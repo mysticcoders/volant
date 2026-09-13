@@ -5,3 +5,5 @@ dist/
 *.xcworkspace
 xcuserdata/
 .DS_Store
+
+.env.cloudflare
