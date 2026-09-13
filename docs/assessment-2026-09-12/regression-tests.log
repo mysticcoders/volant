@@ -1,0 +1,36 @@
+[0/1] Planning build
+Building for debugging...
+[0/4] Write sources
+[1/4] Write swift-version--58304C5D6DBC2206.txt
+[3/6] Compiling SlingshotTests AssessmentRegressionTests.swift
+[4/6] Emitting module SlingshotTests
+[4/6] Write Objects.LinkFileList
+[5/6] Linking SlingshotAssessmentPackageTests
+Build complete! (0.63s)
+Test Suite 'Selected tests' started at 2026-09-12 22:56:40.950.
+Test Suite 'SlingshotAssessmentPackageTests.xctest' started at 2026-09-12 22:56:40.951.
+Test Suite 'AssessmentRegressionTests' started at 2026-09-12 22:56:40.951.
+Test Case '-[SlingshotTests.AssessmentRegressionTests testMarkdownIdentityIsStableAndUnique]' started.
+/private/tmp/slingshot-assessment-tests/Tests/SlingshotTests/AssessmentRegressionTests.swift:27: error: -[SlingshotTests.AssessmentRegressionTests testMarkdownIdentityIsStableAndUnique] : XCTAssertEqual failed: ("rule:552D4D95-F644-407A-B054-66E1389EBBE1") is not equal to ("rule:EAB863B1-4462-4569-B21D-6FDFD3008613")
+/private/tmp/slingshot-assessment-tests/Tests/SlingshotTests/AssessmentRegressionTests.swift:29: error: -[SlingshotTests.AssessmentRegressionTests testMarkdownIdentityIsStableAndUnique] : XCTAssertEqual failed: ("1") is not equal to ("2")
+Test Case '-[SlingshotTests.AssessmentRegressionTests testMarkdownIdentityIsStableAndUnique]' failed (0.046 seconds).
+Test Case '-[SlingshotTests.AssessmentRegressionTests testPreviousConfigDecodesWithNewDefaults]' started.
+/private/tmp/slingshot-assessment-tests/Tests/SlingshotTests/AssessmentRegressionTests.swift:23: error: -[SlingshotTests.AssessmentRegressionTests testPreviousConfigDecodesWithNewDefaults] : XCTAssertNoThrow failed: threw error "DecodingError.keyNotFound: Key 'notesHotKey' not found in keyed decoding container. Debug description: No value associated with key CodingKeys(stringValue: "notesHotKey", intValue: nil) ("notesHotKey")."
+Test Case '-[SlingshotTests.AssessmentRegressionTests testPreviousConfigDecodesWithNewDefaults]' failed (0.001 seconds).
+Test Case '-[SlingshotTests.AssessmentRegressionTests testRapidNotesHaveUniqueFiles]' started.
+/private/tmp/slingshot-assessment-tests/Tests/SlingshotTests/AssessmentRegressionTests.swift:9: error: -[SlingshotTests.AssessmentRegressionTests testRapidNotesHaveUniqueFiles] : XCTAssertEqual failed: ("2") is not equal to ("10")
+/private/tmp/slingshot-assessment-tests/Tests/SlingshotTests/AssessmentRegressionTests.swift:10: error: -[SlingshotTests.AssessmentRegressionTests testRapidNotesHaveUniqueFiles] : XCTAssertEqual failed: ("2") is not equal to ("10")
+Test Case '-[SlingshotTests.AssessmentRegressionTests testRapidNotesHaveUniqueFiles]' failed (0.005 seconds).
+Test Case '-[SlingshotTests.AssessmentRegressionTests testReloadPreservesPendingEdits]' started.
+/private/tmp/slingshot-assessment-tests/Tests/SlingshotTests/AssessmentRegressionTests.swift:19: error: -[SlingshotTests.AssessmentRegressionTests testReloadPreservesPendingEdits] : XCTAssertEqual failed: ("Optional("old fictional text")") is not equal to ("Optional("new fictional text")")
+Test Case '-[SlingshotTests.AssessmentRegressionTests testReloadPreservesPendingEdits]' failed (0.001 seconds).
+Test Suite 'AssessmentRegressionTests' failed at 2026-09-12 22:56:41.003.
+	 Executed 4 tests, with 6 failures (0 unexpected) in 0.052 (0.052) seconds
+Test Suite 'SlingshotAssessmentPackageTests.xctest' failed at 2026-09-12 22:56:41.003.
+	 Executed 4 tests, with 6 failures (0 unexpected) in 0.052 (0.052) seconds
+Test Suite 'Selected tests' failed at 2026-09-12 22:56:41.003.
+	 Executed 4 tests, with 6 failures (0 unexpected) in 0.052 (0.053) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.

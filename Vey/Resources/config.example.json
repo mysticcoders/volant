@@ -1,0 +1,9 @@
+{
+  "_help": "Copy to ~/Library/Containers/com.mysticcoders.vey/Data/Library/Application Support/Vey/config.json (or use Reveal Config Folder from the menu bar).",
+  "summonHotKey": "option+space",
+  "clipboardRetention": 500,
+  "appHotKeys": [
+    { "bundleIdentifier": "com.mitchellh.ghostty", "hotKey": "cmd+ctrl+t" },
+    { "bundleIdentifier": "md.obsidian", "hotKey": "cmd+ctrl+o" }
+  ]
+}

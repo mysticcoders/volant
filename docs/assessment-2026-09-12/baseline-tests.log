@@ -1,0 +1,98 @@
+[0/1] Planning build
+Building for debugging...
+[0/4] Write sources
+[1/4] Write swift-version--58304C5D6DBC2206.txt
+[3/8] Compiling Slingshot NotesStore.swift
+[4/8] Emitting module Slingshot
+[5/8] Compiling Slingshot Preferences.swift
+[6/8] Compiling Slingshot MarkdownBlocks.swift
+[7/16] Compiling SlingshotTests PasteboardFilterTests.swift
+[8/16] Compiling SlingshotTests UnitConverterTests.swift
+[9/16] Compiling SlingshotTests FuzzyMatcherTests.swift
+[10/16] Emitting module SlingshotTests
+[11/16] Compiling SlingshotTests MarkdownBlocksTests.swift
+[12/16] Compiling SlingshotTests FileSearchTests.swift
+[13/16] Compiling SlingshotTests NotesStoreTests.swift
+[14/16] Compiling SlingshotTests CalculatorTests.swift
+[15/18] Compiling SlingshotAssessmentPackageTests runner.swift
+[16/18] Emitting module SlingshotAssessmentPackageTests
+[16/18] Write Objects.LinkFileList
+[17/18] Linking SlingshotAssessmentPackageTests
+Build complete! (1.57s)
+Test Suite 'All tests' started at 2026-09-12 22:55:53.784.
+Test Suite 'SlingshotAssessmentPackageTests.xctest' started at 2026-09-12 22:55:53.785.
+Test Suite 'CalculatorTests' started at 2026-09-12 22:55:53.785.
+Test Case '-[SlingshotTests.CalculatorTests testFormatting]' started.
+Test Case '-[SlingshotTests.CalculatorTests testFormatting]' passed (0.001 seconds).
+Test Case '-[SlingshotTests.CalculatorTests testPrecedence]' started.
+Test Case '-[SlingshotTests.CalculatorTests testPrecedence]' passed (0.000 seconds).
+Test Case '-[SlingshotTests.CalculatorTests testRejectsAppNamesAndGarbage]' started.
+Test Case '-[SlingshotTests.CalculatorTests testRejectsAppNamesAndGarbage]' passed (0.000 seconds).
+Test Case '-[SlingshotTests.CalculatorTests testUnaryMinusAndFunctions]' started.
+Test Case '-[SlingshotTests.CalculatorTests testUnaryMinusAndFunctions]' passed (0.000 seconds).
+Test Suite 'CalculatorTests' passed at 2026-09-12 22:55:53.787.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.002 (0.002) seconds
+Test Suite 'FileSearchTests' started at 2026-09-12 22:55:53.787.
+Test Case '-[SlingshotTests.FileSearchTests testNoiseFilter]' started.
+Test Case '-[SlingshotTests.FileSearchTests testNoiseFilter]' passed (0.000 seconds).
+Test Suite 'FileSearchTests' passed at 2026-09-12 22:55:53.788.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'FuzzyMatcherTests' started at 2026-09-12 22:55:53.788.
+Test Case '-[SlingshotTests.FuzzyMatcherTests testAcronymGetsWordStartBonus]' started.
+Test Case '-[SlingshotTests.FuzzyMatcherTests testAcronymGetsWordStartBonus]' passed (0.000 seconds).
+Test Case '-[SlingshotTests.FuzzyMatcherTests testCaseInsensitive]' started.
+Test Case '-[SlingshotTests.FuzzyMatcherTests testCaseInsensitive]' passed (0.000 seconds).
+Test Case '-[SlingshotTests.FuzzyMatcherTests testNoMatchReturnsNil]' started.
+Test Case '-[SlingshotTests.FuzzyMatcherTests testNoMatchReturnsNil]' passed (0.000 seconds).
+Test Case '-[SlingshotTests.FuzzyMatcherTests testPrefixBeatsScattered]' started.
+Test Case '-[SlingshotTests.FuzzyMatcherTests testPrefixBeatsScattered]' passed (0.000 seconds).
+Test Suite 'FuzzyMatcherTests' passed at 2026-09-12 22:55:53.788.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'MarkdownBlocksTests' started at 2026-09-12 22:55:53.788.
+Test Case '-[SlingshotTests.MarkdownBlocksTests testBareURLIsItsOwnBlock]' started.
+Test Case '-[SlingshotTests.MarkdownBlocksTests testBareURLIsItsOwnBlock]' passed (0.000 seconds).
+Test Case '-[SlingshotTests.MarkdownBlocksTests testCodeBlockCopiesWithoutFences]' started.
+Test Case '-[SlingshotTests.MarkdownBlocksTests testCodeBlockCopiesWithoutFences]' passed (0.000 seconds).
+Test Case '-[SlingshotTests.MarkdownBlocksTests testIndentationInsideCodeIsPreserved]' started.
+Test Case '-[SlingshotTests.MarkdownBlocksTests testIndentationInsideCodeIsPreserved]' passed (0.000 seconds).
+Test Case '-[SlingshotTests.MarkdownBlocksTests testListsAndHeadings]' started.
+Test Case '-[SlingshotTests.MarkdownBlocksTests testListsAndHeadings]' passed (0.000 seconds).
+Test Case '-[SlingshotTests.MarkdownBlocksTests testTaskListItems]' started.
+Test Case '-[SlingshotTests.MarkdownBlocksTests testTaskListItems]' passed (0.000 seconds).
+Test Case '-[SlingshotTests.MarkdownBlocksTests testUnclosedFenceStillYieldsCode]' started.
+Test Case '-[SlingshotTests.MarkdownBlocksTests testUnclosedFenceStillYieldsCode]' passed (0.000 seconds).
+Test Suite 'MarkdownBlocksTests' passed at 2026-09-12 22:55:53.789.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'NotesStoreTests' started at 2026-09-12 22:55:53.789.
+Test Case '-[SlingshotTests.NotesStoreTests testCreateUpdateSearchDelete]' started.
+Test Case '-[SlingshotTests.NotesStoreTests testCreateUpdateSearchDelete]' passed (0.043 seconds).
+Test Suite 'NotesStoreTests' passed at 2026-09-12 22:55:53.833.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.043 (0.043) seconds
+Test Suite 'PasteboardFilterTests' started at 2026-09-12 22:55:53.833.
+Test Case '-[SlingshotTests.PasteboardFilterTests testConcealedIsNeverRecorded]' started.
+Test Case '-[SlingshotTests.PasteboardFilterTests testConcealedIsNeverRecorded]' passed (0.000 seconds).
+Test Case '-[SlingshotTests.PasteboardFilterTests testPlainTextIsRecorded]' started.
+Test Case '-[SlingshotTests.PasteboardFilterTests testPlainTextIsRecorded]' passed (0.000 seconds).
+Test Suite 'PasteboardFilterTests' passed at 2026-09-12 22:55:53.833.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'UnitConverterTests' started at 2026-09-12 22:55:53.833.
+Test Case '-[SlingshotTests.UnitConverterTests testDataAndSpeed]' started.
+Test Case '-[SlingshotTests.UnitConverterTests testDataAndSpeed]' passed (0.000 seconds).
+Test Case '-[SlingshotTests.UnitConverterTests testFormat]' started.
+Test Case '-[SlingshotTests.UnitConverterTests testFormat]' passed (0.000 seconds).
+Test Case '-[SlingshotTests.UnitConverterTests testLengthAndCompactForm]' started.
+Test Case '-[SlingshotTests.UnitConverterTests testLengthAndCompactForm]' passed (0.000 seconds).
+Test Case '-[SlingshotTests.UnitConverterTests testMismatchedDimensionsAndGarbage]' started.
+Test Case '-[SlingshotTests.UnitConverterTests testMismatchedDimensionsAndGarbage]' passed (0.000 seconds).
+Test Case '-[SlingshotTests.UnitConverterTests testTemperatureTouchingUnit]' started.
+Test Case '-[SlingshotTests.UnitConverterTests testTemperatureTouchingUnit]' passed (0.000 seconds).
+Test Suite 'UnitConverterTests' passed at 2026-09-12 22:55:53.834.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'SlingshotAssessmentPackageTests.xctest' passed at 2026-09-12 22:55:53.834.
+	 Executed 23 tests, with 0 failures (0 unexpected) in 0.047 (0.049) seconds
+Test Suite 'All tests' passed at 2026-09-12 22:55:53.834.
+	 Executed 23 tests, with 0 failures (0 unexpected) in 0.047 (0.051) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.

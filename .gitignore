@@ -1,0 +1,7 @@
+build/
+build-release/
+dist/
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+.DS_Store

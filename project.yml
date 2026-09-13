@@ -1,0 +1,68 @@
+name: Vey
+options:
+  bundleIdPrefix: com.mysticcoders
+  deploymentTarget:
+    macOS: "15.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+    DEVELOPMENT_TEAM: REMBT6JY4N
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_HARDENED_RUNTIME: YES
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_TREAT_WARNINGS_AS_ERRORS: NO
+targets:
+  Vey:
+    type: application
+    platform: macOS
+    sources:
+      - path: Vey
+        excludes: ["Resources/config.example.json"]
+    entitlements:
+      path: Vey/Vey.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.personal-information.addressbook: true
+        com.apple.security.personal-information.calendars: true
+    info:
+      path: Vey/Info.plist
+      properties:
+        CFBundleName: Vey
+        CFBundleDisplayName: Vey
+        CFBundleIdentifier: com.mysticcoders.vey
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSUIElement: true
+        LSMinimumSystemVersion: "15.0"
+        NSHumanReadableCopyright: "Copyright 2026 Mystic Coders, LLC"
+        NSPrincipalClass: NSApplication
+        NSContactsUsageDescription: "Vey searches your contacts so you can copy an email address or phone number. Read-only."
+        NSCalendarsFullAccessUsageDescription: "Vey shows today's events and their meeting links. Read-only."
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.vey
+        GENERATE_INFOPLIST_FILE: NO
+  VeyTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [VeyTests]
+    dependencies:
+      - target: Vey
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.vey.tests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  Vey:
+    build:
+      targets:
+        Vey: all
+        VeyTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets: [VeyTests]
