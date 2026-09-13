@@ -7,6 +7,8 @@ enum NoteAction {
 }
 
 enum ResultRow: Identifiable, Hashable {
+    case extensionRun(InstalledExtension, input: String)
+    case extensionResult(String)
     case note(Note)
     case newNote(String)
     case calculation(String)
@@ -28,6 +30,8 @@ enum ResultRow: Identifiable, Hashable {
         case .clip(let c): return "clip:\(c.id)"
         case .note(let n): return "note:\(n.id)"
         case .newNote(let t): return "newnote:\(t)"
+        case .extensionRun(let e, let i): return "ext:\(e.id):\(i)"
+        case .extensionResult(let s): return "extresult:\(s)"
         }
     }
 
@@ -42,6 +46,8 @@ enum ResultRow: Identifiable, Hashable {
         case .event: return "Event"
         case .clip: return "Clipboard"
         case .note, .newNote: return "Note"
+        case .extensionRun: return "Extension"
+        case .extensionResult: return "Result"
         }
     }
 
@@ -56,6 +62,8 @@ enum ResultRow: Identifiable, Hashable {
         case .clip: return "Copy to Clipboard"
         case .note: return "Open Note"
         case .newNote: return "Create Note"
+        case .extensionRun: return "Run Extension"
+        case .extensionResult: return "Copy Result"
         }
     }
 
@@ -92,6 +100,7 @@ final class LauncherModel: ObservableObject {
     private let clipboard: ClipboardStore
     private let notes: NotesStore
     private let onNote: (NoteAction) -> Void
+    let extensions = ExtensionManager()
     private let files = FileSearch()
     private let contacts = ContactSearch()
     private let agenda = CalendarAgenda()
@@ -159,6 +168,17 @@ final class LauncherModel: ObservableObject {
                     }
                 }
             }
+            return
+        }
+        if q.lowercased() == "ext" || q.lowercased().hasPrefix("ext ") {
+            let rest = q.dropFirst(3).trimmingCharacters(in: .whitespaces)
+            let parts = rest.split(separator: " ", maxSplits: 1).map(String.init)
+            let name = parts.first ?? ""
+            let input = parts.count > 1 ? parts[1] : ""
+            extensions.reload()
+            let rows = extensions.search(name).map { ResultRow.extensionRun($0, input: input) }
+            notice = rows.isEmpty ? "No extensions installed. Folders go in Application Support/Vey/Extensions." : nil
+            sections = rows.isEmpty ? [] : [ResultSection(title: "Extensions", rows: rows)]
             return
         }
         if q.lowercased() == "note" || q.lowercased().hasPrefix("note ") {
@@ -239,6 +259,20 @@ final class LauncherModel: ObservableObject {
         case .event(let event): CalendarAgenda.open(event)
         case .note(let note): onNote(.open(note.id))
         case .newNote(let text): onNote(.create(text + "\n"))
+        case .extensionRun(let ext, let input):
+            let gen = generation
+            extensions.run(ext, input: input) { [weak self] result in
+                guard let self, gen == self.generation else { return }
+                switch result {
+                case .success(let output):
+                    self.sections = [ResultSection(title: ext.name, rows: [.extensionResult(output)])]
+                case .failure(let error):
+                    self.notice = "Extension failed: \(error.localizedDescription)"
+                    self.sections = []
+                }
+            }
+            return
+        case .extensionResult(let text): copy(text)
         }
         dismiss()
     }

@@ -1,0 +1,12 @@
+{
+  "id": "com.mysticcoders.vey.hello-rust",
+  "name": "Hello (Rust)",
+  "version": "0.1.0",
+  "module": "hello.wasm",
+  "capabilities": [
+    "log",
+    "clipboard.write"
+  ],
+  "timeoutSeconds": 2,
+  "sha256": "7b4269be7bb8ca4dd3e181b74cc48cfe74c7cdae02d36f22006b4df42c360c62"
+}

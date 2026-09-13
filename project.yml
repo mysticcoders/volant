@@ -21,6 +21,7 @@ targets:
     sources:
       - path: Vey
         excludes: ["Resources/config.example.json"]
+      - path: Shared
     entitlements:
       path: Vey/Vey.entitlements
       properties:
@@ -41,14 +42,40 @@ targets:
         NSPrincipalClass: NSApplication
         NSContactsUsageDescription: "Vey searches your contacts so you can copy an email address or phone number. Read-only."
         NSCalendarsFullAccessUsageDescription: "Vey shows today's events and their meeting links. Read-only."
+    dependencies:
+      - target: VeyExtensionHost
+        embed: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.vey
         GENERATE_INFOPLIST_FILE: NO
+  VeyExtensionHost:
+    type: xpc-service
+    platform: macOS
+    sources:
+      - path: VeyExtensionHost
+      - path: Shared
+    entitlements:
+      path: VeyExtensionHost/VeyExtensionHost.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+    info:
+      path: VeyExtensionHost/Info.plist
+      properties:
+        CFBundleIdentifier: com.mysticcoders.vey.ExtensionHost
+        CFBundleName: VeyExtensionHost
+        XPCService:
+          ServiceType: Application
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.vey.ExtensionHost
+        GENERATE_INFOPLIST_FILE: NO
   VeyTests:
     type: bundle.unit-test
     platform: macOS
-    sources: [VeyTests]
+    sources:
+      - path: VeyTests
+      - path: Shared
     dependencies:
       - target: Vey
     settings:

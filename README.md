@@ -7,7 +7,7 @@ A small, sandboxed macOS launcher for one person. Apps, per-app hotkeys, calcula
 ## Security posture
 
 - **App Sandbox on. No network entitlement.** The binary makes no network requests and has no telemetry. Opening a meeting link or a URL in a note hands it to your browser, which does.
-- **No extensions, no scripting, no shell.** There is no way to run third-party code inside Vey.
+- **No scripting, no shell, and extensions only in a cage.** Third-party code can run only as a WebAssembly module inside a separate sandboxed XPC process, with exactly the capabilities its manifest declares (spike; see `docs/extensions.md`). Nothing runs inside the app itself.
 - **Two permissions, asked on first use:** Contacts and Calendar, each scoped by its own sandbox entitlement. Vey only reads, but note that Apple's Calendar grant is a full-access grant; the read-only behavior is the app's, not the OS's. Deny either and that feature simply returns nothing.
 - **No Accessibility or Input Monitoring grant.** Global hotkeys use Carbon `RegisterEventHotKey`, which needs no permission. Version 0.1 copies results to the clipboard instead of pasting, so no keystroke is ever synthesized.
 - **Clipboard history is AES-GCM encrypted at rest** with a 256-bit key held in the Keychain (`WhenUnlockedThisDeviceOnly`), stored in SQLite with `secure_delete` on, and excluded from Time Machine. Password-manager pasteboard markers (`ConcealedType`, `TransientType`, `is-sensitive`) are honored unconditionally. Text only; no images.

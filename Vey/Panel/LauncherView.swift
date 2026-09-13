@@ -143,6 +143,8 @@ private struct RowView: View {
         case .clip(let c): return c.text.replacingOccurrences(of: "\n", with: " ")
         case .note(let n): return n.title
         case .newNote(let t): return "New note “\(t)”"
+        case .extensionRun(let e, let i): return i.isEmpty ? e.name : "\(e.name) — \(i)"
+        case .extensionResult(let s): return s
         }
     }
 
@@ -156,6 +158,8 @@ private struct RowView: View {
         case .clip(let c): return c.copiedAt.formatted(date: .abbreviated, time: .shortened)
         case .note(let n): return n.preview.isEmpty ? n.modified.formatted(date: .abbreviated, time: .shortened) : n.preview
         case .newNote: return nil
+        case .extensionRun(let e, _): return "\(e.manifest.id) · capabilities: \(e.manifest.capabilities.joined(separator: ", "))"
+        case .extensionResult: return "Press return to copy"
         }
     }
 
@@ -170,6 +174,8 @@ private struct RowView: View {
         case .clip: Image(systemName: "doc.on.clipboard.fill").font(.system(size: 18)).foregroundStyle(.secondary)
         case .note: Image(systemName: "note.text").font(.system(size: 20)).foregroundStyle(.secondary)
         case .newNote: Image(systemName: "plus.circle").font(.system(size: 20)).foregroundStyle(.secondary)
+        case .extensionRun: Image(systemName: "puzzlepiece.extension").font(.system(size: 20)).foregroundStyle(.secondary)
+        case .extensionResult: Image(systemName: "checkmark.circle").font(.system(size: 20)).foregroundStyle(.secondary)
         }
     }
 }

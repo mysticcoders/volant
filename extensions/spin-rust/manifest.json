@@ -1,0 +1,9 @@
+{
+  "id": "com.mysticcoders.vey.spin",
+  "name": "Spin",
+  "version": "0.1.0",
+  "module": "spin.wasm",
+  "capabilities": [],
+  "timeoutSeconds": 1,
+  "sha256": "abc7a5d2f94a8c5e686fb867e74fb6628f8d828cfd429c2b36be5c5298060413"
+}
