@@ -57,12 +57,19 @@ final class AppIndex: NSObject {
         return false
     }
 
-    func search(_ text: String, limit: Int = 8) -> [AppEntry] {
+    /// Fuzzy match, then learned ranking: each past use adds a decayed bonus, and the app last chosen
+    /// for this exact query is pinned to the top.
+    func search(_ text: String, limit: Int = 8, usage: UsageStore? = nil) -> [AppEntry] {
         let trimmed = text.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return [] }
+        let pinned = usage?.choice(forQuery: trimmed)
         return apps
-            .compactMap { app -> (AppEntry, Int)? in
-                FuzzyMatcher.score(query: trimmed, candidate: app.name).map { (app, $0) }
+            .compactMap { app -> (AppEntry, Double)? in
+                guard let base = FuzzyMatcher.score(query: trimmed, candidate: app.name) else { return nil }
+                var score = Double(base)
+                if let usage { score += 25 * min(usage.score("app:" + app.id), 4) }
+                if pinned == "app:" + app.id { score += 1000 }
+                return (app, score)
             }
             .sorted { $0.1 > $1.1 }
             .prefix(limit)
@@ -70,22 +77,22 @@ final class AppIndex: NSObject {
     }
 
     func launch(_ app: AppEntry) {
-        RecentApps.record(app.id)
         NSWorkspace.shared.openApplication(at: app.url, configuration: NSWorkspace.OpenConfiguration())
     }
 
     /// Most recently used apps by Spotlight's last-used date, which LaunchServices updates however the app was opened.
     /// Vey's own launches count immediately, before Spotlight catches up.
-    func suggestions(limit: Int = 6) -> [AppEntry] {
-        let ownRecents = RecentApps.paths()
-        func stamp(_ app: AppEntry) -> Date {
-            if let i = ownRecents.firstIndex(of: app.id) { return Date().addingTimeInterval(-Double(i)) }
-            return app.lastUsed ?? .distantPast
+    /// Learned first: apps by frecency of being chosen here, then the system's last-used dates to fill.
+    func suggestions(limit: Int = 6, usage: UsageStore? = nil) -> [AppEntry] {
+        let byPath = Dictionary(uniqueKeysWithValues: apps.map { ($0.id, $0) })
+        var out: [AppEntry] = []
+        if let usage {
+            for key in usage.top(prefix: "app:", limit: limit) {
+                if let app = byPath[String(key.dropFirst(4))], !out.contains(app) { out.append(app) }
+            }
         }
-        return apps
-            .filter { stamp($0) > .distantPast }
-            .sorted { stamp($0) > stamp($1) }
-            .prefix(limit)
-            .map { $0 }
+        let bySystem = apps.filter { $0.lastUsed != nil }.sorted { ($0.lastUsed ?? .distantPast) > ($1.lastUsed ?? .distantPast) }
+        for app in bySystem where out.count < limit && !out.contains(app) { out.append(app) }
+        return Array(out.prefix(limit))
     }
 }

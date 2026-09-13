@@ -113,6 +113,7 @@ final class LauncherModel: ObservableObject {
     private let notes: NotesStore
     private let onNote: (NoteAction) -> Void
     let extensions = ExtensionManager()
+    let usage = UsageStore()
     var config: Preferences
     private let files = FileSearch()
     private let contacts = ContactSearch()
@@ -138,7 +139,7 @@ final class LauncherModel: ObservableObject {
     }
 
     private func showSuggestions() {
-        let apps = index.suggestions().map { ResultRow.app($0) }
+        let apps = index.suggestions(usage: usage).map { ResultRow.app($0) }
         sections = apps.isEmpty ? [] : [ResultSection(title: "Suggestions", rows: apps)]
     }
 
@@ -237,7 +238,7 @@ final class LauncherModel: ObservableObject {
         let links = QuicklinkResolver.search(config.quicklinks, head).map { ResultRow.quicklink($0, query: tail) }
         if !links.isEmpty { immediate.append(ResultSection(title: "Quicklinks", rows: links)) }
         let aliased = Set(immediate.flatMap(\.rows).map(\.id))
-        let apps = index.search(q, limit: 6).map { ResultRow.app($0) }.filter { !aliased.contains($0.id) }
+        let apps = index.search(q, limit: 6, usage: usage).map { ResultRow.app($0) }.filter { !aliased.contains($0.id) }
         if !apps.isEmpty { immediate.append(ResultSection(title: "Applications", rows: apps)) }
         compose()
 
@@ -285,6 +286,10 @@ final class LauncherModel: ObservableObject {
 
     func activateSelection() {
         guard let row = selectedRow else { return }
+        switch row {
+        case .extensionResult, .newNote, .calculation, .unit: break
+        default: usage.record(key: row.id, query: query)
+        }
         switch row {
         case .calculation(let text): copy(text)
         case .unit(let text): copy(text.components(separatedBy: " = ").last ?? text)

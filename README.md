@@ -22,7 +22,7 @@ A small, sandboxed macOS launcher for one person. Apps, per-app hotkeys, calcula
 - Results merge: math and units first, then apps, then up to three contacts and five files once the query is long enough. Prefixes force one source: `/` files, `@` contacts, `cal` or `today` for the agenda (return joins the meeting or opens Calendar), `clip` for clipboard history.
 - The launcher opens ready to type when the app starts (`showOnLaunch` in config). Launch at Login is a menu bar toggle, on by default after `Scripts/install.sh`.
 - The panel dismisses when it loses focus, except while a system permission prompt is up.
-- Empty query shows Suggestions: apps ordered by Spotlight's last-used date (however they were opened), with Vey's own launches counted immediately.
+- **Learned ranking.** Every choice is recorded with the exact query that led to it, in a local SQLite file. A use adds one point to a score with a seven-day half-life, so daily picks outrank an old binge. Among matched apps the score is a bonus, and the app last chosen for the exact query you typed is pinned first, so `sa` learns Safari after one pick. Suggestions on an empty query are your most-chosen apps, filled out with Spotlight's last-used dates. Nothing about this leaves the machine.
 - `cal` shows Today and Tomorrow; merged contact results only appear once Contacts access has been granted via `@`.
 - Footer names the return action for the selected row; command-return runs the secondary one (reveal in Finder, copy phone).
 - **Snippets**: `snippets` in config, each with a keyword; `snip` lists them, or type the keyword. Return copies the body with `{date}`, `{isodate}`, `{time}`, `{datetime}`, `{clipboard}` and `{uuid}` expanded. Never pastes.
