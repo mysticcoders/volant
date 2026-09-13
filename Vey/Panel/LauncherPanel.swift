@@ -3,11 +3,15 @@ import SwiftUI
 
 /// A floating, non-activating, borderless panel that hosts the SwiftUI launcher and toggles on the summon hotkey.
 final class LauncherPanel: NSPanel {
-    static let size = NSSize(width: 750, height: 480)
+    static var scale: Double = 1.0
+    static var opacity: Double = 1.0
+    static var size: NSSize { NSSize(width: 750 * scale, height: 480 * scale) }
     private let model: LauncherModel
 
-    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, onNote: @escaping (NoteAction) -> Void) {
-        model = LauncherModel(index: index, clipboard: clipboard, notes: notes, onNote: onNote)
+    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, onNote: @escaping (NoteAction) -> Void) {
+        LauncherPanel.scale = min(1.4, max(0.8, config.appearance.scale))
+        LauncherPanel.opacity = min(1.0, max(0.5, config.appearance.opacity))
+        model = LauncherModel(index: index, clipboard: clipboard, notes: notes, config: config, onNote: onNote)
         super.init(contentRect: NSRect(origin: .zero, size: LauncherPanel.size),
                    styleMask: [.nonactivatingPanel, .borderless, .fullSizeContentView],
                    backing: .buffered, defer: false)
@@ -49,6 +53,8 @@ final class LauncherPanel: NSPanel {
 
     /// Development aid for screenshots: `Vey --show --query saf`.
     func setQuery(_ text: String) { model.query = text }
+
+    func apply(config: Preferences) { model.config = config }
 
     override func cancelOperation(_ sender: Any?) { orderOut(nil) }
 }

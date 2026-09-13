@@ -7,6 +7,9 @@ enum NoteAction {
 }
 
 enum ResultRow: Identifiable, Hashable {
+    case snippet(Snippet)
+    case emoji(EmojiEntry)
+    case quicklink(Quicklink, query: String)
     case extensionRun(InstalledExtension, input: String)
     case extensionResult(String)
     case note(Note)
@@ -32,6 +35,9 @@ enum ResultRow: Identifiable, Hashable {
         case .newNote(let t): return "newnote:\(t)"
         case .extensionRun(let e, let i): return "ext:\(e.id):\(i)"
         case .extensionResult(let s): return "extresult:\(s)"
+        case .snippet(let s): return "snip:\(s.keyword)"
+        case .emoji(let e): return "emoji:\(e.symbol)"
+        case .quicklink(let q, let t): return "ql:\(q.name):\(t)"
         }
     }
 
@@ -48,6 +54,9 @@ enum ResultRow: Identifiable, Hashable {
         case .note, .newNote: return "Note"
         case .extensionRun: return "Extension"
         case .extensionResult: return "Result"
+        case .snippet: return "Snippet"
+        case .emoji: return "Emoji"
+        case .quicklink: return "Quicklink"
         }
     }
 
@@ -64,6 +73,9 @@ enum ResultRow: Identifiable, Hashable {
         case .newNote: return "Create Note"
         case .extensionRun: return "Run Extension"
         case .extensionResult: return "Copy Result"
+        case .snippet: return "Copy Snippet"
+        case .emoji: return "Copy Emoji"
+        case .quicklink: return "Open Link"
         }
     }
 
@@ -101,6 +113,7 @@ final class LauncherModel: ObservableObject {
     private let notes: NotesStore
     private let onNote: (NoteAction) -> Void
     let extensions = ExtensionManager()
+    var config: Preferences
     private let files = FileSearch()
     private let contacts = ContactSearch()
     private let agenda = CalendarAgenda()
@@ -109,10 +122,11 @@ final class LauncherModel: ObservableObject {
     private var contactRows: [ResultRow] = []
     private var fileRows: [ResultRow] = []
 
-    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, onNote: @escaping (NoteAction) -> Void) {
+    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, onNote: @escaping (NoteAction) -> Void) {
         self.index = index
         self.clipboard = clipboard
         self.notes = notes
+        self.config = config
         self.onNote = onNote
     }
 
@@ -170,6 +184,17 @@ final class LauncherModel: ObservableObject {
             }
             return
         }
+        if q.hasPrefix(":") {
+            let rows = EmojiIndex.search(String(q.dropFirst())).map { ResultRow.emoji($0) }
+            sections = rows.isEmpty ? [] : [ResultSection(title: "Emoji", rows: rows)]
+            return
+        }
+        if q.lowercased() == "snip" || q.lowercased().hasPrefix("snip ") {
+            let rows = SnippetExpander.search(config.snippets, q.dropFirst(4).trimmingCharacters(in: .whitespaces)).map { ResultRow.snippet($0) }
+            notice = rows.isEmpty ? "No snippets. Add them under \"snippets\" in config.json." : nil
+            sections = rows.isEmpty ? [] : [ResultSection(title: "Snippets", rows: rows)]
+            return
+        }
         if q.lowercased() == "ext" || q.lowercased().hasPrefix("ext ") {
             let rest = q.dropFirst(3).trimmingCharacters(in: .whitespaces)
             let parts = rest.split(separator: " ", maxSplits: 1).map(String.init)
@@ -199,9 +224,20 @@ final class LauncherModel: ObservableObject {
         var answers: [ResultRow] = []
         if let value = Calculator.evaluate(q) { answers.append(.calculation(Calculator.format(value))) }
         if let conv = UnitConverter.convert(q) { answers.append(.unit(UnitConverter.format(conv))) }
-        let apps = index.search(q, limit: 6).map { ResultRow.app($0) }
         immediate = []
+        let words = q.split(separator: " ", maxSplits: 1).map(String.init)
+        let head = words.first?.lowercased() ?? ""
+        let tail = words.count > 1 ? words[1] : ""
+        if let target = config.aliases[head], words.count == 1, let app = index.search(target, limit: 1).first {
+            immediate.append(ResultSection(title: "Alias", rows: [.app(app)]))
+        }
         if !answers.isEmpty { immediate.append(ResultSection(title: "Answer", rows: answers)) }
+        let snips = config.snippets.filter { $0.keyword.lowercased() == q.lowercased() }.map { ResultRow.snippet($0) }
+        if !snips.isEmpty { immediate.append(ResultSection(title: "Snippets", rows: snips)) }
+        let links = QuicklinkResolver.search(config.quicklinks, head).map { ResultRow.quicklink($0, query: tail) }
+        if !links.isEmpty { immediate.append(ResultSection(title: "Quicklinks", rows: links)) }
+        let aliased = Set(immediate.flatMap(\.rows).map(\.id))
+        let apps = index.search(q, limit: 6).map { ResultRow.app($0) }.filter { !aliased.contains($0.id) }
         if !apps.isEmpty { immediate.append(ResultSection(title: "Applications", rows: apps)) }
         compose()
 
@@ -252,7 +288,10 @@ final class LauncherModel: ObservableObject {
         switch row {
         case .calculation(let text): copy(text)
         case .unit(let text): copy(text.components(separatedBy: " = ").last ?? text)
-        case .clip(let clip): copy(clip.text)
+        case .clip(let clip):
+            if clip.kind == .image, let data = clip.imageData {
+                let pb = NSPasteboard.general; pb.clearContents(); pb.setData(data, forType: .png)
+            } else { copy(clip.text) }
         case .app(let app): index.launch(app)
         case .file(let file): FileSearch.open(file)
         case .contact(let contact): if let value = contact.copyValue { copy(value) }
@@ -273,6 +312,11 @@ final class LauncherModel: ObservableObject {
             }
             return
         case .extensionResult(let text): copy(text)
+        case .snippet(let snippet): copy(SnippetExpander.expand(snippet.body))
+        case .emoji(let e): copy(e.symbol)
+        case .quicklink(let link, let query):
+            if QuicklinkResolver.needsQuery(link) && query.isEmpty { self.query = link.name + " "; return }
+            if let url = QuicklinkResolver.url(for: link, query: query) { QuicklinkResolver.open(url) }
         }
         dismiss()
     }

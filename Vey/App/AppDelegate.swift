@@ -10,7 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var clipboardMonitor = ClipboardMonitor(store: clipboardStore)
     private let notesStore = NotesStore()
     private lazy var notesPanel = NotesPanel(store: notesStore)
-    private lazy var panel = LauncherPanel(index: index, clipboard: clipboardStore, notes: notesStore) { [weak self] action in
+    private lazy var panel = LauncherPanel(index: index, clipboard: clipboardStore, notes: notesStore, config: config) { [weak self] action in
         switch action {
         case .open(let id): self?.notesPanel.open(noteID: id)
         case .create(let text): self?.notesPanel.openNew(text: text)
@@ -71,6 +71,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(withTitle: "Notes", action: #selector(toggleNotes), keyEquivalent: "")
         menu.addItem(withTitle: "Reveal Config Folder", action: #selector(revealConfig), keyEquivalent: "")
         menu.addItem(withTitle: "Reload Config", action: #selector(reloadConfig), keyEquivalent: "")
+        menu.addItem(withTitle: "Export Backup…", action: #selector(exportBackup), keyEquivalent: "")
+        menu.addItem(withTitle: "Import Backup…", action: #selector(importBackup), keyEquivalent: "")
         let login = NSMenuItem(title: "Launch at Login", action: #selector(toggleLoginItem), keyEquivalent: "")
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
         menu.addItem(login)
@@ -109,9 +111,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSWorkspace.shared.activateFileViewerSelecting([Preferences.configURL])
     }
 
+    @objc private func exportBackup() { Backup.export() }
+    @objc private func importBackup() { if Backup.importBackup() { reloadConfig() } }
+
     @objc private func reloadConfig() {
         config = Preferences.load()
         registerHotKeys()
+        panel.apply(config: config)
         clipboardStore.retention = config.clipboardRetention
         if let error = Preferences.loadError {
             let alert = NSAlert()

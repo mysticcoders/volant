@@ -22,9 +22,15 @@ final class ClipboardMonitor {
         guard pb.changeCount != lastChange else { return }
         lastChange = pb.changeCount
         let types = (pb.types ?? []).map(\.rawValue)
-        guard PasteboardFilter.shouldRecord(types: types),
-              let text = pb.string(forType: .string),
-              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, text.utf8.count <= 256_000 else { return }
-        store.record(text)
+        guard PasteboardFilter.shouldRecord(types: types) else { return }
+        if let text = pb.string(forType: .string), !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            guard text.utf8.count <= 256_000 else { return }
+            store.record(text)
+            return
+        }
+        if let png = pb.data(forType: .png) ?? pb.data(forType: .tiff).flatMap({ NSBitmapImageRep(data: $0)?.representation(using: .png, properties: [:]) }),
+           png.count <= 8_000_000 {
+            store.recordImage(png)
+        }
     }
 }

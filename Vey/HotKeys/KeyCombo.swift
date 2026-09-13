@@ -20,6 +20,8 @@ struct KeyCombo: Equatable {
             case "ctrl", "control": mods |= UInt32(controlKey)
             case "opt", "option", "alt": mods |= UInt32(optionKey)
             case "shift": mods |= UInt32(shiftKey)
+            case "meh": mods |= UInt32(controlKey) | UInt32(optionKey) | UInt32(shiftKey)
+            case "hyper": mods |= UInt32(cmdKey) | UInt32(controlKey) | UInt32(optionKey) | UInt32(shiftKey)
             default: return nil
             }
         }

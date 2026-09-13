@@ -25,6 +25,14 @@ A small, sandboxed macOS launcher for one person. Apps, per-app hotkeys, calcula
 - Empty query shows Suggestions: apps ordered by Spotlight's last-used date (however they were opened), with Vey's own launches counted immediately.
 - `cal` shows Today and Tomorrow; merged contact results only appear once Contacts access has been granted via `@`.
 - Footer names the return action for the selected row; command-return runs the secondary one (reveal in Finder, copy phone).
+- **Snippets**: `snippets` in config, each with a keyword; `snip` lists them, or type the keyword. Return copies the body with `{date}`, `{isodate}`, `{time}`, `{datetime}`, `{clipboard}` and `{uuid}` expanded. Never pastes.
+- **Emoji**: `:rocket` searches 1,765 names from the Unicode database bundled with the app. Return copies.
+- **Aliases**: `aliases` maps a word to an app name; the alias ranks first.
+- **Quicklinks**: `quicklinks` with a `{query}` slot; `google vey launcher` opens the search. Only http, https and mailto URLs are opened.
+- **Clipboard images**: PNG and TIFF copies are stored encrypted like text, shown as thumbnails under `clip`, and put back on the pasteboard with return. 8 MB cap.
+- **Appearance**: `appearance.scale` (0.8 to 1.4) and `appearance.opacity` (0.5 to 1.0).
+- **Backup**: Export Backup and Import Backup in the menu bar copy config and notes to and from a folder you choose. Import shows every hotkey and quicklink it would install before applying. Clipboard history is excluded by design, since it is encrypted under this Mac's Keychain key.
+- Hotkeys accept `meh` (control+option+shift) and `hyper` (all four) as modifier names, for Karabiner users.
 - **Notes** on `option+n` (configurable as `notesHotKey`): a floating window with a note list and an editor. Each note is a plain `.md` file in the container. Preview renders Markdown; **code blocks and bare URLs copy their contents, never the fences**, by double-click or the Copy button. ⇧⌘C copies the raw Markdown when you want it. ⌘N new, ⌘E toggles edit and preview, ⌘⌫ trashes. From the launcher, `note` lists recent notes, `note term` searches contents and offers to create one.
 - Development: `Vey --show --query "5 km in mi"` opens the launcher with a query; `--notes` opens the notes window.
 - Per-app hotkeys: edit `config.json` (menu bar, Reveal Config Folder), add `{ "bundleIdentifier": "...", "hotKey": "cmd+ctrl+t" }`, then Reload Config. Press once to activate or launch, again to hide.

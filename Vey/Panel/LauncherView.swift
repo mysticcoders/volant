@@ -13,7 +13,7 @@ struct LauncherView: View {
             footer
         }
         .frame(width: LauncherPanel.size.width, height: LauncherPanel.size.height)
-        .background(.regularMaterial)
+        .background(.regularMaterial.opacity(LauncherPanel.opacity))
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.primary.opacity(0.08)))
         .onAppear { DispatchQueue.main.async { focused = true } }
@@ -145,6 +145,9 @@ private struct RowView: View {
         case .newNote(let t): return "New note “\(t)”"
         case .extensionRun(let e, let i): return i.isEmpty ? e.name : "\(e.name) — \(i)"
         case .extensionResult(let s): return s
+        case .snippet(let s): return s.name
+        case .emoji(let e): return "\(e.symbol)  \(e.name)"
+        case .quicklink(let q, let t): return t.isEmpty ? q.name : "\(q.name) — \(t)"
         }
     }
 
@@ -160,6 +163,9 @@ private struct RowView: View {
         case .newNote: return nil
         case .extensionRun(let e, _): return "\(e.manifest.id) · capabilities: \(e.manifest.capabilities.joined(separator: ", "))"
         case .extensionResult: return "Press return to copy"
+        case .snippet(let s): return s.body.replacingOccurrences(of: "\n", with: " ")
+        case .emoji: return nil
+        case .quicklink(let q, _): return q.url
         }
     }
 
@@ -171,9 +177,14 @@ private struct RowView: View {
         case .file(let f): Image(nsImage: NSWorkspace.shared.icon(forFile: f.url.path)).resizable()
         case .contact: Image(systemName: "person.crop.circle.fill").font(.system(size: 20)).foregroundStyle(.secondary)
         case .event: Image(systemName: "calendar").font(.system(size: 20)).foregroundStyle(.secondary)
-        case .clip: Image(systemName: "doc.on.clipboard.fill").font(.system(size: 18)).foregroundStyle(.secondary)
+        case .clip(let c):
+            if c.kind == .image, let data = c.imageData, let img = NSImage(data: data) { Image(nsImage: img).resizable().aspectRatio(contentMode: .fit) }
+            else { Image(systemName: "doc.on.clipboard.fill").font(.system(size: 18)).foregroundStyle(.secondary) }
         case .note: Image(systemName: "note.text").font(.system(size: 20)).foregroundStyle(.secondary)
         case .newNote: Image(systemName: "plus.circle").font(.system(size: 20)).foregroundStyle(.secondary)
+        case .snippet: Image(systemName: "text.badge.plus").font(.system(size: 20)).foregroundStyle(.secondary)
+        case .emoji: Image(systemName: "face.smiling").font(.system(size: 20)).foregroundStyle(.secondary)
+        case .quicklink: Image(systemName: "link").font(.system(size: 20)).foregroundStyle(.secondary)
         case .extensionRun: Image(systemName: "puzzlepiece.extension").font(.system(size: 20)).foregroundStyle(.secondary)
         case .extensionResult: Image(systemName: "checkmark.circle").font(.system(size: 20)).foregroundStyle(.secondary)
         }

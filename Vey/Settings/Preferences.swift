@@ -7,10 +7,14 @@ struct Preferences: Codable {
     var appHotKeys: [AppHotKey] = []
     var clipboardRetention: Int = 500
     var showOnLaunch: Bool = true
-    var help: String = "Edit and choose Reload Config from the menu bar. Hotkey syntax: cmd|ctrl|option|shift + key, e.g. option+space, cmd+shift+t. App hotkeys use the app's bundle identifier."
+    var snippets: [Snippet] = []
+    var quicklinks: [Quicklink] = [Quicklink(name: "Google", url: "https://www.google.com/search?q={query}")]
+    var aliases: [String: String] = [:]
+    var appearance: Appearance = Appearance()
+    var help: String = "Edit and choose Reload Config from the menu bar. Hotkeys: cmd|ctrl|option|shift|meh|hyper + key. App hotkeys use the bundle identifier. Snippets: {date} {isodate} {time} {datetime} {clipboard} {uuid}. Quicklinks: {query}. Aliases map a word to an app name or query. Appearance: scale 0.8–1.4, opacity 0.5–1.0."
 
     enum CodingKeys: String, CodingKey {
-        case summonHotKey, notesHotKey, appHotKeys, clipboardRetention, showOnLaunch
+        case summonHotKey, notesHotKey, appHotKeys, clipboardRetention, showOnLaunch, snippets, quicklinks, aliases, appearance
         case help = "_help"
     }
 
@@ -32,6 +36,10 @@ struct Preferences: Codable {
         appHotKeys = try c.decodeIfPresent([AppHotKey].self, forKey: .appHotKeys) ?? d.appHotKeys
         clipboardRetention = try c.decodeIfPresent(Int.self, forKey: .clipboardRetention) ?? d.clipboardRetention
         showOnLaunch = try c.decodeIfPresent(Bool.self, forKey: .showOnLaunch) ?? d.showOnLaunch
+        snippets = try c.decodeIfPresent([Snippet].self, forKey: .snippets) ?? d.snippets
+        quicklinks = try c.decodeIfPresent([Quicklink].self, forKey: .quicklinks) ?? d.quicklinks
+        aliases = try c.decodeIfPresent([String: String].self, forKey: .aliases) ?? d.aliases
+        appearance = try c.decodeIfPresent(Appearance.self, forKey: .appearance) ?? d.appearance
         help = try c.decodeIfPresent(String.self, forKey: .help) ?? d.help
     }
 
@@ -59,6 +67,13 @@ struct Preferences: Codable {
         }
         return defaults
     }
+}
+
+struct Appearance: Codable, Equatable {
+    /// 1.0 is the default 750×480 panel; 0.8 to 1.4 are sensible.
+    var scale: Double = 1.0
+    /// 1.0 is the system material; lower values let the desktop show through more.
+    var opacity: Double = 1.0
 }
 
 struct AppHotKey: Codable {
