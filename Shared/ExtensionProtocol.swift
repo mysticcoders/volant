@@ -14,14 +14,14 @@ struct ExtensionManifest: Codable, Hashable {
 }
 
 /// What the app can ask the sandboxed service to do.
-@objc protocol VeyExtensionHostProtocol {
+@objc protocol VolantExtensionHostProtocol {
     /// Instantiates `module` with only the imports named in `capabilities`, writes `input` into its memory,
     /// calls `run`, and replies with the extension's output string or an error message.
     func run(module: Data, capabilities: [String], input: String, timeout: Double, reply: @escaping (String?, String?) -> Void)
 }
 
 /// What the service may ask the app to do on the extension's behalf. Every call is re-checked against the manifest by the app.
-@objc protocol VeyCapabilityClientProtocol {
+@objc protocol VolantCapabilityClientProtocol {
     func log(_ message: String)
     func clipboardWrite(_ text: String)
 }

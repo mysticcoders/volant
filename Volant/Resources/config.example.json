@@ -1,0 +1,22 @@
+{
+  "_help": "Copy to the Volant config folder config.json (menu bar: Reveal Config Folder), then Reload Config.",
+  "summonHotKey": "cmd+space",
+  "notesHotKey": "option+n",
+  "showOnLaunch": true,
+  "clipboardRetention": 500,
+  "appHotKeys": [
+    { "bundleIdentifier": "com.mitchellh.ghostty", "hotKey": "meh+t" },
+    { "bundleIdentifier": "md.obsidian", "hotKey": "meh+o" }
+  ],
+  "aliases": { "gh": "GitHub Desktop", "sys": "System Settings" },
+  "snippets": [
+    { "name": "Signature", "keyword": "sig", "body": "Andrew Lombardi\nMystic Coders" },
+    { "name": "Today", "keyword": "td", "body": "{isodate}" }
+  ],
+  "quicklinks": [
+    { "name": "Google", "url": "https://www.google.com/search?q={query}" },
+    { "name": "GitHub", "url": "https://github.com/search?q={query}" },
+    { "name": "Vault", "url": "obsidian://open?vault=Brain" }
+  ],
+  "appearance": { "scale": 1.0, "opacity": 1.0 }
+}

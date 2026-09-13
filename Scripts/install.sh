@@ -4,10 +4,11 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 xcodegen generate --quiet
-xcodebuild -project Vey.xcodeproj -scheme Vey -configuration Release -derivedDataPath build-release build 2>&1 | grep -E "error:|BUILD (SUCCEEDED|FAILED)" | sort -u
-SRC="$ROOT/build-release/Build/Products/Release/Vey.app"
-DEST="/Applications/Vey.app"
+xcodebuild -project Volant.xcodeproj -scheme Volant -configuration Release -derivedDataPath build-release build 2>&1 | grep -E "error:|BUILD (SUCCEEDED|FAILED)" | sort -u
+SRC="$ROOT/build-release/Build/Products/Release/Volant.app"
+DEST="/Applications/Volant.app"
 pkill -x Vey 2>/dev/null || true
+pkill -x Volant 2>/dev/null || true
 sleep 0.5
 rm -rf "$DEST"
 ditto "$SRC" "$DEST"

@@ -1,4 +1,4 @@
-name: Vey
+name: Volant
 options:
   bundleIdPrefix: com.mysticcoders
   deploymentTarget:
@@ -15,24 +15,24 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
     SWIFT_TREAT_WARNINGS_AS_ERRORS: NO
 targets:
-  Vey:
+  Volant:
     type: application
     platform: macOS
     sources:
-      - path: Vey
+      - path: Volant
         excludes: ["Resources/config.example.json"]
       - path: Shared
     entitlements:
-      path: Vey/Vey.entitlements
+      path: Volant/Volant.entitlements
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.personal-information.addressbook: true
         com.apple.security.personal-information.calendars: true
     info:
-      path: Vey/Info.plist
+      path: Volant/Info.plist
       properties:
-        CFBundleName: Vey
-        CFBundleDisplayName: Vey
+        CFBundleName: Volant
+        CFBundleDisplayName: Volant
         CFBundleIdentifier: com.mysticcoders.vey
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
@@ -40,57 +40,60 @@ targets:
         LSMinimumSystemVersion: "15.0"
         NSHumanReadableCopyright: "Copyright 2026 Mystic Coders, LLC"
         NSPrincipalClass: NSApplication
-        NSContactsUsageDescription: "Vey searches your contacts so you can copy an email address or phone number. Read-only."
-        NSCalendarsFullAccessUsageDescription: "Vey shows today's events and their meeting links. Read-only."
+        NSContactsUsageDescription: "Volant searches your contacts so you can copy an email address or phone number. Read-only."
+        NSCalendarsFullAccessUsageDescription: "Volant shows today's events and their meeting links. Read-only."
     dependencies:
-      - target: VeyExtensionHost
+      - target: VolantExtensionHost
         embed: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.vey
+        PRODUCT_NAME: Volant
+        PRODUCT_MODULE_NAME: Volant
         GENERATE_INFOPLIST_FILE: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-  VeyExtensionHost:
+  VolantExtensionHost:
     type: xpc-service
     platform: macOS
     sources:
-      - path: VeyExtensionHost
+      - path: VolantExtensionHost
       - path: Shared
     entitlements:
-      path: VeyExtensionHost/VeyExtensionHost.entitlements
+      path: VolantExtensionHost/VolantExtensionHost.entitlements
       properties:
         com.apple.security.app-sandbox: true
     info:
-      path: VeyExtensionHost/Info.plist
+      path: VolantExtensionHost/Info.plist
       properties:
         CFBundleIdentifier: com.mysticcoders.vey.ExtensionHost
-        CFBundleName: VeyExtensionHost
+        CFBundleName: VolantExtensionHost
         XPCService:
           ServiceType: Application
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.vey.ExtensionHost
         GENERATE_INFOPLIST_FILE: NO
-  VeyTests:
+  VolantTests:
     type: bundle.unit-test
     platform: macOS
     sources:
-      - path: VeyTests
+      - path: VolantTests
       - path: Shared
     dependencies:
-      - target: Vey
+      - target: Volant
     settings:
       base:
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Volant.app/Contents/MacOS/Volant"
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.vey.tests
         GENERATE_INFOPLIST_FILE: YES
 schemes:
-  Vey:
+  Volant:
     build:
       targets:
-        Vey: all
-        VeyTests: [test]
+        Volant: all
+        VolantTests: [test]
     run:
       config: Debug
     test:
       config: Debug
-      targets: [VeyTests]
+      targets: [VolantTests]
