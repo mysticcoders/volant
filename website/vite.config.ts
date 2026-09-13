@@ -7,6 +7,7 @@ const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === 'seatbelt';
 
 const localBindingConfig = {
   name: 'volant-marketing',
+  workers_dev: true,
   account_id: '55b50ebf1d3295768fc53dd77cb0e2e6',
   routes: [{ pattern: 'usevolant.com', custom_domain: true }],
   main: 'vinext/server/fetch-handler',
