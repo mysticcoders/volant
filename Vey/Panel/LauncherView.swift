@@ -28,9 +28,13 @@ struct LauncherView: View {
 
     private var searchField: some View {
         HStack(spacing: 14) {
-            Image(systemName: "arrow.up.forward.circle")
-                .font(.system(size: 22, weight: .light))
+            Image("VeyWing")
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 24, height: 24)
                 .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
             TextField("Search for apps, files, contacts, or calculate…", text: $model.query)
                 .textFieldStyle(.plain)
                 .font(.system(size: 22, weight: .regular))
@@ -77,9 +81,13 @@ struct LauncherView: View {
 
     private var footer: some View {
         HStack(spacing: 18) {
-            Image(systemName: "arrow.up.forward.circle.fill")
-                .font(.system(size: 16))
+            Image("VeyWing")
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 16, height: 16)
                 .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
             Spacer()
             if let row = model.selectedRow {
                 HStack(spacing: 8) {

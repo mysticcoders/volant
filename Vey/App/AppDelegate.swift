@@ -65,7 +65,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func installStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.button?.image = NSImage(systemSymbolName: "arrow.up.forward.circle", accessibilityDescription: "Vey")
+        if let wing = NSImage(named: "VeyWing") {
+            wing.size = NSSize(width: 16, height: 16)
+            wing.isTemplate = true
+            item.button?.image = wing
+        } else {
+            item.button?.image = NSImage(systemSymbolName: "arrow.up.forward.circle", accessibilityDescription: "Vey")
+        }
+        item.button?.setAccessibilityLabel("Vey")
         let menu = NSMenu()
         menu.addItem(withTitle: "Show Vey", action: #selector(togglePanel), keyEquivalent: "")
         menu.addItem(withTitle: "Notes", action: #selector(toggleNotes), keyEquivalent: "")
