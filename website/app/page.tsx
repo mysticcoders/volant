@@ -326,7 +326,7 @@ export default function Home() {
           <Brand />
         </a>
         <span>
-          Made by <a href="https://github.com/mysticcoders">Mystic Coders</a>.
+          Made by <a href="https://mysticcoders.com">Mystic Coders</a>.
         </span>
         <a href="#top">
           Back to top <ArrowUpRight size={12} />

@@ -3,6 +3,7 @@ import ServiceManagement
 
 /// Owns the long-lived services: menu bar item, hotkeys, app index, clipboard monitor, and the panel.
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    private lazy var settingsPanel = SettingsWindowController { [weak self] in self?.reloadConfig() }
     private var statusItem: NSStatusItem?
     private var config = Preferences.load()
     private let index = AppIndex()
@@ -18,6 +19,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.setActivationPolicy(config.showInDock ? .regular : .accessory)
+        installApplicationMenu()
         installStatusItem()
         index.start()
         clipboardMonitor.start()
@@ -35,6 +38,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
             return
+        }
+        if CommandLine.arguments.contains("--settings") {
+            DispatchQueue.main.async { [weak self] in self?.showSettings() }
         }
         if CommandLine.arguments.contains("--register-login") {
             try? SMAppService.mainApp.register()
@@ -57,6 +63,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !panel.isVisible { panel.toggle() }
+        else { panel.makeKeyAndOrderFront(nil) }
+        sender.activate(ignoringOtherApps: true)
+        return true
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         clipboardMonitor.stop()
         notesStore.flush()
@@ -75,6 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         item.button?.setAccessibilityLabel("Volant")
         let menu = NSMenu()
         menu.addItem(withTitle: "Show Volant", action: #selector(togglePanel), keyEquivalent: "")
+        menu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
         menu.addItem(withTitle: "Notes", action: #selector(toggleNotes), keyEquivalent: "")
         menu.addItem(withTitle: "Reveal Config Folder", action: #selector(revealConfig), keyEquivalent: "")
         menu.addItem(withTitle: "Reload Config", action: #selector(reloadConfig), keyEquivalent: "")
@@ -101,6 +115,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AppHotKeys.register(config.appHotKeys)
     }
 
+    private func installApplicationMenu() {
+        let bar = NSMenu()
+        let item = NSMenuItem()
+        bar.addItem(item)
+        let menu = NSMenu(title: "Volant")
+        let settings = menu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
+        settings.target = self
+        menu.addItem(.separator())
+        menu.addItem(withTitle: "Quit Volant", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q").target = NSApp
+        item.submenu = menu
+        // Preserve standard text-editing shortcuts in the native notes editor.
+        let editItem = NSMenuItem()
+        bar.addItem(editItem)
+        let edit = NSMenu(title: "Edit")
+        for (title, selector, key) in [("Undo", "undo:", "z"), ("Cut", "cut:", "x"), ("Copy", "copy:", "c"), ("Paste", "paste:", "v"), ("Select All", "selectAll:", "a")] {
+            edit.addItem(withTitle: title, action: NSSelectorFromString(selector), keyEquivalent: key)
+        }
+        editItem.submenu = edit
+        NSApp.mainMenu = bar
+    }
+
+    @objc private func showSettings() {
+        settingsPanel.refresh(config)
+        settingsPanel.showWindow(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
     @objc private func toggleNotes() { notesPanel.toggle() }
 
     @objc private func togglePanel() { panel.toggle() }
@@ -123,6 +164,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func reloadConfig() {
         config = Preferences.load()
+        NSApp.setActivationPolicy(config.showInDock ? .regular : .accessory)
+        settingsPanel.refresh(config)
         registerHotKeys()
         panel.apply(config: config)
         clipboardStore.retention = config.clipboardRetention

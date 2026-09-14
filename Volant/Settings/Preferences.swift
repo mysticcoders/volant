@@ -1,12 +1,13 @@
 import Foundation
 
-/// User configuration, read from a JSON file in the app's sandbox container. No settings UI in v0.1.
+/// User configuration, read from a JSON file in the app's sandbox container. General settings also have a native panel.
 struct Preferences: Codable {
     var summonHotKey: String = "option+space"
     var notesHotKey: String = "option+n"
     var appHotKeys: [AppHotKey] = []
     var clipboardRetention: Int = 500
     var showOnLaunch: Bool = true
+    var showInDock: Bool = true
     var snippets: [Snippet] = []
     var quicklinks: [Quicklink] = [Quicklink(name: "Google", url: "https://www.google.com/search?q={query}")]
     var aliases: [String: String] = [:]
@@ -14,7 +15,7 @@ struct Preferences: Codable {
     var help: String = "Edit and choose Reload Config from the menu bar. Hotkeys: cmd|ctrl|option|shift|meh|hyper + key. App hotkeys use the bundle identifier. Snippets: {date} {isodate} {time} {datetime} {clipboard} {uuid}. Quicklinks: {query}. Aliases map a word to an app name or query. Appearance: scale 0.8–1.4, opacity 0.5–1.0."
 
     enum CodingKeys: String, CodingKey {
-        case summonHotKey, notesHotKey, appHotKeys, clipboardRetention, showOnLaunch, snippets, quicklinks, aliases, appearance
+        case summonHotKey, notesHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, snippets, quicklinks, aliases, appearance
         case help = "_help"
     }
 
@@ -37,6 +38,7 @@ struct Preferences: Codable {
         appHotKeys = try c.decodeIfPresent([AppHotKey].self, forKey: .appHotKeys) ?? d.appHotKeys
         clipboardRetention = try c.decodeIfPresent(Int.self, forKey: .clipboardRetention) ?? d.clipboardRetention
         showOnLaunch = try c.decodeIfPresent(Bool.self, forKey: .showOnLaunch) ?? d.showOnLaunch
+        showInDock = try c.decodeIfPresent(Bool.self, forKey: .showInDock) ?? d.showInDock
         snippets = try c.decodeIfPresent([Snippet].self, forKey: .snippets) ?? d.snippets
         quicklinks = try c.decodeIfPresent([Quicklink].self, forKey: .quicklinks) ?? d.quicklinks
         aliases = try c.decodeIfPresent([String: String].self, forKey: .aliases) ?? d.aliases
@@ -45,6 +47,20 @@ struct Preferences: Codable {
     }
 
     init() {}
+
+    /// Patch a single setting, preserving externally edited and unknown configuration fields.
+    static func updateBoolean(_ key: String, value: Bool, at url: URL = configURL) throws {
+        precondition(["showInDock", "showOnLaunch"].contains(key))
+        let data = try Data(contentsOf: url)
+        guard var object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        object[key] = value
+        let updated = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
+        // Reject invalid known settings before changing the file.
+        _ = try JSONDecoder().decode(Preferences.self, from: updated)
+        try updated.write(to: url, options: .atomic)
+    }
 
     /// Last load problem, shown in the menu bar. A malformed file is left in place, never replaced.
     static var loadError: String? = nil

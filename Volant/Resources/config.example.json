@@ -3,6 +3,7 @@
   "summonHotKey": "cmd+space",
   "notesHotKey": "option+n",
   "showOnLaunch": true,
+  "showInDock": true,
   "clipboardRetention": 500,
   "appHotKeys": [
     { "bundleIdentifier": "com.mitchellh.ghostty", "hotKey": "meh+t" },
