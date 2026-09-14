@@ -114,6 +114,8 @@ final class LauncherModel: ObservableObject {
     @Published var notice: String? = nil
     var dismiss: () -> Void = {}
     let agents = AgentsModel()
+    let acp = ACPModel()
+    var showingACP: Bool { query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "acp" }
     @Published var promotedHarness: String?
     var isPresented = false
     private var agentSubscription: AnyCancellable?
@@ -203,6 +205,7 @@ final class LauncherModel: ObservableObject {
         let q = query.trimmingCharacters(in: .whitespaces)
         guard !q.isEmpty else { showSuggestions(); return }
 
+        if showingACP { sections = []; return }
         if showingAgents {
             refreshAgentResults()
             return

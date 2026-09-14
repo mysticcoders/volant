@@ -1,9 +1,25 @@
 import Foundation
 import Security
 
-/// Optional local automation bridge. No shell, prompt, file-read or arbitrary-command API.
+/// Local Herdr discovery and typed ACP conversations. No shell or arbitrary-command API.
 /// This service intentionally runs outside App Sandbox to reach the user's Herdr socket.
 final class AgentHost: NSObject, VolantAgentHostProtocol {
+    private let acp = ACPConnection()
+    func acpStart(provider: String, project: String, reply: @escaping (String?) -> Void) {
+        acp.queue.async { do { try self.acp.start(provider: provider, project: project); reply(nil) } catch { reply(error.localizedDescription) } }
+    }
+    func acpRead(reply: @escaping (Data?, String?) -> Void) {
+        acp.queue.async { do { reply(try JSONEncoder().encode(self.acp.state), nil) } catch { reply(nil, error.localizedDescription) } }
+    }
+    func acpPrompt(text: String, reply: @escaping (String?) -> Void) {
+        acp.queue.async { do { try self.acp.prompt(text); reply(nil) } catch { reply(error.localizedDescription) } }
+    }
+    func acpCancel(reply: @escaping (String?) -> Void) { acp.queue.async { self.acp.cancel(); reply(nil) } }
+    func acpPermission(request: String, option: String, reply: @escaping (String?) -> Void) {
+        acp.queue.async { do { try self.acp.choose(request: request, option: option); reply(nil) } catch { reply(error.localizedDescription) } }
+    }
+    func acpStop(reply: @escaping () -> Void) { acp.queue.async { self.acp.stop(); reply() } }
+    func invalidate() { acp.queue.async { self.acp.stop() } }
     private let queue = DispatchQueue(label: "com.mysticcoders.volant.agent-host")
     private func run(_ arguments: [String]) throws -> Data {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
@@ -76,7 +92,10 @@ final class ListenerDelegate: NSObject, NSXPCListenerDelegate {
         guard SecRequirementCreateWithString(text as CFString, [], &requirement) == errSecSuccess,
               let requirement, SecCodeCheckValidity(code, [], requirement) == errSecSuccess else { return false }
         connection.exportedInterface = NSXPCInterface(with: VolantAgentHostProtocol.self)
-        connection.exportedObject = AgentHost()
+        let host = AgentHost()
+        connection.exportedObject = host
+        connection.invalidationHandler = { host.invalidate() }
+        connection.interruptionHandler = { host.invalidate() }
         connection.resume()
         return true
     }

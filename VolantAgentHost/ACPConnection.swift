@@ -1,0 +1,245 @@
+import Foundation
+import Darwin
+
+/// One Volant-owned ACP v1 session. All state and protocol IO are serialized on queue.
+/// Only fixed provider executables are launched. No shell, terminal-input or generic RPC surface.
+final class ACPConnection {
+    let queue = DispatchQueue(label: "com.mysticcoders.volant.acp")
+    private(set) var state = ACPState()
+    private let writer = DispatchQueue(label: "com.mysticcoders.volant.acp-writer")
+    private var task: Process?
+    private var input: FileHandle?
+    private var output: FileHandle?
+    private var buffer = Data()
+    private var pending: [Int: String] = [:]
+    private var nextID = 0
+    private var permissionIDs: [String: Any] = [:]
+    private var project = ""
+    private var epoch = UUID()
+    private var turn = UUID()
+    private var textBytes = 0
+    private var toolDetails: [String: [String: Any]] = [:]
+    private var detailBytes = 0
+    // Fixture injection is only available to Swift tests, never over XPC.
+    var testSend: (([String: Any]) -> Void)?
+
+    func start(provider: String, project: String) throws {
+        guard task == nil, state.phase == "disconnected" else { throw failure("End this conversation before starting another.") }
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let names: [String]
+        switch provider {
+        case "opencode": names = ["/opt/homebrew/bin/opencode", home + "/.opencode/bin/opencode", home + "/.local/bin/opencode", "/usr/local/bin/opencode"]
+        case "cursor": names = [home + "/.local/bin/agent", "/opt/homebrew/bin/agent", "/usr/local/bin/agent"]
+        default: throw failure("This provider does not have an ACP adapter in Volant yet.")
+        }
+        guard let executable = names.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
+            throw failure(provider == "cursor" ? "Cursor CLI is not installed. Install and sign in to Cursor CLI, then retry." : "OpenCode was not found. Install it and run opencode auth login, then retry.")
+        }
+        var directory: ObjCBool = false
+        guard project.hasPrefix("/"), !project.contains("\0"), FileManager.default.fileExists(atPath: project, isDirectory: &directory), directory.boolValue else { throw failure("Choose an existing project folder.") }
+        self.project = URL(fileURLWithPath: project).resolvingSymlinksInPath().path
+        state.phase = "starting"; state.status = "Connecting to " + provider + "…"
+        let process = Process(), stdin = Pipe(), stdout = Pipe()
+        process.executableURL = URL(fileURLWithPath: executable)
+        process.arguments = ["acp"]
+        process.currentDirectoryURL = URL(fileURLWithPath: self.project)
+        process.environment = ["HOME": home, "USER": NSUserName(), "PATH": home + "/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin", "LANG": "en_US.UTF-8"]
+        process.standardInput = stdin; process.standardOutput = stdout; process.standardError = FileHandle.nullDevice
+        let generation = epoch
+        process.terminationHandler = { [weak self] _ in
+            self?.queue.async { [weak self] in
+                guard let self, self.epoch == generation else { return }
+                self.stop("Agent process exited. Check the provider’s terminal login and reconnect.", failed: true)
+            }
+        }
+        try process.run()
+        task = process; input = stdin.fileHandleForWriting; output = stdout.fileHandleForReading
+        output?.readabilityHandler = { [weak self] handle in
+            let data = handle.availableData
+            self?.queue.async { [weak self] in
+                guard let self, self.epoch == generation else { return }
+                if data.isEmpty { self.stop("Agent connection closed.", failed: true) }
+                else { self.receive(data) }
+            }
+        }
+        beginHandshake(project: self.project)
+        queue.asyncAfter(deadline: .now() + 45) { [weak self] in
+            guard let self, self.epoch == generation, self.state.phase == "starting" else { return }
+            self.stop("Agent startup timed out. Check its terminal login and reconnect.", failed: true)
+        }
+    }
+    func beginHandshake(project: String) {
+        self.project = project
+        state.phase = "starting"
+        request("initialize", ["protocolVersion": 1, "clientCapabilities": ["fs": ["readTextFile": false, "writeTextFile": false], "terminal": false], "clientInfo": ["name": "volant", "title": "Volant", "version": "0.1.0"]])
+    }
+    func prompt(_ text: String) throws {
+        guard state.phase == "ready", let id = state.sessionID else { throw failure("The conversation is not ready for another prompt.") }
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, text.utf8.count <= 64_000 else { throw failure("Enter a prompt of at most 64 KB.") }
+        guard textBytes + text.utf8.count < 1_000_000 else { throw failure("This conversation reached its display limit. Start a new conversation.") }
+        textBytes += text.utf8.count
+        state.messages.append(ACPMessage(role: "You", text: text))
+        state.phase = "working"; state.status = "Working…"; turn = UUID()
+        request("session/prompt", ["sessionId": id, "prompt": [["type": "text", "text": text]]])
+    }
+    func cancel() {
+        guard ["working", "cancelling"].contains(state.phase), let id = state.sessionID else { return }
+        state.phase = "cancelling"; state.status = "Cancelling…"
+        cancelPermissions()
+        send(["jsonrpc": "2.0", "method": "session/cancel", "params": ["sessionId": id]])
+        let generation = epoch, currentTurn = turn
+        queue.asyncAfter(deadline: .now() + 10) { [weak self] in
+            guard let self, self.epoch == generation, self.turn == currentTurn, self.state.phase == "cancelling" else { return }
+            self.stop("Agent did not finish cancellation; connection ended.", failed: true)
+        }
+    }
+    func choose(request key: String, option: String) throws {
+        guard state.phase == "working", let id = permissionIDs[key],
+              let permission = state.permissions.first(where: { $0.id == key }),
+              permission.options.contains(where: { $0.optionId == option }) else { throw failure("This permission request has expired.") }
+        permissionIDs.removeValue(forKey: key); state.permissions.removeAll { $0.id == key }
+        send(["jsonrpc": "2.0", "id": id, "result": ["outcome": ["outcome": "selected", "optionId": option]]])
+        state.status = state.permissions.isEmpty ? "Working…" : "Needs your permission"
+    }
+    func stop(_ message: String = "Conversation ended.", failed: Bool = false) {
+        cancelPermissions()
+        epoch = UUID()
+        output?.readabilityHandler = nil
+        if let process = task, process.isRunning {
+            process.terminate()
+            DispatchQueue.global().asyncAfter(deadline: .now() + 2) {
+                if process.isRunning { kill(process.processIdentifier, SIGKILL) }
+            }
+        }
+        // Terminate before closing handles: a blocked writer may hold a FileHandle lock.
+        try? input?.close(); input = nil
+        try? output?.close(); output = nil
+        task = nil; pending = [:]; buffer = Data()
+        state.phase = failed ? "failed" : "disconnected"; state.status = message; state.sessionID = nil
+    }
+    private func cancelPermissions() {
+        let ids = Array(permissionIDs.values)
+        permissionIDs = [:]; state.permissions = []
+        for id in ids { send(["jsonrpc": "2.0", "id": id, "result": ["outcome": ["outcome": "cancelled"]]]) }
+    }
+    private func request(_ method: String, _ params: [String: Any]) {
+        nextID += 1; pending[nextID] = method
+        send(["jsonrpc": "2.0", "id": nextID, "method": method, "params": params])
+    }
+    private func send(_ object: [String: Any]) {
+        if let testSend { testSend(object); return }
+        guard let input else { return }
+        let generation = epoch
+        guard var data = try? JSONSerialization.data(withJSONObject: object) else { return }
+        data.append(10)
+        // A provider that stops reading stdin must never block cancellation or XPC snapshots.
+        writer.async { [weak self] in
+            do { try input.write(contentsOf: data) }
+            catch { self?.queue.async { [weak self] in
+                guard let self, self.epoch == generation else { return }
+                self.stop("Couldn’t send to the agent. Reconnect to continue.", failed: true)
+            } }
+        }
+    }
+
+    func receive(_ data: Data) {
+        buffer.append(data)
+        while let end = buffer.firstIndex(of: 10) {
+            let line = buffer.prefix(upTo: end); buffer.removeSubrange(...end)
+            if line.isEmpty { continue }
+            guard line.count <= 2_000_000, let message = try? JSONSerialization.jsonObject(with: line) as? [String: Any], message["jsonrpc"] as? String == "2.0" else {
+                stop("Agent returned invalid ACP data.", failed: true); return
+            }
+            handle(message)
+            if state.phase == "failed" { return }
+        }
+        if buffer.count > 2_000_000 { stop("Agent response exceeded the ACP frame limit.", failed: true) }
+    }
+    private func handle(_ object: [String: Any]) {
+        if let method = object["method"] as? String {
+            let params = object["params"] as? [String: Any] ?? [:]
+            if let id = object["id"] {
+                if method == "session/request_permission", let sessionID = state.sessionID, params["sessionId"] as? String == sessionID, state.phase == "working" {
+                    guard permissionIDs.count < 16, let options = params["options"], let bytes = try? JSONSerialization.data(withJSONObject: options),
+                          bytes.count <= 8_000, let choices = try? JSONDecoder().decode([ACPPermission.Option].self, from: bytes), !choices.isEmpty,
+                          choices.count <= 8, Set(choices.map(\.optionId)).count == choices.count else {
+                        send(["jsonrpc": "2.0", "id": id, "result": ["outcome": ["outcome": "cancelled"]]]); return
+                    }
+                    let incoming = params["toolCall"] as? [String: Any] ?? [:]
+                    var tool = toolDetails[incoming["toolCallId"] as? String ?? ""] ?? [:]
+                    tool.merge(incoming) { _, new in new }
+                    let detail = (try? JSONSerialization.data(withJSONObject: tool, options: [.prettyPrinted, .sortedKeys])).flatMap { String(data: $0, encoding: .utf8) } ?? ""
+                    // Never approve an operation whose details were dropped by a display limit.
+                    guard detail.utf8.count <= 64_000 else { send(["jsonrpc": "2.0", "id": id, "result": ["outcome": ["outcome": "cancelled"]]]); return }
+                    let key = UUID().uuidString
+                    permissionIDs[key] = id
+                    state.permissions.append(ACPPermission(id: key, title: tool["title"] as? String ?? "Agent requests permission", detail: detail, options: choices))
+                    state.status = "Needs your permission"
+                } else if method == "session/request_permission" {
+                    send(["jsonrpc": "2.0", "id": id, "result": ["outcome": ["outcome": "cancelled"]]])
+                } else {
+                    send(["jsonrpc": "2.0", "id": id, "error": ["code": -32601, "message": "Volant does not support this client method."]])
+                    state.status = "Unsupported agent request: " + method
+                }
+            } else if method == "session/update", let sessionID = state.sessionID, params["sessionId"] as? String == sessionID,
+                      let update = params["update"] as? [String: Any] { updateSession(update) }
+            return
+        }
+        guard let id = object["id"] as? Int, let method = pending.removeValue(forKey: id) else { return }
+        if let error = object["error"] as? [String: Any] {
+            let message = error["message"] as? String ?? "Agent request failed."
+            if method == "session/prompt" { cancelPermissions(); state.phase = "ready"; state.status = message }
+            else { stop(message + " Check the provider’s terminal login and retry.", failed: true) }
+            return
+        }
+        let result = object["result"] as? [String: Any] ?? [:]
+        switch method {
+        case "initialize":
+            guard result["protocolVersion"] as? Int == 1 else { stop("Agent requires an unsupported ACP version.", failed: true); return }
+            state.agentName = (result["agentInfo"] as? [String: Any])?["name"] as? String ?? "ACP agent"
+            state.capabilities = ((try? JSONSerialization.data(withJSONObject: result["agentCapabilities"] ?? [:], options: [.sortedKeys])).flatMap { String(data: $0, encoding: .utf8) }) ?? "{}"
+            request("session/new", ["cwd": project, "mcpServers": []])
+        case "session/new":
+            guard let session = result["sessionId"] as? String, !session.isEmpty else { stop("Agent returned no conversation ID.", failed: true); return }
+            state.sessionID = session; state.phase = "ready"; state.status = "Ready"
+        case "session/prompt":
+            cancelPermissions()
+            let cancelled = state.phase == "cancelling"
+            state.phase = "ready"; state.status = cancelled ? "Cancelled" : (result["stopReason"] as? String == "end_turn" ? "Ready" : "Stopped: " + (result["stopReason"] as? String ?? "unknown reason"))
+        default: break
+        }
+    }
+    private func updateSession(_ update: [String: Any]) {
+        let kind = update["sessionUpdate"] as? String ?? ""
+        if kind == "agent_message_chunk", let content = update["content"] as? [String: Any] {
+            let text = content["type"] as? String == "text" ? (content["text"] as? String ?? "") : "\n[Non-text response is not displayed in this version.]\n"
+            textBytes += text.utf8.count
+            guard textBytes < 1_000_000 else { stop("Conversation reached its display limit; connection ended.", failed: true); return }
+            if state.messages.last?.role == "Agent" { state.messages[state.messages.count - 1].text += text }
+            else { state.messages.append(ACPMessage(role: "Agent", text: text)) }
+        } else if kind == "tool_call" || kind == "tool_call_update" {
+            if let toolID = update["toolCallId"] as? String {
+                let size = (try? JSONSerialization.data(withJSONObject: update).count) ?? 0
+                detailBytes += size
+                guard detailBytes < 2_000_000 else { stop("Conversation reached its tool-detail limit.", failed: true); return }
+                var details = toolDetails[toolID] ?? [:]
+                details.merge(update) { _, new in new }
+                toolDetails[toolID] = details
+            }
+            if let title = update["title"] as? String {
+                textBytes += title.utf8.count
+                guard textBytes < 1_000_000 else { stop("Conversation reached its display limit.", failed: true); return }
+            }
+            let key = "tool:" + (update["toolCallId"] as? String ?? UUID().uuidString)
+            let status = update["status"] as? String ?? "pending"
+            if let index = state.messages.firstIndex(where: { $0.id == key }) {
+                if let title = update["title"] as? String { state.messages[index].text = title }
+                state.messages[index].role = "Tool · " + status
+            } else {
+                state.messages.append(ACPMessage(id: key, role: "Tool · " + status, text: update["title"] as? String ?? "Agent tool"))
+            }
+            if state.messages.count > 2_000 { stop("Conversation reached its event limit.", failed: true) }
+        }
+    }
+    private func failure(_ message: String) -> NSError { NSError(domain: "VolantACP", code: 1, userInfo: [NSLocalizedDescriptionKey: message]) }
+}

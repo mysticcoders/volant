@@ -1,6 +1,12 @@
 import Foundation
 
 @objc protocol VolantAgentHostProtocol {
+    func acpStart(provider: String, project: String, reply: @escaping (String?) -> Void)
+    func acpRead(reply: @escaping (Data?, String?) -> Void)
+    func acpPrompt(text: String, reply: @escaping (String?) -> Void)
+    func acpCancel(reply: @escaping (String?) -> Void)
+    func acpPermission(request: String, option: String, reply: @escaping (String?) -> Void)
+    func acpStop(reply: @escaping () -> Void)
     func listAgents(reply: @escaping (Data?, String?) -> Void)
     func focusAgent(paneID: String, terminalID: String, sessionIdentity: String, reply: @escaping (String?) -> Void)
 }

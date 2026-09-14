@@ -20,6 +20,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if CommandLine.arguments.contains("--acp-check") {
+            let model = ACPModel()
+            model.project = "/tmp/volant-acp-fixture"
+            model.start()
+            var submitted = false
+            var checkTimer: Timer?
+            checkTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
+                if model.state.phase == "failed" {
+                    print("ACP check failed: " + model.state.status)
+                    checkTimer?.invalidate(); model.disconnect(); NSApp.terminate(nil)
+                } else if model.state.phase == "ready" && !model.submitting {
+                    if CommandLine.arguments.contains("--acp-prompt-check") && !submitted {
+                        submitted = true
+                        model.draft = "Reply with exactly VOLANT_ACP_OK. Do not use tools or read or change files."
+                        model.send()
+                    } else {
+                        let output = model.state.messages.filter { $0.role == "Agent" }.map(\.text).joined()
+                        print("ACP initialized: " + model.state.agentName + "; session: " + (model.state.sessionID == nil ? "missing" : "created"))
+                        if submitted { print("ACP prompt: " + (output.contains("VOLANT_ACP_OK") ? "passed" : "failed")) }
+                        checkTimer?.invalidate(); model.disconnect(); NSApp.terminate(nil)
+                    }
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 80) {
+                print("ACP check timed out: " + model.state.status)
+                checkTimer?.invalidate(); model.disconnect(); NSApp.terminate(nil)
+            }
+            return
+        }
         if CommandLine.arguments.contains("--agents-check") {
             let model = panel.model.agents
             model.connect()

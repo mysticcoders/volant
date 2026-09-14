@@ -13,24 +13,39 @@ struct LauncherView: View {
                 agentStatusStrip
                 Divider().opacity(0.6)
             }
+            if !model.showingACP {
+                ACPActivityStrip(model: model.acp) { model.query = "acp" }
+            }
             if model.showingAgents, let message = agents.actionMessage {
                 Text(message).font(.system(size: 12)).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20).padding(.vertical, 8)
             }
-            results
+            if model.showingACP {
+                ACPConversationView(model: model.acp)
+            } else {
+                if model.showingAgents {
+                    HStack {
+                        Text("Herdr panes").foregroundStyle(.secondary)
+                        Spacer()
+                        Button("New ACP conversation") { model.query = "acp" }
+                    }.font(.system(size: 12)).padding(.horizontal, 20).padding(.vertical, 6)
+                }
+                results
+            }
             Divider().opacity(0.6)
-            footer
+            if !model.showingACP { footer }
         }
         .frame(width: LauncherPanel.size.width, height: LauncherPanel.size.height)
         .background(.regularMaterial.opacity(LauncherPanel.opacity))
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.primary.opacity(0.08)))
         .onAppear { DispatchQueue.main.async { focused = true } }
-        .onKeyPress(.downArrow) { model.moveSelection(1); return .handled }
-        .onKeyPress(.upArrow) { model.moveSelection(-1); return .handled }
+        .onKeyPress(.downArrow) { guard !model.showingACP else { return .ignored }; model.moveSelection(1); return .handled }
+        .onKeyPress(.upArrow) { guard !model.showingACP else { return .ignored }; model.moveSelection(-1); return .handled }
         .onKeyPress(.escape) { model.dismiss(); return .handled }
         .onKeyPress(.return, phases: .down) { press in
+            guard !model.showingACP else { return .ignored }
             if press.modifiers.contains(.command) { model.activateSecondary() } else { model.activateSelection() }
             return .handled
         }

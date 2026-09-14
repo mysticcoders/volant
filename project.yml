@@ -26,6 +26,7 @@ targets:
       path: Volant/Volant.entitlements
       properties:
         com.apple.security.app-sandbox: true
+        com.apple.security.files.user-selected.read-only: true
         com.apple.security.personal-information.addressbook: true
         com.apple.security.personal-information.calendars: true
     info:
@@ -81,6 +82,7 @@ targets:
     sources:
       - path: VolantAgentHost
       - path: Shared/AgentProtocol.swift
+      - path: Shared/ACPTypes.swift
     info:
       path: VolantAgentHost/Info.plist
       properties:
