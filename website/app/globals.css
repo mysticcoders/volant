@@ -133,7 +133,7 @@ body {
   }
 }
 
-/* Vey: graphite surfaces, warm white type, coral wing accent. */
+/* Volant: graphite surfaces, warm white type, coral wing accent. */
 :root,
 .dark {
   color-scheme: dark;
@@ -797,3 +797,27 @@ footer .brand img {
   height: auto;
   padding: 12px;
 }
+
+/* Launcher-led positioning; preview is explicitly illustrative, not interactive. */
+.hero { grid-template-columns: 1.05fr 1fr; gap: 48px; }
+h1 { font-size: clamp(44px, 4.65vw, 66px); letter-spacing: -3px; }
+.eyebrow, .availability, .preview-caption { font-size: 12px; }
+.notes-details p, .feature-grid p, .features-heading > p { font-size: 15px; }
+.launcher-preview { background: var(--card); border: 1px solid var(--border); border-radius: 18px; box-shadow: 0 25px 75px #0005; overflow: hidden; }
+.launcher-search { display:flex; align-items:center; gap:14px; padding:25px 22px; font-size:24px; }
+.launcher-search svg { color:var(--muted-foreground); }
+.preview-caret { height:25px; width:1px; background:var(--primary); margin-left:-12px; }
+.harness-preview { display:flex; align-items:center; gap:10px; padding:13px 18px; margin:0 12px; border:1px solid var(--border); border-radius:9px; font-size:12px; color:var(--muted-foreground); flex-wrap:wrap; }
+.harness-preview strong { color:var(--foreground); margin-right:auto; }
+.attention { color:var(--primary); }
+.preview-group { font-size:11px; letter-spacing:1px; padding:24px 22px 12px; color:var(--muted-foreground); }
+.launcher-result { display:flex; align-items:center; gap:13px; margin:4px 12px; padding:15px 12px; border-radius:9px; }
+.launcher-result.selected { background:var(--accent); }
+.launcher-result strong { display:block; font-size:16px; font-weight:500; }
+.launcher-result small { display:block; font-size:12px; color:var(--muted-foreground); margin-top:3px; }
+.launcher-result > svg { margin-left:auto; color:var(--muted-foreground); }
+.result-icon { display:grid; place-items:center; width:34px; height:34px; border-radius:8px; background:#284753; color:#b9dce8; font-size:23px; }
+.muted-icon { background:var(--accent); color:var(--muted-foreground); font-size:18px; }
+.preview-footer { display:flex; justify-content:space-between; padding:16px 22px; margin-top:25px; border-top:1px solid var(--border); font-size:12px; color:var(--muted-foreground); }
+.notes-preview { width:260px; max-width:100%; height:auto; margin:0 0 28px; border-radius:12px; border:1px solid var(--border); }
+@media(max-width:700px) { .hero { grid-template-columns:1fr; } h1 { font-size:clamp(40px, 10.7vw, 58px); letter-spacing:-2px; } .nav nav { gap:12px; } .harness-preview { gap:8px; } }

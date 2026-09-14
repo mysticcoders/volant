@@ -64,8 +64,8 @@ export default function Home() {
         </a>
         <nav aria-label="Main navigation">
           <a href="#agents">Agents</a>
-          <a href="#notes">Live Notes</a>
-          <a href="#features">The little things</a>
+          <a href="#launcher">Launcher</a>
+          <a href="#features">Notes & more</a>
           <a href="#get" className="nav-source">
             Release status <ArrowUpRight size={14} />
           </a>
@@ -78,23 +78,21 @@ export default function Home() {
         <section className="hero wrap">
           <div className="hero-copy">
             <p className="eyebrow">
-              <span className="status-dot" /> A SMALL UTILITY FOR YOUR MAC
+              <span className="status-dot" /> YOUR MAC WORKSPACE, ONE SHORTCUT AWAY
             </p>
             <h1>
-              A little less
-              <br />
-              friction.
-              <br />
-              <span>A lot more flow.</span>
+              Your Mac.<br />
+              Your agents.<br />
+              <span>One shortcut away.</span>
             </h1>
             <p className="intro">
-              Reach your agents. Catch a thought. Find your app.
-              <br className="desktop-break" /> Volant keeps the little things
-              one shortcut away.
+              Launch apps, find what you need, follow your agents, and start a
+              conversation—all from a native Mac launcher. Keep notes, clipboard
+              history, and reusable snippets close at hand.
             </p>
             <div className="hero-actions">
               <a href="#agents" className="button">
-                Find your flow <ArrowRight size={17} />
+                Explore Volant <ArrowRight size={17} />
               </a>
               <a href="#get" className="text-link">
                 Release status <ArrowUpRight size={15} />
@@ -106,21 +104,16 @@ export default function Home() {
             </p>
           </div>
           <div className="hero-visual">
-            <div className="orbit-label">
-              <Command size={14} /> Less reaching. More doing.
-            </div>
-            <Image
-              unoptimized
-              className="app-preview"
-              src="/images/live-notes.png"
-              width="1120"
-              height="1240"
-              alt="Volant Live Notes editor showing Markdown and a Python code block with a local Auto language selector and Copy Code action."
-            />
-            <div className="preview-caption">
-              <span className="tiny-line" /> Live Notes · current development
-              preview
-            </div>
+            <div className="orbit-label"><Command size={14} /> One place to keep work moving.</div>
+            <figure className="launcher-preview" aria-label="Illustrative Volant launcher: search for Safari with a pinned Herdr status strip showing three working agents and one needing attention.">
+              <div className="launcher-search"><Command size={20} /><span>sa</span><span className="preview-caret" /></div>
+              <div className="harness-preview"><span className="status-dot" /><strong>Herdr</strong><span>3 working</span><span className="attention">1 needs you</span></div>
+              <div className="preview-group">APPLICATIONS</div>
+              <div className="launcher-result selected"><span className="result-icon">↗</span><div><strong>Safari</strong><small>Application</small></div><CornerDownLeft size={17} /></div>
+              <div className="launcher-result"><span className="result-icon muted-icon">S</span><div><strong>System Settings</strong><small>Application</small></div></div>
+              <div className="preview-footer"><span>Volant</span><span>↵ Open application</span></div>
+            </figure>
+            <div className="preview-caption"><span className="tiny-line" /> Illustrative launcher preview · fictional activity</div>
           </div>
         </section>
         <div className="principles wrap">
@@ -131,10 +124,10 @@ export default function Home() {
             <LockKeyhole size={17} /> Local by design
           </span>
           <span>
-            <FileText size={17} /> Plain Markdown
+            <FileText size={17} /> Portable files
           </span>
           <span>
-            <Code2 size={17} /> Local first
+            <Code2 size={17} /> Agent conversations
           </span>
         </div>
         <section className="notes-section wrap" id="agents" aria-labelledby="agents-title">
@@ -145,14 +138,24 @@ export default function Home() {
             <a className="text-link" href="#get">Follow release status <ArrowUpRight size={15} /></a>
           </div>
           <div className="notes-details">
-            <article><span className="detail-number">01</span><div><h3>Find the right session.</h3><p>We’re building Herdr session discovery and pane focus first, with project search and agents that need attention at the top.</p></div></article>
-            <article><span className="detail-number">02</span><div><h3>The harnesses you already use.</h3><p>OpenCode, Cursor, Claude Code, and Codex are the integration targets. Native conversations and approvals are planned through ACP and provider-specific interfaces.</p></div></article>
-            <article><span className="detail-number">03</span><div><h3>From a thought to a task.</h3><p>Next: choose a note or snippet, review the context, and send it to your agent. Context handoff is planned; notes are never shared automatically.</p></div></article>
+            <article><span className="detail-number">01</span><div><h3>Find the right session.</h3><p>Find Herdr panes by project, harness, or status, then jump back to the right pane. Pin a harness below the search field to keep working and attention counts in view.</p></div></article>
+            <article><span className="detail-number">02</span><div><h3>The harnesses you already use.</h3><p>Start native ACP conversations with OpenCode, Claude Code, and Codex. Read streamed responses and tool activity, respond to permission requests, and cancel a turn from Volant. Claude Code and Codex connect through ACP adapters.</p></div></article>
+            <article><span className="detail-number">03</span><div><h3>Clear about what’s next.</h3><p>ACP starts a new Volant-owned conversation; it doesn’t attach to an existing terminal session. Cursor support is awaiting verification. Reviewed note and snippet handoff is next; context is never sent automatically.</p></div></article>
+          </div>
+        </section>
+        <section className="features-section" id="launcher">
+          <div className="wrap">
+            <div className="features-heading"><div><p className="eyebrow">02 / MOVE AROUND YOUR MAC</p><h2>Find it.<br /><span>Get there.</span></h2></div><p>Apps, files, people, and everyday actions. A familiar starting point that learns the way you work.</p></div>
+            <div className="feature-grid">
+              <article><Zap /><h3>A faster way there.</h3><p>Launch apps with ranking that learns from your choices. Use aliases and per-app hotkeys to bring an app forward, then hide it when you’re done.</p><div className="mini-search"><span><Command size={16} /> sa</span><span>Safari <CornerDownLeft size={15} /></span></div></article>
+              <article><Command /><h3>Keep your hands moving.</h3><p>Search files and contacts, calculate, and convert units from the launcher. Run explicitly configured Apple Shortcuts, with optional text input.</p></article>
+              <article><CornerDownLeft /><h3>Make the next meeting.</h3><p>Type cal to see today and tomorrow’s agenda. Select a meeting and press Return to join from its meeting link.</p></article>
+            </div>
           </div>
         </section>
         <section className="notes-section wrap" id="notes">
           <div className="section-intro">
-            <p className="eyebrow">02 / A PLACE FOR THE THOUGHT</p>
+            <p className="eyebrow">03 / KEEP USEFUL THINGS CLOSE</p>
             <h2>
               Open. Write.
               <br />
@@ -163,10 +166,11 @@ export default function Home() {
               get it down, and get back to what you were doing.
             </p>
             <a className="text-link" href="#get">
-              Get Volant <ArrowUpRight size={15} />
+              Release status <ArrowUpRight size={15} />
             </a>
           </div>
           <div className="notes-details">
+            <Image unoptimized className="notes-preview" src="/images/live-notes.png" width="1120" height="1240" alt="Development preview of Live Notes with Markdown and a Python code block, language selection, and Copy Code." />
             <article>
               <span className="detail-number">01</span>
               <div>
@@ -221,7 +225,7 @@ export default function Home() {
           <div className="wrap">
             <div className="features-heading">
               <div>
-                <p className="eyebrow">03 / SMALL THINGS, HANDLED</p>
+                <p className="eyebrow">YOUR EVERYDAY TOOLKIT</p>
                 <h2>
                   Less repeat.
                   <br />
@@ -229,26 +233,14 @@ export default function Home() {
                 </h2>
               </div>
               <p>
-                The everyday helpers you reach for again and again, together in
-                one small Mac utility.
+                Save what matters. Reuse what works. Keep your everyday tools
+                together, with storage and settings you control.
               </p>
             </div>
             <div className="feature-grid">
               <article>
-                <Zap />
-                <h3>A faster way there.</h3>
-                <p>
-                  Launch apps with ranking that learns from your choices. Set an
-                  app hotkey to bring it forward, then hide it when you’re done.
-                </p>
-                <div className="mini-search">
-                  <span>
-                    <Command size={16} /> sa
-                  </span>
-                  <span>
-                    Safari <CornerDownLeft size={15} />
-                  </span>
-                </div>
+                <LockKeyhole /><h3>Make it yours.</h3>
+                <p>Keep aliases, quicklinks, and preferences in portable text configuration. Export a backup, and choose whether Volant appears in the Dock or stays in the menu bar.</p>
               </article>
               <article>
                 <Clipboard />
@@ -282,18 +274,19 @@ export default function Home() {
           </div>
         </section>
         <section className="philosophy wrap">
-          <p className="eyebrow">03 / DELIBERATELY PERSONAL</p>
+          <p className="eyebrow">04 / DELIBERATELY PERSONAL</p>
           <h2>
             Your Mac.
             <br />
             Your tools. <span>Your business.</span>
           </h2>
           <p>
-            No account to create. No telemetry to turn off. Volant works
-            locally, with readable files and a configuration you control.
+            No Volant account. No telemetry. Your notes, clipboard history, and
+            configuration stay on your Mac. Connected agents use their own
+            accounts, network access, and tool permissions.
           </p>
           <a href="#details" className="text-link">
-            How your data stays local. <ArrowUpRight size={15} />
+            Understand your data. <ArrowUpRight size={15} />
           </a>
         </section>
         <section className="faq wrap" id="details">
@@ -320,15 +313,15 @@ export default function Home() {
             width="84"
             height="84"
           />
-          <p className="eyebrow">A LITTLE SPACE IN YOUR WORKFLOW</p>
+          <p className="eyebrow">YOUR MAC. YOUR AGENTS. YOUR WORKSPACE.</p>
           <h2>Make room for Volant.</h2>
           <p>
-            We’re building a calmer way to get the little things done.
+            A native workspace for the way you work now.
             <br />
             The public release is on its way.
           </p>
-          <a className="button" href="#get">
-            View Volant on Release status <ArrowUpRight size={17} />
+          <a className="button" href="#agents">
+            Explore the features <ArrowRight size={17} />
           </a>
           <span className="availability">
             In development · No public download yet

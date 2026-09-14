@@ -3,9 +3,9 @@ import './globals.css';
 export const metadata: Metadata = {
   metadataBase: new URL('https://usevolant.com'),
   alternates: { canonical: 'https://usevolant.com/' },
-  title: 'Volant — A little less friction. A lot more flow.',
+  title: 'Volant — Your Mac. Your agents. One shortcut away.',
   description:
-    'A focused Mac utility for Live Markdown notes, app launching, reusable snippets, and local encrypted clipboard history. Local first and in development.',
+    'A keyboard-first workspace for your Mac and coding agents. App launching, Herdr pane status, ACP conversations, Live Notes, encrypted clipboard history, and snippets. In development.',
   icons: { icon: '/favicon.svg' },
 };
 export default function RootLayout({
