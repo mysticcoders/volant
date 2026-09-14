@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import OSLog
 
 enum LauncherAction {
     case agents
@@ -40,7 +41,7 @@ enum ResultRow: Identifiable, Hashable {
         case .newNote(let t): return "newnote:\(t)"
         case .extensionRun(let e, let i): return "ext:\(e.id):\(i)"
         case .extensionResult(let s): return "extresult:\(s)"
-        case .snippet(let s): return "snip:\(s.keyword)"
+        case .snippet(let s): return "snip:\(s.name.utf8.count):\(s.name)\(s.keyword.utf8.count):\(s.keyword)\(s.body)"
         case .emoji(let e): return "emoji:\(e.symbol)"
         case .quicklink(let q, let t): return "ql:\(q.name):\(t)"
         }
@@ -109,7 +110,30 @@ struct ResultSection: Identifiable {
 /// Otherwise results merge: math and units first, then apps, contacts, and files once the query is long enough.
 final class LauncherModel: ObservableObject {
     @Published var query: String = "" { didSet { refresh() } }
-    @Published var sections: [ResultSection] = []
+    @Published private var displayedSections: [ResultSection] = []
+    var sections: [ResultSection] {
+        get { displayedSections }
+        set {
+            assert(Thread.isMainThread, "Launcher results must update on the main thread")
+            var seen = Set<String>()
+            var normalized: [ResultSection] = []
+            var duplicates = 0
+            for section in newValue {
+                let unique = section.rows.filter { row in
+                    if seen.insert(row.id).inserted { return true }
+                    duplicates += 1
+                    return false
+                }
+                guard !unique.isEmpty else { continue }
+                if let index = normalized.firstIndex(where: { $0.id == section.id }) {
+                    normalized[index] = ResultSection(title: section.title, rows: normalized[index].rows + unique)
+                } else { normalized.append(ResultSection(title: section.title, rows: unique)) }
+            }
+            if duplicates > 0 { Logger(subsystem: "com.mysticcoders.volant", category: "Launcher").warning("Duplicate result identities ignored: \(duplicates)") }
+            displayedSections = normalized
+        }
+    }
+    @Published var searchFocusRequest = UUID()
     @Published var selection: Int = 0
     @Published var notice: String? = nil
     var dismiss: () -> Void = {}
@@ -161,8 +185,9 @@ final class LauncherModel: ObservableObject {
     private let notes: NotesStore
     private let onNote: (LauncherAction) -> Void
     let extensions = ExtensionManager()
-    let usage = UsageStore()
+    let usage: UsageStore
     var config: Preferences { didSet { promotedHarness = config.promotedHarness } }
+    var searchesSecondarySources = true
     private let files = FileSearch()
     private let contacts = ContactSearch()
     private let agenda = CalendarAgenda()
@@ -171,7 +196,8 @@ final class LauncherModel: ObservableObject {
     private var contactRows: [ResultRow] = []
     private var fileRows: [ResultRow] = []
 
-    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, onNote: @escaping (LauncherAction) -> Void) {
+    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), onNote: @escaping (LauncherAction) -> Void) {
+        self.usage = usage
         self.index = index
         self.clipboard = clipboard
         self.notes = notes
@@ -286,7 +312,7 @@ final class LauncherModel: ObservableObject {
         let words = q.split(separator: " ", maxSplits: 1).map(String.init)
         let head = words.first?.lowercased() ?? ""
         let tail = words.count > 1 ? words[1] : ""
-        if let target = config.aliases[head], words.count == 1, let app = index.search(target, limit: 1).first {
+        if let target = config.aliases[head] ?? config.aliases.sorted(by: { $0.key < $1.key }).first(where: { $0.key.lowercased() == head })?.value, words.count == 1, let app = index.resolveAlias(target) {
             immediate.append(ResultSection(title: "Alias", rows: [.app(app)]))
         }
         if !answers.isEmpty { immediate.append(ResultSection(title: "Answer", rows: answers)) }
@@ -300,14 +326,14 @@ final class LauncherModel: ObservableObject {
         compose()
 
         let letters = q.filter(\.isLetter).count
-        if letters >= 2 && q.count <= 40 {
+        if searchesSecondarySources && letters >= 2 && q.count <= 40 {
             contacts.search(q, askIfNeeded: false) { [weak self] hits in
                 let needle = q.lowercased()
                 let tight = hits.filter { c in c.name.lowercased().split(separator: " ").contains { $0.hasPrefix(needle) } || c.name.lowercased().hasPrefix(needle) }
                 self?.deliver(gen) { $0.contactRows = tight.prefix(3).map { .contact($0) } }
             }
         }
-        if q.count >= 3 {
+        if searchesSecondarySources && q.count >= 3 {
             files.search(q) { [weak self] hits in self?.deliver(gen) { $0.fileRows = hits.prefix(5).map { .file($0) } } }
         }
     }
@@ -339,6 +365,14 @@ final class LauncherModel: ObservableObject {
         let pb = NSPasteboard.general
         pb.clearContents()
         pb.setString(text, forType: .string)
+    }
+
+    /// Clicks resolve the visible row's stable identity against the current results.
+    /// A stale row must never fall back to index zero or launch a different app.
+    func activate(rowID: String) {
+        guard let index = rows.firstIndex(where: { $0.id == rowID }) else { return }
+        selection = index
+        activateSelection()
     }
 
     func activateSelection() {

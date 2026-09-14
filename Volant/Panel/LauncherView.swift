@@ -40,7 +40,8 @@ struct LauncherView: View {
         .background(.regularMaterial.opacity(LauncherPanel.opacity))
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.primary.opacity(0.08)))
-        .onAppear { DispatchQueue.main.async { focused = true } }
+        .onAppear { requestSearchFocus() }
+        .onChange(of: model.searchFocusRequest) { _, _ in requestSearchFocus() }
         .onKeyPress(.downArrow) { guard !model.showingACP else { return .ignored }; model.moveSelection(1); return .handled }
         .onKeyPress(.upArrow) { guard !model.showingACP else { return .ignored }; model.moveSelection(-1); return .handled }
         .onKeyPress(.escape) { model.dismiss(); return .handled }
@@ -91,17 +92,16 @@ struct LauncherView: View {
                             .padding(.top, 10)
                             .padding(.bottom, 4)
                         ForEach(section.rows) { row in
-                            let offset = model.rows.firstIndex(of: row) ?? 0
-                            RowView(row: row, selected: offset == model.selection)
-                                .id(row.id)
-                                .contentShape(Rectangle())
-                                .onTapGesture { model.selection = offset; model.activateSelection() }
-                                .contextMenu {
-                                    if case .agentSession(let session) = row,
-                                       Preferences.harnessOptions.contains(where: { $0.id == session.agent }) {
-                                        Button("Pin \(session.provider) status") { model.promoteHarness(session.agent) }
+                            if case .agentSession(let session) = row {
+                                resultButton(row)
+                                    .contextMenu {
+                                        if Preferences.harnessOptions.contains(where: { $0.id == session.agent }) {
+                                            Button("Pin \(session.provider) status") { model.promoteHarness(session.agent) }
+                                        }
                                     }
-                                }
+                            } else {
+                                resultButton(row)
+                            }
                         }
                     }
                     if model.sections.isEmpty {
@@ -118,6 +118,27 @@ struct LauncherView: View {
                 if let row = model.selectedRow { proxy.scrollTo(row.id, anchor: .center) }
             }
         }
+    }
+
+    private func requestSearchFocus() {
+        // A persistent hosting view does not appear again each time its panel is summoned.
+        if NSApp.keyWindow?.firstResponder is NSTextView {
+            focused = true
+            return
+        }
+        focused = false
+        DispatchQueue.main.async { focused = true }
+    }
+
+    private func resultButton(_ row: ResultRow) -> some View {
+        Button { model.activate(rowID: row.id) } label: {
+            RowView(row: row, selected: row.id == model.selectedRow?.id)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .focusable(false)
+        .id(row.id)
+        .accessibilityAddTraits(row.id == model.selectedRow?.id ? .isSelected : [])
     }
 
     private var footer: some View {

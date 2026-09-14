@@ -3,7 +3,7 @@ import ServiceManagement
 
 /// Owns the long-lived services: menu bar item, hotkeys, app index, clipboard monitor, and the panel.
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private lazy var settingsPanel = SettingsWindowController { [weak self] in self?.reloadConfig() }
+    private lazy var settingsPanel = SettingsWindowController { [weak self] in self?.reloadConfig(); self?.notesStore.reload() }
     private var statusItem: NSStatusItem?
     private var config = Preferences.load()
     private let index = AppIndex()
@@ -92,6 +92,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
+        if CommandLine.arguments.contains("--import-raycast") {
+            DispatchQueue.main.async { [weak self] in self?.settingsPanel.showRaycastImport() }
+        }
         if CommandLine.arguments.contains("--settings") {
             DispatchQueue.main.async { [weak self] in self?.showSettings() }
         }
@@ -99,7 +102,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             try? SMAppService.mainApp.register()
             print("login item: \(SMAppService.mainApp.status == .enabled ? "enabled" : "not enabled")")
         }
-        if config.showOnLaunch && !CommandLine.arguments.contains("--agents") && !CommandLine.arguments.contains("--show") && !CommandLine.arguments.contains("--notes") {
+        if config.showOnLaunch && !CommandLine.arguments.contains("--import-raycast") && !CommandLine.arguments.contains("--settings") && !CommandLine.arguments.contains("--agents") && !CommandLine.arguments.contains("--show") && !CommandLine.arguments.contains("--notes") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in self?.panel.toggle() }
         }
         if CommandLine.arguments.contains("--notes") {

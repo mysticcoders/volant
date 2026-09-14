@@ -19,10 +19,10 @@ final class ClipboardStore {
     var retention: Int { didSet { queue.async { self.trim() } } }
     private let queue = DispatchQueue(label: "com.mysticcoders.volant.clipboard")
 
-    init(retention: Int) {
+    init(retention: Int, storageURL: URL? = nil, encryptionKey: SymmetricKey? = nil) {
         self.retention = max(10, retention)
-        self.key = KeychainKey.load()
-        let url = Preferences.supportDirectory.appendingPathComponent("clipboard.sqlite")
+        self.key = encryptionKey ?? KeychainKey.load()
+        let url = storageURL ?? Preferences.supportDirectory.appendingPathComponent("clipboard.sqlite")
         if sqlite3_open(url.path, &db) == SQLITE_OK {
             exec("PRAGMA secure_delete = ON")
             exec("PRAGMA journal_mode = DELETE")

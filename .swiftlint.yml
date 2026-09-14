@@ -1,0 +1,35 @@
+# Focused correctness rules, not a style rewrite. Integration checks cover actual focus/click behavior.
+only_rules:
+  - custom_rules
+included:
+  - Volant/Panel
+  - Volant/Import
+custom_rules:
+  result_index_fallback:
+    name: Result identity fallback
+    regex: 'firstIndex\(of:[^\n]*\)\s*\?\?\s*0'
+    message: Resolve result identity explicitly; a missing row must not activate row zero.
+    severity: error
+  launcher_tap_action:
+    name: Native launcher actions
+    included: 'LauncherView\.swift'
+    regex: '\.onTapGesture\b'
+    message: Use a native Button for launcher actions so mouse and accessibility activation agree.
+    severity: error
+  import_force_cast:
+    name: Checked import casts
+    included: '/Import/.*\.swift'
+    regex: '\bas!\s'
+    message: Untrusted imports require checked casts and recoverable errors.
+    severity: error
+  import_force_unwrap:
+    name: Checked import values
+    included: '/Import/.*\.swift'
+    regex: '[\]\)]!'
+    message: Handle missing import values explicitly.
+    severity: error
+  new_modal_session:
+    name: Nonmodal import and launcher flows
+    regex: '\.runModal\('
+    message: Use sheets; app-modal dialogs can block the non-activating launcher.
+    severity: error

@@ -12,6 +12,18 @@ struct AppEntry: Identifiable, Hashable {
 final class AppIndex: NSObject {
     private(set) var apps: [AppEntry] = []
     private let query = NSMetadataQuery()
+    private let launchOverride: ((AppEntry) -> Void)?
+    init(entries: [AppEntry] = [], launch: ((AppEntry) -> Void)? = nil) {
+        self.apps = entries
+        self.launchOverride = launch
+        super.init()
+    }
+
+    /// Imported aliases contain a path and must never fuzzy-match a different app.
+    func resolveAlias(_ target: String) -> AppEntry? {
+        if target.hasPrefix("/") { return apps.first { $0.url.path == target } }
+        return search(target, limit: 1).first
+    }
 
     static let applicationRoots: [String] = {
         var roots = ["/Applications/", "/System/Applications/", "/System/Applications/Utilities/", "/Applications/Utilities/"]
@@ -77,6 +89,7 @@ final class AppIndex: NSObject {
     }
 
     func launch(_ app: AppEntry) {
+        if let launchOverride { launchOverride(app); return }
         NSWorkspace.shared.openApplication(at: app.url, configuration: NSWorkspace.OpenConfiguration())
     }
 

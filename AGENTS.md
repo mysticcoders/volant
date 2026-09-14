@@ -14,3 +14,6 @@
 - ACP turns must own their native session IDs, invalidate stale snapshots, reject concurrent prompts, and cancel pending permission requests explicitly. Do not advertise client filesystem/terminal capabilities without implementing them. Run `./tools/check-acp.sh` after transport changes; its fake-agent checks do not replace a signed installed-provider smoke test.
 
 - The agent XPC helper must join the caller’s security session for provider Keychain logins. A successful ACP handshake does not prove authentication: verify a minimal prompt through the signed installed app. Never copy provider OAuth tokens or weaken Keychain ACLs to bypass a session configuration bug.
+
+- Launcher rows must activate by stable identity, never a cached array offset or `firstIndex(...) ?? 0`. Use native buttons for row actions. Before showing a non-activating panel, handle any app-modal window; test actual panel typing/clicks and repeated summon, not only a titled hosting window.
+- Raycast import changes require `tools/check-raycast.sh`; keep personal exports/passwords out of fixtures, logs, and arguments. Preserve unknown fields inside existing config entries as well as at the top level. `tools/check-launcher.sh` and focused SwiftLint rules run from `Scripts/test.sh`; see `docs/launcher-quality.md` for what is and is not verified.

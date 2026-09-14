@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import OSLog
 
 /// A floating, non-activating, borderless panel that hosts the SwiftUI launcher and toggles on the summon hotkey.
 final class LauncherPanel: NSPanel {
@@ -8,10 +9,10 @@ final class LauncherPanel: NSPanel {
     static var size: NSSize { NSSize(width: 750 * scale, height: 480 * scale) }
     let model: LauncherModel
 
-    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, onNote: @escaping (LauncherAction) -> Void) {
+    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), onNote: @escaping (LauncherAction) -> Void) {
         LauncherPanel.scale = min(1.4, max(0.8, config.appearance.scale))
         LauncherPanel.opacity = min(1.0, max(0.5, config.appearance.opacity))
-        model = LauncherModel(index: index, clipboard: clipboard, notes: notes, config: config, onNote: onNote)
+        model = LauncherModel(index: index, clipboard: clipboard, notes: notes, config: config, usage: usage, onNote: onNote)
         super.init(contentRect: NSRect(origin: .zero, size: LauncherPanel.size),
                    styleMask: [.nonactivatingPanel, .borderless, .fullSizeContentView],
                    backing: .buffered, defer: false)
@@ -36,12 +37,35 @@ final class LauncherPanel: NSPanel {
     }
 
     func toggle() {
+        if let modal = NSApp.modalWindow {
+            if isVisible { orderOut(nil) }
+            modal.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
         if isVisible { orderOut(nil); return }
         model.isPresented = true
         model.reset()
         model.resumeAgentsIfNeeded()
         center(onScreenWithMouse: true)
         makeKeyAndOrderFront(nil)
+        contentView?.layoutSubtreeIfNeeded()
+        if let field = searchInput(in: contentView) {
+            makeFirstResponder(field)
+        } else {
+            model.searchFocusRequest = UUID()
+        }
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.isVisible, !self.isKeyWindow else { return }
+            Logger(subsystem: "com.mysticcoders.volant", category: "Launcher").fault("Launcher failed to become key; dismissing instead of leaving an unresponsive panel.")
+            self.orderOut(nil)
+        }
+    }
+
+    private func searchInput(in view: NSView?) -> NSTextField? {
+        guard let view else { return nil }
+        if let field = view as? NSTextField, field.placeholderString == "Search for apps, files, contacts, or calculate…" { return field }
+        return view.subviews.lazy.compactMap { self.searchInput(in: $0) }.first
     }
 
     func showAgents() {

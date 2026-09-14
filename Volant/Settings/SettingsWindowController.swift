@@ -2,6 +2,7 @@ import AppKit
 
 /// A reusable native settings surface. Controls use system colors in both appearances.
 final class SettingsWindowController: NSWindowController {
+    private lazy var raycastImport = RaycastImportWindowController(onChange: onChange)
     private let dock = NSButton(checkboxWithTitle: "Show Volant in the Dock", target: nil, action: nil)
     private let launch = NSButton(checkboxWithTitle: "Show launcher when Volant starts", target: nil, action: nil)
     private let harness = NSPopUpButton(frame: .zero, pullsDown: false)
@@ -10,8 +11,9 @@ final class SettingsWindowController: NSWindowController {
 
     init(onChange: @escaping () -> Void) {
         self.onChange = onChange
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 500, height: 330),
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 500, height: 385),
                               styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        window.minSize = NSSize(width: 500, height: 385)
         window.title = "Volant Settings"
         window.isReleasedWhenClosed = false
         window.setFrameAutosaveName("VolantSettings")
@@ -35,7 +37,9 @@ final class SettingsWindowController: NSWindowController {
         harnessRow.spacing = 14
         let harnessHint = NSTextField(wrappingLabelWithString: "Show its Herdr pane status below the launcher’s search field. Connects while the launcher is open.")
         harnessHint.textColor = .secondaryLabelColor
-        let stack = NSStackView(views: [title, dock, hint, launch, harnessRow, harnessHint, config])
+        let importer = NSButton(title: "Import from Raycast…", target: self, action: #selector(importRaycast))
+        importer.bezelStyle = .rounded
+        let stack = NSStackView(views: [title, dock, hint, launch, harnessRow, harnessHint, config, importer])
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 14
@@ -75,6 +79,9 @@ final class SettingsWindowController: NSWindowController {
             if let window { alert.beginSheetModal(for: window) }
         }
     }
+
+    @objc private func importRaycast() { showRaycastImport() }
+    func showRaycastImport() { raycastImport.showWindow(nil); NSApp.activate(ignoringOtherApps: true) }
 
     @objc private func changeDock() { save("showInDock", button: dock) }
     @objc private func changeLaunch() { save("showOnLaunch", button: launch) }
