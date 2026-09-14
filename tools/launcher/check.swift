@@ -396,3 +396,15 @@ verify(model.rows.first?.id == "command:settings")
 model.query = "reload config"
 verify(model.rows.first?.id == "command:reload")
 print("PASS: app binding persistence, conflicts and launcher settings commands")
+
+let systemSettings = AppEntry(id: "/System/Applications/System Settings.app", name: "System Settings", url: URL(fileURLWithPath: "/System/Applications/System Settings.app"), lastUsed: nil)
+let settingsSearch = LauncherModel(index: AppIndex(entries: [systemSettings]), clipboard: clipboard, notes: notes, config: Preferences(), usage: usage, onNote: { _ in })
+settingsSearch.searchesSecondarySources = false
+for query in ["sett", "Settings", " SETTINGS "] {
+    settingsSearch.query = query
+    verify(settingsSearch.rows.map(\.id) == ["app:" + systemSettings.id, "command:settings"], "Apps precede Volant commands")
+    verify(settingsSearch.selectedRow?.id == "app:" + systemSettings.id, "System Settings starts selected")
+}
+settingsSearch.query = "volant settings"
+verify(settingsSearch.rows.map(\.id) == ["command:settings"], "Explicit Volant Settings stays direct")
+print("PASS: Settings search prioritizes System Settings over Volant Settings")

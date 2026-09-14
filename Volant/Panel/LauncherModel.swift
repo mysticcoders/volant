@@ -266,7 +266,7 @@ final class LauncherModel: ObservableObject {
         let q = query.trimmingCharacters(in: .whitespaces)
         guard !q.isEmpty else { showSuggestions(); return }
 
-        if ["settings", "volant settings", "reload", "reload config", "reload configuration"].contains(q.lowercased()) {
+        if ["volant settings", "reload", "reload config", "reload configuration"].contains(q.lowercased()) {
             sections = [ResultSection(title: "Volant", rows: [q.lowercased().contains("reload") ? .reloadConfig : .settings])]
             return
         }
@@ -357,7 +357,6 @@ final class LauncherModel: ObservableObject {
         immediate = []
         let builtins: [(String, ResultRow)] = [("Volant Settings", .settings), ("Reload Configuration", .reloadConfig)]
         let matchingCommands = builtins.filter { $0.0.localizedCaseInsensitiveContains(q) }.map { $0.1 }
-        if !matchingCommands.isEmpty { immediate.append(ResultSection(title: "Volant", rows: matchingCommands)) }
         let words = q.split(separator: " ", maxSplits: 1).map(String.init)
         let head = words.first?.lowercased() ?? ""
         let tail = words.count > 1 ? words[1] : ""
@@ -372,6 +371,7 @@ final class LauncherModel: ObservableObject {
         let aliased = Set(immediate.flatMap(\.rows).map(\.id))
         let apps = index.search(q, limit: 6, usage: usage).map { ResultRow.app($0) }.filter { !aliased.contains($0.id) }
         if !apps.isEmpty { immediate.append(ResultSection(title: "Applications", rows: apps)) }
+        if !matchingCommands.isEmpty { immediate.append(ResultSection(title: "Volant", rows: matchingCommands)) }
         compose(preservingSelection: false)
 
         let letters = q.filter(\.isLetter).count
