@@ -27,3 +27,17 @@ struct ACPState: Codable, Equatable {
     var capabilities = ""
     var busy: Bool { ["starting", "working", "cancelling"].contains(phase) }
 }
+
+
+enum ACPProvider: String, CaseIterable, Identifiable {
+    case opencode, cursor, claude, codex
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .opencode: return "OpenCode"
+        case .cursor: return "Cursor"
+        case .claude: return "Claude Code"
+        case .codex: return "Codex"
+        }
+    }
+}

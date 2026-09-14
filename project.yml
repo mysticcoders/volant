@@ -90,6 +90,7 @@ targets:
         CFBundleName: VolantAgentHost
         XPCService:
           ServiceType: Application
+          JoinExistingSession: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.AgentHost

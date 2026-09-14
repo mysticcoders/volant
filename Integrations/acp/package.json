@@ -1,0 +1,11 @@
+{
+  "name": "volant-acp-adapters",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Pinned ACP bridges for Volant's Claude Code and Codex providers",
+  "dependencies": {
+    "@agentclientprotocol/claude-agent-acp": "0.76.0",
+    "@agentclientprotocol/codex-acp": "1.11.0"
+  },
+  "engines": { "node": ">=22" }
+}

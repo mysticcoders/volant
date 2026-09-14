@@ -7,13 +7,12 @@ struct ACPConversationView: View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 if model.active {
-                    Text(model.provider == "cursor" ? "Cursor" : "OpenCode").fontWeight(.medium)
+                    Text(ACPProvider(rawValue: model.provider)?.title ?? model.provider).fontWeight(.medium)
                     Label(URL(fileURLWithPath: model.project).lastPathComponent, systemImage: "folder")
                         .foregroundStyle(.secondary).lineLimit(1).help(model.project)
                 } else {
                     Picker("Provider", selection: $model.provider) {
-                        Text("OpenCode").tag("opencode")
-                        Text("Cursor").tag("cursor")
+                        ForEach(ACPProvider.allCases) { provider in Text(provider.title).tag(provider.rawValue) }
                     }.labelsHidden().frame(width: 125)
                     Button(action: model.chooseProject) {
                         Label(model.project.isEmpty ? "Choose project…" : URL(fileURLWithPath: model.project).lastPathComponent, systemImage: "folder").lineLimit(1)
@@ -111,7 +110,7 @@ struct ACPActivityStrip: View {
             Button(action: open) {
                 HStack {
                     Image(systemName: model.state.permissions.isEmpty ? "bubble.left.and.bubble.right" : "hand.raised")
-                    Text(model.provider == "cursor" ? "Cursor" : "OpenCode")
+                    Text(ACPProvider(rawValue: model.provider)?.title ?? model.provider)
                     Text(model.state.status).foregroundStyle(.secondary).lineLimit(1)
                     Spacer()
                     Text("Open conversation").foregroundStyle(.secondary)

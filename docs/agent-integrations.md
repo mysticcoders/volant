@@ -1,6 +1,6 @@
 # Native agent integrations
 
-Scope requested: Herdr panes plus OpenCode, Cursor, Claude Code and Codex sessions inside Volant. Delivered development slices: native Herdr discovery/focus and inline ACP v1 conversations, verified end to end with OpenCode. Claude Code and Codex conversation adapters remain planned. Historical slice notes below record the earlier state.
+Scope requested: Herdr panes plus OpenCode, Cursor, Claude Code and Codex sessions inside Volant. Delivered development slices: native Herdr discovery/focus and inline ACP v1 conversations, verified end to end with OpenCode, Claude Code and Codex. Claude/Codex use maintained ACP adapters rather than separate native conversation transports. Historical slice notes below record the earlier state.
 
 - Herdr: local socket API for discovery, state, focus and explicit prompts. Installed at ~/.local/bin/herdr; CLI exposes api schema, agent list/get/focus/prompt and pane operations.
 - OpenCode: ACP over stdio. Installed at /opt/homebrew/bin/opencode; acp subcommand confirmed locally. Negotiate installed capabilities instead of assuming current website docs match this version.
@@ -62,3 +62,16 @@ Regression lesson: an older snapshot could arrive after prompt submission and br
 Next concrete work: live keyboard/project-picker/approval UX verification; Cursor CLI installation and provider extensions; negotiated model/mode selection and session restore; then Claude Code SDK and Codex app-server adapters. Keep marketing tagged in development until release verification.
 
 Installed delivery evidence: `/Applications/Volant.app` passed deep/strict code-signature verification and repeated the OpenCode ACP session + expected-response check successfully. Real tool execution/approvals, Cursor, full launcher keyboard handling and the project picker remain unverified; do not infer them from the protocol fixture or view renders.
+
+
+## Claude Code and Codex through ACP — September 13
+
+Added both providers to the same inline conversation UI. Locked adapter packages are `@agentclientprotocol/claude-agent-acp@0.76.0` and `@agentclientprotocol/codex-acp@1.11.0`, with reproducible dependency versions in `Integrations/acp/package-lock.json`. `Scripts/install-acp-adapters.sh` installs them into `~/.local/share/volant/acp`. A Node 22+ runtime is required. The helper executes Node by absolute path, passes only the known adapter entrypoint, and sets `CLAUDE_CODE_EXECUTABLE` / `CODEX_PATH` to an installed CLI. No shell or startup package download is used. Both signed app/helper conversation checks returned the expected no-tools response using existing logins. Tested CLI versions: Claude Code 2.1.270 and Codex 0.154.0. Cursor remains unverified.
+
+Authentication lesson: Claude worked directly but failed with “Authentication required” through XPC. The helper was in a new audit/security session, so the provider could not see the login Keychain. `XPCService.JoinExistingSession = true` joins the caller’s security session; the signed Claude ACP prompt then passed. Do not copy OAuth tokens or weaken Keychain ACLs as a workaround. Initialization/session creation alone does not verify authentication; include a minimal prompt in delivery smoke checks.
+
+Sources: [Claude ACP adapter](https://github.com/agentclientprotocol/claude-agent-acp), [Codex ACP adapter](https://github.com/agentclientprotocol/codex-acp), [Apple XPC security session configuration](https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingXPCServices.html).
+
+Next: verify real provider tool approvals and live keyboard/project selection; Cursor setup; negotiated model/mode selection and session restore. Provider-specific extensions and notes/context handoff remain outside this slice.
+
+Installed verification: both `--acp-provider claude` and `--acp-provider codex` passed session creation and expected-response checks from `/Applications/Volant.app`; the installed app passed deep/strict signature verification. Claude/Codex provider labels were inspected in native light/dark view renders. Actual provider tool approvals and live keyboard/project-picker behavior remain unverified.

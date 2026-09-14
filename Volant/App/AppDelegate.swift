@@ -23,6 +23,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if CommandLine.arguments.contains("--acp-check") {
             let model = ACPModel()
             model.project = "/tmp/volant-acp-fixture"
+            if let index = CommandLine.arguments.firstIndex(of: "--acp-provider"), CommandLine.arguments.indices.contains(index + 1) {
+                model.provider = CommandLine.arguments[index + 1]
+            }
             model.start()
             var submitted = false
             var checkTimer: Timer?
@@ -38,7 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     } else {
                         let output = model.state.messages.filter { $0.role == "Agent" }.map(\.text).joined()
                         print("ACP initialized: " + model.state.agentName + "; session: " + (model.state.sessionID == nil ? "missing" : "created"))
-                        if submitted { print("ACP prompt: " + (output.contains("VOLANT_ACP_OK") ? "passed" : "failed")) }
+                        if submitted { print("ACP prompt: " + (output.contains("VOLANT_ACP_OK") ? "passed" : "failed: " + model.state.status)) }
                         checkTimer?.invalidate(); model.disconnect(); NSApp.terminate(nil)
                     }
                 }

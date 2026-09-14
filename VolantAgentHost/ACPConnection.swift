@@ -26,14 +26,35 @@ final class ACPConnection {
     func start(provider: String, project: String) throws {
         guard task == nil, state.phase == "disconnected" else { throw failure("End this conversation before starting another.") }
         let home = FileManager.default.homeDirectoryForCurrentUser.path
-        let names: [String]
-        switch provider {
-        case "opencode": names = ["/opt/homebrew/bin/opencode", home + "/.opencode/bin/opencode", home + "/.local/bin/opencode", "/usr/local/bin/opencode"]
-        case "cursor": names = [home + "/.local/bin/agent", "/opt/homebrew/bin/agent", "/usr/local/bin/agent"]
-        default: throw failure("This provider does not have an ACP adapter in Volant yet.")
-        }
-        guard let executable = names.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
-            throw failure(provider == "cursor" ? "Cursor CLI is not installed. Install and sign in to Cursor CLI, then retry." : "OpenCode was not found. Install it and run opencode auth login, then retry.")
+        guard let selected = ACPProvider(rawValue: provider) else { throw failure("Unknown ACP provider.") }
+        var arguments = ["acp"]
+        var providerEnvironment: [String: String] = [:]
+        let executable: String
+        if selected == .claude || selected == .codex {
+            let package = selected == .claude ? "claude-agent-acp" : "codex-acp"
+            let adapter = home + "/.local/share/volant/acp/node_modules/@agentclientprotocol/" + package + "/dist/index.js"
+            guard FileManager.default.fileExists(atPath: adapter) else {
+                throw failure(selected.title + "’s ACP adapter is missing. Install Volant’s ACP adapters and retry.")
+            }
+            var nodes = ["/opt/homebrew/bin/node", "/usr/local/bin/node", home + "/.local/bin/node"]
+            for root in [home + "/.local/share/mise/installs/node", home + "/.nvm/versions/node"] {
+                let versions = (try? FileManager.default.contentsOfDirectory(atPath: root)) ?? []
+                nodes += versions.sorted { $0.compare($1, options: .numeric) == .orderedDescending }.map { root + "/" + $0 + "/bin/node" }
+            }
+            guard let node = nodes.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else { throw failure("The ACP adapters require Node.js 22 or newer.") }
+            let cli = selected == .claude ? "claude" : "codex"
+            guard let installed = [home + "/.local/bin/" + cli, "/opt/homebrew/bin/" + cli, "/usr/local/bin/" + cli].first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else { throw failure("Install and sign in to " + selected.title + " first.") }
+            providerEnvironment[selected == .claude ? "CLAUDE_CODE_EXECUTABLE" : "CODEX_PATH"] = installed
+            executable = node
+            arguments = [adapter]
+        } else {
+            let names = selected == .opencode
+                ? ["/opt/homebrew/bin/opencode", home + "/.opencode/bin/opencode", home + "/.local/bin/opencode", "/usr/local/bin/opencode"]
+                : [home + "/.local/bin/agent", "/opt/homebrew/bin/agent", "/usr/local/bin/agent"]
+            guard let installed = names.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
+                throw failure(selected == .cursor ? "Cursor CLI is not installed. Install and sign in to Cursor CLI, then retry." : "OpenCode was not found. Install it and run opencode auth login, then retry.")
+            }
+            executable = installed
         }
         var directory: ObjCBool = false
         guard project.hasPrefix("/"), !project.contains("\0"), FileManager.default.fileExists(atPath: project, isDirectory: &directory), directory.boolValue else { throw failure("Choose an existing project folder.") }
@@ -41,9 +62,11 @@ final class ACPConnection {
         state.phase = "starting"; state.status = "Connecting to " + provider + "…"
         let process = Process(), stdin = Pipe(), stdout = Pipe()
         process.executableURL = URL(fileURLWithPath: executable)
-        process.arguments = ["acp"]
+        process.arguments = arguments
         process.currentDirectoryURL = URL(fileURLWithPath: self.project)
         process.environment = ["HOME": home, "USER": NSUserName(), "PATH": home + "/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin", "LANG": "en_US.UTF-8"]
+        process.environment?["PATH"] = URL(fileURLWithPath: executable).deletingLastPathComponent().path + ":" + (process.environment?["PATH"] ?? "")
+        for (key, value) in providerEnvironment { process.environment?[key] = value }
         process.standardInput = stdin; process.standardOutput = stdout; process.standardError = FileHandle.nullDevice
         let generation = epoch
         process.terminationHandler = { [weak self] _ in
