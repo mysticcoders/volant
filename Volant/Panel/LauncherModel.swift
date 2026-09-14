@@ -9,6 +9,8 @@ enum LauncherAction {
 }
 
 enum ResultRow: Identifiable, Hashable {
+    case connectivity(ConnectivityItem)
+    case audioRoute(AudioRoute)
     case volume(VolumeCommand, detail: String)
     case agents
     case agentSession(AgentSession)
@@ -30,6 +32,8 @@ enum ResultRow: Identifiable, Hashable {
     var id: String {
         switch self {
         case .agentSession(let session): return "agent:" + session.id
+        case .connectivity(let item): return item.id
+        case .audioRoute(let route): return "audio:" + route.id
         case .volume(let command, _): return "volume:" + command.id
         case .agents: return "command:agents"
         case .calculation(let s): return "calc:\(s)"
@@ -53,6 +57,8 @@ enum ResultRow: Identifiable, Hashable {
     var kind: String {
         switch self {
         case .agentSession(let session): return session.status
+        case .connectivity: return "Connectivity"
+        case .audioRoute(let route): return route.current ? "Current" : "Device"
         case .volume: return "System"
         case .agents: return "Command"
         case .calculation: return "Calculation"
@@ -75,6 +81,11 @@ enum ResultRow: Identifiable, Hashable {
     var primaryAction: String {
         switch self {
         case .agentSession: return "Focus in Herdr"
+        case .connectivity(let item):
+            if case .wifi(let network) = item { return network.current ? "Connected" : "Join Network" }
+            if case .refresh = item { return "Refresh" }
+            return "Open Settings"
+        case .audioRoute(let route): return route.current ? "Keep Current Device" : "Use as " + route.direction.rawValue.capitalized
         case .volume: return "Apply"
         case .agents: return "Open Agents"
         case .calculation, .unit: return "Copy Result"
@@ -113,7 +124,7 @@ struct ResultSection: Identifiable {
 /// Routes a query. Prefixes force one source: `/` files, `@` contacts, `cal` or `today` agenda, `clip` history.
 /// Otherwise results merge: math and units first, then apps, contacts, and files once the query is long enough.
 final class LauncherModel: ObservableObject {
-    @Published var query: String = "" { didSet { refresh() } }
+    @Published var query: String = "" { didSet { if oldValue != query { refresh() } } }
     @Published private var displayedSections: [ResultSection] = []
     var sections: [ResultSection] {
         get { displayedSections }
@@ -141,6 +152,10 @@ final class LauncherModel: ObservableObject {
     @Published var selection: Int = 0
     @Published var actionFeedback: String?
     var volumeControl = VolumeControl()
+    var audioRouting: AudioRouting = CoreAudioRouting()
+    lazy var connectivity: ConnectivityAccess = ConnectivityService()
+    @Published var wifiJoin: WiFiChoice?
+    @Published var connectivityBusy = false
     @Published var notice: String? = nil
     var dismiss: () -> Void = {}
     let agents = AgentsModel()
@@ -216,6 +231,8 @@ final class LauncherModel: ObservableObject {
     }
 
     func reset() {
+        wifiJoin = nil
+        actionFeedback = nil
         files.cancel()
         query = ""
         selection = 0
@@ -234,10 +251,13 @@ final class LauncherModel: ObservableObject {
         immediate = []; contactRows = []; fileRows = []
         notice = nil
         actionFeedback = nil
+        wifiJoin = nil
         files.cancel()
         let q = query.trimmingCharacters(in: .whitespaces)
         guard !q.isEmpty else { showSuggestions(); return }
 
+        if connectivitySource != nil { refreshConnectivity(); return }
+        if AudioRouteQuery(q) != nil { refreshAudioRoutes(); return }
         if VolumeCommand.matches(q) {
             refreshVolumeResults()
             return
@@ -366,6 +386,62 @@ final class LauncherModel: ObservableObject {
         else { selection = 0 }
     }
 
+    private var connectivitySource: String? {
+        let head = query.lowercased().split(whereSeparator: \.isWhitespace).first ?? ""
+        if head == "wifi" || head == "wi-fi" { return "wifi" }
+        if head == "bluetooth" || head == "bt" { return "bluetooth" }
+        return nil
+    }
+    private func refreshConnectivity(force: Bool = false) {
+        guard let source = connectivitySource else { return }
+        let gen = generation
+        let selectedID = force ? selectedRow?.id : nil
+        let term = query.split(whereSeparator: \.isWhitespace).dropFirst().joined(separator: " ")
+        sections = []; notice = "Loading…"
+        connectivity.load(source, refresh: force) { [weak self] snapshot in
+            guard let self, self.generation == gen else { return }
+            let items = snapshot.items.filter { item in
+                switch item {
+                case .settings, .refresh: return true
+                default: return term.isEmpty || item.title.localizedCaseInsensitiveContains(term)
+                }
+            }
+            self.sections = [ResultSection(title: source == "wifi" ? "Wi-Fi Networks" : "Connected Bluetooth Devices", rows: items.map(ResultRow.connectivity))]
+            if let selectedID, let index = self.rows.firstIndex(where: { $0.id == selectedID }) { self.selection = index }
+            else { self.selection = 0 }
+            self.actionFeedback = snapshot.items.isEmpty ? nil : snapshot.message
+            self.notice = snapshot.message
+        }
+    }
+    func joinWiFi(_ network: WiFiChoice, password: String?, useSaved: Bool) {
+        guard !connectivityBusy else { return }
+        connectivityBusy = true
+        let gen = generation
+        connectivity.join(network, password: password, useSaved: useSaved) { [weak self] error in
+            guard let self else { return }
+            self.connectivityBusy = false
+            guard gen == self.generation else { return }
+            if let error { self.actionFeedback = error }
+            else {
+                self.wifiJoin = nil
+                self.refreshConnectivity(force: true)
+                self.actionFeedback = "Connected to " + network.name
+                self.searchFocusRequest = UUID()
+            }
+        }
+    }
+
+    private func refreshAudioRoutes() {
+        guard let search = AudioRouteQuery(query) else { return }
+        do {
+            let routes = try audioRouting.routes().filter { search.directions.contains($0.direction) && (search.term.isEmpty || $0.name.localizedCaseInsensitiveContains(search.term)) }
+            sections = search.directions.map { direction in
+                ResultSection(title: direction.title, rows: routes.filter { $0.direction == direction }.map(ResultRow.audioRoute))
+            }
+            notice = routes.isEmpty ? "No matching audio devices. Connect the device and search again." : nil
+        } catch { sections = []; notice = error.localizedDescription }
+    }
+
     private func refreshVolumeResults() {
         do {
             let state = try volumeControl.state()
@@ -406,10 +482,32 @@ final class LauncherModel: ObservableObject {
     func activateSelection() {
         guard let row = selectedRow else { return }
         switch row {
-        case .volume, .extensionResult, .newNote, .calculation, .unit: break
+        case .connectivity, .audioRoute, .volume, .extensionResult, .newNote, .calculation, .unit: break
         default: usage.record(key: row.id, query: query)
         }
         switch row {
+        case .connectivity(let item):
+            switch item {
+            case .settings(let source): ConnectivityService.openSettings(source)
+            case .refresh: refreshConnectivity(force: true)
+            case .bluetooth: ConnectivityService.openSettings("bluetooth")
+            case .wifi(let network):
+                guard !connectivityBusy else { return }
+                if network.current { refreshConnectivity(force: true) }
+                else if network.security == "Managed / Other" { ConnectivityService.openSettings("wifi") }
+                else if network.security == "Open" { joinWiFi(network, password: nil, useSaved: false) }
+                else { wifiJoin = network; actionFeedback = nil }
+            }
+            return
+        case .audioRoute(let route):
+            do {
+                try audioRouting.select(route)
+                refreshAudioRoutes()
+                if let index = rows.firstIndex(where: { $0.id == row.id }) { selection = index }
+                else { selection = 0 }
+                actionFeedback = route.direction.title + ": " + route.name
+            } catch { actionFeedback = error.localizedDescription }
+            return
         case .volume(let command, _):
             do {
                 let state = try volumeControl.perform(command)

@@ -208,3 +208,110 @@ verify(homePanel.model.rows.isEmpty && homePanel.model.notice?.contains("No audi
 try captureVolume("missing")
 homePanel.orderOut(nil)
 print("PASS: native volume discovery, Return, exact level, mute/unmute, unsupported and missing output")
+
+final class RoutingFixture: AudioRouting {
+    var output = "speakers"
+    var input = "microphone"
+    var connected = true
+    var writes = 0
+    func routes() throws -> [AudioRoute] {
+        var result = [AudioRoute(uid: "speakers", device: 1, name: "Mac Speakers", direction: .output, current: output == "speakers"), AudioRoute(uid: "microphone", device: 2, name: "Mac Microphone", direction: .input, current: input == "microphone")]
+        if connected {
+            result += [AudioRoute(uid: "airpods", device: 3, name: "AirPods", direction: .output, current: output == "airpods"), AudioRoute(uid: "airpods", device: 3, name: "AirPods", direction: .input, current: input == "airpods")]
+        }
+        return result
+    }
+    func select(_ route: AudioRoute) throws {
+        guard try routes().contains(where: { $0.id == route.id }) else { throw VolumeFailure(message: "This audio device disconnected. Refresh the list and try again.") }
+        writes += 1
+        if route.direction == .output { output = route.uid } else { input = route.uid }
+    }
+}
+let routingFixture = RoutingFixture()
+homePanel.model.audioRouting = routingFixture
+homePanel.toggle()
+homePanel.model.query = "audio"
+RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+verify(homePanel.model.rows.count == 4 && Set(homePanel.model.rows.map(\.id)).count == 4, "Input/output identities stay distinct")
+try captureVolume("audio-devices")
+homePanel.model.query = "output air"
+sendHomeKey("\r", code: 36)
+verify(routingFixture.output == "airpods" && routingFixture.input == "microphone", "Changing output leaves microphone alone")
+verify(homePanel.model.rows.first?.kind == "Current", "Current marker updates after switching")
+try captureVolume("audio-selected")
+homePanel.model.query = "input air"
+sendHomeKey("\r", code: 36)
+verify(routingFixture.input == "airpods", "Input switching is independent")
+homePanel.model.query = "audio output air"
+let routeWrites = routingFixture.writes
+routingFixture.connected = false
+sendHomeKey("\r", code: 36)
+verify(routingFixture.writes == routeWrites && homePanel.model.actionFeedback?.contains("disconnected") == true, "Disconnected selection does not fall back to another device")
+try captureVolume("audio-disconnected")
+homePanel.model.query = "audio missing"
+verify(homePanel.model.rows.isEmpty && homePanel.model.notice != nil, "No matching audio devices")
+verify(AudioRouteQuery("audiobook") == nil, "Audio command does not hijack unrelated names")
+for command in ["audio", "input", "output"] { verify(LauncherRouting.isReserved(command), "Audio command reserved for import") }
+homePanel.orderOut(nil)
+print("PASS: native audio route listing, output/input independence, current marker, disconnect, empty search")
+
+final class ConnectivityFixture: ConnectivityAccess {
+    var delayed = false
+    var callback: ((ConnectivitySnapshot) -> Void)?
+    var joins = 0
+    var completion: ((String?) -> Void)?
+    let secured = WiFiChoice(ssid: Data("Studio".utf8), name: "Studio Wi-Fi", security: "WPA2 Personal", signal: -52, current: false)
+    func load(_ source: String, refresh: Bool, completion: @escaping (ConnectivitySnapshot) -> Void) {
+        callback = completion
+        if delayed { return }
+        if source == "bluetooth" {
+            completion(ConnectivitySnapshot(items: [.bluetooth(id: "fixture-headphones", name: "Studio Headphones"), .bluetooth(id: "fixture-keyboard", name: "Desk Keyboard"), .settings("bluetooth")], message: nil))
+        } else {
+            completion(ConnectivitySnapshot(items: [.wifi(WiFiChoice(ssid: Data("Home".utf8), name: "Home Wi-Fi", security: "WPA3 Personal", signal: -35, current: true)), .wifi(secured), .settings("wifi")], message: nil))
+        }
+    }
+    func join(_ network: WiFiChoice, password: String?, useSaved: Bool, completion: @escaping (String?) -> Void) {
+        joins += 1
+        self.completion = completion
+    }
+}
+let connectivityFixture = ConnectivityFixture()
+homePanel.model.connectivity = connectivityFixture
+homePanel.toggle()
+homePanel.model.query = "bluetooth"
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+verify(homePanel.model.rows.count == 3, "Connected Bluetooth list")
+try captureVolume("bluetooth")
+homePanel.model.query = "wifi"
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+verify(homePanel.model.rows.count == 3, "Wi-Fi network list")
+try captureVolume("wifi")
+homePanel.model.query = "wifi studio"
+sendHomeKey("\r", code: 36)
+verify(homePanel.model.wifiJoin?.id == connectivityFixture.secured.id && connectivityFixture.joins == 0, "Secured network opens password form without joining")
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+verify((homePanel.firstResponder as? NSTextView)?.isFieldEditor == true, "Password form gets a native editing responder")
+try captureVolume("wifi-password")
+for letter in "fixture" { sendHomeKey(String(letter), code: UInt16(KeyCombo.keyCodes[String(letter)]!)) }
+sendHomeKey("\r", code: 36)
+verify(connectivityFixture.joins == 1, "Native secure field Return submits exactly one join")
+connectivityFixture.completion?("Incorrect fixture password")
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+sendHomeKey(String(UnicodeScalar(27)!), code: 53)
+verify(homePanel.model.wifiJoin == nil && homePanel.isVisible, "Escape cancels password entry, not the launcher")
+homePanel.model.joinWiFi(connectivityFixture.secured, password: "fictional-fixture", useSaved: false)
+homePanel.model.joinWiFi(connectivityFixture.secured, password: "fictional-fixture", useSaved: false)
+verify(connectivityFixture.joins == 2, "Duplicate joins are rejected")
+connectivityFixture.completion?("Incorrect fixture password")
+verify(!homePanel.model.connectivityBusy && homePanel.model.actionFeedback == "Incorrect fixture password", "Joining error remains visible")
+connectivityFixture.delayed = true
+homePanel.model.query = "wifi"
+let stale = connectivityFixture.callback
+homePanel.model.query = "output"
+stale?(ConnectivitySnapshot(items: [.settings("wifi")], message: "Old scan"))
+verify(homePanel.model.rows.allSatisfy { if case .audioRoute = $0 { return true }; return false }, "Old scans cannot overwrite a newer query")
+homePanel.model.query = "wifi"
+connectivityFixture.callback?(ConnectivitySnapshot(items: [.settings("wifi")], message: "Location access is off. Enable Volant in System Settings → Privacy & Security → Location Services."))
+try captureVolume("wifi-denied")
+homePanel.orderOut(nil)
+print("PASS: connectivity lists, password form, cancel, duplicate joins, errors, stale scan rejection, denied state")

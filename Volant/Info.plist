@@ -24,12 +24,20 @@
 	<string>15.0</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Volant lists connected Bluetooth devices when you open the Bluetooth command.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Volant lists connected Bluetooth devices on request.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Volant shows today's events and their meeting links. Read-only.</string>
 	<key>NSContactsUsageDescription</key>
 	<string>Volant searches your contacts so you can copy an email address or phone number. Read-only.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright 2026 Mystic Coders, LLC</string>
+	<key>NSLocationUsageDescription</key>
+	<string>macOS requires Location access to show Wi-Fi network names. Volant does not request your coordinates.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>macOS requires Location access to show Wi-Fi network names. Volant does not request your coordinates.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 </dict>

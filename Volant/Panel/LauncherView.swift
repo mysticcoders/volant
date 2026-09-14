@@ -25,9 +25,11 @@ struct LauncherView: View {
                 Text(feedback).font(.system(size: 12)).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20).padding(.vertical, 8)
-                    .accessibilityLabel("Volume status: " + feedback)
+                    .accessibilityLabel("Status: " + feedback)
             }
-            if model.showingACP {
+            if let network = model.wifiJoin {
+                WiFiJoinView(model: model, network: network).id(network.id)
+            } else if model.showingACP {
                 ACPConversationView(model: model.acp)
             } else {
                 if model.showingAgents {
@@ -40,7 +42,7 @@ struct LauncherView: View {
                 results
             }
             Divider().opacity(0.6)
-            if !model.showingACP { footer }
+            if !model.showingACP && model.wifiJoin == nil { footer }
         }
         .frame(width: LauncherPanel.size.width, height: LauncherPanel.size.height)
         .background(.regularMaterial.opacity(LauncherPanel.opacity))
@@ -48,11 +50,15 @@ struct LauncherView: View {
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.primary.opacity(0.08)))
         .onAppear { requestSearchFocus() }
         .onChange(of: model.searchFocusRequest) { _, _ in requestSearchFocus() }
-        .onKeyPress(.downArrow) { guard !model.showingACP else { return .ignored }; model.moveSelection(1); return .handled }
-        .onKeyPress(.upArrow) { guard !model.showingACP else { return .ignored }; model.moveSelection(-1); return .handled }
-        .onKeyPress(.escape) { model.dismiss(); return .handled }
+        .onKeyPress(.downArrow) { guard !model.showingACP && model.wifiJoin == nil else { return .ignored }; model.moveSelection(1); return .handled }
+        .onKeyPress(.upArrow) { guard !model.showingACP && model.wifiJoin == nil else { return .ignored }; model.moveSelection(-1); return .handled }
+        .onKeyPress(.escape) {
+            if model.wifiJoin != nil { guard !model.connectivityBusy else { return .handled }; model.wifiJoin = nil; model.searchFocusRequest = UUID() }
+            else { model.dismiss() }
+            return .handled
+        }
         .onKeyPress(.return, phases: .down) { press in
-            guard !model.showingACP else { return .ignored }
+            guard !model.showingACP && model.wifiJoin == nil else { return .ignored }
             if press.modifiers.contains(.command) { model.activateSecondary() } else { model.activateSelection() }
             return .handled
         }
@@ -214,6 +220,8 @@ private struct RowView: View {
     private var title: String {
         switch row {
         case .agentSession(let session): return session.project
+        case .connectivity(let item): return item.title
+        case .audioRoute(let route): return route.name
         case .volume(let command, _): return command.title
         case .agents: return "Open Agents"
         case .calculation(let s): return "= \(s)"
@@ -236,6 +244,8 @@ private struct RowView: View {
     private var subtitle: String? {
         switch row {
         case .agentSession(let session): return session.provider + " · " + session.paneID
+        case .connectivity(let item): return item.detail
+        case .audioRoute(let route): return route.direction.rawValue.capitalized
         case .volume(_, let detail): return detail.isEmpty ? nil : detail
         case .agents: return "Find Herdr sessions and focus a pane"
         case .calculation, .unit, .app: return nil
@@ -257,6 +267,8 @@ private struct RowView: View {
     @ViewBuilder private var icon: some View {
         switch row {
         case .agentSession(let session): Image(systemName: session.agentStatus == "blocked" ? "exclamationmark.bubble" : "terminal").font(.system(size: 20)).foregroundStyle(session.agentStatus == "blocked" ? Color.orange : Color.secondary)
+        case .connectivity(let item): Image(systemName: item.id.hasPrefix("wifi:") ? "wifi" : "antenna.radiowaves.left.and.right").font(.system(size: 20)).foregroundStyle(.secondary)
+        case .audioRoute(let route): Image(systemName: route.direction == .input ? "mic" : "speaker.wave.2").font(.system(size: 20)).foregroundStyle(.secondary)
         case .volume(let command, _): Image(systemName: command == .mute ? "speaker.slash" : "speaker.wave.2").font(.system(size: 20)).foregroundStyle(.secondary)
         case .agents: Image(systemName: "terminal").font(.system(size: 20)).foregroundStyle(.secondary)
         case .calculation: Image(systemName: "equal.circle.fill").font(.system(size: 20)).foregroundStyle(.secondary)

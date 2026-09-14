@@ -1,4 +1,5 @@
 import AppKit
+import CoreAudio
 
 let app = NSApplication.shared
 // A count-only installed-artifact check: never prints clipboard contents or key material.
@@ -21,6 +22,36 @@ if CommandLine.arguments.contains("--volume-check") {
         }
         exit(0)
     } catch { print("Volume check: " + error.localizedDescription); exit(1) }
+}
+if CommandLine.arguments.contains("--audio-check") {
+    do {
+        let routes = try CoreAudioRouting().routes()
+        print("Audio outputs: \(routes.filter { $0.direction == .output }.count); inputs: \(routes.filter { $0.direction == .input }.count)")
+        if CommandLine.arguments.contains("--audio-write-check") {
+            for route in routes where route.current {
+                var address = AudioObjectPropertyAddress(mSelector: route.direction.selector, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
+                var device = route.device
+                guard AudioObjectSetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, UInt32(MemoryLayout<AudioDeviceID>.size), &device) == noErr else { throw VolumeFailure(message: "Current route write failed") }
+                print("Same-device \(route.direction.rawValue) write passed")
+            }
+        }
+        exit(0)
+    } catch { print(error.localizedDescription); exit(1) }
+}
+if let index = CommandLine.arguments.firstIndex(of: "--connectivity-check"), CommandLine.arguments.indices.contains(index + 1) {
+    let source = CommandLine.arguments[index + 1]
+    guard ["wifi", "bluetooth"].contains(source) else { exit(2) }
+    let service = ConnectivityService()
+    var latest: ConnectivitySnapshot?
+    service.load(source, refresh: true) { latest = $0 }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 20) {
+        let count = latest?.items.filter { item in
+            switch item { case .wifi, .bluetooth: return true; default: return false }
+        }.count ?? 0
+        print("Connectivity check: \(source); visible entries: \(count); status: \(latest?.message ?? "ready")")
+        exit(0)
+    }
+    withExtendedLifetime(service) { app.run() }
 }
 let delegate = AppDelegate()
 app.delegate = delegate

@@ -29,6 +29,8 @@ targets:
         com.apple.security.files.user-selected.read-only: true
         com.apple.security.personal-information.addressbook: true
         com.apple.security.personal-information.calendars: true
+        com.apple.security.device.bluetooth: true
+        com.apple.security.personal-information.location: true
     info:
       path: Volant/Info.plist
       properties:
@@ -42,6 +44,10 @@ targets:
         NSHumanReadableCopyright: "Copyright 2026 Mystic Coders, LLC"
         NSPrincipalClass: NSApplication
         NSContactsUsageDescription: "Volant searches your contacts so you can copy an email address or phone number. Read-only."
+        NSBluetoothAlwaysUsageDescription: "Volant lists connected Bluetooth devices when you open the Bluetooth command."
+        NSBluetoothPeripheralUsageDescription: "Volant lists connected Bluetooth devices on request."
+        NSLocationWhenInUseUsageDescription: "macOS requires Location access to show Wi-Fi network names. Volant does not request your coordinates."
+        NSLocationUsageDescription: "macOS requires Location access to show Wi-Fi network names. Volant does not request your coordinates."
         NSCalendarsFullAccessUsageDescription: "Volant shows today's events and their meeting links. Read-only."
     dependencies:
       - target: VolantExtensionHost
