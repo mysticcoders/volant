@@ -1,12 +1,14 @@
 import AppKit
 import Combine
 
-enum NoteAction {
+enum LauncherAction {
+    case agents
     case open(String)
     case create(String)
 }
 
 enum ResultRow: Identifiable, Hashable {
+    case agents
     case snippet(Snippet)
     case emoji(EmojiEntry)
     case quicklink(Quicklink, query: String)
@@ -24,6 +26,7 @@ enum ResultRow: Identifiable, Hashable {
 
     var id: String {
         switch self {
+        case .agents: return "command:agents"
         case .calculation(let s): return "calc:\(s)"
         case .unit(let s): return "unit:\(s)"
         case .app(let a): return "app:\(a.id)"
@@ -44,6 +47,7 @@ enum ResultRow: Identifiable, Hashable {
     /// Right-aligned kind label, as in Raycast's "Application" / "Command" column.
     var kind: String {
         switch self {
+        case .agents: return "Command"
         case .calculation: return "Calculation"
         case .unit: return "Conversion"
         case .app: return "Application"
@@ -63,6 +67,7 @@ enum ResultRow: Identifiable, Hashable {
     /// Footer label for return.
     var primaryAction: String {
         switch self {
+        case .agents: return "Open Agents"
         case .calculation, .unit: return "Copy Result"
         case .app: return "Open Application"
         case .file: return "Open File"
@@ -111,7 +116,7 @@ final class LauncherModel: ObservableObject {
     private let index: AppIndex
     private let clipboard: ClipboardStore
     private let notes: NotesStore
-    private let onNote: (NoteAction) -> Void
+    private let onNote: (LauncherAction) -> Void
     let extensions = ExtensionManager()
     let usage = UsageStore()
     var config: Preferences
@@ -123,7 +128,7 @@ final class LauncherModel: ObservableObject {
     private var contactRows: [ResultRow] = []
     private var fileRows: [ResultRow] = []
 
-    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, onNote: @escaping (NoteAction) -> Void) {
+    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, onNote: @escaping (LauncherAction) -> Void) {
         self.index = index
         self.clipboard = clipboard
         self.notes = notes
@@ -153,6 +158,10 @@ final class LauncherModel: ObservableObject {
         let q = query.trimmingCharacters(in: .whitespaces)
         guard !q.isEmpty else { showSuggestions(); return }
 
+        if ["agents", "herdr"].contains(q.lowercased()) {
+            sections = [ResultSection(title: "Agents", rows: [.agents])]
+            return
+        }
         if q.hasPrefix("/") {
             let term = String(q.dropFirst()).trimmingCharacters(in: .whitespaces)
             sections = []
@@ -291,6 +300,7 @@ final class LauncherModel: ObservableObject {
         default: usage.record(key: row.id, query: query)
         }
         switch row {
+        case .agents: onNote(.agents)
         case .calculation(let text): copy(text)
         case .unit(let text): copy(text.components(separatedBy: " = ").last ?? text)
         case .clip(let clip):

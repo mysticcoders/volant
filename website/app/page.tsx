@@ -31,7 +31,7 @@ const questions = [
   ],
   [
     'Where does my data live?',
-    'Notes are plain Markdown files on your Mac. Clipboard history is encrypted locally using a key stored in Keychain. Your configuration is a portable text file. Volant has no network entitlement; websites and Shortcuts you open can use their own network access.',
+    'Notes are plain Markdown files on your Mac. Clipboard history is encrypted locally using a key stored in Keychain. Your configuration is a portable text file. The main app keeps its network access disabled. Optional agent connections use a separate local helper; external harnesses, websites, and Shortcuts have their own access and data handling.',
   ],
   [
     'Does it work with Shortcuts?',
@@ -63,6 +63,7 @@ export default function Home() {
           <Brand />
         </a>
         <nav aria-label="Main navigation">
+          <a href="#agents">Agents</a>
           <a href="#notes">Live Notes</a>
           <a href="#features">The little things</a>
           <a href="#get" className="nav-source">
@@ -87,12 +88,12 @@ export default function Home() {
               <span>A lot more flow.</span>
             </h1>
             <p className="intro">
-              Find your app. Catch a thought. Reuse that snippet.
+              Reach your agents. Catch a thought. Find your app.
               <br className="desktop-break" /> Volant keeps the little things
               one shortcut away.
             </p>
             <div className="hero-actions">
-              <a href="#notes" className="button">
+              <a href="#agents" className="button">
                 Find your flow <ArrowRight size={17} />
               </a>
               <a href="#get" className="text-link">
@@ -136,9 +137,22 @@ export default function Home() {
             <Code2 size={17} /> Local first
           </span>
         </div>
+        <section className="notes-section wrap" id="agents" aria-labelledby="agents-title">
+          <div className="section-intro">
+            <p className="eyebrow">01 / AGENT WORKFLOWS · IN DEVELOPMENT</p>
+            <h2 id="agents-title">Your agents.<br /><span>Within reach.</span></h2>
+            <p>A native place to find the session that needs you, return to its pane, and keep work moving.</p>
+            <a className="text-link" href="#get">Follow release status <ArrowUpRight size={15} /></a>
+          </div>
+          <div className="notes-details">
+            <article><span className="detail-number">01</span><div><h3>Find the right session.</h3><p>We’re building Herdr session discovery and pane focus first, with project search and agents that need attention at the top.</p></div></article>
+            <article><span className="detail-number">02</span><div><h3>The harnesses you already use.</h3><p>OpenCode, Cursor, Claude Code, and Codex are the integration targets. Native conversations and approvals are planned through ACP and provider-specific interfaces.</p></div></article>
+            <article><span className="detail-number">03</span><div><h3>From a thought to a task.</h3><p>Next: choose a note or snippet, review the context, and send it to your agent. Context handoff is planned; notes are never shared automatically.</p></div></article>
+          </div>
+        </section>
         <section className="notes-section wrap" id="notes">
           <div className="section-intro">
-            <p className="eyebrow">01 / A PLACE FOR THE THOUGHT</p>
+            <p className="eyebrow">02 / A PLACE FOR THE THOUGHT</p>
             <h2>
               Open. Write.
               <br />
@@ -207,7 +221,7 @@ export default function Home() {
           <div className="wrap">
             <div className="features-heading">
               <div>
-                <p className="eyebrow">02 / SMALL THINGS, HANDLED</p>
+                <p className="eyebrow">03 / SMALL THINGS, HANDLED</p>
                 <h2>
                   Less repeat.
                   <br />

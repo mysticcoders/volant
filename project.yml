@@ -45,6 +45,8 @@ targets:
     dependencies:
       - target: VolantExtensionHost
         embed: true
+      - target: VolantAgentHost
+        embed: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.vey
@@ -73,6 +75,24 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.vey.ExtensionHost
         GENERATE_INFOPLIST_FILE: NO
+  VolantAgentHost:
+    type: xpc-service
+    platform: macOS
+    sources:
+      - path: VolantAgentHost
+      - path: Shared/AgentProtocol.swift
+    info:
+      path: VolantAgentHost/Info.plist
+      properties:
+        CFBundleIdentifier: com.mysticcoders.volant.AgentHost
+        CFBundleName: VolantAgentHost
+        XPCService:
+          ServiceType: Application
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.AgentHost
+        GENERATE_INFOPLIST_FILE: NO
+        ENABLE_APP_SANDBOX: NO
   VolantTests:
     type: bundle.unit-test
     platform: macOS

@@ -2,12 +2,13 @@
 
 Formerly Slingshot (renamed 2026-09-13).
 
-A small, sandboxed macOS launcher for one person. Apps, per-app hotkeys, calculator, unit conversion, file search, contacts, today's calendar, encrypted clipboard history, and quick Markdown notes. No network access. Sandboxed WebAssembly extensions are available as a working spike with an unstable API; see [extensions](docs/extensions.md).
+A small, sandboxed macOS launcher for one person. Apps, per-app hotkeys, calculator, unit conversion, file search, contacts, today's calendar, encrypted clipboard history, and quick Markdown notes. The main app has no network access. Sandboxed WebAssembly extensions are available as a working spike with an unstable API; see [extensions](docs/extensions.md).
 
 ## Security posture
 
 - **App Sandbox on. No network entitlement.** The binary makes no network requests and has no telemetry. Opening links hands them to other apps. Shortcuts quicklinks hand execution to Shortcuts; those workflows may access the network or change data using their own permissions.
-- **No scripting, no shell, and extensions only in a cage.** Third-party code can run only as a WebAssembly module inside a separate sandboxed XPC process, with exactly the capabilities its manifest declares (spike; see `docs/extensions.md`). Nothing runs inside the app itself.
+- **Optional local agent bridge.** Type `agents` or `herdr` in the launcher, or choose Agents from the menu, then Connect Herdr. The signed helper runs outside App Sandbox and exposes only default-local-session discovery and pane focus through the installed Herdr CLI. No prompt submission or notes sharing is implemented yet. ACP conversations and provider adapters remain in development.
+- **No shell API; WASM extensions stay in a cage.** Extension code runs as a WebAssembly module inside a separate sandboxed XPC process, with exactly the capabilities its manifest declares (spike; see `docs/extensions.md`). Nothing runs inside the app itself.
 - **Two permissions, asked on first use:** Contacts and Calendar, each scoped by its own sandbox entitlement. Volant only reads, but note that Apple's Calendar grant is a full-access grant; the read-only behavior is the app's, not the OS's. Deny either and that feature simply returns nothing.
 - **No Accessibility or Input Monitoring grant.** Global hotkeys use Carbon `RegisterEventHotKey`, which needs no permission. Version 0.1 copies results to the clipboard instead of pasting, so no keystroke is ever synthesized.
 - **Clipboard history is AES-GCM encrypted at rest** with a 256-bit key held in the Keychain (`WhenUnlockedThisDeviceOnly`), stored in SQLite with `secure_delete` on, and excluded from Time Machine. Password-manager pasteboard markers (`ConcealedType`, `TransientType`, `is-sensitive`) are honored unconditionally. Supports text and images; PNG and TIFF copies are stored as PNG, capped at 8 MB per image.
@@ -48,7 +49,7 @@ Requires Xcode 26 and xcodegen (`brew install xcodegen`). Deployment target macO
 
 ## Not in 0.1, by choice
 
-Paste-in-place, window management, window and menu-bar search (all need Accessibility; ruled out for now), currency conversion (needs a network source; the European Central Bank's daily rates are the candidate for a later version), Apple Intelligence, a settings window, auto-update. Add deliberately.
+Paste-in-place, window management, window and menu-bar search (all need Accessibility; ruled out for now), currency conversion (needs a network source; the European Central Bank's daily rates are the candidate for a later version), Apple Intelligence, auto-update. Add deliberately.
 
 ## Volant name and compatibility
 

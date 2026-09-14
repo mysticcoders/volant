@@ -142,6 +142,7 @@ private struct RowView: View {
 
     private var title: String {
         switch row {
+        case .agents: return "Open Agents"
         case .calculation(let s): return "= \(s)"
         case .unit(let s): return s
         case .app(let a): return a.name
@@ -161,6 +162,7 @@ private struct RowView: View {
 
     private var subtitle: String? {
         switch row {
+        case .agents: return "Find Herdr sessions and focus a pane"
         case .calculation, .unit, .app: return nil
         case .file(let f): return f.url.deletingLastPathComponent().path.replacingOccurrences(of: NSHomeDirectory(), with: "~")
         case .contact(let c): return c.email ?? c.phone ?? (c.organization.isEmpty ? nil : c.organization)
@@ -179,6 +181,7 @@ private struct RowView: View {
 
     @ViewBuilder private var icon: some View {
         switch row {
+        case .agents: Image(systemName: "terminal").font(.system(size: 20)).foregroundStyle(.secondary)
         case .calculation: Image(systemName: "equal.circle.fill").font(.system(size: 20)).foregroundStyle(.secondary)
         case .unit: Image(systemName: "arrow.left.arrow.right.circle.fill").font(.system(size: 20)).foregroundStyle(.secondary)
         case .app(let a): Image(nsImage: NSWorkspace.shared.icon(forFile: a.url.path)).resizable()

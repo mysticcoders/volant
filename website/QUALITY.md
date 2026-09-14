@@ -20,3 +20,6 @@ No forms, trackers, account collection, or DNS changes are included.
 Owner selected Volant. Product copy and metadata use Volant; the existing Sites project is retained; GitHub repository is now mysticcoders/volant. No claim to volant.com or new domain ownership is made.
 
 Repository audit: mysticcoders/volant is private. Removed public-source claims and inaccessible source CTAs. Public deployment and canonical domain remain pending owner Cloudflare setup.
+
+## Agent workflows feature order
+Agent workflows now lead the feature sections and navigation; ACP and provider integrations are explicitly in development. Desktop 1440 and mobile 390 Chrome captures were inspected. Existing layout tokens reused. Privacy FAQ distinguishes the sandboxed app from the optional local helper. Full keyboard/browser theme checks were not repeated.

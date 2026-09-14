@@ -3,6 +3,7 @@ import ServiceManagement
 
 /// Owns the long-lived services: menu bar item, hotkeys, app index, clipboard monitor, and the panel.
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    private lazy var agentsPanel = AgentsWindowController()
     private lazy var settingsPanel = SettingsWindowController { [weak self] in self?.reloadConfig() }
     private var statusItem: NSStatusItem?
     private var config = Preferences.load()
@@ -13,12 +14,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var notesPanel = NotesPanel(store: notesStore)
     private lazy var panel = LauncherPanel(index: index, clipboard: clipboardStore, notes: notesStore, config: config) { [weak self] action in
         switch action {
+        case .agents: self?.showAgents()
         case .open(let id): self?.notesPanel.open(noteID: id)
         case .create(let text): self?.notesPanel.openNew(text: text)
         }
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if CommandLine.arguments.contains("--agents-check") {
+            let model = agentsPanel.model
+            model.connect()
+            if CommandLine.arguments.contains("--focus-current-pane"), let pane = ProcessInfo.processInfo.environment["HERDR_PANE_ID"] {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    if let session = model.sessions.first(where: { $0.paneID == pane }) { model.focus(session) }
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+                print("Herdr bridge: \(model.connected && !model.busy ? "connected" : "failed"); sessions: \(model.sessions.count); \(model.message)")
+                if CommandLine.arguments.contains("--focus-current-pane") { print("Focus current pane: \(model.lastFocusSucceeded == true ? "passed" : "failed")") }
+                model.disconnect()
+                NSApp.terminate(nil)
+            }
+            return
+        }
+        if CommandLine.arguments.contains("--agents") {
+            DispatchQueue.main.async { [weak self] in self?.showAgents() }
+        }
+
         NSApp.setActivationPolicy(config.showInDock ? .regular : .accessory)
         installApplicationMenu()
         installStatusItem()
@@ -88,6 +110,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         item.button?.setAccessibilityLabel("Volant")
         let menu = NSMenu()
         menu.addItem(withTitle: "Show Volant", action: #selector(togglePanel), keyEquivalent: "")
+        menu.addItem(withTitle: "Agents…", action: #selector(showAgents), keyEquivalent: "")
         menu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
         menu.addItem(withTitle: "Notes", action: #selector(toggleNotes), keyEquivalent: "")
         menu.addItem(withTitle: "Reveal Config Folder", action: #selector(revealConfig), keyEquivalent: "")
@@ -120,6 +143,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let item = NSMenuItem()
         bar.addItem(item)
         let menu = NSMenu(title: "Volant")
+        menu.addItem(withTitle: "Agents…", action: #selector(showAgents), keyEquivalent: "").target = self
         let settings = menu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
         settings.target = self
         menu.addItem(.separator())
@@ -134,6 +158,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         editItem.submenu = edit
         NSApp.mainMenu = bar
+    }
+
+    @objc private func showAgents() {
+        agentsPanel.showWindow(nil)
+        agentsPanel.window?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     @objc private func showSettings() {

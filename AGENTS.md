@@ -7,3 +7,6 @@
 - Current decisions, evidence and remaining work: [notes design review](docs/notes-design-review.md).
 
 - Live Markdown must preserve UTF-16 source ranges, selection, undo and input-method composition. Language choices edit only the opening fence through NSTextView’s editing API; Auto must stay local and must not rewrite detected tags into source. Live and Preview share fence parsing.
+
+- Agent pane identity and conversation identity are separate. Revalidate the current occupant before focusing or sending input; never submit prompts through a generic shell-input path. The local agent helper must keep an explicit narrow API.
+- Native hosting views need a semantic window background for reliable light/dark rendering. Verify actual rendered controls, not just a successful build.

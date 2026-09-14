@@ -8,7 +8,7 @@ final class LauncherPanel: NSPanel {
     static var size: NSSize { NSSize(width: 750 * scale, height: 480 * scale) }
     private let model: LauncherModel
 
-    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, onNote: @escaping (NoteAction) -> Void) {
+    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, onNote: @escaping (LauncherAction) -> Void) {
         LauncherPanel.scale = min(1.4, max(0.8, config.appearance.scale))
         LauncherPanel.opacity = min(1.0, max(0.5, config.appearance.opacity))
         model = LauncherModel(index: index, clipboard: clipboard, notes: notes, config: config, onNote: onNote)
