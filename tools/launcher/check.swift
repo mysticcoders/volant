@@ -427,3 +427,17 @@ for (value, expected, available) in [("ctrl+option+n", "ctrl+option+space", true
     } catch { verify(try! Data(contentsOf: globalURL) == globalSaved, "Failed global shortcut edit preserves file") }
 }
 print("PASS: global shortcut changes, conflicts, stale edits and unknown-field preservation")
+
+// Hover removal persists empty global keys rather than reverting to defaults.
+try GlobalShortcutStore.save(key: "summonHotKey", value: "", expectedValue: "ctrl+option+space", at: globalURL, available: { _ in false })
+try GlobalShortcutStore.save(key: "notesHotKey", value: "", expectedValue: "ctrl+option+n", at: globalURL, available: { _ in false })
+let removedGlobals = try JSONDecoder().decode(Preferences.self, from: Data(contentsOf: globalURL))
+verify(removedGlobals.summonHotKey.isEmpty && removedGlobals.notesHotKey.isEmpty)
+try bindingBytes.write(to: bindingURL)
+_ = try AppBindingStore.updateHotKey(bundleID: "test.app", value: "ctrl+option+y", expectedValue: "ctrl+option+t", at: bindingURL, available: { _ in true })
+let autoSavedApp = try JSONDecoder().decode(Preferences.self, from: Data(contentsOf: bindingURL))
+verify(autoSavedApp.aliases["old"] == "/Test.app" && autoSavedApp.appHotKeys.first?.hotKey == "ctrl+option+y", "Autosaving a shortcut must not apply or clear aliases")
+_ = try AppBindingStore.updateHotKey(bundleID: "test.app", value: "", expectedValue: "ctrl+option+y", at: bindingURL, available: { _ in false })
+let removedApp = try JSONDecoder().decode(Preferences.self, from: Data(contentsOf: bindingURL))
+verify(removedApp.appHotKeys.isEmpty && removedApp.aliases["old"] == "/Test.app")
+print("PASS: immediate shortcut persistence and removal preserve aliases and disabled global keys")

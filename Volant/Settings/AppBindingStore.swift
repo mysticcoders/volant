@@ -10,8 +10,9 @@ struct BindingFailure: LocalizedError {
 enum AppBindingStore {
 
 
+    @discardableResult
     static func save(bundleID: String, path: String, originalAlias: String, alias: String, hotKey: String,
-                     expected: Data, at url: URL, available: (KeyCombo) -> Bool) throws {
+                     expected: Data, at url: URL, available: (KeyCombo) -> Bool) throws -> Data {
         let current = try Data(contentsOf: url)
         guard current == expected else { throw BindingFailure(message: "Configuration changed. Reload this editor before saving again.") }
         let config = try JSONDecoder().decode(Preferences.self, from: current)
@@ -53,5 +54,17 @@ enum AppBindingStore {
         let data = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
         _ = try JSONDecoder().decode(Preferences.self, from: data)
         try data.write(to: url, options: .atomic)
+        return data
     }
+    static func updateHotKey(bundleID: String, value: String, expectedValue: String, at url: URL,
+                             available: (KeyCombo) -> Bool) throws -> Data {
+        let data = try Data(contentsOf: url)
+        let config = try JSONDecoder().decode(Preferences.self, from: data)
+        let current = config.appHotKeys.first { $0.bundleIdentifier == bundleID }?.hotKey ?? ""
+        guard current == expectedValue else { throw BindingFailure(message: "This app shortcut changed. Reload before trying again.") }
+        return try save(bundleID: bundleID, path: "", originalAlias: "", alias: "", hotKey: value, expected: data, at: url) { combo in
+            combo == KeyCombo(parsing: current) || available(combo)
+        }
+    }
+
 }

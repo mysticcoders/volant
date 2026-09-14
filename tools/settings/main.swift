@@ -66,6 +66,17 @@ if CommandLine.arguments.contains("--render") {
                 let view = controller.window!.contentView!
                 view.layoutSubtreeIfNeeded()
                 precondition(abs(view.bounds.width - 680) < 1 && abs(view.bounds.height - 500) < 1, "Settings fixture changed size")
+                func recorders(_ view: NSView) -> [RecorderButton] {
+                    (view as? RecorderButton).map { [$0] } ?? view.subviews.flatMap(recorders)
+                }
+                if section == "General" {
+                    let event = NSEvent.mouseEvent(with: .mouseMoved, location: .zero, modifierFlags: [], timestamp: 0,
+                                                   windowNumber: controller.window!.windowNumber, context: nil, eventNumber: 0, clickCount: 0, pressure: 0)!
+                    for recorder in recorders(view) {
+                        recorder.mouseEntered(with: event)
+                        precondition(recorder.subviews.contains { !$0.isHidden && ($0 as? NSButton)?.toolTip == "Remove shortcut" })
+                    }
+                }
                 let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
                 view.cacheDisplay(in: view.bounds, to: rep)
                 try! rep.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent(theme + "-" + section + ".png"))

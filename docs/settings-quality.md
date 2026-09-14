@@ -41,3 +41,11 @@ Settings ranking follow-up: generic `settings` queries no longer short-circuit t
 Global shortcut editor follow-up: General now includes shared native recorders and explicit Save buttons for Show Volant and Open Notes. Changing a binding re-registers shortcuts through the existing reload path. Config patches preserve nested unknown fields, reject stale values and conflicts with the other global binding or app bindings, and retain failed drafts for retry. The main app now surfaces registration failures for these two shortcuts as well.
 
 Global shortcut validation: native fixture recording and Save succeeded for both controls; assigning the same combination to Notes showed a conflict, retained the draft, and accepted a corrected combination on retry. Light/dark compact renders and the expanded persistence suite passed. These fixture values never changed the owner’s preferences.
+
+## Immediate shortcut saving
+
+The owner replaced the explicit Save flow: all shortcut recorders now commit when a combination is captured, show a checkmark with Saved only after a successful write, and expose a native hover × to remove the binding immediately. Removal shows Removed and persists an empty global key (no fallback to the default) or deletes the app binding. Keyboard focus plus Delete and the accessibility Remove shortcut action provide alternatives to hover. Conflicts and write errors retain the attempted change for Retry, without claiming success. App shortcut writes preserve aliases and do not apply unfinished alias text. Alias text retains a separate Apply Alias action and is applied on Done.
+
+Native preview evidence: recording updates General and app controls immediately; the app sheet shows Saved without Save; global accessibility removal shows Not set and Removed. Persistence checks cover removal of both global bindings, app removal and alias preservation. Physical global-key activation remains a separate installed check.
+
+Hover rendering evidence: native mouse-enter events were driven in hidden fixtures to assert the remove buttons become visible; inspected the resulting light/dark controls. CUA’s accessibility Remove action also verified immediate persistence and Removed feedback. Final recorder honors disabled-state environment; app shortcut autosave does not invalidate protection against concurrent alias edits.
