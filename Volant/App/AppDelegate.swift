@@ -1,5 +1,6 @@
 import AppKit
 import ServiceManagement
+import Combine
 
 /// Owns the long-lived services: menu bar item, hotkeys, app index, clipboard monitor, and the panel.
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -8,12 +9,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var config = Preferences.load()
     private let index = AppIndex()
+    private var indexObserver: AnyCancellable?
     private lazy var clipboardStore = ClipboardStore(retention: config.clipboardRetention)
     private lazy var clipboardMonitor = ClipboardMonitor(store: clipboardStore)
     private let notesStore = NotesStore()
     private lazy var notesPanel = NotesPanel(store: notesStore)
     private lazy var panel = LauncherPanel(index: index, clipboard: clipboardStore, notes: notesStore, config: config) { [weak self] action in
         switch action {
+        case .settings: self?.showSettings()
+        case .reloadConfig: self?.reloadConfig()
+        case .editApp(let app):
+            self?.showSettings()
+            self?.settingsPanel.edit(app)
         case .agents: self?.showAgents()
         case .open(let id): self?.notesPanel.open(noteID: id)
         case .create(let text): self?.notesPanel.openNew(text: text)
@@ -77,6 +84,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         updater.start()
         installApplicationMenu()
         installStatusItem()
+        indexObserver = index.$apps.sink { [weak self] apps in self?.settingsPanel.state.apps = apps }
         index.start()
         clipboardMonitor.start()
         registerHotKeys()
@@ -144,22 +152,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             item.button?.image = NSImage(systemSymbolName: "arrow.up.forward.circle", accessibilityDescription: "Volant")
         }
         item.button?.setAccessibilityLabel("Volant")
-        let menu = NSMenu()
-        menu.addItem(withTitle: "Show Volant", action: #selector(togglePanel), keyEquivalent: "")
-        menu.addItem(withTitle: "Agents…", action: #selector(showAgents), keyEquivalent: "")
-        menu.addItem(withTitle: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "")
-        menu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
-        menu.addItem(withTitle: "Notes", action: #selector(toggleNotes), keyEquivalent: "")
-        menu.addItem(withTitle: "Reveal Config Folder", action: #selector(revealConfig), keyEquivalent: "")
-        menu.addItem(withTitle: "Reload Config", action: #selector(reloadConfig), keyEquivalent: "")
-        menu.addItem(withTitle: "Export Backup…", action: #selector(exportBackup), keyEquivalent: "")
-        menu.addItem(withTitle: "Import Backup…", action: #selector(importBackup), keyEquivalent: "")
-        let login = NSMenuItem(title: "Launch at Login", action: #selector(toggleLoginItem), keyEquivalent: "")
-        login.state = SMAppService.mainApp.status == .enabled ? .on : .off
-        menu.addItem(login)
-        menu.addItem(.separator())
-        menu.addItem(withTitle: "Quit Volant", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
-        menu.items.forEach { $0.target = $0.action == #selector(NSApplication.terminate(_:)) ? NSApp : self }
+        let menu = StatusMenu.make(target: self, show: #selector(togglePanel), settings: #selector(showSettings), update: #selector(checkForUpdates))
         item.menu = menu
         statusItem = item
     }
@@ -172,7 +165,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let combo = KeyCombo(parsing: config.notesHotKey) {
             HotKeyCenter.shared.register(combo) { [weak self] in self?.toggleNotes() }
         }
-        AppHotKeys.register(config.appHotKeys)
+        let failures = AppHotKeys.register(config.appHotKeys)
+        settingsPanel.state.registrationErrors = failures
     }
 
     private func installApplicationMenu() {
@@ -206,7 +200,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func checkForUpdates() { updater.checkForUpdates() }
 
     @objc private func showSettings() {
-        settingsPanel.refresh(config)
+        settingsPanel.refresh(config, apps: index.apps)
         settingsPanel.showWindow(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
@@ -215,34 +209,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func togglePanel() { panel.toggle() }
 
-    @objc private func toggleLoginItem(_ sender: NSMenuItem) {
-        if SMAppService.mainApp.status == .enabled {
-            try? SMAppService.mainApp.unregister()
-        } else {
-            try? SMAppService.mainApp.register()
-        }
-        sender.state = SMAppService.mainApp.status == .enabled ? .on : .off
-    }
-
-    @objc private func revealConfig() {
-        NSWorkspace.shared.activateFileViewerSelecting([Preferences.configURL])
-    }
-
-    @objc private func exportBackup() { Backup.export() }
-    @objc private func importBackup() { if Backup.importBackup() { reloadConfig() } }
-
     @objc private func reloadConfig() {
-        config = Preferences.load()
+        let loaded = Preferences.load()
+        if let error = Preferences.loadError {
+            let alert = NSAlert()
+            alert.messageText = "Configuration not applied"
+            alert.informativeText = error
+            if let window = settingsPanel.window { settingsPanel.showWindow(nil); alert.beginSheetModal(for: window) }
+            return
+        }
+        config = loaded
         NSApp.setActivationPolicy(config.showInDock ? .regular : .accessory)
-        settingsPanel.refresh(config)
+        settingsPanel.refresh(config, apps: index.apps)
         registerHotKeys()
         panel.apply(config: config)
         clipboardStore.retention = config.clipboardRetention
-        if let error = Preferences.loadError {
-            let alert = NSAlert()
-            alert.messageText = "Config not applied"
-            alert.informativeText = error
-            alert.runModal()
-        }
+
     }
 }

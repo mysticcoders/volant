@@ -63,3 +63,7 @@ Build 3 adds active-work focus retention and remembered window placement by drag
 The public DMG SHA-256 is `78444a229e185be884741ef1a9c11c929349aa02631d6ebc2e7fa2cc2e5c6370`, matching the local artifact. The downloaded artifact passed stapler validation and Gatekeeper (Notarized Developer ID); the published appcast matches the signed local feed byte-for-byte. Website build, TypeScript, page lint and desktop/390px mobile inspection passed. Cloudflare deployment: `edc2b78b-084f-4a71-91cc-9e6ead8895ee`.
 
 The repository is public under MIT. The website highlights that in its hero, main copy, FAQ and footer, with GitHub and Mystic Coders X links. Footer headline: “Move faster with Volant.” The installed two-version Sparkle upgrade and Intel hardware checks remain outstanding.
+
+## Local Settings test DMG — 0.1.2 build 4
+
+`dist-release.ykah5E/updates/Volant-0.1.2.dmg` contains the expanded Settings, compact menu and app shortcut/alias editor. Archive/export, Apple notarization, stapling, Gatekeeper and signed appcast verification passed. It has not replaced the public 0.1.1 feed. See [Settings quality](settings-quality.md) for native UI evidence and installed hotkey verification still required. An earlier local candidate in `dist-release.3pKrno` is superseded; deliver only `ykah5E`.

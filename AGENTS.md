@@ -28,3 +28,5 @@
 
 - Website product screenshots must come from the actual native views with fictional data and the release asset catalog; never rebuild the launcher in HTML as a screenshot. Sparkle releases must archive AND export to sign nested helpers, notarize/staple the app and DMG, and sign the update feed. Increase the build number for every distributed update. See `docs/release-quality.md`.
 - Active ACP sessions and unfinished prompts must survive launcher focus loss. Explicit dismissal remains available. Verify drag movement in a real native preview; `isMovableByWindowBackground` alone does not prove a hosted view can be dragged. Keep remembered positions reachable after display changes.
+
+- Settings shortcut edits must preserve unknown configuration fields and reject stale snapshots. Recording a key is not proof of global Carbon delivery. Keep reserved commands in Shared/LauncherRouting.swift so import and editing agree; check native Settings section sizes after navigation.

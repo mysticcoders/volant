@@ -34,6 +34,14 @@ final class HotKeyCenter {
         return id
     }
 
+    func isAvailable(_ combo: KeyCombo) -> Bool {
+        var ref: EventHotKeyRef?
+        let status = RegisterEventHotKey(combo.keyCode, combo.carbonModifiers,
+                                        EventHotKeyID(signature: Self.signature, id: 0), GetApplicationEventTarget(), 0, &ref)
+        if let ref { UnregisterEventHotKey(ref) }
+        return status == noErr
+    }
+
     func unregisterAll() {
         for ref in refs.values { UnregisterEventHotKey(ref) }
         refs.removeAll()

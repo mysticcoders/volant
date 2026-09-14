@@ -2,12 +2,17 @@ import AppKit
 
 /// Per-app hotkeys: press once to activate or launch, press again while frontmost to hide.
 enum AppHotKeys {
-    static func register(_ entries: [AppHotKey]) {
+    @discardableResult
+    static func register(_ entries: [AppHotKey]) -> [String] {
+        var failures: [String] = []
         for entry in entries {
-            guard let combo = KeyCombo(parsing: entry.hotKey) else { continue }
+            guard let combo = KeyCombo(parsing: entry.hotKey) else { failures.append("Invalid shortcut for " + entry.bundleIdentifier); continue }
             let bundleID = entry.bundleIdentifier
-            HotKeyCenter.shared.register(combo) { toggle(bundleID) }
+            if HotKeyCenter.shared.register(combo, handler: { toggle(bundleID) }) == nil {
+                failures.append("Shortcut unavailable: " + entry.hotKey + " (" + bundleID + ")")
+            }
         }
+        return failures
     }
 
     static func toggle(_ bundleID: String) {

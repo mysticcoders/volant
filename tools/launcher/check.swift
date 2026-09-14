@@ -370,3 +370,29 @@ RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 verify(NSScreen.screens.contains { $0.visibleFrame.contains(sticky.frame) }, "Offscreen saved position is recovered onto a visible display")
 sticky.orderOut(nil)
 print("PASS: actual ACP focus loss/refocus, explicit dismissal, draft preservation, ordinary blur, saved placement, and offscreen recovery")
+
+// App binding writes preserve nested unknown fields and reject conflicts/stale editors.
+let bindingURL = root.appendingPathComponent("binding-config.json")
+let bindingBytes = Data(#"{"future":{"keep":true},"aliases":{"other":"/Other.app","old":"/Test.app"},"appHotKeys":[{"bundleIdentifier":"test.app","hotKey":"ctrl+option+t","future":42}]}"#.utf8)
+try bindingBytes.write(to: bindingURL)
+try AppBindingStore.save(bundleID: "test.app", path: "/Test.app", originalAlias: "old", alias: "t", hotKey: "ctrl+option+y", expected: bindingBytes, at: bindingURL, available: { _ in true })
+let changed = try Data(contentsOf: bindingURL)
+let bindingObject = try JSONSerialization.jsonObject(with: changed) as! [String: Any]
+verify((bindingObject["future"] as? [String: Bool])?["keep"] == true)
+verify((bindingObject["appHotKeys"] as? [[String: Any]])?.first?["future"] as? Int == 42)
+let bindingConfig = try JSONDecoder().decode(Preferences.self, from: changed)
+verify(bindingConfig.aliases["old"] == nil && bindingConfig.aliases["t"] == "/Test.app" && bindingConfig.aliases["other"] == "/Other.app")
+for (alias, shortcut, stale, available) in [("other", "ctrl+option+y", false, true), ("settings", "ctrl+option+y", false, true), ("t", "c", false, true), ("t", "option+space", false, true), ("t", "ctrl+option+y", true, true), ("t", "ctrl+option+y", false, false)] {
+    do {
+        try AppBindingStore.save(bundleID: "test.app", path: "/Test.app", originalAlias: "t", alias: alias, hotKey: shortcut, expected: stale ? bindingBytes : changed, at: bindingURL, available: { _ in available })
+        verify(false, "Invalid binding must fail")
+    } catch { verify(try! Data(contentsOf: bindingURL) == changed, "Failed edit preserves file") }
+}
+try AppBindingStore.save(bundleID: "test.app", path: "/Test.app", originalAlias: "t", alias: "", hotKey: "", expected: changed, at: bindingURL, available: { _ in true })
+let cleared = try JSONDecoder().decode(Preferences.self, from: Data(contentsOf: bindingURL))
+verify(cleared.appHotKeys.isEmpty && cleared.aliases["t"] == nil && cleared.aliases["other"] != nil)
+model.query = "volant settings"
+verify(model.rows.first?.id == "command:settings")
+model.query = "reload config"
+verify(model.rows.first?.id == "command:reload")
+print("PASS: app binding persistence, conflicts and launcher settings commands")

@@ -4,6 +4,7 @@ struct LauncherView: View {
     @ObservedObject var model: LauncherModel
     @ObservedObject var agents: AgentsModel
     @FocusState private var focused: Bool
+    @State private var actionApp: AppEntry?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -49,16 +50,20 @@ struct LauncherView: View {
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.primary.opacity(0.08)))
         .onAppear { requestSearchFocus() }
+        .onChange(of: model.query) { _, _ in actionApp = nil }
+        .onChange(of: model.selectedRow?.id) { _, _ in actionApp = nil }
         .onChange(of: model.searchFocusRequest) { _, _ in requestSearchFocus() }
         .onKeyPress(.downArrow) { guard !model.showingACP && model.wifiJoin == nil else { return .ignored }; model.moveSelection(1); return .handled }
         .onKeyPress(.upArrow) { guard !model.showingACP && model.wifiJoin == nil else { return .ignored }; model.moveSelection(-1); return .handled }
         .onKeyPress(.escape) {
+            if actionApp != nil { actionApp = nil; return .handled }
             if model.wifiJoin != nil { guard !model.connectivityBusy else { return .handled }; model.wifiJoin = nil; model.searchFocusRequest = UUID() }
             else { model.dismiss() }
             return .handled
         }
         .onKeyPress(.return, phases: .down) { press in
             guard !model.showingACP && model.wifiJoin == nil else { return .ignored }
+            if let target = actionApp { actionApp = nil; model.editApp(target); return .handled }
             if press.modifiers.contains(.command) { model.activateSecondary() } else { model.activateSelection() }
             return .handled
         }
@@ -165,6 +170,16 @@ struct LauncherView: View {
                 .accessibilityHidden(true)
             Spacer()
             if let row = model.selectedRow {
+                if case .app(let app) = row {
+                    Button("Actions ⌘K") { actionApp = actionApp == nil ? app : nil }
+                        .keyboardShortcut("k", modifiers: .command)
+                        .popover(item: $actionApp) { target in
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text(target.name).font(.headline)
+                                Button("Edit Shortcut & Alias…") { actionApp = nil; model.editApp(target) }
+                            }.padding(16)
+                        }
+                }
                 HStack(spacing: 8) {
                     Text(row.primaryAction).font(.system(size: 13, weight: .medium))
                     KeyCap("↩")
@@ -228,6 +243,8 @@ private struct RowView: View {
         case .agents: return "Open Agents"
         case .calculation(let s): return "= \(s)"
         case .unit(let s): return s
+        case .settings: return "Volant Settings"
+        case .reloadConfig: return "Reload Configuration"
         case .app(let a): return a.name
         case .file(let f): return f.name
         case .contact(let c): return c.name
@@ -245,6 +262,8 @@ private struct RowView: View {
 
     private var subtitle: String? {
         switch row {
+        case .settings: return "Preferences, app shortcuts and backups"
+        case .reloadConfig: return "Apply changes from config.json"
         case .agentSession(let session): return session.provider + " · " + session.paneID
         case .connectivity(let item): return item.detail
         case .audioRoute(let route): return route.direction.rawValue.capitalized
@@ -275,6 +294,8 @@ private struct RowView: View {
         case .agents: Image(systemName: "terminal").font(.system(size: 20)).foregroundStyle(.secondary)
         case .calculation: Image(systemName: "equal.circle.fill").font(.system(size: 20)).foregroundStyle(.secondary)
         case .unit: Image(systemName: "arrow.left.arrow.right.circle.fill").font(.system(size: 20)).foregroundStyle(.secondary)
+        case .settings: Image(systemName: "gearshape")
+        case .reloadConfig: Image(systemName: "arrow.clockwise")
         case .app(let a): Image(nsImage: NSWorkspace.shared.icon(forFile: a.url.path)).resizable()
         case .file(let f): Image(nsImage: NSWorkspace.shared.icon(forFile: f.url.path)).resizable()
         case .contact: Image(systemName: "person.crop.circle.fill").font(.system(size: 20)).foregroundStyle(.secondary)

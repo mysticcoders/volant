@@ -14,7 +14,7 @@ struct Preferences: Codable {
     var quicklinks: [Quicklink] = [Quicklink(name: "Google", url: "https://www.google.com/search?q={query}")]
     var aliases: [String: String] = [:]
     var appearance: Appearance = Appearance()
-    var help: String = "Edit and choose Reload Config from the menu bar. Hotkeys: cmd|ctrl|option|shift|meh|hyper + key. App hotkeys use the bundle identifier. Snippets: {date} {isodate} {time} {datetime} {clipboard} {uuid}. Quicklinks: {query}. Aliases map a word to an app name or query. Appearance: scale 0.8–1.4, opacity 0.5–1.0."
+    var help: String = "Edit and choose Reload Configuration in Settings. Hotkeys: cmd|ctrl|option|shift|meh|hyper + key. App hotkeys use the bundle identifier. Snippets: {date} {isodate} {time} {datetime} {clipboard} {uuid}. Quicklinks: {query}. Aliases map a word to an app name or query. Appearance: scale 0.8–1.4, opacity 0.5–1.0."
 
     enum CodingKeys: String, CodingKey {
         case summonHotKey, notesHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, promotedHarness, snippets, quicklinks, aliases, appearance

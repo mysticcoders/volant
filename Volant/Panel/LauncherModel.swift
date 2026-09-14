@@ -3,12 +3,17 @@ import Combine
 import OSLog
 
 enum LauncherAction {
+    case settings
+    case reloadConfig
+    case editApp(AppEntry)
     case agents
     case open(String)
     case create(String)
 }
 
 enum ResultRow: Identifiable, Hashable {
+    case settings
+    case reloadConfig
     case connectivity(ConnectivityItem)
     case audioRoute(AudioRoute)
     case volume(VolumeCommand, detail: String)
@@ -35,6 +40,8 @@ enum ResultRow: Identifiable, Hashable {
         case .connectivity(let item): return item.id
         case .audioRoute(let route): return "audio:" + route.id
         case .volume(let command, _): return "volume:" + command.id
+        case .settings: return "command:settings"
+        case .reloadConfig: return "command:reload"
         case .agents: return "command:agents"
         case .calculation(let s): return "calc:\(s)"
         case .unit(let s): return "unit:\(s)"
@@ -60,6 +67,7 @@ enum ResultRow: Identifiable, Hashable {
         case .connectivity: return "Connectivity"
         case .audioRoute(let route): return route.current ? "Current" : "Device"
         case .volume: return "System"
+        case .settings, .reloadConfig: return "Command"
         case .agents: return "Command"
         case .calculation: return "Calculation"
         case .unit: return "Conversion"
@@ -87,6 +95,8 @@ enum ResultRow: Identifiable, Hashable {
             return "Open Settings"
         case .audioRoute(let route): return route.current ? "Keep Current Device" : "Use as " + route.direction.rawValue.capitalized
         case .volume: return "Apply"
+        case .settings: return "Open Settings"
+        case .reloadConfig: return "Reload Configuration"
         case .agents: return "Open Agents"
         case .calculation, .unit: return "Copy Result"
         case .app: return "Open Application"
@@ -256,6 +266,11 @@ final class LauncherModel: ObservableObject {
         let q = query.trimmingCharacters(in: .whitespaces)
         guard !q.isEmpty else { showSuggestions(); return }
 
+        if ["settings", "volant settings", "reload", "reload config", "reload configuration"].contains(q.lowercased()) {
+            sections = [ResultSection(title: "Volant", rows: [q.lowercased().contains("reload") ? .reloadConfig : .settings])]
+            return
+        }
+        if q.lowercased() == "notes" { sections = [ResultSection(title: "Notes", rows: notes.search("").map { .note($0) } + [.newNote("")])]; return }
         if connectivitySource != nil { refreshConnectivity(); return }
         if AudioRouteQuery(q) != nil { refreshAudioRoutes(); return }
         if VolumeCommand.matches(q) {
@@ -340,6 +355,9 @@ final class LauncherModel: ObservableObject {
         if let value = Calculator.evaluate(q) { answers.append(.calculation(Calculator.format(value))) }
         if let conv = UnitConverter.convert(q) { answers.append(.unit(UnitConverter.format(conv))) }
         immediate = []
+        let builtins: [(String, ResultRow)] = [("Volant Settings", .settings), ("Reload Configuration", .reloadConfig)]
+        let matchingCommands = builtins.filter { $0.0.localizedCaseInsensitiveContains(q) }.map { $0.1 }
+        if !matchingCommands.isEmpty { immediate.append(ResultSection(title: "Volant", rows: matchingCommands)) }
         let words = q.split(separator: " ", maxSplits: 1).map(String.init)
         let head = words.first?.lowercased() ?? ""
         let tail = words.count > 1 ? words[1] : ""
@@ -517,6 +535,8 @@ final class LauncherModel: ObservableObject {
                 actionFeedback = state.summary
             } catch { actionFeedback = error.localizedDescription }
             return
+        case .settings: dismiss(); onNote(.settings); return
+        case .reloadConfig: dismiss(); onNote(.reloadConfig); return
         case .agentSession(let session): agents.focus(session); return
         case .agents: query = "agents"; return
         case .calculation(let text): copy(text)
@@ -565,6 +585,12 @@ final class LauncherModel: ObservableObject {
             }
         }
         dismiss()
+    }
+
+    func editApp(_ app: AppEntry) {
+        guard index.apps.contains(where: { $0.id == app.id }) else { return }
+        dismiss()
+        onNote(.editApp(app))
     }
 
     func activateSecondary() {

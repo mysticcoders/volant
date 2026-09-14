@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 
 struct AppEntry: Identifiable, Hashable {
     let id: String
@@ -10,7 +11,7 @@ struct AppEntry: Identifiable, Hashable {
 /// Application index built from Spotlight metadata, which works inside the sandbox without folder access.
 /// Only bundles in real application folders are indexed, so helper and system-internal apps stay out.
 final class AppIndex: NSObject {
-    private(set) var apps: [AppEntry] = []
+    @Published private(set) var apps: [AppEntry] = []
     private let query = NSMetadataQuery()
     private let launchOverride: ((AppEntry) -> Void)?
     init(entries: [AppEntry] = [], launch: ((AppEntry) -> Void)? = nil) {
