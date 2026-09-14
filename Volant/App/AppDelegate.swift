@@ -159,13 +159,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func registerHotKeys() {
         HotKeyCenter.shared.unregisterAll()
+        var failures: [String] = []
         if let combo = KeyCombo(parsing: config.summonHotKey) {
-            HotKeyCenter.shared.register(combo) { [weak self] in self?.togglePanel() }
+            if HotKeyCenter.shared.register(combo, handler: { [weak self] in self?.togglePanel() }) == nil {
+                failures.append("Show Volant shortcut unavailable: " + config.summonHotKey)
+            }
         }
         if let combo = KeyCombo(parsing: config.notesHotKey) {
-            HotKeyCenter.shared.register(combo) { [weak self] in self?.toggleNotes() }
+            if HotKeyCenter.shared.register(combo, handler: { [weak self] in self?.toggleNotes() }) == nil {
+                failures.append("Open Notes shortcut unavailable: " + config.notesHotKey)
+            }
         }
-        let failures = AppHotKeys.register(config.appHotKeys)
+        failures += AppHotKeys.register(config.appHotKeys)
         settingsPanel.state.registrationErrors = failures
     }
 

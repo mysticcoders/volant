@@ -96,6 +96,7 @@ private struct SettingsView: View {
     }
 
     private var general: some View {
+        ScrollView {
         VStack(alignment: .leading, spacing: 20) {
             Toggle("Show Volant in the Dock", isOn: boolean("showInDock", state.config.showInDock))
             Toggle("Show launcher when Volant starts", isOn: boolean("showOnLaunch", state.config.showOnLaunch))
@@ -118,9 +119,11 @@ private struct SettingsView: View {
             }
             Text("Show agent activity below the launcher’s search field.").font(.callout).foregroundStyle(.secondary)
             Divider()
-            LabeledContent("Show Volant", value: state.config.summonHotKey)
-            LabeledContent("Open Notes", value: state.config.notesHotKey)
-            Text("Global launcher shortcuts can be changed in the configuration file. App shortcuts have their own editor.").font(.callout).foregroundStyle(.secondary)
+            if !state.registrationErrors.isEmpty { Text(state.registrationErrors.joined(separator: "\n")).font(.callout).foregroundStyle(.red) }
+            GlobalShortcutRow(title: "Show Volant", key: "summonHotKey", value: state.config.summonHotKey, configURL: configURL, onChange: onChange)
+            GlobalShortcutRow(title: "Open Notes", key: "notesHotKey", value: state.config.notesHotKey, configURL: configURL, onChange: onChange)
+            Text("Click a shortcut to record a new combination, then Save. Include Command, Control or Option.").font(.callout).foregroundStyle(.secondary)
+        }.frame(maxWidth: .infinity, alignment: .leading)
         }.onAppear { loginStatus = SMAppService.mainApp.status }
     }
 

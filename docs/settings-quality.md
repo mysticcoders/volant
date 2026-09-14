@@ -23,7 +23,7 @@ A physical global-hotkey launch/focus/hide and reassignment test in the signed i
 ## Next steps
 
 1. Install the test DMG and check app hotkeys physically; complete #7’s two-version updater test.
-2. Extend shortcut editing to the launcher/Notes bindings and show orphaned app bindings when their apps are no longer installed.
+2. Show orphaned app bindings when their apps are no longer installed.
 3. Translation: evaluate Apple TranslationSession on macOS 15+, with on-device shared language packs and runtime pair availability. No translation command is implemented by this settings change. References: https://developer.apple.com/videos/play/wwdc2024/10117/ and https://support.apple.com/en-ie/guide/mac-help/mchldd8b3c15/mac.
 
 ## Rendering lesson
@@ -37,3 +37,7 @@ Volant 0.1.2 build 4 was archived/exported with Developer ID, notarized and stap
 Final launcher light/dark suite and binding checks passed. All six section render fixtures assert 680×500 bounds and were visually inspected with readable controls. The native menu accessibility tree confirms the intended order and disabled version label. Native-menu popup pixels were not captured by the window-only screenshot surface. The preview editor recorded and saved a fictional shortcut/alias; physical global activation remains unverified.
 
 Settings ranking follow-up: generic `settings` queries no longer short-circuit to Volant Settings. Matching application rows precede built-in commands, including partial queries; explicit `volant settings` remains direct. Light/dark launcher checks assert System Settings is selected first for `sett`, `Settings`, and mixed-case/whitespace variants. Release build passed.
+
+Global shortcut editor follow-up: General now includes shared native recorders and explicit Save buttons for Show Volant and Open Notes. Changing a binding re-registers shortcuts through the existing reload path. Config patches preserve nested unknown fields, reject stale values and conflicts with the other global binding or app bindings, and retain failed drafts for retry. The main app now surfaces registration failures for these two shortcuts as well.
+
+Global shortcut validation: native fixture recording and Save succeeded for both controls; assigning the same combination to Notes showed a conflict, retained the draft, and accepted a corrected combination on retry. Light/dark compact renders and the expanded persistence suite passed. These fixture values never changed the owner’s preferences.

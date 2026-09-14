@@ -408,3 +408,22 @@ for query in ["sett", "Settings", " SETTINGS "] {
 settingsSearch.query = "volant settings"
 verify(settingsSearch.rows.map(\.id) == ["command:settings"], "Explicit Volant Settings stays direct")
 print("PASS: Settings search prioritizes System Settings over Volant Settings")
+
+let globalURL = root.appendingPathComponent("global-shortcuts.json")
+let globalBytes = Data(#"{"summonHotKey":"option+space","notesHotKey":"option+n","unknown":{"keep":true},"appHotKeys":[{"bundleIdentifier":"fixture.app","hotKey":"ctrl+option+t","unknown":42}]}"#.utf8)
+try globalBytes.write(to: globalURL)
+try GlobalShortcutStore.save(key: "summonHotKey", value: "ctrl+option+space", expectedValue: "option+space", at: globalURL, available: { _ in true })
+try GlobalShortcutStore.save(key: "notesHotKey", value: "ctrl+option+n", expectedValue: "option+n", at: globalURL, available: { _ in true })
+let globalSaved = try Data(contentsOf: globalURL)
+let globalConfig = try JSONDecoder().decode(Preferences.self, from: globalSaved)
+verify(globalConfig.summonHotKey == "ctrl+option+space" && globalConfig.notesHotKey == "ctrl+option+n")
+let globalObject = try JSONSerialization.jsonObject(with: globalSaved) as! [String: Any]
+verify((globalObject["unknown"] as? [String: Bool])?["keep"] == true)
+verify((globalObject["appHotKeys"] as? [[String: Any]])?.first?["unknown"] as? Int == 42)
+for (value, expected, available) in [("ctrl+option+n", "ctrl+option+space", true), ("ctrl+option+t", "ctrl+option+space", true), ("space", "ctrl+option+space", true), ("ctrl+option+y", "option+space", true), ("ctrl+option+y", "ctrl+option+space", false)] {
+    do {
+        try GlobalShortcutStore.save(key: "summonHotKey", value: value, expectedValue: expected, at: globalURL, available: { _ in available })
+        verify(false, "Conflicting or stale global shortcut must fail")
+    } catch { verify(try! Data(contentsOf: globalURL) == globalSaved, "Failed global shortcut edit preserves file") }
+}
+print("PASS: global shortcut changes, conflicts, stale edits and unknown-field preservation")

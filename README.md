@@ -78,6 +78,6 @@ Claude Code and Codex ACP setup: install Node.js 22+, keep the native `claude` a
 
 ### Settings and app shortcuts
 
-Open Settings from Volant’s menu or type `settings` in the launcher. General contains Dock/startup and Herdr preferences; Data & Configuration contains reload, backups and Raycast import. Type `reload config` to apply file edits.
+Open Settings from Volant’s menu or type `settings` in the launcher. General contains Dock/startup and Herdr preferences plus editable Show Volant and Open Notes shortcuts; Data & Configuration contains reload, backups and Raycast import. Type `reload config` to apply file edits.
 
 Select an application and press **⌘K**, then Return, to edit its global shortcut and launcher alias. App Shortcuts in Settings offers the same editor. Global shortcuts require Command, Control or Option; aliases such as `c` are typed into Volant. Conflicts and save failures are reported. See [Settings validation and remaining checks](docs/settings-quality.md).
