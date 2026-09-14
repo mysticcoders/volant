@@ -323,7 +323,7 @@ final class LauncherModel: ObservableObject {
         let aliased = Set(immediate.flatMap(\.rows).map(\.id))
         let apps = index.search(q, limit: 6, usage: usage).map { ResultRow.app($0) }.filter { !aliased.contains($0.id) }
         if !apps.isEmpty { immediate.append(ResultSection(title: "Applications", rows: apps)) }
-        compose()
+        compose(preservingSelection: false)
 
         let letters = q.filter(\.isLetter).count
         if searchesSecondarySources && letters >= 2 && q.count <= 40 {
@@ -345,14 +345,14 @@ final class LauncherModel: ObservableObject {
     }
 
     /// Keeps the selected row by identity when async sections arrive above it.
-    private func compose() {
-        let selectedID = selectedRow?.id
+    private func compose(preservingSelection: Bool = true) {
+        let selectedID = preservingSelection ? selectedRow?.id : nil
         var out = immediate
         if !contactRows.isEmpty { out.append(ResultSection(title: "Contacts", rows: contactRows)) }
         if !fileRows.isEmpty { out.append(ResultSection(title: "Files", rows: fileRows)) }
         sections = out
         if let selectedID, let i = rows.firstIndex(where: { $0.id == selectedID }) { selection = i }
-        else if selection >= rows.count { selection = 0 }
+        else { selection = 0 }
     }
 
     func moveSelection(_ delta: Int) {

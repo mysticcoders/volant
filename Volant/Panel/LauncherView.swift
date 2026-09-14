@@ -132,13 +132,12 @@ struct LauncherView: View {
 
     private func resultButton(_ row: ResultRow) -> some View {
         Button { model.activate(rowID: row.id) } label: {
-            RowView(row: row, selected: row.id == model.selectedRow?.id)
+            RowView(row: row, model: model)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .focusable(false)
         .id(row.id)
-        .accessibilityAddTraits(row.id == model.selectedRow?.id ? .isSelected : [])
     }
 
     private var footer: some View {
@@ -185,7 +184,9 @@ private struct KeyCap: View {
 
 private struct RowView: View {
     let row: ResultRow
-    let selected: Bool
+    // Lazy rows must observe selection themselves; parent closure updates can retain stale styling.
+    @ObservedObject var model: LauncherModel
+    private var selected: Bool { model.selectedRow?.id == row.id }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -199,6 +200,7 @@ private struct RowView: View {
         }
         .padding(.horizontal, 12)
         .frame(height: 40)
+        .accessibilityAddTraits(selected ? .isSelected : [])
         .background(selected ? Color.primary.opacity(0.1) : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 

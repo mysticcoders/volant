@@ -93,3 +93,59 @@ panel.toggle()
 verify(!panel.isVisible, "Modal session cannot leave a dead launcher visible")
 app.endModalSession(session); modal.orderOut(nil)
 print("PASS: real LauncherPanel screen typing, result mouse activation, repeat summon, and modal-session guard")
+
+// A new query must select its own first result, not the prior suggestion's identity.
+let home = AppEntry(id: "fixture-home", name: "Home", url: URL(fileURLWithPath: "/System/Applications/Home.app"), lastUsed: Date(timeIntervalSince1970: 1))
+let assistant = AppEntry(id: "fixture-assistant", name: "Home Assistant", url: URL(fileURLWithPath: "/Applications/Home Assistant.app"), lastUsed: Date())
+var homeLaunches: [String] = []
+let homeIndex = AppIndex(entries: [home, assistant], launch: { homeLaunches.append($0.id) })
+let homeUsage = UsageStore(url: root.appendingPathComponent("home-\(dark ? "dark" : "light").sqlite"))
+let homePanel = LauncherPanel(index: homeIndex, clipboard: clipboard, notes: notes, config: Preferences(), usage: homeUsage, onNote: { _ in })
+homePanel.model.searchesSecondarySources = false
+homePanel.toggle()
+homePanel.model.promotedHarness = "all" // Render the strip without connecting to any real harness.
+RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+verify(homePanel.model.selectedRow?.id == "app:" + assistant.id, "Fixture begins with Home Assistant as the recent suggestion")
+func sendHomeKey(_ characters: String, code: UInt16) {
+    let event = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: homePanel.windowNumber, context: nil, characters: characters, charactersIgnoringModifiers: characters, isARepeat: false, keyCode: code)!
+    homePanel.sendEvent(event)
+    RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+}
+// Check pixels away from text/icons: model assertions alone missed stale row styling.
+func verifyHomeHighlight(firstSelected: Bool) {
+    let content = homePanel.contentView!
+    content.layoutSubtreeIfNeeded()
+    let bitmap = content.bitmapImageRepForCachingDisplay(in: content.bounds)!
+    content.cacheDisplay(in: content.bounds, to: bitmap)
+    let scale = CGFloat(bitmap.pixelsHigh) / content.bounds.height
+    func brightness(_ y: CGFloat) -> CGFloat {
+        let color = bitmap.colorAt(x: bitmap.pixelsWide / 2, y: Int(y * scale))!.usingColorSpace(.deviceRGB)!
+        return (color.redComponent + color.greenComponent + color.blueComponent) / 3
+    }
+    let difference = brightness(148) - brightness(190)
+    let expectedSign: CGFloat = (firstSelected == dark) ? 1 : -1
+    verify(difference * expectedSign > 0.025, "Rendered highlight agrees with selection in both appearances")
+}
+for text in ["h", "o", "m"] {
+    sendHomeKey(text, code: UInt16(KeyCombo.keyCodes[text]!))
+    verify(homePanel.model.rows.first?.id == "app:" + home.id, "Home ranks first for each query prefix")
+    verify(homePanel.model.selection == 0, "New query selects visible first result, not prior suggestion")
+    verifyHomeHighlight(firstSelected: true)
+}
+sendHomeKey(String(UnicodeScalar(NSDownArrowFunctionKey)!), code: 125)
+verify(homePanel.model.selectedRow?.id == "app:" + assistant.id, "Down selects Home Assistant")
+verifyHomeHighlight(firstSelected: false)
+sendHomeKey(String(UnicodeScalar(NSUpArrowFunctionKey)!), code: 126)
+verify(homePanel.model.selectedRow?.id == "app:" + home.id, "Up returns to Home")
+verify(homePanel.model.query == "hom", "Navigation does not rewrite the query")
+verifyHomeHighlight(firstSelected: true)
+if let content = homePanel.contentView, let bitmap = content.bitmapImageRepForCachingDisplay(in: content.bounds) {
+    content.cacheDisplay(in: content.bounds, to: bitmap)
+    try bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.75])!.write(to: URL(fileURLWithPath: "/tmp/volant-home-\(dark ? "dark" : "light").jpg"))
+}
+for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
+    homePanel.sendEvent(NSEvent.mouseEvent(with: type, location: NSPoint(x: 180, y: LauncherPanel.size.height - 148), modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: homePanel.windowNumber, context: nil, eventNumber: 2, clickCount: 1, pressure: type == .leftMouseDown ? 1 : 0)!)
+    RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+}
+verify(homeLaunches == [home.id], "Clicking Home above Home Assistant activates Home with pinned harness visible")
+print("PASS: h/ho/hom initial selection, up/down navigation, and Home mouse activation with pinned harness")

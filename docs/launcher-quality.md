@@ -28,3 +28,10 @@ Next gaps:
 Prevention: model tests alone did not cover the window's modal/non-activating behavior. Preserve the real-panel regression in the standard test entry point. Never describe synthetic archive compatibility or in-process input as a live installed-user-data test.
 
 Delivery: the final Release artifact was installed at `/Applications/Volant.app`; deep/strict code-signature validation and byte comparison of the installed executable passed. A read-only window-title check confirmed the installed “Import from Raycast” window opened. This does not establish that the personal archive has been unlocked or imported.
+
+## Home / Home Assistant follow-up
+
+Symptom: typing ho/hom showed Home first but highlighted Home Assistant; Up appeared ineffective.
+Cause: composing a fresh query preserved the previous suggestion identity. Separately, lazy row styling could remain stale after the model selection changed.
+Fix: fresh queries reset to their own first result; same-query asynchronous deliveries still preserve identity. Each row observes the launcher model directly for selection styling and accessibility selection.
+Prevention/evidence: isolated actual-panel tests cover h/ho/hom, Down/Up, and clicking Home with the pinned harness strip. Pixel assertions compare the two rendered row backgrounds after every transition in light and dark, independently of model assertions. These run in the existing focused test entry point. Installed real-data keyboard/mouse verification remains a separate smoke check.
