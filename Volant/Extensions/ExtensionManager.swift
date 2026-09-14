@@ -47,7 +47,7 @@ final class ExtensionManager: NSObject, VolantCapabilityClientProtocol {
             completion(.failure(ExtensionError.hashMismatch)); return
         }
         active = ext.manifest
-        let connection = NSXPCConnection(serviceName: "com.mysticcoders.vey.ExtensionHost")
+        let connection = NSXPCConnection(serviceName: "com.mysticcoders.volant.ExtensionHost")
         connection.remoteObjectInterface = NSXPCInterface(with: VolantExtensionHostProtocol.self)
         connection.exportedInterface = NSXPCInterface(with: VolantCapabilityClientProtocol.self)
         connection.exportedObject = self

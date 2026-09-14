@@ -34,7 +34,7 @@ targets:
       properties:
         CFBundleName: Volant
         CFBundleDisplayName: Volant
-        CFBundleIdentifier: com.mysticcoders.vey
+        CFBundleIdentifier: com.mysticcoders.volant
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSUIElement: true
@@ -50,7 +50,7 @@ targets:
         embed: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.vey
+        PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant
         PRODUCT_NAME: Volant
         PRODUCT_MODULE_NAME: Volant
         GENERATE_INFOPLIST_FILE: NO
@@ -68,13 +68,13 @@ targets:
     info:
       path: VolantExtensionHost/Info.plist
       properties:
-        CFBundleIdentifier: com.mysticcoders.vey.ExtensionHost
+        CFBundleIdentifier: com.mysticcoders.volant.ExtensionHost
         CFBundleName: VolantExtensionHost
         XPCService:
           ServiceType: Application
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.vey.ExtensionHost
+        PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.ExtensionHost
         GENERATE_INFOPLIST_FILE: NO
   VolantAgentHost:
     type: xpc-service
@@ -107,7 +107,7 @@ targets:
     settings:
       base:
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Volant.app/Contents/MacOS/Volant"
-        PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.vey.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.tests
         GENERATE_INFOPLIST_FILE: YES
 schemes:
   Volant:

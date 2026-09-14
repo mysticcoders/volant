@@ -4,6 +4,7 @@ import CryptoKit
 
 /// A per-device AES key for clipboard history, created once and held in the Keychain (this device only, unlocked only).
 enum KeychainKey {
+    // Storage compatibility, not the app identity. Reuse the existing AES key after the bundle rename.
     private static let service = "com.mysticcoders.vey.clipboard-key"
     private static let account = "aes-256-gcm"
 

@@ -88,7 +88,7 @@ final class ListenerDelegate: NSObject, NSXPCListenerDelegate {
         let attributes = [kSecGuestAttributePid as String: NSNumber(value: connection.processIdentifier)] as CFDictionary
         guard SecCodeCopyGuestWithAttributes(nil, attributes, [], &code) == errSecSuccess, let code else { return false }
         var requirement: SecRequirement?
-        let text = "anchor apple generic and identifier \"com.mysticcoders.vey\" and certificate leaf[subject.OU] = \"REMBT6JY4N\""
+        let text = "anchor apple generic and identifier \"com.mysticcoders.volant\" and certificate leaf[subject.OU] = \"REMBT6JY4N\""
         guard SecRequirementCreateWithString(text as CFString, [], &requirement) == errSecSuccess,
               let requirement, SecCodeCheckValidity(code, [], requirement) == errSecSuccess else { return false }
         connection.exportedInterface = NSXPCInterface(with: VolantAgentHostProtocol.self)

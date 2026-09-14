@@ -41,7 +41,7 @@ The module exports `memory`, `alloc(len) -> ptr`, and `run(ptr, len) -> ptr`. Th
 
 ## Using it
 
-Folders go in `~/Library/Containers/com.mysticcoders.vey/Data/Library/Application Support/Vey/Extensions/<name>/`. In the launcher, `ext hello some text` runs the extension with the text as input and shows the result. From the command line, `Vey --run-extension hello "some text"` does the same and prints the log.
+Folders go in `~/Library/Containers/com.mysticcoders.volant/Data/Library/Application Support/Vey/Extensions/<name>/`. In the launcher, `ext hello some text` runs the extension with the text as input and shows the result. From the command line, `Volant --run-extension hello "some text"` does the same and prints the log.
 
 Build the sample: `extensions/hello-rust/build.sh` (uses rustup's toolchain, since Homebrew's cargo lacks the wasm target).
 

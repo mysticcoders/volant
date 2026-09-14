@@ -3,6 +3,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+python3 tools/check-bundle-migration.py
 swiftlint lint --strict --quiet --config .swiftlint.yml
 ./tools/check-raycast.sh
 ./tools/check-launcher.sh
