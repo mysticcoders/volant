@@ -12,6 +12,7 @@ enum LauncherAction {
 }
 
 enum ResultRow: Identifiable, Hashable {
+    case systemSettings(SystemSettingsDestination)
     case settings
     case reloadConfig
     case connectivity(ConnectivityItem)
@@ -40,6 +41,7 @@ enum ResultRow: Identifiable, Hashable {
         case .connectivity(let item): return item.id
         case .audioRoute(let route): return "audio:" + route.id
         case .volume(let command, _): return "volume:" + command.id
+        case .systemSettings(let pane): return "system-settings:" + pane.id
         case .settings: return "command:settings"
         case .reloadConfig: return "command:reload"
         case .agents: return "command:agents"
@@ -67,6 +69,7 @@ enum ResultRow: Identifiable, Hashable {
         case .connectivity: return "Connectivity"
         case .audioRoute(let route): return route.current ? "Current" : "Device"
         case .volume: return "System"
+        case .systemSettings: return "System Settings"
         case .settings, .reloadConfig: return "Command"
         case .agents: return "Command"
         case .calculation: return "Calculation"
@@ -95,7 +98,7 @@ enum ResultRow: Identifiable, Hashable {
             return "Open Settings"
         case .audioRoute(let route): return route.current ? "Keep Current Device" : "Use as " + route.direction.rawValue.capitalized
         case .volume: return "Apply"
-        case .settings: return "Open Settings"
+        case .settings, .systemSettings: return "Open Settings"
         case .reloadConfig: return "Reload Configuration"
         case .agents: return "Open Agents"
         case .calculation, .unit: return "Copy Result"
@@ -270,6 +273,14 @@ final class LauncherModel: ObservableObject {
             sections = [ResultSection(title: "Volant", rows: [q.lowercased().contains("reload") ? .reloadConfig : .settings])]
             return
         }
+        let settingTerms = q.lowercased().split(whereSeparator: { $0.isWhitespace })
+        if settingTerms.count > 1 && settingTerms.contains("settings") {
+            let panes = SystemSettingsDestination.search(q).map { ResultRow.systemSettings($0) }
+            if !panes.isEmpty {
+                sections = [ResultSection(title: "System Settings", rows: panes)]
+                return
+            }
+        }
         if q.lowercased() == "notes" { sections = [ResultSection(title: "Notes", rows: notes.search("").map { .note($0) } + [.newNote("")])]; return }
         if connectivitySource != nil { refreshConnectivity(); return }
         if AudioRouteQuery(q) != nil { refreshAudioRoutes(); return }
@@ -371,6 +382,8 @@ final class LauncherModel: ObservableObject {
         let aliased = Set(immediate.flatMap(\.rows).map(\.id))
         let apps = index.search(q, limit: 6, usage: usage).map { ResultRow.app($0) }.filter { !aliased.contains($0.id) }
         if !apps.isEmpty { immediate.append(ResultSection(title: "Applications", rows: apps)) }
+        let panes = SystemSettingsDestination.search(q).map { ResultRow.systemSettings($0) }
+        if !panes.isEmpty { immediate.append(ResultSection(title: "System Settings", rows: panes)) }
         if !matchingCommands.isEmpty { immediate.append(ResultSection(title: "Volant", rows: matchingCommands)) }
         compose(preservingSelection: false)
 
@@ -535,6 +548,12 @@ final class LauncherModel: ObservableObject {
                 actionFeedback = state.summary
             } catch { actionFeedback = error.localizedDescription }
             return
+        case .systemSettings(let pane):
+            guard NSWorkspace.shared.open(pane.url) else {
+                actionFeedback = "Couldn’t open " + pane.title + " in System Settings."
+                return
+            }
+            dismiss(); return
         case .settings: dismiss(); onNote(.settings); return
         case .reloadConfig: dismiss(); onNote(.reloadConfig); return
         case .agentSession(let session): agents.focus(session); return

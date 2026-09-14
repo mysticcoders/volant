@@ -1,5 +1,6 @@
 import AppKit
 import CryptoKit
+import SwiftUI
 
 let app = NSApplication.shared
 app.setActivationPolicy(.regular)
@@ -46,7 +47,17 @@ statusItem.button?.image?.isTemplate = true
 statusItem.button?.setAccessibilityLabel("Volant Settings Preview")
 statusItem.menu = StatusMenu.make(target: actions, show: #selector(PreviewActions.showLauncher), settings: #selector(PreviewActions.settings), update: #selector(PreviewActions.updates))
 controller.window?.setFrame(NSWindow.frameRect(forContentRect: NSRect(x: 100, y: 100, width: 680, height: 500), styleMask: controller.window!.styleMask), display: true)
-if !CommandLine.arguments.contains("--render") {
+var destinationWindow: NSWindow?
+if CommandLine.arguments.contains("--destinations") {
+    panel.model.query = "settings login"
+    let host = NSHostingView(rootView: LauncherView(model: panel.model, agents: panel.model.agents).background(Color(nsColor: .windowBackgroundColor)))
+    destinationWindow = NSWindow(contentRect: NSRect(origin: .zero, size: LauncherPanel.size), styleMask: [.titled, .closable], backing: .buffered, defer: false)
+    destinationWindow?.title = "Settings Destination Preview"
+    destinationWindow?.contentView = host
+    destinationWindow?.center()
+    destinationWindow?.makeKeyAndOrderFront(nil)
+    app.activate(ignoringOtherApps: true)
+} else if !CommandLine.arguments.contains("--render") {
     controller.showWindow(nil)
     app.activate(ignoringOtherApps: true)
 }

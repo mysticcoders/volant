@@ -441,3 +441,28 @@ _ = try AppBindingStore.updateHotKey(bundleID: "test.app", value: "", expectedVa
 let removedApp = try JSONDecoder().decode(Preferences.self, from: Data(contentsOf: bindingURL))
 verify(removedApp.appHotKeys.isEmpty && removedApp.aliases["old"] == "/Test.app")
 print("PASS: immediate shortcut persistence and removal preserve aliases and disabled global keys")
+
+verify(SystemSettingsDestination.search("settings").isEmpty, "Generic settings must preserve the System Settings app ranking")
+verify(SystemSettingsDestination.search("settings login").first?.title == "Login Items & Extensions")
+verify(SystemSettingsDestination.search("dark mode").first?.title == "Appearance")
+verify(SystemSettingsDestination.search("system settings software update").first?.title == "Software Update")
+verify(SystemSettingsDestination.search("nonexistent pane").isEmpty)
+verify(Set(SystemSettingsDestination.all.map(\.id)).count == SystemSettingsDestination.all.count)
+print("PASS: System Settings destination search, synonyms and stable identities")
+
+panel.model.query = "wifi settings"
+RunLoop.main.run(until: Date().addingTimeInterval(0.15))
+verify(panel.model.rows.first?.id == "system-settings:com.apple.wifi-settings-extension", "Explicit Wi-Fi settings must bypass network discovery")
+panel.model.query = "settings login"
+RunLoop.main.run(until: Date().addingTimeInterval(0.15))
+verify(panel.model.rows.first?.kind == "System Settings")
+let destinationHost = NSHostingView(rootView: LauncherView(model: panel.model, agents: panel.model.agents).background(Color(nsColor: .windowBackgroundColor)))
+destinationHost.frame = NSRect(origin: .zero, size: LauncherPanel.size)
+let destinationWindow = NSWindow(contentRect: destinationHost.frame, styleMask: [.titled], backing: .buffered, defer: false)
+destinationWindow.appearance = app.appearance
+destinationWindow.contentView = destinationHost
+destinationHost.layoutSubtreeIfNeeded()
+let destinationRep = destinationHost.bitmapImageRepForCachingDisplay(in: destinationHost.bounds)!
+destinationHost.cacheDisplay(in: destinationHost.bounds, to: destinationRep)
+try destinationRep.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "/tmp/volant-destinations-\(dark ? "dark" : "light").png"))
+print("PASS: direct Settings queries bypass connectivity discovery; rendered destination row")

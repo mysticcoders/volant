@@ -243,6 +243,7 @@ private struct RowView: View {
         case .agents: return "Open Agents"
         case .calculation(let s): return "= \(s)"
         case .unit(let s): return s
+        case .systemSettings(let pane): return pane.title
         case .settings: return "Volant Settings"
         case .reloadConfig: return "Reload Configuration"
         case .app(let a): return a.name
@@ -262,6 +263,7 @@ private struct RowView: View {
 
     private var subtitle: String? {
         switch row {
+        case .systemSettings: return "Open this pane in System Settings"
         case .settings: return "Preferences, app shortcuts and backups"
         case .reloadConfig: return "Apply changes from config.json"
         case .agentSession(let session): return session.provider + " · " + session.paneID
@@ -294,7 +296,7 @@ private struct RowView: View {
         case .agents: Image(systemName: "terminal").font(.system(size: 20)).foregroundStyle(.secondary)
         case .calculation: Image(systemName: "equal.circle.fill").font(.system(size: 20)).foregroundStyle(.secondary)
         case .unit: Image(systemName: "arrow.left.arrow.right.circle.fill").font(.system(size: 20)).foregroundStyle(.secondary)
-        case .settings: Image(systemName: "gearshape")
+        case .systemSettings, .settings: Image(systemName: "gearshape")
         case .reloadConfig: Image(systemName: "arrow.clockwise")
         case .app(let a): Image(nsImage: NSWorkspace.shared.icon(forFile: a.url.path)).resizable()
         case .file(let f): Image(nsImage: NSWorkspace.shared.icon(forFile: f.url.path)).resizable()
