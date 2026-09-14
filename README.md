@@ -56,3 +56,8 @@ Paste-in-place, window management, window and menu-bar search (all need Accessib
 Volant was previously named Vey. Build with the Volant scheme in Volant.xcodeproj (generated from project.yml). App, source folders, tests, and release artifacts use Volant. Repository: https://github.com/mysticcoders/volant (currently private).
 
 Historical bundle/storage/Keychain identifiers and the WASM import namespace are preserved for existing users. Old Vey backups remain importable. See [rename decisions](docs/volant-rename.md).
+
+
+### Agent status in the launcher
+
+Type `agents` or `herdr` and connect to see local Herdr panes directly in the launcher. Search by provider or project, then press Return to focus a pane in Herdr. Use the pin menu or **Settings → Pinned harness** to keep one harness's status below the search field while using other launcher features. Pinned status connects while the launcher is open and stops polling when it closes. This is Herdr pane integration; native ACP conversations are still in development.

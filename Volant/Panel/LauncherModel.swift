@@ -9,6 +9,7 @@ enum LauncherAction {
 
 enum ResultRow: Identifiable, Hashable {
     case agents
+    case agentSession(AgentSession)
     case snippet(Snippet)
     case emoji(EmojiEntry)
     case quicklink(Quicklink, query: String)
@@ -26,6 +27,7 @@ enum ResultRow: Identifiable, Hashable {
 
     var id: String {
         switch self {
+        case .agentSession(let session): return "agent:" + session.id
         case .agents: return "command:agents"
         case .calculation(let s): return "calc:\(s)"
         case .unit(let s): return "unit:\(s)"
@@ -47,6 +49,7 @@ enum ResultRow: Identifiable, Hashable {
     /// Right-aligned kind label, as in Raycast's "Application" / "Command" column.
     var kind: String {
         switch self {
+        case .agentSession(let session): return session.status
         case .agents: return "Command"
         case .calculation: return "Calculation"
         case .unit: return "Conversion"
@@ -67,6 +70,7 @@ enum ResultRow: Identifiable, Hashable {
     /// Footer label for return.
     var primaryAction: String {
         switch self {
+        case .agentSession: return "Focus in Herdr"
         case .agents: return "Open Agents"
         case .calculation, .unit: return "Copy Result"
         case .app: return "Open Application"
@@ -109,6 +113,43 @@ final class LauncherModel: ObservableObject {
     @Published var selection: Int = 0
     @Published var notice: String? = nil
     var dismiss: () -> Void = {}
+    let agents = AgentsModel()
+    @Published var promotedHarness: String?
+    var isPresented = false
+    private var agentSubscription: AnyCancellable?
+    var showingAgents: Bool {
+        let q = query.trimmingCharacters(in: .whitespaces).lowercased()
+        return q == "agents" || q == "herdr" || q.hasPrefix("agents ") || q.hasPrefix("herdr ")
+    }
+    var promotedTitle: String { Preferences.harnessOptions.first { $0.id == promotedHarness }?.title ?? "Agents" }
+    var promotedSessions: [AgentSession] { agents.sessions.filter { promotedHarness == "all" || $0.agent == promotedHarness } }
+    func promoteHarness(_ id: String?) {
+        do {
+            try Preferences.updatePromotedHarness(id)
+            config.promotedHarness = id
+            if id != nil && isPresented && !agents.connected { agents.connect() }
+        } catch { notice = "Couldn’t save pinned harness: " + error.localizedDescription }
+    }
+    func resumeAgentsIfNeeded() {
+        if promotedHarness != nil && !agents.connected { agents.connect() }
+    }
+    func showPromotedAgents() {
+        query = "agents" + (promotedHarness == "all" ? "" : " " + (promotedHarness ?? ""))
+    }
+    private func refreshAgentResults() {
+        guard showingAgents else { return }
+        let selectedID = selectedRow?.id
+        let parts = query.trimmingCharacters(in: .whitespaces).split(separator: " ", maxSplits: 1)
+        let term = parts.count > 1 ? String(parts[1]) : ""
+        let sessions = agents.sessions.filter {
+            term.isEmpty || [$0.project, $0.provider, $0.agent, $0.status, $0.cwd ?? "", $0.terminalTitle ?? ""].joined(separator: " ").localizedCaseInsensitiveContains(term)
+        }
+        sections = sessions.isEmpty ? [] : [ResultSection(title: "Herdr panes", rows: sessions.map(ResultRow.agentSession))]
+        notice = agents.connected ? (agents.busy && agents.sessions.isEmpty ? "Loading Herdr panes…" : (sessions.isEmpty && !agents.sessions.isEmpty ? "No matching panes" : agents.message)) : agents.message
+        if let selectedID, let index = rows.firstIndex(where: { $0.id == selectedID }) { selection = index }
+        else { selection = min(selection, max(0, rows.count - 1)) }
+    }
+
 
     var rows: [ResultRow] { sections.flatMap(\.rows) }
     var selectedRow: ResultRow? { rows.indices.contains(selection) ? rows[selection] : nil }
@@ -119,7 +160,7 @@ final class LauncherModel: ObservableObject {
     private let onNote: (LauncherAction) -> Void
     let extensions = ExtensionManager()
     let usage = UsageStore()
-    var config: Preferences
+    var config: Preferences { didSet { promotedHarness = config.promotedHarness } }
     private let files = FileSearch()
     private let contacts = ContactSearch()
     private let agenda = CalendarAgenda()
@@ -134,6 +175,10 @@ final class LauncherModel: ObservableObject {
         self.notes = notes
         self.config = config
         self.onNote = onNote
+        self.promotedHarness = config.promotedHarness
+        agentSubscription = agents.objectWillChange.sink { [weak self] _ in
+            DispatchQueue.main.async { self?.refreshAgentResults() }
+        }
     }
 
     func reset() {
@@ -158,8 +203,8 @@ final class LauncherModel: ObservableObject {
         let q = query.trimmingCharacters(in: .whitespaces)
         guard !q.isEmpty else { showSuggestions(); return }
 
-        if ["agents", "herdr"].contains(q.lowercased()) {
-            sections = [ResultSection(title: "Agents", rows: [.agents])]
+        if showingAgents {
+            refreshAgentResults()
             return
         }
         if q.hasPrefix("/") {
@@ -300,7 +345,8 @@ final class LauncherModel: ObservableObject {
         default: usage.record(key: row.id, query: query)
         }
         switch row {
-        case .agents: onNote(.agents)
+        case .agentSession(let session): agents.focus(session); return
+        case .agents: query = "agents"; return
         case .calculation(let text): copy(text)
         case .unit(let text): copy(text.components(separatedBy: " = ").last ?? text)
         case .clip(let clip):

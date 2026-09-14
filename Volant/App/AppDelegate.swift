@@ -3,7 +3,6 @@ import ServiceManagement
 
 /// Owns the long-lived services: menu bar item, hotkeys, app index, clipboard monitor, and the panel.
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private lazy var agentsPanel = AgentsWindowController()
     private lazy var settingsPanel = SettingsWindowController { [weak self] in self?.reloadConfig() }
     private var statusItem: NSStatusItem?
     private var config = Preferences.load()
@@ -22,7 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if CommandLine.arguments.contains("--agents-check") {
-            let model = agentsPanel.model
+            let model = panel.model.agents
             model.connect()
             if CommandLine.arguments.contains("--focus-current-pane"), let pane = ProcessInfo.processInfo.environment["HERDR_PANE_ID"] {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -68,7 +67,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             try? SMAppService.mainApp.register()
             print("login item: \(SMAppService.mainApp.status == .enabled ? "enabled" : "not enabled")")
         }
-        if config.showOnLaunch && !CommandLine.arguments.contains("--show") && !CommandLine.arguments.contains("--notes") {
+        if config.showOnLaunch && !CommandLine.arguments.contains("--agents") && !CommandLine.arguments.contains("--show") && !CommandLine.arguments.contains("--notes") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in self?.panel.toggle() }
         }
         if CommandLine.arguments.contains("--notes") {
@@ -161,9 +160,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func showAgents() {
-        agentsPanel.showWindow(nil)
-        agentsPanel.window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        panel.showAgents()
     }
 
     @objc private func showSettings() {

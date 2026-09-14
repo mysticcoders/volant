@@ -8,6 +8,8 @@ struct Preferences: Codable {
     var clipboardRetention: Int = 500
     var showOnLaunch: Bool = true
     var showInDock: Bool = true
+    var promotedHarness: String? = nil
+    static let harnessOptions: [(id: String, title: String)] = [("all", "All Herdr agents"), ("opencode", "OpenCode"), ("cursor", "Cursor"), ("claude", "Claude Code"), ("codex", "Codex")]
     var snippets: [Snippet] = []
     var quicklinks: [Quicklink] = [Quicklink(name: "Google", url: "https://www.google.com/search?q={query}")]
     var aliases: [String: String] = [:]
@@ -15,7 +17,7 @@ struct Preferences: Codable {
     var help: String = "Edit and choose Reload Config from the menu bar. Hotkeys: cmd|ctrl|option|shift|meh|hyper + key. App hotkeys use the bundle identifier. Snippets: {date} {isodate} {time} {datetime} {clipboard} {uuid}. Quicklinks: {query}. Aliases map a word to an app name or query. Appearance: scale 0.8–1.4, opacity 0.5–1.0."
 
     enum CodingKeys: String, CodingKey {
-        case summonHotKey, notesHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, snippets, quicklinks, aliases, appearance
+        case summonHotKey, notesHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, promotedHarness, snippets, quicklinks, aliases, appearance
         case help = "_help"
     }
 
@@ -39,6 +41,8 @@ struct Preferences: Codable {
         clipboardRetention = try c.decodeIfPresent(Int.self, forKey: .clipboardRetention) ?? d.clipboardRetention
         showOnLaunch = try c.decodeIfPresent(Bool.self, forKey: .showOnLaunch) ?? d.showOnLaunch
         showInDock = try c.decodeIfPresent(Bool.self, forKey: .showInDock) ?? d.showInDock
+        promotedHarness = try c.decodeIfPresent(String.self, forKey: .promotedHarness)
+        if let id = promotedHarness, !Self.harnessOptions.contains(where: { $0.id == id }) { promotedHarness = nil }
         snippets = try c.decodeIfPresent([Snippet].self, forKey: .snippets) ?? d.snippets
         quicklinks = try c.decodeIfPresent([Quicklink].self, forKey: .quicklinks) ?? d.quicklinks
         aliases = try c.decodeIfPresent([String: String].self, forKey: .aliases) ?? d.aliases
@@ -58,6 +62,20 @@ struct Preferences: Codable {
         object[key] = value
         let updated = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
         // Reject invalid known settings before changing the file.
+        _ = try JSONDecoder().decode(Preferences.self, from: updated)
+        try updated.write(to: url, options: .atomic)
+    }
+
+    static func updatePromotedHarness(_ harness: String?, at url: URL = configURL) throws {
+        guard harness == nil || harnessOptions.contains(where: { $0.id == harness }) else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        let data = try Data(contentsOf: url)
+        guard var object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        object["promotedHarness"] = harness
+        let updated = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
         _ = try JSONDecoder().decode(Preferences.self, from: updated)
         try updated.write(to: url, options: .atomic)
     }

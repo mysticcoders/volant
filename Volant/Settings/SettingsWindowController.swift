@@ -4,11 +4,13 @@ import AppKit
 final class SettingsWindowController: NSWindowController {
     private let dock = NSButton(checkboxWithTitle: "Show Volant in the Dock", target: nil, action: nil)
     private let launch = NSButton(checkboxWithTitle: "Show launcher when Volant starts", target: nil, action: nil)
+    private let harness = NSPopUpButton(frame: .zero, pullsDown: false)
+    private var previousHarness: String?
     private let onChange: () -> Void
 
     init(onChange: @escaping () -> Void) {
         self.onChange = onChange
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 240),
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 500, height: 330),
                               styleMask: [.titled, .closable], backing: .buffered, defer: false)
         window.title = "Volant Settings"
         window.isReleasedWhenClosed = false
@@ -24,7 +26,16 @@ final class SettingsWindowController: NSWindowController {
         dock.action = #selector(changeDock)
         launch.target = self
         launch.action = #selector(changeLaunch)
-        let stack = NSStackView(views: [title, dock, hint, launch, config])
+        harness.addItem(withTitle: "None")
+        for option in Preferences.harnessOptions { harness.addItem(withTitle: option.title) }
+        harness.target = self
+        harness.action = #selector(changeHarness)
+        let harnessRow = NSStackView(views: [NSTextField(labelWithString: "Pinned harness"), harness])
+        harnessRow.orientation = .horizontal
+        harnessRow.spacing = 14
+        let harnessHint = NSTextField(wrappingLabelWithString: "Show its Herdr pane status below the launcher’s search field. Connects while the launcher is open.")
+        harnessHint.textColor = .secondaryLabelColor
+        let stack = NSStackView(views: [title, dock, hint, launch, harnessRow, harnessHint, config])
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 14
@@ -44,8 +55,25 @@ final class SettingsWindowController: NSWindowController {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     func refresh(_ config: Preferences) {
+        previousHarness = config.promotedHarness
+        harness.selectItem(at: Preferences.harnessOptions.firstIndex(where: { $0.id == config.promotedHarness }).map { $0 + 1 } ?? 0)
         dock.state = config.showInDock ? .on : .off
         launch.state = config.showOnLaunch ? .on : .off
+    }
+
+    @objc private func changeHarness() {
+        let index = harness.indexOfSelectedItem
+        let id = index > 0 ? Preferences.harnessOptions[index - 1].id : nil
+        do {
+            try Preferences.updatePromotedHarness(id)
+            previousHarness = id
+            onChange()
+        } catch {
+            harness.selectItem(at: Preferences.harnessOptions.firstIndex(where: { $0.id == previousHarness }).map { $0 + 1 } ?? 0)
+            let alert = NSAlert(error: error)
+            alert.messageText = "Couldn’t save pinned harness"
+            if let window { alert.beginSheetModal(for: window) }
+        }
     }
 
     @objc private func changeDock() { save("showInDock", button: dock) }

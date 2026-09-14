@@ -6,7 +6,7 @@ final class LauncherPanel: NSPanel {
     static var scale: Double = 1.0
     static var opacity: Double = 1.0
     static var size: NSSize { NSSize(width: 750 * scale, height: 480 * scale) }
-    private let model: LauncherModel
+    let model: LauncherModel
 
     init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, onNote: @escaping (LauncherAction) -> Void) {
         LauncherPanel.scale = min(1.4, max(0.8, config.appearance.scale))
@@ -24,7 +24,7 @@ final class LauncherPanel: NSPanel {
         isReleasedWhenClosed = false
         hidesOnDeactivate = false
         model.dismiss = { [weak self] in self?.orderOut(nil) }
-        contentView = NSHostingView(rootView: LauncherView(model: model))
+        contentView = NSHostingView(rootView: LauncherView(model: model, agents: model.agents))
     }
 
     override var canBecomeKey: Bool { true }
@@ -37,9 +37,23 @@ final class LauncherPanel: NSPanel {
 
     func toggle() {
         if isVisible { orderOut(nil); return }
+        model.isPresented = true
         model.reset()
+        model.resumeAgentsIfNeeded()
         center(onScreenWithMouse: true)
         makeKeyAndOrderFront(nil)
+    }
+
+    func showAgents() {
+        if !isVisible { toggle() }
+        model.query = "agents"
+        makeKeyAndOrderFront(nil)
+    }
+
+    override func orderOut(_ sender: Any?) {
+        model.isPresented = false
+        model.agents.disconnect()
+        super.orderOut(sender)
     }
 
     private func center(onScreenWithMouse: Bool) {

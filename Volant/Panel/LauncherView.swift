@@ -2,12 +2,22 @@ import SwiftUI
 
 struct LauncherView: View {
     @ObservedObject var model: LauncherModel
+    @ObservedObject var agents: AgentsModel
     @FocusState private var focused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
             searchField
             Divider().opacity(0.6)
+            if model.promotedHarness != nil || model.showingAgents {
+                agentStatusStrip
+                Divider().opacity(0.6)
+            }
+            if model.showingAgents, let message = agents.actionMessage {
+                Text(message).font(.system(size: 12)).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20).padding(.vertical, 8)
+            }
             results
             Divider().opacity(0.6)
             footer
@@ -44,6 +54,16 @@ struct LauncherView: View {
         .padding(.vertical, 16)
     }
 
+    private var agentStatusStrip: some View {
+        HarnessStatusStrip(title: model.promotedTitle,
+                           sessions: model.promotedHarness == nil ? agents.sessions : model.promotedSessions,
+                           connected: agents.connected, busy: agents.busy,
+                           pinned: model.promotedHarness != nil,
+                           onOpen: { model.showPromotedAgents() },
+                           onConnect: { if agents.connected { agents.disconnect() } else { agents.connect() } },
+                           onPromote: { model.promoteHarness($0) })
+    }
+
     private var results: some View {
         ScrollViewReader { proxy in
             ScrollView {
@@ -61,6 +81,12 @@ struct LauncherView: View {
                                 .id(row.id)
                                 .contentShape(Rectangle())
                                 .onTapGesture { model.selection = offset; model.activateSelection() }
+                                .contextMenu {
+                                    if case .agentSession(let session) = row,
+                                       Preferences.harnessOptions.contains(where: { $0.id == session.agent }) {
+                                        Button("Pin \(session.provider) status") { model.promoteHarness(session.agent) }
+                                    }
+                                }
                         }
                     }
                     if model.sections.isEmpty {
@@ -142,6 +168,7 @@ private struct RowView: View {
 
     private var title: String {
         switch row {
+        case .agentSession(let session): return session.project
         case .agents: return "Open Agents"
         case .calculation(let s): return "= \(s)"
         case .unit(let s): return s
@@ -162,6 +189,7 @@ private struct RowView: View {
 
     private var subtitle: String? {
         switch row {
+        case .agentSession(let session): return session.provider + " · " + session.paneID
         case .agents: return "Find Herdr sessions and focus a pane"
         case .calculation, .unit, .app: return nil
         case .file(let f): return f.url.deletingLastPathComponent().path.replacingOccurrences(of: NSHomeDirectory(), with: "~")
@@ -181,6 +209,7 @@ private struct RowView: View {
 
     @ViewBuilder private var icon: some View {
         switch row {
+        case .agentSession(let session): Image(systemName: session.agentStatus == "blocked" ? "exclamationmark.bubble" : "terminal").font(.system(size: 20)).foregroundStyle(session.agentStatus == "blocked" ? Color.orange : Color.secondary)
         case .agents: Image(systemName: "terminal").font(.system(size: 20)).foregroundStyle(.secondary)
         case .calculation: Image(systemName: "equal.circle.fill").font(.system(size: 20)).foregroundStyle(.secondary)
         case .unit: Image(systemName: "arrow.left.arrow.right.circle.fill").font(.system(size: 20)).foregroundStyle(.secondary)

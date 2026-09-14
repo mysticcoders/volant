@@ -5,14 +5,14 @@ import Foundation
     func focusAgent(paneID: String, terminalID: String, sessionIdentity: String, reply: @escaping (String?) -> Void)
 }
 
-struct AgentSession: Codable, Identifiable, Equatable {
+struct AgentSession: Codable, Identifiable, Hashable {
     let agent: String
     let agentStatus: String
     let paneID: String
     let terminalID: String
     let cwd: String?
     let terminalTitle: String?
-    struct SessionReference: Codable, Equatable { let value: String }
+    struct SessionReference: Codable, Hashable { let value: String }
     let agentSession: SessionReference?
     var sessionIdentity: String { agent + ":" + (agentSession?.value ?? terminalID) }
     var id: String { terminalID + ":" + paneID }
