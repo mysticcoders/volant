@@ -137,7 +137,10 @@ final class ConnectivityService: NSObject, ConnectivityAccess, CLLocationManager
                     if $0.signal != $1.signal { return $0.signal > $1.signal }
                     return $0.id < $1.id
                 }
-                snapshot = ConnectivitySnapshot(items: sorted.map(ConnectivityItem.wifi) + [.refresh("wifi"), .settings("wifi")], message: sorted.isEmpty ? "No visible Wi-Fi networks found. Hidden networks can be joined in System Settings." : nil)
+                let emptyMessage = networks.isEmpty
+                    ? "No visible Wi-Fi networks found. Hidden networks can be joined in System Settings."
+                    : "macOS returned networks without names. Check Volant’s Location access in Privacy & Security, then quit and reopen Volant."
+                snapshot = ConnectivitySnapshot(items: sorted.map(ConnectivityItem.wifi) + [.refresh("wifi"), .settings("wifi")], message: sorted.isEmpty ? emptyMessage : nil)
             } catch { snapshot = ConnectivitySnapshot(items: [.refresh("wifi"), .settings("wifi")], message: error.localizedDescription) }
             DispatchQueue.main.async {
                 self.scanning = false

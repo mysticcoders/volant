@@ -43,3 +43,17 @@ Sources: Apple [CoreWLAN sandbox guidance](https://developer.apple.com/documenta
 Next: verify first-use permissions and the owner's actual device/network inventory; then physical handoff and a deliberate Wi-Fi switch. Continuous device/route change listeners and Bluetooth battery information can follow. The Raycast compatibility prototype is deferred, not part of this work.
 
 Delivery: installed at `/Applications/Volant.app`; deep/strict signature validation and executable byte comparison passed. The installed audio inventory check again found 5 outputs and 4 inputs. Bluetooth/Location consent was deliberately left for first use. Wi-Fi scan loading has no actionable rows, so a pending Settings row cannot turn into a network-join action when scan results arrive.
+
+
+## Installed Wi-Fi discovery repair (2026-09-14)
+
+Symptom: Location was granted, but the installed app initially reported no Wi-Fi interface, then an empty network list. Two separate OS boundaries were involved:
+
+- Sandbox logs showed `mach-lookup com.apple.airportd` denied. The main app now declares only that local Mach-service exception. Sandbox, Location consent, and the absence of network-client/server entitlements remain intact.
+- After that fix, airportd still identified the overwritten `/Applications/Volant.app` bundle as `com.mysticcoders.vey`, despite its corrected plist and signing identifier. It stripped SSIDs as unauthorized. Refreshing Launch Services alone did not resolve this. Installing a fresh bundle directory did; the installed diagnostic then returned 10 named networks. No connection was changed.
+
+Prevention: `Scripts/install.sh` stages and verifies a fresh signed bundle, replaces the old bundle with rollback if the destination move fails, and refreshes only Volant's Launch Services registration. It does not reset privacy grants or the global registry. Scans whose results contain no readable names now explain that macOS returned unnamed networks, instead of implying there are no nearby networks.
+
+Evidence: Release build, native launcher regressions in both appearances, strict focused SwiftLint, installer shell syntax, and diff whitespace checks passed. The installed executable matched the Release build and its signature passed deep/strict verification. Installed Bluetooth permission succeeded, with zero connected paired devices; the unsandboxed IOBluetooth check also reported zero (23 paired). This does not establish BLE-only peripheral coverage. Real association, saved-password retrieval, and physical AirPods handoff remain manual checks. Permission prompts remain first-use only.
+
+Next: use the installed `wifi` command to choose a network deliberately when the owner wants to test joining, and verify a connected Bluetooth headset against `bt` plus `output`. Do not perform either connection change automatically.

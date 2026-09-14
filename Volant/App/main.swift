@@ -1,5 +1,6 @@
 import AppKit
 import CoreAudio
+import CoreWLAN
 
 let app = NSApplication.shared
 // A count-only installed-artifact check: never prints clipboard contents or key material.
@@ -52,6 +53,11 @@ if let index = CommandLine.arguments.firstIndex(of: "--connectivity-check"), Com
         exit(0)
     }
     withExtendedLifetime(service) { app.run() }
+}
+if CommandLine.arguments.contains("--wifi-interface-check") {
+    let client = CWWiFiClient.shared()
+    print("Interfaces: \(client.interfaces()?.count ?? -1); default: \(client.interface() != nil); named: \(client.interface(withName: "en0") != nil)")
+    exit(0)
 }
 let delegate = AppDelegate()
 app.delegate = delegate

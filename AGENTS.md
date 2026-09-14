@@ -23,3 +23,5 @@
 - System controls must re-resolve the current device when activated, honor hardware capabilities, preserve stereo balance and mute state, and report partial failures. Run `tools/check-volume.sh` plus native launcher fixtures for volume changes; signed sandbox writes are separate hardware evidence.
 
 - Bluetooth and Location permissions are requested only on first use of their connectivity commands, never startup. Do not log or persist scanned networks, device identifiers, or Wi-Fi passwords. Never change the owner’s Wi-Fi network in automated checks. Secure-field Return and focus transitions need native tests; unchanged search text must not reset an open form. Raycast extension prototyping is deferred in favor of audio/connectivity.
+
+- After bundle-ID changes, install a fresh app bundle rather than overwriting its directory. Verify connectivity from `/Applications`, not only DerivedData: macOS can retain the old bundle identity and redact Wi-Fi names despite a successful Location grant. See `docs/system-control.md`.
