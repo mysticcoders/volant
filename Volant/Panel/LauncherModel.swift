@@ -9,6 +9,7 @@ enum LauncherAction {
 }
 
 enum ResultRow: Identifiable, Hashable {
+    case volume(VolumeCommand, detail: String)
     case agents
     case agentSession(AgentSession)
     case snippet(Snippet)
@@ -29,6 +30,7 @@ enum ResultRow: Identifiable, Hashable {
     var id: String {
         switch self {
         case .agentSession(let session): return "agent:" + session.id
+        case .volume(let command, _): return "volume:" + command.id
         case .agents: return "command:agents"
         case .calculation(let s): return "calc:\(s)"
         case .unit(let s): return "unit:\(s)"
@@ -51,6 +53,7 @@ enum ResultRow: Identifiable, Hashable {
     var kind: String {
         switch self {
         case .agentSession(let session): return session.status
+        case .volume: return "System"
         case .agents: return "Command"
         case .calculation: return "Calculation"
         case .unit: return "Conversion"
@@ -72,6 +75,7 @@ enum ResultRow: Identifiable, Hashable {
     var primaryAction: String {
         switch self {
         case .agentSession: return "Focus in Herdr"
+        case .volume: return "Apply"
         case .agents: return "Open Agents"
         case .calculation, .unit: return "Copy Result"
         case .app: return "Open Application"
@@ -135,6 +139,8 @@ final class LauncherModel: ObservableObject {
     }
     @Published var searchFocusRequest = UUID()
     @Published var selection: Int = 0
+    @Published var actionFeedback: String?
+    var volumeControl = VolumeControl()
     @Published var notice: String? = nil
     var dismiss: () -> Void = {}
     let agents = AgentsModel()
@@ -227,10 +233,15 @@ final class LauncherModel: ObservableObject {
         let gen = generation
         immediate = []; contactRows = []; fileRows = []
         notice = nil
+        actionFeedback = nil
         files.cancel()
         let q = query.trimmingCharacters(in: .whitespaces)
         guard !q.isEmpty else { showSuggestions(); return }
 
+        if VolumeCommand.matches(q) {
+            refreshVolumeResults()
+            return
+        }
         if showingACP { sections = []; return }
         if showingAgents {
             refreshAgentResults()
@@ -355,6 +366,23 @@ final class LauncherModel: ObservableObject {
         else { selection = 0 }
     }
 
+    private func refreshVolumeResults() {
+        do {
+            let state = try volumeControl.state()
+            let commands = VolumeCommand.parse(query, muted: state.muted)
+            let volumeRows = commands.map { command -> ResultRow in
+                let supported = (command == .mute || command == .unmute) ? state.canSetMute : state.canSetVolume
+                let detail = supported ? (command == .up ? "+5%" : command == .down ? "−5%" : "") : "Hardware control only"
+                return .volume(command, detail: detail)
+            }
+            sections = [ResultSection(title: "Volume · " + state.summary, rows: volumeRows)]
+            notice = commands.isEmpty ? "Try volume up, volume down, mute, unmute, or volume 40%." : nil
+        } catch {
+            sections = []
+            notice = error.localizedDescription
+        }
+    }
+
     func moveSelection(_ delta: Int) {
         let count = rows.count
         guard count > 0 else { return }
@@ -378,10 +406,19 @@ final class LauncherModel: ObservableObject {
     func activateSelection() {
         guard let row = selectedRow else { return }
         switch row {
-        case .extensionResult, .newNote, .calculation, .unit: break
+        case .volume, .extensionResult, .newNote, .calculation, .unit: break
         default: usage.record(key: row.id, query: query)
         }
         switch row {
+        case .volume(let command, _):
+            do {
+                let state = try volumeControl.perform(command)
+                refreshVolumeResults()
+                if let index = rows.firstIndex(where: { $0.id == row.id }) { selection = index }
+                else { selection = 0 }
+                actionFeedback = state.summary
+            } catch { actionFeedback = error.localizedDescription }
+            return
         case .agentSession(let session): agents.focus(session); return
         case .agents: query = "agents"; return
         case .calculation(let text): copy(text)

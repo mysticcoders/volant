@@ -149,3 +149,62 @@ for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
 }
 verify(homeLaunches == [home.id], "Clicking Home above Home Assistant activates Home with pinned harness visible")
 print("PASS: h/ho/hom initial selection, up/down navigation, and Home mouse activation with pinned harness")
+
+
+// Volume uses fictional hardware; native Return exercises routing without changing host audio.
+final class LauncherAudioFixture: AudioHardwareAccess {
+    var value: Float32 = 0.35
+    var muted = false
+    var supported = true
+    var available = true
+    func output() throws -> AudioOutputState {
+        guard available else { throw VolumeFailure(message: "No audio output is available. Connect an output and try again.") }
+        return AudioOutputState(device: 1, name: "Fixture Speakers", volumes: [(0, value)], canSetVolume: supported, muted: muted, canSetMute: supported)
+    }
+    func setVolume(_ value: Float32, channel: UInt32, device: UInt32) throws { self.value = value }
+    func setMute(_ value: Bool, device: UInt32) throws { muted = value }
+}
+let audioFixture = LauncherAudioFixture()
+homePanel.model.volumeControl = VolumeControl(hardware: audioFixture)
+homePanel.toggle()
+homePanel.model.query = "volume"
+RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+verify(homePanel.model.rows.count == 3, "Volume command discovery")
+func captureVolume(_ suffix: String) throws {
+    RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+    let content = homePanel.contentView!
+    content.layoutSubtreeIfNeeded()
+    let bitmap = content.bitmapImageRepForCachingDisplay(in: content.bounds)!
+    content.cacheDisplay(in: content.bounds, to: bitmap)
+    try bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.75])!.write(to: URL(fileURLWithPath: "/tmp/volant-volume-\(suffix)-\(dark ? "dark" : "light").jpg"))
+}
+try captureVolume("commands")
+sendHomeKey("\r", code: 36)
+verify(abs(audioFixture.value - 0.4) < 0.001 && homePanel.isVisible, "Return adjusts volume and keeps panel open")
+verify(homePanel.model.actionFeedback?.contains("40%") == true, "Show actual volume readback")
+homePanel.model.query = "volume 65%"
+sendHomeKey("\r", code: 36)
+verify(abs(audioFixture.value - 0.65) < 0.001, "Exact volume via native Return")
+try captureVolume("applied")
+homePanel.model.query = "mute"
+sendHomeKey("\r", code: 36)
+verify(audioFixture.muted, "Native mute command")
+homePanel.model.query = "unmute"
+sendHomeKey("\r", code: 36)
+verify(!audioFixture.muted, "Native unmute command")
+audioFixture.supported = false
+homePanel.model.query = "volume"
+sendHomeKey("\r", code: 36)
+verify(homePanel.model.actionFeedback?.contains("doesn’t support") == true, "Unsupported hardware shows an actionable error")
+if case .volume(_, let detail) = homePanel.model.rows[0] {
+    verify(detail == "Hardware control only", "Unsupported control detail updates")
+} else { verify(false, "Volume result expected") }
+try captureVolume("unsupported")
+homePanel.model.query = "volume 101"
+verify(homePanel.model.rows.isEmpty && homePanel.model.notice != nil, "Invalid percentage has no action")
+audioFixture.available = false
+homePanel.model.query = "volume"
+verify(homePanel.model.rows.isEmpty && homePanel.model.notice?.contains("No audio output") == true, "Missing output state")
+try captureVolume("missing")
+homePanel.orderOut(nil)
+print("PASS: native volume discovery, Return, exact level, mute/unmute, unsupported and missing output")

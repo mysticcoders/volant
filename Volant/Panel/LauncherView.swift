@@ -21,6 +21,12 @@ struct LauncherView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20).padding(.vertical, 8)
             }
+            if let feedback = model.actionFeedback {
+                Text(feedback).font(.system(size: 12)).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20).padding(.vertical, 8)
+                    .accessibilityLabel("Volume status: " + feedback)
+            }
             if model.showingACP {
                 ACPConversationView(model: model.acp)
             } else {
@@ -106,7 +112,7 @@ struct LauncherView: View {
                     }
                     if model.sections.isEmpty {
                         Text(model.notice ?? (model.query.isEmpty ? "Type to search" : "No results"))
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(.secondary)
                             .padding(.top, 24)
                             .frame(maxWidth: .infinity)
                     }
@@ -132,7 +138,7 @@ struct LauncherView: View {
 
     private func resultButton(_ row: ResultRow) -> some View {
         Button { model.activate(rowID: row.id) } label: {
-            RowView(row: row, model: model)
+            RowView(initialRow: row, model: model)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -183,7 +189,8 @@ private struct KeyCap: View {
 }
 
 private struct RowView: View {
-    let row: ResultRow
+    let initialRow: ResultRow
+    private var row: ResultRow { model.rows.first(where: { $0.id == initialRow.id }) ?? initialRow }
     // Lazy rows must observe selection themselves; parent closure updates can retain stale styling.
     @ObservedObject var model: LauncherModel
     private var selected: Bool { model.selectedRow?.id == row.id }
@@ -207,6 +214,7 @@ private struct RowView: View {
     private var title: String {
         switch row {
         case .agentSession(let session): return session.project
+        case .volume(let command, _): return command.title
         case .agents: return "Open Agents"
         case .calculation(let s): return "= \(s)"
         case .unit(let s): return s
@@ -228,6 +236,7 @@ private struct RowView: View {
     private var subtitle: String? {
         switch row {
         case .agentSession(let session): return session.provider + " · " + session.paneID
+        case .volume(_, let detail): return detail.isEmpty ? nil : detail
         case .agents: return "Find Herdr sessions and focus a pane"
         case .calculation, .unit, .app: return nil
         case .file(let f): return f.url.deletingLastPathComponent().path.replacingOccurrences(of: NSHomeDirectory(), with: "~")
@@ -248,6 +257,7 @@ private struct RowView: View {
     @ViewBuilder private var icon: some View {
         switch row {
         case .agentSession(let session): Image(systemName: session.agentStatus == "blocked" ? "exclamationmark.bubble" : "terminal").font(.system(size: 20)).foregroundStyle(session.agentStatus == "blocked" ? Color.orange : Color.secondary)
+        case .volume(let command, _): Image(systemName: command == .mute ? "speaker.slash" : "speaker.wave.2").font(.system(size: 20)).foregroundStyle(.secondary)
         case .agents: Image(systemName: "terminal").font(.system(size: 20)).foregroundStyle(.secondary)
         case .calculation: Image(systemName: "equal.circle.fill").font(.system(size: 20)).foregroundStyle(.secondary)
         case .unit: Image(systemName: "arrow.left.arrow.right.circle.fill").font(.system(size: 20)).foregroundStyle(.secondary)

@@ -19,3 +19,5 @@
 - Raycast import changes require `tools/check-raycast.sh`; keep personal exports/passwords out of fixtures, logs, and arguments. Preserve unknown fields inside existing config entries as well as at the top level. `tools/check-launcher.sh` and focused SwiftLint rules run from `Scripts/test.sh`; see `docs/launcher-quality.md` for what is and is not verified.
 
 - New launcher queries select their first result; only same-query asynchronous updates preserve selection identity. Lazy result rows observe selection directly. Keep rendered-highlight assertions alongside keyboard/model tests.
+
+- System controls must re-resolve the current device when activated, honor hardware capabilities, preserve stereo balance and mute state, and report partial failures. Run `tools/check-volume.sh` plus native launcher fixtures for volume changes; signed sandbox writes are separate hardware evidence.

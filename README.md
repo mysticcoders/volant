@@ -26,6 +26,7 @@ A small, sandboxed macOS launcher for one person. Apps, per-app hotkeys, calcula
 - **Learned ranking.** Every choice is recorded with the exact query that led to it, in a local SQLite file. A use adds one point to a score with a seven-day half-life, so daily picks outrank an old binge. Among matched apps the score is a bonus, and the app last chosen for the exact query you typed is pinned first, so `sa` learns Safari after one pick. Suggestions on an empty query are your most-chosen apps, filled out with Spotlight's last-used dates. Nothing about this leaves the machine.
 - `cal` shows Today and Tomorrow; merged contact results only appear once Contacts access has been granted via `@`.
 - Footer names the return action for the selected row; command-return runs the secondary one (reveal in Finder, copy phone).
+- **Volume**: `volume` (or `vol`) shows the current output, `volume up` / `volume down` adjust by five percentage points, `volume 40%` sets a level, and `mute` / `unmute` control output mute. Uses CoreAudio inside the sandbox; unsupported hardware is reported. [Behavior and validation](docs/system-control.md).
 - **Snippets**: `snippets` in config, each with a keyword; `snip` lists them, or type the keyword. Return copies the body with `{date}`, `{isodate}`, `{time}`, `{datetime}`, `{clipboard}` and `{uuid}` expanded. Never pastes.
 - **Emoji**: `:rocket` searches 1,765 names from the Unicode database bundled with the app. Return copies.
 - **Aliases**: `aliases` maps a word to an app name; the alias ranks first.
