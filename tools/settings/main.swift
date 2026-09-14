@@ -39,7 +39,11 @@ launchItem.target = actions
 submenu.addItem(withTitle: "Quit Preview", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
 item.submenu = submenu; menu.addItem(item); app.mainMenu = menu
 let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-statusItem.button?.title = "V"
+statusItem.isVisible = CommandLine.arguments.contains("--menu")
+statusItem.button?.image = NSImage(named: "VolantWing")
+statusItem.button?.image?.size = NSSize(width: 16, height: 16)
+statusItem.button?.image?.isTemplate = true
+statusItem.button?.setAccessibilityLabel("Volant Settings Preview")
 statusItem.menu = StatusMenu.make(target: actions, show: #selector(PreviewActions.showLauncher), settings: #selector(PreviewActions.settings), update: #selector(PreviewActions.updates))
 controller.window?.setFrame(NSWindow.frameRect(forContentRect: NSRect(x: 100, y: 100, width: 680, height: 500), styleMask: controller.window!.styleMask), display: true)
 if !CommandLine.arguments.contains("--render") {

@@ -11,6 +11,6 @@ cat > "$bundle/Info.plist" <<'PLIST'
 PLIST
 sources=()
 while IFS= read -r source; do sources+=("$source"); done < <(find Volant Shared -name '*.swift' ! -path 'Volant/App/*')
-swiftc "${sources[@]}" tools/settings/main.swift -o "$bundle/MacOS/VolantSettingsPreview"
+swiftc -target "$(uname -m)-apple-macosx15.0" "${sources[@]}" tools/settings/main.swift -o "$bundle/MacOS/VolantSettingsPreview"
 echo "Preview app: ${bundle%/Contents}"
 "$bundle/MacOS/VolantSettingsPreview" "${1:-light}"

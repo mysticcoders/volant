@@ -20,10 +20,13 @@ final class SettingsWindowController: NSWindowController {
     init(configURL: URL = Preferences.configURL, onChange: @escaping () -> Void) {
         self.onChange = onChange
         self.configURL = configURL
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 760, height: 540),
-                              styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
+        let window = SettingsPanel(contentRect: NSRect(x: 0, y: 0, width: 760, height: 540),
+                              styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
         window.minSize = NSSize(width: 680, height: 500)
         window.title = "Volant Settings"
+        window.collectionBehavior = [.fullScreenNone]
+        window.setAccessibilitySubrole(.dialog)
+        window.hidesOnDeactivate = false
         window.isReleasedWhenClosed = false
         window.setFrameAutosaveName("VolantSettings")
         super.init(window: window)
@@ -72,6 +75,7 @@ private struct SettingsView: View {
                 ForEach(sections, id: \.self) { section in
                     Button { state.section = section } label: {
                         Text(section).frame(maxWidth: .infinity, alignment: .leading).padding(10)
+                            .contentShape(Rectangle())
                             .background(state.section == section ? Color.accentColor.opacity(0.16) : .clear, in: RoundedRectangle(cornerRadius: 7))
                     }.buttonStyle(.plain)
                 }
@@ -183,5 +187,15 @@ private struct SettingsView: View {
     }
     private func apply(_ action: () throws -> Void) {
         do { try action(); onChange() } catch { self.error = error.localizedDescription }
+    }
+}
+
+/// A dialog-style panel tells tiling window managers to float Settings.
+final class SettingsPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+    override func cancelOperation(_ sender: Any?) {
+        // Escape inside a recorder or sheet belongs to that control first.
+        guard attachedSheet == nil else { return }
+        orderOut(sender)
     }
 }
