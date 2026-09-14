@@ -40,5 +40,13 @@
 	<string>macOS requires Location access to show Wi-Fi network names. Volant does not request your coordinates.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>SUEnableDownloaderService</key>
+	<true/>
+	<key>SUEnableInstallerLauncherService</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>$(VOLANT_UPDATE_FEED_URL)</string>
+	<key>SUPublicEDKey</key>
+	<string>$(VOLANT_UPDATE_PUBLIC_KEY)</string>
 </dict>
 </plist>

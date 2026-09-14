@@ -11,9 +11,13 @@ settings:
     DEVELOPMENT_TEAM: REMBT6JY4N
     CODE_SIGN_STYLE: Automatic
     ENABLE_HARDENED_RUNTIME: YES
-    MARKETING_VERSION: "0.1.0"
-    CURRENT_PROJECT_VERSION: "1"
+    MARKETING_VERSION: "0.1.1"
+    CURRENT_PROJECT_VERSION: "3"
     SWIFT_TREAT_WARNINGS_AS_ERRORS: NO
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    exactVersion: 2.10.0
 targets:
   Volant:
     type: application
@@ -33,6 +37,8 @@ targets:
         com.apple.security.personal-information.location: true
         com.apple.security.temporary-exception.mach-lookup.global-name:
           - com.apple.airportd
+          - $(PRODUCT_BUNDLE_IDENTIFIER)-spks
+          - $(PRODUCT_BUNDLE_IDENTIFIER)-spki
     info:
       path: Volant/Info.plist
       properties:
@@ -41,6 +47,10 @@ targets:
         CFBundleIdentifier: com.mysticcoders.volant
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        SUFeedURL: $(VOLANT_UPDATE_FEED_URL)
+        SUPublicEDKey: $(VOLANT_UPDATE_PUBLIC_KEY)
+        SUEnableInstallerLauncherService: true
+        SUEnableDownloaderService: true
         LSUIElement: true
         LSMinimumSystemVersion: "15.0"
         NSHumanReadableCopyright: "Copyright 2026 Mystic Coders, LLC"
@@ -52,6 +62,7 @@ targets:
         NSLocationUsageDescription: "macOS requires Location access to show Wi-Fi network names. Volant does not request your coordinates."
         NSCalendarsFullAccessUsageDescription: "Volant shows today's events and their meeting links. Read-only."
     dependencies:
+      - package: Sparkle
       - target: VolantExtensionHost
         embed: true
       - target: VolantAgentHost
@@ -63,6 +74,9 @@ targets:
         PRODUCT_MODULE_NAME: Volant
         GENERATE_INFOPLIST_FILE: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        VOLANT_UPDATE_FEED_URL: https://usevolant.com/updates/appcast.xml
+        VOLANT_UPDATE_PUBLIC_KEY: "iygB/kS8RY5Jh1g/IkvPRHy47iXRWqFR71jJCz9oTgY="
   VolantExtensionHost:
     type: xpc-service
     platform: macOS

@@ -71,8 +71,10 @@ struct LauncherView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 24, height: 24)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(Color.accentColor)
                 .accessibilityHidden(true)
+                .overlay(LauncherDragHandle())
+                .help("Drag the wing to move Volant")
             TextField("Search for apps, files, contacts, or calculate…", text: $model.query)
                 .textFieldStyle(.plain)
                 .font(.system(size: 22, weight: .regular))
@@ -159,7 +161,7 @@ struct LauncherView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 16, height: 16)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(Color.accentColor)
                 .accessibilityHidden(true)
             Spacer()
             if let row = model.selectedRow {
@@ -214,7 +216,7 @@ private struct RowView: View {
         .padding(.horizontal, 12)
         .frame(height: 40)
         .accessibilityAddTraits(selected ? .isSelected : [])
-        .background(selected ? Color.primary.opacity(0.1) : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(selected ? Color.accentColor.opacity(0.14) : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
     private var title: String {

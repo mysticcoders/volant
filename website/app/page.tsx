@@ -20,18 +20,22 @@ import {
   AccordionContent,
 } from '@/components/ui/accordion';
 
+const repositoryURL = 'https://github.com/mysticcoders/volant';
+const socialURL = 'https://x.com/mysticcoders';
+const downloadURL = '/updates/Volant-0.1.1.dmg';
+
 const questions = [
   [
     'Can I download Volant yet?',
-    'Volant is in active development. There isn’t a packaged public release yet. Download details will be added here when the public release is ready.',
+    'Yes. Download the macOS disk image, open it, and drag Volant into Applications. This is an early release, signed with Developer ID and notarized by Apple. Volant includes Check for Updates in its menu.',
   ],
   [
     'What Mac do I need?',
-    'Volant requires macOS 15 or later. Building from source requires Xcode 26.',
+    'Volant requires macOS 15 or later. The download includes both Apple silicon and Intel versions.',
   ],
   [
     'Where does my data live?',
-    'Notes are plain Markdown files on your Mac. Clipboard history is encrypted locally using a key stored in Keychain. Your configuration is a portable text file. The main app keeps its network access disabled. Optional agent connections use a separate local helper; external harnesses, websites, and Shortcuts have their own access and data handling.',
+    'Notes are plain Markdown files on your Mac. Clipboard history is encrypted locally using a key stored in Keychain. Your configuration is a portable text file. The main app keeps its network access disabled. Update checks and downloads use Sparkle’s separate helper. Optional agent connections use a separate local helper; external harnesses, websites, and Shortcuts have their own access and data handling.',
   ],
   [
     'Does it work with Shortcuts?',
@@ -39,7 +43,7 @@ const questions = [
   ],
   [
     'Is Volant open source?',
-    'The repository is currently private. Public source availability has not been announced.',
+    'Yes. Volant is open source under the MIT license. You can read the code, report issues, and contribute on GitHub.',
   ],
 ];
 
@@ -66,20 +70,20 @@ export default function Home() {
           <a href="#agents">Agents</a>
           <a href="#launcher">Launcher</a>
           <a href="#features">Notes & more</a>
-          <a href="#get" className="nav-source">
-            Release status <ArrowUpRight size={14} />
+          <a href={repositoryURL} className="nav-source">
+            <Image unoptimized src="/icons/github.svg" alt="" width={18} height={18} className="social-icon" /> GitHub
           </a>
         </nav>
-        <a className="button small" href="#get">
-          Meet Volant <ArrowRight size={14} />
+        <a className="button small" href={downloadURL} download>
+          Download for Mac <ArrowRight size={14} />
         </a>
       </header>
       <main id="main">
         <section className="hero wrap">
           <div className="hero-copy">
-            <p className="eyebrow">
-              <span className="status-dot" /> YOUR MAC WORKSPACE, ONE SHORTCUT AWAY
-            </p>
+            <a className="eyebrow open-source-label" href={repositoryURL}>
+              <Code2 size={16} aria-hidden="true" /> OPEN SOURCE · MIT LICENSED
+            </a>
             <h1>
               Your Mac.<br />
               Your agents.<br />
@@ -91,29 +95,26 @@ export default function Home() {
               history, and reusable snippets close at hand.
             </p>
             <div className="hero-actions">
-              <a href="#agents" className="button">
-                Explore Volant <ArrowRight size={17} />
+              <a href={downloadURL} className="button" download>
+                Download for Mac <ArrowRight size={17} />
               </a>
               <a href="#get" className="text-link">
                 Release status <ArrowUpRight size={15} />
               </a>
             </div>
             <p className="availability">
-              Made for macOS 15+ <span>·</span> Local first <span>·</span> In
-              development
+              Made for macOS 15+ <span>·</span> Local first <span>·</span> Early release
             </p>
           </div>
           <div className="hero-visual">
             <div className="orbit-label"><Command size={14} /> One place to keep work moving.</div>
-            <figure className="launcher-preview" aria-label="Illustrative Volant launcher: search for Safari with a pinned Herdr status strip showing three working agents and one needing attention.">
-              <div className="launcher-search"><Command size={20} /><span>sa</span><span className="preview-caret" /></div>
-              <div className="harness-preview"><span className="status-dot" /><strong>Herdr</strong><span>3 working</span><span className="attention">1 needs you</span></div>
-              <div className="preview-group">APPLICATIONS</div>
-              <div className="launcher-result selected"><span className="result-icon">↗</span><div><strong>Safari</strong><small>Application</small></div><CornerDownLeft size={17} /></div>
-              <div className="launcher-result"><span className="result-icon muted-icon">S</span><div><strong>System Settings</strong><small>Application</small></div></div>
-              <div className="preview-footer"><span>Volant</span><span>↵ Open application</span></div>
+            <figure className="native-launcher-preview">
+              {/* oxlint-disable-next-line next/no-html-link-for-pages -- Direct PNG asset, not a Next.js route. */}
+              <a href="/images/launcher-dark.png" aria-label="View the full-size Volant launcher capture">
+              <Image unoptimized src="/images/launcher-dark.png" alt="Volant’s native launcher with coral accents, Safari results, and expanded Herdr pane details showing each fictional project, provider, and status." width={1500} height={960} priority />
+              </a>
             </figure>
-            <div className="preview-caption"><span className="tiny-line" /> Illustrative launcher preview · fictional activity</div>
+            <div className="preview-caption"><span className="tiny-line" /> Native Volant capture · fictional activity</div>
           </div>
         </section>
         <div className="principles wrap">
@@ -138,7 +139,7 @@ export default function Home() {
             <a className="text-link" href="#get">Follow release status <ArrowUpRight size={15} /></a>
           </div>
           <div className="notes-details">
-            <article><span className="detail-number">01</span><div><h3>Find the right session.</h3><p>Find Herdr panes by project, harness, or status, then jump back to the right pane. Pin a harness below the search field to keep working and attention counts in view.</p></div></article>
+            <article><span className="detail-number">01</span><div><h3>Find the right session.</h3><p>Find Herdr panes by project, harness, or status, then jump back to the right pane. Pin a harness below the search field, then optionally expand its overview to see each project, provider, and status without opening the agent list.</p></div></article>
             <article><span className="detail-number">02</span><div><h3>The harnesses you already use.</h3><p>Start native ACP conversations with OpenCode, Claude Code, and Codex. Read streamed responses and tool activity, respond to permission requests, and cancel a turn from Volant. Claude Code and Codex connect through ACP adapters.</p></div></article>
             <article><span className="detail-number">03</span><div><h3>Clear about what’s next.</h3><p>ACP starts a new Volant-owned conversation; it doesn’t attach to an existing terminal session. Cursor support is awaiting verification. Reviewed note and snippet handoff is next; context is never sent automatically.</p></div></article>
           </div>
@@ -276,17 +277,17 @@ export default function Home() {
         <section className="philosophy wrap">
           <p className="eyebrow">04 / DELIBERATELY PERSONAL</p>
           <h2>
-            Your Mac.
+            Open source.
             <br />
-            Your tools. <span>Your business.</span>
+            MIT licensed. <span>Yours to make.</span>
           </h2>
           <p>
-            No Volant account. No telemetry. Your notes, clipboard history, and
-            configuration stay on your Mac. Connected agents use their own
-            accounts, network access, and tool permissions.
+            Built in the open, with the code on GitHub. Use it, change it, and
+            make it yours. No Volant account. No telemetry. Your notes, clipboard
+            history, and configuration stay on your Mac.
           </p>
-          <a href="#details" className="text-link">
-            Understand your data. <ArrowUpRight size={15} />
+          <a href={repositoryURL} className="text-link">
+            <Image unoptimized src="/icons/github.svg" alt="" width={18} height={18} className="social-icon" /> Explore the source <ArrowUpRight size={15} />
           </a>
         </section>
         <section className="faq wrap" id="details">
@@ -299,7 +300,7 @@ export default function Home() {
               <AccordionItem key={q} value={q}>
                 <AccordionTrigger>{q}</AccordionTrigger>
                 <AccordionContent>
-                  <p>{a}</p>
+                  <p>{a}{q === 'Is Volant open source?' && <> <a className="faq-source" href={repositoryURL}>View the source</a> · <a className="faq-source" href={`${repositoryURL}/blob/main/LICENSE`}>Read the MIT license</a>.</>}</p>
                 </AccordionContent>
               </AccordionItem>
             ))}
@@ -314,17 +315,17 @@ export default function Home() {
             height="84"
           />
           <p className="eyebrow">YOUR MAC. YOUR AGENTS. YOUR WORKSPACE.</p>
-          <h2>Make room for Volant.</h2>
+          <h2>Move faster with Volant.</h2>
           <p>
-            A native workspace for the way you work now.
+            Apps, agents, and notes. One shortcut away.
             <br />
-            The public release is on its way.
+            Open source. MIT licensed.
           </p>
-          <a className="button" href="#agents">
-            Explore the features <ArrowRight size={17} />
+          <a className="button" href={downloadURL} download>
+            Download for Mac <ArrowRight size={17} />
           </a>
           <span className="availability">
-            In development · No public download yet
+            Version 0.1.1 · macOS 15+ · Apple silicon & Intel
           </span>
         </section>
       </main>
@@ -335,9 +336,11 @@ export default function Home() {
         <span>
           Made by <a href="https://mysticcoders.com">Mystic Coders</a>.
         </span>
-        <a href="#top">
-          Back to top <ArrowUpRight size={12} />
-        </a>
+        <div className="social-links">
+          <a href={repositoryURL} aria-label="Volant on GitHub"><Image unoptimized src="/icons/github.svg" alt="" width={20} height={20} className="social-icon" /> GitHub</a>
+          <a href={socialURL} aria-label="Mystic Coders on X (Twitter)"><Image unoptimized src="/icons/x.svg" alt="" width={18} height={18} className="social-icon" /> @mysticcoders</a>
+          <a href={`${repositoryURL}/blob/main/LICENSE`}>MIT license</a>
+        </div>
       </footer>
     </>
   );

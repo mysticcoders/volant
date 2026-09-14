@@ -7,3 +7,5 @@ xcuserdata/
 .DS_Store
 
 .env.cloudflare
+
+dist-release.*/

@@ -4,6 +4,7 @@ import ServiceManagement
 /// Owns the long-lived services: menu bar item, hotkeys, app index, clipboard monitor, and the panel.
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var settingsPanel = SettingsWindowController { [weak self] in self?.reloadConfig(); self?.notesStore.reload() }
+    private let updater = AppUpdater()
     private var statusItem: NSStatusItem?
     private var config = Preferences.load()
     private let index = AppIndex()
@@ -73,6 +74,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         NSApp.setActivationPolicy(config.showInDock ? .regular : .accessory)
+        updater.start()
         installApplicationMenu()
         installStatusItem()
         index.start()
@@ -145,6 +147,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         menu.addItem(withTitle: "Show Volant", action: #selector(togglePanel), keyEquivalent: "")
         menu.addItem(withTitle: "Agents…", action: #selector(showAgents), keyEquivalent: "")
+        menu.addItem(withTitle: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "")
         menu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
         menu.addItem(withTitle: "Notes", action: #selector(toggleNotes), keyEquivalent: "")
         menu.addItem(withTitle: "Reveal Config Folder", action: #selector(revealConfig), keyEquivalent: "")
@@ -178,6 +181,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         bar.addItem(item)
         let menu = NSMenu(title: "Volant")
         menu.addItem(withTitle: "Agents…", action: #selector(showAgents), keyEquivalent: "").target = self
+        menu.addItem(withTitle: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "").target = self
         let settings = menu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
         settings.target = self
         menu.addItem(.separator())
@@ -198,6 +202,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
         panel.showAgents()
     }
+
+    @objc private func checkForUpdates() { updater.checkForUpdates() }
 
     @objc private func showSettings() {
         settingsPanel.refresh(config)

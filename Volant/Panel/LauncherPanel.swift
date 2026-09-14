@@ -3,19 +3,23 @@ import SwiftUI
 import OSLog
 
 /// A floating, non-activating, borderless panel that hosts the SwiftUI launcher and toggles on the summon hotkey.
-final class LauncherPanel: NSPanel {
+final class LauncherPanel: NSPanel, NSWindowDelegate {
     static var scale: Double = 1.0
     static var opacity: Double = 1.0
     static var size: NSSize { NSSize(width: 750 * scale, height: 480 * scale) }
     let model: LauncherModel
+    private let positionStore: UserDefaults
+    private var restoringPosition = false
 
-    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), onNote: @escaping (LauncherAction) -> Void) {
+    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), positionStore: UserDefaults = .standard, onNote: @escaping (LauncherAction) -> Void) {
+        self.positionStore = positionStore
         LauncherPanel.scale = min(1.4, max(0.8, config.appearance.scale))
         LauncherPanel.opacity = min(1.0, max(0.5, config.appearance.opacity))
         model = LauncherModel(index: index, clipboard: clipboard, notes: notes, config: config, usage: usage, onNote: onNote)
         super.init(contentRect: NSRect(origin: .zero, size: LauncherPanel.size),
                    styleMask: [.nonactivatingPanel, .borderless, .fullSizeContentView],
                    backing: .buffered, defer: false)
+        delegate = self
         isOpaque = false
         backgroundColor = .clear
         hasShadow = true
@@ -25,15 +29,22 @@ final class LauncherPanel: NSPanel {
         isReleasedWhenClosed = false
         hidesOnDeactivate = false
         model.dismiss = { [weak self] in self?.orderOut(nil) }
-        contentView = NSHostingView(rootView: LauncherView(model: model, agents: model.agents))
+        contentView = NSHostingView(rootView: LauncherView(model: model, agents: model.agents)
+            .background(Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 14)))
     }
 
     override var canBecomeKey: Bool { true }
 
-    /// Clicking anywhere else, or switching apps, dismisses the panel instead of leaving it floating.
+    /// Ordinary search is transient; conversations and unfinished input survive focus changes.
+    var keepsVisibleOnBlur: Bool {
+        model.acp.active || model.acp.submitting ||
+        (model.showingACP && !model.acp.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) ||
+        model.wifiJoin != nil || model.connectivityBusy
+    }
+
     override func resignKey() {
         super.resignKey()
-        if !PermissionGate.isPrompting { orderOut(nil) }
+        if !PermissionGate.isPrompting && !keepsVisibleOnBlur { orderOut(nil) }
     }
 
     func toggle() {
@@ -43,11 +54,15 @@ final class LauncherPanel: NSPanel {
             NSApp.activate(ignoringOtherApps: true)
             return
         }
-        if isVisible { orderOut(nil); return }
+        if isVisible {
+            if isKeyWindow { orderOut(nil) }
+            else { makeKeyAndOrderFront(nil) }
+            return
+        }
         model.isPresented = true
-        model.reset()
+        if !keepsVisibleOnBlur { model.reset() }
         model.resumeAgentsIfNeeded()
-        center(onScreenWithMouse: true)
+        restorePositionOrCenter()
         makeKeyAndOrderFront(nil)
         contentView?.layoutSubtreeIfNeeded()
         if let field = searchInput(in: contentView) {
@@ -80,13 +95,30 @@ final class LauncherPanel: NSPanel {
         super.orderOut(sender)
     }
 
-    private func center(onScreenWithMouse: Bool) {
+    func windowDidMove(_ notification: Notification) {
+        guard isVisible, !restoringPosition else { return }
+        positionStore.set(["x": frame.origin.x, "y": frame.origin.y], forKey: "launcherPosition")
+    }
+
+    private func restorePositionOrCenter() {
+        restoringPosition = true
+        defer { restoringPosition = false }
+        let screens = NSScreen.screens.map(\.visibleFrame)
         let mouse = NSEvent.mouseLocation
-        let screen = NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main
-        guard let frame = screen?.visibleFrame else { return }
-        let origin = NSPoint(x: frame.midX - LauncherPanel.size.width / 2,
-                             y: frame.midY - LauncherPanel.size.height / 2 + frame.height * 0.10)
-        setFrameOrigin(origin)
+        let fallback = screens.first { $0.contains(mouse) } ?? NSScreen.main?.visibleFrame
+        guard let fallback else { return }
+        if let saved = positionStore.dictionary(forKey: "launcherPosition"),
+           let x = saved["x"] as? Double, let y = saved["y"] as? Double, x.isFinite, y.isFinite {
+            let proposed = NSRect(origin: NSPoint(x: x, y: y), size: frame.size)
+            let screen = screens.max {
+                $0.intersection(proposed).size.area < $1.intersection(proposed).size.area
+            }.flatMap { $0.intersects(proposed) ? $0 : nil } ?? fallback
+            setFrameOrigin(NSPoint(x: min(max(x, screen.minX), max(screen.minX, screen.maxX - frame.width)),
+                                   y: min(max(y, screen.minY), max(screen.minY, screen.maxY - frame.height))))
+        } else {
+            setFrameOrigin(NSPoint(x: fallback.midX - frame.width / 2,
+                                   y: fallback.midY - frame.height / 2 + fallback.height * 0.10))
+        }
     }
 
     /// Development aid for screenshots: `Volant --show --query saf`.
@@ -95,4 +127,8 @@ final class LauncherPanel: NSPanel {
     func apply(config: Preferences) { model.config = config }
 
     override func cancelOperation(_ sender: Any?) { orderOut(nil) }
+}
+
+private extension NSSize {
+    var area: CGFloat { max(0, width) * max(0, height) }
 }

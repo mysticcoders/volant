@@ -1,0 +1,18 @@
+<?xml version="1.0" standalone="yes"?><!-- sparkle-sign-warning:
+IMPORTANT: This file was signed by Sparkle. Any modifications to this file requires re-signing this file with generate_appcast or sign_update! The signed signature will be embedded at the end of this file.
+--><rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Volant</title>
+        <item>
+            <title>0.1.1</title>
+            <pubDate>Mon, 14 Sep 2026 13:52:10 -0700</pubDate>
+            <sparkle:version>3</sparkle:version>
+            <sparkle:shortVersionString>0.1.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://usevolant.com/updates/Volant-0.1.1.dmg" length="4499830" type="application/octet-stream" sparkle:edSignature="qTOcz2mX8hxzv+9jXH4/fpXupiXHCjzQsSUCc8G3xAfAuls8r0YA6JRNU9RJhBtCMS7VuB0bDi+wX44ZtMQXAA=="></enclosure>
+        </item>
+    </channel>
+</rss><!-- sparkle-signatures:
+edSignature: alOlXrmadDrQu9XCDh2iiu3yEG4/Fbv+VhX3kLdpc4TSyphtKLsJuO7qcCPRWNamzQcyLU0PcTYb32kvuZ+kDg==
+length: 1005
+-->

@@ -5,6 +5,7 @@ import CryptoKit
 func verify(_ condition: @autoclosure () -> Bool, _ message: String = "Assertion", line: Int = #line) {
     if !condition() { fputs("FAIL at line \(line): \(message)\n", stderr); exit(1) }
 }
+let positionDefaults = UserDefaults(suiteName: "volant.launcher.test." + UUID().uuidString)!
 let app = NSApplication.shared
 let root = URL(fileURLWithPath: CommandLine.arguments[1])
 let dark = CommandLine.arguments.contains("dark")
@@ -60,7 +61,7 @@ print("PASS: launcher row identity, stale click, snippet identity, Screen Sharin
 var launched: [String] = []
 let screenApp = AppEntry(id: "/System/Applications/Utilities/Screen Sharing.app", name: "Screen Sharing", url: URL(fileURLWithPath: "/System/Applications/Utilities/Screen Sharing.app"), lastUsed: Date())
 let appIndex = AppIndex(entries: [screenApp], launch: { launched.append($0.id) })
-let panel = LauncherPanel(index: appIndex, clipboard: clipboard, notes: notes, config: Preferences(), usage: usage, onNote: { _ in })
+let panel = LauncherPanel(index: appIndex, clipboard: clipboard, notes: notes, config: Preferences(), usage: usage, positionStore: positionDefaults, onNote: { _ in })
 panel.model.searchesSecondarySources = false
 panel.toggle()
 RunLoop.main.run(until: Date().addingTimeInterval(0.4))
@@ -100,7 +101,7 @@ let assistant = AppEntry(id: "fixture-assistant", name: "Home Assistant", url: U
 var homeLaunches: [String] = []
 let homeIndex = AppIndex(entries: [home, assistant], launch: { homeLaunches.append($0.id) })
 let homeUsage = UsageStore(url: root.appendingPathComponent("home-\(dark ? "dark" : "light").sqlite"))
-let homePanel = LauncherPanel(index: homeIndex, clipboard: clipboard, notes: notes, config: Preferences(), usage: homeUsage, onNote: { _ in })
+let homePanel = LauncherPanel(index: homeIndex, clipboard: clipboard, notes: notes, config: Preferences(), usage: homeUsage, positionStore: positionDefaults, onNote: { _ in })
 homePanel.model.searchesSecondarySources = false
 homePanel.toggle()
 homePanel.model.promotedHarness = "all" // Render the strip without connecting to any real harness.
@@ -315,3 +316,57 @@ connectivityFixture.callback?(ConnectivitySnapshot(items: [.settings("wifi")], m
 try captureVolume("wifi-denied")
 homePanel.orderOut(nil)
 print("PASS: connectivity lists, password form, cancel, duplicate joins, errors, stale scan rejection, denied state")
+
+
+// A real key-window transfer must preserve a live conversation and unsent input.
+let sticky = LauncherPanel(index: AppIndex(), clipboard: clipboard, notes: notes, config: Preferences(), usage: usage, positionStore: positionDefaults, onNote: { _ in })
+sticky.model.searchesSecondarySources = false
+sticky.model.query = "acp"
+sticky.model.acp.state.phase = "working"
+sticky.model.acp.state.sessionID = "fictional-session"
+sticky.model.acp.draft = "Keep this fictional draft"
+sticky.toggle()
+RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+let otherWindow = NSWindow(contentRect: NSRect(x: 20, y: 20, width: 180, height: 100), styleMask: [.titled], backing: .buffered, defer: false)
+for phase in ["starting", "working", "cancelling", "ready"] {
+    sticky.model.acp.state.phase = phase
+    otherWindow.makeKeyAndOrderFront(nil)
+    RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+    verify(sticky.isVisible && !sticky.isKeyWindow, "ACP remains visible after real focus loss in \(phase)")
+    sticky.toggle()
+    verify(sticky.isVisible && sticky.isKeyWindow, "Summon refocuses a visible conversation")
+}
+sticky.cancelOperation(nil)
+verify(!sticky.isVisible && sticky.model.acp.state.sessionID == "fictional-session", "Explicit dismissal keeps the ACP session")
+sticky.toggle()
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+verify(sticky.model.query == "acp" && sticky.model.acp.draft == "Keep this fictional draft", "Reopening preserves conversation and draft")
+sticky.model.acp.state.phase = "disconnected"
+otherWindow.makeKeyAndOrderFront(nil)
+verify(sticky.isVisible, "Unsent ACP draft survives focus loss")
+sticky.toggle()
+sticky.model.acp.draft = ""
+sticky.model.query = "screen"
+otherWindow.makeKeyAndOrderFront(nil)
+verify(!sticky.isVisible, "Ordinary launcher search still dismisses on blur")
+otherWindow.orderOut(nil)
+
+// Native movement notifications save the position; re-summon does not recenter it.
+sticky.toggle()
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+let screenFrame = NSScreen.main!.visibleFrame
+let movedOrigin = NSPoint(x: screenFrame.minX + 24, y: screenFrame.minY + 36)
+sticky.setFrameOrigin(movedOrigin)
+RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+verify(positionDefaults.dictionary(forKey: "launcherPosition") != nil, "Window move saves position")
+sticky.orderOut(nil)
+sticky.toggle()
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+verify(sticky.frame.origin == movedOrigin, "Re-summon keeps the moved position")
+sticky.orderOut(nil)
+positionDefaults.set(["x": 100000.0, "y": 100000.0], forKey: "launcherPosition")
+sticky.toggle()
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+verify(NSScreen.screens.contains { $0.visibleFrame.contains(sticky.frame) }, "Offscreen saved position is recovered onto a visible display")
+sticky.orderOut(nil)
+print("PASS: actual ACP focus loss/refocus, explicit dismissal, draft preservation, ordinary blur, saved placement, and offscreen recovery")
