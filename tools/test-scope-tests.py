@@ -1,5 +1,6 @@
 import importlib.util
 import unittest
+from pathlib import Path
 
 spec = importlib.util.spec_from_file_location("scope", "tools/test-scope.py")
 scope = importlib.util.module_from_spec(spec)
@@ -19,6 +20,11 @@ class ScopeTests(unittest.TestCase):
                      "Volant/Notes/LiveMarkdownEditor.swift", "Shared/LauncherRouting.swift",
                      "tools/launcher/check.swift"]:
             self.assertEqual(scope.classify([path]), {"native": True, "ui": True}, path)
+
+    def test_current_swiftui_surfaces_are_classified(self):
+        for path in Path("Volant").rglob("*.swift"):
+            if "import SwiftUI" in path.read_text():
+                self.assertTrue(scope.classify([path.as_posix()])["ui"], str(path))
 
     def test_mixed_and_deleted_paths(self):
         self.assertTrue(scope.classify(["docs/a.md", "Volant/Settings/OldView.swift"])["ui"])
