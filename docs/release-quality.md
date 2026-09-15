@@ -67,3 +67,16 @@ The repository is public under MIT. The website highlights that in its hero, mai
 ## Local Settings test DMG — 0.1.2 build 4
 
 `dist-release.ykah5E/updates/Volant-0.1.2.dmg` contains the expanded Settings, compact menu and app shortcut/alias editor. Archive/export, Apple notarization, stapling, Gatekeeper and signed appcast verification passed. It has not replaced the public 0.1.1 feed. See [Settings quality](settings-quality.md) for native UI evidence and installed hotkey verification still required. An earlier local candidate in `dist-release.3pKrno` is superseded; deliver only `ykah5E`.
+
+
+## 0.1.3 build 5 — September 15, 2026
+
+Prepared from release version commit `82590f3`, incorporating main `683c24e`. Includes the latest Settings/shortcuts, emoji grid, Caffeinate cup, window positioning and translation UI. Output: `dist-release.emndwF/`.
+
+Apple accepted app submission `823e6314-1f14-4350-bb1e-762f86d4a225` and DMG submission `124f624e-bbd3-4952-9741-5cca146f5181`. Both artifacts were stapled and passed Gatekeeper as Notarized Developer ID. Mounted app signature/staple, version/build, `x86_64 arm64` slices and Applications symlink verified. SHA-256: `eb7785cefa3a8f1288fc272c77bfa42c01bbf8acff9fc873c376efc8ca05452b`. Generated Sparkle enclosure metadata matches build 5, version 0.1.3 and the DMG size; signed appcast verification passed.
+
+Local diff-selected native checks passed; UI fixtures correctly skipped for this version/download-only change. Feature UI verification is recorded in the earlier feature PRs. Website production build, TypeScript and page lint passed.
+
+Publish in two stages: first the new DMG and website links while retaining the old feed, verify public delivery, then publish the signed build-5 appcast. Existing public DMGs and checksums remain available. Public deployment and checksum verification pending at preparation time.
+
+Remaining limits: no installed two-version Sparkle upgrade, Intel hardware smoke test, or signed installed-app Apple translation/model-download verification. This publication does not replace the owner's running app or interrupt its Caffeinate session.
