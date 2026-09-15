@@ -41,3 +41,8 @@ Hover defect: `.button.small` kept a transparent background while `.button:hover
 ## Open-source launch and 0.1.1
 
 Published Cloudflare version `edc2b78b-084f-4a71-91cc-9e6ead8895ee`. Reviewed the open-source hero label and “Move faster with Volant” footer at desktop and 390px widths. Public accessibility tree confirms GitHub links, MIT copy and 0.1.1 download destinations. Production build, TypeScript and page lint pass. Downloaded public DMG checksum and signed appcast match the release; Gatekeeper and stapler accept the DMG.
+
+
+## 0.1.3 download — September 15, 2026
+
+Published the notarized 0.1.3 build-5 DMG and updated download URLs/version label through Cloudflare `bdb53f1a-09b7-41b8-a2ee-94f584b23bf6`. Production build, TypeScript and page lint passed. Public HTML links point to 0.1.3; a fresh DMG download exactly matches the local notarized bytes and passes Gatekeeper/stapler. Existing assets remain available. No layout or screenshot changes were made, so no additional visual review was claimed. Sparkle feed is updated only after this public-DMG verification.

@@ -77,6 +77,6 @@ Apple accepted app submission `823e6314-1f14-4350-bb1e-762f86d4a225` and DMG sub
 
 Local diff-selected native checks passed; UI fixtures correctly skipped for this version/download-only change. Feature UI verification is recorded in the earlier feature PRs. Website production build, TypeScript and page lint passed.
 
-Publish in two stages: first the new DMG and website links while retaining the old feed, verify public delivery, then publish the signed build-5 appcast. Existing public DMGs and checksums remain available. Public deployment and checksum verification pending at preparation time.
+Publish in two stages: first the new DMG and website links while retaining the old feed, verify public delivery, then publish the signed build-5 appcast. Existing public DMGs and checksums remain available. Download published through Cloudflare version `bdb53f1a-09b7-41b8-a2ee-94f584b23bf6` after PR #20 passed its native/scope/PR gate checks. The live homepage offers 0.1.3. A fresh public download matched the SHA-256 above and passed stapler/Gatekeeper. The follow-up publishes the exact already-verified signed build-5 appcast; public feed verification follows activation.
 
 Remaining limits: no installed two-version Sparkle upgrade, Intel hardware smoke test, or signed installed-app Apple translation/model-download verification. This publication does not replace the owner's running app or interrupt its Caffeinate session.
