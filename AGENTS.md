@@ -1,3 +1,12 @@
+# Delivery workflow
+
+- Make changes on a focused branch, not directly on `main`. Commit, push the branch, and open a pull request with the problem, resulting behavior, validation, and remaining limitations.
+- Wait for GitHub workflow checks on the latest PR commit to finish successfully before merging. Fix failures on the branch; do not bypass failed or pending checks. Merge the PR, then return to `main` and fast-forward it from the remote. Repository work is authorized through this cycle; publishing the website or distributing a release remains separately scoped.
+- `PR gate` is the stable aggregate check. Native build/logic tests run for native or test-infrastructure changes; UI jobs run only when the shared change classifier identifies UI-affecting files. A skipped UI job is not visual verification.
+- Use `Scripts/test.sh --base origin/main` locally. It includes committed branch changes plus staged, unstaged and untracked changes when selecting UI tests. Use `--ui always` for an unlisted UI impact, `--ui only` to rerun UI checks, or `--ui never` for an explicitly scoped non-UI run. Explain overrides in the PR. Keep `tools/test-scope.py` and its tests current when adding UI surfaces or dependencies.
+- Do not launch previews, UI automation, or appearance checks for docs, backend-only changes or unchanged UI. When UI behavior or appearance changes, inspect only the affected surfaces and navigation destinations in light/dark appearances; hosted runners do not replace installed-app, hardware, signing or visual inspection evidence.
+- Unit-test hosts must not start real clipboard monitoring, hotkeys, menus, updater checks or normal app windows. Keep test fixtures isolated from owner data.
+
 # Project working notes
 
 - Keep notes as plain Markdown files. Failed creates/updates must remain dirty through reload and support retry; never report Saved while any dirty write remains.

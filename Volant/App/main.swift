@@ -3,6 +3,11 @@ import CoreAudio
 import CoreWLAN
 
 let app = NSApplication.shared
+// Hosted unit tests must not start the real menu, clipboard monitor, hotkeys or updater.
+if ProcessInfo.processInfo.environment["VOLANT_UNIT_TESTING"] == "1" {
+    app.run()
+    exit(0)
+}
 // A count-only installed-artifact check: never prints clipboard contents or key material.
 if CommandLine.arguments.contains("--storage-check") {
     let store = ClipboardStore(retention: Preferences.load().clipboardRetention)

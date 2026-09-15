@@ -140,5 +140,7 @@ schemes:
     run:
       config: Debug
     test:
+      environmentVariables:
+        VOLANT_UNIT_TESTING: "1"
       config: Debug
       targets: [VolantTests]
