@@ -6,6 +6,7 @@ trap 'rm -rf "$fixture_dir"' EXIT
 bundle="$fixture_dir/Volant Settings Preview.app/Contents"
 mkdir -p "$bundle/MacOS" "$bundle/Resources"
 cp dist/export/Volant.app/Contents/Resources/Assets.car "$bundle/Resources/"
+cp Volant/Resources/emoji.json "$bundle/Resources/"
 cat > "$bundle/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>CFBundleExecutable</key><string>VolantSettingsPreview</string><key>CFBundleName</key><string>Volant Settings Preview</string><key>CFBundleIdentifier</key><string>com.mysticcoders.volant.settingspreview</string><key>NSAccentColorName</key><string>AccentColor</string><key>CFBundlePackageType</key><string>APPL</string></dict></plist>
 PLIST

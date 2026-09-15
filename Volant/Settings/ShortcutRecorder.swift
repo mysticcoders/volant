@@ -63,8 +63,8 @@ final class RecorderButton: NSButton {
     override var acceptsFirstResponder: Bool { true }
     @objc func beginRecording() { recording = true; window?.makeFirstResponder(self); updateTitle() }
     func updateTitle() {
-        title = recording ? "Press shortcut… (Esc to cancel)" : value.isEmpty ? "Record Shortcut…" : value
-        setAccessibilityLabel("Global shortcut: " + title)
+        title = recording ? "Press shortcut… (Esc to cancel)" : value.isEmpty ? "Record Hotkey" : KeyCombo.display(value)
+        setAccessibilityLabel("Global shortcut: " + (value.isEmpty || recording ? title : value))
         updateRemoveButton()
     }
     override func resignFirstResponder() -> Bool { recording = false; updateTitle(); return super.resignFirstResponder() }

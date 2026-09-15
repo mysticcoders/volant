@@ -12,11 +12,11 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
     private var restoringPosition = false
     let snapGuides = LauncherSnapGuides()
 
-    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), positionStore: UserDefaults = .standard, onNote: @escaping (LauncherAction) -> Void) {
+    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), positionStore: UserDefaults = .standard, caffeinate: CaffeinateService = CaffeinateService(), onNote: @escaping (LauncherAction) -> Void) {
         self.positionStore = positionStore
         LauncherPanel.scale = min(1.4, max(0.8, config.appearance.scale))
         LauncherPanel.opacity = min(1.0, max(0.5, config.appearance.opacity))
-        model = LauncherModel(index: index, clipboard: clipboard, notes: notes, config: config, usage: usage, onNote: onNote)
+        model = LauncherModel(index: index, clipboard: clipboard, notes: notes, config: config, usage: usage, caffeinate: caffeinate, onNote: onNote)
         super.init(contentRect: NSRect(origin: .zero, size: LauncherPanel.size),
                    styleMask: [.nonactivatingPanel, .borderless, .fullSizeContentView],
                    backing: .buffered, defer: false)
@@ -72,16 +72,32 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
             model.searchFocusRequest = UUID()
         }
         DispatchQueue.main.async { [weak self] in
-            guard let self, self.isVisible, !self.isKeyWindow else { return }
-            Logger(subsystem: "com.mysticcoders.volant", category: "Launcher").fault("Launcher failed to become key; dismissing instead of leaving an unresponsive panel.")
-            self.orderOut(nil)
+            guard let self, self.isVisible else { return }
+            guard self.isKeyWindow else {
+                Logger(subsystem: "com.mysticcoders.volant", category: "Launcher").fault("Launcher failed to become key; dismissing instead of leaving an unresponsive panel.")
+                self.orderOut(nil)
+                return
+            }
+            // SwiftUI can finish installing its focus state after the initial native focus.
+            // Reconcile once after layout, without interrupting an existing text editor.
+            if !(self.firstResponder is NSTextView), let field = self.searchInput(in: self.contentView) {
+                self.makeFirstResponder(field)
+            }
         }
     }
 
     private func searchInput(in view: NSView?) -> NSTextField? {
         guard let view else { return nil }
-        if let field = view as? NSTextField, field.placeholderString == "Search for apps, files, contacts, or calculate…" { return field }
+        if let field = view as? NSTextField, ["Search for apps, files, contacts, or calculate…", "Search emoji…"].contains(field.placeholderString ?? "") { return field }
         return view.subviews.lazy.compactMap { self.searchInput(in: $0) }.first
+    }
+
+    func showEmoji() {
+        if NSApp.modalWindow != nil { toggle(); return }
+        if !isVisible { toggle() } else { makeKeyAndOrderFront(nil) }
+        guard isVisible else { return }
+        model.query = ":"
+        model.searchFocusRequest = UUID()
     }
 
     func showAgents() {

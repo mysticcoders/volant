@@ -37,8 +37,8 @@ enum Backup {
         guard let data = try? Data(contentsOf: configURL), let incoming = try? JSONDecoder().decode(Preferences.self, from: data) else {
             alert("Import failed", "No readable config.json in that folder."); return false
         }
-        var summary = "Summon: \(incoming.summonHotKey)\nNotes: \(incoming.notesHotKey)\n"
-        summary += "App hotkeys: " + (incoming.appHotKeys.isEmpty ? "none" : incoming.appHotKeys.map { "\($0.hotKey) → \($0.bundleIdentifier)" }.joined(separator: ", ")) + "\n"
+        var summary = "Summon: \(KeyCombo.display(incoming.summonHotKey))\nNotes: \(KeyCombo.display(incoming.notesHotKey))\n"
+        summary += "App hotkeys: " + (incoming.appHotKeys.isEmpty ? "none" : incoming.appHotKeys.map { "\(KeyCombo.display($0.hotKey)) → \($0.bundleIdentifier)" }.joined(separator: ", ")) + "\n"
         summary += "Quicklinks: " + (incoming.quicklinks.isEmpty ? "none" : incoming.quicklinks.map { "\($0.name) → \($0.url)" }.joined(separator: ", ")) + "\n"
         summary += "Snippets: \(incoming.snippets.count)   Aliases: \(incoming.aliases.count)\n"
         let noteCount = (try? FileManager.default.contentsOfDirectory(atPath: notesURL.path))?.filter { $0.hasSuffix(".md") }.count ?? 0

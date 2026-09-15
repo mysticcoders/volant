@@ -5,17 +5,18 @@ import Carbon.HIToolbox
 enum GlobalShortcutStore {
     static func save(key: String, value: String, expectedValue: String, at url: URL,
                      available: (KeyCombo) -> Bool) throws {
-        guard ["summonHotKey", "notesHotKey"].contains(key) else { throw BindingFailure(message: "Unknown global shortcut.") }
+        guard ["summonHotKey", "notesHotKey", "emojiHotKey"].contains(key) else { throw BindingFailure(message: "Unknown global shortcut.") }
         let data = try Data(contentsOf: url)
         let config = try JSONDecoder().decode(Preferences.self, from: data)
-        let current = key == "summonHotKey" ? config.summonHotKey : config.notesHotKey
+        let bindings = ["summonHotKey": config.summonHotKey, "notesHotKey": config.notesHotKey, "emojiHotKey": config.emojiHotKey]
+        let current = bindings[key] ?? ""
         guard current == expectedValue else { throw BindingFailure(message: "This shortcut changed in the configuration file. Reload Configuration before saving again.") }
         if !value.isEmpty {
         guard let combo = KeyCombo(parsing: value), combo.carbonModifiers & UInt32(cmdKey | controlKey | optionKey) != 0 else {
             throw BindingFailure(message: "Include Command, Control or Option with a key.")
         }
-        let other = key == "summonHotKey" ? config.notesHotKey : config.summonHotKey
-        guard !([other] + config.appHotKeys.map(\.hotKey)).contains(where: { KeyCombo(parsing: $0) == combo }) else {
+        let others = bindings.filter { $0.key != key }.map(\.value)
+        guard !(others + config.appHotKeys.map(\.hotKey)).contains(where: { KeyCombo(parsing: $0) == combo }) else {
             throw BindingFailure(message: "That shortcut is already assigned in Volant.")
         }
         guard combo == KeyCombo(parsing: current) || available(combo) else {

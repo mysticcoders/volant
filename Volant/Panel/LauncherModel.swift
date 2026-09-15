@@ -12,6 +12,8 @@ enum LauncherAction {
 }
 
 enum ResultRow: Identifiable, Hashable {
+    case core(CoreCommand)
+    case caffeinate(CaffeinateCommand)
     case systemSettings(SystemSettingsDestination)
     case settings
     case reloadConfig
@@ -37,6 +39,8 @@ enum ResultRow: Identifiable, Hashable {
 
     var id: String {
         switch self {
+        case .core(let command): return "core:" + command.rawValue
+        case .caffeinate(let command): return "caffeinate:" + command.id
         case .agentSession(let session): return "agent:" + session.id
         case .connectivity(let item): return item.id
         case .audioRoute(let route): return "audio:" + route.id
@@ -65,6 +69,7 @@ enum ResultRow: Identifiable, Hashable {
     /// Right-aligned kind label, as in Raycast's "Application" / "Command" column.
     var kind: String {
         switch self {
+        case .core, .caffeinate: return "Command"
         case .agentSession(let session): return session.status
         case .connectivity: return "Connectivity"
         case .audioRoute(let route): return route.current ? "Current" : "Device"
@@ -88,9 +93,18 @@ enum ResultRow: Identifiable, Hashable {
         }
     }
 
+    var isCoreCommand: Bool {
+        switch self {
+        case .core, .caffeinate, .settings, .reloadConfig, .agents, .volume, .audioRoute, .connectivity, .systemSettings: return true
+        default: return false
+        }
+    }
+
     /// Footer label for return.
     var primaryAction: String {
         switch self {
+        case .core: return "Open Command"
+        case .caffeinate(let command): return command.stop ? "Stop" : "Start"
         case .agentSession: return "Focus in Herdr"
         case .connectivity(let item):
             if case .wifi(let network) = item { return network.current ? "Connected" : "Join Network" }
@@ -138,6 +152,7 @@ struct ResultSection: Identifiable {
 /// Otherwise results merge: math and units first, then apps, contacts, and files once the query is long enough.
 final class LauncherModel: ObservableObject {
     @Published var query: String = "" { didSet { if oldValue != query { refresh() } } }
+    private var flattenedRows: [ResultRow] = []
     @Published private var displayedSections: [ResultSection] = []
     var sections: [ResultSection] {
         get { displayedSections }
@@ -158,12 +173,22 @@ final class LauncherModel: ObservableObject {
                 } else { normalized.append(ResultSection(title: section.title, rows: unique)) }
             }
             if duplicates > 0 { Logger(subsystem: "com.mysticcoders.volant", category: "Launcher").warning("Duplicate result identities ignored: \(duplicates)") }
+            flattenedRows = normalized.flatMap(\.rows)
             displayedSections = normalized
         }
     }
     @Published var searchFocusRequest = UUID()
     @Published var selection: Int = 0
     @Published var actionFeedback: String?
+    let caffeinate: CaffeinateService
+    private var caffeinateSubscription: AnyCancellable?
+    var showingEmoji: Bool { query.trimmingCharacters(in: .whitespaces).hasPrefix(":") }
+    var emojiSearch: (String) -> [EmojiEntry] = { EmojiIndex.search($0, limit: Int.max) }
+    var searchText: String {
+        get { showingEmoji ? String(query.dropFirst()) : query }
+        set { query = showingEmoji ? ":" + newValue : newValue }
+    }
+    static let emojiColumns = 10
     var volumeControl = VolumeControl()
     var audioRouting: AudioRouting = CoreAudioRouting()
     lazy var connectivity: ConnectivityAccess = ConnectivityService()
@@ -211,7 +236,7 @@ final class LauncherModel: ObservableObject {
     }
 
 
-    var rows: [ResultRow] { sections.flatMap(\.rows) }
+    var rows: [ResultRow] { flattenedRows }
     var selectedRow: ResultRow? { rows.indices.contains(selection) ? rows[selection] : nil }
 
     private let index: AppIndex
@@ -230,7 +255,8 @@ final class LauncherModel: ObservableObject {
     private var contactRows: [ResultRow] = []
     private var fileRows: [ResultRow] = []
 
-    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), onNote: @escaping (LauncherAction) -> Void) {
+    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), caffeinate: CaffeinateService = CaffeinateService(), onNote: @escaping (LauncherAction) -> Void) {
+        self.caffeinate = caffeinate
         self.usage = usage
         self.index = index
         self.clipboard = clipboard
@@ -238,6 +264,12 @@ final class LauncherModel: ObservableObject {
         self.config = config
         self.onNote = onNote
         self.promotedHarness = config.promotedHarness
+        caffeinateSubscription = caffeinate.$command.dropFirst().sink { [weak self] _ in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                if CaffeinateCommand.matches(self.query) { self.refreshCaffeinateResults() }
+            }
+        }
         agentSubscription = agents.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.refreshAgentResults() }
         }
@@ -254,7 +286,7 @@ final class LauncherModel: ObservableObject {
 
     private func showSuggestions() {
         let apps = index.suggestions(usage: usage).map { ResultRow.app($0) }
-        sections = apps.isEmpty ? [] : [ResultSection(title: "Suggestions", rows: apps)]
+        sections = (apps.isEmpty ? [] : [ResultSection(title: "Suggestions", rows: apps)]) + [ResultSection(title: "Volant Commands", rows: CoreCommand.allCases.map(ResultRow.core) + [.settings, .reloadConfig])]
     }
 
     private func refresh() {
@@ -269,6 +301,8 @@ final class LauncherModel: ObservableObject {
         let q = query.trimmingCharacters(in: .whitespaces)
         guard !q.isEmpty else { showSuggestions(); return }
 
+        if CaffeinateCommand.matches(q) { refreshCaffeinateResults(); return }
+        if q.lowercased() == "emoji" { query = ":"; return }
         if ["volant settings", "reload", "reload config", "reload configuration"].contains(q.lowercased()) {
             sections = [ResultSection(title: "Volant", rows: [q.lowercased().contains("reload") ? .reloadConfig : .settings])]
             return
@@ -326,7 +360,7 @@ final class LauncherModel: ObservableObject {
             return
         }
         if q.hasPrefix(":") {
-            let rows = EmojiIndex.search(String(q.dropFirst())).map { ResultRow.emoji($0) }
+            let rows = emojiSearch(String(q.dropFirst())).map { ResultRow.emoji($0) }
             sections = rows.isEmpty ? [] : [ResultSection(title: "Emoji", rows: rows)]
             return
         }
@@ -367,7 +401,7 @@ final class LauncherModel: ObservableObject {
         if let conv = UnitConverter.convert(q) { answers.append(.unit(UnitConverter.format(conv))) }
         immediate = []
         let builtins: [(String, ResultRow)] = [("Volant Settings", .settings), ("Reload Configuration", .reloadConfig)]
-        let matchingCommands = builtins.filter { $0.0.localizedCaseInsensitiveContains(q) }.map { $0.1 }
+        let matchingCommands = CoreCommand.search(q).map(ResultRow.core) + builtins.filter { $0.0.localizedCaseInsensitiveContains(q) }.map { $0.1 }
         let words = q.split(separator: " ", maxSplits: 1).map(String.init)
         let head = words.first?.lowercased() ?? ""
         let tail = words.count > 1 ? words[1] : ""
@@ -490,17 +524,34 @@ final class LauncherModel: ObservableObject {
         }
     }
 
+    private func refreshCaffeinateResults() {
+        let selectedID = selectedRow?.id
+        var commands = CaffeinateCommand.parse(query)
+        if caffeinate.isActive { commands = [.off] }
+        sections = [ResultSection(title: "Caffeinate", rows: commands.map(ResultRow.caffeinate))]
+        notice = commands.isEmpty ? "Try caffeinate 30m, caffeinate 1h display, or caffeinate off (up to 24 hours)." : nil
+        if let selectedID, let index = rows.firstIndex(where: { $0.id == selectedID }) { selection = index }
+        else { selection = 0 }
+    }
+
+    func moveEmojiSelection(_ delta: Int) {
+        guard !rows.isEmpty else { return }
+        selection = min(max(0, selection + delta), rows.count - 1)
+    }
+
     func moveSelection(_ delta: Int) {
         let count = rows.count
         guard count > 0 else { return }
         selection = (selection + delta + count) % count
     }
 
-    private func copy(_ text: String) {
+    var copyText: (String) -> Void = { text in
         let pb = NSPasteboard.general
         pb.clearContents()
         pb.setString(text, forType: .string)
     }
+
+    private func copy(_ text: String) { copyText(text) }
 
     /// Clicks resolve the visible row's stable identity against the current results.
     /// A stale row must never fall back to index zero or launch a different app.
@@ -517,6 +568,12 @@ final class LauncherModel: ObservableObject {
         default: usage.record(key: row.id, query: query)
         }
         switch row {
+        case .core(let command): query = command.query; return
+        case .caffeinate(let command):
+            let succeeded = caffeinate.perform(command)
+            refreshCaffeinateResults()
+            actionFeedback = succeeded ? (command.stop ? "Caffeinate stopped." : "Caffeinate started.") : caffeinate.error
+            return
         case .connectivity(let item):
             switch item {
             case .settings(let source): ConnectivityService.openSettings(source)

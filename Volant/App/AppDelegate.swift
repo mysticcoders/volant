@@ -137,6 +137,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        panel.model.caffeinate.stop()
         clipboardMonitor.stop()
         notesStore.flush()
         HotKeyCenter.shared.unregisterAll()
@@ -162,13 +163,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         var failures: [String] = []
         if let combo = KeyCombo(parsing: config.summonHotKey) {
             if HotKeyCenter.shared.register(combo, handler: { [weak self] in self?.togglePanel() }) == nil {
-                failures.append("Show Volant shortcut unavailable: " + config.summonHotKey)
+                failures.append("Show Volant shortcut unavailable: " + KeyCombo.display(config.summonHotKey))
             }
         }
         if let combo = KeyCombo(parsing: config.notesHotKey) {
             if HotKeyCenter.shared.register(combo, handler: { [weak self] in self?.toggleNotes() }) == nil {
-                failures.append("Open Notes shortcut unavailable: " + config.notesHotKey)
+                failures.append("Open Notes shortcut unavailable: " + KeyCombo.display(config.notesHotKey))
             }
+        }
+        if let combo = KeyCombo(parsing: config.emojiHotKey) {
+            if HotKeyCenter.shared.register(combo, handler: { [weak self] in
+                self?.panel.showEmoji()
+            }) == nil { failures.append("Search Emoji shortcut unavailable: " + KeyCombo.display(config.emojiHotKey)) }
         }
         failures += AppHotKeys.register(config.appHotKeys)
         settingsPanel.state.registrationErrors = failures
