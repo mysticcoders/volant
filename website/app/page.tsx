@@ -22,7 +22,7 @@ import {
 
 const repositoryURL = 'https://github.com/mysticcoders/volant';
 const socialURL = 'https://x.com/mysticcoders';
-const downloadURL = '/updates/Volant-0.1.1.dmg';
+const downloadURL = '/updates/Volant-0.1.3.dmg';
 
 const questions = [
   [
@@ -325,7 +325,7 @@ export default function Home() {
             Download for Mac <ArrowRight size={17} />
           </a>
           <span className="availability">
-            Version 0.1.1 · macOS 15+ · Apple silicon & Intel
+            Version 0.1.3 · macOS 15+ · Apple silicon & Intel
           </span>
         </section>
       </main>
