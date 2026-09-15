@@ -1,0 +1,10 @@
+1fd0fcfd403d432b2e8b432c4df307466dbb983c
+2cc970a87f50dc056f4fa174b7b5c48b6d70bba8c5ece7ad0ce076e53f2f5e95  tools/memory/main.swift
+ProductName:		macOS
+ProductVersion:		27.0
+BuildVersion:		26A428
+arm64
+Apple Swift version 6.3.3 (swiftlang-6.3.3.1.3 clang-2100.1.1.101)
+Target: arm64-apple-macosx28.0
+hw.memsize: 137438953472
+hw.model: Mac16,6
