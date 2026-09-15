@@ -34,11 +34,15 @@ if [[ "$ui_mode" != only ]]; then
     ./tools/check-raycast.sh
     ./tools/check-volume.sh
     ./tools/check-acp.sh
-    xcodebuild "${build_options[@]}" test -skip-testing:VolantTests/NotesRenderTests -skip-testing:VolantTests/LiveMarkdownTests
+    xcodebuild "${build_options[@]}" test -skip-testing:VolantTests/NotesRenderTests \
+        -skip-testing:VolantTests/LiveMarkdownTests/testLanguageChangePreservesContentSelectionAndUndo \
+        -skip-testing:VolantTests/LiveMarkdownTests/testTypingFenceAndChangingModesDoNotRewriteSource
 fi
 if [[ "$run_ui" == true ]]; then
     ./tools/check-launcher.sh
-    xcodebuild "${build_options[@]}" test -only-testing:VolantTests/NotesRenderTests -only-testing:VolantTests/LiveMarkdownTests
+    xcodebuild "${build_options[@]}" test -only-testing:VolantTests/NotesRenderTests \
+        -only-testing:VolantTests/LiveMarkdownTests/testLanguageChangePreservesContentSelectionAndUndo \
+        -only-testing:VolantTests/LiveMarkdownTests/testTypingFenceAndChangingModesDoNotRewriteSource
 else
     echo 'Skipped native UI/keyboard/render fixtures: no UI changes, or explicitly disabled.'
 fi
