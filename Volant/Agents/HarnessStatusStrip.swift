@@ -84,17 +84,19 @@ private struct HarnessPaneSummary: View {
         if session.agentStatus == "working" { return .accentColor }
         return .secondary
     }
+    private var providerLabel: String { session.provider + " · " + session.paneID }
+    private var helpText: String { [session.project, session.provider, session.paneID, session.status].joined(separator: " · ") }
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: session.agentStatus == "blocked" ? "exclamationmark.circle.fill" : "circle.fill")
                 .font(.system(size: 8))
                 .foregroundStyle(statusColor)
             Text(session.project).fontWeight(.medium).lineLimit(1)
-            Text(session.provider + " · " + session.paneID).foregroundStyle(.secondary).lineLimit(1)
+            Text(providerLabel).foregroundStyle(.secondary).lineLimit(1)
             Spacer(minLength: 8)
             Text(session.status).foregroundStyle(.secondary)
         }
-        .help(session.project + " · " + session.provider + " · " + session.paneID + " · " + session.status)
+        .help(helpText)
         .accessibilityElement(children: .combine)
     }
 }

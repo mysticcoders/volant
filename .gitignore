@@ -9,3 +9,7 @@ xcuserdata/
 .env.cloudflare
 
 dist-release.*/
+
+# Python test tooling caches
+__pycache__/
+*.pyc
