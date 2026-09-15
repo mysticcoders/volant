@@ -41,3 +41,5 @@
 - Settings shortcut edits must preserve unknown configuration fields and reject stale snapshots. Recording a key is not proof of global Carbon delivery. Keep reserved commands in Shared/LauncherRouting.swift so import and editing agree; check native Settings section sizes after navigation.
 
 - Translation requests own immutable text/language snapshots and reject stale completions. Keep drafts in memory, copy only on request, and never log source/result text or raw framework errors. Use runtime Apple language availability and system download consent; fake translation fixtures do not verify installed language models or the signed app's service access.
+
+- Dictionary lookups use validated UTF-16 ranges and explicit ownership of returned CFStrings. Keep calls off the UI executor, reject stale completions after edits/dismissal, and never persist or log lookup text. See `docs/dictionary-quality.md`; enabled-dictionary coverage and signed app handoff require separate native evidence.

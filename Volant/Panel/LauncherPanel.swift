@@ -123,6 +123,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
 
     override func orderOut(_ sender: Any?) {
         endDragging()
+        model.dictionary.clear()
         model.isPresented = false
         model.agents.disconnect()
         super.orderOut(sender)

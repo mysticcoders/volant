@@ -180,6 +180,8 @@ final class LauncherModel: ObservableObject {
     @Published var searchFocusRequest = UUID()
     @Published var selection: Int = 0
     @Published var actionFeedback: String?
+    let dictionary = DictionaryModel()
+    var showingDictionary: Bool { DictionaryQuery.term(query) != nil }
     let translation = TranslationModel()
     var showingTranslation: Bool { ["translate", "translation", "translator"].contains(query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()) }
     let caffeinate: CaffeinateService
@@ -301,8 +303,10 @@ final class LauncherModel: ObservableObject {
         wifiJoin = nil
         files.cancel()
         let q = query.trimmingCharacters(in: .whitespaces)
+        if !showingDictionary { dictionary.clear() }
         guard !q.isEmpty else { showSuggestions(); return }
 
+        if let term = DictionaryQuery.term(query) { dictionary.input = term; sections = []; return }
         if showingTranslation { sections = []; return }
         if CaffeinateCommand.matches(q) { refreshCaffeinateResults(); return }
         if q.lowercased() == "emoji" { query = ":"; return }
