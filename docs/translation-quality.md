@@ -1,0 +1,17 @@
+# Native translation
+
+The Translate Text core command opens a two-pane view based on the owner's Raycast reference, using Volant's native materials, semantic colors and wing. Source defaults to Detect Language; target defaults to English. The source is editable multiline text, the result is selectable, language menus use the runtime Apple catalog, and swap uses the detected/selected source with the translated text when available. Return inserts a newline; ⌘T requests translation, ⌘↩ copies, ⌘[ returns to search and Escape dismisses the launcher. Voice input/output and a separate actions menu are not part of this first text-focused version.
+
+Use the macOS 15 SwiftUI `translationTask` API, not the newer direct session initializer. Each request has immutable input/language values and its own task view. Editing, changing languages, clearing or cancellation invalidates its identity; old availability checks/results cannot publish. Leaving the translation view cancels the current request. Drafts remain in memory across focus changes and explicit dismissal. Nothing is persisted or logged; copying is explicit and uses the launcher's clipboard action. Input over 16,000 characters is rejected without truncating the draft.
+
+Availability is checked on explicit Translate, including detection from text. Unsupported pairs show a recoverable state. Supported but missing languages are labeled downloadable; Apple's translation session presents system download consent. Completed translation marks the pair installed. Language-list failures have Retry Languages; request failures preserve input and offer Translate again. Error payloads are not echoed because they may contain submitted text. Translation is on-device once models are installed; no remote-provider fallback or API key is implemented.
+
+## Verification and delivery
+
+- Logic tests cover explicit copy, auto-source requests, swap, late completion after edit/language change/cancel, unsupported pairs, failures/retry, size limits, stale availability and catalog retry.
+- Launcher fixtures use fictional languages/results and isolated clipboard capture. The conditional UI classifier includes the translation view and model. These tests do not download models or exercise Apple's translator.
+- Branded empty, translated-result, unsupported-pair and active-cup renders inspected in light/dark at 750×480 and 600×384. Live isolated preview verified ⌘T translation, ⌘↩ explicit copy, Return inserting a newline, and native target-language selection. Results and clipboard actions in that preview are fictional. Diff-selected local checks passed (62 logic tests plus native UI suites); signed Release build passed.
+- Fixture lesson: pumping RunLoop inside a main-queue screenshot loop did not let a MainActor translation task finish. The render helper now suspends asynchronously and asserts result/error state before capture, preventing misleading empty screenshots.
+- Signed installed-app translation, Apple's download-consent/cancel flow, offline failure and non-Latin/RTL output: pending. Passing fake-service tests is not evidence of these behaviors.
+
+Sources: [Apple Translation](https://developer.apple.com/documentation/translation), [custom translation UI](https://developer.apple.com/documentation/translation/translating-text-within-your-app), [language availability](https://developer.apple.com/documentation/translation/languageavailability). Follow-up tracked in issue #5; do not close it until remaining native-service acceptance checks are recorded.

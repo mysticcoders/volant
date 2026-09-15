@@ -180,6 +180,8 @@ final class LauncherModel: ObservableObject {
     @Published var searchFocusRequest = UUID()
     @Published var selection: Int = 0
     @Published var actionFeedback: String?
+    let translation = TranslationModel()
+    var showingTranslation: Bool { ["translate", "translation", "translator"].contains(query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()) }
     let caffeinate: CaffeinateService
     private var caffeinateSubscription: AnyCancellable?
     var showingEmoji: Bool { query.trimmingCharacters(in: .whitespaces).hasPrefix(":") }
@@ -301,6 +303,7 @@ final class LauncherModel: ObservableObject {
         let q = query.trimmingCharacters(in: .whitespaces)
         guard !q.isEmpty else { showSuggestions(); return }
 
+        if showingTranslation { sections = []; return }
         if CaffeinateCommand.matches(q) { refreshCaffeinateResults(); return }
         if q.lowercased() == "emoji" { query = ":"; return }
         if ["volant settings", "reload", "reload config", "reload configuration"].contains(q.lowercased()) {

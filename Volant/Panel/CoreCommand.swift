@@ -2,9 +2,10 @@ import Foundation
 
 /// Discoverable entry points. Data rows keep their own identity and aren't branded as apps.
 enum CoreCommand: String, CaseIterable, Hashable {
-    case caffeinate, emoji, notes, clipboard, agents, wifi, bluetooth, audio
+    case translate, caffeinate, emoji, notes, clipboard, agents, wifi, bluetooth, audio
     var title: String {
         switch self {
+        case .translate: return "Translate Text"
         case .caffeinate: return "Caffeinate"
         case .emoji: return "Search Emoji"
         case .notes: return "Open Notes"
@@ -24,6 +25,7 @@ enum CoreCommand: String, CaseIterable, Hashable {
     }
     var symbol: String {
         switch self {
+        case .translate: return "character.bubble"
         case .caffeinate: return "cup.and.saucer"
         case .emoji: return "face.smiling"
         case .notes: return "note.text"
@@ -36,6 +38,7 @@ enum CoreCommand: String, CaseIterable, Hashable {
     }
     var detail: String {
         switch self {
+        case .translate: return "Translate between languages on your Mac"
         case .caffeinate: return "Keep your Mac awake"
         case .emoji: return "Browse emoji and copy one"
         default: return "Built into Volant"
