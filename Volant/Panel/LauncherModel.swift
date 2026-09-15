@@ -575,7 +575,7 @@ final class LauncherModel: ObservableObject {
         case .caffeinate(let command):
             let succeeded = caffeinate.perform(command)
             refreshCaffeinateResults()
-            actionFeedback = succeeded ? (command.stop ? "Caffeinate stopped." : "Caffeinate started.") : caffeinate.error
+            actionFeedback = succeeded ? nil : caffeinate.error
             return
         case .connectivity(let item):
             switch item {

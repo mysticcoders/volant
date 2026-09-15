@@ -54,10 +54,12 @@ statusItem.button?.setAccessibilityLabel("Volant Settings Preview")
 statusItem.menu = StatusMenu.make(target: actions, show: #selector(PreviewActions.showLauncher), settings: #selector(PreviewActions.settings), update: #selector(PreviewActions.updates))
 controller.window?.setFrame(NSWindow.frameRect(forContentRect: NSRect(x: 100, y: 100, width: 680, height: 500), styleMask: controller.window!.styleMask), display: true)
 var destinationWindow: NSWindow?
-if CommandLine.arguments.contains("--translation") || CommandLine.arguments.contains("--render-translation") {
+if CommandLine.arguments.contains("--translation") || CommandLine.arguments.contains("--render-translation") || CommandLine.arguments.contains("--native-translation") {
+    if !CommandLine.arguments.contains("--native-translation") {
     panel.model.translation.loadLanguages = { ["en", "es", "fr", "de", "ja", "ar"] }
     panel.model.translation.availability = { _ in .installed }
     panel.model.translation.translateFixture = { _ in TranslationResult(text: "Hola\n¿Cómo estás?", source: "en") }
+    }
     panel.model.query = "translate"
     let host = NSHostingView(rootView: LauncherView(model: panel.model, agents: panel.model.agents).background(Color(nsColor: .windowBackgroundColor)))
     destinationWindow = NSWindow(contentRect: NSRect(origin: .zero, size: LauncherPanel.size), styleMask: [.titled, .closable], backing: .buffered, defer: false)

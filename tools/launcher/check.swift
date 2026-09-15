@@ -595,6 +595,7 @@ verify(corePanel.firstResponder is NSTextView, "Core command search has a native
 sendCoreKey("\r", code: 36)
 verify(awake.isActive && power.created == 1, "Return starts a Caffeinate session: key=\(corePanel.isKeyWindow), responder=\(String(describing: corePanel.firstResponder)), query=\(corePanel.model.query), row=\(String(describing: corePanel.model.selectedRow?.id)), created=\(power.created), active=\(awake.isActive)")
 verify(corePanel.model.rows.map(\.id) == ["caffeinate:off"], "Active session offers Stop")
+verify(corePanel.model.actionFeedback == nil, "Active cup replaces the success status bar")
 try renderCore("active")
 sendCoreKey("\r", code: 36)
 verify(!awake.isActive && power.released == 1, "Return stops a Caffeinate session")
