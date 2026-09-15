@@ -43,3 +43,5 @@
 - Translation requests own immutable text/language snapshots and reject stale completions. Keep drafts in memory, copy only on request, and never log source/result text or raw framework errors. Use runtime Apple language availability and system download consent; fake translation fixtures do not verify installed language models or the signed app's service access.
 
 - Dictionary lookups use validated UTF-16 ranges and explicit ownership of returned CFStrings. Keep calls off the UI executor, reject stale completions after edits/dismissal, and never persist or log lookup text. See `docs/dictionary-quality.md`; enabled-dictionary coverage and signed app handoff require separate native evidence.
+
+- Memory reports must separate physical footprint, RSS, live allocations, and transient peaks. Use isolated fictional fixtures, fresh-process repetitions and explicit autorelease-pool boundaries; retained footprint alone is not a leak verdict. Keep model-only measurements distinct from installed UI/XPC behavior, and never capture owner process arguments or memory contents. See `tools/memory/README.md` and `docs/memory-profile-2026-09-15.md`.

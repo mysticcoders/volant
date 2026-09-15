@@ -1,5 +1,7 @@
 # Memory review — September 14, 2026
 
+Follow-up: [controlled component profile, September 15](memory-profile-2026-09-15.md) adds reproducible footprint/live-allocation measurements and records the remaining installed-UI/XPC coverage gaps.
+
 This is a source audit plus an uncontrolled live RSS snapshot, not an Instruments leak/peak-footprint assessment. The already-running development Release process (PID 74049, about three hours old) used 195,424 KiB RSS (~190.8 MiB); its agent helper used 11,776 KiB (~11.5 MiB). This process predates the current changes and is not the installed /Applications copy. Its current sessions and personal data were left untouched. RSS includes shared and reclaimable pages and is not a per-feature budget or evidence of a leak. Read process names and metrics only, never process argument lists.
 
 ## Improvements in this change

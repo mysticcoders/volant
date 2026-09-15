@@ -1,0 +1,165 @@
+// Opt-in profiling fixture: real production models, fictional data, no normal app startup.
+import AppKit
+import CryptoKit
+import Darwin
+
+func memory() -> (UInt64, UInt64) {
+    var info = task_vm_info_data_t()
+    var count = mach_msg_type_number_t(MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<integer_t>.size)
+    let status = withUnsafeMutablePointer(to: &info) {
+        $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+            task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count)
+        }
+    }
+    precondition(status == KERN_SUCCESS)
+    return (info.phys_footprint, info.resident_size)
+}
+final class Sampler {
+    private let queue = DispatchQueue(label: "volant.memory.sample")
+    private var timer: DispatchSourceTimer?
+    private var peak: UInt64 = 0
+    func start() {
+        peak = memory().0
+        let timer = DispatchSource.makeTimerSource(queue: queue)
+        timer.schedule(deadline: .now(), repeating: .milliseconds(5))
+        timer.setEventHandler { [weak self] in self?.peak = max(self?.peak ?? 0, memory().0) }
+        self.timer = timer; timer.resume()
+    }
+    func stop() -> UInt64 {
+        queue.sync { timer?.cancel(); timer = nil; peak = max(peak, memory().0) }
+        return peak
+    }
+}
+let scenario = CommandLine.arguments.dropFirst().first ?? "idle"
+let root = FileManager.default.temporaryDirectory.appendingPathComponent("volant-memory-" + UUID().uuidString)
+try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+defer { try? FileManager.default.removeItem(at: root) }
+setbuf(stdout, nil)
+print("scenario,phase,footprint_bytes,rss_bytes,sampled_peak_bytes,heap_in_use_bytes,elapsed_ms,units")
+func phase(_ name: String, units: Int = 0, _ body: () throws -> Void) rethrows {
+    let sampler = Sampler(); sampler.start()
+    let start = ProcessInfo.processInfo.systemUptime
+    try autoreleasepool { try body() }
+    let peak = sampler.stop(), current = memory()
+    var heap = malloc_statistics_t()
+    malloc_zone_statistics(nil, &heap)
+    let elapsed = (ProcessInfo.processInfo.systemUptime - start) * 1000
+    print("\(scenario),\(name),\(current.0),\(current.1),\(max(peak, current.0)),\(heap.size_in_use),\(String(format: "%.3f", elapsed)),\(units)")
+}
+func settle(_ name: String) { phase(name) { Thread.sleep(forTimeInterval: 0.3) } }
+func clipboard(_ name: String = "clips") -> ClipboardStore {
+    ClipboardStore(retention: 100, storageURL: root.appendingPathComponent(name + ".sqlite"), encryptionKey: SymmetricKey(size: .bits256))
+}
+func imageData(side: Int, seed: UInt64, noisy: Bool) -> Data {
+    let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: side, pixelsHigh: side, bitsPerSample: 8,
+        samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: side * 4, bitsPerPixel: 32)!
+    var state = seed + 1
+    for offset in stride(from: 0, to: side * side * 4, by: 4) {
+        state = state &* 6364136223846793005 &+ 1
+        for channel in 0..<3 { rep.bitmapData![offset + channel] = noisy ? UInt8(truncatingIfNeeded: state >> (channel * 8 + 24)) : UInt8(truncatingIfNeeded: seed * 17) }
+        rep.bitmapData![offset + 3] = 255
+    }
+    let data = rep.representation(using: .png, properties: [:])!
+    precondition(data.count <= 8_000_000)
+    return data
+}
+phase("baseline") {}
+autoreleasepool {
+switch scenario {
+case "idle", "emoji":
+    var model: LauncherModel?
+    phase("model_loaded") {
+        model = LauncherModel(index: AppIndex(entries: []), clipboard: clipboard(), notes: NotesStore(directory: root.appendingPathComponent("notes")), config: Preferences(), usage: UsageStore(url: root.appendingPathComponent("usage.sqlite"))) { _ in }
+        model!.searchesSecondarySources = false
+        model!.reset()
+    }
+    if scenario == "emoji" {
+        precondition(EmojiIndex.all.count > 1000, "Bundled catalog required")
+        for batch in 1...4 {
+            phase("cycles_\(batch * 25)", units: 25) {
+                for _ in 0..<25 {
+                    autoreleasepool {
+                        for query in [":", ":cat", ":heart", ":missing-fixture", ":"] {
+                            model!.query = query
+                            for _ in 0..<20 { model!.moveEmojiSelection(1) }
+                        }
+                        model!.reset()
+                    }
+                }
+            }
+        }
+    } else { phase("idle_3s") { Thread.sleep(forTimeInterval: 3) } }
+    model = nil; settle("released")
+case "clipboard", "image-decode":
+    var store: ClipboardStore? = clipboard()
+    let count = scenario == "clipboard" ? 12 : 3
+    phase("seed_images", units: count) {
+        for index in 0..<count {
+            autoreleasepool {
+                store!.recordImage(imageData(side: scenario == "clipboard" ? 1400 : 4096, seed: UInt64(index), noisy: scenario == "clipboard"))
+                _ = store!.recent(limit: 1) // Drain async writes without accumulating queued payloads.
+            }
+        }
+        store!.record("fictional searchable text")
+        _ = store!.recent(limit: 1)
+    }
+    settle("seed_settled")
+    var rows: [ClipEntry] = []
+    phase("rows_loaded", units: count) { rows = store!.recent(limit: 12) }
+    if scenario == "image-decode" {
+        var decoded: [CGImage] = []
+        phase("decoded_full_size", units: count) {
+            for row in rows {
+                guard let data = row.imageData, let image = NSImage(data: data), let cg = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { continue }
+                let context = CGContext(data: nil, width: cg.width, height: cg.height, bitsPerComponent: 8, bytesPerRow: cg.width * 4, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+                context.draw(cg, in: CGRect(x: 0, y: 0, width: cg.width, height: cg.height))
+                decoded.append(context.makeImage()!)
+            }
+        }
+        withExtendedLifetime(decoded) { settle("decoded_retained") }
+        decoded = []
+    }
+    rows = []; settle("rows_released")
+    for batch in 1...3 {
+        phase("text_queries_\(batch * 10)", units: 10) {
+            for _ in 0..<10 { autoreleasepool { precondition(store!.recent(limit: 12, matching: "searchable").count == 1) } }
+        }
+    }
+    store = nil; settle("released")
+case "notes":
+    phase("seed_notebook", units: 1000) {
+        let body = String(repeating: "Fictional profiling text for note search.\n", count: 1600)
+        for index in 0..<1000 { try! ("# Fixture \(index)\n" + body).write(to: root.appendingPathComponent("\(index).md"), atomically: false, encoding: .utf8) }
+    }
+    var store: NotesStore?
+    phase("notebook_loaded", units: 1000) { store = NotesStore(directory: root); precondition(store!.notes.count == 1000) }
+    for batch in 1...3 {
+        phase("reload_\(batch)", units: 1000) { store!.reload(); precondition(store!.search("profiling").count == 8) }
+    }
+    store = nil; settle("released")
+case "acp":
+    var state = ACPState()
+    phase("transcript_loaded", units: 1800) {
+        state.messages = (0..<1800).map { ACPMessage(role: "assistant", text: "Fixture \($0): " + String(repeating: "x", count: 480)) }
+    }
+    var latest: ACPState?
+    for batch in 1...4 {
+        phase("snapshots_\(batch * 100)", units: 100) {
+            for _ in 0..<100 { autoreleasepool {
+                let data = try! JSONEncoder().encode(state)
+                let next = try! JSONDecoder().decode(ACPState.self, from: data)
+                if latest != next { latest = next }
+            } }
+        }
+    }
+    latest = nil; state.messages = []; settle("released")
+default: fatalError("Unknown scenario")
+}
+
+}
+settle("pool_drained")
+
+// Diagnostic only: distinguish releasable allocator pages from live allocations.
+// This is not a proposed production "purge memory" strategy.
+phase("allocator_relief") { _ = malloc_zone_pressure_relief(nil, 0) }
+settle("after_relief")
