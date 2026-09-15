@@ -47,6 +47,7 @@ final class LauncherSnapGuides {
             panel.backgroundColor = .clear
             panel.hasShadow = false
             panel.ignoresMouseEvents = true
+            panel.setAccessibilityElement(false)
             panel.isReleasedWhenClosed = false
             panel.hidesOnDeactivate = false
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]

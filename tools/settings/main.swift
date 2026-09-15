@@ -49,11 +49,17 @@ statusItem.menu = StatusMenu.make(target: actions, show: #selector(PreviewAction
 controller.window?.setFrame(NSWindow.frameRect(forContentRect: NSRect(x: 100, y: 100, width: 680, height: 500), styleMask: controller.window!.styleMask), display: true)
 var destinationWindow: NSWindow?
 if CommandLine.arguments.contains("--snap") {
+    _ = NotificationCenter.default.addObserver(forName: NSWindow.didMoveNotification, object: panel, queue: .main) { _ in
+        print("Snap fixture position: \(panel.frame.origin)"); fflush(stdout)
+    }
     // Retain this isolated fixture when computer-use inspection shifts app focus.
     // No connectivity operation is started; ordinary blur is tested in check-launcher.
     panel.model.connectivityBusy = true
-    panel.toggle()
-    panel.setQuery("Calculator")
+    DispatchQueue.main.async {
+        app.activate(ignoringOtherApps: true)
+        panel.toggle()
+        panel.setQuery("Calculator")
+    }
 } else if CommandLine.arguments.contains("--destinations") {
     panel.model.query = "settings login"
     let host = NSHostingView(rootView: LauncherView(model: panel.model, agents: panel.model.agents).background(Color(nsColor: .windowBackgroundColor)))

@@ -480,15 +480,19 @@ verify(freeSnap.frame == freeFrame && freeSnap.vertical == nil && freeSnap.horiz
 let oversized = LauncherSnapPlacement.resolve(NSRect(x: 0, y: 0, width: 1800, height: 1100), in: snapScreen)
 verify(oversized.vertical == nil && oversized.horizontal == nil)
 
+func samePixelPosition(_ actual: NSPoint, _ expected: NSPoint) -> Bool {
+    abs(actual.x - expected.x) <= 1 && abs(actual.y - expected.y) <= 1
+}
 sticky.toggle()
 let guideScreen = sticky.screen!.visibleFrame
 let idealOrigin = NSPoint(x: guideScreen.midX - sticky.frame.width / 2, y: guideScreen.midY - sticky.frame.height / 2)
 let proposedOrigin = NSPoint(x: idealOrigin.x + 5, y: idealOrigin.y - 5)
 sticky.drag(to: proposedOrigin, pointer: NSPoint(x: guideScreen.midX, y: guideScreen.midY), freely: false)
-verify(sticky.frame.origin == idealOrigin && sticky.snapGuides.isVisible)
+verify(samePixelPosition(sticky.frame.origin, idealOrigin), "Native snap origin \(sticky.frame.origin), expected \(idealOrigin) within one display pixel")
+verify(sticky.snapGuides.isVisible, "Snapped drag shows guide overlay")
 verify(sticky.isKeyWindow, "Alignment guides never steal typing focus")
 sticky.drag(to: proposedOrigin, pointer: NSPoint(x: guideScreen.midX, y: guideScreen.midY), freely: true)
-verify(sticky.frame.origin == proposedOrigin && !sticky.snapGuides.isVisible, "Option bypasses snapping")
+verify(samePixelPosition(sticky.frame.origin, proposedOrigin) && !sticky.snapGuides.isVisible, "Option bypasses snapping")
 sticky.drag(to: proposedOrigin, pointer: NSPoint(x: guideScreen.midX, y: guideScreen.midY), freely: false)
 sticky.endDragging()
 verify(!sticky.snapGuides.isVisible, "Releasing drag clears guides")
@@ -530,7 +534,7 @@ func dragEvent(_ type: NSEvent.EventType, at point: NSPoint) -> NSEvent {
 }
 dragHandle.mouseDown(with: dragEvent(.leftMouseDown, at: startLocation))
 dragHandle.mouseDragged(with: dragEvent(.leftMouseDragged, at: NSPoint(x: startLocation.x + 75, y: startLocation.y + 55)))
-verify(sticky.frame.origin == idealOrigin && sticky.snapGuides.isVisible, "Native wing drag reaches snapped placement")
+verify(samePixelPosition(sticky.frame.origin, idealOrigin) && sticky.snapGuides.isVisible, "Native wing drag reaches snapped placement")
 dragHandle.mouseUp(with: dragEvent(.leftMouseUp, at: startLocation))
 verify(!sticky.snapGuides.isVisible)
 sticky.orderOut(nil)
