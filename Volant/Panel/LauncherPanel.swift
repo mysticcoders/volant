@@ -10,6 +10,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
     let model: LauncherModel
     private let positionStore: UserDefaults
     private var restoringPosition = false
+    let snapGuides = LauncherSnapGuides()
 
     init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), positionStore: UserDefaults = .standard, onNote: @escaping (LauncherAction) -> Void) {
         self.positionStore = positionStore
@@ -89,7 +90,22 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         makeKeyAndOrderFront(nil)
     }
 
+    func drag(to origin: NSPoint, pointer: NSPoint, freely: Bool) {
+        let proposed = NSRect(origin: origin, size: frame.size)
+        guard !freely, let screen = NSScreen.screens.first(where: { $0.frame.contains(pointer) }) ?? self.screen else {
+            snapGuides.hide()
+            setFrameOrigin(origin)
+            return
+        }
+        let placement = LauncherSnapPlacement.resolve(proposed, in: screen.visibleFrame)
+        setFrameOrigin(placement.frame.origin)
+        snapGuides.show(placement, screen: screen.visibleFrame, above: self)
+    }
+
+    func endDragging() { snapGuides.hide() }
+
     override func orderOut(_ sender: Any?) {
+        endDragging()
         model.isPresented = false
         model.agents.disconnect()
         super.orderOut(sender)

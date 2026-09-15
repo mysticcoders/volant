@@ -79,7 +79,7 @@ struct LauncherView: View {
                 .foregroundStyle(Color.accentColor)
                 .accessibilityHidden(true)
                 .overlay(LauncherDragHandle())
-                .help("Drag the wing to move Volant")
+                .help("Drag to align Volant. Hold Option to move freely.")
             TextField("Search for apps, files, contacts, or calculate…", text: $model.query)
                 .textFieldStyle(.plain)
                 .font(.system(size: 22, weight: .regular))

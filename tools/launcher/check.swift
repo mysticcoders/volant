@@ -466,3 +466,76 @@ let destinationRep = destinationHost.bitmapImageRepForCachingDisplay(in: destina
 destinationHost.cacheDisplay(in: destinationHost.bounds, to: destinationRep)
 try destinationRep.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "/tmp/volant-destinations-\(dark ? "dark" : "light").png"))
 print("PASS: direct Settings queries bypass connectivity discovery; rendered destination row")
+
+// Snap geometry uses visible screen coordinates, including negative monitor origins.
+let snapScreen = NSRect(x: -1600, y: 40, width: 1600, height: 900)
+let centeredFrame = NSRect(x: -1175, y: 250, width: 750, height: 480)
+let centerSnap = LauncherSnapPlacement.resolve(centeredFrame.offsetBy(dx: 8, dy: -10), in: snapScreen)
+verify(centerSnap.frame == centeredFrame && centerSnap.vertical == -800 && centerSnap.horizontal == 490)
+let edgeSnap = LauncherSnapPlacement.resolve(NSRect(x: -1584, y: 447, width: 750, height: 480), in: snapScreen)
+verify(edgeSnap.frame.origin == NSPoint(x: -1580, y: 440), "Snap uses usable screen inset, not menu bar or Dock area")
+let freeFrame = NSRect(x: -1450, y: 150, width: 750, height: 480)
+let freeSnap = LauncherSnapPlacement.resolve(freeFrame, in: snapScreen)
+verify(freeSnap.frame == freeFrame && freeSnap.vertical == nil && freeSnap.horizontal == nil)
+let oversized = LauncherSnapPlacement.resolve(NSRect(x: 0, y: 0, width: 1800, height: 1100), in: snapScreen)
+verify(oversized.vertical == nil && oversized.horizontal == nil)
+
+func samePixelPosition(_ actual: NSPoint, _ expected: NSPoint) -> Bool {
+    abs(actual.x - expected.x) <= 1 && abs(actual.y - expected.y) <= 1
+}
+sticky.toggle()
+let guideScreen = sticky.screen!.visibleFrame
+let idealOrigin = NSPoint(x: guideScreen.midX - sticky.frame.width / 2, y: guideScreen.midY - sticky.frame.height / 2)
+let proposedOrigin = NSPoint(x: idealOrigin.x + 5, y: idealOrigin.y - 5)
+sticky.drag(to: proposedOrigin, pointer: NSPoint(x: guideScreen.midX, y: guideScreen.midY), freely: false)
+verify(samePixelPosition(sticky.frame.origin, idealOrigin), "Native snap origin \(sticky.frame.origin), expected \(idealOrigin) within one display pixel")
+verify(sticky.snapGuides.isVisible, "Snapped drag shows guide overlay")
+verify(sticky.isKeyWindow, "Alignment guides never steal typing focus")
+sticky.drag(to: proposedOrigin, pointer: NSPoint(x: guideScreen.midX, y: guideScreen.midY), freely: true)
+verify(samePixelPosition(sticky.frame.origin, proposedOrigin) && !sticky.snapGuides.isVisible, "Option bypasses snapping")
+sticky.drag(to: proposedOrigin, pointer: NSPoint(x: guideScreen.midX, y: guideScreen.midY), freely: false)
+sticky.endDragging()
+verify(!sticky.snapGuides.isVisible, "Releasing drag clears guides")
+sticky.drag(to: proposedOrigin, pointer: NSPoint(x: guideScreen.midX, y: guideScreen.midY), freely: false)
+sticky.orderOut(nil)
+verify(!sticky.snapGuides.isVisible, "Dismissing launcher clears guides")
+
+// Render the actual guide view around an excluded launcher-sized area.
+let guideView = SnapGuideView(frame: NSRect(x: 0, y: 0, width: 1000, height: 700))
+guideView.appearance = app.appearance
+guideView.vertical = 500; guideView.horizontal = 350
+guideView.exclusion = NSRect(x: 125, y: 110, width: 750, height: 480)
+let guideCanvas = NSView(frame: guideView.frame)
+guideCanvas.appearance = app.appearance
+guideCanvas.wantsLayer = true
+guideCanvas.layer?.backgroundColor = NSColor.underPageBackgroundColor.cgColor
+let guideLauncher = NSHostingView(rootView: LauncherView(model: panel.model, agents: panel.model.agents).background(Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 14)))
+guideLauncher.frame = guideView.exclusion
+guideCanvas.addSubview(guideLauncher)
+guideCanvas.addSubview(guideView)
+guideCanvas.layoutSubtreeIfNeeded()
+let guideRep = guideCanvas.bitmapImageRepForCachingDisplay(in: guideCanvas.bounds)!
+guideCanvas.cacheDisplay(in: guideCanvas.bounds, to: guideRep)
+try guideRep.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "/tmp/volant-snap-\(dark ? "dark" : "light").png"))
+print("PASS: snap center/edges, multi-display geometry, free positioning, focus and guide cleanup")
+
+// Exercise the native wing responder, not only the placement helper.
+sticky.toggle()
+sticky.setFrameOrigin(NSPoint(x: idealOrigin.x - 70, y: idealOrigin.y - 50))
+func findDragHandle(_ view: NSView) -> WindowDragView? {
+    if let handle = view as? WindowDragView { return handle }
+    return view.subviews.lazy.compactMap(findDragHandle).first
+}
+let dragHandle = findDragHandle(sticky.contentView!)!
+let startLocation = NSPoint(x: 30, y: sticky.frame.height - 30)
+func dragEvent(_ type: NSEvent.EventType, at point: NSPoint) -> NSEvent {
+    NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                      windowNumber: sticky.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: 1)!
+}
+dragHandle.mouseDown(with: dragEvent(.leftMouseDown, at: startLocation))
+dragHandle.mouseDragged(with: dragEvent(.leftMouseDragged, at: NSPoint(x: startLocation.x + 75, y: startLocation.y + 55)))
+verify(samePixelPosition(sticky.frame.origin, idealOrigin) && sticky.snapGuides.isVisible, "Native wing drag reaches snapped placement")
+dragHandle.mouseUp(with: dragEvent(.leftMouseUp, at: startLocation))
+verify(!sticky.snapGuides.isVisible)
+sticky.orderOut(nil)
+print("PASS: native wing drag and release use snap geometry and clear guides")
