@@ -2,6 +2,8 @@ import AppKit
 import SwiftUI
 import CryptoKit
 
+setbuf(stdout, nil)
+
 func verify(_ condition: @autoclosure () -> Bool, _ message: String = "Assertion", line: Int = #line) {
     if !condition() { fputs("FAIL at line \(line): \(message)\n", stderr); exit(1) }
 }
@@ -148,7 +150,7 @@ for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
     homePanel.sendEvent(NSEvent.mouseEvent(with: type, location: NSPoint(x: 180, y: LauncherPanel.size.height - 148), modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: homePanel.windowNumber, context: nil, eventNumber: 2, clickCount: 1, pressure: type == .leftMouseDown ? 1 : 0)!)
     RunLoop.main.run(until: Date().addingTimeInterval(0.1))
 }
-verify(homeLaunches == [home.id], "Clicking Home above Home Assistant activates Home with pinned harness visible")
+verify(homeLaunches == [home.id], "Clicking Home activates Home: launches=\(homeLaunches), key=\(homePanel.isKeyWindow), visible=\(homePanel.isVisible), responder=\(String(describing: homePanel.firstResponder))")
 print("PASS: h/ho/hom initial selection, up/down navigation, and Home mouse activation with pinned harness")
 
 
@@ -539,3 +541,94 @@ dragHandle.mouseUp(with: dragEvent(.leftMouseUp, at: startLocation))
 verify(!sticky.snapGuides.isVisible)
 sticky.orderOut(nil)
 print("PASS: native wing drag and release use snap geometry and clear guides")
+
+// Built-in discovery, power commands and emoji grid use fictional services and clipboard.
+final class FixtureCaffeinateAssertions: CaffeinateAssertions {
+    var created = 0
+    var released = 0
+    func create(display: Bool, timeout: TimeInterval) throws -> UInt32 { created += 1; return 7 }
+    func release(_ id: UInt32) throws { released += 1 }
+}
+let power = FixtureCaffeinateAssertions()
+let awake = CaffeinateService(assertions: power, automaticTimer: false)
+let corePanel = LauncherPanel(index: AppIndex(entries: []), clipboard: clipboard, notes: notes,
+    config: Preferences(), usage: usage, positionStore: positionDefaults, caffeinate: awake, onNote: { _ in })
+corePanel.model.searchesSecondarySources = false
+var copiedEmoji: [String] = []
+corePanel.model.copyText = { copiedEmoji.append($0) }
+let fixtureEmoji = zip(
+    ["😀", "🐱", "☕️", "🎉", "🚀", "❤️", "🌈", "🍎", "🌻", "👍", "😃", "😄", "😁", "😆", "😅", "😂", "🙂", "🙃", "😉", "😊", "😍", "🥰", "😘", "😎", "🤩", "🥳", "🤔", "🤗", "😴", "🤓", "🐶", "🦊", "🐼", "🦁", "🐸", "🐵", "🐧", "🦋", "🌍", "⭐️"],
+    ["Grinning face", "Cat", "Hot beverage", "Party popper", "Rocket", "Red heart", "Rainbow", "Red apple", "Sunflower", "Thumbs up", "Grinning face with big eyes", "Grinning face with smiling eyes", "Beaming face", "Squinting face", "Grinning face with sweat", "Face with tears of joy", "Slightly smiling face", "Upside-down face", "Winking face", "Smiling face", "Heart eyes", "Smiling face with hearts", "Blowing a kiss", "Sunglasses", "Star-struck", "Partying face", "Thinking face", "Hugging face", "Sleeping face", "Nerd face", "Dog", "Fox", "Panda", "Lion", "Frog", "Monkey", "Penguin", "Butterfly", "Globe", "Star"]
+).map { EmojiEntry(symbol: $0.0, name: $0.1) }
+corePanel.model.emojiSearch = { term in term == "missing" ? [] : fixtureEmoji }
+corePanel.toggle()
+verify(corePanel.model.rows.contains { $0.id == "core:caffeinate" })
+verify(corePanel.model.rows.contains { $0.id == "core:emoji" })
+verify(ResultRow.core(.emoji).isCoreCommand && !ResultRow.emoji(fixtureEmoji[0]).isCoreCommand)
+func sendCoreKey(_ characters: String, code: UInt16) {
+    let event = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+        windowNumber: corePanel.windowNumber, context: nil, characters: characters, charactersIgnoringModifiers: characters,
+        isARepeat: false, keyCode: code)!
+    corePanel.sendEvent(event)
+    RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+}
+func renderCore(_ name: String) throws {
+    RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+    let view = corePanel.contentView!
+    view.layoutSubtreeIfNeeded()
+    let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
+    view.cacheDisplay(in: view.bounds, to: bitmap)
+    try bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "/tmp/volant-core-\(name)-\(dark ? "dark" : "light").png"))
+}
+try renderCore("commands")
+corePanel.model.query = "caffeinate 30m"
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+// Set up native text focus without entering AppKit's synchronous mouse tracking loop.
+// Summon/typing focus is covered above; this fixture checks command keyboard delivery.
+func coreSearchField(in view: NSView) -> NSTextField? {
+    if let field = view as? NSTextField,
+       field.placeholderString == "Search for apps, files, contacts, or calculate…" { return field }
+    return view.subviews.lazy.compactMap { coreSearchField(in: $0) }.first
+}
+verify(corePanel.makeFirstResponder(coreSearchField(in: corePanel.contentView!)!), "Focus core command search")
+verify(corePanel.firstResponder is NSTextView, "Core command search has a native field editor")
+sendCoreKey("\r", code: 36)
+verify(awake.isActive && power.created == 1, "Return starts a Caffeinate session: key=\(corePanel.isKeyWindow), responder=\(String(describing: corePanel.firstResponder)), query=\(corePanel.model.query), row=\(String(describing: corePanel.model.selectedRow?.id)), created=\(power.created), active=\(awake.isActive)")
+verify(corePanel.model.rows.map(\.id) == ["caffeinate:off"], "Active session offers Stop")
+try renderCore("active")
+sendCoreKey("\r", code: 36)
+verify(!awake.isActive && power.released == 1, "Return stops a Caffeinate session")
+corePanel.model.query = "caffeinate nonsense"
+verify(corePanel.model.rows.isEmpty && corePanel.model.notice != nil)
+try renderCore("invalid")
+corePanel.model.query = ":"
+RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+verify(corePanel.model.searchText.isEmpty, "Picker hides command prefix")
+sendCoreKey("\u{F701}", code: 125)
+verify(corePanel.model.selection == 10, "Down moves one emoji grid row")
+sendCoreKey("\u{F703}", code: 124)
+verify(corePanel.model.selection == 11, "Right moves one emoji grid cell")
+sendCoreKey("\u{F702}", code: 123)
+verify(corePanel.model.selection == 10, "Left moves one emoji grid cell")
+sendCoreKey("\u{F700}", code: 126)
+verify(corePanel.model.selection == 0, "Up moves one emoji grid row")
+try renderCore("emoji")
+sendCoreKey("\r", code: 36)
+verify(copiedEmoji == [fixtureEmoji[0].symbol] && !corePanel.isVisible, "Return copies selected emoji and dismisses")
+corePanel.toggle(); corePanel.model.query = ":missing"
+verify(corePanel.model.rows.isEmpty)
+try renderCore("emoji-empty")
+corePanel.model.searchText = "fixture"
+verify(corePanel.model.query == ":fixture" && corePanel.model.selection == 0)
+corePanel.orderOut(nil)
+print("PASS: core command marks/discovery, Caffeinate Return/start/stop/errors, emoji grid arrows and copy")
+
+try GlobalShortcutStore.save(key: "emojiHotKey", value: "ctrl+option+e", expectedValue: "", at: globalURL, available: { _ in true })
+do {
+    try GlobalShortcutStore.save(key: "notesHotKey", value: "ctrl+option+e", expectedValue: "", at: globalURL, available: { _ in true })
+    verify(false, "Emoji shortcut must conflict with other global commands")
+} catch { }
+try GlobalShortcutStore.save(key: "emojiHotKey", value: "", expectedValue: "ctrl+option+e", at: globalURL, available: { _ in false })
+let emojiSettings = try JSONSerialization.jsonObject(with: Data(contentsOf: globalURL)) as! [String: Any]
+verify(emojiSettings["emojiHotKey"] as? String == "")
+print("PASS: emoji shortcut save, conflict and removal")

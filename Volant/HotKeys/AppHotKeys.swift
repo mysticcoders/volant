@@ -9,7 +9,7 @@ enum AppHotKeys {
             guard let combo = KeyCombo(parsing: entry.hotKey) else { failures.append("Invalid shortcut for " + entry.bundleIdentifier); continue }
             let bundleID = entry.bundleIdentifier
             if HotKeyCenter.shared.register(combo, handler: { toggle(bundleID) }) == nil {
-                failures.append("Shortcut unavailable: " + entry.hotKey + " (" + bundleID + ")")
+                failures.append("Shortcut unavailable: " + KeyCombo.display(entry.hotKey) + " (" + bundleID + ")")
             }
         }
         return failures

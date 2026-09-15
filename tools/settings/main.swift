@@ -20,10 +20,16 @@ controller.refresh(try JSONDecoder().decode(Preferences.self, from: Data(content
 let clipboard = ClipboardStore(retention: 10, storageURL: root.appendingPathComponent("clipboard.sqlite"), encryptionKey: SymmetricKey(size: .bits256))
 let notes = NotesStore(directory: root.appendingPathComponent("Notes"))
 let usage = UsageStore(url: root.appendingPathComponent("usage.sqlite"))
-let panel = LauncherPanel(index: AppIndex(entries: apps), clipboard: clipboard, notes: notes, config: Preferences(), usage: usage, positionStore: UserDefaults(suiteName: "volant.settings.preview")!) { action in
+final class PreviewPowerAssertions: CaffeinateAssertions {
+    func create(display: Bool, timeout: TimeInterval) throws -> UInt32 { 1 }
+    func release(_ id: UInt32) throws { }
+}
+let previewCaffeinate = CaffeinateService(assertions: PreviewPowerAssertions(), automaticTimer: false)
+let panel = LauncherPanel(index: AppIndex(entries: apps), clipboard: clipboard, notes: notes, config: Preferences(), usage: usage, positionStore: UserDefaults(suiteName: "volant.settings.preview")!, caffeinate: previewCaffeinate) { action in
     if case .editApp(let entry) = action { controller.edit(entry) }
 }
 panel.model.searchesSecondarySources = false
+panel.model.copyText = { print("Fictional preview copied: \($0)"); fflush(stdout) }
 final class PreviewActions: NSObject {
     let show: () -> Void
     init(show: @escaping () -> Void) { self.show = show }
@@ -48,7 +54,16 @@ statusItem.button?.setAccessibilityLabel("Volant Settings Preview")
 statusItem.menu = StatusMenu.make(target: actions, show: #selector(PreviewActions.showLauncher), settings: #selector(PreviewActions.settings), update: #selector(PreviewActions.updates))
 controller.window?.setFrame(NSWindow.frameRect(forContentRect: NSRect(x: 100, y: 100, width: 680, height: 500), styleMask: controller.window!.styleMask), display: true)
 var destinationWindow: NSWindow?
-if CommandLine.arguments.contains("--snap") {
+if CommandLine.arguments.contains("--core") || CommandLine.arguments.contains("--render-core") {
+    panel.model.query = "caffeinate"
+    let host = NSHostingView(rootView: LauncherView(model: panel.model, agents: panel.model.agents).background(Color(nsColor: .windowBackgroundColor)))
+    destinationWindow = NSWindow(contentRect: NSRect(origin: .zero, size: LauncherPanel.size), styleMask: [.titled, .closable], backing: .buffered, defer: false)
+    destinationWindow?.title = "Volant Core Commands Preview"
+    destinationWindow?.contentView = host
+    destinationWindow?.center()
+    destinationWindow?.makeKeyAndOrderFront(nil)
+    app.activate(ignoringOtherApps: true)
+} else if CommandLine.arguments.contains("--snap") {
     _ = NotificationCenter.default.addObserver(forName: NSWindow.didMoveNotification, object: panel, queue: .main) { _ in
         print("Snap fixture position: \(panel.frame.origin)"); fflush(stdout)
     }
@@ -80,6 +95,28 @@ if CommandLine.arguments.contains("--menu") {
         statusItem.menu?.popUp(positioning: nil, at: NSPoint(x: 40, y: 100), in: controller.window?.contentView)
     }
 }
+if CommandLine.arguments.contains("--render-core") {
+    DispatchQueue.main.async {
+        for theme in ["light", "dark"] {
+            app.appearance = NSAppearance(named: theme == "dark" ? .darkAqua : .aqua)
+            destinationWindow?.appearance = app.appearance
+            for (name, query) in [("commands", ""), ("caffeinate", "caffeinate"), ("active", "caffeinate 30m"), ("emoji", ":"), ("emoji-search", ":cat"), ("emoji-empty", ":nonexistent-fixture-emoji")] {
+                if name == "active" { previewCaffeinate.perform(CaffeinateCommand.parse(query)[0]) }
+                else { previewCaffeinate.stop() }
+                panel.model.query = query
+                if query.isEmpty { panel.model.reset() }
+                RunLoop.main.run(until: Date().addingTimeInterval(0.25))
+                let view = destinationWindow!.contentView!
+                view.layoutSubtreeIfNeeded()
+                let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
+                view.cacheDisplay(in: view.bounds, to: bitmap)
+                try! bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "/tmp/volant-branded-\(name)-\(theme).png"))
+                print("Rendered core \(name) \(theme)")
+            }
+        }
+        app.terminate(nil)
+    }
+}
 if CommandLine.arguments.contains("--render") {
     DispatchQueue.main.async {
         let output = URL(fileURLWithPath: "/tmp/volant-settings-renders")
@@ -99,7 +136,7 @@ if CommandLine.arguments.contains("--render") {
                 if section == "General" {
                     let event = NSEvent.mouseEvent(with: .mouseMoved, location: .zero, modifierFlags: [], timestamp: 0,
                                                    windowNumber: controller.window!.windowNumber, context: nil, eventNumber: 0, clickCount: 0, pressure: 0)!
-                    for recorder in recorders(view) {
+                    for recorder in recorders(view) where !recorder.value.isEmpty {
                         recorder.mouseEntered(with: event)
                         precondition(recorder.subviews.contains { !$0.isHidden && ($0 as? NSButton)?.toolTip == "Remove shortcut" })
                     }

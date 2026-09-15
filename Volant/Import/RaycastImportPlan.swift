@@ -90,7 +90,7 @@ struct RaycastImportPlan {
         let settings = root["settings"] as? [String: Any]
         var knownAliases = Set(existing.aliases.keys.map { $0.lowercased() })
         var appIDs = Set(existing.appHotKeys.map(\.bundleIdentifier))
-        var combos = ([existing.summonHotKey, existing.notesHotKey] + existing.appHotKeys.map(\.hotKey)).compactMap(KeyCombo.init(parsing:))
+        var combos = ([existing.summonHotKey, existing.notesHotKey, existing.emojiHotKey] + existing.appHotKeys.map(\.hotKey)).compactMap(KeyCombo.init(parsing:))
         for command in settings?["commands"] as? [[String: Any]] ?? [] {
             let alias = nonempty(command["alias"])
             let hasHotkey = command["macosHotkey"] is [String: Any]

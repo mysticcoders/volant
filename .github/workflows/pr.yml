@@ -55,7 +55,11 @@ jobs:
       - uses: actions/checkout@v4
       - run: brew install xcodegen
       - name: Native UI fixtures
-        run: Scripts/test.sh --ci --ui only > /tmp/volant-ui.log 2>&1
+        run: |
+          if ! Scripts/test.sh --ci --ui only > /tmp/volant-ui.log 2>&1; then
+            tail -100 /tmp/volant-ui.log
+            exit 1
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -65,6 +69,7 @@ jobs:
             /tmp/volant-launcher-*.jpg
             /tmp/volant-destinations-*.png
             /tmp/volant-snap-*.png
+            /tmp/volant-core-*.png
             build/Logs/Test/*.xcresult
   checks:
     name: PR gate

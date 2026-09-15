@@ -8,13 +8,13 @@ from pathlib import Path
 
 UI_PATTERNS = (
     "Volant/**/*View.swift", "Volant/**/*Panel.swift", "Volant/**/*WindowController.swift",
-    "Volant/Panel/*", "Volant/Settings/Shortcut*.swift", "Volant/Settings/GlobalShortcutRow.swift",
-    "Volant/Settings/AppBindingEditor.swift", "Volant/Settings/StatusMenu.swift",
+    "Volant/Panel/*", "Volant/Emoji/*", "Volant/Settings/Shortcut*.swift", "Volant/Settings/GlobalShortcutRow.swift",
+    "Volant/Settings/AppBindingEditor.swift", "Volant/Settings/AppBindingRow.swift", "Volant/HotKeys/KeyCombo.swift", "Volant/Settings/StatusMenu.swift",
     "Volant/Notes/LiveMarkdown*.swift", "Volant/Agents/*Model.swift", "Volant/Agents/HarnessStatusStrip.swift",
     "Volant/App/main.swift", "Volant/App/AppDelegate.swift", "Volant/Resources/*",
     "Shared/LauncherRouting.swift", "Volant/SystemControl/SystemSettingsDestination.swift",
     "tools/launcher/*", "tools/settings/*", "tools/marketing/*", "tools/raycast/render.swift",
-    "tools/check-launcher.sh", "tools/preview-settings.sh", "tools/render-*.sh",
+    "tools/check-launcher.sh", "tools/run-bounded-check.py", "tools/preview-settings.sh", "tools/render-*.sh",
     "VolantTests/LiveMarkdownTests.swift", "VolantTests/NotesStoreTests.swift",
 )
 NATIVE_PATTERNS = ("Volant/*", "VolantTests/*", "VolantAgentHost/*", "VolantExtensionHost/*",

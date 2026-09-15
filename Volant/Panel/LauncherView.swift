@@ -10,6 +10,7 @@ struct LauncherView: View {
         VStack(spacing: 0) {
             searchField
             Divider().opacity(0.6)
+            CaffeinateStatusView(service: model.caffeinate)
             if model.promotedHarness != nil || model.showingAgents {
                 agentStatusStrip
                 Divider().opacity(0.6)
@@ -30,6 +31,8 @@ struct LauncherView: View {
             }
             if let network = model.wifiJoin {
                 WiFiJoinView(model: model, network: network).id(network.id)
+            } else if model.showingEmoji {
+                EmojiGridView(model: model)
             } else if model.showingACP {
                 ACPConversationView(model: model.acp)
             } else {
@@ -51,10 +54,13 @@ struct LauncherView: View {
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.primary.opacity(0.08)))
         .onAppear { requestSearchFocus() }
         .onChange(of: model.query) { _, _ in actionApp = nil }
+        .onChange(of: model.showingEmoji) { _, _ in requestSearchFocus() }
         .onChange(of: model.selectedRow?.id) { _, _ in actionApp = nil }
         .onChange(of: model.searchFocusRequest) { _, _ in requestSearchFocus() }
-        .onKeyPress(.downArrow) { guard !model.showingACP && model.wifiJoin == nil else { return .ignored }; model.moveSelection(1); return .handled }
-        .onKeyPress(.upArrow) { guard !model.showingACP && model.wifiJoin == nil else { return .ignored }; model.moveSelection(-1); return .handled }
+        .onKeyPress(.downArrow) { guard !model.showingACP && model.wifiJoin == nil else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(LauncherModel.emojiColumns) } else { model.moveSelection(1) }; return .handled }
+        .onKeyPress(.upArrow) { guard !model.showingACP && model.wifiJoin == nil else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(-LauncherModel.emojiColumns) } else { model.moveSelection(-1) }; return .handled }
+        .onKeyPress(.leftArrow) { guard model.showingEmoji else { return .ignored }; model.moveEmojiSelection(-1); return .handled }
+        .onKeyPress(.rightArrow) { guard model.showingEmoji else { return .ignored }; model.moveEmojiSelection(1); return .handled }
         .onKeyPress(.escape) {
             if actionApp != nil { actionApp = nil; return .handled }
             if model.wifiJoin != nil { guard !model.connectivityBusy else { return .handled }; model.wifiJoin = nil; model.searchFocusRequest = UUID() }
@@ -80,7 +86,7 @@ struct LauncherView: View {
                 .accessibilityHidden(true)
                 .overlay(LauncherDragHandle())
                 .help("Drag to align Volant. Hold Option to move freely.")
-            TextField("Search for apps, files, contacts, or calculate…", text: $model.query)
+            TextField(model.showingEmoji ? "Search emoji…" : "Search for apps, files, contacts, or calculate…", text: Binding(get: { model.searchText }, set: { model.searchText = $0 }))
                 .textFieldStyle(.plain)
                 .font(.system(size: 22, weight: .regular))
                 .focused($focused)
@@ -141,10 +147,6 @@ struct LauncherView: View {
 
     private func requestSearchFocus() {
         // A persistent hosting view does not appear again each time its panel is summoned.
-        if NSApp.keyWindow?.firstResponder is NSTextView {
-            focused = true
-            return
-        }
         focused = false
         DispatchQueue.main.async { focused = true }
     }
@@ -226,6 +228,11 @@ private struct RowView: View {
                 Text(subtitle).font(.system(size: 14)).foregroundStyle(.secondary).lineLimit(1)
             }
             Spacer(minLength: 12)
+            if row.isCoreCommand {
+                Image("VolantWing").renderingMode(.template).resizable().scaledToFit()
+                    .frame(width: 14, height: 14).foregroundStyle(Color.accentColor)
+                    .help("Built into Volant").accessibilityLabel("Volant built-in command")
+            }
             Text(row.kind).font(.system(size: 14)).foregroundStyle(.secondary)
         }
         .padding(.horizontal, 12)
@@ -236,6 +243,8 @@ private struct RowView: View {
 
     private var title: String {
         switch row {
+        case .core(let command): return command.title
+        case .caffeinate(let command): return command.title
         case .agentSession(let session): return session.project
         case .connectivity(let item): return item.title
         case .audioRoute(let route): return route.name
@@ -263,6 +272,8 @@ private struct RowView: View {
 
     private var subtitle: String? {
         switch row {
+        case .core(let command): return command.detail
+        case .caffeinate(let command): return command.detail
         case .systemSettings: return "Open this pane in System Settings"
         case .settings: return "Preferences, app shortcuts and backups"
         case .reloadConfig: return "Apply changes from config.json"
@@ -289,6 +300,8 @@ private struct RowView: View {
 
     @ViewBuilder private var icon: some View {
         switch row {
+        case .core(let command): Image(systemName: command.symbol).font(.system(size: 20)).foregroundStyle(.secondary)
+        case .caffeinate: Image(systemName: "cup.and.saucer").font(.system(size: 20)).foregroundStyle(.secondary)
         case .agentSession(let session): Image(systemName: session.agentStatus == "blocked" ? "exclamationmark.bubble" : "terminal").font(.system(size: 20)).foregroundStyle(session.agentStatus == "blocked" ? Color.orange : Color.secondary)
         case .connectivity(let item): Image(systemName: item.id.hasPrefix("wifi:") ? "wifi" : "antenna.radiowaves.left.and.right").font(.system(size: 20)).foregroundStyle(.secondary)
         case .audioRoute(let route): Image(systemName: route.direction == .input ? "mic" : "speaker.wave.2").font(.system(size: 20)).foregroundStyle(.secondary)
@@ -308,7 +321,7 @@ private struct RowView: View {
         case .note: Image(systemName: "note.text").font(.system(size: 20)).foregroundStyle(.secondary)
         case .newNote: Image(systemName: "plus.circle").font(.system(size: 20)).foregroundStyle(.secondary)
         case .snippet: Image(systemName: "text.badge.plus").font(.system(size: 20)).foregroundStyle(.secondary)
-        case .emoji: Image(systemName: "face.smiling").font(.system(size: 20)).foregroundStyle(.secondary)
+        case .emoji(let emoji): Text(emoji.symbol).font(.system(size: 20))
         case .quicklink: Image(systemName: "link").font(.system(size: 20)).foregroundStyle(.secondary)
         case .extensionRun: Image(systemName: "puzzlepiece.extension").font(.system(size: 20)).foregroundStyle(.secondary)
         case .extensionResult: Image(systemName: "checkmark.circle").font(.system(size: 20)).foregroundStyle(.secondary)

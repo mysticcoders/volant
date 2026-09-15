@@ -148,7 +148,7 @@ final class RaycastImportWindowController: NSWindowController, NSWindowDelegate 
         lines += incoming.snippets.map { "Snippet: \($0.name)" }
         lines += incoming.quicklinks.map { "Quicklink: \($0.name) → \($0.url)" }
         lines += incoming.aliases.keys.sorted().map { "Alias: \($0) → \(incoming.aliases[$0, default: ""])" }
-        lines += incoming.hotkeys.map { "Hotkey: \($0.hotKey) → \($0.bundleIdentifier)" }
+        lines += incoming.hotkeys.map { "Hotkey: \(KeyCombo.display($0.hotKey)) → \($0.bundleIdentifier)" }
         lines += incoming.notes.values.sorted().map { "Note: \($0.split(separator: "\n").first.map(String.init) ?? "Untitled")" }
         lines += ["", "COMPATIBILITY & CONFLICTS"] + incoming.report
         details.string = lines.joined(separator: "\n\n")

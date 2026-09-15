@@ -53,3 +53,21 @@ struct KeyCombo: Equatable {
         return table
     }()
 }
+
+
+extension KeyCombo {
+    static func display(_ value: String) -> String {
+        guard let combo = KeyCombo(parsing: value) else { return value }
+        let hyper = UInt32(cmdKey | controlKey | optionKey | shiftKey)
+        var glyphs = ""
+        if combo.carbonModifiers & hyper == hyper { glyphs = "✦" }
+        else {
+            for (modifier, glyph) in [(controlKey, "⌃"), (optionKey, "⌥"), (shiftKey, "⇧"), (cmdKey, "⌘")] {
+                if combo.carbonModifiers & UInt32(modifier) != 0 { glyphs += glyph }
+            }
+        }
+        let key = value.lowercased().split(separator: "+").last.map { $0.trimmingCharacters(in: .whitespaces) } ?? ""
+        let special = ["space": "␣", "return": "↩", "enter": "↩", "tab": "⇥", "escape": "⎋", "delete": "⌫", "up": "↑", "down": "↓", "left": "←", "right": "→"]
+        return glyphs + (glyphs.isEmpty ? "" : " ") + (special[key] ?? key.uppercased())
+    }
+}

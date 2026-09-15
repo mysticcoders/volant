@@ -101,7 +101,7 @@ private struct SettingsView: View {
 
     private var general: some View {
         ScrollView {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 14) {
             Toggle("Show Volant in the Dock", isOn: boolean("showInDock", state.config.showInDock))
             Toggle("Show launcher when Volant starts", isOn: boolean("showOnLaunch", state.config.showOnLaunch))
             Toggle("Launch at Login", isOn: Binding(get: { loginStatus == .enabled }, set: { enabled in
@@ -126,6 +126,7 @@ private struct SettingsView: View {
             if !state.registrationErrors.isEmpty { Text(state.registrationErrors.joined(separator: "\n")).font(.callout).foregroundStyle(.red) }
             GlobalShortcutRow(title: "Show Volant", key: "summonHotKey", value: state.config.summonHotKey, configURL: configURL, onChange: onChange)
             GlobalShortcutRow(title: "Open Notes", key: "notesHotKey", value: state.config.notesHotKey, configURL: configURL, onChange: onChange)
+            GlobalShortcutRow(title: "Search Emoji", key: "emojiHotKey", value: state.config.emojiHotKey, configURL: configURL, onChange: onChange)
             Text("Click a shortcut and press a new combination. Changes save automatically. Hover to remove a shortcut.").font(.callout).foregroundStyle(.secondary)
         }.frame(maxWidth: .infinity, alignment: .leading)
         }.onAppear { loginStatus = SMAppService.mainApp.status }
@@ -133,29 +134,14 @@ private struct SettingsView: View {
 
     private var shortcuts: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Choose an app to add a global shortcut or a short alias, such as c for Claude.").foregroundStyle(.secondary)
+            Text("Add an alias or record a hotkey. Aliases save on Return or when you leave the field.").foregroundStyle(.secondary)
             TextField("Search applications", text: $search).textFieldStyle(.roundedBorder)
             if !state.registrationErrors.isEmpty {
                 Text(state.registrationErrors.joined(separator: "\n")).font(.callout).foregroundStyle(.red).textSelection(.enabled)
             }
             List {
                 ForEach(state.apps.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }) { app in
-                    Button { state.editing = app } label: {
-                        HStack {
-                            Image(nsImage: NSWorkspace.shared.icon(forFile: app.url.path)).resizable().frame(width: 24, height: 24)
-                            VStack(alignment: .leading) {
-                                Text(app.name)
-                                let aliases = state.config.aliases.filter { $0.value == app.url.path }.keys.sorted()
-                                if !aliases.isEmpty { Text(aliases.joined(separator: ", ")).font(.caption).foregroundStyle(.secondary) }
-                            }
-                            Spacer()
-                            if let id = Bundle(url: app.url)?.bundleIdentifier,
-                               let key = state.config.appHotKeys.first(where: { $0.bundleIdentifier == id })?.hotKey {
-                                Text(key).font(.caption).foregroundStyle(.secondary)
-                            }
-                            Image(systemName: "chevron.right").foregroundStyle(.secondary)
-                        }.padding(.vertical, 4).contentShape(Rectangle())
-                    }.buttonStyle(.plain)
+                    AppBindingRow(app: app, config: state.config, configURL: configURL, onChange: onChange)
                 }
             }.listStyle(.inset).overlay {
                 if state.apps.isEmpty { Text("No applications indexed yet. This list updates automatically.").foregroundStyle(.secondary).padding() }

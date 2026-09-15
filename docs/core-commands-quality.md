@@ -1,0 +1,32 @@
+# Core commands, Caffeinate and emoji picker
+
+Built-in entry points appear below application suggestions and participate in search. Their rows show the Volant wing beside the command label. App/file/user-content rows and individual emoji are not labeled as core apps. Settings search continues to prefer System Settings.
+
+Caffeinate offers 15 minutes, 30 minutes, one hour and until-stopped sessions, each with a display-awake option. Typed durations accept positive integer minutes/hours up to 24 hours (`caffeinate 45m`, `caffeinate 2h display`); `caffeinate off` stops. An active strip remains available while searching other commands. Stop the current session before starting another; rejected starts don't replace or leak assertions.
+
+The service owns one IOKit assertion: prevent idle system sleep, or prevent idle display sleep (which also prevents idle system sleep). Native timed assertions turn off at their OS deadline; Volant retains ownership until release, avoiding stale/reused IDs after automatic release. A continuous clock drives the displayed countdown; Stop, expiration and app termination release ownership. Release errors retain the session and expose a retryable Stop. No saved power preferences, startup restoration, admin prompt, or implicit ACP coupling. Explicit sleep/lid close are not overridden.
+
+Emoji uses the bundled Unicode-derived catalog in a grid: `emoji`, `Search Emoji`, or `:` opens browsing; typing filters names. The command prefix is hidden within the picker. Arrows navigate cells/rows, Return or click copies the chosen emoji, and Escape dismisses. There is no redundant gray smiley on emoji cells. Settings → General → Search Emoji records an optional global shortcut with immediate save/removal and cross-command/app conflict checking. It starts unassigned so macOS's existing emoji shortcut remains available. This is copy-to-clipboard, not automatic insertion into another application. Skin-tone controls, categories, recents and favorites are future work.
+
+## Validation and gaps
+
+- Fake-clock/assertion tests cover timed and indefinite sessions, display mode, duplicate starts, creation/release failures, retry and deinitialization. These never keep a CI machine awake.
+- Launcher fixtures use fictional clipboard/config and an injected power provider. Native events cover command activation, emoji navigation/copy, query resets and shortcuts. Branded visual inspection uses the separate preview bundle with the actual release asset catalog. Bare-executable interaction fixtures are separate keyboard evidence.
+- UI checks are selected by the shared diff classifier; emoji source changes count as UI impact. CI retains core-command renders alongside launcher fixtures.
+- Signed installed-app power assertions, global Carbon shortcut delivery, physical sleep/wake and refreshed notarized release verification remain separate delivery checks. Do not equate fixture rendering with those checks.
+
+## Recurring quality notes
+
+Symptom: native launcher fixture renders lacked the Volant wing and used the system blue accent. Cause: a bare Swift executable has no app asset catalog; registering an NSImage does not satisfy SwiftUI's bundle asset lookup. Prevention: use a separate temporary preview bundle with the actual compiled assets; retain the established interaction host. Evidence: branded core-command renders and separate keyboard fixture results.
+
+Avoid running separate native UI previews concurrently: they compete for key-window state and invalidate keyboard evidence. Backend unit-test hosts remain isolated and don't start production windows or services.
+
+Focus feasibility and next step are tracked in [the design note](focus-design.md) and [issue #16](https://github.com/mysticcoders/volant/issues/16); blocking is not included in this implementation.
+
+App Shortcuts now edits aliases and hotkeys inline. Alias writes commit on Return/focus loss, preserve additional aliases and unrelated fields, reject stale target-app aliases, and expose Retry/Reload on failure. Clearing the field removes only the displayed alias. Shortcut recording/removal remains immediate. All formatted shortcut labels use modifier/key glyphs; the full four-modifier chord uses ✦, while JSON stays canonical (`hyper+c` and `cmd+ctrl+option+shift+c` remain equivalent). The optional emoji shortcut also participates in Raycast-import conflict checking.
+
+Verification evidence: local non-UI logic/persistence/transport tests and native light/dark launcher suites passed; branded Caffeinate/emoji and inline Settings renders were inspected. Live CUA in the isolated preview verified Caffeinate Return/start/Stop, emoji horizontal/vertical navigation, inline alias saving, Hyper recording and removal. Clipboard output and power assertions were faked in that preview. A separate native IOKit smoke check observed its system assertion in `pmset -g assertions` and confirmed it disappeared at the OS timeout before explicit release. `IOPMAssertionCopyProperties` retained stale level data on this machine after expiration, so it is not used to drive session status. The service uses its continuous clock and explicit ownership instead.
+
+CI diagnostics: standalone launcher compilation and each native appearance run have separate deadlines and flushed progress output. A stalled runner now identifies its stage and preserves failure logs rather than holding the PR gate indefinitely. The wrapper terminates only its own child process group; it never skips a failed/timed-out check.
+
+CI fixture lesson: a separately dispatched mouse-down into an AppKit text field can enter synchronous selection tracking before the fixture sends mouse-up. The hosted run stalled after the core-command render. Set up field-editor focus with `makeFirstResponder` for command keyboard tests; keep summon/typing coverage separate. Local light/dark keyboard checks validate the replacement.
