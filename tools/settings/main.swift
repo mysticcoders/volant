@@ -54,7 +54,25 @@ statusItem.button?.setAccessibilityLabel("Volant Settings Preview")
 statusItem.menu = StatusMenu.make(target: actions, show: #selector(PreviewActions.showLauncher), settings: #selector(PreviewActions.settings), update: #selector(PreviewActions.updates))
 controller.window?.setFrame(NSWindow.frameRect(forContentRect: NSRect(x: 100, y: 100, width: 680, height: 500), styleMask: controller.window!.styleMask), display: true)
 var destinationWindow: NSWindow?
-if CommandLine.arguments.contains("--translation") || CommandLine.arguments.contains("--render-translation") || CommandLine.arguments.contains("--native-translation") {
+if CommandLine.arguments.contains("--dictionary") || CommandLine.arguments.contains("--render-dictionary") || CommandLine.arguments.contains("--native-dictionary") {
+    panel.model.dictionary.debounce = .zero
+    panel.model.dictionary.lookup = { term in
+        if term == "missing" { return nil }
+        if term == "error" { throw CocoaError(.fileReadUnknown) }
+        return DictionaryEntry(term: term, definition: "serendipity | ˌserənˈdipədē |\nnoun\nThe occurrence and development of events by chance in a happy or beneficial way.\n\nA fortunate discovery while looking for something else.")
+    }
+    if CommandLine.arguments.contains("--native-dictionary") {
+        panel.model.dictionary.lookup = { try await NativeDictionaryLookup.shared.lookup($0) }
+    }
+    panel.model.query = "define"
+    let host = NSHostingView(rootView: LauncherView(model: panel.model, agents: panel.model.agents).background(Color(nsColor: .windowBackgroundColor)))
+    destinationWindow = NSWindow(contentRect: NSRect(origin: .zero, size: LauncherPanel.size), styleMask: [.titled, .closable], backing: .buffered, defer: false)
+    destinationWindow?.title = "Volant Dictionary Preview"
+    destinationWindow?.contentView = host
+    destinationWindow?.center()
+    destinationWindow?.makeKeyAndOrderFront(nil)
+    app.activate(ignoringOtherApps: true)
+} else if CommandLine.arguments.contains("--translation") || CommandLine.arguments.contains("--render-translation") || CommandLine.arguments.contains("--native-translation") {
     if !CommandLine.arguments.contains("--native-translation") {
     panel.model.translation.loadLanguages = { ["en", "es", "fr", "de", "ja", "ar"] }
     panel.model.translation.availability = { _ in .installed }
@@ -107,6 +125,31 @@ fflush(stdout)
 if CommandLine.arguments.contains("--menu") {
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
         statusItem.menu?.popUp(positioning: nil, at: NSPoint(x: 40, y: 100), in: controller.window?.contentView)
+    }
+}
+if CommandLine.arguments.contains("--render-dictionary") {
+    Task { @MainActor in
+        for scale in [1.0, 0.8] {
+            LauncherPanel.scale = scale
+            destinationWindow?.contentView = NSHostingView(rootView: LauncherView(model: panel.model, agents: panel.model.agents).background(Color(nsColor: .windowBackgroundColor)))
+            destinationWindow?.setContentSize(LauncherPanel.size)
+            for theme in ["light", "dark"] {
+                app.appearance = NSAppearance(named: theme == "dark" ? .darkAqua : .aqua)
+                destinationWindow?.appearance = app.appearance
+                for (name, term) in [("empty", ""), ("result", "serendipity"), ("missing", "missing"), ("error", "error"), ("limit", String(repeating: "a", count: 257))] {
+                    panel.model.dictionary.input = term
+                    try! await Task.sleep(for: .milliseconds(300))
+                    precondition(name != "result" || panel.model.dictionary.entry != nil)
+                    precondition(name != "error" || panel.model.dictionary.failed)
+                    let view = destinationWindow!.contentView!
+                    view.layoutSubtreeIfNeeded()
+                    let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
+                    view.cacheDisplay(in: view.bounds, to: bitmap)
+                    try! bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "/tmp/volant-dictionary-\(name)-\(theme)\(scale == 1 ? "" : "-small").png"))
+                }
+            }
+        }
+        NSApp.terminate(nil)
     }
 }
 if CommandLine.arguments.contains("--render-translation") {

@@ -8,7 +8,9 @@ struct LauncherView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if model.showingTranslation {
+            if model.showingDictionary {
+                DictionaryView(model: model.dictionary, caffeinate: model.caffeinate, back: { model.query = ""; model.searchFocusRequest = UUID() }, copy: model.copyText)
+            } else if model.showingTranslation {
                 TranslationView(model: model.translation, caffeinate: model.caffeinate, back: { model.query = ""; model.searchFocusRequest = UUID() }, copy: model.copyText)
             } else {
             searchField
@@ -60,8 +62,8 @@ struct LauncherView: View {
         .onChange(of: model.showingEmoji) { _, _ in requestSearchFocus() }
         .onChange(of: model.selectedRow?.id) { _, _ in actionApp = nil }
         .onChange(of: model.searchFocusRequest) { _, _ in requestSearchFocus() }
-        .onKeyPress(.downArrow) { guard !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(LauncherModel.emojiColumns) } else { model.moveSelection(1) }; return .handled }
-        .onKeyPress(.upArrow) { guard !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(-LauncherModel.emojiColumns) } else { model.moveSelection(-1) }; return .handled }
+        .onKeyPress(.downArrow) { guard !model.showingDictionary && !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(LauncherModel.emojiColumns) } else { model.moveSelection(1) }; return .handled }
+        .onKeyPress(.upArrow) { guard !model.showingDictionary && !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(-LauncherModel.emojiColumns) } else { model.moveSelection(-1) }; return .handled }
         .onKeyPress(.leftArrow) { guard model.showingEmoji else { return .ignored }; model.moveEmojiSelection(-1); return .handled }
         .onKeyPress(.rightArrow) { guard model.showingEmoji else { return .ignored }; model.moveEmojiSelection(1); return .handled }
         .onKeyPress(.escape) {
@@ -71,7 +73,7 @@ struct LauncherView: View {
             return .handled
         }
         .onKeyPress(.return, phases: .down) { press in
-            guard !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }
+            guard !model.showingDictionary && !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }
             if let target = actionApp { actionApp = nil; model.editApp(target); return .handled }
             if press.modifiers.contains(.command) { model.activateSecondary() } else { model.activateSelection() }
             return .handled
@@ -150,7 +152,7 @@ struct LauncherView: View {
     }
 
     private func requestSearchFocus() {
-        guard !model.showingTranslation else { return }
+        guard !model.showingDictionary && !model.showingTranslation else { return }
         // A persistent hosting view does not appear again each time its panel is summoned.
         focused = false
         DispatchQueue.main.async { focused = true }

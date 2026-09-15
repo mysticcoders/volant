@@ -665,3 +665,29 @@ translator.clear()
 verify(!corePanel.keepsVisibleOnBlur)
 corePanel.orderOut(nil)
 print("PASS: translation view, draft lifetime, explicit copy, language changes and unsupported pair")
+
+let dictionary = corePanel.model.dictionary
+dictionary.debounce = .zero
+dictionary.lookup = { DictionaryEntry(term: $0, definition: "A fictional definition.") }
+corePanel.toggle()
+corePanel.model.query = "define"
+RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+verify(corePanel.model.showingDictionary && corePanel.model.rows.isEmpty)
+func dictionaryField(in view: NSView) -> NSTextField? {
+    if let field = view as? NSTextField, field.placeholderString == "Word or phrase…" { return field }
+    return view.subviews.lazy.compactMap { dictionaryField(in: $0) }.first
+}
+verify(corePanel.makeFirstResponder(dictionaryField(in: corePanel.contentView!)!), "Focus dictionary search")
+(corePanel.firstResponder as? NSTextView)?.insertText("serendipity", replacementRange: NSRange(location: NSNotFound, length: 0))
+sendCoreKey("\r", code: 36)
+RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+verify(dictionary.entry?.term == "serendipity", "Native dictionary field and Return deliver query")
+try renderCore("dictionary-result")
+corePanel.model.query = "Calculator"
+verify(dictionary.input.isEmpty && dictionary.entry == nil, "Leaving dictionary clears transient state")
+corePanel.model.query = "define phrase"
+RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+verify(dictionary.entry?.term == "phrase", "Inline define query preserves phrase")
+sendCoreKey("\u{1b}", code: 53)
+verify(!corePanel.isVisible && dictionary.input.isEmpty, "Escape dismisses and clears dictionary")
+print("PASS: dictionary routing, native text editing, Return, mode exit and Escape cleanup")
