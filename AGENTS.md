@@ -39,3 +39,5 @@
 - Active ACP sessions and unfinished prompts must survive launcher focus loss. Explicit dismissal remains available. Verify drag movement in a real native preview; `isMovableByWindowBackground` alone does not prove a hosted view can be dragged. Keep remembered positions reachable after display changes.
 
 - Settings shortcut edits must preserve unknown configuration fields and reject stale snapshots. Recording a key is not proof of global Carbon delivery. Keep reserved commands in Shared/LauncherRouting.swift so import and editing agree; check native Settings section sizes after navigation.
+
+- Translation requests own immutable text/language snapshots and reject stale completions. Keep drafts in memory, copy only on request, and never log source/result text or raw framework errors. Use runtime Apple language availability and system download consent; fake translation fixtures do not verify installed language models or the signed app's service access.

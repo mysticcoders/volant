@@ -8,9 +8,11 @@ struct LauncherView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            if model.showingTranslation {
+                TranslationView(model: model.translation, caffeinate: model.caffeinate, back: { model.query = ""; model.searchFocusRequest = UUID() }, copy: model.copyText)
+            } else {
             searchField
             Divider().opacity(0.6)
-            CaffeinateStatusView(service: model.caffeinate)
             if model.promotedHarness != nil || model.showingAgents {
                 agentStatusStrip
                 Divider().opacity(0.6)
@@ -47,6 +49,7 @@ struct LauncherView: View {
             }
             Divider().opacity(0.6)
             if !model.showingACP && model.wifiJoin == nil { footer }
+            }
         }
         .frame(width: LauncherPanel.size.width, height: LauncherPanel.size.height)
         .background(.regularMaterial.opacity(LauncherPanel.opacity))
@@ -57,8 +60,8 @@ struct LauncherView: View {
         .onChange(of: model.showingEmoji) { _, _ in requestSearchFocus() }
         .onChange(of: model.selectedRow?.id) { _, _ in actionApp = nil }
         .onChange(of: model.searchFocusRequest) { _, _ in requestSearchFocus() }
-        .onKeyPress(.downArrow) { guard !model.showingACP && model.wifiJoin == nil else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(LauncherModel.emojiColumns) } else { model.moveSelection(1) }; return .handled }
-        .onKeyPress(.upArrow) { guard !model.showingACP && model.wifiJoin == nil else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(-LauncherModel.emojiColumns) } else { model.moveSelection(-1) }; return .handled }
+        .onKeyPress(.downArrow) { guard !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(LauncherModel.emojiColumns) } else { model.moveSelection(1) }; return .handled }
+        .onKeyPress(.upArrow) { guard !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(-LauncherModel.emojiColumns) } else { model.moveSelection(-1) }; return .handled }
         .onKeyPress(.leftArrow) { guard model.showingEmoji else { return .ignored }; model.moveEmojiSelection(-1); return .handled }
         .onKeyPress(.rightArrow) { guard model.showingEmoji else { return .ignored }; model.moveEmojiSelection(1); return .handled }
         .onKeyPress(.escape) {
@@ -68,7 +71,7 @@ struct LauncherView: View {
             return .handled
         }
         .onKeyPress(.return, phases: .down) { press in
-            guard !model.showingACP && model.wifiJoin == nil else { return .ignored }
+            guard !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }
             if let target = actionApp { actionApp = nil; model.editApp(target); return .handled }
             if press.modifiers.contains(.command) { model.activateSecondary() } else { model.activateSelection() }
             return .handled
@@ -86,6 +89,7 @@ struct LauncherView: View {
                 .accessibilityHidden(true)
                 .overlay(LauncherDragHandle())
                 .help("Drag to align Volant. Hold Option to move freely.")
+            if model.showingACP || model.wifiJoin != nil { CaffeinateStatusView(service: model.caffeinate) }
             TextField(model.showingEmoji ? "Search emoji…" : "Search for apps, files, contacts, or calculate…", text: Binding(get: { model.searchText }, set: { model.searchText = $0 }))
                 .textFieldStyle(.plain)
                 .font(.system(size: 22, weight: .regular))
@@ -146,6 +150,7 @@ struct LauncherView: View {
     }
 
     private func requestSearchFocus() {
+        guard !model.showingTranslation else { return }
         // A persistent hosting view does not appear again each time its panel is summoned.
         focused = false
         DispatchQueue.main.async { focused = true }
@@ -170,6 +175,7 @@ struct LauncherView: View {
                 .frame(width: 16, height: 16)
                 .foregroundStyle(Color.accentColor)
                 .accessibilityHidden(true)
+            CaffeinateStatusView(service: model.caffeinate)
             Spacer()
             if let row = model.selectedRow {
                 if case .app(let app) = row {

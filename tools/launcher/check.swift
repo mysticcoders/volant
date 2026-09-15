@@ -595,6 +595,7 @@ verify(corePanel.firstResponder is NSTextView, "Core command search has a native
 sendCoreKey("\r", code: 36)
 verify(awake.isActive && power.created == 1, "Return starts a Caffeinate session: key=\(corePanel.isKeyWindow), responder=\(String(describing: corePanel.firstResponder)), query=\(corePanel.model.query), row=\(String(describing: corePanel.model.selectedRow?.id)), created=\(power.created), active=\(awake.isActive)")
 verify(corePanel.model.rows.map(\.id) == ["caffeinate:off"], "Active session offers Stop")
+verify(corePanel.model.actionFeedback == nil, "Active cup replaces the success status bar")
 try renderCore("active")
 sendCoreKey("\r", code: 36)
 verify(!awake.isActive && power.released == 1, "Return stops a Caffeinate session")
@@ -632,3 +633,35 @@ try GlobalShortcutStore.save(key: "emojiHotKey", value: "", expectedValue: "ctrl
 let emojiSettings = try JSONSerialization.jsonObject(with: Data(contentsOf: globalURL)) as! [String: Any]
 verify(emojiSettings["emojiHotKey"] as? String == "")
 print("PASS: emoji shortcut save, conflict and removal")
+
+// Translation uses fictional catalog, availability, output and clipboard throughout.
+let translator = corePanel.model.translation
+translator.loadLanguages = { ["en", "es", "fr"] }
+translator.availability = { _ in .installed }
+translator.translateFixture = { _ in TranslationResult(text: "Hola\n¿Cómo estás?", source: "en") }
+corePanel.toggle()
+corePanel.model.query = "translate"
+RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+verify(corePanel.model.showingTranslation && corePanel.model.rows.isEmpty)
+try renderCore("translation-empty")
+translator.text = "Hello\nHow are you?"
+translator.target = "es"
+verify(corePanel.keepsVisibleOnBlur, "Translation draft survives focus loss")
+Task { @MainActor in translator.start() }
+RunLoop.main.run(until: Date().addingTimeInterval(0.4))
+verify(translator.output == "Hola\n¿Cómo estás?", "Translation session view delivers fixture result")
+try renderCore("translation-result")
+var translationCopies: [String] = []
+translator.copy { translationCopies.append($0) }
+verify(translationCopies == [translator.output], "Explicit copy delivers translation")
+translator.target = "fr"
+verify(translator.output.isEmpty, "Language change clears stale translation")
+translator.availability = { _ in .unsupported }
+Task { @MainActor in translator.start() }
+RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+verify(translator.pairState == .unsupported && !translator.busy)
+try renderCore("translation-unsupported")
+translator.clear()
+verify(!corePanel.keepsVisibleOnBlur)
+corePanel.orderOut(nil)
+print("PASS: translation view, draft lifetime, explicit copy, language changes and unsupported pair")
