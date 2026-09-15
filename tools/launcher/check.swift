@@ -2,6 +2,8 @@ import AppKit
 import SwiftUI
 import CryptoKit
 
+setbuf(stdout, nil)
+
 func verify(_ condition: @autoclosure () -> Bool, _ message: String = "Assertion", line: Int = #line) {
     if !condition() { fputs("FAIL at line \(line): \(message)\n", stderr); exit(1) }
 }
@@ -581,14 +583,15 @@ func renderCore(_ name: String) throws {
 try renderCore("commands")
 corePanel.model.query = "caffeinate 30m"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
-// Establish the same text-field focus as a user clicking the search box before typing.
-for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
-    corePanel.sendEvent(NSEvent.mouseEvent(with: type, location: NSPoint(x: 160, y: LauncherPanel.size.height - 30),
-        modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: corePanel.windowNumber,
-        context: nil, eventNumber: 1, clickCount: 1, pressure: type == .leftMouseDown ? 1 : 0)!)
-    RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+// Set up native text focus without entering AppKit's synchronous mouse tracking loop.
+// Summon/typing focus is covered above; this fixture checks command keyboard delivery.
+func coreSearchField(in view: NSView) -> NSTextField? {
+    if let field = view as? NSTextField,
+       field.placeholderString == "Search for apps, files, contacts, or calculate…" { return field }
+    return view.subviews.lazy.compactMap { coreSearchField(in: $0) }.first
 }
-verify(corePanel.firstResponder is NSTextView, "Core command search field accepts native mouse focus")
+verify(corePanel.makeFirstResponder(coreSearchField(in: corePanel.contentView!)!), "Focus core command search")
+verify(corePanel.firstResponder is NSTextView, "Core command search has a native field editor")
 sendCoreKey("\r", code: 36)
 verify(awake.isActive && power.created == 1, "Return starts a Caffeinate session: key=\(corePanel.isKeyWindow), responder=\(String(describing: corePanel.firstResponder)), query=\(corePanel.model.query), row=\(String(describing: corePanel.model.selectedRow?.id)), created=\(power.created), active=\(awake.isActive)")
 verify(corePanel.model.rows.map(\.id) == ["caffeinate:off"], "Active session offers Stop")

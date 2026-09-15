@@ -6,6 +6,6 @@ trap 'rm -rf "$launcher_check_dir"' EXIT
 cp tools/launcher/check.swift "$launcher_check_dir/main.swift"
 launcher_sources=()
 while IFS= read -r source; do launcher_sources+=("$source"); done < <(find Volant Shared -name '*.swift' ! -path 'Volant/App/*')
-swiftc "${launcher_sources[@]}" "$launcher_check_dir/main.swift" -o "$launcher_check_dir/check"
-"$launcher_check_dir/check" "$launcher_check_dir"
-"$launcher_check_dir/check" "$launcher_check_dir" dark
+python3 tools/run-bounded-check.py 300 "Compile launcher fixtures" swiftc "${launcher_sources[@]}" "$launcher_check_dir/main.swift" -o "$launcher_check_dir/check"
+python3 tools/run-bounded-check.py 120 "Light launcher interactions" "$launcher_check_dir/check" "$launcher_check_dir"
+python3 tools/run-bounded-check.py 120 "Dark launcher interactions" "$launcher_check_dir/check" "$launcher_check_dir" dark

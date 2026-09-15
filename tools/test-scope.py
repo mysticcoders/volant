@@ -14,7 +14,7 @@ UI_PATTERNS = (
     "Volant/App/main.swift", "Volant/App/AppDelegate.swift", "Volant/Resources/*",
     "Shared/LauncherRouting.swift", "Volant/SystemControl/SystemSettingsDestination.swift",
     "tools/launcher/*", "tools/settings/*", "tools/marketing/*", "tools/raycast/render.swift",
-    "tools/check-launcher.sh", "tools/preview-settings.sh", "tools/render-*.sh",
+    "tools/check-launcher.sh", "tools/run-bounded-check.py", "tools/preview-settings.sh", "tools/render-*.sh",
     "VolantTests/LiveMarkdownTests.swift", "VolantTests/NotesStoreTests.swift",
 )
 NATIVE_PATTERNS = ("Volant/*", "VolantTests/*", "VolantAgentHost/*", "VolantExtensionHost/*",
