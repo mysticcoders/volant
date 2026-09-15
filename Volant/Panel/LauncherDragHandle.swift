@@ -7,16 +7,16 @@ struct LauncherDragHandle: NSViewRepresentable {
     func updateNSView(_ nsView: NSView, context: Context) {}
 }
 
-private final class WindowDragView: NSView {
+final class WindowDragView: NSView {
     private var dragStart: NSPoint?
     private var windowStart: NSPoint?
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
-        toolTip = "Drag to move Volant"
+        toolTip = "Drag to align Volant. Hold Option to move freely."
         setAccessibilityElement(true)
         setAccessibilityRole(.group)
         setAccessibilityLabel("Move Volant window")
-        setAccessibilityHelp("Drag the wing to move the window. Its position is remembered.")
+        setAccessibilityHelp("Drag the wing to align the window with screen edges or center. Hold Option to move freely. Its position is remembered.")
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     override var mouseDownCanMoveWindow: Bool { false }
@@ -30,10 +30,13 @@ private final class WindowDragView: NSView {
     override func mouseDragged(with event: NSEvent) {
         guard let window, let dragStart, let windowStart else { return }
         let point = window.convertPoint(toScreen: event.locationInWindow)
-        window.setFrameOrigin(NSPoint(x: windowStart.x + point.x - dragStart.x,
-                                      y: windowStart.y + point.y - dragStart.y))
+        let origin = NSPoint(x: windowStart.x + point.x - dragStart.x, y: windowStart.y + point.y - dragStart.y)
+        if let launcher = window as? LauncherPanel {
+            launcher.drag(to: origin, pointer: point, freely: event.modifierFlags.contains(.option))
+        } else { window.setFrameOrigin(origin) }
     }
     override func mouseUp(with event: NSEvent) {
+        (window as? LauncherPanel)?.endDragging()
         dragStart = nil
         windowStart = nil
     }
