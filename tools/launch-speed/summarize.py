@@ -8,7 +8,9 @@ from pathlib import Path
 root = Path(sys.argv[1])
 print("| Test | Trials | Median ms | P95 ms (nearest rank) | Min–max ms |")
 print("| --- | ---: | ---: | ---: | ---: |")
-for mode, count in [("reopen", 20), ("startup", 5)]:
+selection = sys.argv[2] if len(sys.argv) > 2 else "all"
+assert selection in ("all", "reopen")
+for mode, count in ([("reopen", 20)] if selection == "reopen" else [("reopen", 20), ("startup", 5)]):
     with (root / f"{mode}.csv").open() as stream:
         rows = list(csv.DictReader(stream))
     assert len(rows) == count

@@ -11,10 +11,6 @@ let targets: [String: (id: String, path: String, level: Int, ratio: CGFloat)] = 
 ]
 guard let specification = targets[target] else { fputs("Unknown target.\n", stderr); exit(2) }
 let bundleID = specification.id
-func alive(_ pid: pid_t) -> Bool { kill(pid, 0) == 0 || errno == EPERM }
-func targetApplication() -> NSRunningApplication? {
-    NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first { alive($0.processIdentifier) }
-}
 func visible(_ pid: pid_t) -> Bool {
     let windows = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID) as? [[String: Any]] ?? []
     return windows.contains { window in
@@ -39,7 +35,7 @@ print("mode,sample,request_to_window_server_visible_ms")
     let count = mode == "startup" ? 5 : 20
     var cohortPID: pid_t?
     for trial in 1...count {
-        guard let current = targetApplication() else {
+        guard let current = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first else {
             fputs("Expected target app to be running before each trial.\n", stderr); exit(3)
         }
         if mode == "reopen" {
@@ -49,9 +45,8 @@ print("mode,sample,request_to_window_server_visible_ms")
         if mode == "startup" {
             require(current.terminate(), "Clean quit request failed")
             let deadline = Date().addingTimeInterval(10)
-            while alive(current.processIdentifier) && Date() < deadline { pump(0.01) }
-            require(!alive(current.processIdentifier), "Refusing to force quit target app")
-            require(targetApplication() == nil, "Target restarted before the timed launch request")
+            while !current.isTerminated && Date() < deadline { pump(0.01) }
+            require(current.isTerminated, "Refusing to force quit target app")
         } else {
             guard let neutral = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.finder").first else {
                 fputs("Finder must be running as the neutral focus target.\n", stderr); exit(5)
@@ -74,7 +69,7 @@ print("mode,sample,request_to_window_server_visible_ms")
         }
         let deadline = Date().addingTimeInterval(10)
         while Date() < deadline {
-            if result == nil { result = targetApplication() }
+            if result == nil { result = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first }
             if let app = result, visible(app.processIdentifier) {
                 if mode == "reopen" { require(app.processIdentifier == cohortPID, "Reopen unexpectedly started a new process") }
                 print("\(mode),\(trial),\(String(format: "%.3f", (ProcessInfo.processInfo.systemUptime - timestamp) * 1000))")

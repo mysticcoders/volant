@@ -1,0 +1,12 @@
+Wed Sep 16 01:16:55 UTC 2026
+32a039c66cbaf72aee6a7a04959760f21d712dfc
+0c97924c5edf3b4c78d287048f64f6257fe14207e1d08bb3a07916b0840b7e82  tools/launch-speed/main.swift
+74522b8c96c0bf34f9e1141cf8f28cdfcf8beecf400447e2ac784b4fc4667dbf  /Applications/Raycast.app/Contents/MacOS/Raycast
+2.4.1.0
+0
+ProductName:		macOS
+ProductVersion:		27.0
+BuildVersion:		26A428
+arm64
+hw.model: Mac16,6
+hw.memsize: 137438953472

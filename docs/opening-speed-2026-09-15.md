@@ -1,5 +1,7 @@
 # Local Volant opening speed — September 15, 2026
 
+Follow-up: [matched Raycast comparison](opening-comparison-2026-09-15.md) uses identical Finder-focus preparation for both apps. Use that dataset for comparisons; this earlier Volant-only run remains an audit record.
+
 Measured on the owner’s Mac, not a VM. The existing Tart VMs were stopped and no test VM was started. Installed app: 0.1.3 build 5, development Release from main `0a5771f`, executable SHA-256 `03f58b2dfb7dbba984513924c12fb2c262817eb1ead5ed789c916b564a92090c`. Host: Apple silicon Mac16,6, 128 GiB RAM, macOS 27.0 build 26A428. Existing configuration, data, app index and pinned Herdr overview were used; the harness did not edit configuration or app data. App settings confirmed ⌘Space and show-on-launch enabled.
 
 ## Metric
