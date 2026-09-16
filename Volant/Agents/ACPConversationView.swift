@@ -3,12 +3,20 @@ import SwiftUI
 struct ACPConversationView: View {
     @ObservedObject var model: ACPModel
     var settings: () -> Void = {}
+    var back: () -> Void = {}
+    var caffeinate: CaffeinateService?
     var focusRequest: UUID = UUID()
     @FocusState private var promptFocused: Bool
     @State private var follow = true
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
+                Button(action: back) { Image(systemName: "chevron.left") }.buttonStyle(.plain).help("Back to search")
+                    .accessibilityLabel("Back to search")
+                Image("VolantWing").renderingMode(.template).resizable().scaledToFit()
+                    .frame(width: 18, height: 18).foregroundStyle(Color.accentColor)
+                    .accessibilityHidden(true).overlay(LauncherDragHandle())
+                if let caffeinate { CaffeinateStatusView(service: caffeinate) }
                 Text("AI Chat").fontWeight(.medium)
                 Text(ACPProvider(rawValue: model.provider)?.title ?? "").foregroundStyle(.secondary)
                 if !model.project.isEmpty {

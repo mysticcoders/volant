@@ -94,15 +94,18 @@ key("k", 40, .command)
 focusActionSearch()
 (panel.firstResponder as? NSTextView)?.insertText("copy name", replacementRange: NSRange(location: NSNotFound, length: 0)); settle()
 // Native mouse activation of the filtered first row, at each supported panel size.
-let point = NSPoint(x: LauncherPanel.size.width - 175, y: 48 + 40 + 9 + min(285, LauncherPanel.size.height - 150) - 18)
+var point = NSPoint(x: LauncherPanel.size.width - 175, y: 48 + 40 + 9 + min(285, LauncherPanel.size.height - 150) - 18)
 func mouse(_ type: NSEvent.EventType) -> NSEvent {
     NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
                       windowNumber: panel.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: 0)!
 }
+func clickPoint() {
 app.postEvent(mouse(.leftMouseUp), atStart: true)
 panel.sendEvent(mouse(.leftMouseDown))
 if let release = app.nextEvent(matching: .leftMouseUp, until: .distantPast, inMode: .default, dequeue: true) { panel.sendEvent(release) }
 settle()
+}
+clickPoint()
 verify(copied == ["Fixture", "Fixture"] && launched == 0, "Native mouse click executes filtered action")
 panel.orderOut(nil)
 print("PASS: native action search, keyboard navigation, empty state, Escape, copying, and Favorites")
@@ -124,6 +127,10 @@ try render("chat")
 panel.orderOut(nil); settle(); panel.toggle(); settle()
 (panel.firstResponder as? NSTextView)?.insertText("!", replacementRange: NSRange(location: NSNotFound, length: 0)); settle()
 verify(panel.model.acp.draft.contains("!") && panel.model.query == "ai", "Reopening active chat restores prompt focus and preserves draft")
+point = NSPoint(x: 20, y: LauncherPanel.size.height - 18)
+clickPoint()
+verify(!panel.model.showingACP && panel.model.acp.active && !panel.model.acp.draft.isEmpty, "Back returns to search without ending chat or discarding its draft")
+try render("chat-back")
 panel.orderOut(nil)
 let settings = SettingsWindowController(configURL: panel.model.actionConfigURL, acp: panel.model.acp) {}
 try chatConfig!.save(at: panel.model.actionConfigURL)

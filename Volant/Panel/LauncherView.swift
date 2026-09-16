@@ -11,6 +11,9 @@ struct LauncherView: View {
                 DictionaryView(model: model.dictionary, caffeinate: model.caffeinate, back: { model.query = ""; model.searchFocusRequest = UUID() }, copy: model.copyText)
             } else if model.showingTranslation {
                 TranslationView(model: model.translation, caffeinate: model.caffeinate, back: { model.query = ""; model.searchFocusRequest = UUID() }, copy: model.copyText)
+            } else if model.showingACP {
+                ACPConversationView(model: model.acp, settings: model.openAISettings, back: { model.query = "" }, caffeinate: model.caffeinate, focusRequest: model.searchFocusRequest)
+                    .onAppear { model.openAIChat() }
             } else {
             searchField
             Divider().opacity(0.6)
@@ -39,9 +42,6 @@ struct LauncherView: View {
                 WiFiJoinView(model: model, network: network).id(network.id)
             } else if model.showingEmoji {
                 EmojiGridView(model: model)
-            } else if model.showingACP {
-                ACPConversationView(model: model.acp, settings: model.openAISettings, focusRequest: model.searchFocusRequest)
-                    .onAppear { model.openAIChat() }
             } else {
                 if model.showingAgents {
                     HStack {
