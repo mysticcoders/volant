@@ -123,7 +123,19 @@ for previous in ["", "screen", ":", "define test"] {
     RunLoop.main.run(until: Date().addingTimeInterval(0.1))
     verify(panel.model.query == "s", "Deferred SwiftUI updates do not overwrite first key")
 }
+panel.model.query = "screen"
 panel.orderOut(nil)
+let keyWindowBeforePreparation = app.keyWindow
+RunLoop.main.run(until: Date().addingTimeInterval(0.25))
+verify(panel.model.query.isEmpty && !panel.model.isPresented, "Hidden preparation resets ordinary search")
+verify(!panel.isVisible && !panel.isKeyWindow && app.keyWindow === keyWindowBeforePreparation, "Hidden preparation never shows a window or steals focus")
+panel.toggle()
+verify((panel.firstResponder as? NSTextView)?.string == "", "Prepared home editor contains no stale query")
+panel.model.query = "screen"
+panel.orderOut(nil)
+panel.model.query = "snip changed while hidden"
+RunLoop.main.run(until: Date().addingTimeInterval(0.25))
+verify(panel.model.query == "snip changed while hidden", "Stale hidden preparation cannot overwrite a newer query")
 let modal = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 200, height: 100), styleMask: [.titled], backing: .buffered, defer: false)
 let session = app.beginModalSession(for: modal)
 _ = app.runModalSession(session)
@@ -132,6 +144,23 @@ panel.toggle()
 verify(!panel.isVisible, "Modal session cannot leave a dead launcher visible")
 app.endModalSession(session); modal.orderOut(nil)
 print("PASS: real LauncherPanel screen typing, result mouse activation, repeat summon, and modal-session guard")
+
+// Real search/Return/dismiss/idle/reopen cycles use a fake launch callback.
+for _ in 0..<3 {
+    let before = launched.count
+    panel.toggle()
+    for character in "screen" {
+        let value = String(character)
+        let event = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: panel.windowNumber, context: nil, characters: value, charactersIgnoringModifiers: value, isARepeat: false, keyCode: UInt16(KeyCombo.keyCodes[value]!))!
+        panel.sendEvent(event)
+    }
+    verify(panel.model.query == "screen", "Reopened search accepts all immediately typed keys")
+    let submit = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: panel.windowNumber, context: nil, characters: "\r", charactersIgnoringModifiers: "\r", isARepeat: false, keyCode: 36)!
+    panel.sendEvent(submit)
+    RunLoop.main.run(until: Date().addingTimeInterval(0.25))
+    verify(launched.count == before + 1 && !panel.isVisible && panel.model.query.isEmpty, "Return launches once, dismisses, and prepares an empty home")
+}
+print("PASS: search/Return/dismiss/idle/reopen lifecycle with isolated launch callback")
 
 // A new query must select its own first result, not the prior suggestion's identity.
 let home = AppEntry(id: "fixture-home", name: "Home", url: URL(fileURLWithPath: "/System/Applications/Home.app"), lastUsed: Date(timeIntervalSince1970: 1))
@@ -376,6 +405,8 @@ for phase in ["starting", "working", "cancelling", "ready"] {
 }
 sticky.cancelOperation(nil)
 verify(!sticky.isVisible && sticky.model.acp.state.sessionID == "fictional-session", "Explicit dismissal keeps the ACP session")
+RunLoop.main.run(until: Date().addingTimeInterval(0.25))
+verify(sticky.model.query == "acp" && sticky.model.acp.draft == "Keep this fictional draft", "Hidden idle work preserves ACP session and draft")
 sticky.toggle()
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 verify(sticky.model.query == "acp" && sticky.model.acp.draft == "Keep this fictional draft", "Reopening preserves conversation and draft")
@@ -697,6 +728,10 @@ Task { @MainActor in translator.start() }
 RunLoop.main.run(until: Date().addingTimeInterval(0.3))
 verify(translator.pairState == .unsupported && !translator.busy)
 try renderCore("translation-unsupported")
+corePanel.orderOut(nil)
+RunLoop.main.run(until: Date().addingTimeInterval(0.25))
+verify(corePanel.model.query == "translate" && translator.text == "Hello\nHow are you?", "Hidden idle work preserves translation draft")
+corePanel.toggle()
 translator.clear()
 verify(!corePanel.keepsVisibleOnBlur)
 corePanel.orderOut(nil)

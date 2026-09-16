@@ -11,10 +11,14 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
     let model: LauncherModel
     private let positionStore: UserDefaults
     private var restoringPosition = false
+    private let preparesWhenHidden: Bool
+    private var hiddenPreparation: DispatchWorkItem?
+    private var presentationGeneration = 0
     let snapGuides = LauncherSnapGuides()
 
-    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), positionStore: UserDefaults = .standard, caffeinate: CaffeinateService = CaffeinateService(), onNote: @escaping (LauncherAction) -> Void) {
+    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), positionStore: UserDefaults = .standard, caffeinate: CaffeinateService = CaffeinateService(), preparesWhenHidden: Bool = true, onNote: @escaping (LauncherAction) -> Void) {
         self.positionStore = positionStore
+        self.preparesWhenHidden = preparesWhenHidden
         LauncherPanel.scale = min(1.4, max(0.8, config.appearance.scale))
         LauncherPanel.opacity = min(1.0, max(0.5, config.appearance.opacity))
         model = LauncherModel(index: index, clipboard: clipboard, notes: notes, config: config, usage: usage, caffeinate: caffeinate, onNote: onNote)
@@ -50,7 +54,11 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         if !PermissionGate.isPrompting && !keepsVisibleOnBlur { orderOut(nil) }
     }
 
-    func toggle() {
+    func toggle(source: LauncherOpenSource = .other, requestedAt: TimeInterval? = nil) {
+        let started = requestedAt ?? ProcessInfo.processInfo.systemUptime
+        hiddenPreparation?.cancel(); hiddenPreparation = nil
+        presentationGeneration += 1
+        let generation = presentationGeneration
         if let modal = NSApp.modalWindow {
             if isVisible { orderOut(nil) }
             modal.makeKeyAndOrderFront(nil)
@@ -59,9 +67,14 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         }
         if isVisible {
             if isKeyWindow { orderOut(nil) }
-            else { makeKeyAndOrderFront(nil) }
+            else {
+                let trace = LauncherOpeningTrace(source: source, started: started)
+                makeKeyAndOrderFront(nil)
+                trace.finish(ready: isKeyWindow && firstResponder is NSTextView)
+            }
             return
         }
+        let trace = LauncherOpeningTrace(source: source, started: started)
         let openingID = OSSignpostID(log: Self.openingLog)
         os_signpost(.begin, log: Self.openingLog, name: "Prepare launcher", signpostID: openingID)
         let previousQuery = model.query
@@ -94,9 +107,15 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
             model.searchFocusRequest = UUID()
         }
         os_signpost(.end, log: Self.openingLog, name: "Present and focus", signpostID: openingID)
+        let ready = isKeyWindow && firstResponder is NSTextView
+        if ready { trace.finish(ready: true) }
         DispatchQueue.main.async { [weak self] in
-            guard let self, self.isVisible else { return }
+            guard let self, self.isVisible, self.presentationGeneration == generation else {
+                trace.finish(ready: false)
+                return
+            }
             guard self.isKeyWindow else {
+                trace.finish(ready: false)
                 Logger(subsystem: "com.mysticcoders.volant", category: "Launcher").fault("Launcher failed to become key; dismissing instead of leaving an unresponsive panel.")
                 self.orderOut(nil)
                 return
@@ -106,6 +125,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
             if !(self.firstResponder is NSTextView), let field = self.searchInput(in: self.contentView) {
                 self.makeFirstResponder(field)
             }
+            trace.finish(ready: self.firstResponder is NSTextView)
         }
     }
 
@@ -144,11 +164,30 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
     func endDragging() { snapGuides.hide() }
 
     override func orderOut(_ sender: Any?) {
+        hiddenPreparation?.cancel(); hiddenPreparation = nil
+        presentationGeneration += 1
         endDragging()
         model.dictionary.clear()
         model.isPresented = false
         model.agents.disconnect()
         super.orderOut(sender)
+        guard preparesWhenHidden, !keepsVisibleOnBlur else { return }
+        let generation = presentationGeneration
+        let dismissedQuery = model.query
+        let preparation = DispatchWorkItem { [weak self] in
+            guard let self, self.presentationGeneration == generation else { return }
+            self.hiddenPreparation = nil
+            guard !self.isVisible, !self.keepsVisibleOnBlur, self.model.query == dismissedQuery,
+                  NSApp.modalWindow == nil else { return }
+            let id = OSSignpostID(log: Self.openingLog)
+            os_signpost(.begin, log: Self.openingLog, name: "Prepare hidden home", signpostID: id)
+            self.model.reset()
+            self.contentView?.layoutSubtreeIfNeeded()
+            os_signpost(.end, log: Self.openingLog, name: "Prepare hidden home", signpostID: id)
+        }
+        hiddenPreparation = preparation
+        // One cancellable idle task, not a repeating timer. Rapid reopens use normal reset.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: preparation)
     }
 
     func windowDidMove(_ notification: Notification) {

@@ -23,6 +23,7 @@ elif [[ "$ui_mode" != never ]]; then
 fi
 printf 'UI verification: %s (mode: %s)\n' "$run_ui" "$ui_mode"
 python3 tools/test-scope-tests.py
+python3 tools/interaction-speed/check.py
 xcodegen generate --quiet
 build_options=(-project Volant.xcodeproj -scheme Volant -derivedDataPath build -destination 'platform=macOS')
 if [[ "$ci" == true ]]; then

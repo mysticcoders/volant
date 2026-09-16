@@ -1,0 +1,4 @@
+Handler entry → native editor readiness; NOT physical key → first displayed frame.
+other: ready=62, incomplete/cancelled=0
+  median=16.806 ms, p95=26.958 ms, max=70.547 ms
+No ready hotkey samples; other sources are not a substitute for the real shortcut path.

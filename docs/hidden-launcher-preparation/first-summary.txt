@@ -1,0 +1,6 @@
+baseline initial editor readiness ms: 58.133
+baseline handler_to_editor_ready_ms n=20 median=25.929 p95=29.196 ms
+baseline first_key_delivery_ms n=20 median=0.938 p95=3.406 ms
+prepared initial editor readiness ms: 18.625
+prepared handler_to_editor_ready_ms n=20 median=15.401 p95=25.807 ms
+prepared first_key_delivery_ms n=20 median=0.987 p95=6.800 ms
