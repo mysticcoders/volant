@@ -6,6 +6,7 @@
 - Use `Scripts/test.sh --base origin/main` locally. It includes committed branch changes plus staged, unstaged and untracked changes when selecting UI tests. Use `--ui always` for an unlisted UI impact, `--ui only` to rerun UI checks, or `--ui never` for an explicitly scoped non-UI run. Explain overrides in the PR. Keep `tools/test-scope.py` and its tests current when adding UI surfaces or dependencies.
 - Do not launch previews, UI automation, or appearance checks for docs, backend-only changes or unchanged UI. When UI behavior or appearance changes, inspect only the affected surfaces and navigation destinations in light/dark appearances; hosted runners do not replace installed-app, hardware, signing or visual inspection evidence.
 - Unit-test hosts must not start real clipboard monitoring, hotkeys, menus, updater checks or normal app windows. Keep test fixtures isolated from owner data. Run native UI fixtures one process at a time to avoid key-window interference. Render branded UI from the compiled release assets, not a bare executable with missing images.
+- Run routine local UI tests and visual previews in headless Tart, not on the owner's desktop. `Scripts/test.sh` routes local UI checks to `tools/test-ui-vm.py`; never fall back to host UI if the VM is unavailable. Host UI testing (`VOLANT_HOST_UI_TESTS=1`), app relaunches, and disruptive performance measurements require an explicitly agreed window while the owner is working. VM timings are functional evidence, not native performance measurements.
 
 # Project working notes
 
