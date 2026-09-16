@@ -46,6 +46,14 @@ final class LauncherActionsTests: XCTestCase {
         try Data("{}".utf8).write(to: model.actionConfigURL)
         var copied: [String] = []
         model.copyText = { copied.append($0) }
+        model.query = "ai"
+        XCTAssertFalse(model.showingACP, "Searching must not start a chat while typing names such as AirDrop")
+        XCTAssertTrue(model.rows.contains(.core(.ai)))
+        model.activate(rowID: ResultRow.core(.ai).id)
+        XCTAssertTrue(model.showingACP)
+        model.query = "airdrop"
+        XCTAssertFalse(model.showingACP)
+        model.reset()
         model.sections = [ResultSection(title: "Apps", rows: [.app(first), .app(second)])]
         model.toggleActions()
         XCTAssertEqual(model.actionTarget?.id, "app:/Fixture.app")

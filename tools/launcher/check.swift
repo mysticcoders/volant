@@ -388,7 +388,7 @@ print("PASS: connectivity lists, password form, cancel, duplicate joins, errors,
 // A real key-window transfer must preserve a live conversation and unsent input.
 let sticky = LauncherPanel(index: AppIndex(), clipboard: clipboard, notes: notes, config: Preferences(), usage: usage, positionStore: positionDefaults, onNote: { _ in })
 sticky.model.searchesSecondarySources = false
-sticky.model.query = "acp"
+sticky.model.presentAIChat()
 sticky.model.acp.state.phase = "working"
 sticky.model.acp.state.sessionID = "fictional-session"
 sticky.model.acp.draft = "Keep this fictional draft"
@@ -406,10 +406,10 @@ for phase in ["starting", "working", "cancelling", "ready"] {
 sticky.cancelOperation(nil)
 verify(!sticky.isVisible && sticky.model.acp.state.sessionID == "fictional-session", "Explicit dismissal keeps the ACP session")
 RunLoop.main.run(until: Date().addingTimeInterval(0.25))
-verify(sticky.model.query == "acp" && sticky.model.acp.draft == "Keep this fictional draft", "Hidden idle work preserves ACP session and draft")
+verify(sticky.model.query == "ai" && sticky.model.acp.draft == "Keep this fictional draft", "Hidden idle work preserves ACP session and draft")
 sticky.toggle()
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
-verify(sticky.model.query == "acp" && sticky.model.acp.draft == "Keep this fictional draft", "Reopening preserves conversation and draft")
+verify(sticky.model.query == "ai" && sticky.model.acp.draft == "Keep this fictional draft", "Reopening preserves conversation and draft")
 sticky.model.acp.state.phase = "disconnected"
 otherWindow.makeKeyAndOrderFront(nil)
 verify(sticky.isVisible, "Unsent ACP draft survives focus loss")
@@ -806,7 +806,7 @@ print("PASS: dictionary routing, native text editing, Return, mode exit and Esca
 app.setActivationPolicy(.regular)
 app.activate(ignoringOtherApps: true)
 let settingsURL = root.appendingPathComponent("settings.json")
-try Data(#"{"promotedHarness":"claude","ai":{"provider":"claude","project":"/tmp/fictional-project"}}"#.utf8).write(to: settingsURL)
+try Data(#"{"promotedHarness":"claude","ai":{"provider":"claude","project":""}}"#.utf8).write(to: settingsURL)
 let settingsBeforeNavigation = try Data(contentsOf: settingsURL)
 var openedAI: [AIConfiguration] = []
 var settingsController: SettingsWindowController!
@@ -856,7 +856,7 @@ settingsController.state.section = "AI"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 print("CHECK: Settings Connect ACP")
 clickSettings(NSPoint(x: 280, y: 500 - 270))
-verify(openedAI.count == 1 && openedAI[0].provider == "claude" && openedAI[0].project == "/tmp/fictional-project", "Connect ACP passes the saved provider/project once")
+verify(openedAI.count == 1 && openedAI[0].provider == "claude" && openedAI[0].project.isEmpty, "Connect ACP starts general chat with no project selection")
 print("CHECK: Settings project sheet")
 clickSettings(NSPoint(x: 600, y: 500 - 189))
 let sheetDeadline = Date().addingTimeInterval(3)

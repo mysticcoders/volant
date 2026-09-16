@@ -18,7 +18,21 @@ let clipboard = ClipboardStore(retention: 2, storageURL: root.appendingPathCompo
 var preferences = Preferences()
 if CommandLine.arguments.contains("compact") { preferences.appearance.scale = 0.8 }
 if CommandLine.arguments.contains("large") { preferences.appearance.scale = 1.4 }
-let panel = LauncherPanel(index: index, clipboard: clipboard, notes: NotesStore(directory: root.appendingPathComponent("Notes")), config: preferences, usage: UsageStore(url: root.appendingPathComponent("actions-usage.sqlite")), positionStore: UserDefaults(suiteName: "volant.actions.fixture")!) { _ in }
+var chatRequests = 0
+var settingsRequests = 0
+var chatConfig: AIConfiguration?
+var panel: LauncherPanel!
+panel = LauncherPanel(index: index, clipboard: clipboard, notes: NotesStore(directory: root.appendingPathComponent("Notes")), config: preferences, usage: UsageStore(url: root.appendingPathComponent("actions-usage.sqlite")), positionStore: UserDefaults(suiteName: "volant.actions.fixture")!) { action in
+    switch action {
+    case .ai:
+        chatRequests += 1
+        if !panel.model.acp.openChat(configuration: chatConfig, connect: { panel.model.acp.state.phase = "ready"; panel.model.acp.state.status = "Connected" }) {
+            settingsRequests += 1; panel.orderOut(nil)
+        }
+    case .aiSettings: settingsRequests += 1; panel.orderOut(nil)
+    default: break
+    }
+}
 panel.model.searchesSecondarySources = false
 panel.model.actionConfigURL = root.appendingPathComponent("actions-config.json")
 try Data("{}".utf8).write(to: panel.model.actionConfigURL)
@@ -31,8 +45,8 @@ func key(_ text: String, _ code: UInt16, _ modifiers: NSEvent.ModifierFlags = []
     if !modifiers.contains(.command) || !panel.performKeyEquivalent(with: event) { panel.sendEvent(event) }
     settle()
 }
-func render(_ name: String) throws {
-    let view = panel.contentView!
+func render(_ name: String, view supplied: NSView? = nil) throws {
+    let view = supplied ?? panel.contentView!
     view.layoutSubtreeIfNeeded()
     let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
     view.cacheDisplay(in: view.bounds, to: bitmap)
@@ -92,3 +106,29 @@ settle()
 verify(copied == ["Fixture", "Fixture"] && launched == 0, "Native mouse click executes filtered action")
 panel.orderOut(nil)
 print("PASS: native action search, keyboard navigation, empty state, Escape, copying, and Favorites")
+
+// Entering AI Chat invokes setup routing, never a real provider in the fixture.
+panel.toggle(); panel.model.presentAIChat(); settle()
+verify(settingsRequests == 1 && !panel.isVisible, "Unconfigured AI Chat routes to Settings")
+chatConfig = AIConfiguration(); chatConfig?.provider = "claude"
+panel.toggle(); panel.model.presentAIChat(); settle()
+verify(panel.model.acp.state.phase == "ready" && panel.model.acp.project.isEmpty, "Configured AI Chat automatically connects without a project")
+verify(panel.firstResponder is NSTextView, "Chat prompt receives focus")
+(panel.firstResponder as? NSTextView)?.insertText("A fictional question", replacementRange: NSRange(location: NSNotFound, length: 0)); settle()
+verify(panel.model.acp.draft == "A fictional question" && panel.model.query == "ai", "Typing edits the chat prompt instead of launcher search")
+try render("chat")
+panel.orderOut(nil); settle(); panel.toggle(); settle()
+(panel.firstResponder as? NSTextView)?.insertText("!", replacementRange: NSRange(location: NSNotFound, length: 0)); settle()
+verify(panel.model.acp.draft.contains("!") && panel.model.query == "ai", "Reopening active chat restores prompt focus and preserves draft")
+panel.orderOut(nil)
+let settings = SettingsWindowController(configURL: panel.model.actionConfigURL, acp: panel.model.acp) {}
+try chatConfig!.save(at: panel.model.actionConfigURL)
+settings.state.section = "AI"
+settings.window!.setContentSize(NSSize(width: 680, height: 500))
+settings.showWindow(nil); settle()
+try render("ai-settings-active", view: settings.window!.contentView!)
+panel.model.acp.state.phase = "disconnected"
+settle()
+try render("ai-settings", view: settings.window!.contentView!)
+settings.window!.orderOut(nil)
+print("PASS: AI Chat setup routing, automatic general-chat connection, prompt focus, and active-draft preservation")

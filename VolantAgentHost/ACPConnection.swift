@@ -56,9 +56,9 @@ final class ACPConnection {
             }
             executable = installed
         }
-        var directory: ObjCBool = false
-        guard project.hasPrefix("/"), !project.contains("\0"), FileManager.default.fileExists(atPath: project, isDirectory: &directory), directory.boolValue else { throw failure("Choose an existing project folder.") }
-        self.project = URL(fileURLWithPath: project).resolvingSymlinksInPath().path
+        let chatDirectory = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/Volant/Chat", isDirectory: true)
+        do { self.project = try ACPWorkingDirectory.resolve(project: project, generalChat: chatDirectory) }
+        catch { throw failure("Could not open the working folder. Choose another folder or use General Chat in AI Settings.") }
         state.phase = "starting"; state.status = "Connecting to " + provider + "…"
         let process = Process(), stdin = Pipe(), stdout = Pipe()
         process.executableURL = URL(fileURLWithPath: executable)

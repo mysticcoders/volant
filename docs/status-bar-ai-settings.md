@@ -4,7 +4,7 @@ The former pinned harness was a Herdr activity overview, filtered to all agents 
 
 Status Bar offers Herdr activity, its provider filter, and pane details. It is hidden by default. Existing `promotedHarness` choices load into `statusBar.sources` and `statusBar.herdrFilter`; editing the setting writes the new structure. Disabling Herdr retains its filter. Updates preserve unknown fields and future source identifiers, so adding a source does not require reusing Herdr's preferences. Launcher controls use status/configuration language rather than pinning.
 
-AI currently configures ACP only, by owner choice. OpenCode, Cursor, Claude Code and Codex use the existing ACP transport and provider CLI login. Provider/project edits save automatically. Choose Project is a native sheet; Connect ACP opens the launcher and starts the selected provider. An existing conversation is reopened rather than replaced. `AI Chat`/`ai` makes the conversation discoverable, and `acp` remains supported. No connection starts from opening Settings. Unknown AI configuration fields are preserved; stale settings snapshots and malformed configuration are rejected.
+AI currently configures ACP only, by owner choice. OpenCode, Cursor, Claude Code and Codex use the existing ACP transport and provider CLI login. Provider and optional working-folder edits save automatically. Choose Folder is a native sheet; Connect ACP starts the selected provider without requiring a project. General chat uses a Volant-managed working directory. An existing conversation is reopened rather than replaced. `AI Chat` is discoverable by searching `ai` or `acp`. Activating it automatically connects the configured provider, or opens AI Settings if none is selected. Merely typing a search never connects. Existing explicit provider configurations are retained; new configurations require selecting a provider. No connection starts from opening Settings. Unknown AI configuration fields are preserved; stale settings snapshots and malformed configuration are rejected.
 
 ## Validation and limits
 
@@ -19,3 +19,11 @@ Loading a saved provider originally triggered the same change handler as editing
 Native bordered buttons synchronously track mouse release. The in-process fixture queues mouse-up before sending mouse-down, then dispatches any unconsumed release for SwiftUI controls. Settings owns its project sheet explicitly instead of looking up the current key window. Check the attached sheet rather than assuming macOS's panel service exposes an NSOpenPanel subclass.
 
 Next: verify the Settings → project selection → signed ACP conversation flow with an authenticated provider during an agreed host testing window. API providers and secure API-key storage are deferred. Additional status sources should get their own configuration and data lifecycle; only Herdr is implemented today.
+
+## General chat and footer refinement
+
+Actions sits at the far right of the launcher footer. Feedback such as “Added to Favorites” sits beside the small Volant icon, truncating visually with the full text available through help/accessibility. The home section is named Commands.
+
+Chat input receives focus on entry and resummon. An active session and draft survive reopening and Settings navigation. ACP still requires an absolute `cwd`; the helper creates `~/Library/Application Support/Volant/Chat` for general chat and validates explicitly chosen directories. This is a working directory, not a filesystem sandbox or a permission grant.
+
+Automated checks cover configuration migration, no-project setup, working-directory validation, active-session preservation, search-versus-activation routing, and native prompt focus. Native fixtures use fake connection callbacks and never start a real provider. Signed provider authentication and a real prompt remain separate smoke-test evidence.

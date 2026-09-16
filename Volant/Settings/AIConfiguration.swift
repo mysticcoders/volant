@@ -1,15 +1,16 @@
 import Foundation
 
 struct AIConfiguration: Codable, Equatable {
-    var provider = "opencode"
+    var provider = ""
+    var isConfigured: Bool { ACPProvider(rawValue: provider) != nil }
     var project = ""
     enum CodingKeys: String, CodingKey { case provider, project }
     init() {}
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        provider = try c.decodeIfPresent(String.self, forKey: .provider) ?? "opencode"
+        provider = try c.decodeIfPresent(String.self, forKey: .provider) ?? ""
         project = try c.decodeIfPresent(String.self, forKey: .project) ?? ""
-        guard ACPProvider(rawValue: provider) != nil else { throw CocoaError(.fileReadCorruptFile) }
+        guard provider.isEmpty || ACPProvider(rawValue: provider) != nil else { throw CocoaError(.fileReadCorruptFile) }
     }
     static func load(at url: URL = Preferences.configURL) throws -> Self {
         guard let object = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any] else { throw CocoaError(.fileReadCorruptFile) }
@@ -18,7 +19,7 @@ struct AIConfiguration: Codable, Equatable {
     }
     func save(at url: URL = Preferences.configURL, expected: AIConfiguration? = nil) throws {
         if let expected, try Self.load(at: url) != expected { throw CocoaError(.fileWriteFileExists) }
-        guard ACPProvider(rawValue: provider) != nil else { throw CocoaError(.fileWriteInvalidFileName) }
+        guard provider.isEmpty || ACPProvider(rawValue: provider) != nil else { throw CocoaError(.fileWriteInvalidFileName) }
         // Patch the latest file; preserve unknown settings inside and outside AI.
         guard var object = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any] else { throw CocoaError(.fileReadCorruptFile) }
         var ai = object["ai"] as? [String: Any] ?? [:]
