@@ -1,6 +1,8 @@
 import Foundation
 
 @objc protocol VolantAgentHostProtocol {
+    func listAppleShortcuts(reply: @escaping (Data?, String?) -> Void)
+    func runAppleShortcut(id: String, reply: @escaping (String?) -> Void)
     func acpStart(provider: String, project: String, reply: @escaping (String?) -> Void)
     func acpRead(reply: @escaping (Data?, String?) -> Void)
     func acpPrompt(text: String, reply: @escaping (String?) -> Void)
