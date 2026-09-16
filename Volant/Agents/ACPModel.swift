@@ -13,6 +13,14 @@ final class ACPModel: ObservableObject {
         guard !active else { return }
         provider = value.provider; project = value.project
     }
+    /// Reopening an active chat must never replace its session or draft.
+    @discardableResult func openChat(configuration: AIConfiguration?, connect: () -> Void) -> Bool {
+        if active { return true }
+        guard let configuration, configuration.isConfigured else { return false }
+        configure(configuration)
+        connect()
+        return true
+    }
     private var connection: NSXPCConnection?
     private var timer: Timer?
     private var generation = UUID()
@@ -21,15 +29,6 @@ final class ACPModel: ObservableObject {
     var active: Bool { !["failed", "disconnected"].contains(state.phase) }
     var canSend: Bool { state.phase == "ready" && !submitting && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
-    func chooseProject() {
-        PermissionGate.begin()
-        let picker = NSOpenPanel()
-        picker.canChooseDirectories = true; picker.canChooseFiles = false; picker.allowsMultipleSelection = false
-        picker.prompt = "Use Project"
-        if picker.runModal() == .OK, let url = picker.url { project = url.path }
-        PermissionGate.end()
-        NSApp.windows.first(where: { $0 is LauncherPanel })?.makeKeyAndOrderFront(nil)
-    }
     func start() {
         disconnect()
         let current = generation

@@ -130,6 +130,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
     }
 
     private func searchInput(in view: NSView?) -> NSTextField? {
+        guard !model.showingACP else { return nil }
         guard let view else { return nil }
         if let field = view as? NSTextField, ["Search for apps, files, contacts, or calculate…", "Search emoji…"].contains(field.placeholderString ?? "") { return field }
         return view.subviews.lazy.compactMap { self.searchInput(in: $0) }.first

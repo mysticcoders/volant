@@ -11,6 +11,9 @@ struct LauncherView: View {
                 DictionaryView(model: model.dictionary, caffeinate: model.caffeinate, back: { model.query = ""; model.searchFocusRequest = UUID() }, copy: model.copyText)
             } else if model.showingTranslation {
                 TranslationView(model: model.translation, caffeinate: model.caffeinate, back: { model.query = ""; model.searchFocusRequest = UUID() }, copy: model.copyText)
+            } else if model.showingACP {
+                ACPConversationView(model: model.acp, settings: model.openAISettings, back: { model.query = "" }, caffeinate: model.caffeinate, focusRequest: model.searchFocusRequest)
+                    .onAppear { model.openAIChat() }
             } else {
             searchField
             Divider().opacity(0.6)
@@ -28,25 +31,17 @@ struct LauncherView: View {
                 }.font(.system(size: 12)).padding(.horizontal, 20).padding(.vertical, 6)
             }
             if !model.showingACP {
-                ACPActivityStrip(model: model.acp) { model.query = "acp" }
+                ACPActivityStrip(model: model.acp) { model.presentAIChat() }
             }
             if model.showingAgents, let message = agents.actionMessage {
                 Text(message).font(.system(size: 12)).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20).padding(.vertical, 8)
             }
-            if let feedback = model.actionFeedback {
-                Text(feedback).font(.system(size: 12)).foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20).padding(.vertical, 8)
-                    .accessibilityLabel("Status: " + feedback)
-            }
             if let network = model.wifiJoin {
                 WiFiJoinView(model: model, network: network).id(network.id)
             } else if model.showingEmoji {
                 EmojiGridView(model: model)
-            } else if model.showingACP {
-                ACPConversationView(model: model.acp)
             } else {
                 if model.showingAgents {
                     HStack {
@@ -57,7 +52,7 @@ struct LauncherView: View {
                                 if agents.connected { agents.disconnect() } else { agents.connect() }
                             }
                         }
-                        Button("New ACP conversation") { model.query = "acp" }
+                        Button("New ACP conversation") { model.presentAIChat() }
                     }.font(.system(size: 12)).padding(.horizontal, 20).padding(.vertical, 6)
                 }
                 results
@@ -86,6 +81,7 @@ struct LauncherView: View {
         content
         .onAppear { requestSearchFocus() }
         .onChange(of: model.query) { _, _ in model.actionTarget = nil }
+        .onChange(of: model.showingACP) { _, showing in if showing { focused = false } else { requestSearchFocus() } }
         .onChange(of: model.showingEmoji) { _, _ in requestSearchFocus() }
         .onChange(of: model.selectedRow?.id) { _, _ in model.actionTarget = nil }
         .onChange(of: model.actionTarget?.id) { old, new in if old != nil && new == nil { requestSearchFocus() } }
@@ -184,10 +180,13 @@ struct LauncherView: View {
     }
 
     private func requestSearchFocus() {
-        guard model.actionTarget == nil && !model.showingDictionary && !model.showingTranslation else { return }
+        guard model.actionTarget == nil && !model.showingACP && !model.showingDictionary && !model.showingTranslation else { return }
         // A persistent hosting view does not appear again each time its panel is summoned.
         focused = false
-        DispatchQueue.main.async { focused = true }
+        DispatchQueue.main.async {
+            guard model.actionTarget == nil && !model.showingACP && !model.showingDictionary && !model.showingTranslation else { return }
+            focused = true
+        }
     }
 
     private func resultButton(_ row: ResultRow) -> some View {
@@ -209,14 +208,14 @@ struct LauncherView: View {
                 .frame(width: 16, height: 16)
                 .foregroundStyle(Color.accentColor)
                 .accessibilityHidden(true)
+            if let feedback = model.actionFeedback {
+                Text(feedback).font(.system(size: 12)).foregroundStyle(.secondary)
+                    .lineLimit(1).truncationMode(.tail).help(feedback)
+                    .accessibilityLabel("Status: " + feedback).layoutPriority(-1)
+            }
             CaffeinateStatusView(service: model.caffeinate)
-            Spacer()
+            Spacer(minLength: 8)
             if let row = model.selectedRow {
-                if row.supportsActions {
-                    Button { model.toggleActions() } label: {
-                        HStack(spacing: 5) { Text("Actions"); KeyCap("⌘"); KeyCap("K") }
-                    }.keyboardShortcut("k", modifiers: .command)
-                }
                 HStack(spacing: 8) {
                     Text(row.primaryAction).font(.system(size: 13, weight: .medium))
                     KeyCap("↩")
@@ -228,6 +227,11 @@ struct LauncherView: View {
                         KeyCap("⌘")
                         KeyCap("↩")
                     }
+                }
+                if row.supportsActions {
+                    Button { model.toggleActions() } label: {
+                        HStack(spacing: 5) { Text("Actions"); KeyCap("⌘"); KeyCap("K") }
+                    }.keyboardShortcut("k", modifiers: .command)
                 }
             }
         }

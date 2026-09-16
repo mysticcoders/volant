@@ -2,34 +2,39 @@ import SwiftUI
 
 struct ACPConversationView: View {
     @ObservedObject var model: ACPModel
+    var settings: () -> Void = {}
+    var back: () -> Void = {}
+    var caffeinate: CaffeinateService?
+    var focusRequest: UUID = UUID()
     @State private var follow = true
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                if model.active {
-                    Text(ACPProvider(rawValue: model.provider)?.title ?? model.provider).fontWeight(.medium)
+                Button(action: back) { Image(systemName: "chevron.left") }.buttonStyle(.plain).help("Back to search")
+                    .accessibilityLabel("Back to search")
+                Image("VolantWing").renderingMode(.template).resizable().scaledToFit()
+                    .frame(width: 18, height: 18).foregroundStyle(Color.accentColor)
+                    .accessibilityHidden(true).overlay(LauncherDragHandle())
+                if let caffeinate { CaffeinateStatusView(service: caffeinate) }
+                Text("AI Chat").fontWeight(.medium)
+                Text(ACPProvider(rawValue: model.provider)?.title ?? "").foregroundStyle(.secondary)
+                if !model.project.isEmpty {
                     Label(URL(fileURLWithPath: model.project).lastPathComponent, systemImage: "folder")
                         .foregroundStyle(.secondary).lineLimit(1).help(model.project)
-                } else {
-                    Picker("Provider", selection: $model.provider) {
-                        ForEach(ACPProvider.allCases) { provider in Text(provider.title).tag(provider.rawValue) }
-                    }.labelsHidden().frame(width: 125)
-                    Button(action: model.chooseProject) {
-                        Label(model.project.isEmpty ? "Choose project…" : URL(fileURLWithPath: model.project).lastPathComponent, systemImage: "folder").lineLimit(1)
-                    }.help(model.project)
                 }
                 Spacer(minLength: 4)
+                Button("Settings", action: settings)
                 if model.active { Button("End", action: model.disconnect) }
-                else { Button("Start", action: model.start).disabled(model.project.isEmpty) }
+                else { Button("Connect", action: model.start).disabled(ACPProvider(rawValue: model.provider) == nil) }
             }.padding(.horizontal, 16).padding(.vertical, 8)
             Divider()
             ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     if model.state.messages.isEmpty {
-                        Text("A conversation in your project")
+                        Text("What would you like to talk about?")
                             .font(.headline)
-                        Text("Uses your provider’s existing login and tool permissions. Your chosen folder is the working directory; it does not sandbox the agent.")
+                        Text("Chat with your configured AI provider. A project folder is optional.")
                             .font(.callout).foregroundStyle(.secondary)
                         Text("Volant sends only the prompt you write here. Sign in through the provider’s CLI before starting.")
                             .font(.callout).foregroundStyle(.secondary)
@@ -83,10 +88,15 @@ struct ACPConversationView: View {
                 }
             }.padding(.horizontal, 16).padding(.vertical, 6)
             HStack(alignment: .bottom, spacing: 10) {
-                TextField("Ask your agent…", text: $model.draft, axis: .vertical)
-                    .textFieldStyle(.plain).lineLimit(2...4).font(.system(size: 14))
-                    .padding(9).background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 7))
-                    .accessibilityLabel("Agent prompt")
+                ACPPromptView(text: $model.draft, focusRequest: focusRequest, send: model.send)
+                    .frame(height: 64)
+                    .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 7))
+                    .overlay(alignment: .topLeading) {
+                        if model.draft.isEmpty {
+                            Text("Ask your agent…").font(.system(size: 14)).foregroundStyle(.tertiary)
+                                .padding(9).allowsHitTesting(false).accessibilityHidden(true)
+                        }
+                    }
                 Button("Send", action: model.send).disabled(!model.canSend)
                     .keyboardShortcut(.return, modifiers: .command)
             }.padding(.horizontal, 16).padding(.bottom, 12)

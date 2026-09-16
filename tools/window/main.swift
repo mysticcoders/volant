@@ -13,7 +13,7 @@ let usage = UsageStore(url: root.appendingPathComponent("usage.sqlite"))
 let defaults = UserDefaults(suiteName: "volant.window.preview")!
 let panel = LauncherPanel(index: AppIndex(), clipboard: clipboard, notes: notes, config: Preferences(), usage: usage, positionStore: defaults, onNote: { _ in })
 panel.model.searchesSecondarySources = false
-panel.model.query = "acp"
+panel.model.presentAIChat()
 panel.model.acp.project = "/fictional/orbit-web"
 panel.model.acp.state.phase = "working"
 panel.model.acp.state.status = "Working · fictional preview"

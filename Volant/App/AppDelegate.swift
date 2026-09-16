@@ -9,10 +9,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.settingsPanel.window?.orderOut(nil)
         self.panel.model.acp.configure(configuration)
         if !self.panel.isVisible { self.panel.toggle() }
-        self.panel.setQuery("acp")
+        self.panel.model.presentAIChat()
         self.panel.makeKeyAndOrderFront(nil)
         if !self.panel.model.acp.active { self.panel.model.acp.start() }
     }, onChange: { [weak self] in self?.reloadConfig(); self?.notesStore.reload() })
+    private func showAISettings() {
+        panel.orderOut(nil)
+        showSettings()
+        settingsPanel.state.section = "AI"
+    }
+
+    private func openAIChat() {
+        guard !panel.model.acp.active else { return }
+        let acp = panel.model.acp
+        if !acp.openChat(configuration: try? AIConfiguration.load(), connect: acp.start) { showAISettings() }
+    }
+
     private let updater = AppUpdater()
     private var statusItem: NSStatusItem?
     private var config = Preferences.load()
@@ -25,6 +37,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var panel: LauncherPanel = LauncherPanel(index: index, clipboard: clipboardStore, notes: notesStore, config: config) { [weak self] action in
         switch action {
         case .settings: self?.showSettings()
+        case .ai: self?.openAIChat()
+        case .aiSettings: self?.showAISettings()
         case .reloadConfig: self?.reloadConfig()
         case .editApp(let app):
             self?.showSettings()

@@ -4,6 +4,7 @@ import OSLog
 
 enum LauncherAction {
     case settings
+    case ai, aiSettings
     case reloadConfig
     case editApp(AppEntry)
     case agents
@@ -155,7 +156,7 @@ struct ResultSection: Identifiable, Equatable {
 /// Routes a query. Prefixes force one source: `/` files, `@` contacts, `cal` or `today` agenda, `clip` history.
 /// Otherwise results merge: math and units first, then apps, contacts, and files once the query is long enough.
 final class LauncherModel: ObservableObject {
-    @Published var query: String = "" { didSet { if oldValue != query { actionTarget = nil; refresh() } } }
+    @Published var query: String = "" { didSet { if oldValue != query { showingACP = false; actionTarget = nil; refresh() } } }
     private var flattenedRows: [ResultRow] = []
     @Published private var displayedSections: [ResultSection] = []
     var sections: [ResultSection] {
@@ -214,7 +215,7 @@ final class LauncherModel: ObservableObject {
     var showingAppleShortcuts: Bool { AppleShortcut.queryTerm(query) != nil }
     let agents = AgentsModel()
     let acp = ACPModel()
-    var showingACP: Bool { ["acp", "ai"].contains(query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()) }
+    @Published private(set) var showingACP = false
     @Published var promotedHarness: String?
     var isPresented = false
     private var agentSubscription: AnyCancellable?
@@ -307,6 +308,7 @@ final class LauncherModel: ObservableObject {
     }
 
     func reset() {
+        showingACP = false
         actionTarget = nil
         wifiJoin = nil
         actionFeedback = nil
@@ -347,7 +349,7 @@ final class LauncherModel: ObservableObject {
     private func showSuggestions() {
         let favorites = config.favoriteApps.compactMap { id in index.apps.first { $0.id == id } }.map(ResultRow.app)
         let apps = index.suggestions(usage: usage).filter { !config.favoriteApps.contains($0.id) }.map(ResultRow.app)
-        sections = (favorites.isEmpty ? [] : [ResultSection(title: "Favorites", rows: favorites)]) + (apps.isEmpty ? [] : [ResultSection(title: "Suggestions", rows: apps)]) + [ResultSection(title: "Volant Commands", rows: CoreCommand.allCases.map(ResultRow.core) + [.settings, .reloadConfig])]
+        sections = (favorites.isEmpty ? [] : [ResultSection(title: "Favorites", rows: favorites)]) + (apps.isEmpty ? [] : [ResultSection(title: "Suggestions", rows: apps)]) + [ResultSection(title: "Commands", rows: CoreCommand.allCases.map(ResultRow.core) + [.settings, .reloadConfig])]
     }
 
     private func refresh() {
@@ -644,7 +646,9 @@ final class LauncherModel: ObservableObject {
         }
         switch row {
         case .appleShortcut(let shortcut): shortcutRunQuery = query; appleShortcuts.run(shortcut); return
-        case .core(let command): query = command.query; return
+        case .core(let command):
+            if command == .ai { presentAIChat() } else { query = command.query }
+            return
         case .caffeinate(let command):
             let succeeded = caffeinate.perform(command)
             refreshCaffeinateResults()
@@ -738,6 +742,15 @@ final class LauncherModel: ObservableObject {
         }
         dismiss()
     }
+
+    func presentAIChat() {
+        query = "ai"
+        showingACP = true
+        sections = []
+        searchFocusRequest = UUID()
+    }
+    func openAIChat() { onNote(.ai) }
+    func openAISettings() { dismiss(); onNote(.aiSettings) }
 
     func toggleActions() {
         guard let selectedRow, selectedRow.supportsActions else { return }

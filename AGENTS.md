@@ -21,6 +21,8 @@
 - Agent pane identity and conversation identity are separate. Revalidate the current occupant before focusing or sending input; never submit prompts through a generic shell-input path. The local agent helper must keep an explicit narrow API.
 - Native hosting views need a semantic window background for reliable light/dark rendering. Verify actual rendered controls, not just a successful build.
 
+- AI Chat connects only after command activation, never while typing a matching search prefix. General chat supplies an internal ACP working directory; a selected folder is optional and is not a sandbox. Preserve active sessions and drafts when reopening or visiting Settings.
+
 - ACP turns must own their native session IDs, invalidate stale snapshots, reject concurrent prompts, and cancel pending permission requests explicitly. Do not advertise client filesystem/terminal capabilities without implementing them. Run `./tools/check-acp.sh` after transport changes; its fake-agent checks do not replace a signed installed-provider smoke test.
 
 - The agent XPC helper must join the caller’s security session for provider Keychain logins. A successful ACP handshake does not prove authentication: verify a minimal prompt through the signed installed app. Never copy provider OAuth tokens or weaken Keychain ACLs to bypass a session configuration bug.

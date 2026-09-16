@@ -53,6 +53,6 @@ enum CoreCommand: String, CaseIterable, Hashable {
         }
     }
     static func search(_ query: String) -> [Self] {
-        allCases.filter { ($0.title + " " + $0.rawValue).localizedCaseInsensitiveContains(query) }
+        allCases.filter { ($0.title + " " + $0.rawValue + ($0 == .ai ? " acp" : "")).localizedCaseInsensitiveContains(query) }
     }
 }
