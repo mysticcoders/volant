@@ -39,6 +39,7 @@ final class AppleShortcutsModel: ObservableObject {
 
     func refresh(force: Bool = false) {
         guard !loading, force || refreshedAt == nil || Date().timeIntervalSince(refreshedAt!) > 60 else { return }
+        if force && !running { runMessage = nil }
         loading = true
         let token = UUID(); request = token
         let finish: ([AppleShortcut]?, String?) -> Void = { [weak self] values, error in

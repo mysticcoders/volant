@@ -294,8 +294,8 @@ final class LauncherModel: ObservableObject {
             DispatchQueue.main.async {
                 guard let self else { return }
                 self.objectWillChange.send()
-                if self.shortcutRunQuery == self.query { self.actionFeedback = self.appleShortcuts.runMessage }
                 if self.isPresented { self.refreshShortcutResults() }
+                if self.shortcutRunQuery == self.query, let message = self.appleShortcuts.runMessage { self.actionFeedback = message }
             }
         }
         agentSubscription = agents.objectWillChange.sink { [weak self] _ in
@@ -330,6 +330,7 @@ final class LauncherModel: ObservableObject {
             sections = [ResultSection(title: "Apple Shortcuts", rows: appleShortcuts.matches(query).map(ResultRow.appleShortcut))]
             notice = appleShortcuts.loading ? "Loading Apple Shortcuts…" : appleShortcuts.message
                 ?? (rows.isEmpty ? "No matching shortcuts. Create one in the Shortcuts app, then refresh." : nil)
+            if !rows.isEmpty { actionFeedback = notice }
             selection = selectedID.flatMap { id in rows.firstIndex { $0.id == id } } ?? 0
         } else {
             immediate.removeAll { $0.title == "Apple Shortcuts" }

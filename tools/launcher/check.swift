@@ -669,6 +669,13 @@ finishShortcut?("Fictional run failure")
 RunLoop.main.run(until: Date().addingTimeInterval(0.1))
 verify(corePanel.model.actionFeedback == "Fictional run failure")
 try renderCore("shortcuts-error")
+corePanel.model.selection = 1
+corePanel.model.appleShortcuts.loadOverride = { $0(nil, "Fictional refresh failure") }
+corePanel.model.appleShortcuts.refresh(force: true)
+RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+verify(corePanel.model.selectedRow?.id == "apple-shortcut:" + volumeShortcut.id, "Failed refresh preserves selection and cached results")
+verify(corePanel.model.actionFeedback == "Fictional refresh failure", "Refresh failure remains visible alongside cached rows")
+try renderCore("shortcuts-stale")
 corePanel.model.query = "shortcuts missing"
 try renderCore("shortcuts-empty")
 verify(corePanel.model.rows.isEmpty && corePanel.model.notice != nil)
