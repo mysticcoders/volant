@@ -134,7 +134,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        if !panel.isVisible { panel.toggle() }
+        if !panel.isVisible { panel.toggle(source: .workspace) }
         else { panel.makeKeyAndOrderFront(nil) }
         sender.activate(ignoringOtherApps: true)
         return true
@@ -166,7 +166,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         HotKeyCenter.shared.unregisterAll()
         var failures: [String] = []
         if let combo = KeyCombo(parsing: config.summonHotKey) {
-            if HotKeyCenter.shared.register(combo, handler: { [weak self] in self?.togglePanel() }) == nil {
+            if HotKeyCenter.shared.register(combo, handler: { [weak self] in self?.togglePanelFromHotkey() }) == nil {
                 failures.append("Show Volant shortcut unavailable: " + KeyCombo.display(config.summonHotKey))
             }
         }
@@ -222,7 +222,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func toggleNotes() { notesPanel.toggle() }
 
-    @objc private func togglePanel() { panel.toggle() }
+    private func togglePanelFromHotkey() {
+        let started = ProcessInfo.processInfo.systemUptime
+        panel.toggle(source: .hotkey, requestedAt: started)
+    }
+    @objc private func togglePanel() { panel.toggle(source: .menu) }
 
     @objc private func reloadConfig() {
         let loaded = Preferences.load()

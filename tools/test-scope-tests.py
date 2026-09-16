@@ -18,7 +18,7 @@ class ScopeTests(unittest.TestCase):
         for path in ["Volant/Panel/LauncherModel.swift", "Volant/Settings/SettingsWindowController.swift",
                      "Volant/Resources/Assets.xcassets/AccentColor.colorset/Contents.json",
                      "Volant/Notes/LiveMarkdownEditor.swift", "Shared/LauncherRouting.swift",
-                     "Volant/Dictionary/DictionaryModel.swift", "Volant/Dictionary/DictionaryView.swift", "Volant/Translation/TranslationModel.swift", "Volant/Translation/TranslationView.swift", "tools/launcher/check.swift", "tools/run-bounded-check.py"]:
+                     "Volant/Dictionary/DictionaryModel.swift", "Volant/Dictionary/DictionaryView.swift", "Volant/Translation/TranslationModel.swift", "Volant/Translation/TranslationView.swift", "tools/launcher/check.swift", "tools/run-bounded-check.py", "tools/interaction-speed/main.swift", "tools/profile-interaction.sh"]:
             self.assertEqual(scope.classify([path]), {"native": True, "ui": True}, path)
 
     def test_current_swiftui_surfaces_are_classified(self):

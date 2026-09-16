@@ -1,0 +1,12 @@
+Wed Sep 16 03:34:18 UTC 2026
+1b2d620fc0d8f306eb3dd9f669377b5fdce14d11
+ Volant/App/AppDelegate.swift     | 10 ++++++---
+ Volant/Panel/LauncherPanel.swift | 47 ++++++++++++++++++++++++++++++++++++----
+ tools/launcher/check.swift       | 18 +++++++++++++++
+ 3 files changed, 68 insertions(+), 7 deletions(-)
+ProductName:		macOS
+ProductVersion:		27.0
+BuildVersion:		26A428
+arm64
+216674b7b532803d9de46d63205a6b653a5e56c86f00a6136248c5c296cf11ec  /tmp/volant-interaction-first/VolantInteractionFixture.app/Contents/MacOS/VolantInteractionFixture
+d29ee7e70b3c9ec6d20f5c5e1cff06a7f4239c1f72828ab3db9fb7ad5109b25d  /tmp/volant-interaction-first/VolantInteractionFixture.app/Contents/Resources/Assets.car

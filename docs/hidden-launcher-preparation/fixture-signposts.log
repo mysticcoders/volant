@@ -1,0 +1,624 @@
+Filtering the log data using "subsystem == "com.mysticcoders.volant" AND category == "Opening""
+Timestamp               Ty Process[PID:TID]
+2026-09-15 20:36:35.934 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x2, process, begin] Summon: source=other
+2026-09-15 20:36:35.934 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Prepare launcher
+2026-09-15 20:36:35.935 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Prepare launcher
+2026-09-15 20:36:35.935 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Present and focus
+2026-09-15 20:36:35.949 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Window ordered
+2026-09-15 20:36:35.949 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Required layout
+2026-09-15 20:36:35.982 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Required layout
+2026-09-15 20:36:35.982 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Search editor ready
+2026-09-15 20:36:36.004 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Present and focus
+2026-09-15 20:36:36.005 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x2, process,   end] Summon: source=other ready=1 elapsed_ms=70.547
+2026-09-15 20:36:36.331 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xc, process, begin] Summon: source=other
+2026-09-15 20:36:36.331 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd, process, begin] Prepare launcher
+2026-09-15 20:36:36.332 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd, process,   end] Prepare launcher
+2026-09-15 20:36:36.332 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd, process, begin] Present and focus
+2026-09-15 20:36:36.334 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd, process, event] Window ordered
+2026-09-15 20:36:36.334 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd, process, begin] Required layout
+2026-09-15 20:36:36.346 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd, process,   end] Required layout
+2026-09-15 20:36:36.346 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd, process, event] Search editor ready
+2026-09-15 20:36:36.348 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd, process,   end] Present and focus
+2026-09-15 20:36:36.348 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xc, process,   end] Summon: source=other ready=1 elapsed_ms=16.535
+2026-09-15 20:36:36.485 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x12, process, begin] Prepare hidden home
+2026-09-15 20:36:36.490 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x12, process,   end] Prepare hidden home
+2026-09-15 20:36:36.630 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x14, process, begin] Summon: source=other
+2026-09-15 20:36:36.630 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x15, process, begin] Prepare launcher
+2026-09-15 20:36:36.631 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x15, process,   end] Prepare launcher
+2026-09-15 20:36:36.631 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x15, process, begin] Present and focus
+2026-09-15 20:36:36.632 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x15, process, event] Window ordered
+2026-09-15 20:36:36.632 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x15, process, event] Search editor ready
+2026-09-15 20:36:36.637 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x15, process,   end] Present and focus
+2026-09-15 20:36:36.637 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x14, process,   end] Summon: source=other ready=1 elapsed_ms=6.334
+2026-09-15 20:36:36.771 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x18, process, begin] Prepare hidden home
+2026-09-15 20:36:36.780 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x18, process,   end] Prepare hidden home
+2026-09-15 20:36:36.919 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x1a, process, begin] Summon: source=other
+2026-09-15 20:36:36.919 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x1b, process, begin] Prepare launcher
+2026-09-15 20:36:36.919 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x1b, process,   end] Prepare launcher
+2026-09-15 20:36:36.919 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x1b, process, begin] Present and focus
+2026-09-15 20:36:36.923 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x1b, process, event] Window ordered
+2026-09-15 20:36:36.923 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x1b, process, begin] Required layout
+2026-09-15 20:36:36.930 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x1b, process,   end] Required layout
+2026-09-15 20:36:36.930 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x1b, process, event] Search editor ready
+2026-09-15 20:36:36.931 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x1b, process,   end] Present and focus
+2026-09-15 20:36:36.931 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x1a, process,   end] Summon: source=other ready=1 elapsed_ms=12.155
+2026-09-15 20:36:37.218 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x20, process, begin] Summon: source=other
+2026-09-15 20:36:37.218 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x21, process, begin] Prepare launcher
+2026-09-15 20:36:37.218 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x21, process,   end] Prepare launcher
+2026-09-15 20:36:37.218 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x21, process, begin] Present and focus
+2026-09-15 20:36:37.221 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x21, process, event] Window ordered
+2026-09-15 20:36:37.221 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x21, process, begin] Required layout
+2026-09-15 20:36:37.232 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x21, process,   end] Required layout
+2026-09-15 20:36:37.232 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x21, process, event] Search editor ready
+2026-09-15 20:36:37.233 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x21, process,   end] Present and focus
+2026-09-15 20:36:37.234 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x20, process,   end] Summon: source=other ready=1 elapsed_ms=15.588
+2026-09-15 20:36:37.521 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x25, process, begin] Summon: source=other
+2026-09-15 20:36:37.521 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x26, process, begin] Prepare launcher
+2026-09-15 20:36:37.522 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x26, process,   end] Prepare launcher
+2026-09-15 20:36:37.522 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x26, process, begin] Present and focus
+2026-09-15 20:36:37.529 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x26, process, event] Window ordered
+2026-09-15 20:36:37.529 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x26, process, event] Search editor ready
+2026-09-15 20:36:37.531 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x26, process,   end] Present and focus
+2026-09-15 20:36:37.531 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x25, process,   end] Summon: source=other ready=1 elapsed_ms=9.382
+2026-09-15 20:36:37.678 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x2c, process, begin] Prepare hidden home
+2026-09-15 20:36:37.687 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x2c, process,   end] Prepare hidden home
+2026-09-15 20:36:37.825 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x2e, process, begin] Summon: source=other
+2026-09-15 20:36:37.826 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x2f, process, begin] Prepare launcher
+2026-09-15 20:36:37.830 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x2f, process,   end] Prepare launcher
+2026-09-15 20:36:37.830 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x2f, process, begin] Present and focus
+2026-09-15 20:36:37.832 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x2f, process, event] Window ordered
+2026-09-15 20:36:37.832 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x2f, process, event] Search editor ready
+2026-09-15 20:36:37.838 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x2f, process,   end] Present and focus
+2026-09-15 20:36:37.838 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x2e, process,   end] Summon: source=other ready=1 elapsed_ms=12.747
+2026-09-15 20:36:37.975 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x32, process, begin] Prepare hidden home
+2026-09-15 20:36:37.984 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x32, process,   end] Prepare hidden home
+2026-09-15 20:36:38.121 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x34, process, begin] Summon: source=other
+2026-09-15 20:36:38.121 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x35, process, begin] Prepare launcher
+2026-09-15 20:36:38.122 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x35, process,   end] Prepare launcher
+2026-09-15 20:36:38.122 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x35, process, begin] Present and focus
+2026-09-15 20:36:38.130 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x35, process, event] Window ordered
+2026-09-15 20:36:38.130 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x35, process, begin] Required layout
+2026-09-15 20:36:38.144 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x35, process,   end] Required layout
+2026-09-15 20:36:38.144 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x35, process, event] Search editor ready
+2026-09-15 20:36:38.146 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x35, process,   end] Present and focus
+2026-09-15 20:36:38.146 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x34, process,   end] Summon: source=other ready=1 elapsed_ms=24.876
+2026-09-15 20:36:38.431 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x3a, process, begin] Summon: source=other
+2026-09-15 20:36:38.431 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x3b, process, begin] Prepare launcher
+2026-09-15 20:36:38.433 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x3b, process,   end] Prepare launcher
+2026-09-15 20:36:38.433 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x3b, process, begin] Present and focus
+2026-09-15 20:36:38.436 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x3b, process, event] Window ordered
+2026-09-15 20:36:38.436 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x3b, process, begin] Required layout
+2026-09-15 20:36:38.446 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x3b, process,   end] Required layout
+2026-09-15 20:36:38.446 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x3b, process, event] Search editor ready
+2026-09-15 20:36:38.447 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x3b, process,   end] Present and focus
+2026-09-15 20:36:38.447 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x3a, process,   end] Summon: source=other ready=1 elapsed_ms=16.016
+2026-09-15 20:36:38.731 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x3f, process, begin] Summon: source=other
+2026-09-15 20:36:38.731 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x40, process, begin] Prepare launcher
+2026-09-15 20:36:38.734 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x40, process,   end] Prepare launcher
+2026-09-15 20:36:38.734 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x40, process, begin] Present and focus
+2026-09-15 20:36:38.740 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x40, process, event] Window ordered
+2026-09-15 20:36:38.740 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x40, process, event] Search editor ready
+2026-09-15 20:36:38.741 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x40, process,   end] Present and focus
+2026-09-15 20:36:38.741 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x3f, process,   end] Summon: source=other ready=1 elapsed_ms=9.661
+2026-09-15 20:36:38.874 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x46, process, begin] Prepare hidden home
+2026-09-15 20:36:38.885 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x46, process,   end] Prepare hidden home
+2026-09-15 20:36:39.020 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x48, process, begin] Summon: source=other
+2026-09-15 20:36:39.020 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x49, process, begin] Prepare launcher
+2026-09-15 20:36:39.020 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x49, process,   end] Prepare launcher
+2026-09-15 20:36:39.020 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x49, process, begin] Present and focus
+2026-09-15 20:36:39.022 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x49, process, event] Window ordered
+2026-09-15 20:36:39.022 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x49, process, event] Search editor ready
+2026-09-15 20:36:39.027 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x49, process,   end] Present and focus
+2026-09-15 20:36:39.027 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x48, process,   end] Summon: source=other ready=1 elapsed_ms=7.195
+2026-09-15 20:36:39.163 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x4c, process, begin] Prepare hidden home
+2026-09-15 20:36:39.174 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x4c, process,   end] Prepare hidden home
+2026-09-15 20:36:39.309 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x4e, process, begin] Summon: source=other
+2026-09-15 20:36:39.309 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x4f, process, begin] Prepare launcher
+2026-09-15 20:36:39.316 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x4f, process,   end] Prepare launcher
+2026-09-15 20:36:39.316 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x4f, process, begin] Present and focus
+2026-09-15 20:36:39.320 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x4f, process, event] Window ordered
+2026-09-15 20:36:39.320 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x4f, process, begin] Required layout
+2026-09-15 20:36:39.331 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x4f, process,   end] Required layout
+2026-09-15 20:36:39.331 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x4f, process, event] Search editor ready
+2026-09-15 20:36:39.333 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x4f, process,   end] Present and focus
+2026-09-15 20:36:39.333 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x4e, process,   end] Summon: source=other ready=1 elapsed_ms=23.653
+2026-09-15 20:36:39.614 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x54, process, begin] Summon: source=other
+2026-09-15 20:36:39.615 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x55, process, begin] Prepare launcher
+2026-09-15 20:36:39.616 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x55, process,   end] Prepare launcher
+2026-09-15 20:36:39.616 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x55, process, begin] Present and focus
+2026-09-15 20:36:39.618 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x55, process, event] Window ordered
+2026-09-15 20:36:39.618 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x55, process, begin] Required layout
+2026-09-15 20:36:39.631 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x55, process,   end] Required layout
+2026-09-15 20:36:39.631 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x55, process, event] Search editor ready
+2026-09-15 20:36:39.633 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x55, process,   end] Present and focus
+2026-09-15 20:36:39.633 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x54, process,   end] Summon: source=other ready=1 elapsed_ms=18.413
+2026-09-15 20:36:39.913 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x59, process, begin] Summon: source=other
+2026-09-15 20:36:39.913 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x5a, process, begin] Prepare launcher
+2026-09-15 20:36:39.918 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x5a, process,   end] Prepare launcher
+2026-09-15 20:36:39.918 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x5a, process, begin] Present and focus
+2026-09-15 20:36:39.925 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x5a, process, event] Window ordered
+2026-09-15 20:36:39.925 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x5a, process, event] Search editor ready
+2026-09-15 20:36:39.926 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x5a, process,   end] Present and focus
+2026-09-15 20:36:39.926 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x59, process,   end] Summon: source=other ready=1 elapsed_ms=12.458
+2026-09-15 20:36:40.060 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x60, process, begin] Prepare hidden home
+2026-09-15 20:36:40.071 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x60, process,   end] Prepare hidden home
+2026-09-15 20:36:40.208 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x62, process, begin] Summon: source=other
+2026-09-15 20:36:40.208 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x63, process, begin] Prepare launcher
+2026-09-15 20:36:40.214 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x63, process,   end] Prepare launcher
+2026-09-15 20:36:40.214 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x63, process, begin] Present and focus
+2026-09-15 20:36:40.217 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x63, process, event] Window ordered
+2026-09-15 20:36:40.217 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x63, process, event] Search editor ready
+2026-09-15 20:36:40.223 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x63, process,   end] Present and focus
+2026-09-15 20:36:40.223 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x62, process,   end] Summon: source=other ready=1 elapsed_ms=15.164
+2026-09-15 20:36:40.358 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x66, process, begin] Prepare hidden home
+2026-09-15 20:36:40.368 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x66, process,   end] Prepare hidden home
+2026-09-15 20:36:40.504 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x68, process, begin] Summon: source=other
+2026-09-15 20:36:40.504 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x69, process, begin] Prepare launcher
+2026-09-15 20:36:40.505 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x69, process,   end] Prepare launcher
+2026-09-15 20:36:40.505 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x69, process, begin] Present and focus
+2026-09-15 20:36:40.513 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x69, process, event] Window ordered
+2026-09-15 20:36:40.513 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x69, process, begin] Required layout
+2026-09-15 20:36:40.524 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x69, process,   end] Required layout
+2026-09-15 20:36:40.524 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x69, process, event] Search editor ready
+2026-09-15 20:36:40.526 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x69, process,   end] Present and focus
+2026-09-15 20:36:40.526 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x68, process,   end] Summon: source=other ready=1 elapsed_ms=21.678
+2026-09-15 20:36:40.816 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x6e, process, begin] Summon: source=other
+2026-09-15 20:36:40.816 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x6f, process, begin] Prepare launcher
+2026-09-15 20:36:40.818 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x6f, process,   end] Prepare launcher
+2026-09-15 20:36:40.818 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x6f, process, begin] Present and focus
+2026-09-15 20:36:40.820 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x6f, process, event] Window ordered
+2026-09-15 20:36:40.820 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x6f, process, begin] Required layout
+2026-09-15 20:36:40.835 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x6f, process,   end] Required layout
+2026-09-15 20:36:40.835 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x6f, process, event] Search editor ready
+2026-09-15 20:36:40.836 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x6f, process,   end] Present and focus
+2026-09-15 20:36:40.836 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x6e, process,   end] Summon: source=other ready=1 elapsed_ms=20.469
+2026-09-15 20:36:41.116 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x73, process, begin] Summon: source=other
+2026-09-15 20:36:41.116 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x74, process, begin] Prepare launcher
+2026-09-15 20:36:41.117 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x74, process,   end] Prepare launcher
+2026-09-15 20:36:41.117 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x74, process, begin] Present and focus
+2026-09-15 20:36:41.127 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x74, process, event] Window ordered
+2026-09-15 20:36:41.127 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x74, process, event] Search editor ready
+2026-09-15 20:36:41.129 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x74, process,   end] Present and focus
+2026-09-15 20:36:41.129 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x73, process,   end] Summon: source=other ready=1 elapsed_ms=13.073
+2026-09-15 20:36:41.269 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x7a, process, begin] Prepare hidden home
+2026-09-15 20:36:41.281 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x7a, process,   end] Prepare hidden home
+2026-09-15 20:36:41.415 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x7c, process, begin] Summon: source=other
+2026-09-15 20:36:41.415 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x7d, process, begin] Prepare launcher
+2026-09-15 20:36:41.415 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x7d, process,   end] Prepare launcher
+2026-09-15 20:36:41.415 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x7d, process, begin] Present and focus
+2026-09-15 20:36:41.417 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x7d, process, event] Window ordered
+2026-09-15 20:36:41.417 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x7d, process, event] Search editor ready
+2026-09-15 20:36:41.422 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x7d, process,   end] Present and focus
+2026-09-15 20:36:41.422 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x7c, process,   end] Summon: source=other ready=1 elapsed_ms=7.302
+2026-09-15 20:36:41.552 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x80, process, begin] Prepare hidden home
+2026-09-15 20:36:41.563 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x80, process,   end] Prepare hidden home
+2026-09-15 20:36:41.698 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x82, process, begin] Summon: source=other
+2026-09-15 20:36:41.698 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x83, process, begin] Prepare launcher
+2026-09-15 20:36:41.700 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x83, process,   end] Prepare launcher
+2026-09-15 20:36:41.700 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x83, process, begin] Present and focus
+2026-09-15 20:36:41.705 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x83, process, event] Window ordered
+2026-09-15 20:36:41.705 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x83, process, begin] Required layout
+2026-09-15 20:36:41.720 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x83, process,   end] Required layout
+2026-09-15 20:36:41.720 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x83, process, event] Search editor ready
+2026-09-15 20:36:41.721 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x83, process,   end] Present and focus
+2026-09-15 20:36:41.721 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x82, process,   end] Summon: source=other ready=1 elapsed_ms=23.487
+2026-09-15 20:36:42.007 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x88, process, begin] Summon: source=other
+2026-09-15 20:36:42.007 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x89, process, begin] Prepare launcher
+2026-09-15 20:36:42.007 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x89, process,   end] Prepare launcher
+2026-09-15 20:36:42.007 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x89, process, begin] Present and focus
+2026-09-15 20:36:42.016 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x89, process, event] Window ordered
+2026-09-15 20:36:42.016 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x89, process, begin] Required layout
+2026-09-15 20:36:42.030 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x89, process,   end] Required layout
+2026-09-15 20:36:42.030 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x89, process, event] Search editor ready
+2026-09-15 20:36:42.031 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x89, process,   end] Present and focus
+2026-09-15 20:36:42.032 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x88, process,   end] Summon: source=other ready=1 elapsed_ms=24.899
+2026-09-15 20:36:42.308 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x8d, process, begin] Summon: source=other
+2026-09-15 20:36:42.308 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x8e, process, begin] Prepare launcher
+2026-09-15 20:36:42.318 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x8e, process,   end] Prepare launcher
+2026-09-15 20:36:42.318 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x8e, process, begin] Present and focus
+2026-09-15 20:36:42.328 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x8e, process, event] Window ordered
+2026-09-15 20:36:42.328 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x8e, process, event] Search editor ready
+2026-09-15 20:36:42.330 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x8e, process,   end] Present and focus
+2026-09-15 20:36:42.330 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x8d, process,   end] Summon: source=other ready=1 elapsed_ms=22.003
+2026-09-15 20:36:42.469 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x94, process, begin] Prepare hidden home
+2026-09-15 20:36:42.479 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x94, process,   end] Prepare hidden home
+2026-09-15 20:36:42.615 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x96, process, begin] Summon: source=other
+2026-09-15 20:36:42.615 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x97, process, begin] Prepare launcher
+2026-09-15 20:36:42.615 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x97, process,   end] Prepare launcher
+2026-09-15 20:36:42.615 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x97, process, begin] Present and focus
+2026-09-15 20:36:42.617 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x97, process, event] Window ordered
+2026-09-15 20:36:42.617 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x97, process, event] Search editor ready
+2026-09-15 20:36:42.622 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x97, process,   end] Present and focus
+2026-09-15 20:36:42.622 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x96, process,   end] Summon: source=other ready=1 elapsed_ms=7.291
+2026-09-15 20:36:42.752 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x9a, process, begin] Prepare hidden home
+2026-09-15 20:36:42.762 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x9a, process,   end] Prepare hidden home
+2026-09-15 20:36:42.898 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x9c, process, begin] Summon: source=other
+2026-09-15 20:36:42.898 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x9d, process, begin] Prepare launcher
+2026-09-15 20:36:42.898 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x9d, process,   end] Prepare launcher
+2026-09-15 20:36:42.898 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x9d, process, begin] Present and focus
+2026-09-15 20:36:42.903 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x9d, process, event] Window ordered
+2026-09-15 20:36:42.903 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x9d, process, begin] Required layout
+2026-09-15 20:36:42.915 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x9d, process,   end] Required layout
+2026-09-15 20:36:42.915 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x9d, process, event] Search editor ready
+2026-09-15 20:36:42.916 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x9d, process,   end] Present and focus
+2026-09-15 20:36:42.916 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x9c, process,   end] Summon: source=other ready=1 elapsed_ms=18.196
+2026-09-15 20:36:43.201 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xa2, process, begin] Summon: source=other
+2026-09-15 20:36:43.201 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xa3, process, begin] Prepare launcher
+2026-09-15 20:36:43.202 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xa3, process,   end] Prepare launcher
+2026-09-15 20:36:43.202 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xa3, process, begin] Present and focus
+2026-09-15 20:36:43.206 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xa3, process, event] Window ordered
+2026-09-15 20:36:43.206 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xa3, process, begin] Required layout
+2026-09-15 20:36:43.222 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xa3, process,   end] Required layout
+2026-09-15 20:36:43.222 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xa3, process, event] Search editor ready
+2026-09-15 20:36:43.224 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xa3, process,   end] Present and focus
+2026-09-15 20:36:43.224 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xa2, process,   end] Summon: source=other ready=1 elapsed_ms=23.269
+2026-09-15 20:36:43.504 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xa7, process, begin] Summon: source=other
+2026-09-15 20:36:43.504 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xa8, process, begin] Prepare launcher
+2026-09-15 20:36:43.505 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xa8, process,   end] Prepare launcher
+2026-09-15 20:36:43.505 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xa8, process, begin] Present and focus
+2026-09-15 20:36:43.523 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xa8, process, event] Window ordered
+2026-09-15 20:36:43.523 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xa8, process, event] Search editor ready
+2026-09-15 20:36:43.524 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xa8, process,   end] Present and focus
+2026-09-15 20:36:43.524 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xa7, process,   end] Summon: source=other ready=1 elapsed_ms=19.818
+2026-09-15 20:36:43.666 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xae, process, begin] Prepare hidden home
+2026-09-15 20:36:43.677 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xae, process,   end] Prepare hidden home
+2026-09-15 20:36:43.814 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xb0, process, begin] Summon: source=other
+2026-09-15 20:36:43.814 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xb1, process, begin] Prepare launcher
+2026-09-15 20:36:43.816 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xb1, process,   end] Prepare launcher
+2026-09-15 20:36:43.816 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xb1, process, begin] Present and focus
+2026-09-15 20:36:43.818 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xb1, process, event] Window ordered
+2026-09-15 20:36:43.818 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xb1, process, event] Search editor ready
+2026-09-15 20:36:43.823 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xb1, process,   end] Present and focus
+2026-09-15 20:36:43.823 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xb0, process,   end] Summon: source=other ready=1 elapsed_ms=9.737
+2026-09-15 20:36:43.958 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xb4, process, begin] Prepare hidden home
+2026-09-15 20:36:43.969 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xb4, process,   end] Prepare hidden home
+2026-09-15 20:36:44.104 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xb6, process, begin] Summon: source=other
+2026-09-15 20:36:44.104 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xb7, process, begin] Prepare launcher
+2026-09-15 20:36:44.104 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xb7, process,   end] Prepare launcher
+2026-09-15 20:36:44.104 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xb7, process, begin] Present and focus
+2026-09-15 20:36:44.108 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xb7, process, event] Window ordered
+2026-09-15 20:36:44.108 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xb7, process, begin] Required layout
+2026-09-15 20:36:44.119 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xb7, process,   end] Required layout
+2026-09-15 20:36:44.119 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xb7, process, event] Search editor ready
+2026-09-15 20:36:44.121 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xb7, process,   end] Present and focus
+2026-09-15 20:36:44.121 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xb6, process,   end] Summon: source=other ready=1 elapsed_ms=17.077
+2026-09-15 20:36:44.408 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xbc, process, begin] Summon: source=other
+2026-09-15 20:36:44.408 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xbd, process, begin] Prepare launcher
+2026-09-15 20:36:44.415 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xbd, process,   end] Prepare launcher
+2026-09-15 20:36:44.415 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xbd, process, begin] Present and focus
+2026-09-15 20:36:44.418 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xbd, process, event] Window ordered
+2026-09-15 20:36:44.418 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xbd, process, begin] Required layout
+2026-09-15 20:36:44.434 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xbd, process,   end] Required layout
+2026-09-15 20:36:44.434 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xbd, process, event] Search editor ready
+2026-09-15 20:36:44.436 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xbd, process,   end] Present and focus
+2026-09-15 20:36:44.436 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xbc, process,   end] Summon: source=other ready=1 elapsed_ms=27.602
+2026-09-15 20:36:44.723 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xc1, process, begin] Summon: source=other
+2026-09-15 20:36:44.723 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xc2, process, begin] Prepare launcher
+2026-09-15 20:36:44.724 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xc2, process,   end] Prepare launcher
+2026-09-15 20:36:44.724 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xc2, process, begin] Present and focus
+2026-09-15 20:36:44.738 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xc2, process, event] Window ordered
+2026-09-15 20:36:44.738 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xc2, process, event] Search editor ready
+2026-09-15 20:36:44.739 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xc2, process,   end] Present and focus
+2026-09-15 20:36:44.739 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xc1, process,   end] Summon: source=other ready=1 elapsed_ms=16.380
+2026-09-15 20:36:44.878 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xc8, process, begin] Prepare hidden home
+2026-09-15 20:36:44.890 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xc8, process,   end] Prepare hidden home
+2026-09-15 20:36:45.025 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xca, process, begin] Summon: source=other
+2026-09-15 20:36:45.025 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xcb, process, begin] Prepare launcher
+2026-09-15 20:36:45.028 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xcb, process,   end] Prepare launcher
+2026-09-15 20:36:45.028 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xcb, process, begin] Present and focus
+2026-09-15 20:36:45.030 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xcb, process, event] Window ordered
+2026-09-15 20:36:45.030 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xcb, process, event] Search editor ready
+2026-09-15 20:36:45.035 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xcb, process,   end] Present and focus
+2026-09-15 20:36:45.035 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xca, process,   end] Summon: source=other ready=1 elapsed_ms=10.702
+2026-09-15 20:36:45.169 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xce, process, begin] Prepare hidden home
+2026-09-15 20:36:45.181 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xce, process,   end] Prepare hidden home
+2026-09-15 20:36:45.316 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd0, process, begin] Summon: source=other
+2026-09-15 20:36:45.316 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd1, process, begin] Prepare launcher
+2026-09-15 20:36:45.317 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd1, process,   end] Prepare launcher
+2026-09-15 20:36:45.317 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd1, process, begin] Present and focus
+2026-09-15 20:36:45.321 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd1, process, event] Window ordered
+2026-09-15 20:36:45.321 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd1, process, begin] Required layout
+2026-09-15 20:36:45.332 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd1, process,   end] Required layout
+2026-09-15 20:36:45.333 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd1, process, event] Search editor ready
+2026-09-15 20:36:45.334 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd1, process,   end] Present and focus
+2026-09-15 20:36:45.334 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd0, process,   end] Summon: source=other ready=1 elapsed_ms=18.499
+2026-09-15 20:36:45.621 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd6, process, begin] Summon: source=other
+2026-09-15 20:36:45.621 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd7, process, begin] Prepare launcher
+2026-09-15 20:36:45.622 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd7, process,   end] Prepare launcher
+2026-09-15 20:36:45.622 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd7, process, begin] Present and focus
+2026-09-15 20:36:45.624 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd7, process, event] Window ordered
+2026-09-15 20:36:45.624 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd7, process, begin] Required layout
+2026-09-15 20:36:45.637 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd7, process,   end] Required layout
+2026-09-15 20:36:45.637 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd7, process, event] Search editor ready
+2026-09-15 20:36:45.639 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd7, process,   end] Present and focus
+2026-09-15 20:36:45.639 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xd6, process,   end] Summon: source=other ready=1 elapsed_ms=18.138
+2026-09-15 20:36:45.921 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xdb, process, begin] Summon: source=other
+2026-09-15 20:36:45.921 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xdc, process, begin] Prepare launcher
+2026-09-15 20:36:45.922 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xdc, process,   end] Prepare launcher
+2026-09-15 20:36:45.922 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xdc, process, begin] Present and focus
+2026-09-15 20:36:45.929 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xdc, process, event] Window ordered
+2026-09-15 20:36:45.929 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xdc, process, event] Search editor ready
+2026-09-15 20:36:45.930 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xdc, process,   end] Present and focus
+2026-09-15 20:36:45.930 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xdb, process,   end] Summon: source=other ready=1 elapsed_ms=8.684
+2026-09-15 20:36:46.061 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xe2, process, begin] Prepare hidden home
+2026-09-15 20:36:46.070 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xe2, process,   end] Prepare hidden home
+2026-09-15 20:36:46.210 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xe4, process, begin] Summon: source=other
+2026-09-15 20:36:46.210 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xe5, process, begin] Prepare launcher
+2026-09-15 20:36:46.216 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xe5, process,   end] Prepare launcher
+2026-09-15 20:36:46.216 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xe5, process, begin] Present and focus
+2026-09-15 20:36:46.218 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xe5, process, event] Window ordered
+2026-09-15 20:36:46.218 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xe5, process, event] Search editor ready
+2026-09-15 20:36:46.223 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xe5, process,   end] Present and focus
+2026-09-15 20:36:46.223 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xe4, process,   end] Summon: source=other ready=1 elapsed_ms=12.439
+2026-09-15 20:36:46.352 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xe8, process, begin] Prepare hidden home
+2026-09-15 20:36:46.363 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xe8, process,   end] Prepare hidden home
+2026-09-15 20:36:46.502 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xea, process, begin] Summon: source=other
+2026-09-15 20:36:46.502 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xeb, process, begin] Prepare launcher
+2026-09-15 20:36:46.506 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xeb, process,   end] Prepare launcher
+2026-09-15 20:36:46.506 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xeb, process, begin] Present and focus
+2026-09-15 20:36:46.512 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xeb, process, event] Window ordered
+2026-09-15 20:36:46.512 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xeb, process, begin] Required layout
+2026-09-15 20:36:46.523 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xeb, process,   end] Required layout
+2026-09-15 20:36:46.523 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xeb, process, event] Search editor ready
+2026-09-15 20:36:46.524 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xeb, process,   end] Present and focus
+2026-09-15 20:36:46.524 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xea, process,   end] Summon: source=other ready=1 elapsed_ms=22.324
+2026-09-15 20:36:46.816 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xf0, process, begin] Summon: source=other
+2026-09-15 20:36:46.816 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xf1, process, begin] Prepare launcher
+2026-09-15 20:36:46.817 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xf1, process,   end] Prepare launcher
+2026-09-15 20:36:46.817 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xf1, process, begin] Present and focus
+2026-09-15 20:36:46.819 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xf1, process, event] Window ordered
+2026-09-15 20:36:46.819 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xf1, process, begin] Required layout
+2026-09-15 20:36:46.830 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xf1, process,   end] Required layout
+2026-09-15 20:36:46.830 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xf1, process, event] Search editor ready
+2026-09-15 20:36:46.832 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xf1, process,   end] Present and focus
+2026-09-15 20:36:46.832 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xf0, process,   end] Summon: source=other ready=1 elapsed_ms=15.604
+2026-09-15 20:36:47.107 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xf5, process, begin] Summon: source=other
+2026-09-15 20:36:47.107 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xf6, process, begin] Prepare launcher
+2026-09-15 20:36:47.108 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xf6, process,   end] Prepare launcher
+2026-09-15 20:36:47.108 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xf6, process, begin] Present and focus
+2026-09-15 20:36:47.122 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xf6, process, event] Window ordered
+2026-09-15 20:36:47.122 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xf6, process, event] Search editor ready
+2026-09-15 20:36:47.123 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xf6, process,   end] Present and focus
+2026-09-15 20:36:47.123 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xf5, process,   end] Summon: source=other ready=1 elapsed_ms=15.408
+2026-09-15 20:36:47.260 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xfc, process, begin] Prepare hidden home
+2026-09-15 20:36:47.270 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xfc, process,   end] Prepare hidden home
+2026-09-15 20:36:47.407 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xfe, process, begin] Summon: source=other
+2026-09-15 20:36:47.407 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xff, process, begin] Prepare launcher
+2026-09-15 20:36:47.408 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xff, process,   end] Prepare launcher
+2026-09-15 20:36:47.408 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xff, process, begin] Present and focus
+2026-09-15 20:36:47.417 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xff, process, event] Window ordered
+2026-09-15 20:36:47.417 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xff, process, event] Search editor ready
+2026-09-15 20:36:47.422 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xff, process,   end] Present and focus
+2026-09-15 20:36:47.422 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0xfe, process,   end] Summon: source=other ready=1 elapsed_ms=14.822
+2026-09-15 20:36:47.552 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x102, process, begin] Prepare hidden home
+2026-09-15 20:36:47.563 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x102, process,   end] Prepare hidden home
+2026-09-15 20:36:47.698 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x104, process, begin] Summon: source=other
+2026-09-15 20:36:47.698 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x105, process, begin] Prepare launcher
+2026-09-15 20:36:47.699 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x105, process,   end] Prepare launcher
+2026-09-15 20:36:47.699 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x105, process, begin] Present and focus
+2026-09-15 20:36:47.705 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x105, process, event] Window ordered
+2026-09-15 20:36:47.705 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x105, process, begin] Required layout
+2026-09-15 20:36:47.717 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x105, process,   end] Required layout
+2026-09-15 20:36:47.717 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x105, process, event] Search editor ready
+2026-09-15 20:36:47.718 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x105, process,   end] Present and focus
+2026-09-15 20:36:47.718 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x104, process,   end] Summon: source=other ready=1 elapsed_ms=19.803
+2026-09-15 20:36:48.004 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x10a, process, begin] Summon: source=other
+2026-09-15 20:36:48.004 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x10b, process, begin] Prepare launcher
+2026-09-15 20:36:48.004 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x10b, process,   end] Prepare launcher
+2026-09-15 20:36:48.004 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x10b, process, begin] Present and focus
+2026-09-15 20:36:48.007 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x10b, process, event] Window ordered
+2026-09-15 20:36:48.007 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x10b, process, begin] Required layout
+2026-09-15 20:36:48.022 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x10b, process,   end] Required layout
+2026-09-15 20:36:48.022 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x10b, process, event] Search editor ready
+2026-09-15 20:36:48.024 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x10b, process,   end] Present and focus
+2026-09-15 20:36:48.024 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x10a, process,   end] Summon: source=other ready=1 elapsed_ms=20.126
+2026-09-15 20:36:48.305 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x10f, process, begin] Summon: source=other
+2026-09-15 20:36:48.305 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x110, process, begin] Prepare launcher
+2026-09-15 20:36:48.305 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x110, process,   end] Prepare launcher
+2026-09-15 20:36:48.305 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x110, process, begin] Present and focus
+2026-09-15 20:36:48.315 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x110, process, event] Window ordered
+2026-09-15 20:36:48.315 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x110, process, event] Search editor ready
+2026-09-15 20:36:48.316 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x110, process,   end] Present and focus
+2026-09-15 20:36:48.317 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x10f, process,   end] Summon: source=other ready=1 elapsed_ms=11.795
+2026-09-15 20:36:48.456 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x116, process, begin] Prepare hidden home
+2026-09-15 20:36:48.466 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x116, process,   end] Prepare hidden home
+2026-09-15 20:36:48.603 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x118, process, begin] Summon: source=other
+2026-09-15 20:36:48.603 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x119, process, begin] Prepare launcher
+2026-09-15 20:36:48.604 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x119, process,   end] Prepare launcher
+2026-09-15 20:36:48.604 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x119, process, begin] Present and focus
+2026-09-15 20:36:48.606 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x119, process, event] Window ordered
+2026-09-15 20:36:48.606 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x119, process, event] Search editor ready
+2026-09-15 20:36:48.613 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x119, process,   end] Present and focus
+2026-09-15 20:36:48.613 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x118, process,   end] Summon: source=other ready=1 elapsed_ms=10.169
+2026-09-15 20:36:48.753 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x11c, process, begin] Prepare hidden home
+2026-09-15 20:36:48.764 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x11c, process,   end] Prepare hidden home
+2026-09-15 20:36:48.899 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x11e, process, begin] Summon: source=other
+2026-09-15 20:36:48.899 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x11f, process, begin] Prepare launcher
+2026-09-15 20:36:48.900 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x11f, process,   end] Prepare launcher
+2026-09-15 20:36:48.900 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x11f, process, begin] Present and focus
+2026-09-15 20:36:48.905 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x11f, process, event] Window ordered
+2026-09-15 20:36:48.905 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x11f, process, begin] Required layout
+2026-09-15 20:36:48.915 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x11f, process,   end] Required layout
+2026-09-15 20:36:48.915 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x11f, process, event] Search editor ready
+2026-09-15 20:36:48.917 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x11f, process,   end] Present and focus
+2026-09-15 20:36:48.917 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x11e, process,   end] Summon: source=other ready=1 elapsed_ms=17.473
+2026-09-15 20:36:49.199 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x124, process, begin] Summon: source=other
+2026-09-15 20:36:49.199 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x125, process, begin] Prepare launcher
+2026-09-15 20:36:49.200 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x125, process,   end] Prepare launcher
+2026-09-15 20:36:49.200 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x125, process, begin] Present and focus
+2026-09-15 20:36:49.203 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x125, process, event] Window ordered
+2026-09-15 20:36:49.203 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x125, process, begin] Required layout
+2026-09-15 20:36:49.220 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x125, process,   end] Required layout
+2026-09-15 20:36:49.220 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x125, process, event] Search editor ready
+2026-09-15 20:36:49.222 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x125, process,   end] Present and focus
+2026-09-15 20:36:49.222 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x124, process,   end] Summon: source=other ready=1 elapsed_ms=22.490
+2026-09-15 20:36:49.504 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x129, process, begin] Summon: source=other
+2026-09-15 20:36:49.504 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x12a, process, begin] Prepare launcher
+2026-09-15 20:36:49.507 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x12a, process,   end] Prepare launcher
+2026-09-15 20:36:49.507 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x12a, process, begin] Present and focus
+2026-09-15 20:36:49.520 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x12a, process, event] Window ordered
+2026-09-15 20:36:49.520 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x12a, process, event] Search editor ready
+2026-09-15 20:36:49.522 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x12a, process,   end] Present and focus
+2026-09-15 20:36:49.522 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x129, process,   end] Summon: source=other ready=1 elapsed_ms=17.825
+2026-09-15 20:36:49.661 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x130, process, begin] Prepare hidden home
+2026-09-15 20:36:49.671 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x130, process,   end] Prepare hidden home
+2026-09-15 20:36:49.810 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x132, process, begin] Summon: source=other
+2026-09-15 20:36:49.810 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x133, process, begin] Prepare launcher
+2026-09-15 20:36:49.814 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x133, process,   end] Prepare launcher
+2026-09-15 20:36:49.814 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x133, process, begin] Present and focus
+2026-09-15 20:36:49.816 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x133, process, event] Window ordered
+2026-09-15 20:36:49.816 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x133, process, event] Search editor ready
+2026-09-15 20:36:49.821 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x133, process,   end] Present and focus
+2026-09-15 20:36:49.821 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x132, process,   end] Summon: source=other ready=1 elapsed_ms=10.640
+2026-09-15 20:36:49.953 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x136, process, begin] Prepare hidden home
+2026-09-15 20:36:49.962 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x136, process,   end] Prepare hidden home
+2026-09-15 20:36:50.098 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x138, process, begin] Summon: source=other
+2026-09-15 20:36:50.098 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x139, process, begin] Prepare launcher
+2026-09-15 20:36:50.100 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x139, process,   end] Prepare launcher
+2026-09-15 20:36:50.100 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x139, process, begin] Present and focus
+2026-09-15 20:36:50.106 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x139, process, event] Window ordered
+2026-09-15 20:36:50.106 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x139, process, begin] Required layout
+2026-09-15 20:36:50.118 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x139, process,   end] Required layout
+2026-09-15 20:36:50.118 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x139, process, event] Search editor ready
+2026-09-15 20:36:50.119 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x139, process,   end] Present and focus
+2026-09-15 20:36:50.119 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x138, process,   end] Summon: source=other ready=1 elapsed_ms=21.184
+2026-09-15 20:36:50.403 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x13e, process, begin] Summon: source=other
+2026-09-15 20:36:50.403 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x13f, process, begin] Prepare launcher
+2026-09-15 20:36:50.403 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x13f, process,   end] Prepare launcher
+2026-09-15 20:36:50.403 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x13f, process, begin] Present and focus
+2026-09-15 20:36:50.405 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x13f, process, event] Window ordered
+2026-09-15 20:36:50.405 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x13f, process, begin] Required layout
+2026-09-15 20:36:50.417 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x13f, process,   end] Required layout
+2026-09-15 20:36:50.417 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x13f, process, event] Search editor ready
+2026-09-15 20:36:50.418 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x13f, process,   end] Present and focus
+2026-09-15 20:36:50.418 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x13e, process,   end] Summon: source=other ready=1 elapsed_ms=15.746
+2026-09-15 20:36:50.706 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x143, process, begin] Summon: source=other
+2026-09-15 20:36:50.706 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x144, process, begin] Prepare launcher
+2026-09-15 20:36:50.706 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x144, process,   end] Prepare launcher
+2026-09-15 20:36:50.706 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x144, process, begin] Present and focus
+2026-09-15 20:36:50.714 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x144, process, event] Window ordered
+2026-09-15 20:36:50.714 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x144, process, event] Search editor ready
+2026-09-15 20:36:50.715 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x144, process,   end] Present and focus
+2026-09-15 20:36:50.715 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x143, process,   end] Summon: source=other ready=1 elapsed_ms=9.331
+2026-09-15 20:36:50.853 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x14a, process, begin] Prepare hidden home
+2026-09-15 20:36:50.864 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x14a, process,   end] Prepare hidden home
+2026-09-15 20:36:51.001 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x14c, process, begin] Summon: source=other
+2026-09-15 20:36:51.001 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x14d, process, begin] Prepare launcher
+2026-09-15 20:36:51.001 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x14d, process,   end] Prepare launcher
+2026-09-15 20:36:51.001 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x14d, process, begin] Present and focus
+2026-09-15 20:36:51.004 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x14d, process, event] Window ordered
+2026-09-15 20:36:51.004 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x14d, process, event] Search editor ready
+2026-09-15 20:36:51.010 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x14d, process,   end] Present and focus
+2026-09-15 20:36:51.010 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x14c, process,   end] Summon: source=other ready=1 elapsed_ms=8.607
+2026-09-15 20:36:51.144 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x150, process, begin] Prepare hidden home
+2026-09-15 20:36:51.154 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x150, process,   end] Prepare hidden home
+2026-09-15 20:36:51.292 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x152, process, begin] Summon: source=other
+2026-09-15 20:36:51.292 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x153, process, begin] Prepare launcher
+2026-09-15 20:36:51.299 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x153, process,   end] Prepare launcher
+2026-09-15 20:36:51.299 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x153, process, begin] Present and focus
+2026-09-15 20:36:51.305 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x153, process, event] Window ordered
+2026-09-15 20:36:51.305 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x153, process, begin] Required layout
+2026-09-15 20:36:51.317 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x153, process,   end] Required layout
+2026-09-15 20:36:51.318 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x153, process, event] Search editor ready
+2026-09-15 20:36:51.319 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x153, process,   end] Present and focus
+2026-09-15 20:36:51.319 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x152, process,   end] Summon: source=other ready=1 elapsed_ms=26.958
+2026-09-15 20:36:51.603 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x158, process, begin] Summon: source=other
+2026-09-15 20:36:51.603 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x159, process, begin] Prepare launcher
+2026-09-15 20:36:51.604 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x159, process,   end] Prepare launcher
+2026-09-15 20:36:51.604 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x159, process, begin] Present and focus
+2026-09-15 20:36:51.608 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x159, process, event] Window ordered
+2026-09-15 20:36:51.608 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x159, process, begin] Required layout
+2026-09-15 20:36:51.624 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x159, process,   end] Required layout
+2026-09-15 20:36:51.624 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x159, process, event] Search editor ready
+2026-09-15 20:36:51.626 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x159, process,   end] Present and focus
+2026-09-15 20:36:51.626 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x158, process,   end] Summon: source=other ready=1 elapsed_ms=22.937
+2026-09-15 20:36:51.908 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x15d, process, begin] Summon: source=other
+2026-09-15 20:36:51.908 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x15e, process, begin] Prepare launcher
+2026-09-15 20:36:51.917 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x15e, process,   end] Prepare launcher
+2026-09-15 20:36:51.917 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x15e, process, begin] Present and focus
+2026-09-15 20:36:51.929 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x15e, process, event] Window ordered
+2026-09-15 20:36:51.929 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x15e, process, event] Search editor ready
+2026-09-15 20:36:51.930 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x15e, process,   end] Present and focus
+2026-09-15 20:36:51.930 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x15d, process,   end] Summon: source=other ready=1 elapsed_ms=21.687
+2026-09-15 20:36:52.065 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x164, process, begin] Prepare hidden home
+2026-09-15 20:36:52.075 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x164, process,   end] Prepare hidden home
+2026-09-15 20:36:52.210 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x166, process, begin] Summon: source=other
+2026-09-15 20:36:52.210 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x167, process, begin] Prepare launcher
+2026-09-15 20:36:52.213 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x167, process,   end] Prepare launcher
+2026-09-15 20:36:52.213 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x167, process, begin] Present and focus
+2026-09-15 20:36:52.215 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x167, process, event] Window ordered
+2026-09-15 20:36:52.215 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x167, process, event] Search editor ready
+2026-09-15 20:36:52.220 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x167, process,   end] Present and focus
+2026-09-15 20:36:52.220 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x166, process,   end] Summon: source=other ready=1 elapsed_ms=9.432
+2026-09-15 20:36:52.356 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x16a, process, begin] Prepare hidden home
+2026-09-15 20:36:52.368 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x16a, process,   end] Prepare hidden home
+2026-09-15 20:36:52.506 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x16c, process, begin] Summon: source=other
+2026-09-15 20:36:52.506 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x16d, process, begin] Prepare launcher
+2026-09-15 20:36:52.507 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x16d, process,   end] Prepare launcher
+2026-09-15 20:36:52.507 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x16d, process, begin] Present and focus
+2026-09-15 20:36:52.522 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x16d, process, event] Window ordered
+2026-09-15 20:36:52.522 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x16d, process, begin] Required layout
+2026-09-15 20:36:52.535 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x16d, process,   end] Required layout
+2026-09-15 20:36:52.535 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x16d, process, event] Search editor ready
+2026-09-15 20:36:52.537 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x16d, process,   end] Present and focus
+2026-09-15 20:36:52.537 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x16c, process,   end] Summon: source=other ready=1 elapsed_ms=30.554
+2026-09-15 20:36:52.825 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x172, process, begin] Summon: source=other
+2026-09-15 20:36:52.825 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x173, process, begin] Prepare launcher
+2026-09-15 20:36:52.829 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x173, process,   end] Prepare launcher
+2026-09-15 20:36:52.829 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x173, process, begin] Present and focus
+2026-09-15 20:36:52.832 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x173, process, event] Window ordered
+2026-09-15 20:36:52.832 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x173, process, begin] Required layout
+2026-09-15 20:36:52.845 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x173, process,   end] Required layout
+2026-09-15 20:36:52.845 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x173, process, event] Search editor ready
+2026-09-15 20:36:52.847 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x173, process,   end] Present and focus
+2026-09-15 20:36:52.847 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x172, process,   end] Summon: source=other ready=1 elapsed_ms=21.861
+2026-09-15 20:36:53.123 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x177, process, begin] Summon: source=other
+2026-09-15 20:36:53.123 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x178, process, begin] Prepare launcher
+2026-09-15 20:36:53.124 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x178, process,   end] Prepare launcher
+2026-09-15 20:36:53.124 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x178, process, begin] Present and focus
+2026-09-15 20:36:53.140 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x178, process, event] Window ordered
+2026-09-15 20:36:53.140 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x178, process, event] Search editor ready
+2026-09-15 20:36:53.141 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x178, process,   end] Present and focus
+2026-09-15 20:36:53.141 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x177, process,   end] Summon: source=other ready=1 elapsed_ms=18.148
+2026-09-15 20:36:53.286 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x17e, process, begin] Prepare hidden home
+2026-09-15 20:36:53.296 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x17e, process,   end] Prepare hidden home
+2026-09-15 20:36:53.433 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x180, process, begin] Summon: source=other
+2026-09-15 20:36:53.433 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x181, process, begin] Prepare launcher
+2026-09-15 20:36:53.433 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x181, process,   end] Prepare launcher
+2026-09-15 20:36:53.433 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x181, process, begin] Present and focus
+2026-09-15 20:36:53.437 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x181, process, event] Window ordered
+2026-09-15 20:36:53.437 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x181, process, event] Search editor ready
+2026-09-15 20:36:53.442 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x181, process,   end] Present and focus
+2026-09-15 20:36:53.442 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x180, process,   end] Summon: source=other ready=1 elapsed_ms=9.813
+2026-09-15 20:36:53.577 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x184, process, begin] Prepare hidden home
+2026-09-15 20:36:53.587 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x184, process,   end] Prepare hidden home
+2026-09-15 20:36:53.723 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x186, process, begin] Summon: source=other
+2026-09-15 20:36:53.723 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x187, process, begin] Prepare launcher
+2026-09-15 20:36:53.723 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x187, process,   end] Prepare launcher
+2026-09-15 20:36:53.723 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x187, process, begin] Present and focus
+2026-09-15 20:36:53.733 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x187, process, event] Window ordered
+2026-09-15 20:36:53.733 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x187, process, begin] Required layout
+2026-09-15 20:36:53.743 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x187, process,   end] Required layout
+2026-09-15 20:36:53.743 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x187, process, event] Search editor ready
+2026-09-15 20:36:53.745 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x187, process,   end] Present and focus
+2026-09-15 20:36:53.745 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x186, process,   end] Summon: source=other ready=1 elapsed_ms=21.988
+2026-09-15 20:36:54.034 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x18c, process, begin] Summon: source=other
+2026-09-15 20:36:54.034 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x18d, process, begin] Prepare launcher
+2026-09-15 20:36:54.035 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x18d, process,   end] Prepare launcher
+2026-09-15 20:36:54.035 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x18d, process, begin] Present and focus
+2026-09-15 20:36:54.039 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x18d, process, event] Window ordered
+2026-09-15 20:36:54.039 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x18d, process, begin] Required layout
+2026-09-15 20:36:54.054 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x18d, process,   end] Required layout
+2026-09-15 20:36:54.054 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x18d, process, event] Search editor ready
+2026-09-15 20:36:54.056 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x18d, process,   end] Present and focus
+2026-09-15 20:36:54.056 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x18c, process,   end] Summon: source=other ready=1 elapsed_ms=21.472
+2026-09-15 20:36:54.334 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x191, process, begin] Summon: source=other
+2026-09-15 20:36:54.334 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x192, process, begin] Prepare launcher
+2026-09-15 20:36:54.334 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x192, process,   end] Prepare launcher
+2026-09-15 20:36:54.334 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x192, process, begin] Present and focus
+2026-09-15 20:36:54.347 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x192, process, event] Window ordered
+2026-09-15 20:36:54.347 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x192, process, event] Search editor ready
+2026-09-15 20:36:54.349 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x192, process,   end] Present and focus
+2026-09-15 20:36:54.349 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x191, process,   end] Summon: source=other ready=1 elapsed_ms=15.128
+2026-09-15 20:36:54.489 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x198, process, begin] Prepare hidden home
+2026-09-15 20:36:54.501 Sp VolantInteractionFixture[25280:4323ed] [com.mysticcoders.volant:Opening] [spid 0x198, process,   end] Prepare hidden home
