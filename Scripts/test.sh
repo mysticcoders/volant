@@ -24,6 +24,7 @@ fi
 printf 'UI verification: %s (mode: %s)\n' "$run_ui" "$ui_mode"
 python3 tools/test-scope-tests.py
 python3 tools/interaction-speed/check.py
+python3 tools/ui-vm-dispatch-tests.py
 xcodegen generate --quiet
 build_options=(-project Volant.xcodeproj -scheme Volant -derivedDataPath build -destination 'platform=macOS')
 if [[ "$ci" == true ]]; then
@@ -40,6 +41,10 @@ if [[ "$ui_mode" != only ]]; then
         -skip-testing:VolantTests/LiveMarkdownTests/testTypingFenceAndChangingModesDoNotRewriteSource
 fi
 if [[ "$run_ui" == true ]]; then
+    if [[ "$ci" != true && "${VOLANT_HOST_UI_TESTS:-0}" != 1 ]]; then
+        python3 tools/test-ui-vm.py
+        exit 0
+    fi
     ./tools/check-launcher.sh
     xcodebuild "${build_options[@]}" test -only-testing:VolantTests/NotesRenderTests \
         -only-testing:VolantTests/LiveMarkdownTests/testLanguageChangePreservesContentSelectionAndUndo \
