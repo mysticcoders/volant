@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.panel.model.acp.configure(configuration)
         if !self.panel.isVisible { self.panel.toggle() }
         self.panel.setQuery("acp")
+        self.panel.makeKeyAndOrderFront(nil)
         if !self.panel.model.acp.active { self.panel.model.acp.start() }
     }, onChange: { [weak self] in self?.reloadConfig(); self?.notesStore.reload() })
     private let updater = AppUpdater()

@@ -803,6 +803,8 @@ verify(!corePanel.isVisible && dictionary.input.isEmpty, "Escape dismisses and c
 print("PASS: dictionary routing, native text editing, Return, mode exit and Escape cleanup")
 
 // Settings navigation uses real clicks across the sidebar row, with isolated configuration.
+app.setActivationPolicy(.regular)
+app.activate(ignoringOtherApps: true)
 let settingsURL = root.appendingPathComponent("settings.json")
 try Data(#"{"promotedHarness":"claude","ai":{"provider":"claude","project":"/tmp/fictional-project"}}"#.utf8).write(to: settingsURL)
 let settingsBeforeNavigation = try Data(contentsOf: settingsURL)
@@ -818,10 +820,15 @@ settingsController.showWindow(nil)
 settingsWindow.makeKeyAndOrderFront(nil)
 RunLoop.main.run(until: Date().addingTimeInterval(0.3))
 func clickSettings(_ point: NSPoint) {
-    for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
-        let event = NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
-                                      windowNumber: settingsWindow.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: type == .leftMouseDown ? 1 : 0)!
-        settingsWindow.sendEvent(event)
+    func event(_ type: NSEvent.EventType) -> NSEvent {
+        NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                          windowNumber: settingsWindow.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: type == .leftMouseDown ? 1 : 0)!
+    }
+    // Native bordered buttons track synchronously until they consume mouse-up.
+    app.postEvent(event(.leftMouseUp), atStart: true)
+    settingsWindow.sendEvent(event(.leftMouseDown))
+    if let release = app.nextEvent(matching: .leftMouseUp, until: .distantPast, inMode: .default, dequeue: true) {
+        settingsWindow.sendEvent(release)
     }
     RunLoop.main.run(until: Date().addingTimeInterval(0.15))
 }
@@ -847,10 +854,13 @@ verify(settingsAfterNavigation == settingsBeforeNavigation, "Navigating AI setti
 settingsController.showWindow(nil)
 settingsController.state.section = "AI"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+print("CHECK: Settings Connect ACP")
 clickSettings(NSPoint(x: 280, y: 500 - 270))
 verify(openedAI.count == 1 && openedAI[0].provider == "claude" && openedAI[0].project == "/tmp/fictional-project", "Connect ACP passes the saved provider/project once")
+print("CHECK: Settings project sheet")
 clickSettings(NSPoint(x: 600, y: 500 - 189))
 verify(settingsWindow.attachedSheet is NSOpenPanel, "Choose Project opens a native sheet")
+print("CHECK: Cancel project sheet")
 (settingsWindow.attachedSheet as? NSOpenPanel)?.cancel(nil)
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 verify(settingsWindow.attachedSheet == nil, "Project selection can be cancelled")
