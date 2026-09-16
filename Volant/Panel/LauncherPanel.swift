@@ -4,6 +4,7 @@ import OSLog
 
 /// A floating, non-activating, borderless panel that hosts the SwiftUI launcher and toggles on the summon hotkey.
 final class LauncherPanel: NSPanel, NSWindowDelegate {
+    private static let openingLog = OSLog(subsystem: "com.mysticcoders.volant", category: "Opening")
     static var scale: Double = 1.0
     static var opacity: Double = 1.0
     static var size: NSSize { NSSize(width: 750 * scale, height: 480 * scale) }
@@ -61,17 +62,24 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
             else { makeKeyAndOrderFront(nil) }
             return
         }
+        let openingID = OSSignpostID(log: Self.openingLog)
+        os_signpost(.begin, log: Self.openingLog, name: "Prepare launcher", signpostID: openingID)
         model.isPresented = true
         if !keepsVisibleOnBlur { model.reset() }
         model.resumeAgentsIfNeeded()
         restorePositionOrCenter()
+        os_signpost(.end, log: Self.openingLog, name: "Prepare launcher", signpostID: openingID)
+        os_signpost(.begin, log: Self.openingLog, name: "Present and focus", signpostID: openingID)
         makeKeyAndOrderFront(nil)
+        os_signpost(.event, log: Self.openingLog, name: "Window ordered", signpostID: openingID)
         contentView?.layoutSubtreeIfNeeded()
+        os_signpost(.event, log: Self.openingLog, name: "Layout complete", signpostID: openingID)
         if let field = searchInput(in: contentView) {
             makeFirstResponder(field)
         } else {
             model.searchFocusRequest = UUID()
         }
+        os_signpost(.end, log: Self.openingLog, name: "Present and focus", signpostID: openingID)
         DispatchQueue.main.async { [weak self] in
             guard let self, self.isVisible else { return }
             guard self.isKeyWindow else {
