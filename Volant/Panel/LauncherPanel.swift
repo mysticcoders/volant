@@ -64,6 +64,9 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         }
         let openingID = OSSignpostID(log: Self.openingLog)
         os_signpost(.begin, log: Self.openingLog, name: "Prepare launcher", signpostID: openingID)
+        let previousQuery = model.query
+        let previousSections = model.sections
+        let previousSelection = model.selection
         model.isPresented = true
         if !keepsVisibleOnBlur { model.reset() }
         model.resumeAgentsIfNeeded()
@@ -72,8 +75,19 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         os_signpost(.begin, log: Self.openingLog, name: "Present and focus", signpostID: openingID)
         makeKeyAndOrderFront(nil)
         os_signpost(.event, log: Self.openingLog, name: "Window ordered", signpostID: openingID)
-        contentView?.layoutSubtreeIfNeeded()
-        os_signpost(.event, log: Self.openingLog, name: "Layout complete", signpostID: openingID)
+        // Reuse only an unchanged ordinary search surface. A matching editor alone
+        // is insufficient: emoji mode, result changes, or selection changes also
+        // need layout before showing the new state.
+        let existingInput = searchInput(in: contentView)
+        let displayedText = existingInput?.currentEditor()?.string ?? existingInput?.stringValue
+        let unchangedSearch = model.query.isEmpty && previousQuery == model.query &&
+            previousSections == model.sections && previousSelection == model.selection
+        if !unchangedSearch || existingInput == nil || displayedText != model.searchText {
+            os_signpost(.begin, log: Self.openingLog, name: "Required layout", signpostID: openingID)
+            contentView?.layoutSubtreeIfNeeded()
+            os_signpost(.end, log: Self.openingLog, name: "Required layout", signpostID: openingID)
+        }
+        os_signpost(.event, log: Self.openingLog, name: "Search editor ready", signpostID: openingID)
         if let field = searchInput(in: contentView) {
             makeFirstResponder(field)
         } else {

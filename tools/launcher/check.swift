@@ -110,6 +110,19 @@ verify(!panel.isVisible)
 panel.toggle()
 RunLoop.main.run(until: Date().addingTimeInterval(0.3))
 verify(panel.firstResponder is NSTextView, "Reopened panel restores keyboard focus")
+// No run-loop grace period: the very first key must replace the old query.
+for previous in ["", "screen", ":", "define test"] {
+    panel.model.query = previous
+    RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+    panel.orderOut(nil)
+    panel.toggle()
+    verify(panel.firstResponder is NSTextView, "Summon synchronously installs its editing responder")
+    let event = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: panel.windowNumber, context: nil, characters: "s", charactersIgnoringModifiers: "s", isARepeat: false, keyCode: UInt16(KeyCombo.keyCodes["s"]!))!
+    panel.sendEvent(event)
+    verify(panel.model.query == "s", "First key survives reopen without stale text: " + previous)
+    RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+    verify(panel.model.query == "s", "Deferred SwiftUI updates do not overwrite first key")
+}
 panel.orderOut(nil)
 let modal = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 200, height: 100), styleMask: [.titled], backing: .buffered, defer: false)
 let session = app.beginModalSession(for: modal)

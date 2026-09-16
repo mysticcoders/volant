@@ -1,0 +1,846 @@
+Filtering the log data using "subsystem == "com.mysticcoders.volant" AND category == "Opening""
+Timestamp               Ty Process[PID:TID]
+2026-09-15 19:45:04.511 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Prepare launcher
+2026-09-15 19:45:04.512 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Prepare launcher
+2026-09-15 19:45:04.512 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Present and focus
+2026-09-15 19:45:04.519 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Window ordered
+2026-09-15 19:45:04.519 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Required layout
+2026-09-15 19:45:04.545 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Required layout
+2026-09-15 19:45:04.545 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Search editor ready
+2026-09-15 19:45:04.550 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Present and focus
+2026-09-15 19:45:07.671 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x47, process, begin] Prepare launcher
+2026-09-15 19:45:07.672 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x47, process,   end] Prepare launcher
+2026-09-15 19:45:07.672 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x47, process, begin] Present and focus
+2026-09-15 19:45:07.674 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x47, process, event] Window ordered
+2026-09-15 19:45:07.674 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x47, process, begin] Required layout
+2026-09-15 19:45:07.696 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x47, process,   end] Required layout
+2026-09-15 19:45:07.696 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x47, process, event] Search editor ready
+2026-09-15 19:45:07.700 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x47, process,   end] Present and focus
+2026-09-15 19:45:08.528 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x63, process, begin] Prepare launcher
+2026-09-15 19:45:08.529 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x63, process,   end] Prepare launcher
+2026-09-15 19:45:08.529 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x63, process, begin] Present and focus
+2026-09-15 19:45:08.531 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x63, process, event] Window ordered
+2026-09-15 19:45:08.531 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x63, process, event] Search editor ready
+2026-09-15 19:45:08.537 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x63, process,   end] Present and focus
+2026-09-15 19:45:09.286 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x86, process, begin] Prepare launcher
+2026-09-15 19:45:09.286 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x86, process,   end] Prepare launcher
+2026-09-15 19:45:09.286 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x86, process, begin] Present and focus
+2026-09-15 19:45:09.288 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x86, process, event] Window ordered
+2026-09-15 19:45:09.288 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x86, process, event] Search editor ready
+2026-09-15 19:45:09.293 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x86, process,   end] Present and focus
+2026-09-15 19:45:10.031 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0xa7, process, begin] Prepare launcher
+2026-09-15 19:45:10.032 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0xa7, process,   end] Prepare launcher
+2026-09-15 19:45:10.032 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0xa7, process, begin] Present and focus
+2026-09-15 19:45:10.035 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0xa7, process, event] Window ordered
+2026-09-15 19:45:10.035 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0xa7, process, event] Search editor ready
+2026-09-15 19:45:10.042 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0xa7, process,   end] Present and focus
+2026-09-15 19:45:10.802 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0xc8, process, begin] Prepare launcher
+2026-09-15 19:45:10.803 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0xc8, process,   end] Prepare launcher
+2026-09-15 19:45:10.803 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0xc8, process, begin] Present and focus
+2026-09-15 19:45:10.805 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0xc8, process, event] Window ordered
+2026-09-15 19:45:10.805 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0xc8, process, event] Search editor ready
+2026-09-15 19:45:10.812 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0xc8, process,   end] Present and focus
+2026-09-15 19:45:11.702 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0xec, process, begin] Prepare launcher
+2026-09-15 19:45:11.703 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0xec, process,   end] Prepare launcher
+2026-09-15 19:45:11.703 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0xec, process, begin] Present and focus
+2026-09-15 19:45:11.710 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0xec, process, event] Window ordered
+2026-09-15 19:45:11.710 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0xec, process, event] Search editor ready
+2026-09-15 19:45:11.719 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0xec, process,   end] Present and focus
+2026-09-15 19:45:12.469 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x10d, process, begin] Prepare launcher
+2026-09-15 19:45:12.469 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x10d, process,   end] Prepare launcher
+2026-09-15 19:45:12.469 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x10d, process, begin] Present and focus
+2026-09-15 19:45:12.471 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x10d, process, event] Window ordered
+2026-09-15 19:45:12.471 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x10d, process, event] Search editor ready
+2026-09-15 19:45:12.475 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x10d, process,   end] Present and focus
+2026-09-15 19:45:13.222 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x12f, process, begin] Prepare launcher
+2026-09-15 19:45:13.223 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x12f, process,   end] Prepare launcher
+2026-09-15 19:45:13.223 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x12f, process, begin] Present and focus
+2026-09-15 19:45:13.225 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x12f, process, event] Window ordered
+2026-09-15 19:45:13.225 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x12f, process, event] Search editor ready
+2026-09-15 19:45:13.232 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x12f, process,   end] Present and focus
+2026-09-15 19:45:13.975 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x152, process, begin] Prepare launcher
+2026-09-15 19:45:13.976 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x152, process,   end] Prepare launcher
+2026-09-15 19:45:13.976 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x152, process, begin] Present and focus
+2026-09-15 19:45:13.978 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x152, process, event] Window ordered
+2026-09-15 19:45:13.978 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x152, process, event] Search editor ready
+2026-09-15 19:45:13.985 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x152, process,   end] Present and focus
+2026-09-15 19:45:14.736 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x174, process, begin] Prepare launcher
+2026-09-15 19:45:14.736 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x174, process,   end] Prepare launcher
+2026-09-15 19:45:14.736 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x174, process, begin] Present and focus
+2026-09-15 19:45:14.739 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x174, process, event] Window ordered
+2026-09-15 19:45:14.739 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x174, process, event] Search editor ready
+2026-09-15 19:45:14.746 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x174, process,   end] Present and focus
+2026-09-15 19:45:15.588 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x195, process, begin] Prepare launcher
+2026-09-15 19:45:15.588 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x195, process,   end] Prepare launcher
+2026-09-15 19:45:15.588 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x195, process, begin] Present and focus
+2026-09-15 19:45:15.590 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x195, process, event] Window ordered
+2026-09-15 19:45:15.590 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x195, process, event] Search editor ready
+2026-09-15 19:45:15.594 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x195, process,   end] Present and focus
+2026-09-15 19:45:16.336 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x1b6, process, begin] Prepare launcher
+2026-09-15 19:45:16.337 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x1b6, process,   end] Prepare launcher
+2026-09-15 19:45:16.337 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x1b6, process, begin] Present and focus
+2026-09-15 19:45:16.339 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x1b6, process, event] Window ordered
+2026-09-15 19:45:16.339 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x1b6, process, event] Search editor ready
+2026-09-15 19:45:16.345 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x1b6, process,   end] Present and focus
+2026-09-15 19:45:17.077 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x1d5, process, begin] Prepare launcher
+2026-09-15 19:45:17.078 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x1d5, process,   end] Prepare launcher
+2026-09-15 19:45:17.078 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x1d5, process, begin] Present and focus
+2026-09-15 19:45:17.080 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x1d5, process, event] Window ordered
+2026-09-15 19:45:17.080 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x1d5, process, event] Search editor ready
+2026-09-15 19:45:17.087 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x1d5, process,   end] Present and focus
+2026-09-15 19:45:17.819 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x1f7, process, begin] Prepare launcher
+2026-09-15 19:45:17.819 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x1f7, process,   end] Prepare launcher
+2026-09-15 19:45:17.819 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x1f7, process, begin] Present and focus
+2026-09-15 19:45:17.821 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x1f7, process, event] Window ordered
+2026-09-15 19:45:17.821 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x1f7, process, event] Search editor ready
+2026-09-15 19:45:17.825 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x1f7, process,   end] Present and focus
+2026-09-15 19:45:18.556 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x218, process, begin] Prepare launcher
+2026-09-15 19:45:18.557 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x218, process,   end] Prepare launcher
+2026-09-15 19:45:18.557 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x218, process, begin] Present and focus
+2026-09-15 19:45:18.560 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x218, process, event] Window ordered
+2026-09-15 19:45:18.560 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x218, process, event] Search editor ready
+2026-09-15 19:45:18.566 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x218, process,   end] Present and focus
+2026-09-15 19:45:19.305 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x23a, process, begin] Prepare launcher
+2026-09-15 19:45:19.305 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x23a, process,   end] Prepare launcher
+2026-09-15 19:45:19.305 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x23a, process, begin] Present and focus
+2026-09-15 19:45:19.306 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x23a, process, event] Window ordered
+2026-09-15 19:45:19.306 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x23a, process, event] Search editor ready
+2026-09-15 19:45:19.310 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x23a, process,   end] Present and focus
+2026-09-15 19:45:20.004 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x25c, process, begin] Prepare launcher
+2026-09-15 19:45:20.005 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x25c, process,   end] Prepare launcher
+2026-09-15 19:45:20.005 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x25c, process, begin] Present and focus
+2026-09-15 19:45:20.007 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x25c, process, event] Window ordered
+2026-09-15 19:45:20.007 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x25c, process, event] Search editor ready
+2026-09-15 19:45:20.011 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x25c, process,   end] Present and focus
+2026-09-15 19:45:20.712 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x27e, process, begin] Prepare launcher
+2026-09-15 19:45:20.713 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x27e, process,   end] Prepare launcher
+2026-09-15 19:45:20.713 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x27e, process, begin] Present and focus
+2026-09-15 19:45:20.714 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x27e, process, event] Window ordered
+2026-09-15 19:45:20.714 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x27e, process, event] Search editor ready
+2026-09-15 19:45:20.718 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x27e, process,   end] Present and focus
+2026-09-15 19:45:21.422 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x29f, process, begin] Prepare launcher
+2026-09-15 19:45:21.422 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x29f, process,   end] Prepare launcher
+2026-09-15 19:45:21.422 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x29f, process, begin] Present and focus
+2026-09-15 19:45:21.423 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x29f, process, event] Window ordered
+2026-09-15 19:45:21.423 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x29f, process, event] Search editor ready
+2026-09-15 19:45:21.427 Sp Volant[9695:413ccd] [com.mysticcoders.volant:Opening] [spid 0x29f, process,   end] Present and focus
+2026-09-15 19:45:22.434 Sp Volant[9865:414110] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Prepare launcher
+2026-09-15 19:45:22.435 Sp Volant[9865:414110] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Prepare launcher
+2026-09-15 19:45:22.435 Sp Volant[9865:414110] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Present and focus
+2026-09-15 19:45:22.446 Sp Volant[9865:414110] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Window ordered
+2026-09-15 19:45:22.446 Sp Volant[9865:414110] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Required layout
+2026-09-15 19:45:22.474 Sp Volant[9865:414110] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Required layout
+2026-09-15 19:45:22.474 Sp Volant[9865:414110] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Search editor ready
+2026-09-15 19:45:22.480 Sp Volant[9865:414110] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Present and focus
+2026-09-15 19:45:23.600 Sp Volant[9918:41421e] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Prepare launcher
+2026-09-15 19:45:23.601 Sp Volant[9918:41421e] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Prepare launcher
+2026-09-15 19:45:23.601 Sp Volant[9918:41421e] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Present and focus
+2026-09-15 19:45:23.610 Sp Volant[9918:41421e] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Window ordered
+2026-09-15 19:45:23.610 Sp Volant[9918:41421e] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Required layout
+2026-09-15 19:45:23.635 Sp Volant[9918:41421e] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Required layout
+2026-09-15 19:45:23.635 Sp Volant[9918:41421e] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Search editor ready
+2026-09-15 19:45:23.645 Sp Volant[9918:41421e] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Present and focus
+2026-09-15 19:45:24.793 Sp Volant[9928:41428c] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Prepare launcher
+2026-09-15 19:45:24.794 Sp Volant[9928:41428c] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Prepare launcher
+2026-09-15 19:45:24.794 Sp Volant[9928:41428c] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Present and focus
+2026-09-15 19:45:24.810 Sp Volant[9928:41428c] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Window ordered
+2026-09-15 19:45:24.810 Sp Volant[9928:41428c] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Required layout
+2026-09-15 19:45:24.835 Sp Volant[9928:41428c] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Required layout
+2026-09-15 19:45:24.835 Sp Volant[9928:41428c] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Search editor ready
+2026-09-15 19:45:24.846 Sp Volant[9928:41428c] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Present and focus
+2026-09-15 19:45:25.951 Sp Volant[9949:414313] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Prepare launcher
+2026-09-15 19:45:25.951 Sp Volant[9949:414313] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Prepare launcher
+2026-09-15 19:45:25.951 Sp Volant[9949:414313] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Present and focus
+2026-09-15 19:45:25.959 Sp Volant[9949:414313] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Window ordered
+2026-09-15 19:45:25.959 Sp Volant[9949:414313] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Required layout
+2026-09-15 19:45:25.986 Sp Volant[9949:414313] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Required layout
+2026-09-15 19:45:25.986 Sp Volant[9949:414313] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Search editor ready
+2026-09-15 19:45:25.996 Sp Volant[9949:414313] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Present and focus
+2026-09-15 19:45:27.161 Sp Volant[9962:414375] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Prepare launcher
+2026-09-15 19:45:27.162 Sp Volant[9962:414375] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Prepare launcher
+2026-09-15 19:45:27.162 Sp Volant[9962:414375] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Present and focus
+2026-09-15 19:45:27.172 Sp Volant[9962:414375] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Window ordered
+2026-09-15 19:45:27.172 Sp Volant[9962:414375] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Required layout
+2026-09-15 19:45:27.198 Sp Volant[9962:414375] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Required layout
+2026-09-15 19:45:27.198 Sp Volant[9962:414375] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Search editor ready
+2026-09-15 19:45:27.202 Sp Volant[9962:414375] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Present and focus
+2026-09-15 19:45:29.475 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Prepare launcher
+2026-09-15 19:45:29.475 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Prepare launcher
+2026-09-15 19:45:29.475 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Present and focus
+2026-09-15 19:45:29.485 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Window ordered
+2026-09-15 19:45:29.511 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Layout complete
+2026-09-15 19:45:29.515 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Present and focus
+2026-09-15 19:45:32.586 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x46, process, begin] Prepare launcher
+2026-09-15 19:45:32.587 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x46, process,   end] Prepare launcher
+2026-09-15 19:45:32.587 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x46, process, begin] Present and focus
+2026-09-15 19:45:32.590 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x46, process, event] Window ordered
+2026-09-15 19:45:32.613 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x46, process, event] Layout complete
+2026-09-15 19:45:32.617 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x46, process,   end] Present and focus
+2026-09-15 19:45:33.432 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x62, process, begin] Prepare launcher
+2026-09-15 19:45:33.433 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x62, process,   end] Prepare launcher
+2026-09-15 19:45:33.433 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x62, process, begin] Present and focus
+2026-09-15 19:45:33.435 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x62, process, event] Window ordered
+2026-09-15 19:45:33.452 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x62, process, event] Layout complete
+2026-09-15 19:45:33.454 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x62, process,   end] Present and focus
+2026-09-15 19:45:34.204 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x8b, process, begin] Prepare launcher
+2026-09-15 19:45:34.204 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x8b, process,   end] Prepare launcher
+2026-09-15 19:45:34.204 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x8b, process, begin] Present and focus
+2026-09-15 19:45:34.205 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x8b, process, event] Window ordered
+2026-09-15 19:45:34.218 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x8b, process, event] Layout complete
+2026-09-15 19:45:34.220 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x8b, process,   end] Present and focus
+2026-09-15 19:45:34.983 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0xb3, process, begin] Prepare launcher
+2026-09-15 19:45:34.984 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0xb3, process,   end] Prepare launcher
+2026-09-15 19:45:34.984 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0xb3, process, begin] Present and focus
+2026-09-15 19:45:34.985 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0xb3, process, event] Window ordered
+2026-09-15 19:45:35.003 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0xb3, process, event] Layout complete
+2026-09-15 19:45:35.006 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0xb3, process,   end] Present and focus
+2026-09-15 19:45:35.736 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0xdb, process, begin] Prepare launcher
+2026-09-15 19:45:35.737 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0xdb, process,   end] Prepare launcher
+2026-09-15 19:45:35.737 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0xdb, process, begin] Present and focus
+2026-09-15 19:45:35.739 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0xdb, process, event] Window ordered
+2026-09-15 19:45:35.756 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0xdb, process, event] Layout complete
+2026-09-15 19:45:35.759 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0xdb, process,   end] Present and focus
+2026-09-15 19:45:36.619 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x104, process, begin] Prepare launcher
+2026-09-15 19:45:36.620 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x104, process,   end] Prepare launcher
+2026-09-15 19:45:36.620 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x104, process, begin] Present and focus
+2026-09-15 19:45:36.622 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x104, process, event] Window ordered
+2026-09-15 19:45:36.640 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x104, process, event] Layout complete
+2026-09-15 19:45:36.643 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x104, process,   end] Present and focus
+2026-09-15 19:45:37.402 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x12d, process, begin] Prepare launcher
+2026-09-15 19:45:37.403 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x12d, process,   end] Prepare launcher
+2026-09-15 19:45:37.403 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x12d, process, begin] Present and focus
+2026-09-15 19:45:37.405 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x12d, process, event] Window ordered
+2026-09-15 19:45:37.418 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x12d, process, event] Layout complete
+2026-09-15 19:45:37.420 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x12d, process,   end] Present and focus
+2026-09-15 19:45:38.169 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x155, process, begin] Prepare launcher
+2026-09-15 19:45:38.170 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x155, process,   end] Prepare launcher
+2026-09-15 19:45:38.170 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x155, process, begin] Present and focus
+2026-09-15 19:45:38.173 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x155, process, event] Window ordered
+2026-09-15 19:45:38.191 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x155, process, event] Layout complete
+2026-09-15 19:45:38.195 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x155, process,   end] Present and focus
+2026-09-15 19:45:38.936 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x17f, process, begin] Prepare launcher
+2026-09-15 19:45:38.936 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x17f, process,   end] Prepare launcher
+2026-09-15 19:45:38.936 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x17f, process, begin] Present and focus
+2026-09-15 19:45:38.938 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x17f, process, event] Window ordered
+2026-09-15 19:45:38.956 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x17f, process, event] Layout complete
+2026-09-15 19:45:38.959 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x17f, process,   end] Present and focus
+2026-09-15 19:45:39.810 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x1a8, process, begin] Prepare launcher
+2026-09-15 19:45:39.811 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x1a8, process,   end] Prepare launcher
+2026-09-15 19:45:39.811 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x1a8, process, begin] Present and focus
+2026-09-15 19:45:39.813 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x1a8, process, event] Window ordered
+2026-09-15 19:45:39.831 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x1a8, process, event] Layout complete
+2026-09-15 19:45:39.834 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x1a8, process,   end] Present and focus
+2026-09-15 19:45:40.569 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x1d1, process, begin] Prepare launcher
+2026-09-15 19:45:40.570 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x1d1, process,   end] Prepare launcher
+2026-09-15 19:45:40.570 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x1d1, process, begin] Present and focus
+2026-09-15 19:45:40.571 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x1d1, process, event] Window ordered
+2026-09-15 19:45:40.582 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x1d1, process, event] Layout complete
+2026-09-15 19:45:40.584 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x1d1, process,   end] Present and focus
+2026-09-15 19:45:41.320 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x1fa, process, begin] Prepare launcher
+2026-09-15 19:45:41.320 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x1fa, process,   end] Prepare launcher
+2026-09-15 19:45:41.320 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x1fa, process, begin] Present and focus
+2026-09-15 19:45:41.321 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x1fa, process, event] Window ordered
+2026-09-15 19:45:41.331 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x1fa, process, event] Layout complete
+2026-09-15 19:45:41.333 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x1fa, process,   end] Present and focus
+2026-09-15 19:45:42.071 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x222, process, begin] Prepare launcher
+2026-09-15 19:45:42.072 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x222, process,   end] Prepare launcher
+2026-09-15 19:45:42.072 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x222, process, begin] Present and focus
+2026-09-15 19:45:42.079 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x222, process, event] Window ordered
+2026-09-15 19:45:42.095 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x222, process, event] Layout complete
+2026-09-15 19:45:42.097 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x222, process,   end] Present and focus
+2026-09-15 19:45:42.836 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x24b, process, begin] Prepare launcher
+2026-09-15 19:45:42.837 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x24b, process,   end] Prepare launcher
+2026-09-15 19:45:42.837 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x24b, process, begin] Present and focus
+2026-09-15 19:45:42.840 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x24b, process, event] Window ordered
+2026-09-15 19:45:42.858 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x24b, process, event] Layout complete
+2026-09-15 19:45:42.861 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x24b, process,   end] Present and focus
+2026-09-15 19:45:43.712 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x274, process, begin] Prepare launcher
+2026-09-15 19:45:43.712 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x274, process,   end] Prepare launcher
+2026-09-15 19:45:43.713 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x274, process, begin] Present and focus
+2026-09-15 19:45:43.713 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x274, process, event] Window ordered
+2026-09-15 19:45:43.723 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x274, process, event] Layout complete
+2026-09-15 19:45:43.724 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x274, process,   end] Present and focus
+2026-09-15 19:45:44.459 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x29c, process, begin] Prepare launcher
+2026-09-15 19:45:44.460 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x29c, process,   end] Prepare launcher
+2026-09-15 19:45:44.460 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x29c, process, begin] Present and focus
+2026-09-15 19:45:44.462 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x29c, process, event] Window ordered
+2026-09-15 19:45:44.478 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x29c, process, event] Layout complete
+2026-09-15 19:45:44.480 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x29c, process,   end] Present and focus
+2026-09-15 19:45:45.196 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x2c3, process, begin] Prepare launcher
+2026-09-15 19:45:45.197 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x2c3, process,   end] Prepare launcher
+2026-09-15 19:45:45.197 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x2c3, process, begin] Present and focus
+2026-09-15 19:45:45.200 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x2c3, process, event] Window ordered
+2026-09-15 19:45:45.217 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x2c3, process, event] Layout complete
+2026-09-15 19:45:45.220 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x2c3, process,   end] Present and focus
+2026-09-15 19:45:45.953 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x2ea, process, begin] Prepare launcher
+2026-09-15 19:45:45.954 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x2ea, process,   end] Prepare launcher
+2026-09-15 19:45:45.954 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x2ea, process, begin] Present and focus
+2026-09-15 19:45:45.955 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x2ea, process, event] Window ordered
+2026-09-15 19:45:45.967 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x2ea, process, event] Layout complete
+2026-09-15 19:45:45.969 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x2ea, process,   end] Present and focus
+2026-09-15 19:45:46.705 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x311, process, begin] Prepare launcher
+2026-09-15 19:45:46.706 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x311, process,   end] Prepare launcher
+2026-09-15 19:45:46.706 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x311, process, begin] Present and focus
+2026-09-15 19:45:46.711 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x311, process, event] Window ordered
+2026-09-15 19:45:46.727 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x311, process, event] Layout complete
+2026-09-15 19:45:46.730 Sp Volant[10028:4144e7] [com.mysticcoders.volant:Opening] [spid 0x311, process,   end] Present and focus
+2026-09-15 19:45:47.843 Sp Volant[10170:4148b6] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Prepare launcher
+2026-09-15 19:45:47.844 Sp Volant[10170:4148b6] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Prepare launcher
+2026-09-15 19:45:47.844 Sp Volant[10170:4148b6] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Present and focus
+2026-09-15 19:45:47.855 Sp Volant[10170:4148b6] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Window ordered
+2026-09-15 19:45:47.881 Sp Volant[10170:4148b6] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Layout complete
+2026-09-15 19:45:47.886 Sp Volant[10170:4148b6] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Present and focus
+2026-09-15 19:45:48.998 Sp Volant[10183:41498b] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Prepare launcher
+2026-09-15 19:45:48.999 Sp Volant[10183:41498b] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Prepare launcher
+2026-09-15 19:45:48.999 Sp Volant[10183:41498b] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Present and focus
+2026-09-15 19:45:49.008 Sp Volant[10183:41498b] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Window ordered
+2026-09-15 19:45:49.036 Sp Volant[10183:41498b] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Layout complete
+2026-09-15 19:45:49.041 Sp Volant[10183:41498b] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Present and focus
+2026-09-15 19:45:50.163 Sp Volant[10200:414a10] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Prepare launcher
+2026-09-15 19:45:50.163 Sp Volant[10200:414a10] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Prepare launcher
+2026-09-15 19:45:50.163 Sp Volant[10200:414a10] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Present and focus
+2026-09-15 19:45:50.173 Sp Volant[10200:414a10] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Window ordered
+2026-09-15 19:45:50.198 Sp Volant[10200:414a10] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Layout complete
+2026-09-15 19:45:50.203 Sp Volant[10200:414a10] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Present and focus
+2026-09-15 19:45:51.214 Sp Volant[10210:414a7f] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Prepare launcher
+2026-09-15 19:45:51.214 Sp Volant[10210:414a7f] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Prepare launcher
+2026-09-15 19:45:51.214 Sp Volant[10210:414a7f] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Present and focus
+2026-09-15 19:45:51.224 Sp Volant[10210:414a7f] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Window ordered
+2026-09-15 19:45:51.249 Sp Volant[10210:414a7f] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Layout complete
+2026-09-15 19:45:51.255 Sp Volant[10210:414a7f] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Present and focus
+2026-09-15 19:45:52.345 Sp Volant[10218:414ae5] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Prepare launcher
+2026-09-15 19:45:52.346 Sp Volant[10218:414ae5] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Prepare launcher
+2026-09-15 19:45:52.346 Sp Volant[10218:414ae5] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Present and focus
+2026-09-15 19:45:52.356 Sp Volant[10218:414ae5] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Window ordered
+2026-09-15 19:45:52.382 Sp Volant[10218:414ae5] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Layout complete
+2026-09-15 19:45:52.387 Sp Volant[10218:414ae5] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Present and focus
+2026-09-15 19:45:54.545 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Prepare launcher
+2026-09-15 19:45:54.546 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Prepare launcher
+2026-09-15 19:45:54.546 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Present and focus
+2026-09-15 19:45:54.553 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Window ordered
+2026-09-15 19:45:54.553 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Required layout
+2026-09-15 19:45:54.580 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Required layout
+2026-09-15 19:45:54.580 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Search editor ready
+2026-09-15 19:45:54.584 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Present and focus
+2026-09-15 19:45:57.636 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x44, process, begin] Prepare launcher
+2026-09-15 19:45:57.637 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x44, process,   end] Prepare launcher
+2026-09-15 19:45:57.637 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x44, process, begin] Present and focus
+2026-09-15 19:45:57.639 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x44, process, event] Window ordered
+2026-09-15 19:45:57.639 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x44, process, begin] Required layout
+2026-09-15 19:45:57.666 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x44, process,   end] Required layout
+2026-09-15 19:45:57.666 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x44, process, event] Search editor ready
+2026-09-15 19:45:57.669 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x44, process,   end] Present and focus
+2026-09-15 19:45:58.486 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x60, process, begin] Prepare launcher
+2026-09-15 19:45:58.487 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x60, process,   end] Prepare launcher
+2026-09-15 19:45:58.487 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x60, process, begin] Present and focus
+2026-09-15 19:45:58.489 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x60, process, event] Window ordered
+2026-09-15 19:45:58.489 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x60, process, event] Search editor ready
+2026-09-15 19:45:58.496 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x60, process,   end] Present and focus
+2026-09-15 19:45:59.237 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x82, process, begin] Prepare launcher
+2026-09-15 19:45:59.237 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x82, process,   end] Prepare launcher
+2026-09-15 19:45:59.237 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x82, process, begin] Present and focus
+2026-09-15 19:45:59.238 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x82, process, event] Window ordered
+2026-09-15 19:45:59.238 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x82, process, event] Search editor ready
+2026-09-15 19:45:59.243 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x82, process,   end] Present and focus
+2026-09-15 19:46:00.002 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0xa4, process, begin] Prepare launcher
+2026-09-15 19:46:00.003 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0xa4, process,   end] Prepare launcher
+2026-09-15 19:46:00.003 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0xa4, process, begin] Present and focus
+2026-09-15 19:46:00.007 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0xa4, process, event] Window ordered
+2026-09-15 19:46:00.007 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0xa4, process, event] Search editor ready
+2026-09-15 19:46:00.015 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0xa4, process,   end] Present and focus
+2026-09-15 19:46:00.748 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0xc6, process, begin] Prepare launcher
+2026-09-15 19:46:00.749 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0xc6, process,   end] Prepare launcher
+2026-09-15 19:46:00.749 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0xc6, process, begin] Present and focus
+2026-09-15 19:46:00.751 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0xc6, process, event] Window ordered
+2026-09-15 19:46:00.751 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0xc6, process, event] Search editor ready
+2026-09-15 19:46:00.759 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0xc6, process,   end] Present and focus
+2026-09-15 19:46:01.504 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0xe7, process, begin] Prepare launcher
+2026-09-15 19:46:01.505 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0xe7, process,   end] Prepare launcher
+2026-09-15 19:46:01.505 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0xe7, process, begin] Present and focus
+2026-09-15 19:46:01.507 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0xe7, process, event] Window ordered
+2026-09-15 19:46:01.507 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0xe7, process, event] Search editor ready
+2026-09-15 19:46:01.515 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0xe7, process,   end] Present and focus
+2026-09-15 19:46:02.386 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x10a, process, begin] Prepare launcher
+2026-09-15 19:46:02.386 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x10a, process,   end] Prepare launcher
+2026-09-15 19:46:02.386 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x10a, process, begin] Present and focus
+2026-09-15 19:46:02.387 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x10a, process, event] Window ordered
+2026-09-15 19:46:02.387 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x10a, process, event] Search editor ready
+2026-09-15 19:46:02.391 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x10a, process,   end] Present and focus
+2026-09-15 19:46:03.136 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x12c, process, begin] Prepare launcher
+2026-09-15 19:46:03.137 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x12c, process,   end] Prepare launcher
+2026-09-15 19:46:03.137 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x12c, process, begin] Present and focus
+2026-09-15 19:46:03.139 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x12c, process, event] Window ordered
+2026-09-15 19:46:03.139 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x12c, process, event] Search editor ready
+2026-09-15 19:46:03.146 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x12c, process,   end] Present and focus
+2026-09-15 19:46:03.888 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x14b, process, begin] Prepare launcher
+2026-09-15 19:46:03.889 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x14b, process,   end] Prepare launcher
+2026-09-15 19:46:03.889 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x14b, process, begin] Present and focus
+2026-09-15 19:46:03.891 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x14b, process, event] Window ordered
+2026-09-15 19:46:03.891 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x14b, process, event] Search editor ready
+2026-09-15 19:46:03.897 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x14b, process,   end] Present and focus
+2026-09-15 19:46:04.652 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x16d, process, begin] Prepare launcher
+2026-09-15 19:46:04.653 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x16d, process,   end] Prepare launcher
+2026-09-15 19:46:04.653 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x16d, process, begin] Present and focus
+2026-09-15 19:46:04.655 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x16d, process, event] Window ordered
+2026-09-15 19:46:04.655 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x16d, process, event] Search editor ready
+2026-09-15 19:46:04.661 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x16d, process,   end] Present and focus
+2026-09-15 19:46:05.408 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x18f, process, begin] Prepare launcher
+2026-09-15 19:46:05.409 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x18f, process,   end] Prepare launcher
+2026-09-15 19:46:05.409 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x18f, process, begin] Present and focus
+2026-09-15 19:46:05.411 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x18f, process, event] Window ordered
+2026-09-15 19:46:05.411 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x18f, process, event] Search editor ready
+2026-09-15 19:46:05.417 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x18f, process,   end] Present and focus
+2026-09-15 19:46:06.186 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x1b1, process, begin] Prepare launcher
+2026-09-15 19:46:06.187 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x1b1, process,   end] Prepare launcher
+2026-09-15 19:46:06.187 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x1b1, process, begin] Present and focus
+2026-09-15 19:46:06.189 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x1b1, process, event] Window ordered
+2026-09-15 19:46:06.189 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x1b1, process, event] Search editor ready
+2026-09-15 19:46:06.197 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x1b1, process,   end] Present and focus
+2026-09-15 19:46:07.004 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x1d1, process, begin] Prepare launcher
+2026-09-15 19:46:07.005 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x1d1, process,   end] Prepare launcher
+2026-09-15 19:46:07.005 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x1d1, process, begin] Present and focus
+2026-09-15 19:46:07.008 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x1d1, process, event] Window ordered
+2026-09-15 19:46:07.008 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x1d1, process, event] Search editor ready
+2026-09-15 19:46:07.013 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x1d1, process,   end] Present and focus
+2026-09-15 19:46:07.769 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x1f4, process, begin] Prepare launcher
+2026-09-15 19:46:07.770 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x1f4, process,   end] Prepare launcher
+2026-09-15 19:46:07.770 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x1f4, process, begin] Present and focus
+2026-09-15 19:46:07.771 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x1f4, process, event] Window ordered
+2026-09-15 19:46:07.771 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x1f4, process, event] Search editor ready
+2026-09-15 19:46:07.775 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x1f4, process,   end] Present and focus
+2026-09-15 19:46:08.536 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x217, process, begin] Prepare launcher
+2026-09-15 19:46:08.537 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x217, process,   end] Prepare launcher
+2026-09-15 19:46:08.537 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x217, process, begin] Present and focus
+2026-09-15 19:46:08.541 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x217, process, event] Window ordered
+2026-09-15 19:46:08.541 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x217, process, event] Search editor ready
+2026-09-15 19:46:08.550 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x217, process,   end] Present and focus
+2026-09-15 19:46:09.269 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x239, process, begin] Prepare launcher
+2026-09-15 19:46:09.270 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x239, process,   end] Prepare launcher
+2026-09-15 19:46:09.270 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x239, process, begin] Present and focus
+2026-09-15 19:46:09.271 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x239, process, event] Window ordered
+2026-09-15 19:46:09.271 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x239, process, event] Search editor ready
+2026-09-15 19:46:09.275 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x239, process,   end] Present and focus
+2026-09-15 19:46:09.986 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x25b, process, begin] Prepare launcher
+2026-09-15 19:46:09.986 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x25b, process,   end] Prepare launcher
+2026-09-15 19:46:09.986 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x25b, process, begin] Present and focus
+2026-09-15 19:46:09.987 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x25b, process, event] Window ordered
+2026-09-15 19:46:09.987 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x25b, process, event] Search editor ready
+2026-09-15 19:46:09.992 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x25b, process,   end] Present and focus
+2026-09-15 19:46:10.707 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x27d, process, begin] Prepare launcher
+2026-09-15 19:46:10.708 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x27d, process,   end] Prepare launcher
+2026-09-15 19:46:10.708 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x27d, process, begin] Present and focus
+2026-09-15 19:46:10.709 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x27d, process, event] Window ordered
+2026-09-15 19:46:10.709 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x27d, process, event] Search editor ready
+2026-09-15 19:46:10.713 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x27d, process,   end] Present and focus
+2026-09-15 19:46:11.422 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x29f, process, begin] Prepare launcher
+2026-09-15 19:46:11.423 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x29f, process,   end] Prepare launcher
+2026-09-15 19:46:11.423 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x29f, process, begin] Present and focus
+2026-09-15 19:46:11.424 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x29f, process, event] Window ordered
+2026-09-15 19:46:11.424 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x29f, process, event] Search editor ready
+2026-09-15 19:46:11.427 Sp Volant[10239:414bb5] [com.mysticcoders.volant:Opening] [spid 0x29f, process,   end] Present and focus
+2026-09-15 19:46:12.522 Sp Volant[10419:414f7c] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Prepare launcher
+2026-09-15 19:46:12.522 Sp Volant[10419:414f7c] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Prepare launcher
+2026-09-15 19:46:12.522 Sp Volant[10419:414f7c] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Present and focus
+2026-09-15 19:46:12.533 Sp Volant[10419:414f7c] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Window ordered
+2026-09-15 19:46:12.533 Sp Volant[10419:414f7c] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Required layout
+2026-09-15 19:46:12.561 Sp Volant[10419:414f7c] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Required layout
+2026-09-15 19:46:12.561 Sp Volant[10419:414f7c] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Search editor ready
+2026-09-15 19:46:12.566 Sp Volant[10419:414f7c] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Present and focus
+2026-09-15 19:46:13.680 Sp Volant[10428:41504b] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Prepare launcher
+2026-09-15 19:46:13.681 Sp Volant[10428:41504b] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Prepare launcher
+2026-09-15 19:46:13.681 Sp Volant[10428:41504b] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Present and focus
+2026-09-15 19:46:13.690 Sp Volant[10428:41504b] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Window ordered
+2026-09-15 19:46:13.690 Sp Volant[10428:41504b] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Required layout
+2026-09-15 19:46:13.716 Sp Volant[10428:41504b] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Required layout
+2026-09-15 19:46:13.716 Sp Volant[10428:41504b] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Search editor ready
+2026-09-15 19:46:13.721 Sp Volant[10428:41504b] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Present and focus
+2026-09-15 19:46:14.830 Sp Volant[10443:4150bb] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Prepare launcher
+2026-09-15 19:46:14.830 Sp Volant[10443:4150bb] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Prepare launcher
+2026-09-15 19:46:14.830 Sp Volant[10443:4150bb] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Present and focus
+2026-09-15 19:46:14.840 Sp Volant[10443:4150bb] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Window ordered
+2026-09-15 19:46:14.840 Sp Volant[10443:4150bb] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Required layout
+2026-09-15 19:46:14.866 Sp Volant[10443:4150bb] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Required layout
+2026-09-15 19:46:14.866 Sp Volant[10443:4150bb] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Search editor ready
+2026-09-15 19:46:14.871 Sp Volant[10443:4150bb] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Present and focus
+2026-09-15 19:46:15.980 Sp Volant[10451:41511d] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Prepare launcher
+2026-09-15 19:46:15.981 Sp Volant[10451:41511d] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Prepare launcher
+2026-09-15 19:46:15.981 Sp Volant[10451:41511d] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Present and focus
+2026-09-15 19:46:15.990 Sp Volant[10451:41511d] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Window ordered
+2026-09-15 19:46:15.990 Sp Volant[10451:41511d] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Required layout
+2026-09-15 19:46:16.016 Sp Volant[10451:41511d] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Required layout
+2026-09-15 19:46:16.016 Sp Volant[10451:41511d] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Search editor ready
+2026-09-15 19:46:16.023 Sp Volant[10451:41511d] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Present and focus
+2026-09-15 19:46:17.136 Sp Volant[10460:415186] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Prepare launcher
+2026-09-15 19:46:17.138 Sp Volant[10460:415186] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Prepare launcher
+2026-09-15 19:46:17.138 Sp Volant[10460:415186] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Present and focus
+2026-09-15 19:46:17.147 Sp Volant[10460:415186] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Window ordered
+2026-09-15 19:46:17.147 Sp Volant[10460:415186] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Required layout
+2026-09-15 19:46:17.173 Sp Volant[10460:415186] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Required layout
+2026-09-15 19:46:17.173 Sp Volant[10460:415186] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Search editor ready
+2026-09-15 19:46:17.184 Sp Volant[10460:415186] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Present and focus
+2026-09-15 19:46:19.310 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Prepare launcher
+2026-09-15 19:46:19.311 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Prepare launcher
+2026-09-15 19:46:19.311 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Present and focus
+2026-09-15 19:46:19.318 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Window ordered
+2026-09-15 19:46:19.344 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Layout complete
+2026-09-15 19:46:19.349 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Present and focus
+2026-09-15 19:46:22.403 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x46, process, begin] Prepare launcher
+2026-09-15 19:46:22.403 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x46, process,   end] Prepare launcher
+2026-09-15 19:46:22.403 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x46, process, begin] Present and focus
+2026-09-15 19:46:22.405 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x46, process, event] Window ordered
+2026-09-15 19:46:22.430 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x46, process, event] Layout complete
+2026-09-15 19:46:22.434 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x46, process,   end] Present and focus
+2026-09-15 19:46:23.236 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x62, process, begin] Prepare launcher
+2026-09-15 19:46:23.237 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x62, process,   end] Prepare launcher
+2026-09-15 19:46:23.237 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x62, process, begin] Present and focus
+2026-09-15 19:46:23.240 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x62, process, event] Window ordered
+2026-09-15 19:46:23.258 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x62, process, event] Layout complete
+2026-09-15 19:46:23.261 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x62, process,   end] Present and focus
+2026-09-15 19:46:24.003 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x8c, process, begin] Prepare launcher
+2026-09-15 19:46:24.004 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x8c, process,   end] Prepare launcher
+2026-09-15 19:46:24.004 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x8c, process, begin] Present and focus
+2026-09-15 19:46:24.005 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x8c, process, event] Window ordered
+2026-09-15 19:46:24.017 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x8c, process, event] Layout complete
+2026-09-15 19:46:24.020 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x8c, process,   end] Present and focus
+2026-09-15 19:46:24.763 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0xb4, process, begin] Prepare launcher
+2026-09-15 19:46:24.764 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0xb4, process,   end] Prepare launcher
+2026-09-15 19:46:24.764 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0xb4, process, begin] Present and focus
+2026-09-15 19:46:24.766 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0xb4, process, event] Window ordered
+2026-09-15 19:46:24.783 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0xb4, process, event] Layout complete
+2026-09-15 19:46:24.786 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0xb4, process,   end] Present and focus
+2026-09-15 19:46:25.536 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0xdc, process, begin] Prepare launcher
+2026-09-15 19:46:25.537 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0xdc, process,   end] Prepare launcher
+2026-09-15 19:46:25.537 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0xdc, process, begin] Present and focus
+2026-09-15 19:46:25.540 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0xdc, process, event] Window ordered
+2026-09-15 19:46:25.558 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0xdc, process, event] Layout complete
+2026-09-15 19:46:25.561 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0xdc, process,   end] Present and focus
+2026-09-15 19:46:26.393 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x104, process, begin] Prepare launcher
+2026-09-15 19:46:26.394 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x104, process,   end] Prepare launcher
+2026-09-15 19:46:26.394 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x104, process, begin] Present and focus
+2026-09-15 19:46:26.396 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x104, process, event] Window ordered
+2026-09-15 19:46:26.410 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x104, process, event] Layout complete
+2026-09-15 19:46:26.413 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x104, process,   end] Present and focus
+2026-09-15 19:46:27.148 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x12d, process, begin] Prepare launcher
+2026-09-15 19:46:27.148 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x12d, process,   end] Prepare launcher
+2026-09-15 19:46:27.148 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x12d, process, begin] Present and focus
+2026-09-15 19:46:27.149 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x12d, process, event] Window ordered
+2026-09-15 19:46:27.157 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x12d, process, event] Layout complete
+2026-09-15 19:46:27.159 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x12d, process,   end] Present and focus
+2026-09-15 19:46:27.903 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x154, process, begin] Prepare launcher
+2026-09-15 19:46:27.903 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x154, process,   end] Prepare launcher
+2026-09-15 19:46:27.903 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x154, process, begin] Present and focus
+2026-09-15 19:46:27.906 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x154, process, event] Window ordered
+2026-09-15 19:46:27.922 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x154, process, event] Layout complete
+2026-09-15 19:46:27.925 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x154, process,   end] Present and focus
+2026-09-15 19:46:28.662 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x17c, process, begin] Prepare launcher
+2026-09-15 19:46:28.663 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x17c, process,   end] Prepare launcher
+2026-09-15 19:46:28.663 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x17c, process, begin] Present and focus
+2026-09-15 19:46:28.665 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x17c, process, event] Window ordered
+2026-09-15 19:46:28.681 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x17c, process, event] Layout complete
+2026-09-15 19:46:28.684 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x17c, process,   end] Present and focus
+2026-09-15 19:46:29.436 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x1a5, process, begin] Prepare launcher
+2026-09-15 19:46:29.437 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x1a5, process,   end] Prepare launcher
+2026-09-15 19:46:29.437 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x1a5, process, begin] Present and focus
+2026-09-15 19:46:29.440 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x1a5, process, event] Window ordered
+2026-09-15 19:46:29.457 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x1a5, process, event] Layout complete
+2026-09-15 19:46:29.459 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x1a5, process,   end] Present and focus
+2026-09-15 19:46:30.312 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x1cc, process, begin] Prepare launcher
+2026-09-15 19:46:30.313 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x1cc, process,   end] Prepare launcher
+2026-09-15 19:46:30.313 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x1cc, process, begin] Present and focus
+2026-09-15 19:46:30.314 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x1cc, process, event] Window ordered
+2026-09-15 19:46:30.322 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x1cc, process, event] Layout complete
+2026-09-15 19:46:30.324 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x1cc, process,   end] Present and focus
+2026-09-15 19:46:31.069 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x1f4, process, begin] Prepare launcher
+2026-09-15 19:46:31.070 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x1f4, process,   end] Prepare launcher
+2026-09-15 19:46:31.070 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x1f4, process, begin] Present and focus
+2026-09-15 19:46:31.072 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x1f4, process, event] Window ordered
+2026-09-15 19:46:31.089 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x1f4, process, event] Layout complete
+2026-09-15 19:46:31.092 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x1f4, process,   end] Present and focus
+2026-09-15 19:46:31.810 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x21c, process, begin] Prepare launcher
+2026-09-15 19:46:31.810 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x21c, process,   end] Prepare launcher
+2026-09-15 19:46:31.810 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x21c, process, begin] Present and focus
+2026-09-15 19:46:31.817 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x21c, process, event] Window ordered
+2026-09-15 19:46:31.832 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x21c, process, event] Layout complete
+2026-09-15 19:46:31.835 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x21c, process,   end] Present and focus
+2026-09-15 19:46:32.586 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x244, process, begin] Prepare launcher
+2026-09-15 19:46:32.587 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x244, process,   end] Prepare launcher
+2026-09-15 19:46:32.587 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x244, process, begin] Present and focus
+2026-09-15 19:46:32.589 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x244, process, event] Window ordered
+2026-09-15 19:46:32.604 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x244, process, event] Layout complete
+2026-09-15 19:46:32.607 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x244, process,   end] Present and focus
+2026-09-15 19:46:33.353 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x26a, process, begin] Prepare launcher
+2026-09-15 19:46:33.353 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x26a, process,   end] Prepare launcher
+2026-09-15 19:46:33.353 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x26a, process, begin] Present and focus
+2026-09-15 19:46:33.355 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x26a, process, event] Window ordered
+2026-09-15 19:46:33.369 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x26a, process, event] Layout complete
+2026-09-15 19:46:33.371 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x26a, process,   end] Present and focus
+2026-09-15 19:46:34.104 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x291, process, begin] Prepare launcher
+2026-09-15 19:46:34.105 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x291, process,   end] Prepare launcher
+2026-09-15 19:46:34.105 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x291, process, begin] Present and focus
+2026-09-15 19:46:34.107 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x291, process, event] Window ordered
+2026-09-15 19:46:34.125 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x291, process, event] Layout complete
+2026-09-15 19:46:34.129 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x291, process,   end] Present and focus
+2026-09-15 19:46:34.973 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x2b8, process, begin] Prepare launcher
+2026-09-15 19:46:34.974 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x2b8, process,   end] Prepare launcher
+2026-09-15 19:46:34.974 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x2b8, process, begin] Present and focus
+2026-09-15 19:46:34.976 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x2b8, process, event] Window ordered
+2026-09-15 19:46:34.991 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x2b8, process, event] Layout complete
+2026-09-15 19:46:34.994 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x2b8, process,   end] Present and focus
+2026-09-15 19:46:35.736 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x2e1, process, begin] Prepare launcher
+2026-09-15 19:46:35.736 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x2e1, process,   end] Prepare launcher
+2026-09-15 19:46:35.736 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x2e1, process, begin] Present and focus
+2026-09-15 19:46:35.738 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x2e1, process, event] Window ordered
+2026-09-15 19:46:35.749 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x2e1, process, event] Layout complete
+2026-09-15 19:46:35.751 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x2e1, process,   end] Present and focus
+2026-09-15 19:46:36.470 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x307, process, begin] Prepare launcher
+2026-09-15 19:46:36.471 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x307, process,   end] Prepare launcher
+2026-09-15 19:46:36.471 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x307, process, begin] Present and focus
+2026-09-15 19:46:36.473 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x307, process, event] Window ordered
+2026-09-15 19:46:36.490 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x307, process, event] Layout complete
+2026-09-15 19:46:36.493 Sp Volant[10542:415364] [com.mysticcoders.volant:Opening] [spid 0x307, process,   end] Present and focus
+Filtering the log data using "subsystem == "com.mysticcoders.volant" AND category == "Opening""
+Timestamp               Ty Process[PID:TID]
+2026-09-15 19:58:26.871 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Prepare launcher
+2026-09-15 19:58:26.872 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Prepare launcher
+2026-09-15 19:58:26.872 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Present and focus
+2026-09-15 19:58:26.879 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Window ordered
+2026-09-15 19:58:26.879 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Required layout
+2026-09-15 19:58:26.905 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Required layout
+2026-09-15 19:58:26.905 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Search editor ready
+2026-09-15 19:58:26.909 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Present and focus
+2026-09-15 19:58:29.891 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x44, process, begin] Prepare launcher
+2026-09-15 19:58:29.891 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x44, process,   end] Prepare launcher
+2026-09-15 19:58:29.891 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x44, process, begin] Present and focus
+2026-09-15 19:58:29.892 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x44, process, event] Window ordered
+2026-09-15 19:58:29.892 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x44, process, begin] Required layout
+2026-09-15 19:58:29.909 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x44, process,   end] Required layout
+2026-09-15 19:58:29.909 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x44, process, event] Search editor ready
+2026-09-15 19:58:29.911 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x44, process,   end] Present and focus
+2026-09-15 19:58:30.722 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x60, process, begin] Prepare launcher
+2026-09-15 19:58:30.722 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x60, process,   end] Prepare launcher
+2026-09-15 19:58:30.722 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x60, process, begin] Present and focus
+2026-09-15 19:58:30.723 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x60, process, event] Window ordered
+2026-09-15 19:58:30.723 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x60, process, event] Search editor ready
+2026-09-15 19:58:30.727 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x60, process,   end] Present and focus
+2026-09-15 19:58:31.438 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x81, process, begin] Prepare launcher
+2026-09-15 19:58:31.439 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x81, process,   end] Prepare launcher
+2026-09-15 19:58:31.439 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x81, process, begin] Present and focus
+2026-09-15 19:58:31.440 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x81, process, event] Window ordered
+2026-09-15 19:58:31.440 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x81, process, event] Search editor ready
+2026-09-15 19:58:31.444 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x81, process,   end] Present and focus
+2026-09-15 19:58:32.157 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0xa3, process, begin] Prepare launcher
+2026-09-15 19:58:32.157 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0xa3, process,   end] Prepare launcher
+2026-09-15 19:58:32.157 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0xa3, process, begin] Present and focus
+2026-09-15 19:58:32.159 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0xa3, process, event] Window ordered
+2026-09-15 19:58:32.159 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0xa3, process, event] Search editor ready
+2026-09-15 19:58:32.163 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0xa3, process,   end] Present and focus
+2026-09-15 19:58:32.866 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0xc5, process, begin] Prepare launcher
+2026-09-15 19:58:32.867 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0xc5, process,   end] Prepare launcher
+2026-09-15 19:58:32.867 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0xc5, process, begin] Present and focus
+2026-09-15 19:58:32.868 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0xc5, process, event] Window ordered
+2026-09-15 19:58:32.868 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0xc5, process, event] Search editor ready
+2026-09-15 19:58:32.872 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0xc5, process,   end] Present and focus
+2026-09-15 19:58:33.588 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0xe7, process, begin] Prepare launcher
+2026-09-15 19:58:33.589 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0xe7, process,   end] Prepare launcher
+2026-09-15 19:58:33.589 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0xe7, process, begin] Present and focus
+2026-09-15 19:58:33.590 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0xe7, process, event] Window ordered
+2026-09-15 19:58:33.590 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0xe7, process, event] Search editor ready
+2026-09-15 19:58:33.594 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0xe7, process,   end] Present and focus
+2026-09-15 19:58:34.303 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x108, process, begin] Prepare launcher
+2026-09-15 19:58:34.303 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x108, process,   end] Prepare launcher
+2026-09-15 19:58:34.303 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x108, process, begin] Present and focus
+2026-09-15 19:58:34.306 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x108, process, event] Window ordered
+2026-09-15 19:58:34.306 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x108, process, event] Search editor ready
+2026-09-15 19:58:34.310 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x108, process,   end] Present and focus
+2026-09-15 19:58:35.041 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x12a, process, begin] Prepare launcher
+2026-09-15 19:58:35.042 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x12a, process,   end] Prepare launcher
+2026-09-15 19:58:35.042 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x12a, process, begin] Present and focus
+2026-09-15 19:58:35.045 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x12a, process, event] Window ordered
+2026-09-15 19:58:35.045 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x12a, process, event] Search editor ready
+2026-09-15 19:58:35.053 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x12a, process,   end] Present and focus
+2026-09-15 19:58:35.788 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x14e, process, begin] Prepare launcher
+2026-09-15 19:58:35.789 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x14e, process,   end] Prepare launcher
+2026-09-15 19:58:35.789 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x14e, process, begin] Present and focus
+2026-09-15 19:58:35.790 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x14e, process, event] Window ordered
+2026-09-15 19:58:35.790 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x14e, process, event] Search editor ready
+2026-09-15 19:58:35.795 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x14e, process,   end] Present and focus
+2026-09-15 19:58:36.543 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x171, process, begin] Prepare launcher
+2026-09-15 19:58:36.544 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x171, process,   end] Prepare launcher
+2026-09-15 19:58:36.544 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x171, process, begin] Present and focus
+2026-09-15 19:58:36.546 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x171, process, event] Window ordered
+2026-09-15 19:58:36.546 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x171, process, event] Search editor ready
+2026-09-15 19:58:36.553 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x171, process,   end] Present and focus
+2026-09-15 19:58:37.296 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x193, process, begin] Prepare launcher
+2026-09-15 19:58:37.296 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x193, process,   end] Prepare launcher
+2026-09-15 19:58:37.296 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x193, process, begin] Present and focus
+2026-09-15 19:58:37.298 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x193, process, event] Window ordered
+2026-09-15 19:58:37.298 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x193, process, event] Search editor ready
+2026-09-15 19:58:37.305 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x193, process,   end] Present and focus
+2026-09-15 19:58:38.060 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x1b7, process, begin] Prepare launcher
+2026-09-15 19:58:38.061 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x1b7, process,   end] Prepare launcher
+2026-09-15 19:58:38.061 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x1b7, process, begin] Present and focus
+2026-09-15 19:58:38.063 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x1b7, process, event] Window ordered
+2026-09-15 19:58:38.063 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x1b7, process, event] Search editor ready
+2026-09-15 19:58:38.070 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x1b7, process,   end] Present and focus
+2026-09-15 19:58:38.915 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x1d9, process, begin] Prepare launcher
+2026-09-15 19:58:38.915 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x1d9, process,   end] Prepare launcher
+2026-09-15 19:58:38.915 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x1d9, process, begin] Present and focus
+2026-09-15 19:58:38.916 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x1d9, process, event] Window ordered
+2026-09-15 19:58:38.916 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x1d9, process, event] Search editor ready
+2026-09-15 19:58:38.920 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x1d9, process,   end] Present and focus
+2026-09-15 19:58:39.660 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x1fb, process, begin] Prepare launcher
+2026-09-15 19:58:39.661 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x1fb, process,   end] Prepare launcher
+2026-09-15 19:58:39.661 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x1fb, process, begin] Present and focus
+2026-09-15 19:58:39.663 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x1fb, process, event] Window ordered
+2026-09-15 19:58:39.663 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x1fb, process, event] Search editor ready
+2026-09-15 19:58:39.670 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x1fb, process,   end] Present and focus
+2026-09-15 19:58:40.396 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x21a, process, begin] Prepare launcher
+2026-09-15 19:58:40.397 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x21a, process,   end] Prepare launcher
+2026-09-15 19:58:40.397 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x21a, process, begin] Present and focus
+2026-09-15 19:58:40.399 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x21a, process, event] Window ordered
+2026-09-15 19:58:40.399 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x21a, process, event] Search editor ready
+2026-09-15 19:58:40.407 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x21a, process,   end] Present and focus
+2026-09-15 19:58:41.157 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x23d, process, begin] Prepare launcher
+2026-09-15 19:58:41.158 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x23d, process,   end] Prepare launcher
+2026-09-15 19:58:41.158 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x23d, process, begin] Present and focus
+2026-09-15 19:58:41.159 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x23d, process, event] Window ordered
+2026-09-15 19:58:41.159 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x23d, process, event] Search editor ready
+2026-09-15 19:58:41.165 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x23d, process,   end] Present and focus
+2026-09-15 19:58:41.888 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x25e, process, begin] Prepare launcher
+2026-09-15 19:58:41.889 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x25e, process,   end] Prepare launcher
+2026-09-15 19:58:41.889 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x25e, process, begin] Present and focus
+2026-09-15 19:58:41.894 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x25e, process, event] Window ordered
+2026-09-15 19:58:41.894 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x25e, process, event] Search editor ready
+2026-09-15 19:58:41.902 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x25e, process,   end] Present and focus
+2026-09-15 19:58:42.660 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x281, process, begin] Prepare launcher
+2026-09-15 19:58:42.660 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x281, process,   end] Prepare launcher
+2026-09-15 19:58:42.660 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x281, process, begin] Present and focus
+2026-09-15 19:58:42.663 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x281, process, event] Window ordered
+2026-09-15 19:58:42.663 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x281, process, event] Search editor ready
+2026-09-15 19:58:42.670 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x281, process,   end] Present and focus
+2026-09-15 19:58:43.523 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x2a3, process, begin] Prepare launcher
+2026-09-15 19:58:43.524 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x2a3, process,   end] Prepare launcher
+2026-09-15 19:58:43.524 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x2a3, process, begin] Present and focus
+2026-09-15 19:58:43.527 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x2a3, process, event] Window ordered
+2026-09-15 19:58:43.527 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x2a3, process, event] Search editor ready
+2026-09-15 19:58:43.535 Sp Volant[13267:41bc99] [com.mysticcoders.volant:Opening] [spid 0x2a3, process,   end] Present and focus
+2026-09-15 19:58:45.654 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Prepare launcher
+2026-09-15 19:58:45.655 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Prepare launcher
+2026-09-15 19:58:45.655 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x3, process, begin] Present and focus
+2026-09-15 19:58:45.661 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Window ordered
+2026-09-15 19:58:45.687 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x3, process, event] Layout complete
+2026-09-15 19:58:45.691 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x3, process,   end] Present and focus
+2026-09-15 19:58:48.745 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x42, process, begin] Prepare launcher
+2026-09-15 19:58:48.746 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x42, process,   end] Prepare launcher
+2026-09-15 19:58:48.746 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x42, process, begin] Present and focus
+2026-09-15 19:58:48.748 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x42, process, event] Window ordered
+2026-09-15 19:58:48.773 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x42, process, event] Layout complete
+2026-09-15 19:58:48.776 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x42, process,   end] Present and focus
+2026-09-15 19:58:49.588 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x5e, process, begin] Prepare launcher
+2026-09-15 19:58:49.589 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x5e, process,   end] Prepare launcher
+2026-09-15 19:58:49.589 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x5e, process, begin] Present and focus
+2026-09-15 19:58:49.592 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x5e, process, event] Window ordered
+2026-09-15 19:58:49.612 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x5e, process, event] Layout complete
+2026-09-15 19:58:49.615 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x5e, process,   end] Present and focus
+2026-09-15 19:58:50.355 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x85, process, begin] Prepare launcher
+2026-09-15 19:58:50.355 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x85, process,   end] Prepare launcher
+2026-09-15 19:58:50.355 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x85, process, begin] Present and focus
+2026-09-15 19:58:50.357 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x85, process, event] Window ordered
+2026-09-15 19:58:50.368 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x85, process, event] Layout complete
+2026-09-15 19:58:50.370 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x85, process,   end] Present and focus
+2026-09-15 19:58:51.073 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0xab, process, begin] Prepare launcher
+2026-09-15 19:58:51.074 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0xab, process,   end] Prepare launcher
+2026-09-15 19:58:51.074 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0xab, process, begin] Present and focus
+2026-09-15 19:58:51.076 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0xab, process, event] Window ordered
+2026-09-15 19:58:51.088 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0xab, process, event] Layout complete
+2026-09-15 19:58:51.090 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0xab, process,   end] Present and focus
+2026-09-15 19:58:51.805 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0xd4, process, begin] Prepare launcher
+2026-09-15 19:58:51.806 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0xd4, process,   end] Prepare launcher
+2026-09-15 19:58:51.806 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0xd4, process, begin] Present and focus
+2026-09-15 19:58:51.810 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0xd4, process, event] Window ordered
+2026-09-15 19:58:51.827 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0xd4, process, event] Layout complete
+2026-09-15 19:58:51.829 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0xd4, process,   end] Present and focus
+2026-09-15 19:58:52.555 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0xfc, process, begin] Prepare launcher
+2026-09-15 19:58:52.555 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0xfc, process,   end] Prepare launcher
+2026-09-15 19:58:52.555 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0xfc, process, begin] Present and focus
+2026-09-15 19:58:52.557 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0xfc, process, event] Window ordered
+2026-09-15 19:58:52.567 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0xfc, process, event] Layout complete
+2026-09-15 19:58:52.569 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0xfc, process,   end] Present and focus
+2026-09-15 19:58:53.307 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x124, process, begin] Prepare launcher
+2026-09-15 19:58:53.307 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x124, process,   end] Prepare launcher
+2026-09-15 19:58:53.307 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x124, process, begin] Present and focus
+2026-09-15 19:58:53.311 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x124, process, event] Window ordered
+2026-09-15 19:58:53.326 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x124, process, event] Layout complete
+2026-09-15 19:58:53.328 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x124, process,   end] Present and focus
+2026-09-15 19:58:54.073 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x14d, process, begin] Prepare launcher
+2026-09-15 19:58:54.074 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x14d, process,   end] Prepare launcher
+2026-09-15 19:58:54.074 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x14d, process, begin] Present and focus
+2026-09-15 19:58:54.076 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x14d, process, event] Window ordered
+2026-09-15 19:58:54.092 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x14d, process, event] Layout complete
+2026-09-15 19:58:54.095 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x14d, process,   end] Present and focus
+2026-09-15 19:58:54.926 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x172, process, begin] Prepare launcher
+2026-09-15 19:58:54.927 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x172, process,   end] Prepare launcher
+2026-09-15 19:58:54.927 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x172, process, begin] Present and focus
+2026-09-15 19:58:54.929 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x172, process, event] Window ordered
+2026-09-15 19:58:54.945 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x172, process, event] Layout complete
+2026-09-15 19:58:54.948 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x172, process,   end] Present and focus
+2026-09-15 19:58:55.688 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x19b, process, begin] Prepare launcher
+2026-09-15 19:58:55.689 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x19b, process,   end] Prepare launcher
+2026-09-15 19:58:55.689 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x19b, process, begin] Present and focus
+2026-09-15 19:58:55.691 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x19b, process, event] Window ordered
+2026-09-15 19:58:55.702 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x19b, process, event] Layout complete
+2026-09-15 19:58:55.704 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x19b, process,   end] Present and focus
+2026-09-15 19:58:56.438 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x1c3, process, begin] Prepare launcher
+2026-09-15 19:58:56.439 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x1c3, process,   end] Prepare launcher
+2026-09-15 19:58:56.439 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x1c3, process, begin] Present and focus
+2026-09-15 19:58:56.442 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x1c3, process, event] Window ordered
+2026-09-15 19:58:56.456 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x1c3, process, event] Layout complete
+2026-09-15 19:58:56.458 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x1c3, process,   end] Present and focus
+2026-09-15 19:58:57.188 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x1eb, process, begin] Prepare launcher
+2026-09-15 19:58:57.189 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x1eb, process,   end] Prepare launcher
+2026-09-15 19:58:57.189 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x1eb, process, begin] Present and focus
+2026-09-15 19:58:57.194 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x1eb, process, event] Window ordered
+2026-09-15 19:58:57.210 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x1eb, process, event] Layout complete
+2026-09-15 19:58:57.212 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x1eb, process,   end] Present and focus
+2026-09-15 19:58:57.938 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x214, process, begin] Prepare launcher
+2026-09-15 19:58:57.939 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x214, process,   end] Prepare launcher
+2026-09-15 19:58:57.939 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x214, process, begin] Present and focus
+2026-09-15 19:58:57.940 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x214, process, event] Window ordered
+2026-09-15 19:58:57.953 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x214, process, event] Layout complete
+2026-09-15 19:58:57.956 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x214, process,   end] Present and focus
+2026-09-15 19:58:58.805 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x23d, process, begin] Prepare launcher
+2026-09-15 19:58:58.805 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x23d, process,   end] Prepare launcher
+2026-09-15 19:58:58.805 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x23d, process, begin] Present and focus
+2026-09-15 19:58:58.809 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x23d, process, event] Window ordered
+2026-09-15 19:58:58.819 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x23d, process, event] Layout complete
+2026-09-15 19:58:58.821 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x23d, process,   end] Present and focus
+2026-09-15 19:58:59.543 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x265, process, begin] Prepare launcher
+2026-09-15 19:58:59.543 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x265, process,   end] Prepare launcher
+2026-09-15 19:58:59.543 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x265, process, begin] Present and focus
+2026-09-15 19:58:59.544 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x265, process, event] Window ordered
+2026-09-15 19:58:59.554 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x265, process, event] Layout complete
+2026-09-15 19:58:59.556 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x265, process,   end] Present and focus
+2026-09-15 19:59:00.272 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x28e, process, begin] Prepare launcher
+2026-09-15 19:59:00.272 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x28e, process,   end] Prepare launcher
+2026-09-15 19:59:00.272 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x28e, process, begin] Present and focus
+2026-09-15 19:59:00.276 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x28e, process, event] Window ordered
+2026-09-15 19:59:00.286 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x28e, process, event] Layout complete
+2026-09-15 19:59:00.288 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x28e, process,   end] Present and focus
+2026-09-15 19:59:01.005 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x2b5, process, begin] Prepare launcher
+2026-09-15 19:59:01.005 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x2b5, process,   end] Prepare launcher
+2026-09-15 19:59:01.005 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x2b5, process, begin] Present and focus
+2026-09-15 19:59:01.008 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x2b5, process, event] Window ordered
+2026-09-15 19:59:01.017 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x2b5, process, event] Layout complete
+2026-09-15 19:59:01.019 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x2b5, process,   end] Present and focus
+2026-09-15 19:59:01.722 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x2dc, process, begin] Prepare launcher
+2026-09-15 19:59:01.722 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x2dc, process,   end] Prepare launcher
+2026-09-15 19:59:01.722 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x2dc, process, begin] Present and focus
+2026-09-15 19:59:01.723 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x2dc, process, event] Window ordered
+2026-09-15 19:59:01.734 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x2dc, process, event] Layout complete
+2026-09-15 19:59:01.735 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x2dc, process,   end] Present and focus
+2026-09-15 19:59:02.430 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x303, process, begin] Prepare launcher
+2026-09-15 19:59:02.431 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x303, process,   end] Prepare launcher
+2026-09-15 19:59:02.431 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x303, process, begin] Present and focus
+2026-09-15 19:59:02.433 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x303, process, event] Window ordered
+2026-09-15 19:59:02.443 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x303, process, event] Layout complete
+2026-09-15 19:59:02.445 Sp Volant[13407:41c112] [com.mysticcoders.volant:Opening] [spid 0x303, process,   end] Present and focus
