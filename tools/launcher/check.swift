@@ -59,6 +59,29 @@ try rep.representation(using: .jpeg, properties: [.compressionFactor: 0.75])!.wr
 window.orderOut(nil)
 print("PASS: launcher row identity, stale click, snippet identity, Screen Sharing eligibility, and native focus restoration")
 
+// Identical result snapshots avoid invalidating the view; changed metadata still publishes.
+var resultPublications = 0
+let resultObservation = model.objectWillChange.sink { resultPublications += 1 }
+model.sections = model.sections
+verify(resultPublications == 0, "Identical result snapshots do not invalidate the view")
+model.sections = [ResultSection(title: "Applications", rows: [old])]
+model.sections = [ResultSection(title: "Applications", rows: [updated])]
+verify(resultPublications == 2 && model.rows == [updated], "Changed metadata is published despite stable identity")
+resultObservation.cancel()
+model.query = "snip screen"
+model.reset()
+verify(model.query.isEmpty && model.selection == 0, "Search reset restores suggestions and first selection")
+model.isPresented = true
+model.selection = 1
+let preservedSuggestion = model.selectedRow?.id
+model.refreshForAppIndex()
+verify(model.selectedRow?.id == preservedSuggestion, "Index refresh preserves same-query selection")
+model.query = "snip screen"
+let searchRows = model.rows.map(\.id)
+model.refreshForAppIndex()
+verify(model.rows.map(\.id) == searchRows, "Index refresh leaves a typed query intact")
+model.isPresented = false
+
 // Real non-activating panel: route actual in-process key and mouse events without opening an app.
 var launched: [String] = []
 let screenApp = AppEntry(id: "/System/Applications/Utilities/Screen Sharing.app", name: "Screen Sharing", url: URL(fileURLWithPath: "/System/Applications/Utilities/Screen Sharing.app"), lastUsed: Date())

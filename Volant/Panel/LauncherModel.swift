@@ -142,7 +142,7 @@ enum ResultRow: Identifiable, Hashable {
     }
 }
 
-struct ResultSection: Identifiable {
+struct ResultSection: Identifiable, Equatable {
     let title: String
     let rows: [ResultRow]
     var id: String { title }
@@ -173,6 +173,7 @@ final class LauncherModel: ObservableObject {
                 } else { normalized.append(ResultSection(title: section.title, rows: unique)) }
             }
             if duplicates > 0 { Logger(subsystem: "com.mysticcoders.volant", category: "Launcher").warning("Duplicate result identities ignored: \(duplicates)") }
+            guard normalized != displayedSections else { return }
             flattenedRows = normalized.flatMap(\.rows)
             displayedSections = normalized
         }
@@ -206,6 +207,7 @@ final class LauncherModel: ObservableObject {
     @Published var promotedHarness: String?
     var isPresented = false
     private var agentSubscription: AnyCancellable?
+    private var indexSubscription: AnyCancellable?
     var showingAgents: Bool {
         let q = query.trimmingCharacters(in: .whitespaces).lowercased()
         return q == "agents" || q == "herdr" || q.hasPrefix("agents ") || q.hasPrefix("herdr ")
@@ -254,6 +256,7 @@ final class LauncherModel: ObservableObject {
     private let files = FileSearch()
     private let contacts = ContactSearch()
     private let agenda = CalendarAgenda()
+    private var searchesAppIndex = false
     private var generation = 0
     private var immediate: [ResultSection] = []
     private var contactRows: [ResultRow] = []
@@ -274,6 +277,11 @@ final class LauncherModel: ObservableObject {
                 if CaffeinateCommand.matches(self.query) { self.refreshCaffeinateResults() }
             }
         }
+        // Spotlight may finish after the first window is already visible.
+        // Receive on the next main turn, after @Published has assigned index.apps.
+        indexSubscription = index.$apps.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] _ in
+            self?.refreshForAppIndex()
+        }
         agentSubscription = agents.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.refreshAgentResults() }
         }
@@ -283,9 +291,20 @@ final class LauncherModel: ObservableObject {
         wifiJoin = nil
         actionFeedback = nil
         files.cancel()
-        query = ""
+        // Changing the query already refreshes suggestions. Empty-query reopens still
+        // refresh recency, which may have changed while the panel was hidden.
+        if query.isEmpty { showSuggestions() }
+        else { query = "" }
         selection = 0
-        showSuggestions()
+    }
+
+    func refreshForAppIndex() {
+        guard isPresented, query.isEmpty || searchesAppIndex else { return }
+        let selectedID = selectedRow?.id
+        if query.isEmpty { showSuggestions() }
+        else { refresh() }
+        if let selectedID, let offset = rows.firstIndex(where: { $0.id == selectedID }) { selection = offset }
+        else { selection = 0 }
     }
 
     private func showSuggestions() {
@@ -294,6 +313,7 @@ final class LauncherModel: ObservableObject {
     }
 
     private func refresh() {
+        searchesAppIndex = false
         selection = 0
         generation += 1
         let gen = generation
@@ -403,6 +423,7 @@ final class LauncherModel: ObservableObject {
             return
         }
 
+        searchesAppIndex = true
         var answers: [ResultRow] = []
         if let value = Calculator.evaluate(q) { answers.append(.calculation(Calculator.format(value))) }
         if let conv = UnitConverter.convert(q) { answers.append(.unit(UnitConverter.format(conv))) }

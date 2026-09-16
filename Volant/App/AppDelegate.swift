@@ -113,7 +113,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             print("login item: \(SMAppService.mainApp.status == .enabled ? "enabled" : "not enabled")")
         }
         if config.showOnLaunch && !CommandLine.arguments.contains("--import-raycast") && !CommandLine.arguments.contains("--settings") && !CommandLine.arguments.contains("--agents") && !CommandLine.arguments.contains("--show") && !CommandLine.arguments.contains("--notes") {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in self?.panel.toggle() }
+            // AppKit is ready on the next main turn; Spotlight results refresh independently.
+            DispatchQueue.main.async { [weak self] in
+                guard let self, !self.panel.isVisible else { return }
+                self.panel.toggle()
+            }
         }
         if CommandLine.arguments.contains("--notes") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in self?.notesPanel.toggle() }
