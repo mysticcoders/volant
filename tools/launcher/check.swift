@@ -648,6 +648,45 @@ func renderCore(_ name: String) throws {
     try bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "/tmp/volant-core-\(name)-\(dark ? "dark" : "light").png"))
 }
 try renderCore("commands")
+// Fictional Apple Shortcuts: native Return uses stable IDs and late catalogs keep selection.
+let recipe = AppleShortcut(id: "11111111-1111-4111-8111-111111111111", name: "Leftover Recipes")
+let volumeShortcut = AppleShortcut(id: "22222222-2222-4222-8222-222222222222", name: "Set Volume to 50%")
+var shortcutRuns: [String] = []
+var finishShortcut: ((String?) -> Void)?
+corePanel.model.appleShortcuts.loadOverride = { $0([recipe, volumeShortcut], nil) }
+corePanel.model.appleShortcuts.runOverride = { shortcutRuns.append($0); finishShortcut = $1 }
+corePanel.model.appleShortcuts.refresh()
+corePanel.model.query = "apple shortcuts"
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+verify(corePanel.model.rows.map(\.id) == ["apple-shortcut:" + recipe.id, "apple-shortcut:" + volumeShortcut.id])
+verify(corePanel.model.selectedRow?.primaryAction == "Run Shortcut")
+try renderCore("shortcuts")
+verify(corePanel.makeFirstResponder(coreSearchField(in: corePanel.contentView!)!), "Restore native editor after render capture")
+sendCoreKey("\r", code: 36)
+sendCoreKey("\r", code: 36)
+verify(shortcutRuns == [recipe.id], "Return runs the selected shortcut exactly once: runs=\(shortcutRuns), key=\(corePanel.isKeyWindow), visible=\(corePanel.isVisible), query=\(corePanel.model.query), row=\(String(describing: corePanel.model.selectedRow?.id)), responder=\(String(describing: corePanel.firstResponder))")
+finishShortcut?("Fictional run failure")
+RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+verify(corePanel.model.actionFeedback == "Fictional run failure")
+try renderCore("shortcuts-error")
+corePanel.model.selection = 1
+corePanel.model.appleShortcuts.loadOverride = { $0(nil, "Fictional refresh failure") }
+corePanel.model.appleShortcuts.refresh(force: true)
+RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+verify(corePanel.model.selectedRow?.id == "apple-shortcut:" + volumeShortcut.id, "Failed refresh preserves selection and cached results")
+verify(corePanel.model.actionFeedback == "Fictional refresh failure", "Refresh failure remains visible alongside cached rows")
+try renderCore("shortcuts-stale")
+corePanel.model.query = "shortcuts missing"
+try renderCore("shortcuts-empty")
+verify(corePanel.model.rows.isEmpty && corePanel.model.notice != nil)
+corePanel.model.query = "recipes"
+verify(corePanel.model.rows.contains { $0.id == "apple-shortcut:" + recipe.id }, "Shortcuts match ordinary search")
+corePanel.model.appleShortcuts.loadOverride = { $0([], nil) }
+corePanel.model.appleShortcuts.refresh(force: true)
+corePanel.model.query = "caffeinate"
+RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+verify(corePanel.model.rows.allSatisfy { !$0.id.hasPrefix("apple-shortcut:") }, "Late discovery cannot replace a newer command")
+print("PASS: Apple Shortcuts discovery, Return, duplicate guard, errors, empty state and stale-query protection")
 corePanel.model.query = "caffeinate 30m"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 // Set up native text focus without entering AppKit's synchronous mouse tracking loop.

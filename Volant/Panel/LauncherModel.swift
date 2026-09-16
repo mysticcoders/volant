@@ -13,6 +13,7 @@ enum LauncherAction {
 
 enum ResultRow: Identifiable, Hashable {
     case core(CoreCommand)
+    case appleShortcut(AppleShortcut)
     case caffeinate(CaffeinateCommand)
     case systemSettings(SystemSettingsDestination)
     case settings
@@ -39,6 +40,7 @@ enum ResultRow: Identifiable, Hashable {
 
     var id: String {
         switch self {
+        case .appleShortcut(let shortcut): return "apple-shortcut:" + shortcut.id
         case .core(let command): return "core:" + command.rawValue
         case .caffeinate(let command): return "caffeinate:" + command.id
         case .agentSession(let session): return "agent:" + session.id
@@ -69,6 +71,7 @@ enum ResultRow: Identifiable, Hashable {
     /// Right-aligned kind label, as in Raycast's "Application" / "Command" column.
     var kind: String {
         switch self {
+        case .appleShortcut: return "Apple Shortcut"
         case .core, .caffeinate: return "Command"
         case .agentSession(let session): return session.status
         case .connectivity: return "Connectivity"
@@ -103,6 +106,7 @@ enum ResultRow: Identifiable, Hashable {
     /// Footer label for return.
     var primaryAction: String {
         switch self {
+        case .appleShortcut: return "Run Shortcut"
         case .core: return "Open Command"
         case .caffeinate(let command): return command.stop ? "Stop" : "Start"
         case .agentSession: return "Focus in Herdr"
@@ -201,6 +205,10 @@ final class LauncherModel: ObservableObject {
     @Published var connectivityBusy = false
     @Published var notice: String? = nil
     var dismiss: () -> Void = {}
+    let appleShortcuts = AppleShortcutsModel()
+    private var shortcutsSubscription: AnyCancellable?
+    private var shortcutRunQuery: String?
+    var showingAppleShortcuts: Bool { AppleShortcut.queryTerm(query) != nil }
     let agents = AgentsModel()
     let acp = ACPModel()
     var showingACP: Bool { query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "acp" }
@@ -282,6 +290,14 @@ final class LauncherModel: ObservableObject {
         indexSubscription = index.$apps.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] _ in
             self?.refreshForAppIndex()
         }
+        shortcutsSubscription = appleShortcuts.objectWillChange.sink { [weak self] _ in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.objectWillChange.send()
+                if self.isPresented { self.refreshShortcutResults() }
+                if self.shortcutRunQuery == self.query, let message = self.appleShortcuts.runMessage { self.actionFeedback = message }
+            }
+        }
         agentSubscription = agents.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.refreshAgentResults() }
         }
@@ -307,6 +323,23 @@ final class LauncherModel: ObservableObject {
         else { selection = 0 }
     }
 
+    private func refreshShortcutResults() {
+        guard showingAppleShortcuts || searchesAppIndex else { return }
+        if showingAppleShortcuts {
+            let selectedID = selectedRow?.id
+            sections = [ResultSection(title: "Apple Shortcuts", rows: appleShortcuts.matches(query).map(ResultRow.appleShortcut))]
+            notice = appleShortcuts.loading ? "Loading Apple Shortcuts…" : appleShortcuts.message
+                ?? (rows.isEmpty ? "No matching shortcuts. Create one in the Shortcuts app, then refresh." : nil)
+            if !rows.isEmpty { actionFeedback = notice }
+            selection = selectedID.flatMap { id in rows.firstIndex { $0.id == id } } ?? 0
+        } else {
+            immediate.removeAll { $0.title == "Apple Shortcuts" }
+            let matches = appleShortcuts.matches(query).prefix(6).map(ResultRow.appleShortcut)
+            if !matches.isEmpty { immediate.append(ResultSection(title: "Apple Shortcuts", rows: matches)) }
+            compose()
+        }
+    }
+
     private func showSuggestions() {
         let apps = index.suggestions(usage: usage).map { ResultRow.app($0) }
         sections = (apps.isEmpty ? [] : [ResultSection(title: "Suggestions", rows: apps)]) + [ResultSection(title: "Volant Commands", rows: CoreCommand.allCases.map(ResultRow.core) + [.settings, .reloadConfig])]
@@ -324,6 +357,12 @@ final class LauncherModel: ObservableObject {
         files.cancel()
         let q = query.trimmingCharacters(in: .whitespaces)
         if !showingDictionary { dictionary.clear() }
+        if showingAppleShortcuts {
+            sections = []
+            if searchesSecondarySources { appleShortcuts.refresh() }
+            refreshShortcutResults()
+            return
+        }
         guard !q.isEmpty else { showSuggestions(); return }
 
         if let term = DictionaryQuery.term(query) { dictionary.input = term; sections = []; return }
@@ -447,7 +486,10 @@ final class LauncherModel: ObservableObject {
         let panes = SystemSettingsDestination.search(q).map { ResultRow.systemSettings($0) }
         if !panes.isEmpty { immediate.append(ResultSection(title: "System Settings", rows: panes)) }
         if !matchingCommands.isEmpty { immediate.append(ResultSection(title: "Volant", rows: matchingCommands)) }
+        let shortcuts = appleShortcuts.matches(q).prefix(6).map(ResultRow.appleShortcut)
+        if !shortcuts.isEmpty { immediate.append(ResultSection(title: "Apple Shortcuts", rows: shortcuts)) }
         compose(preservingSelection: false)
+        if searchesSecondarySources && q.count >= 2 { appleShortcuts.refresh() }
 
         let letters = q.filter(\.isLetter).count
         if searchesSecondarySources && letters >= 2 && q.count <= 40 {
@@ -592,10 +634,11 @@ final class LauncherModel: ObservableObject {
     func activateSelection() {
         guard let row = selectedRow else { return }
         switch row {
-        case .connectivity, .audioRoute, .volume, .extensionResult, .newNote, .calculation, .unit: break
+        case .appleShortcut, .connectivity, .audioRoute, .volume, .extensionResult, .newNote, .calculation, .unit: break
         default: usage.record(key: row.id, query: query)
         }
         switch row {
+        case .appleShortcut(let shortcut): shortcutRunQuery = query; appleShortcuts.run(shortcut); return
         case .core(let command): query = command.query; return
         case .caffeinate(let command):
             let succeeded = caffeinate.perform(command)

@@ -19,6 +19,15 @@ struct LauncherView: View {
                 agentStatusStrip
                 Divider().opacity(0.6)
             }
+            if model.showingAppleShortcuts {
+                HStack {
+                    Text("Apple Shortcuts").foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Refresh") { model.appleShortcuts.refresh(force: true) }
+                        .disabled(model.appleShortcuts.loading)
+                    Button("Open Shortcuts") { model.appleShortcuts.openApp() }
+                }.font(.system(size: 12)).padding(.horizontal, 20).padding(.vertical, 6)
+            }
             if !model.showingACP {
                 ACPActivityStrip(model: model.acp) { model.query = "acp" }
             }
@@ -256,6 +265,7 @@ private struct RowView: View {
 
     private var title: String {
         switch row {
+        case .appleShortcut(let shortcut): return shortcut.name
         case .core(let command): return command.title
         case .caffeinate(let command): return command.title
         case .agentSession(let session): return session.project
@@ -295,7 +305,7 @@ private struct RowView: View {
         case .audioRoute(let route): return route.direction.rawValue.capitalized
         case .volume(_, let detail): return detail.isEmpty ? nil : detail
         case .agents: return "Find Herdr sessions and focus a pane"
-        case .calculation, .unit, .app: return nil
+        case .appleShortcut, .calculation, .unit, .app: return nil
         case .file(let f): return f.url.deletingLastPathComponent().path.replacingOccurrences(of: NSHomeDirectory(), with: "~")
         case .contact(let c): return c.email ?? c.phone ?? (c.organization.isEmpty ? nil : c.organization)
         case .event(let e):
@@ -313,6 +323,7 @@ private struct RowView: View {
 
     @ViewBuilder private var icon: some View {
         switch row {
+        case .appleShortcut: Image(systemName: "square.stack.3d.up.fill").font(.system(size: 20)).foregroundStyle(.secondary)
         case .core(let command): Image(systemName: command.symbol).font(.system(size: 20)).foregroundStyle(.secondary)
         case .caffeinate: Image(systemName: "cup.and.saucer").font(.system(size: 20)).foregroundStyle(.secondary)
         case .agentSession(let session): Image(systemName: session.agentStatus == "blocked" ? "exclamationmark.bubble" : "terminal").font(.system(size: 20)).foregroundStyle(session.agentStatus == "blocked" ? Color.orange : Color.secondary)

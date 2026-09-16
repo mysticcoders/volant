@@ -4,6 +4,17 @@ import Security
 /// Local Herdr discovery and typed ACP conversations. No shell or arbitrary-command API.
 /// This service intentionally runs outside App Sandbox to reach the user's Herdr socket.
 final class AgentHost: NSObject, VolantAgentHostProtocol {
+    private let shortcutsHost = AppleShortcutsHost()
+    private let shortcutsQueue = DispatchQueue(label: "com.mysticcoders.volant.shortcuts")
+    func listAppleShortcuts(reply: @escaping (Data?, String?) -> Void) {
+        shortcutsQueue.async {
+            do { reply(try AppleShortcutsHost.list(), nil) }
+            catch { reply(nil, "Couldn’t read Apple Shortcuts. Open Shortcuts and try again.") }
+        }
+    }
+    func runAppleShortcut(id: String, reply: @escaping (String?) -> Void) {
+        shortcutsQueue.async { self.shortcutsHost.run(id: id, reply: reply) }
+    }
     private let acp = ACPConnection()
     func acpStart(provider: String, project: String, reply: @escaping (String?) -> Void) {
         acp.queue.async { do { try self.acp.start(provider: provider, project: project); reply(nil) } catch { reply(error.localizedDescription) } }
