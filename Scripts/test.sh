@@ -46,6 +46,7 @@ if [[ "$run_ui" == true ]]; then
         exit 0
     fi
     ./tools/check-launcher.sh
+    ./tools/check-launcher-actions.sh
     xcodebuild "${build_options[@]}" test -only-testing:VolantTests/NotesRenderTests \
         -only-testing:VolantTests/LiveMarkdownTests/testLanguageChangePreservesContentSelectionAndUndo \
         -only-testing:VolantTests/LiveMarkdownTests/testTypingFenceAndChangingModesDoNotRewriteSource

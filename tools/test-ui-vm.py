@@ -43,7 +43,7 @@ finish() {
     result=$?
     trap - EXIT
     if [[ -d "$root/build/Logs/Test" ]]; then ditto "$root/build/Logs/Test" "$output/TestResults"; fi
-    for image in /tmp/volant-launcher-*.jpg /tmp/volant-destinations-*.png /tmp/volant-snap-*.png /tmp/volant-core-*.png; do
+    for image in /tmp/volant-launcher-*.jpg /tmp/volant-destinations-*.png /tmp/volant-snap-*.png /tmp/volant-core-*.png /tmp/volant-actions-*.png; do
         [[ ! -f "$image" ]] || cp "$image" "$output/"
     done
     exit "$result"

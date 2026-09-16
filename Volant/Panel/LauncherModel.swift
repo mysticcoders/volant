@@ -155,7 +155,7 @@ struct ResultSection: Identifiable, Equatable {
 /// Routes a query. Prefixes force one source: `/` files, `@` contacts, `cal` or `today` agenda, `clip` history.
 /// Otherwise results merge: math and units first, then apps, contacts, and files once the query is long enough.
 final class LauncherModel: ObservableObject {
-    @Published var query: String = "" { didSet { if oldValue != query { refresh() } } }
+    @Published var query: String = "" { didSet { if oldValue != query { actionTarget = nil; refresh() } } }
     private var flattenedRows: [ResultRow] = []
     @Published private var displayedSections: [ResultSection] = []
     var sections: [ResultSection] {
@@ -179,11 +179,14 @@ final class LauncherModel: ObservableObject {
             if duplicates > 0 { Logger(subsystem: "com.mysticcoders.volant", category: "Launcher").warning("Duplicate result identities ignored: \(duplicates)") }
             guard normalized != displayedSections else { return }
             flattenedRows = normalized.flatMap(\.rows)
+            if let target = actionTarget, !flattenedRows.contains(where: { $0.id == target.id }) { actionTarget = nil }
             displayedSections = normalized
         }
     }
     @Published var searchFocusRequest = UUID()
-    @Published var selection: Int = 0
+    @Published var selection: Int = 0 { didSet { if oldValue != selection { actionTarget = nil } } }
+    @Published var actionTarget: ResultRow?
+    var actionConfigURL: URL = Preferences.configURL
     @Published var actionFeedback: String?
     let dictionary = DictionaryModel()
     var showingDictionary: Bool { DictionaryQuery.term(query) != nil }
@@ -304,6 +307,7 @@ final class LauncherModel: ObservableObject {
     }
 
     func reset() {
+        actionTarget = nil
         wifiJoin = nil
         actionFeedback = nil
         files.cancel()
@@ -341,8 +345,9 @@ final class LauncherModel: ObservableObject {
     }
 
     private func showSuggestions() {
-        let apps = index.suggestions(usage: usage).map { ResultRow.app($0) }
-        sections = (apps.isEmpty ? [] : [ResultSection(title: "Suggestions", rows: apps)]) + [ResultSection(title: "Volant Commands", rows: CoreCommand.allCases.map(ResultRow.core) + [.settings, .reloadConfig])]
+        let favorites = config.favoriteApps.compactMap { id in index.apps.first { $0.id == id } }.map(ResultRow.app)
+        let apps = index.suggestions(usage: usage).filter { !config.favoriteApps.contains($0.id) }.map(ResultRow.app)
+        sections = (favorites.isEmpty ? [] : [ResultSection(title: "Favorites", rows: favorites)]) + (apps.isEmpty ? [] : [ResultSection(title: "Suggestions", rows: apps)]) + [ResultSection(title: "Volant Commands", rows: CoreCommand.allCases.map(ResultRow.core) + [.settings, .reloadConfig])]
     }
 
     private func refresh() {
@@ -732,6 +737,45 @@ final class LauncherModel: ObservableObject {
             }
         }
         dismiss()
+    }
+
+    func toggleActions() {
+        guard let selectedRow, selectedRow.supportsActions else { return }
+        actionTarget = actionTarget == nil ? selectedRow : nil
+    }
+
+    func performAction(_ action: LauncherItemAction, target snapshot: ResultRow) {
+        // A menu snapshot never authorizes a different or removed result.
+        guard let target = selectedRow, target.id == snapshot.id, rows.contains(where: { $0.id == target.id }),
+              let url = target.actionURL else { actionTarget = nil; return }
+        if case .app(let app) = target, !index.apps.contains(where: { $0.id == app.id }) { actionTarget = nil; return }
+        actionTarget = nil
+        switch action {
+        case .open: activate(rowID: target.id)
+        case .reveal: activateSecondary()
+        case .contents:
+            guard case .app = target else { return }
+            if NSWorkspace.shared.open(url.appendingPathComponent("Contents", isDirectory: true)) { dismiss() }
+            else { actionFeedback = "Could not open package contents." }
+        case .copyPath: copyText(url.path); actionFeedback = "Path copied."
+        case .copyName: copyText(target.actionTitle); actionFeedback = "Name copied."
+        case .copyBundleID:
+            guard case .app = target, let identifier = Bundle(url: url)?.bundleIdentifier else { actionFeedback = "Bundle identifier unavailable."; return }
+            copyText(identifier); actionFeedback = "Bundle identifier copied."
+        case .configure:
+            if case .app(let app) = target { editApp(app) }
+        case .favorite:
+            guard case .app(let app) = target else { return }
+            do {
+                config = try Preferences.updateFavorite(app.id, expected: config.favoriteApps.contains(app.id), at: actionConfigURL)
+                refresh()
+                actionFeedback = config.favoriteApps.contains(app.id) ? "Added to Favorites." : "Removed from Favorites."
+            } catch { actionFeedback = "Could not save Favorites. Reload configuration and try again." }
+        case .resetRanking:
+            if usage.resetRanking(for: target.id) { refresh(); actionFeedback = "Learned ranking reset." }
+            else { actionFeedback = "Could not reset ranking. Try again." }
+        }
+        searchFocusRequest = UUID()
     }
 
     func editApp(_ app: AppEntry) {

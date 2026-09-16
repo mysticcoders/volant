@@ -70,6 +70,7 @@ jobs:
             /tmp/volant-destinations-*.png
             /tmp/volant-snap-*.png
             /tmp/volant-core-*.png
+            /tmp/volant-actions-*.png
             build/Logs/Test/*.xcresult
   checks:
     name: PR gate

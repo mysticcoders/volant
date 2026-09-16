@@ -64,6 +64,29 @@ final class UsageStore {
         }
     }
 
+    /// Drain pending records before removing both ranking and exact-query learning.
+    func resetRanking(for key: String) -> Bool {
+        let saved = queue.sync { () -> Bool in
+            guard let db, sqlite3_exec(db, "BEGIN IMMEDIATE", nil, nil, nil) == SQLITE_OK else { return false }
+            var committed = false
+            defer { if !committed { sqlite3_exec(db, "ROLLBACK", nil, nil, nil) } }
+            for sql in ["DELETE FROM usage WHERE key = ?", "DELETE FROM query_choice WHERE key = ?"] {
+                var statement: OpaquePointer?
+                guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return false }
+                defer { sqlite3_finalize(statement) }
+                sqlite3_bind_text(statement, 1, key, -1, Self.transient)
+                guard sqlite3_step(statement) == SQLITE_DONE else { return false }
+            }
+            committed = sqlite3_exec(db, "COMMIT", nil, nil, nil) == SQLITE_OK
+            return committed
+        }
+        if saved {
+            cache.removeValue(forKey: key)
+            queryCache = queryCache.filter { $0.value != key }
+        }
+        return saved
+    }
+
     /// Keys ordered by effective score, highest first.
     func top(prefix: String, limit: Int) -> [String] {
         cache.values

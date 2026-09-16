@@ -18,12 +18,13 @@ struct Preferences: Codable {
     static let harnessOptions: [(id: String, title: String)] = [("all", "All Herdr agents"), ("opencode", "OpenCode"), ("cursor", "Cursor"), ("claude", "Claude Code"), ("codex", "Codex")]
     var snippets: [Snippet] = []
     var quicklinks: [Quicklink] = [Quicklink(name: "Google", url: "https://www.google.com/search?q={query}")]
+    var favoriteApps: [String] = []
     var aliases: [String: String] = [:]
     var appearance: Appearance = Appearance()
     var help: String = "Edit and choose Reload Configuration in Settings. Hotkeys: cmd|ctrl|option|shift|meh|hyper + key. App hotkeys use the bundle identifier. Snippets: {date} {isodate} {time} {datetime} {clipboard} {uuid}. Quicklinks: {query}. Aliases map a word to an app name or query. Appearance: scale 0.8–1.4, opacity 0.5–1.0."
 
     enum CodingKeys: String, CodingKey {
-        case summonHotKey, notesHotKey, emojiHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, statusBar, snippets, quicklinks, aliases, appearance
+        case favoriteApps, summonHotKey, notesHotKey, emojiHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, statusBar, snippets, quicklinks, aliases, appearance
         case help = "_help"
     }
 
@@ -56,6 +57,7 @@ struct Preferences: Codable {
         if !Self.harnessOptions.contains(where: { $0.id == statusBar.herdrFilter }) { statusBar.herdrFilter = "all" }
         snippets = try c.decodeIfPresent([Snippet].self, forKey: .snippets) ?? d.snippets
         quicklinks = try c.decodeIfPresent([Quicklink].self, forKey: .quicklinks) ?? d.quicklinks
+        favoriteApps = try c.decodeIfPresent([String].self, forKey: .favoriteApps) ?? []
         aliases = try c.decodeIfPresent([String: String].self, forKey: .aliases) ?? d.aliases
         appearance = try c.decodeIfPresent(Appearance.self, forKey: .appearance) ?? d.appearance
         help = try c.decodeIfPresent(String.self, forKey: .help) ?? d.help
@@ -75,6 +77,21 @@ struct Preferences: Codable {
         // Reject invalid known settings before changing the file.
         _ = try JSONDecoder().decode(Preferences.self, from: updated)
         try updated.write(to: url, options: .atomic)
+    }
+
+    /// Patch only this app's membership against the latest document.
+    static func updateFavorite(_ id: String, expected: Bool, at url: URL = configURL) throws -> Preferences {
+        let data = try Data(contentsOf: url)
+        let current = try JSONDecoder().decode(Preferences.self, from: data)
+        guard current.favoriteApps.contains(id) == expected else { throw CocoaError(.fileWriteFileExists) }
+        guard var object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw CocoaError(.fileReadCorruptFile) }
+        var favorites = current.favoriteApps.filter { $0 != id }
+        if !expected { favorites.append(id) }
+        object["favoriteApps"] = favorites
+        let updated = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
+        let result = try JSONDecoder().decode(Preferences.self, from: updated)
+        try updated.write(to: url, options: .atomic)
+        return result
     }
 
     private enum LegacyKeys: String, CodingKey { case promotedHarness }

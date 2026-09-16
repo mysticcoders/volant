@@ -4,9 +4,8 @@ struct LauncherView: View {
     @ObservedObject var model: LauncherModel
     @ObservedObject var agents: AgentsModel
     @FocusState private var focused: Bool
-    @State private var actionApp: AppEntry?
 
-    var body: some View {
+    private var content: some View {
         VStack(spacing: 0) {
             if model.showingDictionary {
                 DictionaryView(model: model.dictionary, caffeinate: model.caffeinate, back: { model.query = ""; model.searchFocusRequest = UUID() }, copy: model.copyText)
@@ -71,27 +70,46 @@ struct LauncherView: View {
         .background(.regularMaterial.opacity(LauncherPanel.opacity))
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.primary.opacity(0.08)))
+        .overlay(alignment: .bottomTrailing) {
+            if let target = model.actionTarget {
+                ZStack(alignment: .bottomTrailing) {
+                    Button { closeActions() } label: { Color.clear.contentShape(Rectangle()) }
+                        .buttonStyle(.plain).accessibilityLabel("Close actions")
+                    LauncherActionsView(model: model, target: target, close: closeActions)
+                        .id(target.id).padding(.trailing, 12).padding(.bottom, 48)
+                }
+            }
+        }
+    }
+
+    var body: some View {
+        content
         .onAppear { requestSearchFocus() }
-        .onChange(of: model.query) { _, _ in actionApp = nil }
+        .onChange(of: model.query) { _, _ in model.actionTarget = nil }
         .onChange(of: model.showingEmoji) { _, _ in requestSearchFocus() }
-        .onChange(of: model.selectedRow?.id) { _, _ in actionApp = nil }
+        .onChange(of: model.selectedRow?.id) { _, _ in model.actionTarget = nil }
+        .onChange(of: model.actionTarget?.id) { old, new in if old != nil && new == nil { requestSearchFocus() } }
         .onChange(of: model.searchFocusRequest) { _, _ in requestSearchFocus() }
-        .onKeyPress(.downArrow) { guard !model.showingDictionary && !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(LauncherModel.emojiColumns) } else { model.moveSelection(1) }; return .handled }
-        .onKeyPress(.upArrow) { guard !model.showingDictionary && !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(-LauncherModel.emojiColumns) } else { model.moveSelection(-1) }; return .handled }
+        .onKeyPress(.downArrow) { guard model.actionTarget == nil && !model.showingDictionary && !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(LauncherModel.emojiColumns) } else { model.moveSelection(1) }; return .handled }
+        .onKeyPress(.upArrow) { guard model.actionTarget == nil && !model.showingDictionary && !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(-LauncherModel.emojiColumns) } else { model.moveSelection(-1) }; return .handled }
         .onKeyPress(.leftArrow) { guard model.showingEmoji else { return .ignored }; model.moveEmojiSelection(-1); return .handled }
         .onKeyPress(.rightArrow) { guard model.showingEmoji else { return .ignored }; model.moveEmojiSelection(1); return .handled }
         .onKeyPress(.escape) {
-            if actionApp != nil { actionApp = nil; return .handled }
+            if model.actionTarget != nil { closeActions(); return .handled }
             if model.wifiJoin != nil { guard !model.connectivityBusy else { return .handled }; model.wifiJoin = nil; model.searchFocusRequest = UUID() }
             else { model.dismiss() }
             return .handled
         }
         .onKeyPress(.return, phases: .down) { press in
-            guard !model.showingDictionary && !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }
-            if let target = actionApp { actionApp = nil; model.editApp(target); return .handled }
+            guard model.actionTarget == nil && !model.showingDictionary && !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }
             if press.modifiers.contains(.command) { model.activateSecondary() } else { model.activateSelection() }
             return .handled
         }
+    }
+
+    private func closeActions() {
+        model.actionTarget = nil
+        requestSearchFocus()
     }
 
     private var searchField: some View {
@@ -166,7 +184,7 @@ struct LauncherView: View {
     }
 
     private func requestSearchFocus() {
-        guard !model.showingDictionary && !model.showingTranslation else { return }
+        guard model.actionTarget == nil && !model.showingDictionary && !model.showingTranslation else { return }
         // A persistent hosting view does not appear again each time its panel is summoned.
         focused = false
         DispatchQueue.main.async { focused = true }
@@ -194,21 +212,16 @@ struct LauncherView: View {
             CaffeinateStatusView(service: model.caffeinate)
             Spacer()
             if let row = model.selectedRow {
-                if case .app(let app) = row {
-                    Button("Actions ⌘K") { actionApp = actionApp == nil ? app : nil }
-                        .keyboardShortcut("k", modifiers: .command)
-                        .popover(item: $actionApp) { target in
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text(target.name).font(.headline)
-                                Button("Edit Shortcut & Alias…") { actionApp = nil; model.editApp(target) }
-                            }.padding(16)
-                        }
+                if row.supportsActions {
+                    Button { model.toggleActions() } label: {
+                        HStack(spacing: 5) { Text("Actions"); KeyCap("⌘"); KeyCap("K") }
+                    }.keyboardShortcut("k", modifiers: .command)
                 }
                 HStack(spacing: 8) {
                     Text(row.primaryAction).font(.system(size: 13, weight: .medium))
                     KeyCap("↩")
                 }
-                if let secondary = row.secondaryAction {
+                if !row.supportsActions, let secondary = row.secondaryAction {
                     Divider().frame(height: 16)
                     HStack(spacing: 8) {
                         Text(secondary).font(.system(size: 13, weight: .medium)).foregroundStyle(.secondary)
@@ -223,7 +236,7 @@ struct LauncherView: View {
     }
 }
 
-private struct KeyCap: View {
+struct KeyCap: View {
     let symbol: String
     init(_ symbol: String) { self.symbol = symbol }
     var body: some View {
