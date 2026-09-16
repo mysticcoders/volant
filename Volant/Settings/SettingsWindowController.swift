@@ -31,6 +31,7 @@ final class SettingsWindowController: NSWindowController {
         window.setFrameAutosaveName("VolantSettings")
         super.init(window: window)
         let hosting = NSHostingView(rootView: SettingsView(state: state, acp: acp, configURL: configURL, onChange: onChange, openAI: openAI,
+                                                                  chooseAIProject: { [weak self] completion in self?.chooseAIProject(completion) },
                                                                   importRaycast: { [weak self] in self?.showRaycastImport() })
             .frame(minWidth: 680, idealWidth: 760, maxWidth: .infinity, minHeight: 500, idealHeight: 540, maxHeight: .infinity))
         hosting.sizingOptions = []
@@ -48,6 +49,13 @@ final class SettingsWindowController: NSWindowController {
         window.setFrame(NSWindow.frameRect(forContentRect: NSRect(x: 0, y: 0, width: 760, height: 540), styleMask: window.styleMask), display: false)
         window.center()
     }
+    private func chooseAIProject(_ completion: @escaping (URL?) -> Void) {
+        guard let window, window.attachedSheet == nil else { return }
+        let picker = NSOpenPanel()
+        picker.canChooseDirectories = true; picker.canChooseFiles = false; picker.allowsMultipleSelection = false
+        picker.prompt = "Use Project"
+        picker.beginSheetModal(for: window) { result in completion(result == .OK ? picker.url : nil) }
+    }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     func refresh(_ config: Preferences, apps: [AppEntry]? = nil, errors: [String]? = nil) {
         state.config = config
@@ -64,6 +72,7 @@ private struct SettingsView: View {
     let configURL: URL
     let onChange: () -> Void
     let openAI: (AIConfiguration) -> Void
+    let chooseAIProject: (@escaping (URL?) -> Void) -> Void
     let importRaycast: () -> Void
     @State private var search = ""
     @State private var error: String?
@@ -88,7 +97,7 @@ private struct SettingsView: View {
                 Text(state.section).font(.title2.bold())
                 if state.section == "General" { general }
                 else if state.section == "Status Bar" { statusBar }
-                else if state.section == "AI" { AISettingsView(model: acp, configURL: configURL, onChange: onChange, openConversation: openAI) }
+                else if state.section == "AI" { AISettingsView(model: acp, configURL: configURL, onChange: onChange, openConversation: openAI, chooseProject: chooseAIProject) }
                 else if state.section == "App Shortcuts" { shortcuts }
                 else { data }
                 Spacer(minLength: 0)

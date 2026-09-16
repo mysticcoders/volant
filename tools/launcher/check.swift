@@ -859,10 +859,13 @@ clickSettings(NSPoint(x: 280, y: 500 - 270))
 verify(openedAI.count == 1 && openedAI[0].provider == "claude" && openedAI[0].project == "/tmp/fictional-project", "Connect ACP passes the saved provider/project once")
 print("CHECK: Settings project sheet")
 clickSettings(NSPoint(x: 600, y: 500 - 189))
-verify(settingsWindow.attachedSheet is NSOpenPanel, "Choose Project opens a native sheet")
+let sheetDeadline = Date().addingTimeInterval(3)
+while settingsWindow.attachedSheet == nil && Date() < sheetDeadline { RunLoop.main.run(until: Date().addingTimeInterval(0.05)) }
+verify(settingsWindow.attachedSheet != nil, "Choose Project opens a native sheet")
 print("CHECK: Cancel project sheet")
-(settingsWindow.attachedSheet as? NSOpenPanel)?.cancel(nil)
-RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+// Modern macOS can present an Open/Save panel service sheet, not an NSOpenPanel subclass.
+settingsWindow.endSheet(settingsWindow.attachedSheet!, returnCode: .cancel)
+RunLoop.main.run(until: Date().addingTimeInterval(0.3))
 verify(settingsWindow.attachedSheet == nil, "Project selection can be cancelled")
 settingsController.state.section = "Status Bar"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))

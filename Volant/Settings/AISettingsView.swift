@@ -6,6 +6,7 @@ struct AISettingsView: View {
     let configURL: URL
     let onChange: () -> Void
     let openConversation: (AIConfiguration) -> Void
+    let chooseProject: (@escaping (URL?) -> Void) -> Void
     @State private var config = AIConfiguration()
     @State private var saved = AIConfiguration()
     @State private var feedback: String?
@@ -23,7 +24,9 @@ struct AISettingsView: View {
                     Text(config.project.isEmpty ? "No project selected" : URL(fileURLWithPath: config.project).lastPathComponent)
                         .lineLimit(1).help(config.project)
                     Spacer()
-                    Button("Choose Project…", action: chooseProject).disabled(!loaded)
+                    Button("Choose Project…") {
+                        chooseProject { url in if let url { config.project = url.path; persist() } }
+                    }.disabled(!loaded)
                 }
                 Text("The selected folder is the agent’s working directory. The agent’s own permissions control tool access.").font(.callout).foregroundStyle(.secondary)
                 if model.active {
@@ -55,13 +58,4 @@ struct AISettingsView: View {
         } catch { report("Couldn’t save AI settings. Your edits remain here; try again.", failure: true); return false }
     }
     private func report(_ text: String, failure: Bool) { feedback = text; failed = failure }
-    private func chooseProject() {
-        let picker = NSOpenPanel()
-        picker.canChooseDirectories = true; picker.canChooseFiles = false; picker.allowsMultipleSelection = false
-        picker.prompt = "Use Project"
-        guard let window = NSApp.keyWindow else { return }
-        picker.beginSheetModal(for: window) { result in
-            if result == .OK, let url = picker.url { config.project = url.path; persist() }
-        }
-    }
 }

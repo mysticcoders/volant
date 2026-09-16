@@ -16,4 +16,6 @@ Branded native Settings fixtures use compiled Release assets and fictional data.
 
 Loading a saved provider originally triggered the same change handler as editing and showed a misleading Saved message. Skip unchanged writes after checking the loaded snapshot; native fixtures assert that navigation leaves the file untouched.
 
+Native bordered buttons synchronously track mouse release. The in-process fixture queues mouse-up before sending mouse-down, then dispatches any unconsumed release for SwiftUI controls. Settings owns its project sheet explicitly instead of looking up the current key window. Check the attached sheet rather than assuming macOS's panel service exposes an NSOpenPanel subclass.
+
 Next: verify the Settings → project selection → signed ACP conversation flow with an authenticated provider during an agreed host testing window. API providers and secure API-key storage are deferred. Additional status sources should get their own configuration and data lifecycle; only Herdr is implemented today.
