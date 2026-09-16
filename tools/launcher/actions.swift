@@ -123,6 +123,14 @@ if panel.model.acp.draft != "A fictional question" || panel.model.query != "ai" 
     print("Chat focus diagnostic: draft length \(panel.model.acp.draft.count), query length \(panel.model.query.count), presented \(panel.model.showingACP)")
 }
 verify(panel.model.acp.draft == "A fictional question" && panel.model.query == "ai", "Typing edits the chat prompt instead of launcher search")
+key("\r", 36)
+verify(panel.model.acp.draft.contains("\n"), "Return inserts a newline in the native prompt")
+(panel.firstResponder as? NSTextView)?.undoManager?.undo(); settle()
+verify(panel.model.acp.draft == "A fictional question", "Undo updates the chat draft binding")
+key("\r", 36, .command)
+verify(panel.model.acp.submitting, "Command Return submits through the native chat editor")
+// The fixture has no XPC connection; reset the local submitting flag without sending a real prompt.
+panel.model.acp.submitting = false
 try render("chat")
 panel.orderOut(nil); settle(); panel.toggle(); settle()
 (panel.firstResponder as? NSTextView)?.insertText("!", replacementRange: NSRange(location: NSNotFound, length: 0)); settle()
