@@ -51,6 +51,7 @@ finish() {
 trap finish EXIT
 cd "$root"
 tar -xf "$output/source.tar"
+sw_vers
 xcodebuild -version
 command -v xcodegen
 Scripts/test.sh --ci --ui only
@@ -63,8 +64,12 @@ try:
     while True:
         if process.poll() is not None:
             raise RuntimeError(f"Tart stopped during boot; see {output / 'tart.log'}")
-        probe = subprocess.run(["tart", "exec", vm, "/usr/bin/true"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15)
-        if probe.returncode == 0:
+        try:
+            probe = subprocess.run(["tart", "exec", vm, "/usr/bin/true"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15)
+            ready = probe.returncode == 0
+        except subprocess.TimeoutExpired:
+            ready = False
+        if ready:
             break
         if time.monotonic() >= deadline:
             raise RuntimeError("Tart guest agent did not become ready within 180 seconds")
