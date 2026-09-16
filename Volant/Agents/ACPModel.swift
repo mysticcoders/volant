@@ -9,6 +9,10 @@ final class ACPModel: ObservableObject {
     @Published var state = ACPState()
     @Published var error: String?
     @Published var submitting = false
+    func configure(_ value: AIConfiguration) {
+        guard !active else { return }
+        provider = value.provider; project = value.project
+    }
     private var connection: NSXPCConnection?
     private var timer: Timer?
     private var generation = UUID()

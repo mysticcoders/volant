@@ -211,7 +211,7 @@ final class LauncherModel: ObservableObject {
     var showingAppleShortcuts: Bool { AppleShortcut.queryTerm(query) != nil }
     let agents = AgentsModel()
     let acp = ACPModel()
-    var showingACP: Bool { query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "acp" }
+    var showingACP: Bool { ["acp", "ai"].contains(query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()) }
     @Published var promotedHarness: String?
     var isPresented = false
     private var agentSubscription: AnyCancellable?
@@ -227,7 +227,7 @@ final class LauncherModel: ObservableObject {
             try Preferences.updatePromotedHarness(id)
             config.promotedHarness = id
             if id != nil && isPresented && !agents.connected { agents.connect() }
-        } catch { notice = "Couldn’t save pinned harness: " + error.localizedDescription }
+        } catch { notice = "Couldn’t save status bar: " + error.localizedDescription }
     }
     func resumeAgentsIfNeeded() {
         if promotedHarness != nil && !agents.connected { agents.connect() }

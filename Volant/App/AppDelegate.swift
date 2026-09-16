@@ -4,7 +4,14 @@ import Combine
 
 /// Owns the long-lived services: menu bar item, hotkeys, app index, clipboard monitor, and the panel.
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private lazy var settingsPanel = SettingsWindowController { [weak self] in self?.reloadConfig(); self?.notesStore.reload() }
+    private lazy var settingsPanel: SettingsWindowController = SettingsWindowController(acp: panel.model.acp, openAI: { [weak self] configuration in
+        guard let self else { return }
+        self.settingsPanel.window?.orderOut(nil)
+        self.panel.model.acp.configure(configuration)
+        if !self.panel.isVisible { self.panel.toggle() }
+        self.panel.setQuery("acp")
+        if !self.panel.model.acp.active { self.panel.model.acp.start() }
+    }, onChange: { [weak self] in self?.reloadConfig(); self?.notesStore.reload() })
     private let updater = AppUpdater()
     private var statusItem: NSStatusItem?
     private var config = Preferences.load()
@@ -14,7 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var clipboardMonitor = ClipboardMonitor(store: clipboardStore)
     private let notesStore = NotesStore()
     private lazy var notesPanel = NotesPanel(store: notesStore)
-    private lazy var panel = LauncherPanel(index: index, clipboard: clipboardStore, notes: notesStore, config: config) { [weak self] action in
+    private lazy var panel: LauncherPanel = LauncherPanel(index: index, clipboard: clipboardStore, notes: notesStore, config: config) { [weak self] action in
         switch action {
         case .settings: self?.showSettings()
         case .reloadConfig: self?.reloadConfig()
@@ -81,6 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         NSApp.setActivationPolicy(config.showInDock ? .regular : .accessory)
+        if let ai = try? AIConfiguration.load() { panel.model.acp.configure(ai) }
         updater.start()
         installApplicationMenu()
         installStatusItem()
@@ -242,6 +250,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settingsPanel.refresh(config, apps: index.apps)
         registerHotKeys()
         panel.apply(config: config)
+        if let ai = try? AIConfiguration.load() { panel.model.acp.configure(ai) }
         clipboardStore.retention = config.clipboardRetention
 
     }

@@ -801,3 +801,64 @@ verify(dictionary.entry?.term == "phrase", "Inline define query preserves phrase
 sendCoreKey("\u{1b}", code: 53)
 verify(!corePanel.isVisible && dictionary.input.isEmpty, "Escape dismisses and clears dictionary")
 print("PASS: dictionary routing, native text editing, Return, mode exit and Escape cleanup")
+
+// Settings navigation uses real clicks across the sidebar row, with isolated configuration.
+let settingsURL = root.appendingPathComponent("settings.json")
+try Data(#"{"promotedHarness":"claude","ai":{"provider":"claude","project":"/tmp/fictional-project"}}"#.utf8).write(to: settingsURL)
+let settingsBeforeNavigation = try Data(contentsOf: settingsURL)
+var openedAI: [AIConfiguration] = []
+var settingsController: SettingsWindowController!
+settingsController = SettingsWindowController(configURL: settingsURL, openAI: { openedAI.append($0) }) {
+    settingsController.refresh(try! JSONDecoder().decode(Preferences.self, from: Data(contentsOf: settingsURL)))
+}
+settingsController.refresh(try JSONDecoder().decode(Preferences.self, from: Data(contentsOf: settingsURL)))
+let settingsWindow = settingsController.window!
+settingsWindow.setContentSize(NSSize(width: 680, height: 500))
+settingsController.showWindow(nil)
+settingsWindow.makeKeyAndOrderFront(nil)
+RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+func clickSettings(_ point: NSPoint) {
+    for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
+        let event = NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                                      windowNumber: settingsWindow.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: type == .leftMouseDown ? 1 : 0)!
+        settingsWindow.sendEvent(event)
+    }
+    RunLoop.main.run(until: Date().addingTimeInterval(0.15))
+}
+clickSettings(NSPoint(x: 175, y: 500 - 124))
+verify(settingsController.state.section == "Status Bar", "Whole Status Bar sidebar row is clickable")
+clickSettings(NSPoint(x: 175, y: 500 - 166))
+verify(settingsController.state.section == "AI", "Whole AI sidebar row is clickable")
+for section in ["General", "Status Bar", "AI"] {
+    settingsController.state.section = section
+    RunLoop.main.run(until: Date().addingTimeInterval(0.15))
+    let content = settingsWindow.contentView!
+    content.layoutSubtreeIfNeeded()
+    verify(abs(content.bounds.width - 680) < 1 && abs(content.bounds.height - 500) < 1, "Settings respects minimum size after navigation")
+    let bitmap = content.bitmapImageRepForCachingDisplay(in: content.bounds)!
+    content.cacheDisplay(in: content.bounds, to: bitmap)
+    try bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "/tmp/volant-core-settings-\(section)-\(dark ? "dark" : "light").png"))
+}
+settingsWindow.cancelOperation(nil)
+verify(!settingsWindow.isVisible, "Escape dismisses Settings")
+verify(openedAI.isEmpty, "Navigating AI settings never connects automatically")
+let settingsAfterNavigation = try Data(contentsOf: settingsURL)
+verify(settingsAfterNavigation == settingsBeforeNavigation, "Navigating AI settings never rewrites configuration")
+settingsController.showWindow(nil)
+settingsController.state.section = "AI"
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+clickSettings(NSPoint(x: 280, y: 500 - 270))
+verify(openedAI.count == 1 && openedAI[0].provider == "claude" && openedAI[0].project == "/tmp/fictional-project", "Connect ACP passes the saved provider/project once")
+clickSettings(NSPoint(x: 600, y: 500 - 189))
+verify(settingsWindow.attachedSheet is NSOpenPanel, "Choose Project opens a native sheet")
+(settingsWindow.attachedSheet as? NSOpenPanel)?.cancel(nil)
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+verify(settingsWindow.attachedSheet == nil, "Project selection can be cancelled")
+settingsController.state.section = "Status Bar"
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+clickSettings(NSPoint(x: 243, y: 500 - 120))
+verify(settingsController.state.config.promotedHarness == nil, "Disabling Herdr hides its status source")
+clickSettings(NSPoint(x: 243, y: 500 - 120))
+verify(settingsController.state.config.promotedHarness == "claude", "Re-enabling Herdr preserves the chosen filter")
+settingsWindow.cancelOperation(nil)
+print("PASS: Status Bar and AI Settings native navigation, minimum size and dismissal")
