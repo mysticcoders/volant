@@ -28,6 +28,8 @@
 - Launcher rows must activate by stable identity, never a cached array offset or `firstIndex(...) ?? 0`. Use native buttons for row actions. Before showing a non-activating panel, handle any app-modal window; test actual panel typing/clicks and repeated summon, not only a titled hosting window.
 - Raycast import changes require `tools/check-raycast.sh`; keep personal exports/passwords out of fixtures, logs, and arguments. Preserve unknown fields inside existing config entries as well as at the top level. `tools/check-launcher.sh` and focused SwiftLint rules run from `Scripts/test.sh`; see `docs/launcher-quality.md` for what is and is not verified.
 
+- Launcher Actions stay inside the panel, revalidate captured result identity, and close before the launcher on Escape. Keep favorite edits as narrow configuration patches and ranking resets transactional. Native Actions fixtures use a separate branded bundle; do not change activation policy in the existing bare launcher fixture. Keep SwiftUI expressions small enough for the CI/VM compiler. See `docs/launcher-actions.md`.
+
 - New launcher queries select their first result; only same-query asynchronous updates preserve selection identity. Lazy result rows observe selection directly. Keep rendered-highlight assertions alongside keyboard/model tests.
 
 - System controls must re-resolve the current device when activated, honor hardware capabilities, preserve stereo balance and mute state, and report partial failures. Run `tools/check-volume.sh` plus native launcher fixtures for volume changes; signed sandbox writes are separate hardware evidence.

@@ -168,6 +168,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         presentationGeneration += 1
         endDragging()
         model.dictionary.clear()
+        model.actionTarget = nil
         model.isPresented = false
         model.agents.disconnect()
         super.orderOut(sender)
@@ -221,7 +222,21 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
 
     func apply(config: Preferences) { model.config = config }
 
-    override func cancelOperation(_ sender: Any?) { orderOut(nil) }
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
+        if modifiers == .command, event.charactersIgnoringModifiers?.lowercased() == "k",
+           model.selectedRow?.supportsActions == true {
+            model.toggleActions()
+            if model.actionTarget == nil { model.searchFocusRequest = UUID() }
+            return true
+        }
+        return super.performKeyEquivalent(with: event)
+    }
+
+    override func cancelOperation(_ sender: Any?) {
+        if model.actionTarget != nil { model.actionTarget = nil; model.searchFocusRequest = UUID() }
+        else { orderOut(nil) }
+    }
 }
 
 private extension NSSize {
