@@ -15,7 +15,7 @@ struct LauncherView: View {
             } else {
             searchField
             Divider().opacity(0.6)
-            if model.promotedHarness != nil || model.showingAgents {
+            if model.promotedHarness != nil {
                 agentStatusStrip
                 Divider().opacity(0.6)
             }
@@ -44,6 +44,11 @@ struct LauncherView: View {
                     HStack {
                         Text("Herdr panes").foregroundStyle(.secondary)
                         Spacer()
+                        if model.promotedHarness == nil {
+                            Button(agents.connected ? "Disconnect" : "Connect") {
+                                if agents.connected { agents.disconnect() } else { agents.connect() }
+                            }
+                        }
                         Button("New ACP conversation") { model.query = "acp" }
                     }.font(.system(size: 12)).padding(.horizontal, 20).padding(.vertical, 6)
                 }
