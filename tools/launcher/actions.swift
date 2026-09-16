@@ -125,8 +125,11 @@ if panel.model.acp.draft != "A fictional question" || panel.model.query != "ai" 
 verify(panel.model.acp.draft == "A fictional question" && panel.model.query == "ai", "Typing edits the chat prompt instead of launcher search")
 key("\r", 36)
 verify(panel.model.acp.draft.contains("\n"), "Return inserts a newline in the native prompt")
+let draftBeforeUndo = panel.model.acp.draft
 (panel.firstResponder as? NSTextView)?.undoManager?.undo(); settle()
-verify(panel.model.acp.draft == "A fictional question", "Undo updates the chat draft binding")
+// AppKit may coalesce adjacent typing into one undo group; the binding must follow the actual editor.
+verify(panel.model.acp.draft != draftBeforeUndo && panel.model.acp.draft == (panel.firstResponder as? NSTextView)?.string, "Undo updates the chat draft binding")
+panel.model.acp.draft = "A fictional question"; settle()
 key("\r", 36, .command)
 verify(panel.model.acp.submitting, "Command Return submits through the native chat editor")
 // The fixture has no XPC connection; reset the local submitting flag without sending a real prompt.
