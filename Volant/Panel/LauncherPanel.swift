@@ -72,8 +72,16 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         os_signpost(.begin, log: Self.openingLog, name: "Present and focus", signpostID: openingID)
         makeKeyAndOrderFront(nil)
         os_signpost(.event, log: Self.openingLog, name: "Window ordered", signpostID: openingID)
-        contentView?.layoutSubtreeIfNeeded()
-        os_signpost(.event, log: Self.openingLog, name: "Layout complete", signpostID: openingID)
+        // A retained search editor with current text is already ready for input.
+        // Force layout only when SwiftUI must install it or clear stale query text.
+        let existingInput = searchInput(in: contentView)
+        let displayedText = existingInput?.currentEditor()?.string ?? existingInput?.stringValue
+        if existingInput == nil || displayedText != model.searchText {
+            os_signpost(.begin, log: Self.openingLog, name: "Required layout", signpostID: openingID)
+            contentView?.layoutSubtreeIfNeeded()
+            os_signpost(.end, log: Self.openingLog, name: "Required layout", signpostID: openingID)
+        }
+        os_signpost(.event, log: Self.openingLog, name: "Search editor ready", signpostID: openingID)
         if let field = searchInput(in: contentView) {
             makeFirstResponder(field)
         } else {
