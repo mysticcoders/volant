@@ -51,6 +51,11 @@ func focusActionSearch() {
     panel.makeFirstResponder(field)
 }
 focusActionSearch()
+for _ in 0..<8 { key(String(UnicodeScalar(NSDownArrowFunctionKey)!), 125) }
+try render("more")
+focusActionSearch(); key("\u{1b}", 53)
+key("k", 40, .command)
+focusActionSearch()
 (panel.firstResponder as? NSTextView)?.insertText("copy", replacementRange: NSRange(location: NSNotFound, length: 0)); settle()
 verify(panel.model.query.isEmpty, "Action search does not alter launcher query")
 key(String(UnicodeScalar(NSDownArrowFunctionKey)!), 125)
@@ -71,5 +76,19 @@ focusActionSearch()
 key("\r", 36)
 verify(panel.model.sections.first?.title == "Favorites", "Favorite appears in home section")
 try render("favorites")
+key("k", 40, .command)
+focusActionSearch()
+(panel.firstResponder as? NSTextView)?.insertText("copy name", replacementRange: NSRange(location: NSNotFound, length: 0)); settle()
+// Native mouse activation of the filtered first row, at each supported panel size.
+let point = NSPoint(x: LauncherPanel.size.width - 175, y: 48 + 40 + 9 + min(285, LauncherPanel.size.height - 150) - 18)
+func mouse(_ type: NSEvent.EventType) -> NSEvent {
+    NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                      windowNumber: panel.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: 0)!
+}
+app.postEvent(mouse(.leftMouseUp), atStart: true)
+panel.sendEvent(mouse(.leftMouseDown))
+if let release = app.nextEvent(matching: .leftMouseUp, until: .distantPast, inMode: .default, dequeue: true) { panel.sendEvent(release) }
+settle()
+verify(copied == ["Fixture", "Fixture"] && launched == 0, "Native mouse click executes filtered action")
 panel.orderOut(nil)
 print("PASS: native action search, keyboard navigation, empty state, Escape, copying, and Favorites")
