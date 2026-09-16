@@ -90,8 +90,12 @@ struct ACPConversationView: View {
                     .keyboardShortcut(.return, modifiers: .command)
             }.padding(.horizontal, 16).padding(.bottom, 12)
         }
-        .onAppear { promptFocused = true }
-        .onChange(of: focusRequest) { _, _ in promptFocused = true }
+        .onAppear { requestPromptFocus() }
+        .onChange(of: focusRequest) { _, _ in requestPromptFocus() }
+    }
+    private func requestPromptFocus() {
+        promptFocused = false
+        DispatchQueue.main.async { promptFocused = true }
     }
     private func permissionButtons(_ permission: ACPPermission) -> some View {
         ForEach(permission.options) { option in

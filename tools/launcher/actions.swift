@@ -115,6 +115,10 @@ panel.toggle(); panel.model.presentAIChat(); settle()
 verify(panel.model.acp.state.phase == "ready" && panel.model.acp.project.isEmpty, "Configured AI Chat automatically connects without a project")
 verify(panel.firstResponder is NSTextView, "Chat prompt receives focus")
 (panel.firstResponder as? NSTextView)?.insertText("A fictional question", replacementRange: NSRange(location: NSNotFound, length: 0)); settle()
+if panel.model.acp.draft != "A fictional question" || panel.model.query != "ai" {
+    try render("chat-focus-failure")
+    print("Chat focus diagnostic: draft length \(panel.model.acp.draft.count), query length \(panel.model.query.count), presented \(panel.model.showingACP)")
+}
 verify(panel.model.acp.draft == "A fictional question" && panel.model.query == "ai", "Typing edits the chat prompt instead of launcher search")
 try render("chat")
 panel.orderOut(nil); settle(); panel.toggle(); settle()

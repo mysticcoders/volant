@@ -81,7 +81,7 @@ struct LauncherView: View {
         content
         .onAppear { requestSearchFocus() }
         .onChange(of: model.query) { _, _ in model.actionTarget = nil }
-        .onChange(of: model.showingACP) { _, showing in if !showing { requestSearchFocus() } }
+        .onChange(of: model.showingACP) { _, showing in if showing { focused = false } else { requestSearchFocus() } }
         .onChange(of: model.showingEmoji) { _, _ in requestSearchFocus() }
         .onChange(of: model.selectedRow?.id) { _, _ in model.actionTarget = nil }
         .onChange(of: model.actionTarget?.id) { old, new in if old != nil && new == nil { requestSearchFocus() } }
@@ -183,7 +183,10 @@ struct LauncherView: View {
         guard model.actionTarget == nil && !model.showingACP && !model.showingDictionary && !model.showingTranslation else { return }
         // A persistent hosting view does not appear again each time its panel is summoned.
         focused = false
-        DispatchQueue.main.async { focused = true }
+        DispatchQueue.main.async {
+            guard model.actionTarget == nil && !model.showingACP && !model.showingDictionary && !model.showingTranslation else { return }
+            focused = true
+        }
     }
 
     private func resultButton(_ row: ResultRow) -> some View {
