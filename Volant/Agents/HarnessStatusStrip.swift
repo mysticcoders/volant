@@ -13,7 +13,7 @@ struct HarnessStatusStrip: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Image(systemName: !pinned ? "terminal" : "pin.fill")
+                Image(systemName: "waveform.path")
                     .foregroundStyle(Color.accentColor)
                 Button(!pinned ? "Herdr" : title) {
                     onOpen()
@@ -40,18 +40,18 @@ struct HarnessStatusStrip: View {
                 .accessibilityLabel(showDetails ? "Hide Herdr pane details" : "Show Herdr pane details")
                 .help("Show project, provider, and status without opening Agents")
                 Menu {
-                    Button("Don’t pin a harness") { onPromote(nil) }
+                    Button("Hide Herdr status") { onPromote(nil) }
                     Divider()
                     ForEach(Preferences.harnessOptions, id: \.id) { option in
                         Button(option.title) { onPromote(option.id) }
                     }
                 } label: {
-                    Image(systemName: "pin")
+                    Image(systemName: "slider.horizontal.3")
                 }
                 .menuStyle(.borderlessButton)
                 .fixedSize()
-                .help("Promote a harness below the search field")
-                .accessibilityLabel("Pin harness status")
+                .help("Configure Herdr status")
+                .accessibilityLabel("Configure status bar")
             }
             .font(.system(size: 12))
             .padding(.horizontal, 20)

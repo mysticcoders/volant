@@ -32,6 +32,29 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual((try JSONSerialization.jsonObject(with: data) as? [String: Any])?["future"] as? Bool, true)
     }
 
+    func testStatusBarMigratesLegacyAndPreservesFutureSources() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: url) }
+        try Data(#"{"promotedHarness":"claude","future":true}"#.utf8).write(to: url)
+        var config = try JSONDecoder().decode(Preferences.self, from: Data(contentsOf: url))
+        XCTAssertEqual(config.statusBar.sources, ["herdr"])
+        XCTAssertEqual(config.statusBar.herdrFilter, "claude")
+        try Preferences.updateStatusBar(enabled: false, at: url)
+        config = try JSONDecoder().decode(Preferences.self, from: Data(contentsOf: url))
+        XCTAssertNil(config.promotedHarness)
+        XCTAssertEqual(config.statusBar.herdrFilter, "claude")
+        try Preferences.updateStatusBar(enabled: true, at: url)
+        XCTAssertEqual(try JSONDecoder().decode(Preferences.self, from: Data(contentsOf: url)).promotedHarness, "claude")
+        try Data(#"{"promotedHarness":"codex","statusBar":{"sources":["herdr","future"],"herdrFilter":"all","unknown":42}}"#.utf8).write(to: url)
+        try Preferences.updateStatusBar(enabled: false, at: url)
+        config = try JSONDecoder().decode(Preferences.self, from: Data(contentsOf: url))
+        XCTAssertEqual(config.statusBar.sources, ["future"])
+        XCTAssertNil(config.promotedHarness)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        XCTAssertNil(object["promotedHarness"])
+        XCTAssertEqual((object["statusBar"] as? [String: Any])?["unknown"] as? Int, 42)
+    }
+
     func testMalformedConfigIsNotOverwritten() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: url) }

@@ -141,7 +141,7 @@ struct LauncherView: View {
                                 resultButton(row)
                                     .contextMenu {
                                         if Preferences.harnessOptions.contains(where: { $0.id == session.agent }) {
-                                            Button("Pin \(session.provider) status") { model.promoteHarness(session.agent) }
+                                            Button("Show \(session.provider) in status bar") { model.promoteHarness(session.agent) }
                                         }
                                     }
                             } else {

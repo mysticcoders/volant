@@ -9,7 +9,12 @@ struct Preferences: Codable {
     var clipboardRetention: Int = 500
     var showOnLaunch: Bool = true
     var showInDock: Bool = true
-    var promotedHarness: String? = nil
+    var statusBar = StatusBarConfiguration()
+    // Compatibility for existing callers and older configuration files.
+    var promotedHarness: String? {
+        get { statusBar.sources.contains("herdr") ? statusBar.herdrFilter : nil }
+        set { statusBar.sources = newValue == nil ? [] : ["herdr"]; if let newValue { statusBar.herdrFilter = newValue } }
+    }
     static let harnessOptions: [(id: String, title: String)] = [("all", "All Herdr agents"), ("opencode", "OpenCode"), ("cursor", "Cursor"), ("claude", "Claude Code"), ("codex", "Codex")]
     var snippets: [Snippet] = []
     var quicklinks: [Quicklink] = [Quicklink(name: "Google", url: "https://www.google.com/search?q={query}")]
@@ -18,7 +23,7 @@ struct Preferences: Codable {
     var help: String = "Edit and choose Reload Configuration in Settings. Hotkeys: cmd|ctrl|option|shift|meh|hyper + key. App hotkeys use the bundle identifier. Snippets: {date} {isodate} {time} {datetime} {clipboard} {uuid}. Quicklinks: {query}. Aliases map a word to an app name or query. Appearance: scale 0.8–1.4, opacity 0.5–1.0."
 
     enum CodingKeys: String, CodingKey {
-        case summonHotKey, notesHotKey, emojiHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, promotedHarness, snippets, quicklinks, aliases, appearance
+        case summonHotKey, notesHotKey, emojiHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, statusBar, snippets, quicklinks, aliases, appearance
         case help = "_help"
     }
 
@@ -43,8 +48,12 @@ struct Preferences: Codable {
         clipboardRetention = try c.decodeIfPresent(Int.self, forKey: .clipboardRetention) ?? d.clipboardRetention
         showOnLaunch = try c.decodeIfPresent(Bool.self, forKey: .showOnLaunch) ?? d.showOnLaunch
         showInDock = try c.decodeIfPresent(Bool.self, forKey: .showInDock) ?? d.showInDock
-        promotedHarness = try c.decodeIfPresent(String.self, forKey: .promotedHarness)
-        if let id = promotedHarness, !Self.harnessOptions.contains(where: { $0.id == id }) { promotedHarness = nil }
+        statusBar = try c.decodeIfPresent(StatusBarConfiguration.self, forKey: .statusBar) ?? StatusBarConfiguration()
+        if !c.contains(.statusBar) {
+            let legacy = try decoder.container(keyedBy: LegacyKeys.self)
+            if let id = try legacy.decodeIfPresent(String.self, forKey: .promotedHarness), Self.harnessOptions.contains(where: { $0.id == id }) { promotedHarness = id }
+        }
+        if !Self.harnessOptions.contains(where: { $0.id == statusBar.herdrFilter }) { statusBar.herdrFilter = "all" }
         snippets = try c.decodeIfPresent([Snippet].self, forKey: .snippets) ?? d.snippets
         quicklinks = try c.decodeIfPresent([Quicklink].self, forKey: .quicklinks) ?? d.quicklinks
         aliases = try c.decodeIfPresent([String: String].self, forKey: .aliases) ?? d.aliases
@@ -68,15 +77,28 @@ struct Preferences: Codable {
         try updated.write(to: url, options: .atomic)
     }
 
+    private enum LegacyKeys: String, CodingKey { case promotedHarness }
+
     static func updatePromotedHarness(_ harness: String?, at url: URL = configURL) throws {
-        guard harness == nil || harnessOptions.contains(where: { $0.id == harness }) else {
-            throw CocoaError(.fileReadCorruptFile)
-        }
+        guard harness == nil || harnessOptions.contains(where: { $0.id == harness }) else { throw CocoaError(.fileReadCorruptFile) }
+        try updateStatusBar(enabled: harness != nil, filter: harness, at: url)
+    }
+
+    static func updateStatusBar(enabled: Bool? = nil, filter: String? = nil, at url: URL = configURL) throws {
+        if let filter, !harnessOptions.contains(where: { $0.id == filter }) { throw CocoaError(.fileReadCorruptFile) }
         let data = try Data(contentsOf: url)
-        guard var object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw CocoaError(.fileReadCorruptFile)
+        let current = try JSONDecoder().decode(Preferences.self, from: data)
+        guard var object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw CocoaError(.fileReadCorruptFile) }
+        var bar = object["statusBar"] as? [String: Any] ?? [:]
+        var sources = current.statusBar.sources
+        if let enabled {
+            sources.removeAll { $0 == "herdr" }
+            if enabled { sources.append("herdr") }
         }
-        object["promotedHarness"] = harness
+        bar["sources"] = sources
+        bar["herdrFilter"] = filter ?? current.statusBar.herdrFilter
+        object["statusBar"] = bar
+        object.removeValue(forKey: "promotedHarness")
         let updated = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
         _ = try JSONDecoder().decode(Preferences.self, from: updated)
         try updated.write(to: url, options: .atomic)
@@ -116,4 +138,16 @@ struct Appearance: Codable, Equatable {
 struct AppHotKey: Codable {
     var bundleIdentifier: String
     var hotKey: String
+}
+
+/// Sources are independent so future status providers need not reuse Herdr settings.
+struct StatusBarConfiguration: Codable {
+    var sources: [String] = []
+    var herdrFilter = "all"
+    init() {}
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        sources = try c.decodeIfPresent([String].self, forKey: .sources) ?? []
+        herdrFilter = try c.decodeIfPresent(String.self, forKey: .herdrFilter) ?? "all"
+    }
 }

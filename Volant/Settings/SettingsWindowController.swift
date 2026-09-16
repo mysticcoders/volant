@@ -17,7 +17,7 @@ final class SettingsWindowController: NSWindowController {
     private let onChange: () -> Void
     private let configURL: URL
 
-    init(configURL: URL = Preferences.configURL, onChange: @escaping () -> Void) {
+    init(configURL: URL = Preferences.configURL, acp: ACPModel = ACPModel(), openAI: @escaping (AIConfiguration) -> Void = { _ in }, onChange: @escaping () -> Void) {
         self.onChange = onChange
         self.configURL = configURL
         let window = SettingsPanel(contentRect: NSRect(x: 0, y: 0, width: 760, height: 540),
@@ -30,7 +30,8 @@ final class SettingsWindowController: NSWindowController {
         window.isReleasedWhenClosed = false
         window.setFrameAutosaveName("VolantSettings")
         super.init(window: window)
-        let hosting = NSHostingView(rootView: SettingsView(state: state, configURL: configURL, onChange: onChange,
+        let hosting = NSHostingView(rootView: SettingsView(state: state, acp: acp, configURL: configURL, onChange: onChange, openAI: openAI,
+                                                                  chooseAIProject: { [weak self] completion in self?.chooseAIProject(completion) },
                                                                   importRaycast: { [weak self] in self?.showRaycastImport() })
             .frame(minWidth: 680, idealWidth: 760, maxWidth: .infinity, minHeight: 500, idealHeight: 540, maxHeight: .infinity))
         hosting.sizingOptions = []
@@ -48,6 +49,13 @@ final class SettingsWindowController: NSWindowController {
         window.setFrame(NSWindow.frameRect(forContentRect: NSRect(x: 0, y: 0, width: 760, height: 540), styleMask: window.styleMask), display: false)
         window.center()
     }
+    private func chooseAIProject(_ completion: @escaping (URL?) -> Void) {
+        guard let window, window.attachedSheet == nil else { return }
+        let picker = NSOpenPanel()
+        picker.canChooseDirectories = true; picker.canChooseFiles = false; picker.allowsMultipleSelection = false
+        picker.prompt = "Use Project"
+        picker.beginSheetModal(for: window) { result in completion(result == .OK ? picker.url : nil) }
+    }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     func refresh(_ config: Preferences, apps: [AppEntry]? = nil, errors: [String]? = nil) {
         state.config = config
@@ -60,13 +68,16 @@ final class SettingsWindowController: NSWindowController {
 
 private struct SettingsView: View {
     @ObservedObject var state: SettingsState
+    @ObservedObject var acp: ACPModel
     let configURL: URL
     let onChange: () -> Void
+    let openAI: (AIConfiguration) -> Void
+    let chooseAIProject: (@escaping (URL?) -> Void) -> Void
     let importRaycast: () -> Void
     @State private var search = ""
     @State private var error: String?
     @State private var loginStatus = SMAppService.mainApp.status
-    private let sections = ["General", "App Shortcuts", "Data & Configuration"]
+    private let sections = ["General", "Status Bar", "AI", "App Shortcuts", "Data & Configuration"]
 
     var body: some View {
         HStack(spacing: 0) {
@@ -85,6 +96,8 @@ private struct SettingsView: View {
             VStack(alignment: .leading, spacing: 18) {
                 Text(state.section).font(.title2.bold())
                 if state.section == "General" { general }
+                else if state.section == "Status Bar" { statusBar }
+                else if state.section == "AI" { AISettingsView(model: acp, configURL: configURL, onChange: onChange, openConversation: openAI, chooseProject: chooseAIProject) }
                 else if state.section == "App Shortcuts" { shortcuts }
                 else { data }
                 Spacer(minLength: 0)
@@ -115,14 +128,6 @@ private struct SettingsView: View {
                 Button("Open Login Items") { SMAppService.openSystemSettingsLoginItems() }
             }
             Divider()
-            Picker("Pinned Herdr overview", selection: Binding(get: { state.config.promotedHarness ?? "" }, set: { value in
-                apply { try Preferences.updatePromotedHarness(value.isEmpty ? nil : value, at: configURL) }
-            })) {
-                Text("None").tag("")
-                ForEach(Preferences.harnessOptions, id: \.id) { Text($0.title).tag($0.id) }
-            }
-            Text("Show agent activity below the launcher’s search field.").font(.callout).foregroundStyle(.secondary)
-            Divider()
             if !state.registrationErrors.isEmpty { Text(state.registrationErrors.joined(separator: "\n")).font(.callout).foregroundStyle(.red) }
             GlobalShortcutRow(title: "Show Volant", key: "summonHotKey", value: state.config.summonHotKey, configURL: configURL, onChange: onChange)
             GlobalShortcutRow(title: "Open Notes", key: "notesHotKey", value: state.config.notesHotKey, configURL: configURL, onChange: onChange)
@@ -130,6 +135,24 @@ private struct SettingsView: View {
             Text("Click a shortcut and press a new combination. Changes save automatically. Hover to remove a shortcut.").font(.callout).foregroundStyle(.secondary)
         }.frame(maxWidth: .infinity, alignment: .leading)
         }.onAppear { loginStatus = SMAppService.mainApp.status }
+    }
+
+    @AppStorage("showHerdrDetails") private var showHerdrDetails = false
+    private var statusBar: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("Choose which sources appear below the launcher’s search field. The bar stays hidden when no source is enabled.").foregroundStyle(.secondary)
+            Toggle("Herdr agent activity", isOn: Binding(get: { state.config.statusBar.sources.contains("herdr") }, set: { value in
+                apply { try Preferences.updateStatusBar(enabled: value, at: configURL) }
+            }))
+            Picker("Agents", selection: Binding(get: { state.config.statusBar.herdrFilter }, set: { value in
+                apply { try Preferences.updateStatusBar(filter: value, at: configURL) }
+            })) {
+                ForEach(Preferences.harnessOptions, id: \.id) { Text($0.title).tag($0.id) }
+            }.disabled(!state.config.statusBar.sources.contains("herdr"))
+            Toggle("Show pane details", isOn: $showHerdrDetails)
+                .disabled(!state.config.statusBar.sources.contains("herdr"))
+            Text("Herdr is the first status source. AI connections are configured separately in AI.").font(.callout).foregroundStyle(.secondary)
+        }
     }
 
     private var shortcuts: some View {
