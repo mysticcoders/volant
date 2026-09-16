@@ -6,7 +6,6 @@ struct ACPConversationView: View {
     var back: () -> Void = {}
     var caffeinate: CaffeinateService?
     var focusRequest: UUID = UUID()
-    @FocusState private var promptFocused: Bool
     @State private var follow = true
     var body: some View {
         VStack(spacing: 0) {
@@ -89,21 +88,19 @@ struct ACPConversationView: View {
                 }
             }.padding(.horizontal, 16).padding(.vertical, 6)
             HStack(alignment: .bottom, spacing: 10) {
-                TextField("Ask your agent…", text: $model.draft, axis: .vertical)
-                    .textFieldStyle(.plain).lineLimit(2...4).font(.system(size: 14))
-                    .padding(9).background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 7))
-                    .accessibilityLabel("Agent prompt")
-                    .focused($promptFocused)
+                ACPPromptView(text: $model.draft, focusRequest: focusRequest, send: model.send)
+                    .frame(height: 64)
+                    .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 7))
+                    .overlay(alignment: .topLeading) {
+                        if model.draft.isEmpty {
+                            Text("Ask your agent…").font(.system(size: 14)).foregroundStyle(.tertiary)
+                                .padding(9).allowsHitTesting(false).accessibilityHidden(true)
+                        }
+                    }
                 Button("Send", action: model.send).disabled(!model.canSend)
                     .keyboardShortcut(.return, modifiers: .command)
             }.padding(.horizontal, 16).padding(.bottom, 12)
         }
-        .onAppear { requestPromptFocus() }
-        .onChange(of: focusRequest) { _, _ in requestPromptFocus() }
-    }
-    private func requestPromptFocus() {
-        promptFocused = false
-        DispatchQueue.main.async { promptFocused = true }
     }
     private func permissionButtons(_ permission: ACPPermission) -> some View {
         ForEach(permission.options) { option in
