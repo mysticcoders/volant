@@ -251,7 +251,46 @@ verify(panel.model.agents.attentionResponse == "Answer sent; Codex resumed.", "D
 try render("attention-answered")
 panel.model.agents.refreshAttention()
 previewReply?(nil, "This question changed or could not be read. Open the pane in Herdr to review it."); settle()
+verify(panel.model.agents.attentionError == nil && panel.model.agents.attentionResponse != nil, "Post-answer refresh cannot replace delivery feedback with a stale error")
+try render("attention-transition")
+panel.model.agents.watchAttention(nil); panel.model.agents.watchAttention(waitingCodex)
+previewReply?(nil, "This question changed or could not be read. Open the pane in Herdr to review it."); settle()
 try render("attention-error")
+// Claude uses its own observed screen, including the complete approval scope.
+panel.model.agents.sessions = [waitingClaude]; settle()
+let claudePermissionText = """
+─────────────────────────────────────────────
+ Create file
+ /fictional/approval.txt
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+  1 Violet demo
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+ Do you want to create approval.txt?
+ ❯ 1. Yes
+   2. Yes, and switch to accept edits (auto-approve file edits and common file
+      commands) for this session (shift+tab)
+   3. No
+
+ Esc to cancel · Tab to amend
+"""
+let claudePermission = HerdrQuestion.parse(claudePermissionText, provider: "claude")!
+previewReply?(try JSONEncoder().encode(HerdrResponseController.Snapshot(text: claudePermissionText, token: "fictional-token", question: claudePermission)), nil); settle()
+verify(panel.model.agents.canAnswerAttention, "Claude approval exposes the verified choices")
+try render("attention-claude-approval")
+func nativeScrollViews(_ view: NSView) -> [NSScrollView] {
+    (view as? NSScrollView).map { [$0] } ?? view.subviews.flatMap(nativeScrollViews)
+}
+if let scroll = nativeScrollViews(panel.contentView!).first, let document = scroll.documentView {
+    scroll.contentView.scroll(to: NSPoint(x: 0, y: max(0, document.bounds.height - scroll.contentSize.height)))
+    scroll.reflectScrolledClipView(scroll.contentView); settle()
+}
+try render("attention-claude-scope")
+point = NSPoint(x: 90, y: panel.contentView!.bounds.height - 324)
+clickPoint()
+key("3", 20, [.command, .option])
+verify(answered == [2, 3], "Claude No shortcut delivers only the selected denial")
+answerReply?("Answer sent; Claude Code resumed.", nil); settle()
+try render("attention-claude-answered")
 panel.model.agents.sessions = []; settle()
 verify(panel.model.agents.attention == nil, "Resolved questions remove the preview")
 try render("attention-empty")

@@ -18,7 +18,7 @@ class ScopeTests(unittest.TestCase):
         for path in ["Volant/Panel/LauncherModel.swift", "Volant/Usage/UsageStore.swift", "Volant/Settings/SettingsWindowController.swift",
                      "Volant/Settings/Preferences.swift", "Volant/Settings/AIConfiguration.swift", "Volant/Settings/AISettingsView.swift",
                      "Volant/Resources/Assets.xcassets/AccentColor.colorset/Contents.json",
-                     "Volant/Notes/LiveMarkdownEditor.swift", "Shared/LauncherRouting.swift", "Shared/ACPTypes.swift", "Shared/HerdrAttention.swift", "Shared/HerdrQuestion.swift", "Shared/HerdrResponseController.swift", "Shared/AgentProtocol.swift",
+                     "Volant/Notes/LiveMarkdownEditor.swift", "Shared/LauncherRouting.swift", "Shared/ACPTypes.swift", "Shared/HerdrAttention.swift", "Shared/HerdrQuestion.swift", "Shared/HerdrClaudeQuestion.swift", "Shared/HerdrResponseController.swift", "Shared/AgentProtocol.swift",
                      "Volant/Dictionary/DictionaryModel.swift", "Volant/Dictionary/DictionaryView.swift", "Volant/Translation/TranslationModel.swift", "Volant/Translation/TranslationView.swift", "tools/launcher/check.swift", "tools/check-launcher-actions.sh", "tools/launcher/actions.swift", "tools/run-bounded-check.py", "tools/interaction-speed/main.swift", "tools/profile-interaction.sh"]:
             self.assertEqual(scope.classify([path]), {"native": True, "ui": True}, path)
 

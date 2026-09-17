@@ -1,7 +1,7 @@
 import Foundation
 import CryptoKit
 
-/// A verified Codex single-choice screen, not an arbitrary terminal command.
+/// A verified provider question or approval screen, never an arbitrary terminal command.
 struct HerdrQuestion: Codable, Equatable {
     struct Choice: Codable, Equatable, Identifiable {
         let number: Int
@@ -13,12 +13,15 @@ struct HerdrQuestion: Codable, Equatable {
     let progress: String
     let choices: [Choice]
     let selected: Int
+    var context: String? = nil
     var fingerprint: String {
-        let content = [progress, title] + choices.map { "\($0.number):\($0.label):\($0.detail)" }
+        let content = [progress, title, context ?? ""] + choices.map { "\($0.number):\($0.label):\($0.detail)" }
         return SHA256.hash(data: Data(content.joined(separator: "\n").utf8)).map { String(format: "%02x", $0) }.joined()
     }
     static func parse(_ text: String, provider: String) -> Self? {
-        guard provider == "codex", text.utf8.count <= 128_000 else { return nil }
+        guard text.utf8.count <= 128_000 else { return nil }
+        if provider == "claude" { return parseClaude(text) }
+        guard provider == "codex" else { return nil }
         let lines = text.components(separatedBy: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
         guard let header = lines.lastIndex(where: { $0.range(of: #"^Question [1-9][0-9]*/[1-9][0-9]* \([1-9][0-9]* unanswered\)$"#, options: .regularExpression) != nil }),
               let footer = lines[(header + 1)...].firstIndex(of: "tab to add notes | enter to submit answer | esc to interrupt"),
@@ -43,5 +46,13 @@ struct HerdrQuestion: Codable, Equatable {
         // Notes require their own form. Never turn that row into an implicit blank answer.
         return Self(title: title, progress: lines[header], choices: choices, selected: selected)
     }
-    var answerChoices: [Choice] { choices.filter { $0.label != "None of the above" } }
+    var displayContext: String? {
+        context.map { text in
+            text.components(separatedBy: "\n").filter { line in
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                return trimmed.isEmpty || !trimmed.allSatisfy { $0 == "─" || $0 == "╌" }
+            }.joined(separator: "\n")
+        }
+    }
+    var answerChoices: [Choice] { choices.filter { !["None of the above", "Type something.", "Chat about this"].contains($0.label) } }
 }
