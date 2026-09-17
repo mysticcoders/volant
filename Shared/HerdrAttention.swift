@@ -21,7 +21,7 @@ struct HerdrAttention: Equatable {
     }
 
     static func matches(_ target: AgentSession, in sessions: [AgentSession]) -> Bool {
-        sessions.contains { $0.paneID == target.paneID && $0.terminalID == target.terminalID &&
+        sessions.contains { $0.id == target.id &&
             $0.sessionIdentity == target.sessionIdentity && $0.agentStatus == "blocked" }
     }
 }

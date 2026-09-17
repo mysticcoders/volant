@@ -32,61 +32,37 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
     func acpStop(reply: @escaping () -> Void) { acp.queue.async { self.acp.stop(); reply() } }
     func invalidate() { acp.queue.async { self.acp.stop() } }
     private let queue = DispatchQueue(label: "com.mysticcoders.volant.agent-host")
+    private let inventoryQueue = DispatchQueue(label: "com.mysticcoders.volant.herdr-inventory")
+    private var machines: HerdrMachineRouter { HerdrMachineRouter(run: { [unowned self] in try self.run($0) }) }
     private func run(_ arguments: [String]) throws -> Data {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         let candidates = [home + "/.local/bin/herdr", "/opt/homebrew/bin/herdr", "/usr/local/bin/herdr"]
         guard let executable = candidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
             throw NSError(domain: "VolantAgents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Herdr was not found. Install Herdr, start a local session, then reconnect."])
         }
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: executable)
-        task.arguments = arguments
-        task.currentDirectoryURL = URL(fileURLWithPath: home)
-        // Do not inherit the caller's focused pane, shell startup files or provider credentials.
-        task.environment = ["HOME": home, "USER": NSUserName(), "PATH": home + "/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin", "LANG": "en_US.UTF-8"]
-        let output = Pipe()
-        task.standardOutput = output
-        task.standardError = FileHandle.nullDevice
-        try task.run()
-        let timeout = DispatchWorkItem { if task.isRunning { task.terminate() } }
-        DispatchQueue.global().asyncAfter(deadline: .now() + 8, execute: timeout)
-        defer { timeout.cancel() }
-        var data = Data()
-        while true {
-            let chunk = output.fileHandleForReading.availableData
-            if chunk.isEmpty { break }
-            data.append(chunk)
-            if data.count > 2_000_000 {
-                task.terminate()
-                throw NSError(domain: "VolantAgents", code: 2, userInfo: [NSLocalizedDescriptionKey: "Herdr returned too much data."])
-            }
-        }
-        task.waitUntilExit()
-        guard task.terminationStatus == 0 else {
-            throw NSError(domain: "VolantAgents", code: 3, userInfo: [NSLocalizedDescriptionKey: "Herdr is unavailable or the session changed. Start the local default Herdr session, then reconnect."])
-        }
-        return data
+        return try HerdrProcess.run(executable: URL(fileURLWithPath: executable), arguments: arguments, home: home)
     }
+
     func listAgents(reply: @escaping (Data?, String?) -> Void) {
-        queue.async {
-            do {
-                let data = try self.run(["agent", "list"])
-                _ = try AgentSession.decodeList(data)
-                reply(data, nil)
-            } catch { reply(nil, error.localizedDescription) }
+        inventoryQueue.async {
+            do { reply(try JSONEncoder().encode(self.machines.inventory()), nil) }
+            catch { reply(nil, "Couldn’t read Herdr machines.") }
         }
     }
-    private lazy var herdrResponses = HerdrResponseController(run: { [unowned self] in try self.run($0) })
-    func readAgentAttention(paneID: String, terminalID: String, sessionIdentity: String, reply: @escaping (Data?, String?) -> Void) {
+    private lazy var herdrResponses = HerdrResponseController(runOnMachine: { [unowned self] in try self.machines.execute($0, $1) })
+    private func currentTarget(_ data: Data, blocked: Bool = false) throws -> AgentSession {
+        guard data.count <= 32_000 else { throw CocoaError(.fileReadCorruptFile) }
+        let requested = try JSONDecoder().decode(AgentSession.self, from: data)
+        guard let target = try machines.agents(on: requested.machine).first(where: {
+            $0.id == requested.id && $0.sessionIdentity == requested.sessionIdentity && (!blocked || $0.agentStatus == "blocked")
+        }) else { throw CocoaError(.fileReadNoSuchFile) }
+        return target
+    }
+    func readAgentAttention(target: Data, reply: @escaping (Data?, String?) -> Void) {
         queue.async {
             do {
-                let agents = try AgentSession.decodeList(self.run(["agent", "list"]))
-                guard let target = agents.first(where: { $0.paneID == paneID && $0.terminalID == terminalID &&
-                    $0.sessionIdentity == sessionIdentity && $0.agentStatus == "blocked" }) else {
-                    throw CocoaError(.fileReadNoSuchFile)
-                }
-                reply(try JSONEncoder().encode(self.herdrResponses.read(target)), nil)
-            } catch { reply(nil, "This question changed or could not be read. Open the pane in Herdr to review it.") }
+                reply(try JSONEncoder().encode(self.herdrResponses.read(self.currentTarget(target, blocked: true))), nil)
+            } catch { reply(nil, "This question or machine changed or could not be read. Open Herdr to review it.") }
         }
     }
     func answerAgentQuestion(token: String, choice: Int, reply: @escaping (String?, String?) -> Void) {
@@ -95,20 +71,19 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
             catch { reply(nil, (error as NSError).domain == "VolantHerdrResponse" ? error.localizedDescription : "Couldn’t confirm delivery. Review the pane before retrying.") }
         }
     }
-    func focusAgent(paneID: String, terminalID: String, sessionIdentity: String, reply: @escaping (String?) -> Void) {
+    func focusAgent(target: Data, reply: @escaping (String?) -> Void) {
         queue.async {
             do {
-                // Revalidate the current occupant; a stale UI must not focus a replacement agent.
-                let agents = try AgentSession.decodeList(self.run(["agent", "list"]))
-                guard agents.contains(where: { $0.paneID == paneID && $0.terminalID == terminalID && $0.sessionIdentity == sessionIdentity }),
-                      !paneID.hasPrefix("-"), paneID.count < 128 else {
-                    throw NSError(domain: "VolantAgents", code: 4, userInfo: [NSLocalizedDescriptionKey: "This pane has changed. Refresh and select the agent again."])
+                let current = try self.currentTarget(target)
+                guard !current.paneID.isEmpty, !current.paneID.hasPrefix("-"), current.paneID.count < 128 else {
+                    throw CocoaError(.fileReadCorruptFile)
                 }
-                _ = try self.run(["agent", "focus", paneID])
+                _ = try self.machines.execute(current.machine, ["agent", "focus", current.paneID])
                 reply(nil)
-            } catch { reply(error.localizedDescription) }
+            } catch { reply("This pane or machine changed or is unavailable. Refresh before continuing.") }
         }
     }
+
 }
 
 final class ListenerDelegate: NSObject, NSXPCListenerDelegate {

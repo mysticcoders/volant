@@ -104,6 +104,8 @@ targets:
     sources:
       - path: VolantAgentHost
       - path: Shared/AgentProtocol.swift
+      - path: Shared/HerdrProcess.swift
+      - path: Shared/HerdrMachines.swift
       - path: Shared/HerdrAttention.swift
       - path: Shared/HerdrQuestion.swift
       - path: Shared/HerdrClaudeQuestion.swift

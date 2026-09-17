@@ -245,7 +245,7 @@ final class LauncherModel: ObservableObject {
         let parts = query.trimmingCharacters(in: .whitespaces).split(separator: " ", maxSplits: 1)
         let term = parts.count > 1 ? String(parts[1]) : ""
         let sessions = agents.sessions.filter {
-            term.isEmpty || [$0.project, $0.provider, $0.agent, $0.status, $0.cwd ?? "", $0.terminalTitle ?? ""].joined(separator: " ").localizedCaseInsensitiveContains(term)
+            term.isEmpty || [$0.machineLabel, $0.project, $0.provider, $0.agent, $0.status, $0.cwd ?? "", $0.terminalTitle ?? ""].joined(separator: " ").localizedCaseInsensitiveContains(term)
         }
         sections = sessions.isEmpty ? [] : [ResultSection(title: "Herdr panes", rows: sessions.map(ResultRow.agentSession))]
         notice = agents.connected ? (agents.busy && agents.sessions.isEmpty ? "Loading Herdr panes…" : (sessions.isEmpty && !agents.sessions.isEmpty ? "No matching panes" : agents.message)) : agents.message

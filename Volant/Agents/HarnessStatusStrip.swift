@@ -9,6 +9,7 @@ struct HarnessStatusStrip: View {
     let onOpen: () -> Void
     let onConnect: () -> Void
     let onPromote: (String?) -> Void
+    var machines: [HerdrMachineStatus] = []
     @AppStorage("showHerdrDetails") private var showDetails = false
     var body: some View {
         VStack(spacing: 0) {
@@ -27,6 +28,12 @@ struct HarnessStatusStrip: View {
                         .accessibilityLabel("\(sessions.count) panes, \(working) working, \(attention) need attention")
                 } else {
                     Text("Not connected").foregroundStyle(.secondary)
+                }
+                if machines.contains(where: \.unavailable) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundStyle(.orange)
+                        .accessibilityLabel("Some Herdr machines are unavailable")
+                        .help(machines.filter(\.unavailable).map { $0.label + ": " + $0.detail }.joined(separator: "\n"))
                 }
                 Spacer(minLength: 0)
                 if busy { ProgressView().controlSize(.mini) }
@@ -60,6 +67,7 @@ struct HarnessStatusStrip: View {
             if showDetails && connected {
                 ScrollView {
                     VStack(spacing: 6) {
+                        HerdrMachineStatusView(machines: machines)
                         if sessions.isEmpty {
                             Text(busy ? "Loading panes…" : "No matching panes")
                                 .foregroundStyle(.secondary)
@@ -84,8 +92,8 @@ private struct HarnessPaneSummary: View {
         if session.agentStatus == "working" { return .accentColor }
         return .secondary
     }
-    private var providerLabel: String { session.provider + " · " + session.paneID }
-    private var helpText: String { [session.project, session.provider, session.paneID, session.status].joined(separator: " · ") }
+    private var providerLabel: String { session.machineLabel + " · " + session.provider + " · " + session.paneID }
+    private var helpText: String { [session.machineLabel, session.project, session.provider, session.paneID, session.status].joined(separator: " · ") }
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: session.agentStatus == "blocked" ? "exclamationmark.circle.fill" : "circle.fill")
@@ -98,5 +106,25 @@ private struct HarnessPaneSummary: View {
         }
         .help(helpText)
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// Shared by the Agents destination and expanded pinned status.
+struct HerdrMachineStatusView: View {
+    let machines: [HerdrMachineStatus]
+    var body: some View {
+        if !machines.isEmpty {
+            ScrollView(.horizontal) {
+                HStack(spacing: 12) {
+                    ForEach(machines) { machine in
+                        Label(machine.label + " · " + machine.state.capitalized,
+                              systemImage: machine.unavailable ? "exclamationmark.triangle" : "desktopcomputer")
+                            .foregroundStyle(machine.unavailable ? Color.orange : Color.secondary)
+                            .help(machine.detail)
+                            .accessibilityLabel(machine.label + ". " + machine.state + ". " + machine.detail)
+                    }
+                }
+            }.font(.system(size: 11)).frame(maxHeight: 24)
+        }
     }
 }
