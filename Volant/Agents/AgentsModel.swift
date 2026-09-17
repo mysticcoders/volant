@@ -12,6 +12,12 @@ final class AgentsModel: ObservableObject {
     @Published private(set) var attention: HerdrAttention?
     @Published private(set) var attentionLoading = false
     @Published private(set) var attentionError: String?
+    @Published private(set) var attentionQuestion: HerdrQuestion?
+    @Published private(set) var attentionAnswering = false
+    @Published private(set) var attentionResponse: String?
+    private var answerRequest = UUID()
+    private var attentionToken: String?
+    var attentionResponder: ((String, Int, @escaping (String?, String?) -> Void) -> Void)?
     private var attentionTarget: AgentSession?
     private var attentionRequest = UUID()
     // Injected only by isolated fixtures; production reads through the signed helper.
@@ -76,19 +82,21 @@ final class AgentsModel: ObservableObject {
 
     func watchAttention(_ session: AgentSession?) {
         if attentionTarget?.id == session?.id && attentionTarget?.sessionIdentity == session?.sessionIdentity { return }
-        attentionRequest = UUID()
+        attentionRequest = UUID(); answerRequest = UUID()
         attentionTarget = session
         attention = nil; attentionError = nil; attentionLoading = false
+        attentionQuestion = nil; attentionToken = nil; attentionResponse = nil; attentionAnswering = false
         refreshAttention()
     }
 
     func refreshAttention() {
-        guard let target = attentionTarget else { return }
+        guard !attentionAnswering, let target = attentionTarget else { return }
         guard connected, HerdrAttention.matches(target, in: sessions) else {
             attentionRequest = UUID(); attention = nil; attentionError = nil; attentionLoading = false
+            attentionQuestion = nil; attentionToken = nil
             return
         }
-        guard !attentionLoading else { return }
+        guard !attentionLoading, !attentionAnswering else { return }
         let request = UUID(); attentionRequest = request
         attentionLoading = true
         let completion: (Data?, String?) -> Void = { [weak self] data, error in
@@ -96,7 +104,10 @@ final class AgentsModel: ObservableObject {
                 guard let self, self.attentionRequest == request, self.connected,
                       HerdrAttention.matches(target, in: self.sessions) else { return }
                 self.attentionLoading = false
-                self.attention = data.flatMap { try? HerdrAttention.preview($0) }
+                let snapshot = data.flatMap { try? JSONDecoder().decode(HerdrResponseController.Snapshot.self, from: $0) }
+                self.attention = snapshot.flatMap { try? HerdrAttention.preview(Data($0.text.utf8)) }
+                self.attentionQuestion = snapshot?.question
+                self.attentionToken = snapshot?.token
                 self.attentionError = error ?? (self.attention == nil ? "Couldn’t read this question. Open it in Herdr." : nil)
             }
         }
@@ -104,6 +115,31 @@ final class AgentsModel: ObservableObject {
         guard let connection else { completion(nil, "Herdr is disconnected."); return }
         let proxy = connection.remoteObjectProxyWithErrorHandler { _ in completion(nil, "Couldn’t read this question. Open it in Herdr.") } as? VolantAgentHostProtocol
         proxy?.readAgentAttention(paneID: target.paneID, terminalID: target.terminalID, sessionIdentity: target.sessionIdentity, reply: completion)
+    }
+
+    var canAnswerAttention: Bool { connected && !attentionLoading && !attentionAnswering && attentionToken != nil }
+    func answerAttention(_ choice: Int) {
+        guard canAnswerAttention, let token = attentionToken, let target = attentionTarget,
+              HerdrAttention.matches(target, in: sessions),
+              attentionQuestion?.answerChoices.contains(where: { $0.number == choice }) == true else { return }
+        attentionToken = nil; attentionAnswering = true; attentionResponse = "Sending answer…"
+        attentionRequest = UUID()
+        answerRequest = UUID()
+        let request = answerRequest
+        let completion: (String?, String?) -> Void = { [weak self] status, error in
+            DispatchQueue.main.async {
+                guard let self, self.answerRequest == request else { return }
+                self.attentionAnswering = false
+                self.attentionResponse = error ?? status
+                self.actionMessage = error ?? status
+                self.attentionError = error
+                self.refresh()
+            }
+        }
+        if let attentionResponder { attentionResponder(token, choice, completion); return }
+        guard let connection else { completion(nil, "Herdr is disconnected."); return }
+        let proxy = connection.remoteObjectProxyWithErrorHandler { _ in completion(nil, "Couldn’t confirm delivery. Review Herdr before retrying.") } as? VolantAgentHostProtocol
+        proxy?.answerAgentQuestion(token: token, choice: choice, reply: completion)
     }
 
     func focus(_ session: AgentSession) {

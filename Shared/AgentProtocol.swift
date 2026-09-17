@@ -9,6 +9,7 @@ import Foundation
     func acpCancel(reply: @escaping (String?) -> Void)
     func acpPermission(request: String, option: String, reply: @escaping (String?) -> Void)
     func acpStop(reply: @escaping () -> Void)
+    func answerAgentQuestion(token: String, choice: Int, reply: @escaping (String?, String?) -> Void)
     func readAgentAttention(paneID: String, terminalID: String, sessionIdentity: String, reply: @escaping (Data?, String?) -> Void)
     func listAgents(reply: @escaping (Data?, String?) -> Void)
     func focusAgent(paneID: String, terminalID: String, sessionIdentity: String, reply: @escaping (String?) -> Void)
@@ -23,6 +24,7 @@ struct AgentSession: Codable, Identifiable, Hashable {
     let terminalTitle: String?
     struct SessionReference: Codable, Hashable { let value: String }
     let agentSession: SessionReference?
+    var stateChangeSequence: UInt64? = nil
     var sessionIdentity: String { agent + ":" + (agentSession?.value ?? terminalID) }
     var id: String { terminalID + ":" + paneID }
     var project: String { cwd.map { URL(fileURLWithPath: $0).lastPathComponent } ?? "Unknown project" }
@@ -47,6 +49,7 @@ struct AgentSession: Codable, Identifiable, Hashable {
     var priority: Int { ["blocked": 0, "working": 1, "done": 2, "idle": 3][agentStatus] ?? 4 }
     enum CodingKeys: String, CodingKey {
         case agent, cwd
+        case stateChangeSequence = "state_change_seq"
         case agentStatus = "agent_status"
         case paneID = "pane_id"
         case terminalID = "terminal_id"

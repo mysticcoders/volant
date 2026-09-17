@@ -76,24 +76,23 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
             } catch { reply(nil, error.localizedDescription) }
         }
     }
+    private lazy var herdrResponses = HerdrResponseController(run: { [unowned self] in try self.run($0) })
     func readAgentAttention(paneID: String, terminalID: String, sessionIdentity: String, reply: @escaping (Data?, String?) -> Void) {
         queue.async {
             do {
-                guard !paneID.hasPrefix("-"), !paneID.isEmpty, paneID.count < 128 else { throw CocoaError(.fileReadCorruptFile) }
-                func current() throws -> AgentSession {
-                    let agents = try AgentSession.decodeList(self.run(["agent", "list"]))
-                    guard let agent = agents.first(where: { $0.paneID == paneID && $0.terminalID == terminalID &&
-                        $0.sessionIdentity == sessionIdentity && $0.agentStatus == "blocked" }) else {
-                        throw CocoaError(.fileReadNoSuchFile)
-                    }
-                    return agent
+                let agents = try AgentSession.decodeList(self.run(["agent", "list"]))
+                guard let target = agents.first(where: { $0.paneID == paneID && $0.terminalID == terminalID &&
+                    $0.sessionIdentity == sessionIdentity && $0.agentStatus == "blocked" }) else {
+                    throw CocoaError(.fileReadNoSuchFile)
                 }
-                _ = try current()
-                let data = try self.run(["agent", "read", paneID, "--source", "detection", "--lines", "30", "--format", "text"])
-                _ = try current() // Never display a replacement occupant's output under an old identity.
-                _ = try HerdrAttention.preview(data)
-                reply(data, nil)
+                reply(try JSONEncoder().encode(self.herdrResponses.read(target)), nil)
             } catch { reply(nil, "This question changed or could not be read. Open the pane in Herdr to review it.") }
+        }
+    }
+    func answerAgentQuestion(token: String, choice: Int, reply: @escaping (String?, String?) -> Void) {
+        queue.async {
+            do { reply(try self.herdrResponses.respond(token: token, choice: choice), nil) }
+            catch { reply(nil, (error as NSError).domain == "VolantHerdrResponse" ? error.localizedDescription : "Couldn’t confirm delivery. Review the pane before retrying.") }
         }
     }
     func focusAgent(paneID: String, terminalID: String, sessionIdentity: String, reply: @escaping (String?) -> Void) {

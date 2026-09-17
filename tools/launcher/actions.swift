@@ -213,11 +213,43 @@ panel.model.agents.attentionReader = { _, reply in previewReply = reply }
 panel.toggle(); settle()
 verify(panel.model.agents.attentionLoading, "Pinned waiting agent starts a passive preview read")
 try render("attention-loading")
-previewReply?(Data("Allow running npm test in /fictional/orbit?\n\n1. Yes, once\n2. Yes, for this session\n3. No".utf8), nil); settle()
+previewReply?(try JSONEncoder().encode(HerdrResponseController.Snapshot(text: "Allow running npm test in /fictional/orbit?\n\n1. Yes, once\n2. Yes, for this session\n3. No", token: nil, question: nil)), nil); settle()
 verify(panel.model.agents.attention?.text.contains("npm test") == true, "Waiting question appears below the pinned status")
 try render("attention")
 panel.model.agents.sessions = [waitingCodex]; settle()
 verify(panel.model.agents.attention == nil && panel.model.agents.attentionLoading, "Changing waiting agent clears the previous question")
+let codexQuestionText = """
+Question 1/1 (1 unanswered)
+Which fictional theme should the demo use?
+
+› 1. Amber              warm colors
+  2. Violet             cool colors
+  3. None of the above  Optionally, add details in notes (tab).
+
+tab to add notes | enter to submit answer | esc to interrupt
+"""
+let codexQuestion = HerdrQuestion.parse(codexQuestionText, provider: "codex")!
+previewReply?(try JSONEncoder().encode(HerdrResponseController.Snapshot(text: codexQuestionText, token: "fictional-token", question: codexQuestion)), nil); settle()
+verify(panel.model.agents.canAnswerAttention, "Verified Codex question enables answers")
+try render("attention-choices")
+var answered: [Int] = []
+var answerReply: ((String?, String?) -> Void)?
+panel.model.agents.attentionResponder = { token, choice, reply in
+    verify(token == "fictional-token", "Response binds the displayed question token")
+    answered.append(choice); answerReply = reply
+}
+// Native click on Answer with keyboard; card geometry is fixed above the scrollable results.
+point = NSPoint(x: 90, y: panel.contentView!.bounds.height - 272)
+clickPoint()
+key("2", 19, [.command, .option])
+verify(answered == [2], "Focused question shortcut sends the selected answer")
+panel.model.agents.answerAttention(2)
+verify(answered == [2] && !panel.model.agents.canAnswerAttention, "Duplicate clicks cannot send a second answer")
+try render("attention-sending")
+answerReply?("Answer sent; Codex resumed.", nil); settle()
+verify(panel.model.agents.attentionResponse == "Answer sent; Codex resumed.", "Delivery feedback shows provider acknowledgement")
+try render("attention-answered")
+panel.model.agents.refreshAttention()
 previewReply?(nil, "This question changed or could not be read. Open the pane in Herdr to review it."); settle()
 try render("attention-error")
 panel.model.agents.sessions = []; settle()

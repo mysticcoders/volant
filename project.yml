@@ -105,6 +105,8 @@ targets:
       - path: VolantAgentHost
       - path: Shared/AgentProtocol.swift
       - path: Shared/HerdrAttention.swift
+      - path: Shared/HerdrQuestion.swift
+      - path: Shared/HerdrResponseController.swift
       - path: Shared/AppleShortcut.swift
       - path: Shared/ACPTypes.swift
     info:

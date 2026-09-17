@@ -1,10 +1,11 @@
 import SwiftUI
 
-/// One passive question preview at a time, below the pinned status bar.
+/// One waiting agent at a time. Only verified structured questions expose answers.
 struct HerdrAttentionView: View {
     @ObservedObject var model: AgentsModel
     let sessions: [AgentSession]
     @State private var selectedID: String?
+    @FocusState private var answersFocused: Bool
     private var waiting: [AgentSession] { sessions.filter { $0.agentStatus == "blocked" } }
     private var selected: AgentSession? { waiting.first { $0.id == selectedID } ?? waiting.first }
     private var identity: String { selected.map { $0.id + ":" + $0.sessionIdentity } ?? "" }
@@ -31,6 +32,17 @@ struct HerdrAttentionView: View {
                         Text("Reading the current question…").foregroundStyle(.secondary)
                     } else if let error = model.attentionError {
                         Text(error).foregroundStyle(.secondary)
+                    } else if let question = model.attentionQuestion {
+                        Text(question.title).fontWeight(.medium).fixedSize(horizontal: false, vertical: true)
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 6) {
+                                ForEach(question.answerChoices) { choice in
+                                    answerButton(choice)
+                                }
+                            }.padding(2)
+                        }.frame(height: min(132, CGFloat(question.answerChoices.count) * 38 + 4))
+                        .focusable().focused($answersFocused)
+                        Text("For notes or another answer, open Herdr.").foregroundStyle(.secondary)
                     } else if let preview = model.attention, !preview.text.isEmpty {
                         ScrollView {
                             Text(preview.text).textSelection(.enabled)
@@ -42,15 +54,21 @@ struct HerdrAttentionView: View {
                             .foregroundStyle(.secondary)
                     }
                     HStack {
-                        Text("Reply in the agent’s pane").foregroundStyle(.secondary)
+                        if model.attentionQuestion != nil {
+                            Button("Answer with keyboard") { answersFocused = true }
+                                .disabled(!model.canAnswerAttention)
+                        } else {
+                            Text("Reply in the agent’s pane").foregroundStyle(.secondary)
+                        }
                         Spacer()
-                        Button("Refresh", action: model.refreshAttention).disabled(model.attentionLoading)
+                        Button("Refresh", action: model.refreshAttention).disabled(model.attentionLoading || model.attentionAnswering)
                         Button("Open in Herdr") { model.focus(session) }
                             .disabled(model.busy)
                             .help("Select this pane in Herdr, then switch to your Herdr terminal")
                     }
-                    if let message = model.actionMessage { Text(message).foregroundStyle(.secondary) }
+                    if let message = model.attentionResponse ?? model.actionMessage { Text(message).foregroundStyle(.secondary) }
                 }
+                .layoutPriority(1)
                 .font(.system(size: 12))
                 .padding(.horizontal, 20).padding(.vertical, 10)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -59,6 +77,24 @@ struct HerdrAttentionView: View {
         }
         .task(id: identity) { model.watchAttention(selected) }
         .onDisappear { model.watchAttention(nil) }
+    }
+
+    @ViewBuilder private func answerButton(_ choice: HerdrQuestion.Choice) -> some View {
+        let button = Button { model.answerAttention(choice.number) } label: {
+            HStack {
+                Text(choice.label).fontWeight(.medium)
+                Text(choice.detail).foregroundStyle(.secondary).lineLimit(2)
+                Spacer(minLength: 4)
+                if answersFocused { Text("⌥⌘" + String(choice.number)).foregroundStyle(.secondary) }
+            }.frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .disabled(!model.canAnswerAttention)
+        .accessibilityLabel("Answer " + choice.label + ". " + choice.detail)
+        if answersFocused {
+            button.keyboardShortcut(KeyEquivalent(Character(String(choice.number))), modifiers: [.command, .option])
+        } else {
+            button
+        }
     }
 
     private func advance(_ direction: Int) {

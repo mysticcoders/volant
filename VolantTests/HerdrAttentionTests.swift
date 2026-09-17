@@ -23,6 +23,9 @@ final class HerdrAttentionTests: XCTestCase {
         XCTAssertThrowsError(try Volant.HerdrAttention.preview(Data([0xff])))
         XCTAssertEqual(try Volant.HerdrAttention.preview(Data("\u{202E}safe\u{0007}".utf8)).text, "safe")
     }
+    private func snapshot(_ text: String) -> Data {
+        try! JSONEncoder().encode(Volant.HerdrResponseController.Snapshot(text: text, token: nil, question: nil))
+    }
     func testDelayedPreviewCannotReplaceNewTargetOrDisconnectedState() {
         let model = AgentsModel()
         let first = session(), second = session("two")
@@ -31,14 +34,14 @@ final class HerdrAttentionTests: XCTestCase {
         model.connected = true; model.sessions = [first, second]
         model.watchAttention(first)
         model.watchAttention(second)
-        replies[0](Data("old question".utf8), nil)
-        replies[1](Data("current question".utf8), nil)
+        replies[0](self.snapshot("old question"), nil)
+        replies[1](self.snapshot("current question"), nil)
         let done = expectation(description: "main callbacks")
         DispatchQueue.main.async {
             XCTAssertEqual(model.attention?.text, "current question")
             model.refreshAttention()
             model.disconnect()
-            replies[2](Data("late question".utf8), nil)
+            replies[2](self.snapshot("late question"), nil)
             DispatchQueue.main.async {
                 XCTAssertNil(model.attention)
                 XCTAssertFalse(model.attentionLoading)
