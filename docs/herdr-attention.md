@@ -14,11 +14,15 @@ Herdr 0.9.0 / protocol 22 has no conditional send operation accepting an expecte
 
 ## Evidence and next work
 
-On 2026-09-17, Codex CLI 0.154.0 in a disposable empty-directory Plan session asked a real `request_user_input` question about fictional Amber/Violet themes. Explicit agent key delivery selected Violet; Codex showed `answer: Violet` and returned `ACK: Violet`. The production response controller then independently read and answered a second real question and observed Codex resume. This establishes the terminal/controller path, not installed-app XPC or mouse/keyboard behavior.
+On 2026-09-17, Codex CLI 0.154.0 in a disposable empty-directory Plan session asked a real `request_user_input` question about fictional Amber/Violet themes. Explicit agent key delivery selected Violet; Codex showed `answer: Violet` and returned `ACK: Violet`. The production response controller then independently read and answered a second real question and observed Codex resume. This establishes the terminal/controller path separately from the installed-app test below.
 
-Automated unit checks cover the observed screen, unsupported/truncated forms, changed pane/state/question, changes after navigation, token expiry, unsupported notes answers and duplicate submission. Branded headless UI fixtures cover loading, choices, pending/acknowledged delivery, fallback errors and resolution in light/dark at three sizes. Installed signed-app delivery and focused card shortcuts require separate smoke evidence.
+Automated unit checks cover the observed screen, unsupported/truncated forms, changed pane/state/question, changes after navigation, token expiry, unsupported notes answers and duplicate submission. Branded headless UI fixtures cover loading, choices, pending/acknowledged delivery, fallback errors and resolution in light/dark at three sizes. Native mouse focus plus ⌥⌘2 submission and duplicate prevention passed in all six Tart variants. Compact/default/large captures and error/resolution states were visually inspected.
 
-Next: verify the signed installed UI/helper path and scoped shortcuts; obtain Herdr conditional delivery; independently verify additional Codex formats and Claude permissions while preserving the exact provider scopes. Persistent question history is out of scope.
+Installed evidence: PR #48 merged as `797fb1f` after scope/native/UI/PR gate passed. The signed Release app was installed fresh at `/Applications/Volant.app` and restarted during an explicitly approved desktop test window. The real fictional question appeared in the pinned card; clicking Violet through the installed UI produced “Codex acknowledged your answer.” Codex independently showed `answer: Violet` and `ACK: Violet`; the status then changed from one waiting agent to zero and removed the card. The executable SHA-256 was `3617f436373496630d92b96fbd2986510b9a63cfea2657eccd4efffe271541eb`. Deep signature verification passed. This was a local signed build, not a newly notarized public release.
+
+Remaining UI polish: a successful answer can briefly coexist with a “question changed or could not be read” refresh message before polling removes the card. The post-answer read races the agent's state transition; delivery itself was acknowledged. Suppress obsolete refresh errors after a confirmed answer and add a transition fixture before calling that polish fixed.
+
+Next: fix that post-answer transition; obtain Herdr conditional delivery; independently verify additional Codex formats and Claude permissions while preserving the exact provider scopes. Persistent question history is out of scope.
 
 References: https://herdr.dev/docs/agent-automation/ and https://herdr.dev/docs/socket-api/ (checked 2026-09-16).
 
