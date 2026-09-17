@@ -30,9 +30,9 @@ struct HarnessStatusStrip: View {
                 }
                 Spacer(minLength: 0)
                 if busy { ProgressView().controlSize(.mini) }
-                Button(connected ? "Disconnect" : "Connect") {
-                    onConnect()
-                }.buttonStyle(.borderless)
+                if !connected {
+                    Button("Connect", action: onConnect).buttonStyle(.borderless)
+                }
                 Button { showDetails.toggle() } label: {
                     Image(systemName: showDetails ? "chevron.up" : "chevron.down")
                 }
