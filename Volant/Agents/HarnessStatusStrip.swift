@@ -21,7 +21,7 @@ struct HarnessStatusStrip: View {
                 if connected {
                     let attention = sessions.filter { $0.agentStatus == "blocked" }.count
                     let working = sessions.filter { $0.agentStatus == "working" }.count
-                    Text("\(sessions.count) panes · \(working) working" + (attention > 0 ? " · \(attention) need you" : ""))
+                    Text("\(sessions.count) panes · \(working) working" + (attention > 0 ? " · \(attention) \(attention == 1 ? "needs" : "need") you" : ""))
                         .foregroundStyle(attention > 0 ? Color.orange : Color.secondary)
                         .lineLimit(1)
                         .accessibilityLabel("\(sessions.count) panes, \(working) working, \(attention) need attention")

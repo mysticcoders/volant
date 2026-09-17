@@ -104,6 +104,7 @@ targets:
     sources:
       - path: VolantAgentHost
       - path: Shared/AgentProtocol.swift
+      - path: Shared/HerdrAttention.swift
       - path: Shared/AppleShortcut.swift
       - path: Shared/ACPTypes.swift
     info:

@@ -201,3 +201,27 @@ settle()
 try render("ai-settings", view: settings.window!.contentView!)
 settings.window!.orderOut(nil)
 print("PASS: AI Chat setup routing, automatic general-chat connection, prompt focus, and active-draft preservation")
+
+// Passive Herdr previews use fictional terminal output and no helper connection.
+panel.model.agents.connected = true
+panel.model.promotedHarness = "all"
+let waitingClaude = AgentSession(agent: "claude", agentStatus: "blocked", paneID: "w1:p1", terminalID: "question-one", cwd: "/fictional/orbit", terminalTitle: nil, agentSession: .init(value: "claude-fictional"))
+let waitingCodex = AgentSession(agent: "codex", agentStatus: "blocked", paneID: "w1:p2", terminalID: "question-two", cwd: "/fictional/comet", terminalTitle: nil, agentSession: .init(value: "codex-fictional"))
+panel.model.agents.sessions = [waitingClaude, waitingCodex]
+var previewReply: ((Data?, String?) -> Void)?
+panel.model.agents.attentionReader = { _, reply in previewReply = reply }
+panel.toggle(); settle()
+verify(panel.model.agents.attentionLoading, "Pinned waiting agent starts a passive preview read")
+try render("attention-loading")
+previewReply?(Data("Allow running npm test in /fictional/orbit?\n\n1. Yes, once\n2. Yes, for this session\n3. No".utf8), nil); settle()
+verify(panel.model.agents.attention?.text.contains("npm test") == true, "Waiting question appears below the pinned status")
+try render("attention")
+panel.model.agents.sessions = [waitingCodex]; settle()
+verify(panel.model.agents.attention == nil && panel.model.agents.attentionLoading, "Changing waiting agent clears the previous question")
+previewReply?(nil, "This question changed or could not be read. Open the pane in Herdr to review it."); settle()
+try render("attention-error")
+panel.model.agents.sessions = []; settle()
+verify(panel.model.agents.attention == nil, "Resolved questions remove the preview")
+try render("attention-empty")
+panel.orderOut(nil)
+print("PASS: passive Herdr question previews, target changes, loading, error, and resolved states")

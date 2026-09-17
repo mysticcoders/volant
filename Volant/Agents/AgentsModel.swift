@@ -9,6 +9,13 @@ final class AgentsModel: ObservableObject {
     @Published var message = "Connect to the default local Herdr session to see your running agents."
     @Published var actionMessage: String?
     @Published var query = ""
+    @Published private(set) var attention: HerdrAttention?
+    @Published private(set) var attentionLoading = false
+    @Published private(set) var attentionError: String?
+    private var attentionTarget: AgentSession?
+    private var attentionRequest = UUID()
+    // Injected only by isolated fixtures; production reads through the signed helper.
+    var attentionReader: ((AgentSession, @escaping (Data?, String?) -> Void) -> Void)?
     private var connection: NSXPCConnection?
     private var timer: Timer?
     private var generation = 0
@@ -31,6 +38,7 @@ final class AgentsModel: ObservableObject {
     }
     func disconnect() {
         generation += 1
+        watchAttention(nil)
         timer?.invalidate(); timer = nil
         connection?.invalidate(); connection = nil
         connected = false; busy = false; sessions = []; actionMessage = nil
@@ -56,11 +64,48 @@ final class AgentsModel: ObservableObject {
                 do {
                     guard let data else { throw CocoaError(.fileReadCorruptFile) }
                     self.sessions = try AgentSession.decodeList(data)
+                    self.refreshAttention()
                     self.message = self.sessions.isEmpty ? "No agents are running in the default Herdr session." : "Local Herdr · updates every 5 seconds"
                 } catch { self.failed("Herdr returned an unsupported response.", generation: current) }
             }
         }
     }
+    func isAttentionTarget(_ session: AgentSession) -> Bool {
+        attentionTarget?.id == session.id && attentionTarget?.sessionIdentity == session.sessionIdentity
+    }
+
+    func watchAttention(_ session: AgentSession?) {
+        if attentionTarget?.id == session?.id && attentionTarget?.sessionIdentity == session?.sessionIdentity { return }
+        attentionRequest = UUID()
+        attentionTarget = session
+        attention = nil; attentionError = nil; attentionLoading = false
+        refreshAttention()
+    }
+
+    func refreshAttention() {
+        guard let target = attentionTarget else { return }
+        guard connected, HerdrAttention.matches(target, in: sessions) else {
+            attentionRequest = UUID(); attention = nil; attentionError = nil; attentionLoading = false
+            return
+        }
+        guard !attentionLoading else { return }
+        let request = UUID(); attentionRequest = request
+        attentionLoading = true
+        let completion: (Data?, String?) -> Void = { [weak self] data, error in
+            DispatchQueue.main.async {
+                guard let self, self.attentionRequest == request, self.connected,
+                      HerdrAttention.matches(target, in: self.sessions) else { return }
+                self.attentionLoading = false
+                self.attention = data.flatMap { try? HerdrAttention.preview($0) }
+                self.attentionError = error ?? (self.attention == nil ? "Couldn’t read this question. Open it in Herdr." : nil)
+            }
+        }
+        if let attentionReader { attentionReader(target, completion); return }
+        guard let connection else { completion(nil, "Herdr is disconnected."); return }
+        let proxy = connection.remoteObjectProxyWithErrorHandler { _ in completion(nil, "Couldn’t read this question. Open it in Herdr.") } as? VolantAgentHostProtocol
+        proxy?.readAgentAttention(paneID: target.paneID, terminalID: target.terminalID, sessionIdentity: target.sessionIdentity, reply: completion)
+    }
+
     func focus(_ session: AgentSession) {
         guard connected, !busy, let connection else { return }
         busy = true
