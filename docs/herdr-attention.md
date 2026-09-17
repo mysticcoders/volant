@@ -1,8 +1,8 @@
-# Herdr attention and Codex answers
+# Herdr attention and provider answers
 
 A pinned Herdr status shows one waiting agent below the status strip, with previous/next controls. Unsupported prompts retain a bounded, literal terminal preview and Open in Herdr. Hidden launchers release the preview; question text is never persisted or logged.
 
-Verified Codex single-choice questions show the question and the provider's actual option labels/descriptions. Click an option to answer. Answer with keyboard explicitly focuses the card; ⌥⌘ plus its option number answers only while that area has focus. Return in launcher search is not an approval shortcut. Notes and None of the above require Open in Herdr. Permission dialogs, wrapped/unrecognized screens, and other providers have no response buttons. This is not a general Yes/Always/No adapter.
+Verified Codex and Claude single-choice questions show the question and the provider's actual option labels/descriptions. Click an option to answer. Answer with keyboard explicitly focuses the card; ⌥⌘ plus its option number answers only while that area has focus. Return in launcher search is not an approval shortcut. Notes and None of the above require Open in Herdr. Claude Create file and Bash approval screens also expose their exact choices and request context; see [Claude evidence and limits](herdr-claude.md). Unrecognized screens and other providers retain pane handoff. This is not a generic Yes/Always/No mapping.
 
 The signed helper exposes read and token-plus-choice methods, not arbitrary keys or shell input. It reads up to 80 detection lines, validates pane/terminal/provider/session identity and blocked-state sequence before and after reading, and issues a 30-second single-use token. The question fingerprint includes progress, title and every choice. Answering consumes the token, revalidates the current question, moves the selection, rereads to confirm the selected row, then sends Enter separately. Changed questions or occupants stop submission. A consumed question cannot be submitted again through a newly refreshed token in the same helper session. Display excerpts remain limited to 30 lines/4,000 characters.
 
@@ -10,7 +10,7 @@ After Enter the helper checks whether Codex resumed, acknowledged the answer, or
 
 ## Remaining transport limitation
 
-Herdr 0.9.0 / protocol 22 has no conditional send operation accepting an expected terminal/session and prompt revision. Separate reads and sends cannot eliminate the final read/send race, including changes made directly in the terminal. Provider session identity is absent in the tested Codex metadata; terminal identity plus state sequence and fingerprint provide the available guards. A future conditional response API is needed for an atomic guarantee. Do not expand this adapter to permission approvals based only on matching words such as Yes or Always.
+Herdr 0.9.0 / protocol 22 has no conditional send operation accepting an expected terminal/session and prompt revision. Separate reads and sends cannot eliminate the final read/send race, including changes made directly in the terminal. Provider session identity is absent in the tested Codex metadata; terminal identity plus state sequence and fingerprint provide the available guards. A future conditional response API is needed for an atomic guarantee. Claude approvals require the complete supported request layout and context fingerprint; matching Yes or Always alone is never sufficient.
 
 ## Evidence and next work
 
@@ -20,9 +20,9 @@ Automated unit checks cover the observed screen, unsupported/truncated forms, ch
 
 Installed evidence: PR #48 merged as `797fb1f` after scope/native/UI/PR gate passed. The signed Release app was installed fresh at `/Applications/Volant.app` and restarted during an explicitly approved desktop test window. The real fictional question appeared in the pinned card; clicking Violet through the installed UI produced “Codex acknowledged your answer.” Codex independently showed `answer: Violet` and `ACK: Violet`; the status then changed from one waiting agent to zero and removed the card. The executable SHA-256 was `3617f436373496630d92b96fbd2986510b9a63cfea2657eccd4efffe271541eb`. Deep signature verification passed. This was a local signed build, not a newly notarized public release.
 
-Remaining UI polish: a successful answer can briefly coexist with a “question changed or could not be read” refresh message before polling removes the card. The post-answer read races the agent's state transition; delivery itself was acknowledged. Suppress obsolete refresh errors after a confirmed answer and add a transition fixture before calling that polish fixed.
+The post-answer transition issue discovered in the installed Codex test is addressed by the Claude adapter change: confirmation tolerates a disappearing question screen, and a racing preview failure cannot replace delivery feedback. See the Claude document for the regression and verification record.
 
-Next: fix that post-answer transition; obtain Herdr conditional delivery; independently verify additional Codex formats and Claude permissions while preserving the exact provider scopes. Persistent question history is out of scope.
+Next: obtain Herdr conditional delivery; independently verify additional provider layouts and exact approval scopes. Persistent question history is out of scope.
 
 References: https://herdr.dev/docs/agent-automation/ and https://herdr.dev/docs/socket-api/ (checked 2026-09-16).
 

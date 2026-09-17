@@ -105,6 +105,16 @@ final class AgentsModel: ObservableObject {
                       HerdrAttention.matches(target, in: self.sessions) else { return }
                 self.attentionLoading = false
                 let snapshot = data.flatMap { try? JSONDecoder().decode(HerdrResponseController.Snapshot.self, from: $0) }
+                // A post-send read can race the provider leaving its question screen. Preserve
+                // the delivery result (including uncertainty) until a fresh screen or list arrives.
+                if snapshot == nil, self.attentionResponse != nil {
+                    self.attentionError = nil
+                    return
+                }
+                if self.attentionQuestion?.fingerprint != snapshot?.question?.fingerprint {
+                    self.attentionResponse = nil
+                    self.actionMessage = nil
+                }
                 self.attention = snapshot.flatMap { try? HerdrAttention.preview(Data($0.text.utf8)) }
                 self.attentionQuestion = snapshot?.question
                 self.attentionToken = snapshot?.token

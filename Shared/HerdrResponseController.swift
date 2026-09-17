@@ -75,17 +75,21 @@ final class HerdrResponseController {
         // Key delivery is not acknowledgement. Look for an advance; never resend on timeout.
         for _ in 0..<10 {
             Thread.sleep(forTimeInterval: 0.15)
-            let agents = try AgentSession.decodeList(run(["agent", "list"]))
+            guard let agents = try? AgentSession.decodeList(run(["agent", "list"])) else {
+                return "Answer sent, but confirmation is unavailable. Check Herdr before retrying."
+            }
             guard let current = agents.first(where: { $0.id == target.id && $0.sessionIdentity == target.sessionIdentity }) else {
                 return "Answer sent; the agent changed before confirmation. Review its pane."
             }
-            if ["working", "idle", "done"].contains(current.agentStatus) { return "Answer sent; Codex resumed." }
+            if ["working", "idle", "done"].contains(current.agentStatus) { return "Answer sent; \(target.provider) resumed." }
             guard current.agentStatus == "blocked" else { break }
-            let text = try screen(current)
+            // The submitted answer can make the screen disappear between list and read.
+            // Retry observation only; never resend Enter or report a pre-submit validation failure.
+            guard let text = try? screen(current) else { continue }
             if let next = HerdrQuestion.parse(text, provider: target.agent), next.fingerprint != request.fingerprint {
-                return "Answer sent; Codex advanced to the next question."
+                return "Answer sent; \(target.provider) advanced to the next question."
             }
-            if text.contains("Questions ") && text.contains(" answered") && text.contains("answer: " + question.choices[choice - 1].label) {
+            if target.agent == "codex", text.contains("Questions ") && text.contains(" answered") && text.contains("answer: " + question.choices[choice - 1].label) {
                 return "Codex acknowledged your answer."
             }
         }

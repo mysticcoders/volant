@@ -36,13 +36,18 @@ struct HerdrAttentionView: View {
                         Text(question.title).fontWeight(.medium).fixedSize(horizontal: false, vertical: true)
                         ScrollView {
                             VStack(alignment: .leading, spacing: 6) {
+                                if let context = question.displayContext {
+                                    Text(context).font(.system(size: 11, design: .monospaced))
+                                        .textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
                                 ForEach(question.answerChoices) { choice in
                                     answerButton(choice)
                                 }
                             }.padding(2)
-                        }.frame(height: min(132, CGFloat(question.answerChoices.count) * 38 + 4))
+                        }.frame(height: question.context == nil ? min(132, CGFloat(question.answerChoices.count) * 38 + 4) : 132)
                         .focusable().focused($answersFocused)
-                        Text("For notes or another answer, open Herdr.").foregroundStyle(.secondary)
+                        Text(question.context == nil ? "For notes or another answer, open Herdr." : "Review the request and exact approval scope above.").foregroundStyle(.secondary)
                     } else if let preview = model.attention, !preview.text.isEmpty {
                         ScrollView {
                             Text(preview.text).textSelection(.enabled)
@@ -82,12 +87,16 @@ struct HerdrAttentionView: View {
     @ViewBuilder private func answerButton(_ choice: HerdrQuestion.Choice) -> some View {
         let button = Button { model.answerAttention(choice.number) } label: {
             HStack {
-                Text(choice.label).fontWeight(.medium)
-                Text(choice.detail).foregroundStyle(.secondary).lineLimit(2)
+                Text(choice.label).fontWeight(.medium).fixedSize(horizontal: false, vertical: true)
+                Text(choice.detail).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 4)
                 if answersFocused { Text("⌥⌘" + String(choice.number)).foregroundStyle(.secondary) }
-            }.frame(maxWidth: .infinity, alignment: .leading)
+            }.padding(.horizontal, 8).padding(.vertical, 6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 6))
+                .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
         .disabled(!model.canAnswerAttention)
         .accessibilityLabel("Answer " + choice.label + ". " + choice.detail)
         if answersFocused {
