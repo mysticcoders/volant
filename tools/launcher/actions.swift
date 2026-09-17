@@ -111,10 +111,14 @@ panel.orderOut(nil)
 print("PASS: native action search, keyboard navigation, empty state, Escape, copying, and Favorites")
 
 // Entering AI Chat invokes setup routing, never a real provider in the fixture.
-panel.toggle(); panel.model.presentAIChat(); settle()
+panel.toggle(); settle(); key("\t", 48)
 verify(settingsRequests == 1 && !panel.isVisible, "Unconfigured AI Chat routes to Settings")
 chatConfig = AIConfiguration(); chatConfig?.provider = "claude"
-panel.toggle(); panel.model.presentAIChat(); settle()
+panel.toggle(); settle()
+(panel.firstResponder as? NSTextView)?.insertText("A fictional question", replacementRange: NSRange(location: NSNotFound, length: 0)); settle()
+key("\t", 48)
+verify(panel.model.acp.draft == "A fictional question" && !panel.model.acp.submitting, "Tab carries search text to an unsent chat draft")
+panel.model.acp.draft = ""; settle()
 verify(panel.model.acp.state.phase == "ready" && panel.model.acp.project.isEmpty, "Configured AI Chat automatically connects without a project")
 verify(panel.firstResponder is NSTextView, "Chat prompt receives focus")
 (panel.firstResponder as? NSTextView)?.insertText("A fictional question", replacementRange: NSRange(location: NSNotFound, length: 0)); settle()
@@ -156,9 +160,31 @@ panel.model.acp.state.messages[1].text += "\n```\n\nSee [the example](https://ex
 settle()
 verify(panel.model.acp.draft == "A fictional follow-up", "Streaming Markdown preserves the prompt draft")
 try render("chat")
+let savedMessages = panel.model.acp.state.messages
+let savedDraft = panel.model.acp.draft
 panel.orderOut(nil); settle(); panel.toggle(); settle()
+verify(!panel.model.showingACP && panel.model.query.isEmpty, "Summoning a hidden chat opens the default launcher")
+verify(panel.model.acp.state.messages == savedMessages && panel.model.acp.draft == savedDraft && panel.model.acp.active, "Summoning preserves the active conversation and draft")
+try render("chat-home")
+let search = fields(panel.contentView!).first { $0.placeholderString == "Search for apps, files, contacts, or calculate…" }!
+panel.makeFirstResponder(search)
+(panel.firstResponder as? NSTextView)?.insertText("Do not replace my draft", replacementRange: NSRange(location: NSNotFound, length: 0)); settle()
+key("\t", 48)
+verify(panel.model.showingACP && panel.model.acp.draft == savedDraft, "Tab resumes chat without overwriting its draft")
+// A busy chat stays visible on blur, but a subsequent summon returns to search.
+panel.model.acp.state.phase = "working"
+let backgroundWindow = NSWindow(contentRect: NSRect(x: 20, y: 20, width: 180, height: 100), styleMask: [.titled], backing: .buffered, defer: false)
+backgroundWindow.makeKeyAndOrderFront(nil); settle()
+verify(panel.isVisible && !panel.isKeyWindow && panel.model.showingACP, "Working chat remains visible on real focus loss")
+panel.toggle(); settle()
+verify(!panel.model.showingACP && panel.model.query.isEmpty && panel.model.acp.state.phase == "working", "Summoning a visible inactive chat returns home without stopping the turn")
+verify(panel.model.acp.state.messages == savedMessages && panel.model.acp.draft == savedDraft, "Focus loss and summon preserve conversation state")
+key("\t", 48)
+verify(panel.model.showingACP, "Tab resumes the working conversation")
+backgroundWindow.orderOut(nil)
+panel.model.acp.state.phase = "ready"
 (panel.firstResponder as? NSTextView)?.insertText("!", replacementRange: NSRange(location: NSNotFound, length: 0)); settle()
-verify(panel.model.acp.draft.contains("!") && panel.model.query == "ai", "Reopening active chat restores prompt focus and preserves draft")
+verify(panel.model.acp.draft.contains("!") && panel.model.query == "ai", "Resuming chat restores native prompt focus")
 point = NSPoint(x: 20, y: LauncherPanel.size.height - 18)
 clickPoint()
 verify(!panel.model.showingACP && panel.model.acp.active && !panel.model.acp.draft.isEmpty, "Back returns to search without ending chat or discarding its draft")

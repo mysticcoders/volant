@@ -38,7 +38,7 @@ Prevention/evidence: isolated actual-panel tests cover h/ho/hom, Down/Up, and cl
 
 ## Active conversations and window placement — September 14, 2026
 
-Focus loss previously dismissed every launcher, including active ACP work. The panel now stays visible for active ACP sessions, submitted/unsent prompts, open Wi-Fi forms, and pending connectivity actions. Ordinary search still dismisses. Summon refocuses an already-visible inactive panel; Escape and summon while focused remain explicit dismissals. Reopening active work preserves the query and draft.
+Focus loss previously dismissed every launcher, including active ACP work. The panel now stays visible for active ACP sessions, submitted/unsent prompts, open Wi-Fi forms, and pending connectivity actions. Ordinary search still dismisses. Summon refocuses an already-visible inactive panel; Escape and summon while focused remain explicit dismissals. Summoning from AI Chat returns to the default launcher while preserving its ACP session, messages, pending permissions and draft. Tab from the main search editor resumes the chat. Other active forms retain their existing preservation behavior.
 
 The wing is an explicit native drag target, with an open-hand cursor and accessibility help. Movement saves coordinates in preferences; re-summon restores them and clamps to an available screen after display changes. Tests use an isolated preference store. A semantic window backdrop keeps text and materials readable in both appearances.
 

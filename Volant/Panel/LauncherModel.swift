@@ -743,6 +743,17 @@ final class LauncherModel: ObservableObject {
         dismiss()
     }
 
+    var canTabToAIChat: Bool {
+        !showingACP && !showingDictionary && !showingTranslation && !showingEmoji &&
+        !showingAppleShortcuts && !showingAgents && wifiJoin == nil && actionTarget == nil
+    }
+
+    func chatFromSearch() {
+        guard canTabToAIChat else { return }
+        if acp.draft.isEmpty { acp.draft = query }
+        presentAIChat()
+    }
+
     func presentAIChat() {
         query = "ai"
         showingACP = true
