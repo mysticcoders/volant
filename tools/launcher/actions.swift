@@ -173,13 +173,15 @@ key("\t", 48)
 verify(panel.model.showingACP && panel.model.acp.draft == savedDraft, "Tab resumes chat without overwriting its draft")
 // A busy chat stays visible on blur, but a subsequent summon returns to search.
 panel.model.acp.state.phase = "working"
-panel.resignKey(); settle()
-verify(panel.isVisible && panel.model.showingACP, "Working chat remains visible on focus loss")
+let backgroundWindow = NSWindow(contentRect: NSRect(x: 20, y: 20, width: 180, height: 100), styleMask: [.titled], backing: .buffered, defer: false)
+backgroundWindow.makeKeyAndOrderFront(nil); settle()
+verify(panel.isVisible && !panel.isKeyWindow && panel.model.showingACP, "Working chat remains visible on real focus loss")
 panel.toggle(); settle()
 verify(!panel.model.showingACP && panel.model.query.isEmpty && panel.model.acp.state.phase == "working", "Summoning a visible inactive chat returns home without stopping the turn")
 verify(panel.model.acp.state.messages == savedMessages && panel.model.acp.draft == savedDraft, "Focus loss and summon preserve conversation state")
 key("\t", 48)
 verify(panel.model.showingACP, "Tab resumes the working conversation")
+backgroundWindow.orderOut(nil)
 panel.model.acp.state.phase = "ready"
 (panel.firstResponder as? NSTextView)?.insertText("!", replacementRange: NSRange(location: NSNotFound, length: 0)); settle()
 verify(panel.model.acp.draft.contains("!") && panel.model.query == "ai", "Resuming chat restores native prompt focus")
