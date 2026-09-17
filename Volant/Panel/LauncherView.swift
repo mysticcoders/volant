@@ -124,6 +124,14 @@ struct LauncherView: View {
                 .textFieldStyle(.plain)
                 .font(.system(size: 22, weight: .regular))
                 .focused($focused)
+            if model.canTabToAIChat {
+                Button(action: model.chatFromSearch) {
+                    HStack(spacing: 6) { Text("AI Chat"); Text("⇥") }
+                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain).help("Open AI Chat (Tab)")
+                .accessibilityLabel("Open AI Chat")
+            }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)

@@ -69,6 +69,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
             if isKeyWindow { orderOut(nil) }
             else {
                 let trace = LauncherOpeningTrace(source: source, started: started)
+                if model.showingACP { model.reset(); model.searchFocusRequest = UUID() }
                 makeKeyAndOrderFront(nil)
                 trace.finish(ready: isKeyWindow && firstResponder is NSTextView)
             }
@@ -81,7 +82,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         let previousSections = model.sections
         let previousSelection = model.selection
         model.isPresented = true
-        if !keepsVisibleOnBlur { model.reset() }
+        if model.showingACP || !keepsVisibleOnBlur { model.reset() }
         model.resumeAgentsIfNeeded()
         restorePositionOrCenter()
         os_signpost(.end, log: Self.openingLog, name: "Prepare launcher", signpostID: openingID)
@@ -222,6 +223,19 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
     func setQuery(_ text: String) { model.query = text }
 
     func apply(config: Preferences) { model.config = config }
+
+    override func sendEvent(_ event: NSEvent) {
+        // Own Tab only in the main search editor, never in a form, menu, or chat.
+        if event.type == .keyDown, event.keyCode == 48,
+           event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
+           model.canTabToAIChat,
+           let editor = searchInput(in: contentView)?.currentEditor() as? NSTextView, firstResponder === editor,
+           !editor.hasMarkedText() {
+            if !event.isARepeat { model.chatFromSearch() }
+            return
+        }
+        super.sendEvent(event)
+    }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
