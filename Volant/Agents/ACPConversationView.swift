@@ -40,11 +40,7 @@ struct ACPConversationView: View {
                             .font(.callout).foregroundStyle(.secondary)
                     }
                     ForEach(model.state.messages) { message in
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text(message.role).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                            Text(message.text).font(.system(size: 14)).textSelection(.enabled)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
+                        ACPMessageView(message: message, provider: ACPProvider(rawValue: model.provider)?.title ?? "Agent")
                     }
                     ForEach(model.state.permissions) { permission in
                         VStack(alignment: .leading, spacing: 8) {
@@ -98,7 +94,7 @@ struct ACPConversationView: View {
                         }
                     }
                 Button("Send", action: model.send).disabled(!model.canSend)
-                    .keyboardShortcut(.return, modifiers: .command)
+                    .help("Return to send; Shift-Return for a new line")
             }.padding(.horizontal, 16).padding(.bottom, 12)
         }
     }
@@ -128,5 +124,28 @@ struct ACPActivityStrip: View {
             }.buttonStyle(.plain)
             Divider()
         }
+    }
+}
+
+/// Provider Markdown is rendered locally; user prompts and tool summaries stay literal.
+private struct ACPMessageView: View {
+    let message: ACPMessage
+    let provider: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(message.role == "Agent" ? provider : message.role)
+                .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            if message.role == "Agent" {
+                MarkdownContent(text: message.text)
+            } else {
+                Text(message.text).font(.system(size: 14)).textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .padding(message.role == "You" ? 12 : 0)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.primary.opacity(message.role == "You" ? 0.05 : 0),
+                    in: RoundedRectangle(cornerRadius: 8))
     }
 }

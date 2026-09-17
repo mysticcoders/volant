@@ -123,17 +123,38 @@ if panel.model.acp.draft != "A fictional question" || panel.model.query != "ai" 
     print("Chat focus diagnostic: draft length \(panel.model.acp.draft.count), query length \(panel.model.query.count), presented \(panel.model.showingACP)")
 }
 verify(panel.model.acp.draft == "A fictional question" && panel.model.query == "ai", "Typing edits the chat prompt instead of launcher search")
-key("\r", 36)
-verify(panel.model.acp.draft.contains("\n"), "Return inserts a newline in the native prompt")
+key("\r", 36, .shift)
+verify(panel.model.acp.draft.contains("\n") && !panel.model.acp.submitting, "Shift Return inserts a newline without sending")
 let draftBeforeUndo = panel.model.acp.draft
 (panel.firstResponder as? NSTextView)?.undoManager?.undo(); settle()
 // AppKit may coalesce adjacent typing into one undo group; the binding must follow the actual editor.
 verify(panel.model.acp.draft != draftBeforeUndo && panel.model.acp.draft == (panel.firstResponder as? NSTextView)?.string, "Undo updates the chat draft binding")
 panel.model.acp.draft = "A fictional question"; settle()
-key("\r", 36, .command)
-verify(panel.model.acp.submitting, "Command Return submits through the native chat editor")
+key("\r", 36)
+verify(panel.model.acp.submitting, "Return submits through the native chat editor")
 // The fixture has no XPC connection; reset the local submitting flag without sending a real prompt.
 panel.model.acp.submitting = false
+panel.model.acp.draft = ""; settle()
+key("\r", 36)
+verify(!panel.model.acp.submitting, "Return does not submit an empty draft")
+panel.model.acp.draft = "A fictional question"; settle()
+if let editor = panel.firstResponder as? NSTextView {
+    editor.setMarkedText("かな", selectedRange: NSRange(location: 2, length: 0), replacementRange: NSRange(location: NSNotFound, length: 0))
+    verify(editor.hasMarkedText(), "Fixture begins input method composition")
+    key("\r", 36)
+    verify(!panel.model.acp.submitting, "Return during marked text composition does not submit")
+    editor.unmarkText()
+}
+panel.model.acp.draft = "A fictional follow-up"; settle()
+panel.model.acp.state.messages = [
+    ACPMessage(role: "You", text: "Show me a **literal** Markdown example."),
+    ACPMessage(role: "Agent", text: "## A clearer answer\nUse **bold** for emphasis and `code` for names.\n\n- Keep messages readable\n- Copy code when needed\n\n```swift\nlet greeting = \"Hello, world!\"\nprint(greeting)")
+]
+settle()
+try render("chat-streaming")
+panel.model.acp.state.messages[1].text += "\n```\n\nSee [the example](https://example.com)."
+settle()
+verify(panel.model.acp.draft == "A fictional follow-up", "Streaming Markdown preserves the prompt draft")
 try render("chat")
 panel.orderOut(nil); settle(); panel.toggle(); settle()
 (panel.firstResponder as? NSTextView)?.insertText("!", replacementRange: NSRange(location: NSNotFound, length: 0)); settle()
