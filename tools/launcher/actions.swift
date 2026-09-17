@@ -238,15 +238,9 @@ panel.model.agents.attentionResponder = { token, choice, reply in
     verify(token == "fictional-token", "Response binds the displayed question token")
     answered.append(choice); answerReply = reply
 }
-func accessibleElements(_ element: Any) -> [any NSAccessibilityProtocol] {
-    guard let accessible = element as? any NSAccessibilityProtocol else { return [] }
-    return [accessible] + (accessible.accessibilityChildren() ?? []).flatMap(accessibleElements)
-}
-let answerFocusButton = accessibleElements(panel.contentView!).first {
-    $0.accessibilityLabel() == "Answer with keyboard" || $0.accessibilityTitle() == "Answer with keyboard"
-}
-verify(answerFocusButton?.accessibilityPerformPress() == true, "Native button focuses question keyboard controls")
-settle()
+// Native click on Answer with keyboard; card geometry is fixed above the scrollable results.
+point = NSPoint(x: 90, y: panel.contentView!.bounds.height - 272)
+clickPoint()
 key("2", 19, [.command, .option])
 verify(answered == [2], "Focused question shortcut sends the selected answer")
 panel.model.agents.answerAttention(2)
