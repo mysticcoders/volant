@@ -8,14 +8,23 @@ struct MarkdownView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 10) {
-                ForEach(MarkdownBlocks.parseIndexed(text)) { item in
-                    BlockView(block: item.block, onCopied: onCopied)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            MarkdownContent(text: text, onCopied: onCopied)
             .padding(16)
         }
+    }
+}
+
+/// Block content without a nested scroll view, also used by the chat transcript.
+struct MarkdownContent: View {
+    let text: String
+    var onCopied: (String) -> Void = { _ in }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(MarkdownBlocks.parseIndexed(text)) { item in
+                BlockView(block: item.block, onCopied: onCopied)
+            }
+        }.frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

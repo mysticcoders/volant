@@ -26,6 +26,7 @@ struct ACPPromptView: NSViewRepresentable {
         editor.textContainer?.widthTracksTextView = true
         editor.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)
         editor.setAccessibilityLabel("Agent prompt")
+        editor.setAccessibilityHelp("Return to send; Shift-Return for a new line")
         editor.delegate = context.coordinator
         editor.string = text
         editor.submit = send
@@ -72,8 +73,11 @@ struct ACPPromptView: NSViewRepresentable {
     final class PromptTextView: NSTextView {
         var submit: () -> Void = {}
         override func keyDown(with event: NSEvent) {
-            if event.keyCode == 36 && event.modifierFlags.intersection([.command, .control, .option, .shift]) == .command {
-                submit()
+            let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
+            let isReturn = event.keyCode == 36 || event.keyCode == 76
+            // Let the input method commit its marked text before considering submission.
+            if isReturn && !hasMarkedText() && (modifiers.isEmpty || modifiers == .command) {
+                if !event.isARepeat { submit() }
             } else { super.keyDown(with: event) }
         }
     }
