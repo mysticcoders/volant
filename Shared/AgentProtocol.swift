@@ -9,6 +9,7 @@ import Foundation
     func acpCancel(reply: @escaping (String?) -> Void)
     func acpPermission(request: String, option: String, reply: @escaping (String?) -> Void)
     func acpStop(reply: @escaping () -> Void)
+    func readAgentAttention(paneID: String, terminalID: String, sessionIdentity: String, reply: @escaping (Data?, String?) -> Void)
     func listAgents(reply: @escaping (Data?, String?) -> Void)
     func focusAgent(paneID: String, terminalID: String, sessionIdentity: String, reply: @escaping (String?) -> Void)
 }

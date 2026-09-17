@@ -76,6 +76,26 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
             } catch { reply(nil, error.localizedDescription) }
         }
     }
+    func readAgentAttention(paneID: String, terminalID: String, sessionIdentity: String, reply: @escaping (Data?, String?) -> Void) {
+        queue.async {
+            do {
+                guard !paneID.hasPrefix("-"), !paneID.isEmpty, paneID.count < 128 else { throw CocoaError(.fileReadCorruptFile) }
+                func current() throws -> AgentSession {
+                    let agents = try AgentSession.decodeList(self.run(["agent", "list"]))
+                    guard let agent = agents.first(where: { $0.paneID == paneID && $0.terminalID == terminalID &&
+                        $0.sessionIdentity == sessionIdentity && $0.agentStatus == "blocked" }) else {
+                        throw CocoaError(.fileReadNoSuchFile)
+                    }
+                    return agent
+                }
+                _ = try current()
+                let data = try self.run(["agent", "read", paneID, "--source", "detection", "--lines", "30", "--format", "text"])
+                _ = try current() // Never display a replacement occupant's output under an old identity.
+                _ = try HerdrAttention.preview(data)
+                reply(data, nil)
+            } catch { reply(nil, "This question changed or could not be read. Open the pane in Herdr to review it.") }
+        }
+    }
     func focusAgent(paneID: String, terminalID: String, sessionIdentity: String, reply: @escaping (String?) -> Void) {
         queue.async {
             do {

@@ -19,6 +19,7 @@ struct LauncherView: View {
             Divider().opacity(0.6)
             if model.promotedHarness != nil {
                 agentStatusStrip
+                HerdrAttentionView(model: agents, sessions: model.promotedSessions)
                 Divider().opacity(0.6)
             }
             if model.showingAppleShortcuts {
