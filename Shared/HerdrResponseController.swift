@@ -16,7 +16,12 @@ final class HerdrResponseController {
     private var consumed: [String: String] = [:]
     var now: () -> Date = Date.init
     let run: (HerdrMachine?, [String]) throws -> Data
-    init(run: @escaping ([String]) throws -> Data) { self.run = { _, args in try run(args) } }
+    init(run: @escaping ([String]) throws -> Data) {
+        self.run = { machine, args in
+            guard machine == nil else { throw CocoaError(.featureUnsupported) }
+            return try run(args)
+        }
+    }
     init(runOnMachine: @escaping (HerdrMachine?, [String]) throws -> Data) { self.run = runOnMachine }
     private func validate(_ target: AgentSession) throws {
         guard !target.paneID.isEmpty, !target.paneID.hasPrefix("-"), target.paneID.count < 128,

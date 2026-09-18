@@ -80,6 +80,13 @@ final class HerdrMachineTests: XCTestCase {
         XCTAssertThrowsError(try controller.respond(token: token, choice: 1))
         XCTAssertEqual(keys.count, 1)
     }
+    func testLocalOnlyControllerRejectsRemoteTargets() throws {
+        var calls = 0
+        let controller = HerdrResponseController(run: { _ in calls += 1; return try self.list() })
+        let target = try AgentSession.decodeList(list(), machine: remote)[0]
+        XCTAssertThrowsError(try controller.read(target))
+        XCTAssertEqual(calls, 0)
+    }
     func testCatalogRejectsAmbiguousIDs() throws {
         XCTAssertThrowsError(try HerdrMachine.decode(JSONEncoder().encode([remote, remote])))
     }
