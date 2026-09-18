@@ -46,6 +46,7 @@ struct LauncherView: View {
             } else {
                 if model.showingAgents {
                     HerdrMachineStatusView(machines: agents.machines)
+                        .padding(.horizontal, 20)
                     HStack {
                         Text("Herdr panes").foregroundStyle(.secondary)
                         Spacer()
