@@ -13,7 +13,10 @@ struct Preferences: Codable {
     // Compatibility for existing callers and older configuration files.
     var promotedHarness: String? {
         get { statusBar.sources.contains("herdr") ? statusBar.herdrFilter : nil }
-        set { statusBar.sources = newValue == nil ? [] : ["herdr"]; if let newValue { statusBar.herdrFilter = newValue } }
+        set {
+            statusBar.sources.removeAll { $0 == "herdr" }
+            if let newValue { statusBar.sources.append("herdr"); statusBar.herdrFilter = newValue }
+        }
     }
     static let harnessOptions: [(id: String, title: String)] = [("all", "All Herdr agents"), ("opencode", "OpenCode"), ("cursor", "Cursor"), ("claude", "Claude Code"), ("codex", "Codex")]
     var snippets: [Snippet] = []
@@ -101,7 +104,8 @@ struct Preferences: Codable {
         try updateStatusBar(enabled: harness != nil, filter: harness, at: url)
     }
 
-    static func updateStatusBar(enabled: Bool? = nil, filter: String? = nil, at url: URL = configURL) throws {
+    static func updateStatusBar(source: String = "herdr", enabled: Bool? = nil, filter: String? = nil, at url: URL = configURL) throws {
+        guard ["herdr", "ai-chat"].contains(source) else { throw CocoaError(.fileReadCorruptFile) }
         if let filter, !harnessOptions.contains(where: { $0.id == filter }) { throw CocoaError(.fileReadCorruptFile) }
         let data = try Data(contentsOf: url)
         let current = try JSONDecoder().decode(Preferences.self, from: data)
@@ -109,8 +113,8 @@ struct Preferences: Codable {
         var bar = object["statusBar"] as? [String: Any] ?? [:]
         var sources = current.statusBar.sources
         if let enabled {
-            sources.removeAll { $0 == "herdr" }
-            if enabled { sources.append("herdr") }
+            sources.removeAll { $0 == source }
+            if enabled { sources.append(source) }
         }
         bar["sources"] = sources
         bar["herdrFilter"] = filter ?? current.statusBar.herdrFilter

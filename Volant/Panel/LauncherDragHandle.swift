@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// The wing is a native window drag target; text fields keep their normal selection behavior.
+/// Native targets on the top edge and wing leave text selection and controls intact.
 struct LauncherDragHandle: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView { WindowDragView() }
     func updateNSView(_ nsView: NSView, context: Context) {}
@@ -16,7 +16,7 @@ final class WindowDragView: NSView {
         setAccessibilityElement(true)
         setAccessibilityRole(.group)
         setAccessibilityLabel("Move Volant window")
-        setAccessibilityHelp("Drag the wing to align the window with screen edges or center. Hold Option to move freely. Its position is remembered.")
+        setAccessibilityHelp("Drag to align the window to the screen's three-by-three placement grid. Hold Option to move freely. Its position is remembered.")
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     override var mouseDownCanMoveWindow: Bool { false }

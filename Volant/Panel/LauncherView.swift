@@ -22,6 +22,9 @@ struct LauncherView: View {
                 HerdrAttentionView(model: agents, sessions: model.promotedSessions)
                 Divider().opacity(0.6)
             }
+            if model.config.statusBar.sources.contains("ai-chat") {
+                ACPActivityStrip(model: model.acp) { model.presentAIChat() }
+            }
             if model.showingAppleShortcuts {
                 HStack {
                     Text("Apple Shortcuts").foregroundStyle(.secondary)
@@ -30,9 +33,6 @@ struct LauncherView: View {
                         .disabled(model.appleShortcuts.loading)
                     Button("Open Shortcuts") { model.appleShortcuts.openApp() }
                 }.font(.system(size: 12)).padding(.horizontal, 20).padding(.vertical, 6)
-            }
-            if !model.showingACP {
-                ACPActivityStrip(model: model.acp) { model.presentAIChat() }
             }
             if model.showingAgents, let message = agents.actionMessage {
                 Text(message).font(.system(size: 12)).foregroundStyle(.secondary)
@@ -68,6 +68,11 @@ struct LauncherView: View {
         .background(.regularMaterial.opacity(LauncherPanel.opacity))
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.primary.opacity(0.08)))
+        .overlay(alignment: .top) {
+            Capsule().fill(Color.secondary.opacity(0.3)).frame(width: 28, height: 3)
+                .padding(.top, 4).frame(maxWidth: .infinity).frame(height: 12)
+                .overlay(LauncherDragHandle())
+        }
         .overlay(alignment: .bottomTrailing) {
             if let target = model.actionTarget {
                 ZStack(alignment: .bottomTrailing) {

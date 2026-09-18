@@ -241,6 +241,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func checkForUpdates() { updater.checkForUpdates() }
 
     @objc private func showSettings() {
+        panel.orderOut(nil)
         settingsPanel.refresh(config, apps: index.apps)
         settingsPanel.showWindow(nil)
         NSApp.activate(ignoringOtherApps: true)

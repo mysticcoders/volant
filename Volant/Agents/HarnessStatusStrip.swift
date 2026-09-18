@@ -16,9 +16,10 @@ struct HarnessStatusStrip: View {
             HStack(spacing: 12) {
                 Image(systemName: "waveform.path")
                     .foregroundStyle(Color.accentColor)
-                Button(!pinned ? "Herdr" : title) {
+                Button("Herdr") {
                     onOpen()
                 }.buttonStyle(.plain).fontWeight(.medium)
+                if pinned && title != "All Herdr agents" { Text(title).foregroundStyle(.secondary) }
                 if connected {
                     let attention = sessions.filter { $0.agentStatus == "blocked" }.count
                     let working = sessions.filter { $0.agentStatus == "working" }.count

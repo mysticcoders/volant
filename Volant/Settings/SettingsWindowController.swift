@@ -140,7 +140,7 @@ private struct SettingsView: View {
     @AppStorage("showHerdrDetails") private var showHerdrDetails = false
     private var statusBar: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("Choose which sources appear below the launcher’s search field. The bar stays hidden when no source is enabled.").foregroundStyle(.secondary)
+            Text("Pin the sources you want below the launcher’s search field. Each source is independent; unpin all to hide the status area.").foregroundStyle(.secondary)
             Toggle("Herdr agent activity", isOn: Binding(get: { state.config.statusBar.sources.contains("herdr") }, set: { value in
                 apply { try Preferences.updateStatusBar(enabled: value, at: configURL) }
             }))
@@ -152,6 +152,12 @@ private struct SettingsView: View {
             Toggle("Show pane details", isOn: $showHerdrDetails)
                 .disabled(!state.config.statusBar.sources.contains("herdr"))
             Text("Includes Local and enabled machines saved in Herdr. Manage remote connections in Herdr. AI connections are configured separately in AI.").font(.callout).foregroundStyle(.secondary)
+            Divider()
+            Toggle("AI Chat activity", isOn: Binding(get: { state.config.statusBar.sources.contains("ai-chat") }, set: { value in
+                apply { try Preferences.updateStatusBar(source: "ai-chat", enabled: value, at: configURL) }
+            }))
+            Text("Show a shortcut to your active Volant conversation, its provider, and whether it needs your attention. Hidden when no conversation is active.")
+                .font(.callout).foregroundStyle(.secondary)
         }
     }
 

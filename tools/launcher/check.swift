@@ -386,7 +386,10 @@ print("PASS: connectivity lists, password form, cancel, duplicate joins, errors,
 
 
 // A real key-window transfer must preserve a live conversation and unsent input.
-let sticky = LauncherPanel(index: AppIndex(), clipboard: clipboard, notes: notes, config: Preferences(), usage: usage, positionStore: positionDefaults, onNote: { _ in })
+var openedSettings = 0
+let sticky = LauncherPanel(index: AppIndex(), clipboard: clipboard, notes: notes, config: Preferences(), usage: usage, positionStore: positionDefaults, onNote: { action in
+    if case .settings = action { openedSettings += 1 }
+})
 sticky.model.searchesSecondarySources = false
 sticky.model.presentAIChat()
 sticky.model.acp.state.phase = "working"
@@ -411,6 +414,17 @@ verify(sticky.model.query.isEmpty && sticky.model.acp.draft == "Keep this fictio
 sticky.toggle()
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 verify(sticky.model.query.isEmpty && sticky.model.acp.draft == "Keep this fictional draft", "Reopening shows search and preserves the chat draft")
+otherWindow.makeKeyAndOrderFront(nil)
+RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+verify(!sticky.isVisible && sticky.model.acp.state.sessionID == "fictional-session", "Untouched home dismisses on blur despite a retained ACP session")
+sticky.toggle()
+let settingsKey = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: .command,
+    timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: sticky.windowNumber, context: nil,
+    characters: ",", charactersIgnoringModifiers: ",", isARepeat: false, keyCode: 43)!
+sticky.sendEvent(settingsKey)
+verify(openedSettings == 1 && !sticky.isVisible, "Command comma routes to Settings after hiding launcher")
+verify(sticky.model.acp.state.sessionID == "fictional-session" && !sticky.model.acp.draft.isEmpty, "Opening Settings preserves chat and draft")
+sticky.toggle()
 sticky.model.acp.state.phase = "disconnected"
 sticky.model.presentAIChat()
 otherWindow.makeKeyAndOrderFront(nil)
@@ -610,6 +624,23 @@ dragHandle.mouseUp(with: dragEvent(.leftMouseUp, at: startLocation))
 verify(!sticky.snapGuides.isVisible)
 sticky.orderOut(nil)
 print("PASS: native wing drag and release use snap geometry and clear guides")
+
+// Dispatch through NSWindow hit testing, rather than calling the drag view directly.
+sticky.toggle()
+sticky.contentView!.layoutSubtreeIfNeeded()
+func dragHandles(_ view: NSView) -> [WindowDragView] {
+    (view as? WindowDragView).map { [$0] } ?? view.subviews.flatMap(dragHandles)
+}
+let topGrip = dragHandles(sticky.contentView!).first { $0.bounds.width > 100 }!
+let gripPoint = topGrip.convert(NSPoint(x: topGrip.bounds.midX, y: topGrip.bounds.midY), to: nil)
+let beforeGripDrag = sticky.frame.origin
+sticky.sendEvent(dragEvent(.leftMouseDown, at: gripPoint))
+sticky.sendEvent(dragEvent(.leftMouseDragged, at: NSPoint(x: gripPoint.x + 58, y: gripPoint.y - 43)))
+sticky.sendEvent(dragEvent(.leftMouseUp, at: gripPoint))
+verify(sticky.frame.origin != beforeGripDrag, "Full-width top grip receives actual window-dispatched drag events")
+verify(!sticky.snapGuides.isVisible, "Window-dispatched mouse release clears guides")
+sticky.orderOut(nil)
+print("PASS: top grip hit testing moves the launcher through NSWindow event dispatch")
 
 // Built-in discovery, power commands and emoji grid use fictional services and clipboard.
 final class FixtureCaffeinateAssertions: CaffeinateAssertions {
