@@ -128,7 +128,7 @@ enum ResultRow: Identifiable, Hashable {
         case .clip: return "Copy to Clipboard"
         case .note: return "Open Note"
         case .newNote: return "Create Note"
-        case .extensionRun: return "Run Extension"
+        case .extensionRun(let ext, _): return ext.enabled ? "Run Extension" : "Enable and Run…"
         case .extensionResult: return "Copy Result"
         case .snippet: return "Copy Snippet"
         case .emoji: return "Copy Emoji"
@@ -261,7 +261,9 @@ final class LauncherModel: ObservableObject {
     private let clipboard: ClipboardStore
     private let notes: NotesStore
     private let onNote: (LauncherAction) -> Void
-    let extensions = ExtensionManager()
+    var extensions = ExtensionManager()
+    @Published var pendingExtension: ExtensionPermissionRequest?
+    @Published private(set) var extensionRunning = false
     let usage: UsageStore
     var config: Preferences { didSet { promotedHarness = config.promotedHarness } }
     var searchesSecondarySources = true
@@ -307,7 +309,35 @@ final class LauncherModel: ObservableObject {
         }
     }
 
+    func enablePendingExtension() {
+        guard let request = pendingExtension else { return }
+        pendingExtension = nil
+        do {
+            try extensions.setEnabled(request.extensionItem, true)
+            guard let enabled = extensions.extensions.first(where: { $0.id == request.extensionItem.id }) else { throw ExtensionManager.ExtensionError.changed }
+            sections = [ResultSection(title: "Extensions", rows: [.extensionRun(enabled, input: request.input)])]
+            runExtension(enabled, input: request.input)
+        } catch { notice = error.localizedDescription }
+    }
+    private func runExtension(_ ext: InstalledExtension, input: String) {
+        guard !extensionRunning else { return }
+        extensionRunning = true
+        let gen = generation
+        notice = "Running \(ext.name)…"
+        extensions.run(ext, input: input) { [weak self] result in
+            guard let self else { return }
+            self.extensionRunning = false
+            guard gen == self.generation else { return }
+            switch result {
+            case .success(let output):
+                self.notice = nil
+                self.sections = [ResultSection(title: ext.name, rows: [.extensionResult(output)])]
+            case .failure(let error): self.notice = "Extension failed: \(error.localizedDescription)"
+            }
+        }
+    }
     func reset() {
+        pendingExtension = nil
         showingACP = false
         actionTarget = nil
         wifiJoin = nil
@@ -448,9 +478,10 @@ final class LauncherModel: ObservableObject {
             let parts = rest.split(separator: " ", maxSplits: 1).map(String.init)
             let name = parts.first ?? ""
             let input = parts.count > 1 ? parts[1] : ""
+            extensions.configURL = actionConfigURL
             extensions.reload()
             let rows = extensions.search(name).map { ResultRow.extensionRun($0, input: input) }
-            notice = rows.isEmpty ? "No extensions installed. Folders go in Application Support/Vey/Extensions." : nil
+            notice = rows.isEmpty ? "No matching extensions. Manage extensions in Settings → Extensions." : nil
             sections = rows.isEmpty ? [] : [ResultSection(title: "Extensions", rows: rows)]
             return
         }
@@ -708,17 +739,8 @@ final class LauncherModel: ObservableObject {
         case .note(let note): onNote(.open(note.id))
         case .newNote(let text): onNote(.create(text + "\n"))
         case .extensionRun(let ext, let input):
-            let gen = generation
-            extensions.run(ext, input: input) { [weak self] result in
-                guard let self, gen == self.generation else { return }
-                switch result {
-                case .success(let output):
-                    self.sections = [ResultSection(title: ext.name, rows: [.extensionResult(output)])]
-                case .failure(let error):
-                    self.notice = "Extension failed: \(error.localizedDescription)"
-                    self.sections = []
-                }
-            }
+            if !ext.enabled { pendingExtension = ExtensionPermissionRequest(extensionItem: ext, input: input) }
+            else { runExtension(ext, input: input) }
             return
         case .extensionResult(let text): copy(text)
         case .snippet(let snippet): copy(SnippetExpander.expand(snippet.body))

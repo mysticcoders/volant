@@ -5,5 +5,6 @@
   "module": "spin.wasm",
   "capabilities": [],
   "timeoutSeconds": 1,
-  "sha256": "abc7a5d2f94a8c5e686fb867e74fb6628f8d828cfd429c2b36be5c5298060413"
+  "sha256": "4381706c7977052094b90903d7906a31463d52ba385df78c49cccf00907626d5",
+  "abiVersion": 1
 }

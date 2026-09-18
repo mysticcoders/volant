@@ -54,3 +54,5 @@
 - Herdr remote identity includes saved machine ID, SSH target and remote session as well as pane/terminal identity. Revalidate saved profiles before forwarding; never fall back to Local after a remote failure. Keep discovery separate from answer delivery, remove unavailable panes from actionable state, and test duplicate pane IDs across machines. See `docs/herdr-machines.md`.
 
 - Herdr Local discovery must never queue behind catalog or remote discovery. Publish each destination independently, bound remote concurrency, and reject stale per-machine replies after profile changes or disconnect. Test delayed replies without real SSH hosts.
+
+- Extension enablement is opt-in and bound to the manifest/code hash. Do not reuse a mutable capability grant across invocations or allow stale results after query changes. Validate actual WASM execution separately from signed XPC delivery; keep Hello World permission-free and preserve user configuration on toggle edits. Run `tools/check-extensions.sh` for runtime/ABI changes.

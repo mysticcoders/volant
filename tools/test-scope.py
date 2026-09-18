@@ -8,7 +8,7 @@ from pathlib import Path
 
 UI_PATTERNS = (
     "Volant/**/*View.swift", "Volant/**/*Panel.swift", "Volant/**/*WindowController.swift",
-    "Volant/Panel/*", "Volant/Usage/UsageStore.swift", "Volant/Shortcuts/*", "Shared/AppleShortcut.swift", "Volant/Emoji/*", "Volant/Translation/*", "Volant/Dictionary/*", "Volant/Settings/Shortcut*.swift", "Volant/Settings/GlobalShortcutRow.swift",
+    "Volant/Extensions/*", "Shared/ExtensionProtocol.swift", "VolantExtensionHost/*", "extensions/*", "Volant/Panel/*", "Volant/Usage/UsageStore.swift", "Volant/Shortcuts/*", "Shared/AppleShortcut.swift", "Volant/Emoji/*", "Volant/Translation/*", "Volant/Dictionary/*", "Volant/Settings/Shortcut*.swift", "Volant/Settings/GlobalShortcutRow.swift",
     "Volant/Settings/Preferences.swift", "Volant/Settings/AIConfiguration.swift", "Volant/Settings/AppBindingEditor.swift", "Volant/Settings/AppBindingRow.swift", "Volant/HotKeys/KeyCombo.swift", "Volant/Settings/StatusMenu.swift",
     "Volant/Notes/LiveMarkdown*.swift", "Volant/Agents/*Model.swift", "Volant/Agents/HarnessStatusStrip.swift",
     "Volant/App/main.swift", "Volant/App/AppDelegate.swift", "Volant/Resources/*",
@@ -18,7 +18,7 @@ UI_PATTERNS = (
     "VolantTests/LiveMarkdownTests.swift", "VolantTests/NotesStoreTests.swift",
 )
 NATIVE_PATTERNS = ("Volant/*", "VolantTests/*", "VolantAgentHost/*", "VolantExtensionHost/*",
-                   "Shared/*", "Scripts/*", "tools/*", "project.yml", ".swiftlint.yml", ".github/workflows/*")
+                   "Shared/*", "extensions/*", "Scripts/*", "tools/*", "project.yml", ".swiftlint.yml", ".github/workflows/*")
 
 
 def classify(paths):
