@@ -215,8 +215,10 @@ panel.model.agents.machines = [
     .init(id: "local", label: "Local", state: "connected", detail: "1 pane"),
     .init(id: "remote:fixture", label: "Build Mac", state: "loading", detail: "Loading panes…")
 ]
+panel.toggle()
 panel.model.query = "agents"
-panel.toggle(); settle()
+settle()
+verify(panel.model.showingAgents && panel.model.rows.count == 1, "Local pane is usable while the remote machine loads")
 try render("machines-loading")
 panel.orderOut(nil)
 panel.model.query = ""
