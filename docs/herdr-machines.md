@@ -21,3 +21,5 @@ Next: verify the signed app against a compatible remote machine using a fictiona
 ## Progressive discovery regression checks
 
 The former combined inventory reply waited for every remote process before publishing Local. Independent XPC requests now isolate local/catalog/remote scheduling. Callback generations and per-destination request IDs reject replies after disconnect, removal, disabling, or retargeting. A failed machine loses only its own actionable panes; catalog failure clears remote destinations but preserves Local. Tests hold catalog/remote replies explicitly to prove local results and later local refreshes do not wait; native light/dark fixtures cover connected Local alongside a loading remote. Installed signed-XPC behavior remains separate from injected transport tests.
+
+During verification, the unrelated Apple Shortcuts fixture exhausted its fixed 200 ms result wait in the dark-mode Tart pass. It now waits at most three seconds for the expected stable row IDs and still fails if they never arrive. This changes test synchronization only, not product timing.
