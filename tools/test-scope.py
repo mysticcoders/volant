@@ -12,7 +12,7 @@ UI_PATTERNS = (
     "Volant/Settings/Preferences.swift", "Volant/Settings/AIConfiguration.swift", "Volant/Settings/AppBindingEditor.swift", "Volant/Settings/AppBindingRow.swift", "Volant/HotKeys/KeyCombo.swift", "Volant/Settings/StatusMenu.swift",
     "Volant/Notes/LiveMarkdown*.swift", "Volant/Agents/*Model.swift", "Volant/Agents/HarnessStatusStrip.swift",
     "Volant/App/main.swift", "Volant/App/AppDelegate.swift", "Volant/Resources/*",
-    "Shared/LauncherRouting.swift", "Shared/ACPTypes.swift", "Shared/HerdrAttention.swift", "Shared/HerdrQuestion.swift", "Shared/HerdrClaudeQuestion.swift", "Shared/HerdrResponseController.swift", "Shared/AgentProtocol.swift", "Volant/SystemControl/SystemSettingsDestination.swift",
+    "Shared/LauncherRouting.swift", "Shared/ACPTypes.swift", "Shared/HerdrMachines.swift", "Shared/HerdrAttention.swift", "Shared/HerdrQuestion.swift", "Shared/HerdrClaudeQuestion.swift", "Shared/HerdrResponseController.swift", "Shared/AgentProtocol.swift", "Volant/SystemControl/SystemSettingsDestination.swift",
     "tools/interaction-speed/*.swift", "tools/profile-interaction.sh", "tools/launcher/*", "tools/settings/*", "tools/marketing/*", "tools/raycast/render.swift",
     "tools/check-launcher.sh", "tools/check-launcher-actions.sh", "tools/run-bounded-check.py", "tools/test-ui-vm.py", "tools/preview-settings.sh", "tools/render-*.sh",
     "VolantTests/LiveMarkdownTests.swift", "VolantTests/NotesStoreTests.swift",

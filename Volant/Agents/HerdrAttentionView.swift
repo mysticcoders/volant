@@ -16,7 +16,7 @@ struct HerdrAttentionView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 8) {
                         Image(systemName: "questionmark.bubble").foregroundStyle(.orange)
-                        Text(session.provider + " · " + session.project).fontWeight(.medium).lineLimit(1)
+                        Text(session.machineLabel + " · " + session.provider + " · " + session.project).fontWeight(.medium).lineLimit(1)
                         Spacer(minLength: 4)
                         if waiting.count > 1 {
                             Button { advance(-1) } label: { Image(systemName: "chevron.left") }
@@ -68,7 +68,7 @@ struct HerdrAttentionView: View {
                         Spacer()
                         Button("Refresh", action: model.refreshAttention).disabled(model.attentionLoading || model.attentionAnswering)
                         Button("Open in Herdr") { model.focus(session) }
-                            .disabled(model.busy)
+                            .disabled(model.attentionAnswering)
                             .help("Select this pane in Herdr, then switch to your Herdr terminal")
                     }
                     if let message = model.attentionResponse ?? model.actionMessage { Text(message).foregroundStyle(.secondary) }

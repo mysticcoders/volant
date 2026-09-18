@@ -15,11 +15,17 @@ final class HerdrResponseController {
     private var pending: [String: Pending] = [:]
     private var consumed: [String: String] = [:]
     var now: () -> Date = Date.init
-    let run: ([String]) throws -> Data
-    init(run: @escaping ([String]) throws -> Data) { self.run = run }
+    let run: (HerdrMachine?, [String]) throws -> Data
+    init(run: @escaping ([String]) throws -> Data) {
+        self.run = { machine, args in
+            guard machine == nil else { throw CocoaError(.featureUnsupported) }
+            return try run(args)
+        }
+    }
+    init(runOnMachine: @escaping (HerdrMachine?, [String]) throws -> Data) { self.run = runOnMachine }
     private func validate(_ target: AgentSession) throws {
         guard !target.paneID.isEmpty, !target.paneID.hasPrefix("-"), target.paneID.count < 128,
-              let current = try AgentSession.decodeList(run(["agent", "list"])).first(where: {
+              let current = try AgentSession.decodeList(run(target.machine, ["agent", "list"]), machine: target.machine).first(where: {
                   $0.id == target.id && $0.sessionIdentity == target.sessionIdentity && $0.agentStatus == "blocked"
               }), current.stateChangeSequence == target.stateChangeSequence else {
             throw failure("This pane or question changed. Refresh before answering.")
@@ -27,7 +33,7 @@ final class HerdrResponseController {
     }
     private func screen(_ target: AgentSession) throws -> String {
         try validate(target)
-        let data = try run(["agent", "read", target.paneID, "--source", "detection", "--lines", "80", "--format", "text"])
+        let data = try run(target.machine, ["agent", "read", target.paneID, "--source", "detection", "--lines", "80", "--format", "text"])
         guard data.count <= 128_000, let text = String(data: data, encoding: .utf8) else { throw failure("Couldn’t read the current question.") }
         try validate(target)
         return text
@@ -58,7 +64,7 @@ final class HerdrResponseController {
         consumed[target.id] = identity
         let delta = choice - question.selected
         if delta != 0 {
-            _ = try run(["agent", "send-keys", target.paneID] + Array(repeating: delta > 0 ? "down" : "up", count: abs(delta)))
+            _ = try run(target.machine, ["agent", "send-keys", target.paneID] + Array(repeating: delta > 0 ? "down" : "up", count: abs(delta)))
         }
         // Selection is a separate operation. Re-read before Enter; never blindly append Enter to navigation.
         var selected: HerdrQuestion?
@@ -71,11 +77,11 @@ final class HerdrResponseController {
             Thread.sleep(forTimeInterval: 0.08)
         }
         guard selected != nil else { throw failure("Couldn’t confirm the selected answer. Review it in Herdr before retrying.") }
-        _ = try run(["agent", "send-keys", target.paneID, "enter"])
+        _ = try run(target.machine, ["agent", "send-keys", target.paneID, "enter"])
         // Key delivery is not acknowledgement. Look for an advance; never resend on timeout.
         for _ in 0..<10 {
             Thread.sleep(forTimeInterval: 0.15)
-            guard let agents = try? AgentSession.decodeList(run(["agent", "list"])) else {
+            guard let agents = try? AgentSession.decodeList(run(target.machine, ["agent", "list"]), machine: target.machine) else {
                 return "Answer sent, but confirmation is unavailable. Check Herdr before retrying."
             }
             guard let current = agents.first(where: { $0.id == target.id && $0.sessionIdentity == target.sessionIdentity }) else {

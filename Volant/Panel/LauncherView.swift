@@ -45,6 +45,8 @@ struct LauncherView: View {
                 EmojiGridView(model: model)
             } else {
                 if model.showingAgents {
+                    HerdrMachineStatusView(machines: agents.machines)
+                        .padding(.horizontal, 20)
                     HStack {
                         Text("Herdr panes").foregroundStyle(.secondary)
                         Spacer()
@@ -145,7 +147,7 @@ struct LauncherView: View {
                            pinned: model.promotedHarness != nil,
                            onOpen: { model.showPromotedAgents() },
                            onConnect: { if agents.connected { agents.disconnect() } else { agents.connect() } },
-                           onPromote: { model.promoteHarness($0) })
+                           onPromote: { model.promoteHarness($0) }, machines: agents.machines)
     }
 
     private var results: some View {
@@ -326,7 +328,7 @@ private struct RowView: View {
         case .systemSettings: return "Open this pane in System Settings"
         case .settings: return "Preferences, app shortcuts and backups"
         case .reloadConfig: return "Apply changes from config.json"
-        case .agentSession(let session): return session.provider + " · " + session.paneID
+        case .agentSession(let session): return session.machineLabel + " · " + session.provider + " · " + session.paneID
         case .connectivity(let item): return item.detail
         case .audioRoute(let route): return route.direction.rawValue.capitalized
         case .volume(_, let detail): return detail.isEmpty ? nil : detail

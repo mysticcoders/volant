@@ -50,3 +50,5 @@
 - Dictionary lookups use validated UTF-16 ranges and explicit ownership of returned CFStrings. Keep calls off the UI executor, reject stale completions after edits/dismissal, and never persist or log lookup text. See `docs/dictionary-quality.md`; enabled-dictionary coverage and signed app handoff require separate native evidence.
 
 - Memory reports must separate physical footprint, RSS, live allocations, and transient peaks. Use isolated fictional fixtures, fresh-process repetitions and explicit autorelease-pool boundaries; retained footprint alone is not a leak verdict. Keep model-only measurements distinct from installed UI/XPC behavior, and never capture owner process arguments or memory contents. See `tools/memory/README.md` and `docs/memory-profile-2026-09-15.md`.
+
+- Herdr remote identity includes saved machine ID, SSH target and remote session as well as pane/terminal identity. Revalidate saved profiles before forwarding; never fall back to Local after a remote failure. Keep discovery separate from answer delivery, remove unavailable panes from actionable state, and test duplicate pane IDs across machines. See `docs/herdr-machines.md`.

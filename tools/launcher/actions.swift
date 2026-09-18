@@ -205,8 +205,14 @@ print("PASS: AI Chat setup routing, automatic general-chat connection, prompt fo
 // Passive Herdr previews use fictional terminal output and no helper connection.
 panel.model.agents.connected = true
 panel.model.promotedHarness = "all"
-let waitingClaude = AgentSession(agent: "claude", agentStatus: "blocked", paneID: "w1:p1", terminalID: "question-one", cwd: "/fictional/orbit", terminalTitle: nil, agentSession: .init(value: "claude-fictional"))
+var waitingClaude = AgentSession(agent: "claude", agentStatus: "blocked", paneID: "w1:p1", terminalID: "question-one", cwd: "/fictional/orbit", terminalTitle: nil, agentSession: .init(value: "claude-fictional"))
 let waitingCodex = AgentSession(agent: "codex", agentStatus: "blocked", paneID: "w1:p2", terminalID: "question-two", cwd: "/fictional/comet", terminalTitle: nil, agentSession: .init(value: "codex-fictional"))
+waitingClaude.machine = HerdrMachine(id: "fixture-remote", label: "Build Mac", target: "fictional-host", session: "agents", enabled: true)
+panel.model.agents.machines = [
+    .init(id: "local", label: "Local", state: "connected", detail: "1 pane"),
+    .init(id: "fixture-remote", label: "Build Mac", state: "connected", detail: "1 pane"),
+    .init(id: "fixture-offline", label: "Lab", state: "unavailable", detail: "Check SSH access and Herdr 0.9.1 or later on this machine.")
+]
 panel.model.agents.sessions = [waitingClaude, waitingCodex]
 var previewReply: ((Data?, String?) -> Void)?
 panel.model.agents.attentionReader = { _, reply in previewReply = reply }
@@ -294,5 +300,18 @@ try render("attention-claude-answered")
 panel.model.agents.sessions = []; settle()
 verify(panel.model.agents.attention == nil, "Resolved questions remove the preview")
 try render("attention-empty")
+// Equal pane IDs remain independently searchable by machine.
+let localTwin = AgentSession(agent: "codex", agentStatus: "working", paneID: "w1:p1", terminalID: "same-pane", cwd: "/fictional/shared", terminalTitle: nil, agentSession: nil)
+var remoteTwin = localTwin; remoteTwin.machine = waitingClaude.machine
+panel.model.agents.sessions = [localTwin, remoteTwin]
+panel.model.query = "agents Build Mac"; settle()
+verify(panel.model.rows.count == 1 && panel.model.rows.first?.id == ResultRow.agentSession(remoteTwin).id, "Machine search selects only the remote pane with a colliding ID")
+try render("machines-filtered")
+panel.model.query = "agents"; settle()
+verify(panel.model.rows.count == 2, "Local and remote panes with identical IDs remain separate rows")
+try render("machines-overview")
+UserDefaults.standard.set(true, forKey: "showHerdrDetails"); settle()
+try render("machines-details")
+UserDefaults.standard.set(false, forKey: "showHerdrDetails"); settle()
 panel.orderOut(nil)
 print("PASS: passive Herdr question previews, target changes, loading, error, and resolved states")

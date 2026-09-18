@@ -4,9 +4,10 @@ import SwiftUI
 /// UI-owned model; callbacks are delivered on the main queue.
 final class AgentsModel: ObservableObject {
     @Published var sessions: [AgentSession] = []
+    @Published var machines: [HerdrMachineStatus] = []
     @Published var connected = false
     @Published var busy = false
-    @Published var message = "Connect to the default local Herdr session to see your running agents."
+    @Published var message = "Connect to Local and enabled machines saved in Herdr."
     @Published var actionMessage: String?
     @Published var query = ""
     @Published private(set) var attention: HerdrAttention?
@@ -25,9 +26,10 @@ final class AgentsModel: ObservableObject {
     private var connection: NSXPCConnection?
     private var timer: Timer?
     private var generation = 0
+    private var focusInFlight = false
     private(set) var lastFocusSucceeded: Bool?
     var filtered: [AgentSession] {
-        sessions.filter { query.isEmpty || [$0.project, $0.provider, $0.status, $0.terminalTitle ?? "", $0.cwd ?? ""].joined(separator: " ").localizedCaseInsensitiveContains(query) }
+        sessions.filter { query.isEmpty || [$0.machineLabel, $0.project, $0.provider, $0.status, $0.terminalTitle ?? "", $0.cwd ?? ""].joined(separator: " ").localizedCaseInsensitiveContains(query) }
     }
     func connect() {
         disconnect()
@@ -47,8 +49,8 @@ final class AgentsModel: ObservableObject {
         watchAttention(nil)
         timer?.invalidate(); timer = nil
         connection?.invalidate(); connection = nil
-        connected = false; busy = false; sessions = []; actionMessage = nil
-        message = "Connect to the default local Herdr session to see your running agents."
+        connected = false; busy = false; focusInFlight = false; sessions = []; machines = []; actionMessage = nil
+        message = "Connect to Local and enabled machines saved in Herdr."
     }
     private func failed(_ error: String, generation current: Int) {
         guard current == generation else { return }
@@ -69,9 +71,12 @@ final class AgentsModel: ObservableObject {
                 if let error { self.failed(error, generation: current); return }
                 do {
                     guard let data else { throw CocoaError(.fileReadCorruptFile) }
-                    self.sessions = try AgentSession.decodeList(data)
+                    let inventory = try JSONDecoder().decode(HerdrInventory.self, from: data)
+                    self.sessions = inventory.agents
+                    self.machines = inventory.machines
                     self.refreshAttention()
-                    self.message = self.sessions.isEmpty ? "No agents are running in the default Herdr session." : "Local Herdr · updates every 5 seconds"
+                    self.message = self.machines.contains(where: \.unavailable) ? "Some machines are unavailable. Showing connected machines only." :
+                        (self.sessions.isEmpty ? "No agents are running on connected machines." : "Herdr machines · refreshes automatically")
                 } catch { self.failed("Herdr returned an unsupported response.", generation: current) }
             }
         }
@@ -124,7 +129,8 @@ final class AgentsModel: ObservableObject {
         if let attentionReader { attentionReader(target, completion); return }
         guard let connection else { completion(nil, "Herdr is disconnected."); return }
         let proxy = connection.remoteObjectProxyWithErrorHandler { _ in completion(nil, "Couldn’t read this question. Open it in Herdr.") } as? VolantAgentHostProtocol
-        proxy?.readAgentAttention(paneID: target.paneID, terminalID: target.terminalID, sessionIdentity: target.sessionIdentity, reply: completion)
+        guard let data = try? JSONEncoder().encode(target) else { completion(nil, "Invalid agent destination."); return }
+        proxy?.readAgentAttention(target: data, reply: completion)
     }
 
     var canAnswerAttention: Bool { connected && !attentionLoading && !attentionAnswering && attentionToken != nil }
@@ -153,18 +159,19 @@ final class AgentsModel: ObservableObject {
     }
 
     func focus(_ session: AgentSession) {
-        guard connected, !busy, let connection else { return }
-        busy = true
+        guard connected, !focusInFlight, let connection else { return }
+        focusInFlight = true
         let current = generation
         let proxy = connection.remoteObjectProxyWithErrorHandler { [weak self] error in
             DispatchQueue.main.async { self?.failed(error.localizedDescription, generation: current) }
         } as? VolantAgentHostProtocol
-        proxy?.focusAgent(paneID: session.paneID, terminalID: session.terminalID, sessionIdentity: session.sessionIdentity) { [weak self] error in
+        guard let data = try? JSONEncoder().encode(session) else { focusInFlight = false; return }
+        proxy?.focusAgent(target: data) { [weak self] error in
             DispatchQueue.main.async {
                 guard let self, self.generation == current else { return }
-                self.busy = false
+                self.focusInFlight = false
                 self.lastFocusSucceeded = error == nil
-                self.actionMessage = error ?? "Focused in Herdr. Switch to your Herdr terminal to continue."
+                self.actionMessage = error ?? "Focused on \(session.machineLabel). Switch to that machine in Herdr to continue."
                 if error == nil { self.refresh() }
             }
         }

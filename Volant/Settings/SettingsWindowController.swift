@@ -151,7 +151,7 @@ private struct SettingsView: View {
             }.disabled(!state.config.statusBar.sources.contains("herdr"))
             Toggle("Show pane details", isOn: $showHerdrDetails)
                 .disabled(!state.config.statusBar.sources.contains("herdr"))
-            Text("Herdr is the first status source. AI connections are configured separately in AI.").font(.callout).foregroundStyle(.secondary)
+            Text("Includes Local and enabled machines saved in Herdr. Manage remote connections in Herdr. AI connections are configured separately in AI.").font(.callout).foregroundStyle(.secondary)
         }
     }
 
