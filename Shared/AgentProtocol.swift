@@ -11,7 +11,8 @@ import Foundation
     func acpStop(reply: @escaping () -> Void)
     func answerAgentQuestion(token: String, choice: Int, reply: @escaping (String?, String?) -> Void)
     func readAgentAttention(target: Data, reply: @escaping (Data?, String?) -> Void)
-    func listAgents(reply: @escaping (Data?, String?) -> Void)
+    func listHerdrMachines(reply: @escaping (Data?, String?) -> Void)
+    func listAgents(machine: Data?, reply: @escaping (Data?, String?) -> Void)
     func focusAgent(target: Data, reply: @escaping (String?) -> Void)
 }
 

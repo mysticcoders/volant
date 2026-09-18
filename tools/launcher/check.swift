@@ -690,8 +690,12 @@ corePanel.model.appleShortcuts.loadOverride = { $0([recipe, volumeShortcut], nil
 corePanel.model.appleShortcuts.runOverride = { shortcutRuns.append($0); finishShortcut = $1 }
 corePanel.model.appleShortcuts.refresh()
 corePanel.model.query = "apple shortcuts"
-RunLoop.main.run(until: Date().addingTimeInterval(0.2))
-verify(corePanel.model.rows.map(\.id) == ["apple-shortcut:" + recipe.id, "apple-shortcut:" + volumeShortcut.id])
+let expectedShortcutIDs = ["apple-shortcut:" + recipe.id, "apple-shortcut:" + volumeShortcut.id]
+let shortcutResultsDeadline = Date().addingTimeInterval(3)
+while corePanel.model.rows.map(\.id) != expectedShortcutIDs && Date() < shortcutResultsDeadline {
+    RunLoop.main.run(until: Date().addingTimeInterval(0.02))
+}
+verify(corePanel.model.rows.map(\.id) == expectedShortcutIDs, "Apple Shortcuts results arrive before the bounded deadline")
 verify(corePanel.model.selectedRow?.primaryAction == "Run Shortcut")
 try renderCore("shortcuts")
 verify(corePanel.makeFirstResponder(coreSearchField(in: corePanel.contentView!)!), "Restore native editor after render capture")

@@ -207,6 +207,23 @@ try render("ai-settings", view: settings.window!.contentView!)
 settings.window!.orderOut(nil)
 print("PASS: AI Chat setup routing, automatic general-chat connection, prompt focus, and active-draft preservation")
 
+// Local panes remain visible while remote machines are still loading.
+panel.model.agents.connected = true
+panel.model.agents.busy = true
+panel.model.agents.sessions = [AgentSession(agent: "codex", agentStatus: "working", paneID: "w1:p1", terminalID: "local-fixture", cwd: "/fictional/local-project", terminalTitle: nil, agentSession: nil)]
+panel.model.agents.machines = [
+    .init(id: "local", label: "Local", state: "connected", detail: "1 pane"),
+    .init(id: "remote:fixture", label: "Build Mac", state: "loading", detail: "Loading panes…")
+]
+panel.toggle()
+panel.model.query = "agents"
+settle()
+verify(panel.model.showingAgents && panel.model.rows.count == 1, "Local pane is usable while the remote machine loads")
+try render("machines-loading")
+panel.orderOut(nil)
+panel.model.query = ""
+panel.model.agents.busy = false
+
 // Passive Herdr previews use fictional terminal output and no helper connection.
 panel.model.agents.connected = true
 panel.model.promotedHarness = "all"
