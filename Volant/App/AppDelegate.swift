@@ -203,7 +203,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.panel.showEmoji()
             }) == nil { failures.append("Search Emoji shortcut unavailable: " + KeyCombo.display(config.emojiHotKey)) }
         }
-        failures += AppHotKeys.register(config.appHotKeys)
+        failures += AppHotKeys.register(config.appHotKeys) { [weak self] message in
+            guard let state = self?.settingsPanel.state else { return }
+            if !state.registrationErrors.contains(message) { state.registrationErrors.append(message) }
+        }
         settingsPanel.state.registrationErrors = failures
     }
 
