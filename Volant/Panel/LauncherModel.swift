@@ -761,6 +761,7 @@ final class LauncherModel: ObservableObject {
         searchFocusRequest = UUID()
     }
     func openAIChat() { onNote(.ai) }
+    func openSettings() { dismiss(); onNote(.settings) }
     func openAISettings() { dismiss(); onNote(.aiSettings) }
 
     func toggleActions() {

@@ -166,6 +166,11 @@ panel.orderOut(nil); settle(); panel.toggle(); settle()
 verify(!panel.model.showingACP && panel.model.query.isEmpty, "Summoning a hidden chat opens the default launcher")
 verify(panel.model.acp.state.messages == savedMessages && panel.model.acp.draft == savedDraft && panel.model.acp.active, "Summoning preserves the active conversation and draft")
 try render("chat-home")
+panel.model.config.statusBar.sources = ["ai-chat"]
+settle()
+try render("chat-status-pinned")
+panel.model.config.statusBar.sources = []
+settle()
 let search = fields(panel.contentView!).first { $0.placeholderString == "Search for apps, files, contacts, or calculate…" }!
 panel.makeFirstResponder(search)
 (panel.firstResponder as? NSTextView)?.insertText("Do not replace my draft", replacementRange: NSRange(location: NSNotFound, length: 0)); settle()

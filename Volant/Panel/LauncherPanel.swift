@@ -14,6 +14,8 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
     private let preparesWhenHidden: Bool
     private var hiddenPreparation: DispatchWorkItem?
     private var presentationGeneration = 0
+    private var outsideClickMonitor: Any?
+    private var activationObserver: NSObjectProtocol?
     let snapGuides = LauncherSnapGuides()
 
     init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), positionStore: UserDefaults = .standard, caffeinate: CaffeinateService = CaffeinateService(), preparesWhenHidden: Bool = true, onNote: @escaping (LauncherAction) -> Void) {
@@ -30,6 +32,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         backgroundColor = .clear
         hasShadow = true
         isMovableByWindowBackground = true
+        isMovable = true
         level = .floating
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         isReleasedWhenClosed = false
@@ -43,16 +46,45 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
 
     /// Ordinary search is transient; conversations and unfinished input survive focus changes.
     var keepsVisibleOnBlur: Bool {
-        model.acp.active || model.acp.submitting ||
-        (model.showingACP && !model.acp.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) ||
+        (model.showingACP && (model.acp.active || model.acp.submitting ||
+        !model.acp.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)) ||
         model.wifiJoin != nil || model.connectivityBusy ||
         (model.showingTranslation && model.translation.hasDraft)
     }
 
     override func resignKey() {
         super.resignKey()
-        if !PermissionGate.isPrompting && !keepsVisibleOnBlur { orderOut(nil) }
+        dismissAfterFocusLoss()
     }
+
+    private func dismissAfterFocusLoss() {
+        if isVisible && !PermissionGate.isPrompting && !keepsVisibleOnBlur { orderOut(nil) }
+    }
+
+    // A nonactivating panel may leave the previous application active. Clicking
+    // that application need not produce an app-deactivation notification.
+    private func observeOutsideInteraction() {
+        guard outsideClickMonitor == nil else { return }
+        outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            self?.dismissAfterFocusLoss()
+        }
+        activationObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
+        ) { [weak self] notification in
+            guard let application = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                  application.processIdentifier != ProcessInfo.processInfo.processIdentifier else { return }
+            self?.dismissAfterFocusLoss()
+        }
+    }
+
+    private func stopObservingOutsideInteraction() {
+        if let outsideClickMonitor { NSEvent.removeMonitor(outsideClickMonitor) }
+        outsideClickMonitor = nil
+        if let activationObserver { NSWorkspace.shared.notificationCenter.removeObserver(activationObserver) }
+        activationObserver = nil
+    }
+
+    deinit { stopObservingOutsideInteraction() }
 
     func toggle(source: LauncherOpenSource = .other, requestedAt: TimeInterval? = nil) {
         let started = requestedAt ?? ProcessInfo.processInfo.systemUptime
@@ -82,6 +114,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         let previousSections = model.sections
         let previousSelection = model.selection
         model.isPresented = true
+        observeOutsideInteraction()
         if model.showingACP || !keepsVisibleOnBlur { model.reset() }
         model.resumeAgentsIfNeeded()
         restorePositionOrCenter()
@@ -166,6 +199,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
     func endDragging() { snapGuides.hide() }
 
     override func orderOut(_ sender: Any?) {
+        stopObservingOutsideInteraction()
         hiddenPreparation?.cancel(); hiddenPreparation = nil
         presentationGeneration += 1
         endDragging()
@@ -225,6 +259,11 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
     func apply(config: Preferences) { model.config = config }
 
     override func sendEvent(_ event: NSEvent) {
+        if event.type == .keyDown, event.keyCode == 43,
+           event.modifierFlags.intersection([.command, .control, .option, .shift]) == .command {
+            model.openSettings()
+            return
+        }
         // Own Tab only in the main search editor, never in a form, menu, or chat.
         if event.type == .keyDown, event.keyCode == 48,
            event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
@@ -239,6 +278,10 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         let modifiers = event.modifierFlags.intersection([.command, .control, .option, .shift])
+        if modifiers == .command, event.keyCode == 43 {
+            model.openSettings()
+            return true
+        }
         if modifiers == .command, event.charactersIgnoringModifiers?.lowercased() == "k",
            model.selectedRow?.supportsActions == true {
             model.toggleActions()

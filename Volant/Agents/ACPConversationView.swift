@@ -116,7 +116,8 @@ struct ACPActivityStrip: View {
             Button(action: open) {
                 HStack {
                     Image(systemName: model.state.permissions.isEmpty ? "bubble.left.and.bubble.right" : "hand.raised")
-                    Text(ACPProvider(rawValue: model.provider)?.title ?? model.provider)
+                    Text("AI Chat").fontWeight(.medium)
+                    Text(ACPProvider(rawValue: model.provider)?.title ?? model.provider).foregroundStyle(.secondary)
                     Text(model.state.status).foregroundStyle(.secondary).lineLimit(1)
                     Spacer()
                     Text("Open conversation").foregroundStyle(.secondary)
