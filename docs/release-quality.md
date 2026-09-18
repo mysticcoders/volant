@@ -80,3 +80,11 @@ Local diff-selected native checks passed; UI fixtures correctly skipped for this
 Publish in two stages: first the new DMG and website links while retaining the old feed, verify public delivery, then publish the signed build-5 appcast. Existing public DMGs and checksums remain available. Download published through Cloudflare version `bdb53f1a-09b7-41b8-a2ee-94f584b23bf6` after PR #20 passed its native/scope/PR gate checks. The live homepage offers 0.1.3. A fresh public download matched the SHA-256 above and passed stapler/Gatekeeper. The follow-up publishes the exact already-verified signed build-5 appcast; public feed verification follows activation.
 
 Remaining limits: no installed two-version Sparkle upgrade, Intel hardware smoke test, or signed installed-app Apple translation/model-download verification. This publication does not replace the owner's running app or interrupt its Caffeinate session.
+
+## 0.1.4 build 6 — September 18, 2026
+
+Release includes merged launcher window/status fixes and global app-shortcut delivery fixes. The owner confirmed physical shortcuts, Settings handoff, dragging and focus-loss dismissal. PR #53 passed 103 native tests, the full headless Tart UI suite and inspected light/dark fixtures. The version-only release branch passed its scoped checks; unchanged UI fixtures were correctly skipped.
+
+Archive and export, app and DMG notarization/stapling, deep strict signature verification, Gatekeeper and signed Sparkle appcast verification passed. DMG SHA-256: `8df71edca02de2625c548b3a36bebeca6aaf4b16c94dd60633c06b45579af4f3`. Publish the DMG first, verify public delivery, then activate the signed build-6 feed. Preserve the previously deployed documentation site and all old DMGs.
+
+Sparkle's official sandboxing documentation confirms its XPC services belong inside the framework, with an unsandboxed Downloader by default. The previous untracked timeout report does not establish an entitlement or service-name defect; do not rename services or broaden application permissions based on that hypothesis. End-to-end updater verification is tracked separately from signing/feed checks.

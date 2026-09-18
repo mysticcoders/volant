@@ -55,3 +55,8 @@ Next concrete backlog:
    work, independent pin / unpin, and cancellation when no consumer remains.
 
 Calendar and Home Assistant status providers are not implemented by this change.
+
+## Installed verification
+
+The owner confirmed physical summon, top-grip dragging and focus-loss dismissal
+on September 18, 2026. Command-comma was also verified in the signed installed app.
