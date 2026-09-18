@@ -8,6 +8,8 @@ final class ExtensionHost: NSObject, VolantExtensionHostProtocol {
 
     init(connection: NSXPCConnection? = nil) { self.connection = connection }
 
+    func prepare(reply: @escaping () -> Void) { reply() }
+
     func run(module: Data, capabilities: [String], input: String, timeout: Double, reply: @escaping (String?, String?) -> Void) {
         do { try ExtensionMemory.validate(module) }
         catch { reply(nil, error.localizedDescription); return }

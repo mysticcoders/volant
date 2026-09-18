@@ -25,6 +25,7 @@ struct ExtensionManifest: Codable, Hashable {
 
 /// What the app can ask the sandboxed service to do.
 @objc protocol VolantExtensionHostProtocol {
+    func prepare(reply: @escaping () -> Void)
     /// Instantiates `module` with only the imports named in `capabilities`, writes `input` into its memory,
     /// calls `run`, and replies with the extension's output string or an error message.
     func run(module: Data, capabilities: [String], input: String, timeout: Double, reply: @escaping (String?, String?) -> Void)

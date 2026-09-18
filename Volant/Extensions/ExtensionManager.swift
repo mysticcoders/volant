@@ -113,33 +113,68 @@ private final class ExtensionExecution: NSObject, VolantCapabilityClientProtocol
     init(manifest: ExtensionManifest, configURL: URL, onLog: @escaping (String) -> Void, completion: @escaping (Result<String, Error>) -> Void) {
         self.manifest = manifest; self.configURL = configURL; self.onLog = onLog; self.completion = completion
     }
+    private var attempt = UUID()
+    private var connectionAttempts = 0
+    private var submitted = false
     func start(module: Data, input: String) {
+        // launchd normally throttles rapid service restarts for up to ten seconds.
+        armDeadline(15, message: "Extension service could not start. Try again.")
+        connect(module: module, input: input)
+    }
+    private func armDeadline(_ seconds: Double, message: String) {
+        deadline?.cancel()
+        let deadline = DispatchWorkItem { [weak self] in
+            self?.finish(.failure(ExtensionManager.ExtensionError.runtime(message)))
+        }
+        self.deadline = deadline
+        DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: deadline)
+    }
+    private func connect(module: Data, input: String) {
+        guard completion != nil else { return }
+        connectionAttempts += 1
+        let token = UUID(); attempt = token
         let connection = NSXPCConnection(serviceName: "com.mysticcoders.volant.ExtensionHost")
         self.connection = connection
         connection.remoteObjectInterface = NSXPCInterface(with: VolantExtensionHostProtocol.self)
         connection.exportedInterface = NSXPCInterface(with: VolantCapabilityClientProtocol.self)
         connection.exportedObject = self
-        let failure = { [weak self] in DispatchQueue.main.async { self?.finish(.failure(ExtensionManager.ExtensionError.runtime("Extension stopped or exceeded its time limit."))) } }
+        let failure = { [weak self] in DispatchQueue.main.async {
+            guard let self, self.completion != nil, self.attempt == token else { return }
+            self.attempt = UUID()
+            // Retry only service readiness. A submitted module is never replayed.
+            if !self.submitted && self.connectionAttempts < 4 {
+                self.clearConnection()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in self?.connect(module: module, input: input) }
+            } else {
+                self.finish(.failure(ExtensionManager.ExtensionError.runtime("Extension stopped or exceeded its time limit.")))
+            }
+        } }
         connection.interruptionHandler = failure; connection.invalidationHandler = failure
         connection.resume()
-        let deadline = DispatchWorkItem(block: failure)
-        self.deadline = deadline
-        DispatchQueue.main.asyncAfter(deadline: .now() + (manifest.timeoutSeconds ?? 2) + 1, execute: deadline)
         let proxy = connection.remoteObjectProxyWithErrorHandler { _ in failure() } as? VolantExtensionHostProtocol
-        proxy?.run(module: module, capabilities: manifest.capabilities, input: input, timeout: manifest.timeoutSeconds ?? 2) { [weak self] output, error in
-            DispatchQueue.main.async {
-                if let error { self?.finish(.failure(ExtensionManager.ExtensionError.runtime(error))) }
-                else if let output, output.utf8.count <= 65_536 { self?.finish(.success(output)) }
-                else { self?.finish(.failure(ExtensionManager.ExtensionError.runtime("Invalid extension output."))) }
+        proxy?.prepare { [weak self] in DispatchQueue.main.async {
+            guard let self, self.completion != nil, self.attempt == token else { return }
+            self.submitted = true
+            self.armDeadline((self.manifest.timeoutSeconds ?? 2) + 1, message: "Extension exceeded its time limit.")
+            proxy?.run(module: module, capabilities: self.manifest.capabilities, input: input, timeout: self.manifest.timeoutSeconds ?? 2) { [weak self] output, error in
+                DispatchQueue.main.async {
+                    guard let self, self.attempt == token else { return }
+                    if let error { self.finish(.failure(ExtensionManager.ExtensionError.runtime(error))) }
+                    else if let output, output.utf8.count <= 65_536 { self.finish(.success(output)) }
+                    else { self.finish(.failure(ExtensionManager.ExtensionError.runtime("Invalid extension output."))) }
+                }
             }
-        }
+        } }
+    }
+    private func clearConnection() {
+        connection?.invalidationHandler = nil; connection?.interruptionHandler = nil
+        connection?.invalidate(); connection = nil
     }
     func finish(_ result: Result<String, Error>) {
         guard let completion else { return }
         self.completion = nil
         deadline?.cancel(); deadline = nil
-        connection?.invalidationHandler = nil; connection?.interruptionHandler = nil
-        connection?.invalidate(); connection = nil
+        clearConnection()
         completion(result)
     }
     private func permitted(_ capability: String) -> Bool {

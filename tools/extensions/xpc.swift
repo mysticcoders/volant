@@ -19,7 +19,7 @@ manager.run(hello, input: "Andrew") { result in
         }
     }
 }
-let deadline = Date().addingTimeInterval(20)
+let deadline = Date().addingTimeInterval(30)
 while !done && Date() < deadline { RunLoop.main.run(until: Date().addingTimeInterval(0.02)) }
 if !done || failure != nil { fputs("FAIL: \(failure ?? "XPC timeout")\n", stderr); exit(1) }
 print("PASS: signed sandboxed XPC executes Hello World, reports runaway termination, and executes a fresh greeting afterward")
