@@ -213,11 +213,17 @@ panel.model.agents.machines = [
     .init(id: "fixture-remote", label: "Build Mac", state: "connected", detail: "1 pane"),
     .init(id: "fixture-offline", label: "Lab", state: "unavailable", detail: "Check SSH access and Herdr 0.9.1 or later on this machine.")
 ]
-panel.model.agents.sessions = [waitingClaude, waitingCodex]
 var previewReply: ((Data?, String?) -> Void)?
 panel.model.agents.attentionReader = { _, reply in previewReply = reply }
-panel.toggle(); settle()
-verify(panel.model.agents.attentionLoading, "Pinned waiting agent starts a passive preview read")
+panel.model.agents.sessions = [waitingClaude, waitingCodex]
+panel.toggle()
+// SwiftUI starts the preview in .task after presentation. A fixed 200 ms delay
+// can expire on a loaded CI runner before that task starts; wait for its effect.
+let previewDeadline = Date().addingTimeInterval(3)
+while (!panel.model.agents.attentionLoading || previewReply == nil) && Date() < previewDeadline {
+    RunLoop.main.run(until: Date().addingTimeInterval(0.02))
+}
+verify(panel.model.agents.attentionLoading && previewReply != nil, "Pinned waiting agent starts a passive preview read")
 try render("attention-loading")
 previewReply?(try JSONEncoder().encode(HerdrResponseController.Snapshot(text: "Allow running npm test in /fictional/orbit?\n\n1. Yes, once\n2. Yes, for this session\n3. No", token: nil, question: nil)), nil); settle()
 verify(panel.model.agents.attention?.text.contains("npm test") == true, "Waiting question appears below the pinned status")

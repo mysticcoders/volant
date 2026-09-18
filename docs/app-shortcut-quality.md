@@ -55,3 +55,13 @@ event in subsystem `com.mysticcoders.volant`, category `AppShortcuts`. Its absen
 points to registration/delivery; its presence narrows the next check to the app
 handoff. Do not label a saved shortcut or successful open callback proof that an
 app reached the foreground.
+
+## CI fixture timing
+
+The final CI run initially failed the dark compact Herdr preview assertion after
+the light, dark and light compact variants passed. That fixture allowed a fixed
+200 ms for SwiftUI's presentation task to start. It now installs the fictional
+reader before publishing the sessions, then waits at most three seconds for both
+the loading state and the reader callback. Missing preview behavior still fails;
+the fixture no longer equates a busy runner with a missing preview. This is an
+automated fixture change, not a change to production Herdr or shortcut behavior.
