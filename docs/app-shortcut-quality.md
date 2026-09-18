@@ -33,8 +33,21 @@ does not monitor or log arbitrary keyboard input or app content.
   missing applications, rejected hides, and asynchronous open success/failure.
 - These injected logic tests do not establish global Carbon event delivery or
   foreground activation on the owner's macOS version.
-- Pending: headless UI checks, signed installed-app Hyper-C/Hyper-S delivery,
-  focus/hide/reopen behavior, and hardware Caps Lock plus Command verification.
+- Headless Tart UI checks passed in `volant-ui-vm-xp5_lyt1`.
+- Signed Release build and deep/strict bundle verification passed. Installed
+  executable SHA-256:
+  `e621aae13471c06cf45794852e251e16cac0119514abd41c6309a1d6158ad749`.
+- The owner confirmed physical Caps Lock + Command + C opens Claude with this
+  installed build. At 20:46:24 local time the matching action log recorded
+  `running=true, active=false`; no handoff failure was logged. The successful
+  case exercises the changed already-running/inactive path.
+- Automation-generated Hyper-C produced no delivery log and is not counted as
+  global-hotkey evidence. Do not infer physical-key failure from those injected
+  events. A restart accompanied the install, so this test alone does not prove
+  which factor caused the original failure.
+- Remaining: installed Hyper-S and other bindings, repeated focus/hide toggling,
+  and reopening an app after its last window closes. The hide branch is covered
+  by isolated logic tests but has not been reverified on the owner's desktop.
 
 If installed verification still fails, first check for an `App shortcut delivered`
 event in subsystem `com.mysticcoders.volant`, category `AppShortcuts`. Its absence
