@@ -45,9 +45,10 @@ does not monitor or log arbitrary keyboard input or app content.
   global-hotkey evidence. Do not infer physical-key failure from those injected
   events. A restart accompanied the install, so this test alone does not prove
   which factor caused the original failure.
-- Remaining: installed Hyper-S and other bindings, repeated focus/hide toggling,
-  and reopening an app after its last window closes. The hide branch is covered
-  by isolated logic tests but has not been reverified on the owner's desktop.
+- The owner also confirmed installed Hyper-S works and a second Hyper-C hides
+  frontmost Claude. No saved bindings were changed.
+- Remaining: other configured bindings and reopening an app after its last
+  window closes. Automated tests do not yet cover physical global key delivery.
 
 If installed verification still fails, first check for an `App shortcut delivered`
 event in subsystem `com.mysticcoders.volant`, category `AppShortcuts`. Its absence
