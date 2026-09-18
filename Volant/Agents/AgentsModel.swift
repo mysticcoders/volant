@@ -23,6 +23,12 @@ final class AgentsModel: ObservableObject {
     private var attentionRequest = UUID()
     // Injected only by isolated fixtures; production reads through the signed helper.
     var attentionReader: ((AgentSession, @escaping (Data?, String?) -> Void) -> Void)?
+    // Injectable transport for deterministic, isolated progressive-loading tests.
+    var inventoryReader: ((HerdrMachine?, @escaping (Data?, String?) -> Void) -> Void)?
+    var machineReader: ((@escaping (Data?, String?) -> Void) -> Void)?
+    private var profiles: [HerdrMachine] = []
+    private var catalogRequest: UUID?
+    private var inventoryRequests: [String: UUID] = [:]
     private var connection: NSXPCConnection?
     private var timer: Timer?
     private var generation = 0
@@ -46,6 +52,7 @@ final class AgentsModel: ObservableObject {
     }
     func disconnect() {
         generation += 1
+        profiles = []; catalogRequest = nil; inventoryRequests = [:]
         watchAttention(nil)
         timer?.invalidate(); timer = nil
         connection?.invalidate(); connection = nil
@@ -58,28 +65,105 @@ final class AgentsModel: ObservableObject {
         message = error
     }
     func refresh() {
-        guard connected, !busy, let connection else { return }
-        busy = true
-        let current = generation
-        let proxy = connection.remoteObjectProxyWithErrorHandler { [weak self] error in
-            DispatchQueue.main.async { self?.failed(error.localizedDescription, generation: current) }
-        } as? VolantAgentHostProtocol
-        proxy?.listAgents { [weak self] data, error in
+        guard connected, connection != nil || inventoryReader != nil else { return }
+        loadInventory(on: nil)
+        for machine in profiles where machine.enabled { loadInventory(on: machine) }
+        guard catalogRequest == nil else { return }
+        let request = UUID(), current = generation
+        catalogRequest = request
+        updateInventoryMessage()
+        let reply: (Data?, String?) -> Void = { [weak self] data, error in
             DispatchQueue.main.async {
-                guard let self, current == self.generation else { return }
-                self.busy = false
-                if let error { self.failed(error, generation: current); return }
-                do {
-                    guard let data else { throw CocoaError(.fileReadCorruptFile) }
-                    let inventory = try JSONDecoder().decode(HerdrInventory.self, from: data)
-                    self.sessions = inventory.agents
-                    self.machines = inventory.machines
-                    self.refreshAttention()
-                    self.message = self.machines.contains(where: \.unavailable) ? "Some machines are unavailable. Showing connected machines only." :
-                        (self.sessions.isEmpty ? "No agents are running on connected machines." : "Herdr machines · refreshes automatically")
-                } catch { self.failed("Herdr returned an unsupported response.", generation: current) }
+                guard let self, self.connected, current == self.generation, self.catalogRequest == request else { return }
+                self.catalogRequest = nil
+                if let data, let profiles = try? HerdrMachine.decode(data), error == nil {
+                    let active = profiles.filter(\.enabled)
+                    let validRoutes = Set(active.map(\.routeIdentity))
+                    let previousRoutes = Set(self.profiles.filter(\.enabled).map(\.routeIdentity))
+                    let validIDs = Set(profiles.map { "remote:" + $0.id })
+                    for old in self.profiles where !validRoutes.contains(old.routeIdentity) {
+                        self.inventoryRequests.removeValue(forKey: "remote:" + old.id)
+                        self.machines.removeAll { $0.id == "remote:" + old.id }
+                    }
+                    self.sessions.removeAll { $0.machine.map { !validRoutes.contains($0.routeIdentity) } ?? false }
+                    self.machines.removeAll { $0.id == "catalog" || ($0.id != "local" && !validIDs.contains($0.id)) }
+                    self.profiles = profiles
+                    for machine in profiles {
+                        if machine.enabled {
+                            if !previousRoutes.contains(machine.routeIdentity) { self.loadInventory(on: machine) }
+                        }
+                        else { self.setMachine(.init(id: "remote:" + machine.id, label: machine.label, state: "disabled", detail: "Disabled in Herdr")) }
+                    }
+                } else {
+                    // An unreadable catalog cannot authorize stale remote panes.
+                    self.profiles = []
+                    self.inventoryRequests = self.inventoryRequests.filter { $0.key == "local" }
+                    self.sessions.removeAll { $0.machine != nil }
+                    self.machines.removeAll { $0.id != "local" }
+                    self.setMachine(.init(id: "catalog", label: "Saved machines", state: "unavailable",
+                        detail: error ?? "Couldn’t read saved machines."))
+                }
+                self.refreshAttention()
+                self.updateInventoryMessage()
             }
         }
+        if let machineReader { machineReader(reply) }
+        else { inventoryProxy()?.listHerdrMachines(reply: reply) }
+    }
+
+    private func inventoryProxy() -> VolantAgentHostProtocol? {
+        let current = generation
+        return connection?.remoteObjectProxyWithErrorHandler { [weak self] _ in
+            DispatchQueue.main.async { self?.failed("Local helper disconnected. Reconnect to try again.", generation: current) }
+        } as? VolantAgentHostProtocol
+    }
+
+    private func loadInventory(on machine: HerdrMachine?) {
+        let id = machine.map { "remote:" + $0.id } ?? "local"
+        guard inventoryRequests[id] == nil else { return }
+        let request = UUID(), current = generation
+        inventoryRequests[id] = request
+        if !machines.contains(where: { $0.id == id && $0.state == "connected" }) {
+            setMachine(.init(id: id, label: machine?.label ?? "Local", state: "loading", detail: "Loading panes…"))
+        }
+        updateInventoryMessage()
+        let reply: (Data?, String?) -> Void = { [weak self] data, error in
+            DispatchQueue.main.async {
+                guard let self, self.connected, current == self.generation, self.inventoryRequests[id] == request else { return }
+                self.inventoryRequests.removeValue(forKey: id)
+                self.sessions.removeAll { ($0.machine.map { "remote:" + $0.id } ?? "local") == id }
+                let values = data.flatMap { try? JSONDecoder().decode([AgentSession].self, from: $0) }
+                if let values, error == nil, values.allSatisfy({ $0.machine?.routeIdentity == machine?.routeIdentity }) {
+                    self.sessions = AgentSession.sorted(self.sessions + values)
+                    self.setMachine(.init(id: id, label: machine?.label ?? "Local", state: "connected", detail: "\(values.count) panes"))
+                } else {
+                    self.setMachine(.init(id: id, label: machine?.label ?? "Local", state: "unavailable", detail: error ?? "Couldn’t read panes."))
+                }
+                self.refreshAttention()
+                self.updateInventoryMessage()
+            }
+        }
+        if let inventoryReader { inventoryReader(machine, reply) }
+        else {
+            do { inventoryProxy()?.listAgents(machine: try machine.map { try JSONEncoder().encode($0) }, reply: reply) }
+            catch { reply(nil, "Invalid saved machine.") }
+        }
+    }
+
+    private func setMachine(_ value: HerdrMachineStatus) {
+        machines.removeAll { $0.id == value.id }
+        machines.append(value)
+        machines.sort {
+            if $0.id == "local" { return true }; if $1.id == "local" { return false }
+            return $0.label == $1.label ? $0.id < $1.id : $0.label.localizedStandardCompare($1.label) == .orderedAscending
+        }
+    }
+
+    private func updateInventoryMessage() {
+        busy = catalogRequest != nil || !inventoryRequests.isEmpty
+        if machines.contains(where: \.unavailable) { message = "Some machines are unavailable. Showing connected machines only." }
+        else if busy { message = "Loading Herdr machines… Available panes are ready to use." }
+        else { message = sessions.isEmpty ? "No agents are running on connected machines." : "Herdr machines · refreshes automatically" }
     }
     func isAttentionTarget(_ session: AgentSession) -> Bool {
         attentionTarget?.id == session.id && attentionTarget?.sessionIdentity == session.sessionIdentity

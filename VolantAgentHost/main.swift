@@ -32,7 +32,13 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
     func acpStop(reply: @escaping () -> Void) { acp.queue.async { self.acp.stop(); reply() } }
     func invalidate() { acp.queue.async { self.acp.stop() } }
     private let queue = DispatchQueue(label: "com.mysticcoders.volant.agent-host")
-    private let inventoryQueue = DispatchQueue(label: "com.mysticcoders.volant.herdr-inventory")
+    private let localInventoryQueue = DispatchQueue(label: "com.mysticcoders.volant.herdr-local")
+    private let catalogQueue = DispatchQueue(label: "com.mysticcoders.volant.herdr-catalog")
+    private let remoteInventoryQueue: OperationQueue = {
+        let queue = OperationQueue()
+        queue.maxConcurrentOperationCount = 4
+        return queue
+    }()
     private var machines: HerdrMachineRouter { HerdrMachineRouter(run: { [unowned self] in try self.run($0) }) }
     private func run(_ arguments: [String]) throws -> Data {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
@@ -43,11 +49,26 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
         return try HerdrProcess.run(executable: URL(fileURLWithPath: executable), arguments: arguments, home: home)
     }
 
-    func listAgents(reply: @escaping (Data?, String?) -> Void) {
-        inventoryQueue.async {
-            do { reply(try JSONEncoder().encode(self.machines.inventory()), nil) }
-            catch { reply(nil, "Couldn’t read Herdr machines.") }
+    func listHerdrMachines(reply: @escaping (Data?, String?) -> Void) {
+        catalogQueue.async {
+            do { reply(try JSONEncoder().encode(self.machines.profiles()), nil) }
+            catch { reply(nil, "Couldn’t read saved machines. Check Herdr 0.9.1 or later is installed.") }
         }
+    }
+    func listAgents(machine data: Data?, reply: @escaping (Data?, String?) -> Void) {
+        let work = {
+            do {
+                guard (data?.count ?? 0) <= 32_000 else { throw CocoaError(.fileReadCorruptFile) }
+                let machine = try data.map { try JSONDecoder().decode(HerdrMachine.self, from: $0) }
+                reply(try JSONEncoder().encode(self.machines.agents(on: machine)), nil)
+            } catch {
+                reply(nil, data == nil ? "Start the local default Herdr session." :
+                    "Check SSH access and Herdr 0.9.1 or later on this machine.")
+            }
+        }
+        // Remote queue saturation and catalog reads must never delay Local.
+        if data == nil { localInventoryQueue.async(execute: work) }
+        else { remoteInventoryQueue.addOperation(work) }
     }
     private lazy var herdrResponses = HerdrResponseController(runOnMachine: { [unowned self] in try self.machines.execute($0, $1) })
     private func currentTarget(_ data: Data, blocked: Bool = false) throws -> AgentSession {

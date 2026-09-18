@@ -118,8 +118,11 @@ struct HerdrMachineStatusView: View {
             ScrollView(.horizontal) {
                 HStack(spacing: 12) {
                     ForEach(machines) { machine in
-                        Label(machine.label + " · " + machine.state.capitalized,
-                              systemImage: machine.unavailable ? "exclamationmark.triangle" : "desktopcomputer")
+                        HStack(spacing: 4) {
+                            if machine.state == "loading" { ProgressView().controlSize(.mini) }
+                            Label(machine.label + " · " + machine.state.capitalized,
+                                  systemImage: machine.unavailable ? "exclamationmark.triangle" : "desktopcomputer")
+                        }
                             .foregroundStyle(machine.unavailable ? Color.orange : Color.secondary)
                             .help(machine.detail)
                             .accessibilityLabel(machine.label + ". " + machine.state + ". " + machine.detail)
