@@ -432,3 +432,40 @@ try render("machines-details")
 UserDefaults.standard.set(false, forKey: "showHerdrDetails"); settle()
 panel.orderOut(nil)
 print("PASS: passive Herdr question previews, target changes, loading, error, and resolved states")
+
+// API/local Settings use fictional discovery and credentials, never host services or owner keys.
+let aiFixtureURL = root.appendingPathComponent("api-settings.json")
+try Data("{}".utf8).write(to: aiFixtureURL)
+var credentialWrites = 0
+let fakeCredentials = AICredentials(read: { _ in nil }, write: { _, _ in credentialWrites += 1 })
+func renderAPISettings(_ kind: AIConnectionKind, provider: AIAPIProvider = .openAI, offline: Bool = false) throws {
+    var config = AIConfiguration(); config.connection = kind; config.api.provider = provider; config.api.endpoint = provider.endpoint
+    try config.save(at: aiFixtureURL)
+    let discovery = AIModelDiscovery()
+    discovery.lookupOverride = { candidate, _, completion in
+        if candidate.endpoint.contains("11434") && !offline { completion(["fictional-local-model", "fictional-second-model"], nil) }
+        else { completion(nil, "Server unavailable. Start it or enter a custom URL.") }
+    }
+    let model = ACPModel()
+    let view = NSHostingView(rootView: AISettingsView(model: model, configURL: aiFixtureURL, onChange: {}, openConversation: { _ in }, chooseProject: { _ in }, credentials: fakeCredentials, discovery: discovery)
+        .padding(16).background(Color(nsColor: .windowBackgroundColor)))
+    let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 660), styleMask: [.titled], backing: .buffered, defer: false)
+    window.contentView = view; window.makeKeyAndOrderFront(nil); settle()
+    try render("ai-\(kind.rawValue)-\(provider.rawValue)\(offline ? "-offline" : "")", view: view)
+    verify(!model.active && credentialWrites == 0, "Opening AI Settings never starts chat or writes credentials")
+    window.orderOut(nil); discovery.cancel()
+}
+try renderAPISettings(.byok)
+try renderAPISettings(.byok, provider: .anthropic)
+try renderAPISettings(.byok, provider: .compatible)
+try renderAPISettings(.local)
+try renderAPISettings(.local, offline: true)
+let apiModel = ACPModel()
+var localConfig = AIConfiguration(); localConfig.connection = .local; localConfig.localAPI.model = "Fictional local model"
+apiModel.configure(localConfig); apiModel.state.phase = "ready"
+apiModel.state.messages = [ACPMessage(role: "You", text: "Show a fictional example"), ACPMessage(role: "Agent", text: "**Hello** from a local model.\n\n- Runs on your machine\n- Uses the same chat controls")]
+let apiChat = NSHostingView(rootView: ACPConversationView(model: apiModel))
+apiChat.frame = NSRect(x: 0, y: 0, width: 740, height: 450)
+try render("ai-local-chat", view: apiChat)
+apiModel.state.phase = "disconnected"
+print("PASS: BYOK/local Settings and chat fixtures use no real servers or credentials")

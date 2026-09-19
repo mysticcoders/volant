@@ -36,6 +36,7 @@ if [[ "$ui_mode" != only ]]; then
     ./tools/check-raycast.sh
     ./tools/check-volume.sh
     ./tools/check-acp.sh
+    ./tools/check-ai-http.sh
     ./tools/check-extensions.sh
     xcodebuild "${build_options[@]}" test -skip-testing:VolantTests/NotesRenderTests \
         -skip-testing:VolantTests/LiveMarkdownTests/testLanguageChangePreservesContentSelectionAndUndo \

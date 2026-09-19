@@ -892,10 +892,10 @@ settingsController.showWindow(nil)
 settingsController.state.section = "AI"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 print("CHECK: Settings Connect ACP")
-clickSettings(NSPoint(x: 280, y: 500 - 270))
+clickSettings(NSPoint(x: 280, y: 500 - 309))
 verify(openedAI.count == 1 && openedAI[0].provider == "claude" && openedAI[0].project.isEmpty, "Connect ACP starts general chat with no project selection")
 print("CHECK: Settings project sheet")
-clickSettings(NSPoint(x: 600, y: 500 - 189))
+clickSettings(NSPoint(x: 600, y: 500 - 226))
 let sheetDeadline = Date().addingTimeInterval(3)
 while settingsWindow.attachedSheet == nil && Date() < sheetDeadline { RunLoop.main.run(until: Date().addingTimeInterval(0.05)) }
 verify(settingsWindow.attachedSheet != nil, "Choose Project opens a native sheet")
