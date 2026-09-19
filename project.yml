@@ -90,6 +90,7 @@ targets:
       path: VolantExtensionHost/VolantExtensionHost.entitlements
       properties:
         com.apple.security.app-sandbox: true
+        com.apple.security.cs.allow-jit: true
     info:
       path: VolantExtensionHost/Info.plist
       properties:

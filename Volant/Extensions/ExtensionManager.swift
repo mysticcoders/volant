@@ -182,7 +182,7 @@ private final class ExtensionExecution: NSObject, VolantCapabilityClientProtocol
             guard self.approved else { self.finish(.failure(ExtensionManager.ExtensionError.disabled)); return }
             self.submitted = true
             self.armDeadline((self.manifest.timeoutSeconds ?? 2) + 1, message: "Extension exceeded its time limit.")
-            proxy?.run(module: module, capabilities: self.manifest.capabilities, input: input, timeout: self.manifest.timeoutSeconds ?? 2) { [weak self] output, error in
+            let reply: (String?, String?) -> Void = { [weak self] output, error in
                 DispatchQueue.main.async {
                     guard let self, self.attempt == token else { return }
                     guard self.approved else { self.finish(.failure(ExtensionManager.ExtensionError.disabled)); return }
@@ -190,6 +190,11 @@ private final class ExtensionExecution: NSObject, VolantCapabilityClientProtocol
                     else if let output, output.utf8.count <= 65_536 { self.finish(.success(output)) }
                     else { self.finish(.failure(ExtensionManager.ExtensionError.runtime("Invalid extension output."))) }
                 }
+            }
+            if self.manifest.abiVersion == 2 {
+                proxy?.runCommand(module: module, input: input, timeout: self.manifest.timeoutSeconds ?? 2, reply: reply)
+            } else {
+                proxy?.run(module: module, capabilities: self.manifest.capabilities, input: input, timeout: self.manifest.timeoutSeconds ?? 2, reply: reply)
             }
         } }
     }

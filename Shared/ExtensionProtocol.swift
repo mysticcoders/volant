@@ -12,7 +12,8 @@ struct ExtensionManifest: Codable, Hashable {
     var sha256: String?
 
     func validate() throws {
-        guard abiVersion == 1, !id.isEmpty, id.count <= 128, !name.isEmpty, name.count <= 128,
+        guard [1, 2].contains(abiVersion ?? 0), abiVersion != 2 || capabilities.isEmpty,
+              !id.isEmpty, id.count <= 128, !name.isEmpty, name.count <= 128,
               !version.isEmpty, module.hasSuffix(".wasm"), !module.contains("/"), !module.contains("\\"),
               Set(capabilities).isSubset(of: Self.knownCapabilities), Set(capabilities).count == capabilities.count,
               let hash = sha256, hash.count == 64, hash.allSatisfy({ $0.isHexDigit }),
@@ -29,6 +30,8 @@ struct ExtensionManifest: Codable, Hashable {
     /// Instantiates `module` with only the imports named in `capabilities`, writes `input` into its memory,
     /// calls `run`, and replies with the extension's output string or an error message.
     func run(module: Data, capabilities: [String], input: String, timeout: Double, reply: @escaping (String?, String?) -> Void)
+    /// ABI 2: restricted WASI command with in-memory stdin/stdout only.
+    func runCommand(module: Data, input: String, timeout: Double, reply: @escaping (String?, String?) -> Void)
 }
 
 /// What the service may ask the app to do on the extension's behalf. Every call is re-checked against the manifest by the app.
@@ -42,7 +45,7 @@ enum ExtensionValidationError: Error, LocalizedError {
     case invalidManifest, invalidMemory
     var errorDescription: String? {
         switch self {
-        case .invalidManifest: return "Extension needs a valid ABI 1 manifest, SHA-256 and supported permissions."
+        case .invalidManifest: return "Extension needs a valid ABI 1 or 2 manifest, SHA-256 and supported permissions."
         case .invalidMemory: return "Extension must declare bounded WebAssembly memory (maximum 16 MiB)."
         }
     }

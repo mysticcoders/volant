@@ -31,5 +31,10 @@ class ScopeTests(unittest.TestCase):
         self.assertTrue(scope.classify(["docs/a.md", "Volant/Settings/OldView.swift"])["ui"])
         self.assertEqual(scope.classify([]), {"native": False, "ui": False})
 
+    def test_command_adapter_build_and_probes_require_native_checks(self):
+        for path in ["tools/build-raycast-example.sh", "tools/raycast-wasm/build.mjs",
+                     "tools/raycast-wasm/bound-memory.mjs", "tools/extensions/wasi-fixtures/streams.wasm"]:
+            self.assertEqual(scope.classify([path]), {"native": True, "ui": False}, path)
+
 
 unittest.main()

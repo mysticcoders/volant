@@ -3,12 +3,14 @@ import Foundation
 let root = URL(fileURLWithPath: CommandLine.arguments[1])
 let config = root.appendingPathComponent("config.json")
 try Data("{}".utf8).write(to: config)
-let manager = ExtensionManager(configURL: config, roots: [root.appendingPathComponent("hello"), root.appendingPathComponent("spin")])
+let manager = ExtensionManager(configURL: config, roots: [root.appendingPathComponent("hello"), root.appendingPathComponent("spin"), root.appendingPathComponent("base64")])
 manager.reload()
 try manager.setCommunityAllowed(true, expected: false)
 guard let hello = manager.search("hello").first, let spin = manager.search("spin").first else { fatalError("Missing isolated fixtures: \(manager.loadErrors)") }
+guard let base64 = manager.search("base64").first else { fatalError("Missing Base64 fixture") }
 try manager.setEnabled(hello, true)
 try manager.setEnabled(spin, true)
+try manager.setEnabled(base64, true)
 var done = false, failure: String?
 func checkRevocation() {
     manager.run(spin, input: "") { result in
@@ -32,6 +34,10 @@ func checkRevocation() {
 }
 manager.run(hello, input: "Andrew") { result in
     guard case .success("Hello, Andrew!") = result else { failure = "First XPC greeting failed: \(result)"; done = true; return }
+    manager.run(base64, input: "café ☕ 日本語") { result in
+        guard case .success(Data("café ☕ 日本語".utf8).base64EncodedString()) = result else {
+            failure = "Actual TypeScript command failed through signed XPC: \(result)"; done = true; return
+        }
     manager.run(spin, input: "") { result in
         guard case .failure = result else { failure = "Runaway returned success"; done = true; return }
         manager.run(hello, input: "world") { result in
@@ -39,8 +45,9 @@ manager.run(hello, input: "Andrew") { result in
             else { failure = "XPC did not recover: \(result)"; done = true }
         }
     }
+    }
 }
 let deadline = Date().addingTimeInterval(30)
 while !done && Date() < deadline { RunLoop.main.run(until: Date().addingTimeInterval(0.02)) }
 if !done || failure != nil { fputs("FAIL: \(failure ?? "XPC timeout")\n", stderr); exit(1) }
-print("PASS: signed sandboxed XPC executes Hello World, recovers after runaway termination, and revokes community execution without erasing individual approval")
+print("PASS: signed sandboxed XPC executes Rust and Raycast TypeScript WASM commands, recovers after runaway termination, and revokes community execution without erasing approval")

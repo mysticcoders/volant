@@ -1,48 +1,61 @@
-# Raycast TypeScript → WASM experiment
+# Raycast TypeScript → Volant WASM command adapter
 
-This is an isolated developer experiment, not a shipped extension or a general Raycast compatibility layer. No changes to Volant's WASM ABI or sandbox permissions are needed to keep this experiment in the repository.
+The Base64 Encode command now runs through **Volant's production extension manager and sandboxed XPC helper**, using a restricted WASI Preview 1 profile designated **Volant ABI 2**. This is a text-command interface, not general Raycast API compatibility or a full WASI runtime. ABI 1 Rust commands keep their existing interface.
 
-## Source and adapter
+## Source and build
 
-`upstream/encode.tsx` is the **unchanged** MIT-licensed Base64 Encode command from [raycast/extensions](https://github.com/raycast/extensions/blob/7385d56717d2666708493dae1f9e2fb4a681dc3d/extensions/base64/src/encode.tsx), revision `7385d56717d2666708493dae1f9e2fb4a681dc3d`. Upstream lists DanielSinclair as author. Its MIT license is retained in `upstream/LICENSE`.
+`upstream/encode.tsx` is the unchanged MIT-licensed [Raycast Base64 Encode command](https://github.com/raycast/extensions/blob/7385d56717d2666708493dae1f9e2fb4a681dc3d/extensions/base64/src/encode.tsx), revision `7385d56717d2666708493dae1f9e2fb4a681dc3d`. Upstream lists DanielSinclair as author; its license is retained in `upstream/LICENSE`.
 
-The command imports `Clipboard` from `@raycast/api`, `update` from its local utility, and `encode` from `js-base64`. We bundle the real command and pinned `js-base64` dependency with esbuild. The two host-facing imports resolve to `adapter.ts`: fictional stdin supplies the clipboard text and stdout captures the result. There is no real clipboard access, paste, browser opening, toast, preferences, React view, network or filesystem capability. The original extension's default-action preferences and UI are not implemented. The adapter is a test harness, not an authorization boundary for arbitrary code.
-
-Javy then embeds the resulting JavaScript in its QuickJS WASM runtime. This does **not** convert the TypeScript logic directly into native-speed WASM instructions. See [Javy](https://github.com/bytecodealliance/javy) and [AssemblyScript's compatibility limits](https://www.assemblyscript.org/concepts.html).
-
-## Reproduce
-
-Requirements: Node 24, npm, and [Javy 9.1.0](https://github.com/bytecodealliance/javy/releases/tag/v9.1.0). Download the compiler for your platform and verify its release checksum. The tested `javy-arm-macos-v9.1.0.gz` SHA-256 is `99e9ec6a8e8c98e119d137c08a921d2443d3b873c675a5571e1800f4451e6294`.
+The esbuild adapter resolves `@raycast/api` and the local `update` utility to `adapter.ts`. `Clipboard.read()` receives command input, and `update({contents})` writes command output. It does not access the actual clipboard, toast, preferences, paste target or browser. The real pinned `js-base64` dependency performs the encoding. Javy embeds the resulting JavaScript in QuickJS compiled to WASM; this is not native compilation of the TypeScript logic.
 
 ```sh
-cd tools/raycast-wasm
-npm ci --ignore-scripts
-JAVY=/absolute/path/to/javy npm run build
-npm test
+# From the repository root; Node/npm are required.
+bash tools/build-raycast-example.sh
+# Or use an existing compiler:
+JAVY=/absolute/path/to/javy bash tools/build-raycast-example.sh
 ```
 
-The harness runs the resulting WASM with Node's WASI Preview 1 implementation, empty environment and no preopened directories. Only fictional input/output files are passed as descriptors. Node documents WASI as experimental; this is not the production sandbox. Generated files and node_modules are ignored and not shipped in Volant.
+The macOS build helper downloads Javy 9.1.0 for Apple Silicon or Intel and checks its pinned SHA-256 before execution. esbuild 0.25.10, js-base64 3.7.8 and development-only wabt 1.0.39 are locked. `bound-memory.mjs` validates the compiler output and rewrites only its single memory declaration to impose a maximum of 256 pages (16 MiB). Hashing happens **after** that change. Generated WASM and manifest live in `extensions/raycast-base64/`, are gitignored, and are not bundled with the app. See [install/use instructions](../../extensions/raycast-base64/README.md).
 
-To test the result against the actual production ABI validator/host, from the repository root:
+Build instructions are repeatable, but Javy 9.1.0 did not produce byte-identical modules in a two-build check, even with its deterministic option. Approval intentionally remains tied to the exact resulting bytes: a rebuilt module can require approval again despite unchanged source. The build helper does not weaken or normalize the code hash.
 
-```sh
-fixture=$(mktemp -d /tmp/volant-raycast-check.XXXXXX)
-cp tools/raycast-wasm/check-host.swift "$fixture/main.swift"
-swiftc Shared/ExtensionProtocol.swift VolantExtensionHost/ExtensionHost.swift "$fixture/main.swift" -o "$fixture/check"
-"$fixture/check" tools/raycast-wasm/out/encode.wasm
-```
+## Runtime contract
 
-## Evidence — September 18, 2026
+ABI 2 manifests use `abiVersion: 2`, a `.wasm` module, its SHA-256, and **empty capabilities**. Both ABI versions require one defined non-shared wasm32 memory with an explicit maximum ≤16 MiB, module size ≤2 MiB, input/output ≤64 KiB and a 0.5–10 second execution deadline. The separate XPC readiness deadline and no-replay behavior are unchanged.
 
-- Javy 9.1.0 + esbuild 0.25.10 + js-base64 3.7.8, Node 24.16.0 on Apple Silicon.
-- Compiled WASM: **1,361,532 bytes** (~1.36 MB / 1.30 MiB), including its JavaScript runtime. This is about 75× our 18,245-byte Rust Hello World; these are different commands, not a like-for-like size or speed benchmark.
-- The unchanged upstream encode function ran successfully for empty input, `Hello, Volant!`, `café ☕ 日本語`, and 4,096 ASCII characters. Outputs matched Node's independent Base64 implementation.
-- Imports nine `wasi_snapshot_preview1` functions for environment, clock, file descriptors and process exit. Exports `memory`, `cabi_realloc`, `config-schema`, `_start`; it does not export Volant's `alloc`/`run` ABI.
-- Production `ExtensionHost` rejected the module at bounded-memory validation. Even after fixing that declaration, the WASI imports and entry point are incompatible with ABI 1. Do not install this artifact into Volant or broaden imports merely to make it load.
-- No execution-speed or memory-footprint benchmark was performed. The artifact size is not runtime memory usage.
+An ABI 2 module exports `memory` and `_start`. Only these function imports from `wasi_snapshot_preview1` are accepted:
 
-## Next decision
+| Import | Volant behavior |
+|---|---|
+| `fd_read` | Descriptor 0 reads only the user-supplied UTF-8 command input, with EOF and partial-read support. |
+| `fd_write` | Descriptor 1 accumulates at most 64 KiB of result bytes. Descriptor 2 discards at most 4 KiB of diagnostics; they are never logged or surfaced. |
+| `fd_close` | Closes only the invocation's virtual descriptors 0–2. |
+| `fd_fdstat_get` | Reports stream type and read/write rights for those virtual descriptors. |
+| `fd_seek` | Returns ESPIPE for open streams and EBADF otherwise. |
+| `environ_sizes_get`, `environ_get` | Empty environment. |
+| `clock_time_get` | Realtime/monotonic IDs return a fixed zero clock; other IDs return EINVAL. This is not live date/time support. |
+| `proc_exit` | Terminates this invocation; zero succeeds, nonzero discards partial output and returns an error. Never exits the helper directly. |
 
-For a real first compatible command, choose between an explicitly supported JavaScript command runtime in the existing XPC helper, or a reviewed WASI adapter with bounded memory, stdin/stdout, timeout and capability semantics. JavaScriptCore already runs JavaScript, so carrying QuickJS inside WASM may add unnecessary work. Neither option supplies Raycast's React UI, Node APIs or extension API automatically. Begin with a narrow no-view command contract and test signed delivery separately before advertising Raycast compatibility.
+Descriptors are entirely in memory and never map to OS descriptors. There are no preopened directories, environment variables, shell, network, random source or real clipboard APIs. Other import namespaces, names and types are rejected before instantiation. Modules must defer host calls requiring memory until `_start`, after exported memory is available. Every pointer, iovec and result range is checked; at most 1,024 iovecs and 4,096 host calls are permitted. Output must be valid UTF-8. Exceptions and nonzero exits discard partial output. A CPU loop terminates the helper through its existing watchdog; later invocations start a fresh service.
 
-The app's master community switch and per-extension approval still apply to any future adapter. Installing code, globally allowing community extensions, and approving a particular extension are separate steps.
+These limits cover WASM linear memory and data, not the entire JavaScriptCore process footprint. The sandboxed helper uses Apple’s `com.apple.security.cs.allow-jit` entitlement for JavaScriptCore; the main app receives no new entitlement or third-party runtime. Any QuickJS runtime belongs to the extension's own bounded module. The community master gate, manifest/hash approval, pre-submission and callback/result rechecks apply unchanged; the ABI version is included in the approval fingerprint.
+
+## Verification
+
+`tools/check-extensions.sh` builds the example if absent and executes it through the production `ExtensionHost`/JavaScriptCore implementation. It compares empty, ASCII and Unicode Base64 results against Foundation, tests the exact output boundary and rejects oversized output. Checked-in WAT/WASM probes cover empty environment, frozen clocks, descriptor rights, EOF, closed streams, forbidden imports, prototype names, bad pointers, excessive iovecs/calls, stderr/output limits, invalid UTF-8, exit codes, memory growth and watchdog termination. Generate the probes with `node generate-probes.mjs` from this directory after `npm ci`.
+
+`npm test` remains a **separate** Node WASI comparison using fictional stdin/stdout, empty environment and no preopened directories. It does not establish production sandbox behavior. Node WASI is not used by Volant.
+
+`tools/check-extensions-xpc.sh` uses an exported Developer ID build and isolated fictional configuration. It exercises the actual manager's ABI dispatch through signed XPC, including the TypeScript module, existing Rust ABI, recovery and community revocation. It does not restart the owner's app or claim installed launcher interaction.
+
+September 18, 2026 evidence: the clean checksum-verified build and standalone comparison passed; production JavaScriptCore tests passed, including exactly 64 KiB output and rejection above it; 111 native tests passed. A fresh Developer ID archive/export passed the signed XPC fixture with the real Unicode Base64 command, Rust greeting, watchdog recovery and master revocation. A regression probe also verifies that caught `proc_exit` cannot resume I/O. Local UI checks were explicitly skipped because this change preserves the existing launcher/Settings surfaces; this is not installed-app UI verification.
+
+No latency or total-memory benchmark has been performed. Next: an installed-app first-use/copy smoke test in an agreed window, package/update distribution and notice handling, and only then additional explicitly reviewed APIs. React views, Node APIs, real clipboard reads, filesystem/network commands and general Raycast compatibility remain unsupported.
+
+## Original experiment
+
+The first experiment produced a 1,361,532-byte unbounded-memory module that ran only under standalone Node WASI. ABI 1 correctly rejected it. The production adapter fixes the memory declaration at build time and explicitly routes ABI 2 modules through the new command contract. Merely compiling a module never implied Raycast API compatibility.
+
+## macOS compatibility lesson
+
+The first CI run on macOS 15 rejected a Javy module’s SIMD local type before import validation, while the macOS 27 interpreter ran it successfully. Javy’s published plugin enables `simd128`. The helper now explicitly authorizes JavaScriptCore JIT using Apple’s standard entitlement, keeping App Sandbox and all invocation restrictions. The headless runtime test is ad-hoc signed with the same JIT authorization so the macOS 15 CI job exercises that requirement. Never treat a newer-OS interpreter result as evidence for the minimum supported OS, and never enable private JavaScriptCore flags to mask a signing mismatch.

@@ -1,4 +1,4 @@
-// Fictional stdin/stdout only: no real clipboard, preferences, toast, browser or paste access.
+// Volant command input/output only: no real clipboard, preferences, toast, browser or paste access.
 declare const Javy: { IO: { readSync(fd: number, data: Uint8Array): number; writeSync(fd: number, data: Uint8Array): number } };
 export const Clipboard = {
   async read() {

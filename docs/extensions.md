@@ -1,4 +1,4 @@
-# Volant extensions — ABI 1
+# Volant extensions — ABI 1 and text-command ABI 2
 
 Volant supports small, user-invoked WebAssembly commands in its sandboxed XPC helper. This is a deliberately narrow first version: plain-text input and output, no background activation, no extension UI or store. A bundled Hello World example starts disabled.
 
@@ -40,7 +40,7 @@ Approval lives under the configuration's `extensions` map and is bound to the co
 
 Each run gets its own XPC connection, capability snapshot and exactly-once completion. The app serializes extension invocations. Disabling a running extension revokes its callbacks and completes it with an error. Every callback rechecks approval; permission state is not shared across runs. Failures, interruption and watchdog termination return a recoverable error to the launcher.
 
-The helper has App Sandbox only: no network entitlement or broad filesystem entitlement. JavaScriptCore instantiates WASM with only granted function imports. ABI 1 requires one non-shared wasm32 memory with an explicit maximum of 16 MiB. Modules are limited to 2 MiB, input/output to 64 KiB, and execution to 0.5–10 seconds. Host callbacks are capped at 64 per invocation. These are linear-memory/data limits, **not a hard cap on total JavaScriptCore process footprint**. A timed-out helper is terminated; the next connection starts a fresh service. A bounded readiness handshake handles the service-restart race; only readiness may retry, never a submitted extension invocation. Startup has a separate 15-second bound to accommodate macOS launchd’s restart throttling; the execution timeout begins only after readiness.
+The helper has App Sandbox and Apple’s `com.apple.security.cs.allow-jit` entitlement for JavaScriptCore WASM execution, including SIMD on macOS 15. It has no network entitlement or broad filesystem entitlement; the main app receives no new entitlement. JavaScriptCore instantiates WASM with only granted function imports. ABI 1 requires one non-shared wasm32 memory with an explicit maximum of 16 MiB. Modules are limited to 2 MiB, input/output to 64 KiB, and execution to 0.5–10 seconds. Host callbacks are capped at 64 per invocation. These are linear-memory/data limits, **not a hard cap on total JavaScriptCore process footprint**. A timed-out helper is terminated; the next connection starts a fresh service. A bounded readiness handshake handles the service-restart race; only readiness may retry, never a submitted extension invocation. Startup has a separate 15-second bound to accommodate macOS launchd’s restart throttling; the execution timeout begins only after readiness.
 
 ## Evidence and next gaps
 
@@ -48,7 +48,7 @@ The helper has App Sandbox only: no network entitlement or broad filesystem enti
 
 Next: signed package distribution/update policy; deliberate async/streaming and richer result APIs; process-memory resource accounting; more capabilities with individually reviewed permission semantics. Existing pre-ABI spike manifests must be rebuilt with ABI 1 and explicit memory maxima before enabling. This is not a Raycast extension compatibility layer.
 
-A [reproducible Raycast TypeScript-to-WASM experiment](../tools/raycast-wasm/README.md) runs the real Base64 Encode command with fictional host adapters. It demonstrates compilation and standalone WASI execution, not compatibility with the shipped Volant ABI. No additional runtime is bundled in the app.
+A [restricted WASI command adapter](../tools/raycast-wasm/README.md) now runs the real Base64 Encode TypeScript command through the production XPC helper. ABI 2 uses `_start` and in-memory stdin/stdout, with empty capabilities; it does not expose the real clipboard or general Raycast/Node APIs. Build and install the opt-in [community Base64 sample](../extensions/raycast-base64/README.md) separately. No additional runtime or sample binary is bundled in the app. The legacy ABI 1 contract above remains unchanged.
 
 ### Signed XPC recovery verification — September 18, 2026
 
