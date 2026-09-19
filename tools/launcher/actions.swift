@@ -453,6 +453,20 @@ func renderAPISettings(_ kind: AIConnectionKind, provider: AIAPIProvider = .open
     window.contentView = view; window.makeKeyAndOrderFront(nil); settle()
     try render("ai-\(kind.rawValue)-\(provider.rawValue)\(offline ? "-offline" : "")", view: view)
     verify(!model.active && credentialWrites == 0, "Opening AI Settings never starts chat or writes credentials")
+    if kind == .local && !offline {
+        let point = NSPoint(x: 435, y: 660 - 100)
+        func event(_ type: NSEvent.EventType) -> NSEvent {
+            NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                              windowNumber: window.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: type == .leftMouseDown ? 1 : 0)!
+        }
+        app.postEvent(event(.leftMouseUp), atStart: true)
+        window.sendEvent(event(.leftMouseDown))
+        if let release = app.nextEvent(matching: .leftMouseUp, until: .distantPast, inMode: .default, dequeue: true) { window.sendEvent(release) }
+        settle()
+        verify(try! AIConfiguration.load(at: aiFixtureURL).localAPI.model == "fictional-local-model", "Use persists the discovered local model")
+        verify(discovery.models.count == 2, "Use keeps the discovered model picker populated")
+        try render("ai-local-selected", view: view)
+    }
     window.orderOut(nil); discovery.cancel()
 }
 try renderAPISettings(.byok)
