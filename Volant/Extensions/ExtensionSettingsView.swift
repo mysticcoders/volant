@@ -3,17 +3,25 @@ import SwiftUI
 struct ExtensionSettingsView: View {
     let configURL: URL
     let onChange: () -> Void
+    var roots: [URL]? = nil
     @State private var installed: [InstalledExtension] = []
     @State private var problems: [String] = []
     @State private var error: String?
-    private var manager: ExtensionManager { ExtensionManager(configURL: configURL) }
+    @State private var communityAllowed = false
+    private var manager: ExtensionManager { ExtensionManager(configURL: configURL, roots: roots) }
     private func reload() {
         let manager = manager; manager.reload()
-        installed = manager.extensions; problems = manager.loadErrors
+        installed = manager.extensions; problems = manager.loadErrors; communityAllowed = manager.communityAllowed
     }
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
+                Toggle("Allow Community Extensions", isOn: Binding(get: { communityAllowed }, set: { allowed in
+                    do { try manager.setCommunityAllowed(allowed, expected: communityAllowed); reload(); onChange() }
+                    catch { self.error = error.localizedDescription; reload() }
+                })).accessibilityIdentifier("community-extensions-toggle")
+                Text("Off blocks community commands and discards results from active runs. Your individual choices are kept. Bundled extensions are controlled separately below.")
+                    .font(.callout).foregroundStyle(.secondary)
                 Text("Extensions start off. Enable one here or choose Enable and Run the first time you use it.")
                     .font(.callout).foregroundStyle(.secondary)
                 Text("Try the bundled example: ext hello Andrew").font(.callout)
@@ -27,7 +35,9 @@ struct ExtensionSettingsView: View {
                         Toggle(ext.name, isOn: Binding(get: { ext.enabled }, set: { enabled in
                             do { try manager.setEnabled(ext, enabled); reload(); onChange() }
                             catch { self.error = error.localizedDescription; reload() }
-                        })).accessibilityIdentifier("extension-toggle-" + ext.id)
+                        })).disabled(ext.communityBlocked).accessibilityIdentifier("extension-toggle-" + ext.id)
+                        Text(ext.isCommunity ? (ext.communityBlocked ? "Community · Blocked by master switch" : "Community") : "Bundled with Volant")
+                            .font(.caption).foregroundStyle(.secondary)
                         Text(ext.accessDescription).font(.callout).foregroundStyle(.secondary)
                         Text("Version \(ext.manifest.version)")
                             .font(.caption).foregroundStyle(.secondary)

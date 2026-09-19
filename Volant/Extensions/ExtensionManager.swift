@@ -5,6 +5,8 @@ struct InstalledExtension: Identifiable, Hashable {
     let manifest: ExtensionManifest
     let directory: URL
     var enabled = false
+    var communityBlocked = false
+    var isCommunity: Bool { !ExtensionManager.isBundled(directory) }
     var name: String { manifest.name }
     var accessDescription: String {
         manifest.capabilities.isEmpty ? "No permissions required" : manifest.capabilities.sorted().map {
@@ -30,6 +32,19 @@ final class ExtensionManager {
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }
+    static func isBundled(_ directory: URL) -> Bool {
+        guard let bundled = Bundle.main.url(forResource: "HelloWorld", withExtension: nil) else { return false }
+        return directory.resolvingSymlinksInPath() == bundled.resolvingSymlinksInPath()
+    }
+    var communityAllowed: Bool { ExtensionApproval.communityAllowed(at: configURL) }
+    func isBlocked(_ ext: InstalledExtension) -> Bool { ext.isCommunity && !communityAllowed }
+    func setCommunityAllowed(_ allowed: Bool, expected: Bool) throws {
+        try ExtensionApproval.updateCommunityAllowed(allowed, expected: expected, at: configURL)
+        if !allowed, let active = Self.activeExecution, active.isCommunity, active.configURL == configURL {
+            active.finish(.failure(ExtensionError.communityDisabled))
+        }
+        reload()
+    }
     func reload() {
         let folders = roots ?? ((Bundle.main.url(forResource: "HelloWorld", withExtension: nil).map { [$0] } ?? []) +
             ((try? FileManager.default.contentsOfDirectory(at: Self.directory, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])) ?? []))
@@ -38,7 +53,8 @@ final class ExtensionManager {
             do {
                 let manifest = try readManifest(dir)
                 return InstalledExtension(id: manifest.id, manifest: manifest, directory: dir,
-                    enabled: ExtensionApproval.enabled(manifest, at: configURL))
+                    enabled: ExtensionApproval.enabled(manifest, at: configURL),
+                    communityBlocked: !Self.isBundled(dir) && !communityAllowed)
             } catch { loadErrors.append("\(dir.lastPathComponent): \(error.localizedDescription)"); return nil }
         }
         let counts = Dictionary(grouping: candidates, by: \.id)
@@ -67,19 +83,23 @@ final class ExtensionManager {
         return module
     }
     func setEnabled(_ ext: InstalledExtension, _ enabled: Bool) throws {
+        if enabled && isBlocked(ext) { throw ExtensionError.communityDisabled }
         if enabled { _ = try verifiedModule(ext) }
         try ExtensionApproval.update(ext.manifest, enabled: enabled, expected: ext.enabled, at: configURL)
-        if !enabled, Self.activeExecution?.extensionID == ext.id { Self.activeExecution?.finish(.failure(ExtensionError.disabled)) }
+        if !enabled, Self.activeExecution?.extensionID == ext.id, Self.activeExecution?.configURL == configURL {
+            Self.activeExecution?.finish(.failure(ExtensionError.disabled))
+        }
         reload()
     }
     func run(_ ext: InstalledExtension, input: String, completion: @escaping (Result<String, Error>) -> Void) {
         do {
+            guard !isBlocked(ext) else { throw ExtensionError.communityDisabled }
             guard ExtensionApproval.enabled(ext.manifest, at: configURL) else { throw ExtensionError.disabled }
             guard !Self.running else { throw ExtensionError.runtime("An extension is already running.") }
             guard input.utf8.count <= 65_536 else { throw ExtensionError.runtime("Extension input exceeds 64 KiB.") }
             let module = try verifiedModule(ext)
             Self.running = true
-            let execution = ExtensionExecution(manifest: ext.manifest, configURL: configURL, onLog: onLog) { [self] result in
+            let execution = ExtensionExecution(manifest: ext.manifest, configURL: configURL, isCommunity: ext.isCommunity, onLog: onLog) { [self] result in
                 Self.running = false; Self.activeExecution = nil; self.execution = nil; completion(result)
             }
             self.execution = execution
@@ -88,13 +108,14 @@ final class ExtensionManager {
         } catch { completion(.failure(error)) }
     }
     enum ExtensionError: Error, LocalizedError {
-        case missingModule, hashMismatch, changed, disabled, runtime(String)
+        case missingModule, hashMismatch, changed, disabled, communityDisabled, runtime(String)
         var errorDescription: String? {
             switch self {
             case .missingModule: return "Extension module is missing, too large, or outside its folder."
             case .hashMismatch: return "Extension module does not match its manifest hash."
             case .changed: return "Extension changed. Refresh and review it before enabling."
             case .disabled: return "Extension is disabled. Enable it before running."
+            case .communityDisabled: return "Community extensions are off. Allow them in Settings → Extensions."
             case .runtime(let message): return message
             }
         }
@@ -105,13 +126,17 @@ final class ExtensionManager {
 private final class ExtensionExecution: NSObject, VolantCapabilityClientProtocol {
     private let manifest: ExtensionManifest
     var extensionID: String { manifest.id }
-    private let configURL: URL
+    let configURL: URL
+    let isCommunity: Bool
     private let onLog: (String) -> Void
     private var completion: ((Result<String, Error>) -> Void)?
     private var connection: NSXPCConnection?
     private var deadline: DispatchWorkItem?
-    init(manifest: ExtensionManifest, configURL: URL, onLog: @escaping (String) -> Void, completion: @escaping (Result<String, Error>) -> Void) {
-        self.manifest = manifest; self.configURL = configURL; self.onLog = onLog; self.completion = completion
+    init(manifest: ExtensionManifest, configURL: URL, isCommunity: Bool, onLog: @escaping (String) -> Void, completion: @escaping (Result<String, Error>) -> Void) {
+        self.manifest = manifest; self.configURL = configURL; self.isCommunity = isCommunity; self.onLog = onLog; self.completion = completion
+    }
+    private var approved: Bool {
+        (!isCommunity || ExtensionApproval.communityAllowed(at: configURL)) && ExtensionApproval.enabled(manifest, at: configURL)
     }
     private var attempt = UUID()
     private var connectionAttempts = 0
@@ -154,11 +179,13 @@ private final class ExtensionExecution: NSObject, VolantCapabilityClientProtocol
         let proxy = connection.remoteObjectProxyWithErrorHandler { _ in failure() } as? VolantExtensionHostProtocol
         proxy?.prepare { [weak self] in DispatchQueue.main.async {
             guard let self, self.completion != nil, self.attempt == token else { return }
+            guard self.approved else { self.finish(.failure(ExtensionManager.ExtensionError.disabled)); return }
             self.submitted = true
             self.armDeadline((self.manifest.timeoutSeconds ?? 2) + 1, message: "Extension exceeded its time limit.")
             proxy?.run(module: module, capabilities: self.manifest.capabilities, input: input, timeout: self.manifest.timeoutSeconds ?? 2) { [weak self] output, error in
                 DispatchQueue.main.async {
                     guard let self, self.attempt == token else { return }
+                    guard self.approved else { self.finish(.failure(ExtensionManager.ExtensionError.disabled)); return }
                     if let error { self.finish(.failure(ExtensionManager.ExtensionError.runtime(error))) }
                     else if let output, output.utf8.count <= 65_536 { self.finish(.success(output)) }
                     else { self.finish(.failure(ExtensionManager.ExtensionError.runtime("Invalid extension output."))) }
@@ -178,7 +205,7 @@ private final class ExtensionExecution: NSObject, VolantCapabilityClientProtocol
         completion(result)
     }
     private func permitted(_ capability: String) -> Bool {
-        completion != nil && manifest.capabilities.contains(capability) && ExtensionApproval.enabled(manifest, at: configURL)
+        completion != nil && manifest.capabilities.contains(capability) && approved
     }
     func log(_ message: String) {
         guard message.utf8.count <= 4096 else { return }

@@ -20,6 +20,7 @@ if CommandLine.arguments.contains("compact") { preferences.appearance.scale = 0.
 if CommandLine.arguments.contains("large") { preferences.appearance.scale = 1.4 }
 var chatRequests = 0
 var settingsRequests = 0
+var extensionSettingsRequests = 0
 var chatConfig: AIConfiguration?
 var panel: LauncherPanel!
 panel = LauncherPanel(index: index, clipboard: clipboard, notes: NotesStore(directory: root.appendingPathComponent("Notes")), config: preferences, usage: UsageStore(url: root.appendingPathComponent("actions-usage.sqlite")), positionStore: UserDefaults(suiteName: "volant.actions.fixture")!) { action in
@@ -30,6 +31,7 @@ panel = LauncherPanel(index: index, clipboard: clipboard, notes: NotesStore(dire
             settingsRequests += 1; panel.orderOut(nil)
         }
     case .aiSettings: settingsRequests += 1; panel.orderOut(nil)
+    case .extensionSettings: extensionSettingsRequests += 1; panel.orderOut(nil)
     default: break
     }
 }
@@ -226,6 +228,49 @@ settings.state.section = "Extensions"
 settings.showWindow(nil); settle()
 try render("extension-settings", view: settings.window!.contentView!)
 settings.window!.orderOut(nil)
+
+// The master gate applies to installed community code, never a manifest's claimed origin/ID.
+let bundledExtension = Bundle.main.url(forResource: "HelloWorld", withExtension: nil)!
+let communityDirectory = root.appendingPathComponent("community-example-" + UUID().uuidString)
+try FileManager.default.copyItem(at: bundledExtension, to: communityDirectory)
+let communityManifestURL = communityDirectory.appendingPathComponent("manifest.json")
+var communityManifest = try JSONDecoder().decode(ExtensionManifest.self, from: Data(contentsOf: communityManifestURL))
+communityManifest.id = "fixture.community"; communityManifest.name = "Community Greeting"
+try JSONEncoder().encode(communityManifest).write(to: communityManifestURL)
+let extensionRoots = [bundledExtension, communityDirectory]
+let communityManager = ExtensionManager(configURL: panel.model.actionConfigURL, roots: extensionRoots)
+communityManager.reload()
+verify(!communityManager.communityAllowed, "Community extensions default off")
+verify(!communityManager.extensions.first(where: { !$0.isCommunity })!.communityBlocked, "Bundled example is independent of master gate")
+panel.model.extensions = communityManager
+panel.toggle(); panel.model.query = "ext community Andrew"; settle()
+verify(panel.model.rows.first?.primaryAction == "Open Extension Settings", "Blocked community command points to Settings")
+key("\r", 36)
+verify(extensionSettingsRequests == 1 && panel.model.pendingExtension == nil, "Master off routes to Settings without offering enable or executing")
+func renderCommunitySettings(_ name: String) throws {
+    let view = NSHostingView(rootView: ExtensionSettingsView(configURL: panel.model.actionConfigURL, onChange: {}, roots: extensionRoots)
+        .padding(16).background(Color(nsColor: .windowBackgroundColor)))
+    let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 440), styleMask: [.titled], backing: .buffered, defer: false)
+    window.contentView = view; window.makeKeyAndOrderFront(nil); settle()
+    try render(name, view: view)
+    window.orderOut(nil)
+}
+try renderCommunitySettings("community-off")
+try communityManager.setCommunityAllowed(true, expected: false)
+panel.toggle(); panel.model.query = "ext community Andrew"; settle()
+verify(panel.model.rows.first?.primaryAction == "Enable and Run…", "Allowing community code still requires individual consent")
+key("\r", 36)
+verify(panel.model.pendingExtension?.extensionItem.id == "fixture.community", "Community first use requests per-extension consent")
+try communityManager.setCommunityAllowed(false, expected: true)
+panel.model.enablePendingExtension()
+verify(!panel.model.extensionRunning && !ExtensionApproval.enabled(communityManifest, at: panel.model.actionConfigURL), "Stale consent cannot bypass revoked master gate")
+panel.orderOut(nil)
+try communityManager.setCommunityAllowed(true, expected: false)
+try communityManager.setEnabled(communityManager.search("community").first!, true)
+try renderCommunitySettings("community-on")
+try communityManager.setCommunityAllowed(false, expected: true)
+try renderCommunitySettings("community-paused")
+print("PASS: community master default, Settings routing, individual consent, stale consent rejection and retained individual choices")
 panel.model.query = ""
 
 // Local panes remain visible while remote machines are still loading.

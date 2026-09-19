@@ -37,6 +37,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var panel: LauncherPanel = LauncherPanel(index: index, clipboard: clipboardStore, notes: notesStore, config: config) { [weak self] action in
         switch action {
         case .settings: self?.showSettings()
+        case .extensionSettings:
+            self?.showSettings()
+            self?.settingsPanel.state.section = "Extensions"
         case .ai: self?.openAIChat()
         case .aiSettings: self?.showAISettings()
         case .reloadConfig: self?.reloadConfig()
