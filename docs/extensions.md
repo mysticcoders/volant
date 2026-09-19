@@ -17,7 +17,7 @@ Installed folders live in Volant's preserved storage location: `~/Library/Contai
 
 ## Direct command discovery
 
-Search by display name or the final component of an extension ID: `base64`, `base64 some text`, or `Base64 Encode some text`. Full display names are matched before their shorter ID trigger so arguments retain their text and casing. Partial names find commands without running them. Return invokes the selected result; typing never executes code. Disabled commands still offer Enable and Run, and master-blocked community commands open Settings. Existing `ext …` searches remain supported for compatibility and explicit extension-only browsing.
+Search by display name or the final component of an extension ID: `base64`, `base64 some text`, or `Base64 Encode some text`. Full display names are matched before their shorter ID trigger so arguments retain their text and casing. Partial names find commands without running them. Once a complete short trigger is present, following text is input (`base64 Enc` encodes `Enc`); a complete full display name takes precedence. Return invokes the selected result; typing never executes code. Disabled commands still offer Enable and Run, and master-blocked community commands open Settings. Existing `ext …` searches remain supported for compatibility and explicit extension-only browsing.
 
 Direct matches appear alongside app and quicklink matches; reserved built-in routes retain precedence. Two extensions sharing a trigger remain separate selectable rows. The catalog caches only manifest metadata, not executable modules. Settings changes, Refresh and Reload Configuration invalidate it; execution still rechecks current approval and the exact manifest/module hash.
 

@@ -62,7 +62,7 @@ final class ExtensionTests: XCTestCase {
         let manager = ExtensionManager(configURL: config, roots: [root])
         for (query, expected) in [("base64", ""), ("BASE64 café ☕", "café ☕"),
                                   ("Base64 Encode Hello  World", "Hello  World"), ("base64\t日本語", "日本語"),
-                                  ("base", ""), ("Base64 Enc", "")] {
+                                  ("base", ""), ("Base64 Enc", "Enc")] {
             let match = try XCTUnwrap(manager.commandMatches(query).first, query)
             XCTAssertEqual(match.input, expected, query)
             XCTAssertFalse(match.extensionItem.enabled)
