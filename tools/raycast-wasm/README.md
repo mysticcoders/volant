@@ -17,6 +17,8 @@ JAVY=/absolute/path/to/javy bash tools/build-raycast-example.sh
 
 The macOS build helper downloads Javy 9.1.0 for Apple Silicon or Intel and checks its pinned SHA-256 before execution. esbuild 0.25.10, js-base64 3.7.8 and development-only wabt 1.0.39 are locked. `bound-memory.mjs` validates the compiler output and rewrites only its single memory declaration to impose a maximum of 256 pages (16 MiB). Hashing happens **after** that change. Generated WASM and manifest live in `extensions/raycast-base64/`, are gitignored, and are not bundled with the app. See [install/use instructions](../../extensions/raycast-base64/README.md).
 
+Build instructions are repeatable, but Javy 9.1.0 did not produce byte-identical modules in a two-build check, even with its deterministic option. Approval intentionally remains tied to the exact resulting bytes: a rebuilt module can require approval again despite unchanged source. The build helper does not weaken or normalize the code hash.
+
 ## Runtime contract
 
 ABI 2 manifests use `abiVersion: 2`, a `.wasm` module, its SHA-256, and **empty capabilities**. Both ABI versions require one defined non-shared wasm32 memory with an explicit maximum ≤16 MiB, module size ≤2 MiB, input/output ≤64 KiB and a 0.5–10 second execution deadline. The separate XPC readiness deadline and no-replay behavior are unchanged.

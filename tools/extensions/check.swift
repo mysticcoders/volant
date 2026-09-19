@@ -30,7 +30,8 @@ check(evaluate(Data([0])).1 != nil, "Malformed module")
 let imported = Data([0,97,115,109,1,0,0,0, 1,6,1,96,2,127,127,0, 2,11,1,3,118,101,121,3,108,111,103,0,0, 5,4,1,1,1,1])
 check(evaluate(imported).1?.contains("not granted") == true, "Undeclared capability denied")
 let base64 = try Data(contentsOf: root.appendingPathComponent("extensions/raycast-base64/encode.wasm"))
-check(evaluate(base64).1?.contains("not granted") == true, "ABI 1 never silently accepts WASI imports")
+let legacyRejection = evaluate(base64)
+check(legacyRejection.0 == nil && legacyRejection.1?.contains("not granted") == true, "ABI 1 never silently accepts WASI imports: \(legacyRejection.1 ?? "no error")")
 for input in ["", "Hello, Volant!", "café ☕ 日本語", String(repeating: "a", count: 4096)] {
     var output: String?, failure: String?
     engine.runCommand(module: base64, input: input, timeout: 2) { output = $0; failure = $1 }
