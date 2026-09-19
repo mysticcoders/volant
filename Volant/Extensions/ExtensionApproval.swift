@@ -3,6 +3,15 @@ import Foundation
 /// Grants are bound to the complete manifest, including code hash and capabilities.
 /// A changed extension is disabled again; edits preserve unrelated config fields.
 enum ExtensionApproval {
+    static func communityAllowed(at url: URL) -> Bool {
+        (try? read(url)["communityExtensionsAllowed"] as? Bool) == true
+    }
+    static func updateCommunityAllowed(_ allowed: Bool, expected: Bool, at url: URL) throws {
+        var object = try read(url)
+        guard (object["communityExtensionsAllowed"] as? Bool == true) == expected else { throw CocoaError(.fileWriteFileExists) }
+        object["communityExtensionsAllowed"] = allowed
+        try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys]).write(to: url, options: .atomic)
+    }
     static func fingerprint(_ manifest: ExtensionManifest) throws -> String {
         let encoder = JSONEncoder(); encoder.outputFormatting = .sortedKeys
         return Integrity.sha256(try encoder.encode(manifest))

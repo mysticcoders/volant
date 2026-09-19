@@ -4,6 +4,7 @@ import OSLog
 
 enum LauncherAction {
     case settings
+    case extensionSettings
     case ai, aiSettings
     case reloadConfig
     case editApp(AppEntry)
@@ -128,7 +129,7 @@ enum ResultRow: Identifiable, Hashable {
         case .clip: return "Copy to Clipboard"
         case .note: return "Open Note"
         case .newNote: return "Create Note"
-        case .extensionRun(let ext, _): return ext.enabled ? "Run Extension" : "Enable and Run…"
+        case .extensionRun(let ext, _): return ext.communityBlocked ? "Open Extension Settings" : (ext.enabled ? "Run Extension" : "Enable and Run…")
         case .extensionResult: return "Copy Result"
         case .snippet: return "Copy Snippet"
         case .emoji: return "Copy Emoji"
@@ -312,6 +313,7 @@ final class LauncherModel: ObservableObject {
     func enablePendingExtension() {
         guard let request = pendingExtension else { return }
         pendingExtension = nil
+        guard !extensionRunning else { notice = "An extension is already running."; return }
         do {
             try extensions.setEnabled(request.extensionItem, true)
             guard let enabled = extensions.extensions.first(where: { $0.id == request.extensionItem.id }) else { throw ExtensionManager.ExtensionError.changed }
@@ -739,6 +741,8 @@ final class LauncherModel: ObservableObject {
         case .note(let note): onNote(.open(note.id))
         case .newNote(let text): onNote(.create(text + "\n"))
         case .extensionRun(let ext, let input):
+            guard !extensionRunning else { notice = "An extension is already running."; return }
+            if extensions.isBlocked(ext) { dismiss(); onNote(.extensionSettings); return }
             if !ext.enabled { pendingExtension = ExtensionPermissionRequest(extensionItem: ext, input: input) }
             else { runExtension(ext, input: input) }
             return

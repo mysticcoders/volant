@@ -349,7 +349,7 @@ private struct RowView: View {
         case .clip(let c): return c.copiedAt.formatted(date: .abbreviated, time: .shortened)
         case .note(let n): return n.preview.isEmpty ? n.modified.formatted(date: .abbreviated, time: .shortened) : n.preview
         case .newNote: return nil
-        case .extensionRun(let e, _): return (e.enabled ? "Enabled · " : "Off · ") + e.accessDescription
+        case .extensionRun(let e, _): return (e.communityBlocked ? "Community extensions off · " : (e.enabled ? "Enabled · " : "Off · ")) + e.accessDescription
         case .extensionResult: return "Press return to copy"
         case .snippet(let s): return s.body.replacingOccurrences(of: "\n", with: " ")
         case .emoji: return nil

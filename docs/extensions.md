@@ -2,6 +2,10 @@
 
 Volant supports small, user-invoked WebAssembly commands in its sandboxed XPC helper. This is a deliberately narrow first version: plain-text input and output, no background activation, no extension UI or store. A bundled Hello World example starts disabled.
 
+Settings → Extensions now has **Allow Community Extensions**, off by default, in addition to each extension's enable switch. The master gate applies to installed community folders; origin is determined by the app's resource location, never a manifest's claimed ID. Bundled Hello World has its own switch and is independent of the community gate. Allowing community extensions does not approve any individual module. First use still offers Enable and Run. When the master gate is off, activating a community result opens Extension Settings instead.
+
+Turning the master gate off preserves individual approvals but revokes the pending/active community invocation, discards its result and blocks callbacks and new runs. A helper already executing code may finish or reach its watchdog timeout; cancellation does not promise immediate process termination. Restoring the master gate restores still-valid individual approvals, but never runs commands automatically. Changed code/manifest still requires approval again. The persisted top-level `communityExtensionsAllowed` Boolean is edited narrowly alongside the existing per-ID `extensions` map.
+
 ## Try it
 
 1. Type `ext hello Andrew` in Volant.
@@ -43,6 +47,8 @@ The helper has App Sandbox only: no network entitlement or broad filesystem enti
 `tools/check-extensions.sh` executes the actual WASM greeting, Unicode, size limits, denied imports, malformed modules and the runaway watchdog. It runs in native CI through `Scripts/test.sh`. Model tests cover opt-in approval, stale edits, changed permissions, hash failure, duplicate IDs and bounded-memory validation. Branded native fixtures cover first-use consent and Settings in light/dark layouts. Direct runtime tests are separate from signed XPC delivery evidence, recorded in the PR.
 
 Next: signed package distribution/update policy; deliberate async/streaming and richer result APIs; process-memory resource accounting; more capabilities with individually reviewed permission semantics. Existing pre-ABI spike manifests must be rebuilt with ABI 1 and explicit memory maxima before enabling. This is not a Raycast extension compatibility layer.
+
+A [reproducible Raycast TypeScript-to-WASM experiment](../tools/raycast-wasm/README.md) runs the real Base64 Encode command with fictional host adapters. It demonstrates compilation and standalone WASI execution, not compatibility with the shipped Volant ABI. No additional runtime is bundled in the app.
 
 ### Signed XPC recovery verification — September 18, 2026
 
