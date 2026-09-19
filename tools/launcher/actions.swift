@@ -245,6 +245,7 @@ verify(!communityManager.extensions.first(where: { !$0.isCommunity })!.community
 panel.model.extensions = communityManager
 panel.toggle(); panel.model.query = "ext community Andrew"; settle()
 verify(panel.model.rows.first?.primaryAction == "Open Extension Settings", "Blocked community command points to Settings")
+try render("community-blocked-launcher")
 key("\r", 36)
 verify(extensionSettingsRequests == 1 && panel.model.pendingExtension == nil, "Master off routes to Settings without offering enable or executing")
 func renderCommunitySettings(_ name: String) throws {
@@ -259,6 +260,7 @@ try renderCommunitySettings("community-off")
 try communityManager.setCommunityAllowed(true, expected: false)
 panel.toggle(); panel.model.query = "ext community Andrew"; settle()
 verify(panel.model.rows.first?.primaryAction == "Enable and Run…", "Allowing community code still requires individual consent")
+try render("community-first-use-launcher")
 key("\r", 36)
 verify(panel.model.pendingExtension?.extensionItem.id == "fixture.community", "Community first use requests per-extension consent")
 try communityManager.setCommunityAllowed(false, expected: true)
