@@ -6,6 +6,11 @@ fixture=$(mktemp -d /tmp/volant-extension-check.XXXXXX)
 trap 'rm -rf "$fixture"' EXIT
 cp tools/extensions/check.swift "$fixture/main.swift"
 swiftc Shared/ExtensionProtocol.swift VolantExtensionHost/ExtensionHost.swift VolantExtensionHost/WASICommand.swift "$fixture/main.swift" -o "$fixture/check"
+# Match the helper's JIT authorization; macOS 15 cannot interpret WASM SIMD.
+cat > "$fixture/jit.plist" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>com.apple.security.cs.allow-jit</key><true/></dict></plist>
+PLIST
+codesign --force --sign - --options runtime --entitlements "$fixture/jit.plist" "$fixture/check"
 "$fixture/check" "$PWD"
 set +e
 "$fixture/check" "$PWD" --spin
