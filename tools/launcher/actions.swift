@@ -464,8 +464,11 @@ let apiModel = ACPModel()
 var localConfig = AIConfiguration(); localConfig.connection = .local; localConfig.localAPI.model = "Fictional local model"
 apiModel.configure(localConfig); apiModel.state.phase = "ready"
 apiModel.state.messages = [ACPMessage(role: "You", text: "Show a fictional example"), ACPMessage(role: "Agent", text: "**Hello** from a local model.\n\n- Runs on your machine\n- Uses the same chat controls")]
-let apiChat = NSHostingView(rootView: ACPConversationView(model: apiModel))
-apiChat.frame = NSRect(x: 0, y: 0, width: 740, height: 450)
+let apiChat = NSHostingView(rootView: ACPConversationView(model: apiModel)
+    .background(Color(nsColor: .windowBackgroundColor)))
+let apiChatWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 740, height: 450), styleMask: [.titled], backing: .buffered, defer: false)
+apiChatWindow.contentView = apiChat; apiChatWindow.makeKeyAndOrderFront(nil); settle()
 try render("ai-local-chat", view: apiChat)
+apiChatWindow.orderOut(nil)
 apiModel.state.phase = "disconnected"
 print("PASS: BYOK/local Settings and chat fixtures use no real servers or credentials")

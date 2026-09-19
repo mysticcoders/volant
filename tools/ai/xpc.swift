@@ -7,6 +7,14 @@ func waitUntil(_ test: () -> Bool) {
     while !test() && Date() < deadline { RunLoop.main.run(until: Date().addingTimeInterval(0.02)) }
     verify(test(), "Timed out waiting for signed API helper")
 }
+let credentialAccount = "fixture:" + UUID().uuidString
+try AICredentials.keychain.write(credentialAccount, "fictional-first-key")
+defer { try? AICredentials.keychain.write(credentialAccount, nil) }
+verify(try AICredentials.keychain.read(credentialAccount) == "fictional-first-key", "Sandboxed Keychain save/read")
+try AICredentials.keychain.write(credentialAccount, "fictional-replacement-key")
+verify(try AICredentials.keychain.read(credentialAccount) == "fictional-replacement-key", "Keychain replacement")
+try AICredentials.keychain.write(credentialAccount, nil)
+verify(try AICredentials.keychain.read(credentialAccount) == nil, "Keychain removal")
 let endpoint = CommandLine.arguments[1]
 var config = AIConfiguration(); config.connection = .local
 config.localAPI.endpoint = endpoint + "/v1"; config.localAPI.model = "fixture-model"
@@ -26,4 +34,4 @@ discovery.refresh(config.localAPI, key: "")
 waitUntil { !discovery.loading }
 verify(discovery.models == ["fixture-model"], "Signed Settings discovery lists models")
 model.disconnect(); discovery.cancel()
-print("PASS: signed sandboxed AI helper, loopback network access, production chat dispatch, Unicode streaming, retained active session and Settings model discovery")
+print("PASS: signed sandboxed AI helper, loopback network access, production chat dispatch, Unicode streaming, retained active session and Settings model discovery and isolated Keychain save/read/replace/remove")
