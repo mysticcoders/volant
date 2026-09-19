@@ -38,7 +38,7 @@ An ABI 2 module exports `memory` and `_start`. Only these function imports from 
 
 Descriptors are entirely in memory and never map to OS descriptors. There are no preopened directories, environment variables, shell, network, random source or real clipboard APIs. Other import namespaces, names and types are rejected before instantiation. Modules must defer host calls requiring memory until `_start`, after exported memory is available. Every pointer, iovec and result range is checked; at most 1,024 iovecs and 4,096 host calls are permitted. Output must be valid UTF-8. Exceptions and nonzero exits discard partial output. A CPU loop terminates the helper through its existing watchdog; later invocations start a fresh service.
 
-These limits cover WASM linear memory and data, not the entire JavaScriptCore process footprint. The adapter adds no app or helper entitlements and no third-party runtime to the Volant bundle. Any QuickJS runtime belongs to the extension's own bounded module. The community master gate, manifest/hash approval, pre-submission and callback/result rechecks apply unchanged; the ABI version is included in the approval fingerprint.
+These limits cover WASM linear memory and data, not the entire JavaScriptCore process footprint. The sandboxed helper uses Apple’s `com.apple.security.cs.allow-jit` entitlement for JavaScriptCore; the main app receives no new entitlement or third-party runtime. Any QuickJS runtime belongs to the extension's own bounded module. The community master gate, manifest/hash approval, pre-submission and callback/result rechecks apply unchanged; the ABI version is included in the approval fingerprint.
 
 ## Verification
 
@@ -55,3 +55,7 @@ No latency or total-memory benchmark has been performed. Next: an installed-app 
 ## Original experiment
 
 The first experiment produced a 1,361,532-byte unbounded-memory module that ran only under standalone Node WASI. ABI 1 correctly rejected it. The production adapter fixes the memory declaration at build time and explicitly routes ABI 2 modules through the new command contract. Merely compiling a module never implied Raycast API compatibility.
+
+## macOS compatibility lesson
+
+The first CI run on macOS 15 rejected a Javy module’s SIMD local type before import validation, while the macOS 27 interpreter ran it successfully. Javy’s published plugin enables `simd128`. The helper now explicitly authorizes JavaScriptCore JIT using Apple’s standard entitlement, keeping App Sandbox and all invocation restrictions. The headless runtime test is ad-hoc signed with the same JIT authorization so the macOS 15 CI job exercises that requirement. Never treat a newer-OS interpreter result as evidence for the minimum supported OS, and never enable private JavaScriptCore flags to mask a signing mismatch.
