@@ -5,6 +5,7 @@ import Combine
 final class AIModelDiscovery: ObservableObject {
     @Published var servers: [AILocalServer] = []
     @Published var models: [String] = []
+    private(set) var modelsEndpoint = ""
     @Published var message: String?
     @Published var loading = false
     private var generation = UUID()
@@ -24,8 +25,14 @@ final class AIModelDiscovery: ObservableObject {
             }
         }
     }
+    func select(_ server: AILocalServer) {
+        cancel(); modelsEndpoint = server.endpoint; models = server.models; message = nil
+    }
+    func endpointChanged(_ endpoint: String) {
+        if modelsEndpoint != endpoint { cancel(); models = []; message = nil }
+    }
     func refresh(_ config: AIHTTPConfiguration, key: String) {
-        cancel(); models = []; message = nil; loading = true; let current = generation
+        cancel(); models = []; modelsEndpoint = config.endpoint; message = nil; loading = true; let current = generation
         lookup(config, key: key) { [weak self] models, error in
             guard let self, self.generation == current else { return }
             self.loading = false; self.models = models ?? []
@@ -48,7 +55,10 @@ final class AIModelDiscovery: ObservableObject {
             DispatchQueue.main.asyncAfter(deadline: .now() + (config.local ? 4 : 20)) { finish(nil, "No response. Check that the server is running.") }
             let proxy = connection.remoteObjectProxyWithErrorHandler { _ in finish(nil, "Couldn’t reach the model service.") } as? VolantAIHostProtocol
             proxy?.models(configuration: try JSONEncoder().encode(config), key: key) { data, error in
-                finish(data.flatMap { try? JSONDecoder().decode([String].self, from: $0) }, error)
+                guard let data, let models = try? JSONDecoder().decode([String].self, from: data) else {
+                    finish(nil, error ?? "The model service returned an invalid list."); return
+                }
+                finish(models, nil)
             }
         } catch { completion(nil, AIHTTPError.message(error)) }
     }

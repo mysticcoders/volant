@@ -46,7 +46,7 @@ struct AISettingsView: View {
                 if config.connection == .local { discovery.discover() }
             } catch { report("Couldn’t load AI settings. Fix or reload the configuration before editing.", failure: true) }
         }
-        .onChange(of: config.http.endpoint) { _, _ in discovery.cancel(); discovery.models = []; keyDraft = "" }
+        .onChange(of: config.http.endpoint) { _, _ in discovery.endpointChanged(config.http.endpoint); keyDraft = "" }
         .onDisappear { discovery.cancel(); keyDraft = ""; if loaded && config != saved { persist() } }
     }
     private var acpControls: some View {
@@ -121,7 +121,7 @@ struct AISettingsView: View {
                         if !server.models.isEmpty {
                             Button("Use") {
                                 config.localAPI = server.configuration; config.localAPI.model = server.models[0]
-                                discovery.models = server.models; keyDraft = ""; persist()
+                                discovery.select(server); keyDraft = ""; persist()
                             }
                         }
                     }

@@ -87,5 +87,10 @@ final class AIHTTPTests: XCTestCase {
         model.cancel(); replies[1](["stale"], nil); XCTAssertTrue(model.servers[1].models.isEmpty)
         model.refresh(Volant.AIHTTPConfiguration(), key: "")
         model.cancel(); replies.last?(["stale"], nil); XCTAssertTrue(model.models.isEmpty)
+        let server = Volant.AILocalServer(name: "Fixture", endpoint: "http://127.0.0.1:1234/v1", models: ["one", "two"])
+        model.select(server); model.endpointChanged(server.endpoint)
+        XCTAssertEqual(model.models, ["one", "two"], "Selecting a discovered endpoint retains its model choices")
+        model.endpointChanged("http://127.0.0.1:8000/v1")
+        XCTAssertTrue(model.models.isEmpty, "Model choices cannot leak into a different endpoint")
     }
 }
