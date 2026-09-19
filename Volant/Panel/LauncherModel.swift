@@ -266,7 +266,7 @@ final class LauncherModel: ObservableObject {
     @Published var pendingExtension: ExtensionPermissionRequest?
     @Published private(set) var extensionRunning = false
     let usage: UsageStore
-    var config: Preferences { didSet { promotedHarness = config.promotedHarness } }
+    var config: Preferences { didSet { promotedHarness = config.promotedHarness; extensions.invalidateCatalog() } }
     var searchesSecondarySources = true
     private let files = FileSearch()
     private let contacts = ContactSearch()
@@ -520,6 +520,9 @@ final class LauncherModel: ObservableObject {
         if !snips.isEmpty { immediate.append(ResultSection(title: "Snippets", rows: snips)) }
         let links = QuicklinkResolver.search(config.quicklinks, head).map { ResultRow.quicklink($0, query: tail) }
         if !links.isEmpty { immediate.append(ResultSection(title: "Quicklinks", rows: links)) }
+        extensions.configURL = actionConfigURL
+        let extensionRows = extensions.commandMatches(q).map { ResultRow.extensionRun($0.extensionItem, input: $0.input) }
+        if !extensionRows.isEmpty { immediate.append(ResultSection(title: "Extensions", rows: extensionRows)) }
         let aliased = Set(immediate.flatMap(\.rows).map(\.id))
         let apps = index.search(q, limit: 6, usage: usage).map { ResultRow.app($0) }.filter { !aliased.contains($0.id) }
         if !apps.isEmpty { immediate.append(ResultSection(title: "Applications", rows: apps)) }

@@ -13,9 +13,9 @@ The build uses pinned npm dependencies and Javy 9.1.0, verifies the downloaded c
 1. Open Volant Settings → Extensions → Open Extensions Folder.
 2. Copy this folder into that directory and click Refresh.
 3. Turn on **Allow Community Extensions**. The individual command still starts disabled.
-4. Type `ext base64 Hello, Volant!` and choose **Enable and Run**.
+4. Type `base64 Hello, Volant!` and choose **Enable and Run**.
 5. The result is `SGVsbG8sIFZvbGFudCE=`. Press Return on the result only if you want to copy it.
 
-The command does **not** read or overwrite your clipboard automatically. The Raycast `Clipboard.read()` call receives the text typed after `ext base64`; its `update()` helper returns text to Volant. Raycast's paste/browser preferences and custom UI are not implemented. No permissions are requested by this sample. Disabling community extensions or the individual module prevents further runs; changed module hashes need approval again.
+The command does **not** read or overwrite your clipboard automatically. The Raycast `Clipboard.read()` call receives the text typed after `base64`; its `update()` helper returns text to Volant. Raycast's paste/browser preferences and custom UI are not implemented. No permissions are requested by this sample. Disabling community extensions or the individual module prevents further runs; changed module hashes need approval again.
 
 The TypeScript source and MIT attribution are in `tools/raycast-wasm/upstream`; build/runtime details and limits are in [the adapter guide](../../tools/raycast-wasm/README.md). Public distribution of third-party runtime build outputs is separate from this source example and should include the embedded dependencies' required notices.
