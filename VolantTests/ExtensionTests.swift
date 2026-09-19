@@ -52,6 +52,31 @@ final class ExtensionTests: XCTestCase {
         XCTAssertTrue(duplicate.extensions.isEmpty)
         XCTAssertFalse(duplicate.loadErrors.isEmpty)
     }
+    func testDirectCommandNamesPreserveInputAndDoNotEnableOrLoadCode() async throws {
+        let (root, config, original) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        var manifest = original; manifest.id = "fixture.base64"; manifest.name = "Base64 Encode"
+        try JSONEncoder().encode(manifest).write(to: root.appendingPathComponent("manifest.json"))
+        // Discovery must work without reading/compiling executable bytes.
+        try FileManager.default.removeItem(at: root.appendingPathComponent("hello.wasm"))
+        let manager = ExtensionManager(configURL: config, roots: [root])
+        for (query, expected) in [("base64", ""), ("BASE64 café ☕", "café ☕"),
+                                  ("Base64 Encode Hello  World", "Hello  World"), ("base64\t日本語", "日本語"),
+                                  ("base", ""), ("Base64 Enc", "Enc")] {
+            let match = try XCTUnwrap(manager.commandMatches(query).first, query)
+            XCTAssertEqual(match.input, expected, query)
+            XCTAssertFalse(match.extensionItem.enabled)
+            XCTAssertTrue(match.extensionItem.communityBlocked)
+        }
+        XCTAssertTrue(manager.commandMatches("base64garbage text").isEmpty)
+        XCTAssertTrue(manager.commandMatches("").isEmpty)
+        XCTAssertFalse(ExtensionApproval.enabled(manifest, at: config))
+        // Repeated keystrokes use metadata, not repeated folder/manifest reads.
+        try FileManager.default.removeItem(at: root.appendingPathComponent("manifest.json"))
+        XCTAssertEqual(manager.commandMatches("base64 another input").count, 1)
+        manager.invalidateCatalog()
+        XCTAssertTrue(manager.commandMatches("base64").isEmpty)
+    }
     func testMemoryMustHaveSmallExplicitMaximum() async throws {
         let prefix: [UInt8] = [0,97,115,109,1,0,0,0]
         XCTAssertNoThrow(try Volant.ExtensionMemory.validate(Data(prefix + [5,4,1,1,1,1])))

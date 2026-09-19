@@ -19,7 +19,8 @@ final class ExtensionManager {
     private(set) var extensions: [InstalledExtension] = []
     private(set) var loadErrors: [String] = []
     var onLog: (String) -> Void = { _ in }
-    var configURL: URL
+    var configURL: URL { didSet { if configURL != oldValue { invalidateCatalog() } } }
+    private var catalogLoaded = false
     private let roots: [URL]?
     private var execution: ExtensionExecution?
     private static var running = false
@@ -45,7 +46,10 @@ final class ExtensionManager {
         }
         reload()
     }
+    func invalidateCatalog() { catalogLoaded = false }
+    func loadIfNeeded() { if !catalogLoaded { reload() } }
     func reload() {
+        catalogLoaded = true
         let folders = roots ?? ((Bundle.main.url(forResource: "HelloWorld", withExtension: nil).map { [$0] } ?? []) +
             ((try? FileManager.default.contentsOfDirectory(at: Self.directory, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])) ?? []))
         loadErrors = []
@@ -63,6 +67,28 @@ final class ExtensionManager {
     }
     func search(_ term: String) -> [InstalledExtension] {
         extensions.filter { term.isEmpty || $0.name.localizedCaseInsensitiveContains(term) || $0.id.lowercased().hasSuffix(term.lowercased()) }
+    }
+    /// Search metadata only. Execution and current approval checks happen on activation.
+    /// A full display name or final ID component introduces input; partial names only search.
+    func commandMatches(_ query: String) -> [(extensionItem: InstalledExtension, input: String)] {
+        loadIfNeeded()
+        let text = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return [] }
+        return extensions.compactMap { ext in
+            let triggers = [ext.name, String(ext.id.split(separator: ".").last ?? "")]
+                .filter { !$0.isEmpty }.sorted { $0.count > $1.count }
+            for trigger in triggers {
+                guard let range = text.range(of: trigger, options: [.anchored, .caseInsensitive]) else { continue }
+                let remainder = text[range.upperBound...]
+                if remainder.isEmpty || remainder.first?.isWhitespace == true {
+                    return (extensionItem: ext, input: String(remainder.drop(while: \.isWhitespace)))
+                }
+            }
+            if ext.name.localizedCaseInsensitiveContains(text) || ext.id.lowercased().hasSuffix(text.lowercased()) {
+                return (extensionItem: ext, input: "")
+            }
+            return nil
+        }
     }
     private func readManifest(_ dir: URL) throws -> ExtensionManifest {
         let url = dir.appendingPathComponent("manifest.json")

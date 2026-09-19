@@ -24,10 +24,10 @@ struct ExtensionSettingsView: View {
                     .font(.callout).foregroundStyle(.secondary)
                 Text("Extensions start off. Enable one here or choose Enable and Run the first time you use it.")
                     .font(.callout).foregroundStyle(.secondary)
-                Text("Try the bundled example: ext hello Andrew").font(.callout)
+                Text("Try the bundled example: hello Andrew").font(.callout)
                 HStack {
                     Button("Open Extensions Folder") { NSWorkspace.shared.open(ExtensionManager.directory) }
-                    Button("Refresh", action: reload)
+                    Button("Refresh") { reload(); onChange() }
                 }
                 if installed.isEmpty { Text("No extensions installed.").foregroundStyle(.secondary) }
                 ForEach(installed) { ext in

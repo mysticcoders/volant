@@ -211,9 +211,17 @@ print("PASS: AI Chat setup routing, automatic general-chat connection, prompt fo
 
 // Bundled extensions are discoverable but never run before explicit consent.
 panel.toggle()
-panel.model.query = "ext hello Andrew"
+panel.model.query = "hello Andrew"
 settle()
 verify(panel.model.rows.first?.primaryAction == "Enable and Run…", "Hello World starts disabled")
+verify(!panel.model.extensionRunning && panel.model.pendingExtension == nil, "Typing an extension name never executes or enables it")
+try render("direct-extension-launcher")
+panel.model.query = "hello world Andrew"; settle()
+verify(panel.model.rows.contains { if case .extensionRun(_, let input) = $0 { return input == "Andrew" }; return false }, "Full display name separates arguments")
+panel.model.query = "ext hello Andrew"; settle()
+verify(panel.model.rows.first?.primaryAction == "Enable and Run…", "Legacy ext prefix remains supported")
+panel.model.query = "hello Andrew"; settle()
+
 key("\r", 36)
 verify(panel.model.pendingExtension?.input == "Andrew", "First invocation requests consent without executing")
 verify(panel.keepsVisibleOnBlur, "Extension consent keeps its parent panel visible")
@@ -243,7 +251,20 @@ communityManager.reload()
 verify(!communityManager.communityAllowed, "Community extensions default off")
 verify(!communityManager.extensions.first(where: { !$0.isCommunity })!.communityBlocked, "Bundled example is independent of master gate")
 panel.model.extensions = communityManager
-panel.toggle(); panel.model.query = "ext community Andrew"; settle()
+communityManifest.name = "Fixture"
+try JSONEncoder().encode(communityManifest).write(to: communityManifestURL)
+communityManager.reload()
+panel.model.query = "Fixture"; settle()
+verify(panel.model.rows.contains { if case .app = $0 { return true }; return false }, "An extension name cannot hide a matching application")
+verify(panel.model.rows.contains { if case .extensionRun = $0 { return true }; return false }, "Extension and app name collisions remain selectable")
+communityManifest.name = "Community Greeting"
+try JSONEncoder().encode(communityManifest).write(to: communityManifestURL)
+communityManager.reload()
+
+panel.model.query = "community"; settle()
+verify(panel.model.rows.contains { if case .extensionRun = $0 { return true }; return false }, "Direct search discovers master-blocked commands without execution")
+
+panel.toggle(); panel.model.query = "community Andrew"; settle()
 verify(panel.model.rows.first?.primaryAction == "Open Extension Settings", "Blocked community command points to Settings")
 try render("community-blocked-launcher")
 key("\r", 36)
@@ -258,7 +279,7 @@ func renderCommunitySettings(_ name: String) throws {
 }
 try renderCommunitySettings("community-off")
 try communityManager.setCommunityAllowed(true, expected: false)
-panel.toggle(); panel.model.query = "ext community Andrew"; settle()
+panel.toggle(); panel.model.query = "community Andrew"; settle()
 verify(panel.model.rows.first?.primaryAction == "Enable and Run…", "Allowing community code still requires individual consent")
 try render("community-first-use-launcher")
 key("\r", 36)
