@@ -77,7 +77,7 @@ private struct SettingsView: View {
     @State private var search = ""
     @State private var error: String?
     @State private var loginStatus = SMAppService.mainApp.status
-    private let sections = ["General", "Status Bar", "AI", "App Shortcuts", "Data & Configuration"]
+    private let sections = ["General", "Status Bar", "AI", "Extensions", "App Shortcuts", "Data & Configuration"]
 
     var body: some View {
         HStack(spacing: 0) {
@@ -98,6 +98,7 @@ private struct SettingsView: View {
                 if state.section == "General" { general }
                 else if state.section == "Status Bar" { statusBar }
                 else if state.section == "AI" { AISettingsView(model: acp, configURL: configURL, onChange: onChange, openConversation: openAI, chooseProject: chooseAIProject) }
+                else if state.section == "Extensions" { ExtensionSettingsView(configURL: configURL, onChange: onChange) }
                 else if state.section == "App Shortcuts" { shortcuts }
                 else { data }
                 Spacer(minLength: 0)

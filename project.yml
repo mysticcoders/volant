@@ -24,7 +24,10 @@ targets:
     platform: macOS
     sources:
       - path: Volant
-        excludes: ["Resources/config.example.json"]
+        excludes: ["Resources/config.example.json", "Resources/HelloWorld"]
+      - path: Volant/Resources/HelloWorld
+        type: folder
+        buildPhase: resources
       - path: Shared
     entitlements:
       path: Volant/Volant.entitlements

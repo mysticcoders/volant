@@ -1,57 +1,51 @@
-# Vey extensions: WebAssembly in a sandboxed process
+# Volant extensions — ABI 1
 
-Status: **spike, working end to end** (2026-09-13). Not a stable API.
+Volant supports small, user-invoked WebAssembly commands in its sandboxed XPC helper. This is a deliberately narrow first version: plain-text input and output, no background activation, no extension UI or store. A bundled Hello World example starts disabled.
 
-## The model
+## Try it
 
-An extension is a folder containing `manifest.json` and a WebAssembly module. The manifest names the module, pins its SHA-256, and lists the **capabilities** the module may use. That list is the complete set of host functions the module can call; nothing else exists from its point of view.
+1. Type `ext hello Andrew` in Volant.
+2. Press Return. Review **No permissions required**, then choose **Enable and Run**.
+3. The real WASM module returns `Hello, Andrew!`. Return on the result copies it; merely running Hello World does not change the clipboard.
+4. Settings → Extensions can disable it again. No extension code runs during search or Settings browsing.
 
-```
+Installed folders live in Volant's preserved storage location: `~/Library/Containers/com.mysticcoders.volant/Data/Library/Application Support/Vey/Extensions/`. Use **Open Extensions Folder** and **Refresh** in Settings. Each folder contains `manifest.json` and its module. Duplicate IDs, invalid manifests and unsupported ABI versions are reported and excluded. There is no automatic downloader or package installer yet.
+
+## Example
+
+Source: `extensions/hello-rust/src/lib.rs`. Build with `bash extensions/hello-rust/build.sh`; it uses rustup, sets a 16 MiB WASM linear-memory maximum, pins the hash, and updates the bundled copy. The wasm32-unknown-unknown target must be installed. The script needs no third-party Rust crates.
+
+```json
 {
-  "id": "com.mysticcoders.vey.hello-rust",
-  "name": "Hello (Rust)",
-  "version": "0.1.0",
+  "abiVersion": 1,
+  "id": "com.mysticcoders.volant.hello",
+  "name": "Hello World",
+  "version": "1.0.0",
   "module": "hello.wasm",
-  "capabilities": ["log", "clipboard.write"],
+  "capabilities": [],
   "timeoutSeconds": 2,
-  "sha256": "…"
+  "sha256": "<SHA-256 of hello.wasm>"
 }
 ```
 
-Extensions are written in **any language that compiles to `wasm32-unknown-unknown`**. The sample is Rust; C, Zig, Go via TinyGo, Swift via SwiftWasm, or AssemblyScript all produce the same kind of module.
+ABI 1 exports `memory`, `alloc(byteCount) -> i32`, and `run(ptr, byteCount) -> i32`. Inputs are UTF-8. The returned pointer addresses a little-endian u32 length followed by UTF-8 output. Memory belongs to a single invocation; the instance is discarded afterward. Supported capability imports retain the original namespace `vey`: `log(ptr,len)` and `clipboard_write(ptr,len)`. No other import types or namespaces are accepted. Hello World imports neither.
 
-## Where it runs
+## Enablement and isolation
 
-```
-Vey.app (sandbox: contacts, calendars)
-  └─ NSXPCConnection ─▶ VeyExtensionHost.xpc (sandbox only; no network, no files, no UI)
-                            └─ JavaScriptCore  ─▶  WebAssembly.Instance(module, { vey: grantedImports })
-```
+Approval lives under the configuration's `extensions` map and is bound to the complete manifest, including module hash, version and capabilities. Changed code or permissions requires fresh enablement. Writes patch only the relevant entry, preserve unknown fields, and reject stale toggle state. Every invocation rereads the manifest, verifies the pinned code hash and checks approval. A hash establishes integrity against the reviewed manifest, not publisher authenticity; install only code you trust.
 
-- **The service is a separate process** with only the App Sandbox entitlement. It links Foundation and JavaScriptCore and nothing else. A crash, a runaway loop or a memory blow-up ends there.
-- **JavaScript is glue, not a runtime for extensions.** The service uses JavaScriptCore's built-in WebAssembly engine, which Apple maintains and ships with macOS, so Vey adds no third-party runtime. The module never sees JavaScript globals; a WebAssembly instance can only call the imports it is handed.
-- **Imports are constructed from the manifest.** Before instantiation the service reads the module's declared imports and refuses any that the manifest does not grant. A module compiled against `clipboard.write` fails to load under a manifest that only grants `log`.
-- **The app re-checks every callback.** Capabilities execute in the app (the clipboard write happens there), and the app checks the running manifest again before honoring each one. Two independent gates.
-- **Integrity.** The app hashes the module and refuses to run it if the hash differs from the manifest's pin.
-- **Watchdog.** If `run` has not returned within `timeoutSeconds`, the service process exits. launchd restarts it for the next call.
+Each run gets its own XPC connection, capability snapshot and exactly-once completion. The app serializes extension invocations. Disabling a running extension revokes its callbacks and completes it with an error. Every callback rechecks approval; permission state is not shared across runs. Failures, interruption and watchdog termination return a recoverable error to the launcher.
 
-## ABI (spike)
+The helper has App Sandbox only: no network entitlement or broad filesystem entitlement. JavaScriptCore instantiates WASM with only granted function imports. ABI 1 requires one non-shared wasm32 memory with an explicit maximum of 16 MiB. Modules are limited to 2 MiB, input/output to 64 KiB, and execution to 0.5–10 seconds. Host callbacks are capped at 64 per invocation. These are linear-memory/data limits, **not a hard cap on total JavaScriptCore process footprint**. A timed-out helper is terminated; the next connection starts a fresh service. A bounded readiness handshake handles the service-restart race; only readiness may retry, never a submitted extension invocation. Startup has a separate 15-second bound to accommodate macOS launchd’s restart throttling; the execution timeout begins only after readiness.
 
-The module exports `memory`, `alloc(len) -> ptr`, and `run(ptr, len) -> ptr`. The host writes the UTF-8 input into `alloc`'d memory, calls `run`, and reads a record at the returned pointer: a little-endian `u32` length followed by UTF-8 bytes. Host imports live in module `vey`: `log(ptr, len)` and `clipboard_write(ptr, len)`.
+## Evidence and next gaps
 
-## Using it
+`tools/check-extensions.sh` executes the actual WASM greeting, Unicode, size limits, denied imports, malformed modules and the runaway watchdog. It runs in native CI through `Scripts/test.sh`. Model tests cover opt-in approval, stale edits, changed permissions, hash failure, duplicate IDs and bounded-memory validation. Branded native fixtures cover first-use consent and Settings in light/dark layouts. Direct runtime tests are separate from signed XPC delivery evidence, recorded in the PR.
 
-Folders go in `~/Library/Containers/com.mysticcoders.volant/Data/Library/Application Support/Vey/Extensions/<name>/`. In the launcher, `ext hello some text` runs the extension with the text as input and shows the result. From the command line, `Volant --run-extension hello "some text"` does the same and prints the log.
+Next: signed package distribution/update policy; deliberate async/streaming and richer result APIs; process-memory resource accounting; more capabilities with individually reviewed permission semantics. Existing pre-ABI spike manifests must be rebuilt with ABI 1 and explicit memory maxima before enabling. This is not a Raycast extension compatibility layer.
 
-Build the sample: `extensions/hello-rust/build.sh` (uses rustup's toolchain, since Homebrew's cargo lacks the wasm target).
+### Signed XPC recovery verification — September 18, 2026
 
-## Verified in the spike
+A Developer ID archive/export provided the sandboxed helper for `tools/check-extensions-xpc.sh`. The headless signed fixture used only fictional config and sample modules: Hello World succeeded, a runaway module terminated, then a new Hello World invocation succeeded through a restarted service. No normal app startup, clipboard monitoring, owner configuration, host windows or hotkeys were involved.
 
-- Rust source → wasm → service → capability callbacks → clipboard, end to end.
-- One flipped byte in the module: refused by the hash check.
-- Manifest without `clipboard.write` for a module that imports it: refused at load.
-- A module whose `run` loops forever: the service is killed at the timeout and the next run works.
-
-## Not yet
-
-Memory caps per module, a capability catalog beyond two functions, a permissions dialog at install, signed manifests, an install flow, async or streaming results, and a stable ABI. Add each deliberately.
+This caught a real difference from the direct engine checks: launchd throttles rapid restarts (its documented default is ten seconds). A single short deadline made the next request fail even though the new service would become available. Prevention: a separate bounded readiness handshake and execution deadline, no replay after submission, and the repeatable signed-XPC smoke script. The script requires signing credentials and is separate from ordinary CI. The direct WASM and approval tests are automated in CI. Signed installed-app consent interaction and a granted clipboard callback are not claimed by this headless test.

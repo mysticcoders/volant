@@ -48,7 +48,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
     var keepsVisibleOnBlur: Bool {
         (model.showingACP && (model.acp.active || model.acp.submitting ||
         !model.acp.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)) ||
-        model.wifiJoin != nil || model.connectivityBusy ||
+        model.pendingExtension != nil || model.extensionRunning || model.wifiJoin != nil || model.connectivityBusy ||
         (model.showingTranslation && model.translation.hasDraft)
     }
 

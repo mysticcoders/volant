@@ -3,7 +3,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 export PATH="$HOME/.cargo/bin:$PATH"
-rustup run stable cargo build --release --target wasm32-unknown-unknown
+RUSTFLAGS="-C link-arg=--max-memory=16777216" rustup run stable cargo build --release --target wasm32-unknown-unknown
 cp target/wasm32-unknown-unknown/release/hello_rust.wasm hello.wasm
 python3 - <<'PY'
 import hashlib, json, pathlib
@@ -12,3 +12,6 @@ m["sha256"] = hashlib.sha256(pathlib.Path("hello.wasm").read_bytes()).hexdigest(
 p.write_text(json.dumps(m, indent=2) + "\n")
 PY
 echo "built hello.wasm ($(wc -c < hello.wasm | tr -d ' ') bytes), hash pinned in manifest.json"
+
+mkdir -p ../../Volant/Resources/HelloWorld
+cp hello.wasm manifest.json ../../Volant/Resources/HelloWorld/

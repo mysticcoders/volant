@@ -207,6 +207,27 @@ try render("ai-settings", view: settings.window!.contentView!)
 settings.window!.orderOut(nil)
 print("PASS: AI Chat setup routing, automatic general-chat connection, prompt focus, and active-draft preservation")
 
+// Bundled extensions are discoverable but never run before explicit consent.
+panel.toggle()
+panel.model.query = "ext hello Andrew"
+settle()
+verify(panel.model.rows.first?.primaryAction == "Enable and Run…", "Hello World starts disabled")
+key("\r", 36)
+verify(panel.model.pendingExtension?.input == "Andrew", "First invocation requests consent without executing")
+verify(panel.keepsVisibleOnBlur, "Extension consent keeps its parent panel visible")
+let permission = panel.model.pendingExtension!
+let consentView = NSHostingView(rootView: ExtensionPermissionView(request: permission, enable: {}, cancel: {}))
+consentView.frame = NSRect(x: 0, y: 0, width: 438, height: 240)
+try render("extension-consent", view: consentView)
+panel.model.pendingExtension = nil
+settle()
+panel.orderOut(nil)
+settings.state.section = "Extensions"
+settings.showWindow(nil); settle()
+try render("extension-settings", view: settings.window!.contentView!)
+settings.window!.orderOut(nil)
+panel.model.query = ""
+
 // Local panes remain visible while remote machines are still loading.
 panel.model.agents.connected = true
 panel.model.agents.busy = true
