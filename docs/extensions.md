@@ -1,4 +1,4 @@
-# Volant extensions — ABI 1
+# Volant extensions — ABI 1 and text-command ABI 2
 
 Volant supports small, user-invoked WebAssembly commands in its sandboxed XPC helper. This is a deliberately narrow first version: plain-text input and output, no background activation, no extension UI or store. A bundled Hello World example starts disabled.
 
@@ -48,7 +48,7 @@ The helper has App Sandbox only: no network entitlement or broad filesystem enti
 
 Next: signed package distribution/update policy; deliberate async/streaming and richer result APIs; process-memory resource accounting; more capabilities with individually reviewed permission semantics. Existing pre-ABI spike manifests must be rebuilt with ABI 1 and explicit memory maxima before enabling. This is not a Raycast extension compatibility layer.
 
-A [reproducible Raycast TypeScript-to-WASM experiment](../tools/raycast-wasm/README.md) runs the real Base64 Encode command with fictional host adapters. It demonstrates compilation and standalone WASI execution, not compatibility with the shipped Volant ABI. No additional runtime is bundled in the app.
+A [restricted WASI command adapter](../tools/raycast-wasm/README.md) now runs the real Base64 Encode TypeScript command through the production XPC helper. ABI 2 uses `_start` and in-memory stdin/stdout, with empty capabilities; it does not expose the real clipboard or general Raycast/Node APIs. Build and install the opt-in [community Base64 sample](../extensions/raycast-base64/README.md) separately. No additional runtime or sample binary is bundled in the app. The legacy ABI 1 contract above remains unchanged.
 
 ### Signed XPC recovery verification — September 18, 2026
 

@@ -60,6 +60,16 @@ final class ExtensionTests: XCTestCase {
         XCTAssertThrowsError(try Volant.ExtensionMemory.validate(Data(prefix + [5,99,1])))
         XCTAssertThrowsError(try Volant.ExtensionMemory.validate(Data(prefix)))
     }
+    func testCommandABIIsExplicitAndCannotRequestLegacyCapabilities() async throws {
+        let (root, _, manifest) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        var command = manifest; command.abiVersion = 2
+        XCTAssertNoThrow(try command.validate())
+        command.capabilities = ["clipboard.write"]
+        XCTAssertThrowsError(try command.validate())
+        command.capabilities = []; command.abiVersion = 3
+        XCTAssertThrowsError(try command.validate())
+    }
     func testCommunityMasterSwitchPreservesIndividualApprovalsAndRejectsStaleRuns() async throws {
         let (root, config, manifest) = try fixture()
         defer { try? FileManager.default.removeItem(at: root) }

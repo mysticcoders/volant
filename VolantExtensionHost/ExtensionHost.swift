@@ -11,6 +11,12 @@ final class ExtensionHost: NSObject, VolantExtensionHostProtocol {
     func prepare(reply: @escaping () -> Void) { reply() }
 
     func run(module: Data, capabilities: [String], input: String, timeout: Double, reply: @escaping (String?, String?) -> Void) {
+        execute(module: module, capabilities: capabilities, input: input, timeout: timeout, command: false, reply: reply)
+    }
+    func runCommand(module: Data, input: String, timeout: Double, reply: @escaping (String?, String?) -> Void) {
+        execute(module: module, capabilities: [], input: input, timeout: timeout, command: true, reply: reply)
+    }
+    private func execute(module: Data, capabilities: [String], input: String, timeout: Double, command: Bool, reply: @escaping (String?, String?) -> Void) {
         do { try ExtensionMemory.validate(module) }
         catch { reply(nil, error.localizedDescription); return }
         guard input.utf8.count <= 65_536, timeout.isFinite, (0.5...10).contains(timeout),
@@ -69,7 +75,7 @@ final class ExtensionHost: NSObject, VolantExtensionHostProtocol {
           return Array.from(new Uint8Array(mem.buffer, out + 4, len));
         })()
         """
-        let result = ctx.evaluateScript(script)
+        let result = ctx.evaluateScript(command ? WASICommand.script : script)
         if let failure { reply(nil, failure); return }
         let bytes = (result?.toArray() as? [NSNumber])?.map { UInt8(truncatingIfNeeded: $0.intValue) } ?? []
         guard let text = String(bytes: bytes, encoding: .utf8) else { reply(nil, "Extension output is not UTF-8."); return }

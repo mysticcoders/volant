@@ -2,6 +2,7 @@
 # Signed, headless XPC delivery check. No app windows, hotkeys, clipboard monitoring or owner config.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+[[ -f extensions/raycast-base64/encode.wasm ]] || bash tools/build-raycast-example.sh
 : "${VOLANT_EXTENSION_APP:?Path to the exported, signed Volant.app}"
 identity='Developer ID Application: Mystic Coders, LLC (REMBT6JY4N)'
 fixture=$(mktemp -d /tmp/volant-extension-xpc.XXXXXX)
@@ -20,4 +21,5 @@ codesign --force --sign "$identity" --options runtime --timestamp "$fixture/Exte
 codesign --verify --deep --strict "$fixture/Extension Smoke.app"
 ditto extensions/hello-rust "$fixture/hello"
 ditto extensions/spin-rust "$fixture/spin"
+ditto extensions/raycast-base64 "$fixture/base64"
 "$bundle/MacOS/ExtensionSmoke" "$fixture"
