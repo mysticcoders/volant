@@ -70,6 +70,8 @@ targets:
         embed: true
       - target: VolantAgentHost
         embed: true
+      - target: VolantAIHost
+        embed: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant
@@ -101,6 +103,32 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.ExtensionHost
+        GENERATE_INFOPLIST_FILE: NO
+  VolantAIHost:
+    type: xpc-service
+    platform: macOS
+    sources:
+      - path: VolantAIHost
+      - path: Shared/AIHTTPTypes.swift
+      - path: Shared/AIHTTPTransport.swift
+      - path: Shared/ACPTypes.swift
+    entitlements:
+      path: VolantAIHost/VolantAIHost.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+    info:
+      path: VolantAIHost/Info.plist
+      properties:
+        CFBundleIdentifier: com.mysticcoders.volant.AIHost
+        CFBundleName: VolantAIHost
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        XPCService:
+          ServiceType: Application
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.AIHost
         GENERATE_INFOPLIST_FILE: NO
   VolantAgentHost:
     type: xpc-service

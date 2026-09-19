@@ -18,7 +18,7 @@ class ScopeTests(unittest.TestCase):
         for path in ["Volant/Panel/LauncherModel.swift", "Volant/Usage/UsageStore.swift", "Volant/Settings/SettingsWindowController.swift",
                      "Volant/Settings/Preferences.swift", "Volant/Settings/AIConfiguration.swift", "Volant/Settings/AISettingsView.swift",
                      "Volant/Resources/Assets.xcassets/AccentColor.colorset/Contents.json",
-                     "Volant/Extensions/ExtensionApproval.swift", "Shared/ExtensionProtocol.swift", "VolantExtensionHost/ExtensionHost.swift", "extensions/hello-rust/hello.wasm", "Volant/Notes/LiveMarkdownEditor.swift", "Shared/LauncherRouting.swift", "Shared/ACPTypes.swift", "Shared/HerdrMachines.swift", "Shared/HerdrAttention.swift", "Shared/HerdrQuestion.swift", "Shared/HerdrClaudeQuestion.swift", "Shared/HerdrResponseController.swift", "Shared/AgentProtocol.swift",
+                     "Volant/Extensions/ExtensionApproval.swift", "Shared/ExtensionProtocol.swift", "VolantExtensionHost/ExtensionHost.swift", "extensions/hello-rust/hello.wasm", "Volant/Notes/LiveMarkdownEditor.swift", "Shared/AIHTTPTypes.swift", "Shared/AIHTTPTransport.swift", "Volant/Settings/AIModelDiscovery.swift", "Shared/LauncherRouting.swift", "Shared/ACPTypes.swift", "Shared/HerdrMachines.swift", "Shared/HerdrAttention.swift", "Shared/HerdrQuestion.swift", "Shared/HerdrClaudeQuestion.swift", "Shared/HerdrResponseController.swift", "Shared/AgentProtocol.swift",
                      "Volant/Dictionary/DictionaryModel.swift", "Volant/Dictionary/DictionaryView.swift", "Volant/Translation/TranslationModel.swift", "Volant/Translation/TranslationView.swift", "tools/launcher/check.swift", "tools/check-launcher-actions.sh", "tools/launcher/actions.swift", "tools/run-bounded-check.py", "tools/interaction-speed/main.swift", "tools/profile-interaction.sh"]:
             self.assertEqual(scope.classify([path]), {"native": True, "ui": True}, path)
 
@@ -26,6 +26,9 @@ class ScopeTests(unittest.TestCase):
         for path in Path("Volant").rglob("*.swift"):
             if "import SwiftUI" in path.read_text():
                 self.assertTrue(scope.classify([path.as_posix()])["ui"], str(path))
+
+    def test_ai_helper_requires_native_checks(self):
+        self.assertEqual(scope.classify(["VolantAIHost/AIHTTPHost.swift"]), {"native": True, "ui": False})
 
     def test_mixed_and_deleted_paths(self):
         self.assertTrue(scope.classify(["docs/a.md", "Volant/Settings/OldView.swift"])["ui"])

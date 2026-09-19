@@ -17,7 +17,7 @@ struct ACPConversationView: View {
                     .accessibilityHidden(true).overlay(LauncherDragHandle())
                 if let caffeinate { CaffeinateStatusView(service: caffeinate) }
                 Text("AI Chat").fontWeight(.medium)
-                Text(ACPProvider(rawValue: model.provider)?.title ?? "").foregroundStyle(.secondary)
+                Text(model.providerTitle).foregroundStyle(.secondary).lineLimit(1).help(model.providerTitle)
                 if !model.project.isEmpty {
                     Label(URL(fileURLWithPath: model.project).lastPathComponent, systemImage: "folder")
                         .foregroundStyle(.secondary).lineLimit(1).help(model.project)
@@ -25,7 +25,7 @@ struct ACPConversationView: View {
                 Spacer(minLength: 4)
                 Button("Settings", action: settings)
                 if model.active { Button("End", action: model.disconnect) }
-                else { Button("Connect", action: model.start).disabled(ACPProvider(rawValue: model.provider) == nil) }
+                else { Button("Connect", action: model.start).disabled(!model.configured) }
             }.padding(.horizontal, 16).padding(.vertical, 8)
             Divider()
             ScrollViewReader { proxy in
@@ -34,13 +34,13 @@ struct ACPConversationView: View {
                     if model.state.messages.isEmpty {
                         Text("What would you like to talk about?")
                             .font(.headline)
-                        Text("Chat with your configured AI provider. A project folder is optional.")
+                        Text(model.usesAPI ? "Chat with your selected model." : "Chat with your configured AI provider. A project folder is optional.")
                             .font(.callout).foregroundStyle(.secondary)
-                        Text("Volant sends only the prompt you write here. Sign in through the provider’s CLI before starting.")
+                        Text(model.usesAPI ? "Your messages and this conversation’s completed turns are sent to the configured server. This connection has no agent tools." : "Volant sends only the prompt you write here. Sign in through the provider’s CLI before starting.")
                             .font(.callout).foregroundStyle(.secondary)
                     }
                     ForEach(model.state.messages) { message in
-                        ACPMessageView(message: message, provider: ACPProvider(rawValue: model.provider)?.title ?? "Agent")
+                        ACPMessageView(message: message, provider: model.providerTitle)
                     }
                     ForEach(model.state.permissions) { permission in
                         VStack(alignment: .leading, spacing: 8) {
@@ -117,7 +117,7 @@ struct ACPActivityStrip: View {
                 HStack {
                     Image(systemName: model.state.permissions.isEmpty ? "bubble.left.and.bubble.right" : "hand.raised")
                     Text("AI Chat").fontWeight(.medium)
-                    Text(ACPProvider(rawValue: model.provider)?.title ?? model.provider).foregroundStyle(.secondary)
+                    Text(model.providerTitle).foregroundStyle(.secondary).lineLimit(1).help(model.providerTitle)
                     Text(model.state.status).foregroundStyle(.secondary).lineLimit(1)
                     Spacer()
                     Text("Open conversation").foregroundStyle(.secondary)
