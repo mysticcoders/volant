@@ -86,3 +86,67 @@ unprivileged caller decides only which operation to request. `AIRedirectGuard` a
 `AIHTTPConfiguration.baseURL()` are the existing examples on the network side. If Kill Process is
 built this way, it becomes the reference for how a capability broker should look, which is a
 better reason to build it than the install count.
+
+## Follow-up: a separately entitled helper does work — September 20, 2026
+
+The open question the first spike left was whether an unsandboxed XPC service *embedded in a
+sandboxed app* keeps the permission the app lacks. It does. `tools/spike-privaccess.sh` builds a
+sandboxed fixture app with an embedded helper, both Developer ID signed, and
+`tools/spike-privaccess-vm.py` runs it against TextEdit in the guest.
+
+The helper's whole vocabulary is one operation plus a probe that sends no signal. There is no
+signal-number parameter, and it accepts no names or patterns, so it can never be asked to resolve
+a target itself.
+
+Measured in a single run, so the two sides are the same process, machine and moment:
+
+| Step | Result |
+| --- | --- |
+| Sandboxed client `kill(pid, 0)` | EPERM |
+| Sandboxed client `terminate()` | false, TextEdit still running |
+| Helper `kill(pid, 0)` | **permitted** |
+| Helper asked to terminate with a mismatched bundle identifier | **refused**: "pid 597 is now com.apple.TextEdit, not com.example.not.this.app" |
+| Helper asked to terminate the real pair | succeeded, TextEdit quit |
+
+### The caller check was tested by attacking it
+
+A control that has only ever been observed allowing things is not verified. The attack the
+code-signing requirement exists to stop is a repackaged app that embeds the genuine, validly
+signed helper but whose own binary is not signed by this team. `Intruder.app` is exactly that:
+the same bundle with only the outer signature replaced by an ad-hoc one.
+
+The intruder was refused and TextEdit survived; the legitimate client succeeded moments later
+against the same helper on the same machine. Because only the caller's signature differs between
+those two runs, the refusal is attributable to `setCodeSigningRequirement`. Note that a refused
+connection and a helper that fails to launch produce the same symptom from the caller's side —
+"Couldn't communicate with a helper application" — so this conclusion rests on the differential,
+not on a distinct denial message.
+
+Worth keeping in proportion: bundled XPC services are already private to their containing bundle,
+so the signing requirement is defence in depth rather than the primary boundary. The primary
+boundary is that nothing outside the app can look the service up at all. The requirement is what
+stops the repackaging attack that gets past it.
+
+### What cost an hour, and is worth knowing
+
+The helper refused to launch, and the symptom pointed at permissions. It was not permissions. The
+helper was compiled on a macOS 27 host with no deployment target, so it linked
+`libswift_DarwinFoundation1.dylib`, which does not exist on the macOS 15 baseline, and died on
+launch with `OS_REASON_DYLD`. Building with `-target arm64-apple-macosx15.0` fixed it.
+
+This is the same host-versus-guest mismatch `launcher-actions.md` already records for the SwiftUI
+expression budget. Ad-hoc `swiftc` fixtures must carry the deployment target, or they prove
+something about the developer's machine rather than about Volant.
+
+Two other changes were made while chasing that failure — the helper's entitlements moved from
+`app-sandbox: false` to an empty dictionary, and the bundle gained the `CFBundleVersion` family of
+keys. Neither was isolated, so neither is known to have mattered. Matching what `VolantAgentHost`
+actually ships is reason enough to keep both.
+
+### What this does not settle
+
+The architecture works; whether to ship it is still the open question, and it is a security
+decision rather than a feature one. Unchanged from the first spike: the helper would be reachable
+by anything that satisfies the requirement, the refusals must stay in the helper rather than the
+launcher, and the README's "sandboxed macOS launcher" framing needs to grow a fuller disclosure
+than it currently carries for the agent helper.
