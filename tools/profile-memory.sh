@@ -2,6 +2,7 @@
 # Explicit opt-in; never run against the owner's process or storage.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source tools/core-module.sh
 profile_output=${1:?Usage: tools/profile-memory.sh OUTPUT_DIRECTORY}
 mkdir -p "$profile_output"
 profile_output=$(cd "$profile_output" && pwd)
@@ -13,7 +14,7 @@ cat > "$profile_bundle/Info.plist" <<'PLIST'
 PLIST
 profile_sources=()
 while IFS= read -r source; do profile_sources+=("$source"); done < <(rg --files Volant Shared -g '*.swift' | rg -v '^Volant/App/')
-swiftc -O -g -target "$(uname -m)-apple-macosx15.0" "${profile_sources[@]}" tools/memory/main.swift -o "$profile_bundle/MacOS/VolantMemoryProfile"
+swiftc -O -g -target "$(uname -m)-apple-macosx15.0" "${VOLANT_CORE_FLAGS[@]}" "${profile_sources[@]}" tools/memory/main.swift -o "$profile_bundle/MacOS/VolantMemoryProfile"
 # Ad-hoc signed measurement fixture, not a notarized/sandboxed release app.
 codesign --force --sign - "$profile_output/Volant Memory Profile.app"
 {

@@ -1,4 +1,5 @@
 import AppKit
+import VolantCore
 
 let app = NSApplication.shared
 let dark = CommandLine.arguments.contains("dark")

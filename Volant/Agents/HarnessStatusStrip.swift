@@ -1,4 +1,5 @@
 import SwiftUI
+import VolantCore
 
 struct HarnessStatusStrip: View {
     let title: String

@@ -1,5 +1,6 @@
 import AppKit
 import EventKit
+import VolantCore
 
 struct EventEntry: Identifiable, Hashable {
     let id: String

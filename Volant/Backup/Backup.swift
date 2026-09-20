@@ -1,4 +1,5 @@
 import AppKit
+import VolantCore
 
 /// Export and import of config and notes to a folder the user picks. Clipboard history is excluded by design:
 /// it is encrypted under this Mac's Keychain key. Import previews hotkeys and quicklinks before applying.

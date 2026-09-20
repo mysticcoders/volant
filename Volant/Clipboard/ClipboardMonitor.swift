@@ -1,4 +1,5 @@
 import AppKit
+import VolantCore
 
 /// Polls the general pasteboard's change count and records plain text that passes the filter.
 final class ClipboardMonitor {

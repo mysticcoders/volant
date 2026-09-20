@@ -2,6 +2,7 @@
 import AppKit
 import CryptoKit
 import Darwin
+import VolantCore
 
 func memory() -> (UInt64, UInt64) {
     var info = task_vm_info_data_t()

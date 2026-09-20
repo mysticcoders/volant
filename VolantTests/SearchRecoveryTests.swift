@@ -1,3 +1,4 @@
+import VolantCore
 import XCTest
 import AppKit
 import CryptoKit

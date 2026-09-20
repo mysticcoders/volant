@@ -1,4 +1,5 @@
 import AppKit
+import VolantCore
 
 private final class RaycastImportSurface: NSView {
     override var isOpaque: Bool { true }

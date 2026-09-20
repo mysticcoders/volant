@@ -1,4 +1,5 @@
 import XCTest
+import VolantCore
 @testable import Volant
 
 final class HerdrResponseTests: XCTestCase {
@@ -50,7 +51,7 @@ final class HerdrResponseTests: XCTestCase {
             default: throw CocoaError(.featureUnsupported)
             }
         }
-        func target() throws -> Volant.AgentSession { try Volant.AgentSession.decodeList(run(["agent", "list"]))[0] }
+        func target() throws -> VolantCore.AgentSession { try VolantCore.AgentSession.decodeList(run(["agent", "list"]))[0] }
     }
     func testObservedCodexQuestionAndUnsupportedScreens() throws {
         let parsed = try XCTUnwrap(Volant.HerdrQuestion.parse(Self.question, provider: "codex"))

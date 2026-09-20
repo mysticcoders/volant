@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import CryptoKit
+import VolantCore
 
 setbuf(stdout, nil)
 func verify(_ condition: @autoclosure () -> Bool, _ message: String) {

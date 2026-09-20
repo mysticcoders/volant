@@ -1,10 +1,6 @@
 import AppKit
+import VolantCore
 
-struct Snippet: Codable, Hashable {
-    var name: String
-    var keyword: String
-    var body: String
-}
 
 /// Expands placeholders at copy time. No paste; the result lands on the clipboard.
 enum SnippetExpander {

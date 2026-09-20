@@ -1,4 +1,5 @@
 import AppKit
+import VolantCore
 
 struct InstalledExtension: Identifiable, Hashable {
     let id: String

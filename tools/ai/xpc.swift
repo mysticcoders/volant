@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import VolantCore
 
 func verify(_ condition: Bool, _ message: String) { if !condition { fputs("FAIL: \(message)\n", stderr); exit(1) } }
 func waitUntil(_ test: () -> Bool) {

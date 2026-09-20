@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source tools/core-module.sh
 fixture_dir=$(mktemp -d /tmp/volant-actions-check.XXXXXX)
 trap 'rm -rf "$fixture_dir"' EXIT
 bundle="$fixture_dir/Volant Actions Fixture.app/Contents"
@@ -15,7 +16,7 @@ PLIST
 cp tools/launcher/actions.swift "$fixture_dir/main.swift"
 sources=()
 while IFS= read -r source; do sources+=("$source"); done < <(find Volant Shared -name '*.swift' ! -path 'Volant/App/*')
-python3 tools/run-bounded-check.py 300 'Compile Actions fixture' swiftc -target "$(uname -m)-apple-macosx15.0" "${sources[@]}" "$fixture_dir/main.swift" -o "$bundle/MacOS/VolantActionsFixture"
+python3 tools/run-bounded-check.py 300 'Compile Actions fixture' swiftc -target "$(uname -m)-apple-macosx15.0" "${VOLANT_CORE_FLAGS[@]}" "${sources[@]}" "$fixture_dir/main.swift" -o "$bundle/MacOS/VolantActionsFixture"
 python3 tools/run-bounded-check.py 120 'Light Actions fixture' "$bundle/MacOS/VolantActionsFixture" "$fixture_dir"
 python3 tools/run-bounded-check.py 120 'Dark Actions fixture' "$bundle/MacOS/VolantActionsFixture" "$fixture_dir" dark
 for scale in compact large; do

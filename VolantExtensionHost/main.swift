@@ -1,4 +1,5 @@
 import Foundation
+import VolantCore
 
 /// The extension host is a separate, sandboxed process with no entitlements beyond the sandbox itself.
 /// It has no network, no file access outside its container, and no UI. A misbehaving module can only

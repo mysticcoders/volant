@@ -10,6 +10,8 @@
 
 # Project working notes
 
+- `Core/` is the `VolantCore` package: Foundation only, no AppKit, SwiftUI, Carbon, CryptoKit or Combine, linked statically so it adds no embedded framework to sign. Code needing a platform framework belongs in the app target. Run its tests with `swift test --package-path Core`; ad-hoc `swiftc` checks link it through `tools/core-module.sh` rather than listing core files by path. See [cross-platform core](docs/cross-platform-core.md).
+
 - Keep notes as plain Markdown files. Failed creates/updates must remain dirty through reload and support retry; never report Saved while any dirty write remains.
 - Drain queued notes writes before trashing. Preserve dirty text on save or trash failure.
 - Notes use native material and semantic styles. Keep the default surface focused on one note; browsing and secondary actions are on demand.

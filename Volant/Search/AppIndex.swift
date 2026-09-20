@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import VolantCore
 
 struct AppEntry: Identifiable, Hashable {
     let id: String

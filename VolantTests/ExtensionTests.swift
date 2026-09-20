@@ -1,9 +1,10 @@
 import XCTest
+import VolantCore
 @testable import Volant
 
 @MainActor
 final class ExtensionTests: XCTestCase {
-    private func fixture() throws -> (URL, URL, Volant.ExtensionManifest) {
+    private func fixture() throws -> (URL, URL, VolantCore.ExtensionManifest) {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         let config = root.appendingPathComponent("config.json")
@@ -11,7 +12,7 @@ final class ExtensionTests: XCTestCase {
         // Minimal ABI-compatible memory declaration with initial and max one page.
         let module = Data([0,97,115,109,1,0,0,0,5,4,1,1,1,1])
         try module.write(to: root.appendingPathComponent("hello.wasm"))
-        let manifest = Volant.ExtensionManifest(id: "fixture.hello", name: "Hello", version: "1", module: "hello.wasm", capabilities: [], timeoutSeconds: 2, sha256: Volant.Integrity.sha256(module))
+        let manifest = VolantCore.ExtensionManifest(id: "fixture.hello", name: "Hello", version: "1", module: "hello.wasm", capabilities: [], timeoutSeconds: 2, sha256: Volant.Integrity.sha256(module))
         try JSONEncoder().encode(manifest).write(to: root.appendingPathComponent("manifest.json"))
         return (root, config, manifest)
     }
@@ -79,11 +80,11 @@ final class ExtensionTests: XCTestCase {
     }
     func testMemoryMustHaveSmallExplicitMaximum() async throws {
         let prefix: [UInt8] = [0,97,115,109,1,0,0,0]
-        XCTAssertNoThrow(try Volant.ExtensionMemory.validate(Data(prefix + [5,4,1,1,1,1])))
-        XCTAssertThrowsError(try Volant.ExtensionMemory.validate(Data(prefix + [5,3,1,0,1])))
-        XCTAssertThrowsError(try Volant.ExtensionMemory.validate(Data(prefix + [5,5,1,1,1,0x81,0x02])))
-        XCTAssertThrowsError(try Volant.ExtensionMemory.validate(Data(prefix + [5,99,1])))
-        XCTAssertThrowsError(try Volant.ExtensionMemory.validate(Data(prefix)))
+        XCTAssertNoThrow(try VolantCore.ExtensionMemory.validate(Data(prefix + [5,4,1,1,1,1])))
+        XCTAssertThrowsError(try VolantCore.ExtensionMemory.validate(Data(prefix + [5,3,1,0,1])))
+        XCTAssertThrowsError(try VolantCore.ExtensionMemory.validate(Data(prefix + [5,5,1,1,1,0x81,0x02])))
+        XCTAssertThrowsError(try VolantCore.ExtensionMemory.validate(Data(prefix + [5,99,1])))
+        XCTAssertThrowsError(try VolantCore.ExtensionMemory.validate(Data(prefix)))
     }
     func testCommandABIIsExplicitAndCannotRequestLegacyCapabilities() async throws {
         let (root, _, manifest) = try fixture()

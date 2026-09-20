@@ -1,6 +1,7 @@
 import AppKit
 import CryptoKit
 import SwiftUI
+import VolantCore
 
 let app = NSApplication.shared
 app.setActivationPolicy(.regular)

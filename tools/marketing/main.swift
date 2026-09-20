@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import CryptoKit
+import VolantCore
 
 let app = NSApplication.shared
 let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)

@@ -2,6 +2,7 @@
 # Headless signed fixture: no owner UI, provider accounts, keys or model inference.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source tools/core-module.sh
 : "${VOLANT_AI_APP:?Path to exported Developer ID Volant.app}"
 identity='Developer ID Application: Mystic Coders, LLC (REMBT6JY4N)'
 fixture=$(mktemp -d /tmp/volant-ai-xpc.XXXXXX)
@@ -25,7 +26,7 @@ PLIST
 cp tools/ai/xpc.swift "$fixture/main.swift"
 sources=()
 while IFS= read -r source; do sources+=("$source"); done < <(find Volant Shared -name '*.swift' ! -path 'Volant/App/*')
-swiftc "${sources[@]}" "$fixture/main.swift" -o "$bundle/MacOS/AISmoke"
+swiftc "${VOLANT_CORE_FLAGS[@]}" "${sources[@]}" "$fixture/main.swift" -o "$bundle/MacOS/AISmoke"
 cat > "$fixture/client.entitlements" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>com.apple.security.app-sandbox</key><true/></dict></plist>
 PLIST

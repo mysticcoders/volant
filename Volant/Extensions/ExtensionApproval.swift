@@ -1,4 +1,5 @@
 import Foundation
+import VolantCore
 
 /// Grants are bound to the complete manifest, including code hash and capabilities.
 /// A changed extension is disabled again; edits preserve unrelated config fields.

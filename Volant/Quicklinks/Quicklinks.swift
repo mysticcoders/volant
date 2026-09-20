@@ -1,9 +1,6 @@
 import AppKit
+import VolantCore
 
-struct Quicklink: Codable, Hashable {
-    var name: String
-    var url: String
-}
 
 /// Opens web/mail links and Apple's documented Shortcuts run URL.
 /// `{query}` is encoded as a single value, so typed text cannot add URL parameters.

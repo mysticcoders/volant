@@ -1,5 +1,6 @@
 import Foundation
 import Carbon.HIToolbox
+import VolantCore
 
 struct BindingFailure: LocalizedError {
     let message: String

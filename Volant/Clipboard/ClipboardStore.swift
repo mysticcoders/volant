@@ -2,6 +2,7 @@ import Foundation
 import SQLite3
 import CryptoKit
 import Combine
+import VolantCore
 
 struct ClipEntry: Identifiable, Hashable {
     enum Kind: Int { case text = 0, image = 1 }

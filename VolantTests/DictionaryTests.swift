@@ -1,5 +1,6 @@
 import XCTest
 import CoreServices
+import VolantCore
 @testable import Volant
 
 @MainActor final class DictionaryTests: XCTestCase {

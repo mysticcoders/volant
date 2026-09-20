@@ -1,6 +1,7 @@
 import AppKit
 import Combine
 import OSLog
+import VolantCore
 
 enum LauncherAction {
     case settings

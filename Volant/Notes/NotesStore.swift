@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import VolantCore
 
 struct Note: Identifiable, Hashable {
     let id: String
