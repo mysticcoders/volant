@@ -17,7 +17,7 @@ let index = AppIndex(entries: [entry], launch: { _ in launched += 1 })
 let clipboardKey = SymmetricKey(size: .bits256)
 var clipboardAvailable = true
 var clipboardRetryDelay: TimeInterval = 0
-let clipboard = ClipboardStore(retention: 2, storageURL: root.appendingPathComponent("actions-clipboard.sqlite"), keyLoader: { _ in
+let clipboard = ClipboardStore(retention: 2, storageURL: root.appendingPathComponent("actions-clipboard-\(UUID().uuidString).sqlite"), keyLoader: { _ in
     if clipboardRetryDelay > 0 { Thread.sleep(forTimeInterval: clipboardRetryDelay) }
     guard clipboardAvailable else { throw KeychainKey.Failure.access(-25308) }
     return clipboardKey
@@ -507,7 +507,10 @@ clipboardAvailable = true; clipboardRetryDelay = 0.8
 key("r", 15, .command)
 verify(panel.model.clipboardRetrying, "Command R activates clipboard Retry")
 try render("clipboard-retrying")
-RunLoop.main.run(until: Date().addingTimeInterval(1))
+let clipboardDeadline = Date().addingTimeInterval(5)
+while (panel.model.clipboardRetrying || panel.model.rows.isEmpty) && Date() < clipboardDeadline {
+    RunLoop.main.run(until: Date().addingTimeInterval(0.02))
+}
 verify(panel.model.clipboardMessage == nil && !panel.model.rows.isEmpty, "Retry restores preserved clipboard history")
 try render("clipboard-recovered")
 panel.model.query = "clip no-fixture-match"; settle()
