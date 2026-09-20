@@ -162,6 +162,16 @@ struct LauncherView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 2, pinnedViews: []) {
+                    if let message = model.searchRecoveryMessage {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(message).font(.callout).foregroundStyle(.secondary)
+                            Button(model.searchRetryTitle) { model.retrySearch() }
+                                .keyboardShortcut("r", modifiers: .command)
+                        }
+                        .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+                        .padding(.horizontal, 8)
+                    }
                     if let message = model.clipboardMessage {
                         VStack(alignment: .leading, spacing: 10) {
                             Text(message).font(.callout).foregroundStyle(.secondary)
@@ -196,7 +206,7 @@ struct LauncherView: View {
                             }
                         }
                     }
-                    if model.sections.isEmpty && model.clipboardMessage == nil {
+                    if model.sections.isEmpty && model.clipboardMessage == nil && model.searchRecoveryMessage == nil {
                         Text(model.notice ?? (model.query.isEmpty ? "Type to search" : "No results"))
                             .foregroundStyle(.secondary)
                             .padding(.top, 24)
