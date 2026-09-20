@@ -15,7 +15,7 @@ class ScopeTests(unittest.TestCase):
             self.assertFalse(scope.classify([path])["ui"], path)
 
     def test_ui_dependencies(self):
-        for path in ["Volant/Panel/LauncherModel.swift", "Volant/Usage/UsageStore.swift", "Volant/Settings/SettingsWindowController.swift",
+        for path in ["Volant/Clipboard/ClipboardStore.swift", "Volant/Clipboard/KeychainKey.swift", "Volant/Panel/LauncherModel.swift", "Volant/Usage/UsageStore.swift", "Volant/Settings/SettingsWindowController.swift",
                      "Volant/Settings/Preferences.swift", "Volant/Settings/AIConfiguration.swift", "Volant/Settings/AISettingsView.swift",
                      "Volant/Resources/Assets.xcassets/AccentColor.colorset/Contents.json",
                      "Volant/Extensions/ExtensionApproval.swift", "Shared/ExtensionProtocol.swift", "VolantExtensionHost/ExtensionHost.swift", "extensions/hello-rust/hello.wasm", "Volant/Notes/LiveMarkdownEditor.swift", "Shared/AIHTTPTypes.swift", "Shared/AIHTTPTransport.swift", "Volant/Settings/AIModelDiscovery.swift", "Shared/LauncherRouting.swift", "Shared/ACPTypes.swift", "Shared/HerdrMachines.swift", "Shared/HerdrAttention.swift", "Shared/HerdrQuestion.swift", "Shared/HerdrClaudeQuestion.swift", "Shared/HerdrResponseController.swift", "Shared/AgentProtocol.swift",

@@ -162,6 +162,20 @@ struct LauncherView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 2, pinnedViews: []) {
+                    if let message = model.clipboardMessage {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(message).font(.callout).foregroundStyle(.secondary)
+                            HStack {
+                                if model.clipboardRetrying { ProgressView().controlSize(.small) }
+                                Button("Retry Clipboard History") { model.retryClipboard() }
+                                    .disabled(model.clipboardRetrying)
+                                    .keyboardShortcut("r", modifiers: .command)
+                            }
+                        }
+                        .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+                        .padding(.top, 8)
+                    }
                     ForEach(model.sections) { section in
                         Text(section.title)
                             .font(.system(size: 12, weight: .medium))
@@ -182,7 +196,7 @@ struct LauncherView: View {
                             }
                         }
                     }
-                    if model.sections.isEmpty {
+                    if model.sections.isEmpty && model.clipboardMessage == nil {
                         Text(model.notice ?? (model.query.isEmpty ? "Type to search" : "No results"))
                             .foregroundStyle(.secondary)
                             .padding(.top, 24)
