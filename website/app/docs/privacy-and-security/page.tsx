@@ -1,0 +1,144 @@
+// oxlint-disable next/no-html-link-for-pages -- vinext 1.0.0-beta.5's next/link throws in the
+// production build, leaving internal navigation dead. Plain anchors until fixed upstream.
+import type { Metadata } from 'next';
+
+import { adjacentDocs } from '../docs-nav';
+import { DocFooterNav } from '@/components/doc-footer-nav';
+
+export const metadata: Metadata = {
+  title: 'Privacy and security — Volant docs',
+  description:
+    'App Sandbox, no network entitlement, no telemetry, encrypted clipboard history, and only the permissions Volant actually needs.',
+  alternates: {
+    canonical: 'https://usevolant.com/docs/privacy-and-security',
+  },
+};
+
+export default function PrivacyAndSecurity() {
+  return (
+    <>
+      <p className="docs-breadcrumb">
+        <a href="/docs">Docs</a> / Privacy and security
+      </p>
+      <h1>Privacy and security</h1>
+      <p className="docs-lede">
+        There is no Volant account and no telemetry. Your notes, clipboard
+        history, and configuration stay on your Mac.
+      </p>
+
+      <h2>The main app has no network access</h2>
+      <p>
+        The main binary ships with <strong>no network entitlement</strong>, so
+        it cannot phone home even in principle. Two deliberate exceptions live
+        outside it:
+      </p>
+      <ul>
+        <li>
+          <strong>Updates</strong> run through Sparkle&rsquo;s own separate
+          helper process.
+        </li>
+        <li>
+          <strong>Agent connections</strong> run through a separate local
+          helper. See <a href="/docs/agents">Agents</a>.
+        </li>
+      </ul>
+      <p>
+        Opening a link hands it to another app. Running an Apple Shortcut hands
+        execution to Shortcuts, whose workflows use their own permissions.
+      </p>
+
+      <h2>Permissions Volant asks for</h2>
+      <div className="docs-table-scroll">
+        <table className="docs-table">
+          <thead>
+            <tr>
+              <th>Permission</th>
+              <th>Why, and when</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Contacts</td>
+              <td>Only to search contacts with <code>@</code>. Asked on first use.</td>
+            </tr>
+            <tr>
+              <td>Calendar</td>
+              <td>Only to show today and tomorrow. Asked on first use.</td>
+            </tr>
+            <tr>
+              <td>Bluetooth</td>
+              <td>Only to list connected paired devices.</td>
+            </tr>
+            <tr>
+              <td>Location</td>
+              <td>macOS requires it to read Wi-Fi network <em>names</em>. Volant never requests coordinates and never starts location updates.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Deny any of them and that feature simply returns nothing, with guidance
+        and a System Settings action.
+      </p>
+      <div className="docs-note">
+        <p>
+          Be aware that Apple&rsquo;s Calendar grant is a full-access grant at
+          the OS level. Volant only reads — but that restraint is the
+          app&rsquo;s, not the operating system&rsquo;s.
+        </p>
+      </div>
+
+      <h2>Permissions Volant does not ask for</h2>
+      <p>
+        <strong>No Accessibility grant. No Input Monitoring grant.</strong>{' '}
+        Global hotkeys use Carbon&rsquo;s hotkey registration, which needs no
+        permission at all.
+      </p>
+      <p>
+        This is also why version 0.1 copies results to the clipboard instead of
+        pasting them: no keystroke is ever synthesized. It is the reason
+        paste-in-place, window management, and system-wide text expansion are
+        absent — each would require that grant, and they were ruled out rather
+        than quietly added.
+      </p>
+
+      <h2>Your data at rest</h2>
+      <ul>
+        <li>
+          <strong>Clipboard history</strong> is AES-GCM encrypted with a 256-bit
+          Keychain key scoped to this device while unlocked, stored in SQLite
+          with <code>secure_delete</code>, and excluded from Time Machine.
+          Password-manager copies are skipped unconditionally.
+        </li>
+        <li>
+          <strong>Notes</strong> are ordinary <code>.md</code> files you can
+          open in any editor.
+        </li>
+        <li>
+          <strong>Configuration</strong> is a portable text file you can read,
+          diff, and back up.
+        </li>
+        <li>
+          <strong>Learned ranking</strong> lives in a local SQLite file. Nothing
+          about it leaves the machine.
+        </li>
+      </ul>
+
+      <h2>Code you can check</h2>
+      <p>
+        Volant is MIT licensed and its source is public. It has zero third-party
+        dependencies — AppKit, SwiftUI, Carbon, CryptoKit, SQLite3, and
+        Security.
+      </p>
+      <p>
+        Release builds are Developer ID signed, hardened, notarized, and
+        stapled. The release script refuses to package an archive that carries
+        debugger access, carries a network entitlement, or lacks a Developer ID
+        signature — so a build that violated the posture above could not ship
+        silently.
+      </p>
+
+      <DocFooterNav {...adjacentDocs('privacy-and-security')} />
+    </>
+  );
+}
