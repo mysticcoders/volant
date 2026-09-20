@@ -1,6 +1,7 @@
 import AppKit
 import CoreAudio
 import CoreWLAN
+import VolantCore
 
 let app = NSApplication.shared
 // Hosted unit tests must not start the real menu, clipboard monitor, hotkeys or updater.

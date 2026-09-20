@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Carbon.HIToolbox
+import VolantCore
 
 struct AppBindingEditor: View {
     let app: AppEntry

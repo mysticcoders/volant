@@ -1,5 +1,6 @@
 import Foundation
 import Darwin
+import VolantCore
 
 /// One Volant-owned ACP v1 session. All state and protocol IO are serialized on queue.
 /// Only fixed provider executables are launched. No shell, terminal-input or generic RPC surface.

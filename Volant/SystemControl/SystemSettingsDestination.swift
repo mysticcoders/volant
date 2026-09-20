@@ -1,4 +1,5 @@
 import AppKit
+import VolantCore
 
 /// Curated pane links, not a mirror of Apple's private Settings search index.
 struct SystemSettingsDestination: Hashable, Identifiable {

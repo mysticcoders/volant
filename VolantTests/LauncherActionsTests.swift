@@ -1,5 +1,6 @@
 import XCTest
 import CryptoKit
+import VolantCore
 @testable import Volant
 
 final class LauncherActionsTests: XCTestCase {

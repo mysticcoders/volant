@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import VolantCore
 
 final class AppleShortcutsModel: ObservableObject {
     @Published private(set) var entries: [AppleShortcut] = []

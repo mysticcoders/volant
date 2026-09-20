@@ -1,5 +1,6 @@
 import AppKit
 import CryptoKit
+import VolantCore
 
 setbuf(stdout, nil)
 let application = NSApplication.shared

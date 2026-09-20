@@ -1,4 +1,5 @@
 import SwiftUI
+import VolantCore
 
 /// One waiting agent at a time. Only verified structured questions expose answers.
 struct HerdrAttentionView: View {

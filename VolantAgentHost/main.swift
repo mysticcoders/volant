@@ -1,5 +1,6 @@
 import Foundation
 import Security
+import VolantCore
 
 /// Local Herdr discovery and typed ACP conversations. No shell or arbitrary-command API.
 /// This service intentionally runs outside App Sandbox to reach the user's Herdr socket.

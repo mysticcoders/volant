@@ -1,5 +1,6 @@
 import Foundation
 import CoreAudio
+import VolantCore
 
 func verify(_ value: @autoclosure () -> Bool, _ message: String, line: Int = #line) {
     guard value() else { fputs("FAIL \(line): \(message)\n", stderr); exit(1) }

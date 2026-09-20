@@ -1,6 +1,7 @@
 import AppKit
 import ServiceManagement
 import Combine
+import VolantCore
 
 /// Owns the long-lived services: menu bar item, hotkeys, app index, clipboard monitor, and the panel.
 final class AppDelegate: NSObject, NSApplicationDelegate {

@@ -1,4 +1,5 @@
 import Foundation
+import VolantCore
 @main struct Check {
     static func check(_ condition: @autoclosure () -> Bool, _ message: String) {
         guard condition() else { fatalError(message) }

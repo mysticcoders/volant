@@ -2,6 +2,7 @@ import XCTest
 import CryptoKit
 import Security
 import SQLite3
+import VolantCore
 @testable import Volant
 
 final class ClipboardRecoveryTests: XCTestCase {

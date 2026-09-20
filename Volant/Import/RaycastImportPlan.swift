@@ -1,5 +1,6 @@
 import Foundation
 import CryptoKit
+import VolantCore
 
 enum RaycastCategory: String, CaseIterable {
     case snippets = "Snippets", quicklinks = "Quicklinks", aliases = "App aliases", hotkeys = "App hotkeys", notes = "Notes"

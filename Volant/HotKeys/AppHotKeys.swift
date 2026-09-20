@@ -1,5 +1,6 @@
 import AppKit
 import OSLog
+import VolantCore
 
 /// Per-app hotkeys: press once to activate or launch, press again while frontmost to hide.
 enum AppHotKeys {

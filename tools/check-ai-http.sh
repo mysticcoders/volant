@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source tools/core-module.sh
 fixture=$(mktemp -d /tmp/volant-ai-http.XXXXXX)
 server_pid=''
 cleanup() { [[ -z "$server_pid" ]] || kill "$server_pid" 2>/dev/null || true; rm -rf "$fixture"; }
@@ -13,5 +14,5 @@ for attempt in {1..300}; do
     sleep 0.1
 done
 [[ -s "$fixture/port" ]] || { echo 'AI fixture server did not start'; cat "$fixture/server.log"; exit 1; }
-swiftc -parse-as-library Shared/ACPTypes.swift Shared/AIHTTPTypes.swift Shared/AIHTTPTransport.swift VolantAIHost/AIHTTPHost.swift tools/ai/check.swift -o "$fixture/check"
+swiftc -parse-as-library "${VOLANT_CORE_FLAGS[@]}" VolantAIHost/AIHTTPHost.swift tools/ai/check.swift -o "$fixture/check"
 "$fixture/check" "http://127.0.0.1:$(cat "$fixture/port")"

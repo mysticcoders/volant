@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import VolantCore
 
 /// UI-owned model; callbacks are delivered on the main queue.
 final class AgentsModel: ObservableObject {

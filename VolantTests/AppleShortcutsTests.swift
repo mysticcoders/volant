@@ -1,28 +1,29 @@
 import XCTest
+import VolantCore
 @testable import Volant
 
 @MainActor final class AppleShortcutsTests: XCTestCase {
-    private let first = Volant.AppleShortcut(id: "11111111-1111-4111-8111-111111111111", name: "Recipes (家族)")
-    private let second = Volant.AppleShortcut(id: "22222222-2222-4222-8222-222222222222", name: "Recipes (家族)")
+    private let first = VolantCore.AppleShortcut(id: "11111111-1111-4111-8111-111111111111", name: "Recipes (家族)")
+    private let second = VolantCore.AppleShortcut(id: "22222222-2222-4222-8222-222222222222", name: "Recipes (家族)")
 
     func testIdentifiersNamesAndMalformedCatalog() throws {
         let text = "\(first.name) (\(first.id))\n\(second.name) (\(second.id))\n\(first.name) (\(first.id))\n"
-        let entries = try Volant.AppleShortcut.decodeListing(Data(text.utf8))
+        let entries = try VolantCore.AppleShortcut.decodeListing(Data(text.utf8))
         XCTAssertEqual(Set(entries.map(\.id)), [first.id, second.id])
         XCTAssertEqual(entries.count, 2)
-        XCTAssertTrue(try Volant.AppleShortcut.decodeListing(Data()).isEmpty)
+        XCTAssertTrue(try VolantCore.AppleShortcut.decodeListing(Data()).isEmpty)
         for bad in ["name only", "Name (--help)", " (\(first.id))"] {
-            XCTAssertThrowsError(try Volant.AppleShortcut.decodeListing(Data(bad.utf8)))
+            XCTAssertThrowsError(try VolantCore.AppleShortcut.decodeListing(Data(bad.utf8)))
         }
-        XCTAssertEqual(Volant.AppleShortcut.queryTerm(" APPLE SHORTCUTS recipes "), "recipes")
-        XCTAssertEqual(Volant.AppleShortcut.queryTerm("shortcuts"), "")
-        XCTAssertNil(Volant.AppleShortcut.queryTerm("shortcutting"))
+        XCTAssertEqual(VolantCore.AppleShortcut.queryTerm(" APPLE SHORTCUTS recipes "), "recipes")
+        XCTAssertEqual(VolantCore.AppleShortcut.queryTerm("shortcuts"), "")
+        XCTAssertNil(VolantCore.AppleShortcut.queryTerm("shortcutting"))
         XCTAssertTrue(LauncherRouting.isReserved("apple shortcuts recipes"))
     }
 
     func testCacheRefreshFailureAndRetry() async throws {
         let model = AppleShortcutsModel()
-        var callbacks: [([Volant.AppleShortcut]?, String?) -> Void] = []
+        var callbacks: [([VolantCore.AppleShortcut]?, String?) -> Void] = []
         model.loadOverride = { callbacks.append($0) }
         model.refresh(); model.refresh(); model.refresh(force: true)
         XCTAssertEqual(callbacks.count, 1)
@@ -63,7 +64,7 @@ import XCTest
         try await Task.sleep(for: .milliseconds(20))
         XCTAssertFalse(model.running)
         XCTAssertEqual(model.runMessage, "Fixture failure")
-        model.run(Volant.AppleShortcut(id: UUID().uuidString, name: "Missing"))
+        model.run(VolantCore.AppleShortcut(id: UUID().uuidString, name: "Missing"))
         XCTAssertEqual(ids.count, 2)
     }
 }

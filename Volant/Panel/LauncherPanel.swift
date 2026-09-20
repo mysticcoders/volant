@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import OSLog
+import VolantCore
 
 /// A floating, non-activating, borderless panel that hosts the SwiftUI launcher and toggles on the summon hotkey.
 final class LauncherPanel: NSPanel, NSWindowDelegate {

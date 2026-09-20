@@ -15,6 +15,8 @@ settings:
     CURRENT_PROJECT_VERSION: "6"
     SWIFT_TREAT_WARNINGS_AS_ERRORS: NO
 packages:
+  VolantCore:
+    path: Core
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
     exactVersion: 2.10.0
@@ -65,6 +67,7 @@ targets:
         NSLocationUsageDescription: "macOS requires Location access to show Wi-Fi network names. Volant does not request your coordinates."
         NSCalendarsFullAccessUsageDescription: "Volant shows today's events and their meeting links. Read-only."
     dependencies:
+      - package: VolantCore
       - package: Sparkle
       - target: VolantExtensionHost
         embed: true
@@ -88,6 +91,8 @@ targets:
     sources:
       - path: VolantExtensionHost
       - path: Shared
+    dependencies:
+      - package: VolantCore
     entitlements:
       path: VolantExtensionHost/VolantExtensionHost.entitlements
       properties:
@@ -109,9 +114,8 @@ targets:
     platform: macOS
     sources:
       - path: VolantAIHost
-      - path: Shared/AIHTTPTypes.swift
-      - path: Shared/AIHTTPTransport.swift
-      - path: Shared/ACPTypes.swift
+    dependencies:
+      - package: VolantCore
     entitlements:
       path: VolantAIHost/VolantAIHost.entitlements
       properties:
@@ -135,15 +139,12 @@ targets:
     platform: macOS
     sources:
       - path: VolantAgentHost
-      - path: Shared/AgentProtocol.swift
       - path: Shared/HerdrProcess.swift
-      - path: Shared/HerdrMachines.swift
-      - path: Shared/HerdrAttention.swift
       - path: Shared/HerdrQuestion.swift
       - path: Shared/HerdrClaudeQuestion.swift
       - path: Shared/HerdrResponseController.swift
-      - path: Shared/AppleShortcut.swift
-      - path: Shared/ACPTypes.swift
+    dependencies:
+      - package: VolantCore
     info:
       path: VolantAgentHost/Info.plist
       properties:
@@ -165,6 +166,9 @@ targets:
       - path: Shared
     dependencies:
       - target: Volant
+      # The host app already links the static core; linking it here duplicates the library.
+      - package: VolantCore
+        link: false
     settings:
       base:
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Volant.app/Contents/MacOS/Volant"

@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import VolantCore
 
 /// UI-owned ACP conversation. Transcript stays in memory; the provider owns its own session storage.
 final class ACPModel: ObservableObject {

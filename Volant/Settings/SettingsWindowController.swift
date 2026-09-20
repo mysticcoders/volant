@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import ServiceManagement
+import VolantCore
 
 final class SettingsState: ObservableObject {
     @Published var config = Preferences()

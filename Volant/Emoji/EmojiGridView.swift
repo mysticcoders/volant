@@ -1,4 +1,5 @@
 import SwiftUI
+import VolantCore
 
 struct EmojiGridView: View {
     @ObservedObject var model: LauncherModel
