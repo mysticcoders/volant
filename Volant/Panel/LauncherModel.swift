@@ -125,7 +125,7 @@ enum ResultRow: Identifiable, Hashable {
         case .calculation, .unit: return "Copy Result"
         case .app: return "Open Application"
         case .file: return "Open File"
-        case .contact(let c): return c.email != nil ? "Copy Email" : "Copy Phone"
+        case .contact(let c): return c.primaryField?.copyTitle ?? "Open Contact"
         case .event(let e): return e.joinURL != nil ? "Join Meeting" : "Open Calendar"
         case .clip: return "Copy to Clipboard"
         case .note: return "Open Note"
@@ -143,7 +143,7 @@ enum ResultRow: Identifiable, Hashable {
         switch self {
         case .file: return "Reveal in Finder"
         case .app: return "Reveal in Finder"
-        case .contact(let c): return c.email != nil && c.phone != nil ? "Copy Phone" : nil
+        case .contact(let c): return c.secondaryField?.copyTitle
         default: return nil
         }
     }
@@ -274,6 +274,9 @@ final class LauncherModel: ObservableObject {
     @Published private(set) var filesUnavailable = false
     private var indexStateSubscription: AnyCancellable?
     private let contacts = ContactSearch()
+    /// Row images are built once per result set. Building an NSImage inside a row body rebuilds
+    /// it on every redraw, which is the cost issue #33 describes for application icons.
+    @Published private(set) var contactImages: [String: NSImage] = [:]
     private let agenda = CalendarAgenda()
     private var searchesAppIndex = false
     private var generation = 0
@@ -504,7 +507,10 @@ final class LauncherModel: ObservableObject {
         if q.hasPrefix("@") {
             let term = String(q.dropFirst()).trimmingCharacters(in: .whitespaces)
             sections = []
-            contacts.search(term, askIfNeeded: true) { [weak self] hits in self?.deliver(gen) { $0.contactRows = hits.map { .contact($0) } } }
+            contacts.search(term, askIfNeeded: true) { [weak self] hits in
+                self?.cacheContactImages(hits)
+                self?.deliver(gen) { $0.contactRows = hits.map { .contact($0) } }
+            }
             return
         }
         if q.lowercased() == "cal" || q.lowercased() == "today" || q.lowercased().hasPrefix("cal ") {
@@ -600,12 +606,21 @@ final class LauncherModel: ObservableObject {
             contacts.search(q, askIfNeeded: false) { [weak self] hits in
                 let needle = q.lowercased()
                 let tight = hits.filter { c in c.name.lowercased().split(separator: " ").contains { $0.hasPrefix(needle) } || c.name.lowercased().hasPrefix(needle) }
+                self?.cacheContactImages(Array(tight.prefix(3)))
                 self?.deliver(gen) { $0.contactRows = tight.prefix(3).map { .contact($0) } }
             }
         }
         if searchesSecondarySources && q.count >= 3 {
             files.search(q) { [weak self] result in self?.receiveFiles(result, generation: gen, limit: 5) }
         }
+    }
+
+    private func cacheContactImages(_ entries: [ContactEntry]) {
+        var images: [String: NSImage] = [:]
+        for entry in entries {
+            if let data = entry.thumbnail, let image = NSImage(data: data) { images[entry.id] = image }
+        }
+        contactImages = images
     }
 
     private func deliver(_ gen: Int, _ apply: (LauncherModel) -> Void) {
@@ -800,7 +815,7 @@ final class LauncherModel: ObservableObject {
             } else { copy(clip.text) }
         case .app(let app): index.launch(app)
         case .file(let file): FileSearch.open(file)
-        case .contact(let contact): if let value = contact.copyValue { copy(value) }
+        case .contact(let contact): if let field = contact.primaryField { copy(field.value) }
         case .event(let event): CalendarAgenda.open(event)
         case .note(let note): onNote(.open(note.id))
         case .newNote(let text): onNote(.create(text + "\n"))
@@ -904,7 +919,7 @@ final class LauncherModel: ObservableObject {
         switch row {
         case .file(let file): FileSearch.reveal(file)
         case .app(let app): NSWorkspace.shared.activateFileViewerSelecting([app.url])
-        case .contact(let contact): if let phone = contact.phone { copy(phone) }
+        case .contact(let contact): if let field = contact.secondaryField { copy(field.value) }
         default: activateSelection(); return
         }
         dismiss()
