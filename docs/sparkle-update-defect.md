@@ -1,4 +1,10 @@
-# Sparkle updates fail in shipped builds
+# Sparkle updates in shipped builds
+
+> **Corrected 2026-09-20.** The original diagnosis below did not survive re-measurement. The feed
+> download succeeds today, and the stated root cause is contradicted by Sparkle's own
+> documentation and by the shipped bundle. Read the correction at the end before acting on
+> anything above it; the fix direction it proposes would have been wasted work.
+
 
 Verified 2026-09-15 in a clean macOS 15.7.7 VM against the notarized 0.1.1 and 0.1.3 DMGs from `website/public/updates/`. This is the two-version upgrade test that [release quality](release-quality.md) lists as unverified.
 
@@ -79,3 +85,65 @@ Tart (`brew`-less install at `~/.local/lib/tart`, notarized 2.37.0) running `ghc
 
 - Whether a corrected build actually updates 0.1.1 → 0.1.3 end to end, including relaunch and preserved notes and config.
 - Update behavior on Intel hardware, and on macOS versions other than 15.7.7.
+
+## Correction — September 20, 2026
+
+Re-measured with `tools/spike-sparkle.sh`, which installs a DMG in a throwaway VM, backdates
+`SULastCheckTime` to force a scheduled check against the live feed, and captures the logs. Run
+against the published 0.1.3 (build 5) while the live appcast advertised 0.1.4 (build 6).
+
+### The reported failure did not reproduce
+
+The downloader completed its request normally. DNS resolved, TLS 1.3 connected over HTTP/3, the
+request was sent, and the connection went dormant and deallocated roughly 100 ms after it started.
+There was no `-999` cancellation, no `-1001` timeout, and no 60-second stall. `SULastCheckTime`
+advanced to the current time.
+
+So the headline claim above — that auto-update cannot work in either shipped build because the
+downloader transfers 0 bytes — is not what happens today. Issue #7's note that "the alleged
+network timeout was not reproduced" is the accurate record.
+
+### The stated root cause is wrong
+
+The analysis above says the XPC services must be embedded in the app and renamed to
+`$(PRODUCT_BUNDLE_IDENTIFIER)-spks` and `-spki`, and that the bundle is broken because it contains
+no services under those names. Sparkle's [sandboxing
+documentation](https://sparkle-project.org/documentation/sandboxing/) says the opposite: the two
+services ship inside the framework, **no renaming is required**, and the two mach-lookup
+exceptions Volant already declares are exactly the documented ones.
+
+Inspection of the shipped 0.1.4 agrees with the documentation rather than with the analysis:
+`Downloader.xpc` and `Installer.xpc` are present in
+`Sparkle.framework/Versions/B/XPCServices/`, both verify against their designated requirement, the
+entitlement variables substituted correctly to `com.mysticcoders.volant-spks` and `-spki`, and
+`SUEnableInstallerLauncherService` and `SUEnableDownloaderService` are both set. Following the fix
+direction above would have repackaged a bundle that already matches what Sparkle asks for.
+
+### What is actually wrong
+
+Two findings survive, both on the installer side rather than the download side.
+
+1. **`com.mysticcoders.volant-spks` fails to resolve.** The running app attempts the lookup twice
+   and both fail with `xpc_error=[3: No such process]`, immediately before it connects to
+   `org.sparkle-project.DownloaderService` successfully. The check proceeds regardless, so this is
+   not what breaks a feed download, but it is a real unresolved service.
+2. **`-spkp` is granted nowhere.** The Sparkle binary references three mach-name suffixes,
+   `-spki`, `-spks` and `-spkp`, and `Volant.entitlements` grants only the first two. Sparkle's own
+   string next to it reads "Timed out while probing installer progress. If your app is sandboxed,
+   please see …/sandboxing/#testing", which ties the missing grant directly to sandboxed installs.
+
+Both plausibly bite at install time, which is exactly the half that has never been verified.
+
+### Still unverified, and now the only real question
+
+Whether an update **installs**. Downloading the appcast is proven; downloading the DMG, validating
+its signature, replacing the app, relaunching and preserving notes and configuration are not. That
+is issue #7's checklist and it remains open. A scheduled check that advances `SULastCheckTime`
+without visibly offering an update is also unexplained: the guest has no Accessibility consent, so
+no UI could be inspected over SSH.
+
+### Method note
+
+`log show` returns nothing without root in the Tart guest. The first two runs of this
+investigation produced empty log sections that read like "no problem found" when they actually
+meant "no data". Any future guest log capture must use `sudo`, or it will quietly prove nothing.
