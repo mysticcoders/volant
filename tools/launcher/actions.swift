@@ -499,7 +499,7 @@ clipboard.record("Fictional clipboard recovery fixture")
 verify(!clipboard.recent().isEmpty, "Fixture clipboard row persisted")
 clipboardAvailable = false
 clipboard.retry(); settle()
-panel.model.query = "clip"; panel.toggle(); settle()
+panel.toggle(); settle(); panel.model.query = "clip"; settle()
 verify(panel.model.clipboardMessage != nil && panel.model.rows.isEmpty, "Clipboard failure is distinct from empty history")
 try render("clipboard-unavailable")
 // A real SwiftUI command equivalent invokes the native Retry button.
