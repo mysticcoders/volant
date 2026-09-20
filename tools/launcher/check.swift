@@ -126,7 +126,11 @@ for previous in ["", "screen", ":", "define test"] {
 panel.model.query = "screen"
 panel.orderOut(nil)
 let keyWindowBeforePreparation = app.keyWindow
-RunLoop.main.run(until: Date().addingTimeInterval(0.25))
+// Functional readiness, not a timing benchmark: loaded CI runners can miss a fixed sleep.
+let preparationDeadline = Date().addingTimeInterval(3)
+while (!panel.model.query.isEmpty || panel.model.isPresented) && Date() < preparationDeadline {
+    RunLoop.main.run(until: Date().addingTimeInterval(0.02))
+}
 verify(panel.model.query.isEmpty && !panel.model.isPresented, "Hidden preparation resets ordinary search")
 verify(!panel.isVisible && !panel.isKeyWindow && app.keyWindow === keyWindowBeforePreparation, "Hidden preparation never shows a window or steals focus")
 panel.toggle()
