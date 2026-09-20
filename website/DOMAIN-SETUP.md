@@ -23,3 +23,10 @@ Owner approved publishing the screenshot update. Deployed existing Cloudflare Wo
 
 ## Packaged download — September 14, 2026
 Published Volant 0.1.0 (build 2), notarized and stapled DMG, signed Sparkle appcast, and checksums under `/updates/`. Download for Mac buttons now link directly to `/updates/Volant-0.1.0.dmg`; FAQ includes drag-to-Applications instructions. Worker version `cd45f136-3ef1-4483-b70b-dbd65a5a74b5`. Live DMG and feed returned HTTP 200 and matched the validated artifacts. Downloaded DMG passed stapler and Gatekeeper verification. Desktop/mobile CTA renders inspected. See `docs/release-quality.md` in the repository for remaining installed-upgrade and hardware verification.
+
+## Documentation section published — September 15, 2026
+Deployed Worker `volant-marketing` twice. Version `667592bd-18ed-4f8b-9fb2-9019dfc54130` published the `/docs` section but shipped broken `next/link` navigation; version `7565499b-d43a-47f7-86c5-4574fe167638` reverted to plain anchors and is the good one. See QUALITY.md for the defect and its cause.
+
+Verified live after the second deploy: all 13 routes return 200, a real browser click navigates between documentation pages, the console reports zero errors, and `getvolant.com` / `getvolant.app` still return 301 to `https://usevolant.com/` with path and query preserved. The served CSS was confirmed to be the newest build rather than a cached asset.
+
+No DMG, appcast, or checksum was published or altered; `public/updates/` was left untouched and `Volant-0.1.3.dmg` continues to serve, unchanged from the release published earlier that day.

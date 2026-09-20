@@ -20,9 +20,12 @@ import {
   AccordionContent,
 } from '@/components/ui/accordion';
 
-const repositoryURL = 'https://github.com/mysticcoders/volant';
-const socialURL = 'https://x.com/mysticcoders';
-const downloadURL = '/updates/Volant-0.1.4.dmg';
+import {
+  SiteFooter,
+  SiteHeader,
+  downloadURL,
+  repositoryURL,
+} from '@/components/site-chrome';
 
 const questions = [
   [
@@ -47,37 +50,13 @@ const questions = [
   ],
 ];
 
-function Brand() {
-  return (
-    <span className="brand">
-      <Image unoptimized src="/favicon.svg" alt="" width="30" height="30" />
-      volant<span className="brand-dot">.</span>
-    </span>
-  );
-}
-
 export default function Home() {
   return (
     <>
       <a className="skip" href="#main">
         Skip to content
       </a>
-      <header id="top" className="nav wrap">
-        <a href="#top" aria-label="Volant home">
-          <Brand />
-        </a>
-        <nav aria-label="Main navigation">
-          <a href="#agents">Agents</a>
-          <a href="#launcher">Launcher</a>
-          <a href="#features">Notes & more</a>
-          <a href={repositoryURL} className="nav-source">
-            <Image unoptimized src="/icons/github.svg" alt="" width={18} height={18} className="social-icon" /> GitHub
-          </a>
-        </nav>
-        <a className="button small" href={downloadURL} download>
-          Download for Mac <ArrowRight size={14} />
-        </a>
-      </header>
+      <SiteHeader />
       <main id="main">
         <section className="hero wrap">
           <div className="hero-copy">
@@ -329,19 +308,7 @@ export default function Home() {
           </span>
         </section>
       </main>
-      <footer className="wrap">
-        <a href="#top" aria-label="Back to top">
-          <Brand />
-        </a>
-        <span>
-          Made by <a href="https://mysticcoders.com">Mystic Coders</a>.
-        </span>
-        <div className="social-links">
-          <a href={repositoryURL} aria-label="Volant on GitHub"><Image unoptimized src="/icons/github.svg" alt="" width={20} height={20} className="social-icon" /> GitHub</a>
-          <a href={socialURL} aria-label="Mystic Coders on X (Twitter)"><Image unoptimized src="/icons/x.svg" alt="" width={18} height={18} className="social-icon" /> @mysticcoders</a>
-          <a href={`${repositoryURL}/blob/main/LICENSE`}>MIT license</a>
-        </div>
-      </footer>
+      <SiteFooter />
     </>
   );
 }

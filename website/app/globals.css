@@ -251,12 +251,12 @@ footer a:hover {
   transform: translateY(-2px);
 }
 .button.small {
-  padding: 10px 15px;
-  gap: 15px;
+  padding: 10px 16px;
+  gap: 10px;
   font-size: 12px;
-  background: transparent;
-  color: var(--foreground);
-  border-color: #55524e;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
 }
 .button.small:hover,
 .button.small:focus-visible {
@@ -839,3 +839,191 @@ h1 { font-size: clamp(44px, 4.65vw, 66px); letter-spacing: -3px; }
 
 .open-source-label { color: var(--primary); width: fit-content; font-size: 13px; }
 .open-source-label:hover { text-decoration: underline; text-underline-offset: 5px; }
+
+/* Nav actions: coral GitHub mark beside the compact download button. */
+.nav-actions { display: flex; align-items: center; gap: 18px; }
+.nav-github {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  background-color: #fff;
+  -webkit-mask: url('/icons/github.svg') center / contain no-repeat;
+  mask: url('/icons/github.svg') center / contain no-repeat;
+  transition: background-color 0.2s;
+}
+.nav-github:hover { background-color: var(--primary); }
+
+/* Documentation: sidebar index beside long-form prose. */
+.docs-shell {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 72px;
+  padding-block: 20px 110px;
+  align-items: start;
+}
+.docs-sidebar { position: sticky; top: 32px; }
+.docs-sidebar-group { margin-bottom: 30px; }
+.docs-sidebar-group > p {
+  font-size: 10px;
+  letter-spacing: 1.8px;
+  font-weight: 600;
+  color: #b0ada7;
+  margin: 0 0 14px;
+}
+.docs-sidebar-group a {
+  display: block;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #aaa9a5;
+  padding: 7px 0;
+}
+.docs-sidebar-group a:hover { color: var(--primary); }
+.docs-sidebar-group a.current { color: var(--primary); }
+.docs-main { max-width: 720px; }
+.docs-main h1 {
+  font-size: clamp(38px, 4vw, 50px);
+  letter-spacing: -2px;
+  margin: 12px 0 0;
+}
+.docs-lede {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #aaa9a5;
+  margin: 20px 0 0;
+}
+.docs-main h2 {
+  font-size: 26px;
+  letter-spacing: -0.8px;
+  margin: 56px 0 0;
+}
+.docs-main h3 {
+  font-size: 16px;
+  margin: 34px 0 0;
+}
+.docs-main p {
+  font-size: 15px;
+  line-height: 1.85;
+  color: #aaa9a5;
+  margin: 16px 0 0;
+}
+.docs-main ul { margin: 18px 0 0; padding-left: 0; list-style: none; }
+.docs-main ul li {
+  position: relative;
+  font-size: 15px;
+  line-height: 1.85;
+  color: #aaa9a5;
+  padding-left: 22px;
+  margin-top: 10px;
+}
+.docs-main ul li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 13px;
+  width: 6px;
+  height: 1px;
+  background: var(--primary);
+}
+/* Inline prose links underline; whole-surface cards do not. */
+.docs-main a:not(.button):not(.docs-card) {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.docs-main code {
+  font: 13px ui-monospace, monospace;
+  background: #1f2122;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 2px 6px;
+  color: #e9b19f;
+}
+.docs-main pre {
+  background: #1b1d1e;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 18px 20px;
+  margin: 20px 0 0;
+  overflow-x: auto;
+}
+.docs-main pre code {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: #d7d3cc;
+  font-size: 12.5px;
+  line-height: 1.75;
+}
+.docs-note {
+  border-left: 2px solid var(--primary);
+  background: #1b1d1e;
+  border-radius: 0 8px 8px 0;
+  padding: 16px 20px;
+  margin: 26px 0 0;
+}
+.docs-note p { margin: 0; font-size: 14px; color: #bfbdb7; }
+.docs-table { width: 100%; border-collapse: collapse; margin: 22px 0 0; font-size: 14px; }
+.docs-table th {
+  text-align: left;
+  font-weight: 500;
+  color: #d5cfc3;
+  border-bottom: 1px solid var(--border);
+  padding: 11px 14px 11px 0;
+}
+.docs-table td {
+  color: #aaa9a5;
+  border-bottom: 1px solid var(--border);
+  padding: 11px 14px 11px 0;
+  vertical-align: top;
+  line-height: 1.7;
+}
+.docs-table td:first-child { white-space: nowrap; color: #d7d3cc; }
+.docs-table-scroll { overflow-x: auto; }
+.docs-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 40px;
+}
+.docs-card {
+  display: block;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 22px;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.docs-card:hover { border-color: #55524e; transform: translateY(-2px); }
+.docs-card strong { display: block; font-size: 15px; font-weight: 500; color: var(--foreground); }
+.docs-card span { display: block; font-size: 13px; line-height: 1.7; color: #9c9b97; margin-top: 8px; }
+.docs-breadcrumb { font-size: 12px; color: #8f8f89; }
+.docs-breadcrumb a:hover { color: var(--primary); }
+.docs-footer-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border);
+  margin-top: 64px;
+  padding-top: 26px;
+  font-size: 13px;
+}
+.docs-footer-nav a { color: var(--primary); }
+@media (max-width: 1000px) {
+  .docs-shell { grid-template-columns: 200px minmax(0, 1fr); gap: 44px; }
+}
+@media (max-width: 700px) {
+  .docs-shell { grid-template-columns: 1fr; gap: 0; padding-block: 8px 70px; }
+  .docs-sidebar {
+    position: static;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 22px;
+    margin-bottom: 34px;
+  }
+  .docs-sidebar-group { margin-bottom: 18px; }
+  .docs-sidebar-group a { display: inline-block; padding: 6px 14px 6px 0; }
+  .docs-card-grid { grid-template-columns: 1fr; }
+  /* Phones keep a text-only nav: the hero carries the download, the footer the source link. */
+  .nav-actions { gap: 14px; }
+  .nav-github { display: none; }
+}
