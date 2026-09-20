@@ -259,6 +259,7 @@ final class LauncherModel: ObservableObject {
     var selectedRow: ResultRow? { rows.indices.contains(selection) ? rows[selection] : nil }
 
     private let index: AppIndex
+    private var clipboardSubscription: AnyCancellable?
     private let clipboard: ClipboardStore
     private let notes: NotesStore
     private let onNote: (LauncherAction) -> Void
@@ -286,6 +287,11 @@ final class LauncherModel: ObservableObject {
         self.config = config
         self.onNote = onNote
         self.promotedHarness = config.promotedHarness
+        clipboardSubscription = clipboard.changes.receive(on: DispatchQueue.main).sink { [weak self] in
+            guard let self, self.showingClipboard else { return }
+            self.objectWillChange.send()
+            self.refreshClipboardResults()
+        }
         caffeinateSubscription = caffeinate.$command.dropFirst().sink { [weak self] _ in
             DispatchQueue.main.async {
                 guard let self else { return }
@@ -382,6 +388,24 @@ final class LauncherModel: ObservableObject {
         let favorites = config.favoriteApps.compactMap { id in index.apps.first { $0.id == id } }.map(ResultRow.app)
         let apps = index.suggestions(usage: usage).filter { !config.favoriteApps.contains($0.id) }.map(ResultRow.app)
         sections = (favorites.isEmpty ? [] : [ResultSection(title: "Favorites", rows: favorites)]) + (apps.isEmpty ? [] : [ResultSection(title: "Suggestions", rows: apps)]) + [ResultSection(title: "Commands", rows: CoreCommand.allCases.map(ResultRow.core) + [.settings, .reloadConfig])]
+    }
+
+    var showingClipboard: Bool {
+        let q = query.trimmingCharacters(in: .whitespaces).lowercased()
+        return q == "clip" || q.hasPrefix("clip ")
+    }
+    var clipboardMessage: String? { showingClipboard ? clipboard.state.message : nil }
+    var clipboardRetrying: Bool { clipboard.state == .retrying }
+    func retryClipboard() { guard showingClipboard else { return }; clipboard.retry() }
+    private func refreshClipboardResults() {
+        let selected = selectedRow?.id
+        let q = query.trimmingCharacters(in: .whitespaces)
+        let term = q.dropFirst(4).trimmingCharacters(in: .whitespaces)
+        let clips = clipboard.recent(limit: 12, matching: term).map { ResultRow.clip($0) }
+        sections = clips.isEmpty ? [] : [ResultSection(title: "Clipboard History", rows: clips)]
+        notice = clipboard.state.message == nil ? (term.isEmpty ? "No clipboard history yet" : "No matching clipboard items") : nil
+        if let selected, let index = rows.firstIndex(where: { $0.id == selected }) { selection = index }
+        else { selection = 0 }
     }
 
     private func refresh() {
@@ -495,10 +519,8 @@ final class LauncherModel: ObservableObject {
             sections = rows.isEmpty ? [] : [ResultSection(title: term.isEmpty ? "Recent Notes" : "Notes", rows: rows)]
             return
         }
-        if q.lowercased() == "clip" || q.lowercased().hasPrefix("clip ") {
-            let term = q.dropFirst(4).trimmingCharacters(in: .whitespaces)
-            let clips = clipboard.recent(limit: 12, matching: term).map { ResultRow.clip($0) }
-            sections = clips.isEmpty ? [] : [ResultSection(title: "Clipboard History", rows: clips)]
+        if showingClipboard {
+            refreshClipboardResults()
             return
         }
 

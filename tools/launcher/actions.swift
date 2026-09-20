@@ -14,7 +14,14 @@ app.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
 let entry = AppEntry(id: "/Applications/Fixture.app", name: "Fixture", url: URL(fileURLWithPath: "/Applications/Fixture.app"), lastUsed: Date())
 var launched = 0
 let index = AppIndex(entries: [entry], launch: { _ in launched += 1 })
-let clipboard = ClipboardStore(retention: 2, storageURL: root.appendingPathComponent("actions-clipboard.sqlite"), encryptionKey: SymmetricKey(size: .bits256))
+let clipboardKey = SymmetricKey(size: .bits256)
+var clipboardAvailable = true
+var clipboardRetryDelay: TimeInterval = 0
+let clipboard = ClipboardStore(retention: 2, storageURL: root.appendingPathComponent("actions-clipboard-\(UUID().uuidString).sqlite"), keyLoader: { _ in
+    if clipboardRetryDelay > 0 { Thread.sleep(forTimeInterval: clipboardRetryDelay) }
+    guard clipboardAvailable else { throw KeychainKey.Failure.access(-25308) }
+    return clipboardKey
+})
 var preferences = Preferences()
 if CommandLine.arguments.contains("compact") { preferences.appearance.scale = 0.8 }
 if CommandLine.arguments.contains("large") { preferences.appearance.scale = 1.4 }
@@ -486,3 +493,28 @@ try render("ai-local-chat", view: apiChat)
 apiChatWindow.orderOut(nil)
 apiModel.state.phase = "disconnected"
 print("PASS: BYOK/local Settings and chat fixtures use no real servers or credentials")
+
+// Clipboard failures never access the owner's Keychain or pasteboard.
+clipboard.record("Fictional clipboard recovery fixture")
+verify(!clipboard.recent().isEmpty, "Fixture clipboard row persisted")
+clipboardAvailable = false
+clipboard.retry(); settle()
+panel.toggle(); settle(); panel.model.query = "clip"; settle()
+verify(panel.model.clipboardMessage != nil && panel.model.rows.isEmpty, "Clipboard failure is distinct from empty history")
+try render("clipboard-unavailable")
+// A real SwiftUI command equivalent invokes the native Retry button.
+clipboardAvailable = true; clipboardRetryDelay = 0.8
+key("r", 15, .command)
+verify(panel.model.clipboardRetrying, "Command R activates clipboard Retry")
+try render("clipboard-retrying")
+let clipboardDeadline = Date().addingTimeInterval(5)
+while (panel.model.clipboardRetrying || panel.model.rows.isEmpty) && Date() < clipboardDeadline {
+    RunLoop.main.run(until: Date().addingTimeInterval(0.02))
+}
+verify(panel.model.clipboardMessage == nil && !panel.model.rows.isEmpty, "Retry restores preserved clipboard history")
+try render("clipboard-recovered")
+panel.model.query = "clip no-fixture-match"; settle()
+verify(panel.model.notice == "No matching clipboard items" && panel.model.clipboardMessage == nil, "A healthy empty search offers no error or Retry")
+try render("clipboard-no-match")
+panel.orderOut(nil)
+print("PASS: clipboard error, native Retry shortcut, progress, retained history and empty search")
