@@ -8,17 +8,17 @@ from pathlib import Path
 
 UI_PATTERNS = (
     "Volant/**/*View.swift", "Volant/**/*Panel.swift", "Volant/**/*WindowController.swift",
-    "Volant/Clipboard/*", "Volant/Extensions/*", "Shared/ExtensionProtocol.swift", "VolantExtensionHost/*", "extensions/*", "Volant/Panel/*", "Volant/Usage/UsageStore.swift", "Volant/Shortcuts/*", "Shared/AppleShortcut.swift", "Volant/Emoji/*", "Volant/Translation/*", "Volant/Dictionary/*", "Volant/Settings/Shortcut*.swift", "Volant/Settings/GlobalShortcutRow.swift",
-    "Volant/Settings/Preferences.swift", "Volant/Settings/AIConfiguration.swift", "Volant/Settings/AppBindingEditor.swift", "Volant/Settings/AppBindingRow.swift", "Volant/HotKeys/KeyCombo.swift", "Volant/Settings/StatusMenu.swift",
+    "Volant/Clipboard/*", "Volant/Extensions/*", "Core/Sources/VolantCore/Extensions/*", "VolantExtensionHost/*", "extensions/*", "Volant/Panel/*", "Volant/Usage/UsageStore.swift", "Volant/Shortcuts/*", "Core/Sources/VolantCore/Shortcuts/*", "Volant/Emoji/*", "Volant/Translation/*", "Volant/Dictionary/*", "Volant/Settings/Shortcut*.swift", "Volant/Settings/GlobalShortcutRow.swift",
+    "Core/Sources/VolantCore/Settings/*", "Core/Sources/VolantCore/AI/*", "Volant/Settings/AppBindingEditor.swift", "Volant/Settings/AppBindingRow.swift", "Volant/HotKeys/KeyCombo.swift", "Volant/Settings/StatusMenu.swift",
     "Volant/Notes/LiveMarkdown*.swift", "Volant/Agents/*Model.swift", "Volant/Agents/HarnessStatusStrip.swift",
     "Volant/App/main.swift", "Volant/App/AppDelegate.swift", "Volant/Resources/*",
-    "Volant/Settings/AIModelDiscovery.swift", "Volant/Settings/AICredentials.swift", "Shared/AIHTTPTypes.swift", "Shared/AIHTTPTransport.swift", "Shared/LauncherRouting.swift", "Shared/ACPTypes.swift", "Shared/HerdrMachines.swift", "Shared/HerdrAttention.swift", "Shared/HerdrQuestion.swift", "Shared/HerdrClaudeQuestion.swift", "Shared/HerdrResponseController.swift", "Shared/AgentProtocol.swift", "Volant/SystemControl/SystemSettingsDestination.swift",
+    "Volant/Settings/AIModelDiscovery.swift", "Volant/Settings/AICredentials.swift", "Core/Sources/VolantCore/Clipboard/*", "Core/Sources/VolantCore/Emoji/*", "Core/Sources/VolantCore/Launcher/*", "Core/Sources/VolantCore/Agents/*", "Core/Sources/VolantCore/Herdr/*", "Shared/HerdrQuestion.swift", "Shared/HerdrClaudeQuestion.swift", "Shared/HerdrResponseController.swift", "Volant/SystemControl/SystemSettingsDestination.swift",
     "tools/interaction-speed/*.swift", "tools/profile-interaction.sh", "tools/launcher/*", "tools/settings/*", "tools/marketing/*", "tools/raycast/render.swift",
     "tools/check-launcher.sh", "tools/check-launcher-actions.sh", "tools/run-bounded-check.py", "tools/test-ui-vm.py", "tools/preview-settings.sh", "tools/render-*.sh",
     "VolantTests/LiveMarkdownTests.swift", "VolantTests/NotesStoreTests.swift",
 )
 NATIVE_PATTERNS = ("Volant/*", "VolantTests/*", "VolantAgentHost/*", "VolantExtensionHost/*", "VolantAIHost/*",
-                   "Shared/*", "extensions/*", "Scripts/*", "tools/*", "project.yml", ".swiftlint.yml", ".github/workflows/*")
+                   "Shared/*", "Core/*", "extensions/*", "Scripts/*", "tools/*", "project.yml", ".swiftlint.yml", ".github/workflows/*")
 
 
 def classify(paths):

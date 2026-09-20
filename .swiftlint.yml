@@ -4,6 +4,7 @@ only_rules:
 included:
   - Volant/Panel
   - Volant/Import
+  - Core/Sources/VolantCore/Launcher
 custom_rules:
   result_index_fallback:
     name: Result identity fallback

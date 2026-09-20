@@ -2,6 +2,7 @@
 # Signed, headless XPC delivery check. No app windows, hotkeys, clipboard monitoring or owner config.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source tools/core-module.sh
 [[ -f extensions/raycast-base64/encode.wasm ]] || bash tools/build-raycast-example.sh
 : "${VOLANT_EXTENSION_APP:?Path to the exported, signed Volant.app}"
 identity='Developer ID Application: Mystic Coders, LLC (REMBT6JY4N)'
@@ -16,7 +17,7 @@ PLIST
 cp tools/extensions/xpc.swift "$fixture/main.swift"
 sources=()
 while IFS= read -r source; do sources+=("$source"); done < <(find Volant Shared -name '*.swift' ! -path 'Volant/App/*')
-swiftc "${sources[@]}" "$fixture/main.swift" -o "$bundle/MacOS/ExtensionSmoke"
+swiftc "${VOLANT_CORE_FLAGS[@]}" "${sources[@]}" "$fixture/main.swift" -o "$bundle/MacOS/ExtensionSmoke"
 codesign --force --sign "$identity" --options runtime --timestamp "$fixture/Extension Smoke.app"
 codesign --verify --deep --strict "$fixture/Extension Smoke.app"
 ditto extensions/hello-rust "$fixture/hello"

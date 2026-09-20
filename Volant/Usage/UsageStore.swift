@@ -1,5 +1,6 @@
 import Foundation
 import SQLite3
+import VolantCore
 
 struct UsageRecord {
     let key: String

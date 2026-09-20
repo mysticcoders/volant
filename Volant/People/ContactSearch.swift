@@ -1,4 +1,5 @@
 import Contacts
+import VolantCore
 
 struct ContactEntry: Identifiable, Hashable {
     let id: String

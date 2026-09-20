@@ -1,4 +1,5 @@
 import Foundation
+import VolantCore
 final class AIServiceDelegate: NSObject, NSXPCListenerDelegate {
     func listener(_ listener: NSXPCListener, shouldAcceptNewConnection connection: NSXPCConnection) -> Bool {
         let host = AIHTTPHost()

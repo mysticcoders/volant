@@ -1,5 +1,6 @@
 import SwiftUI
 import Carbon.HIToolbox
+import VolantCore
 
 /// Patches one global binding without discarding edits elsewhere in configuration.
 enum GlobalShortcutStore {

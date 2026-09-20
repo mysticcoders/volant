@@ -1,4 +1,5 @@
 import Foundation
+import VolantCore
 
 actor AIHTTPConversation {
     private var state = ACPState()

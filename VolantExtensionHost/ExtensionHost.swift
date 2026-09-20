@@ -1,5 +1,6 @@
 import Foundation
 import JavaScriptCore
+import VolantCore
 
 /// Runs one WebAssembly module inside JavaScriptCore. JavaScript is used only as glue to build the
 /// import object; the module can reach nothing except the imports it is handed.

@@ -1,4 +1,5 @@
 import SwiftUI
+import VolantCore
 
 /// Inline editing keeps app identity, alias and hotkey visible together.
 struct AppBindingRow: View {

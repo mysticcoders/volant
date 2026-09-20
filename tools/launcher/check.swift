@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import CryptoKit
+import VolantCore
 
 setbuf(stdout, nil)
 

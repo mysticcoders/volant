@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import VolantCore
 
 /// Created by AI Settings only; no startup, launcher typing or background probing.
 final class AIModelDiscovery: ObservableObject {

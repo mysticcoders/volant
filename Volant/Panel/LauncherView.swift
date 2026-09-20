@@ -1,4 +1,5 @@
 import SwiftUI
+import VolantCore
 
 struct LauncherView: View {
     @ObservedObject var model: LauncherModel

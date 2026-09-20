@@ -1,4 +1,5 @@
 import Foundation
+import VolantCore
 
 /// A fixed Apple executable and typed UUIDs; no shell, input files, or output capture for runs.
 final class AppleShortcutsHost {

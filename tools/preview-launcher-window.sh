@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source tools/core-module.sh
 fixture_dir=$(mktemp -d /tmp/volant-window.XXXXXX)
 trap 'rm -rf "$fixture_dir"' EXIT
 bundle="$fixture_dir/Volant Window Preview.app/Contents"
@@ -11,6 +12,6 @@ cat > "$bundle/Info.plist" <<'PLIST'
 PLIST
 sources=()
 while IFS= read -r source; do sources+=("$source"); done < <(find Volant Shared -name '*.swift' ! -path 'Volant/App/*')
-swiftc "${sources[@]}" tools/window/main.swift -o "$bundle/MacOS/VolantWindowPreview"
+swiftc "${VOLANT_CORE_FLAGS[@]}" "${sources[@]}" tools/window/main.swift -o "$bundle/MacOS/VolantWindowPreview"
 echo "Preview app: ${bundle%/Contents}"
 "$bundle/MacOS/VolantWindowPreview" "${1:-light}"

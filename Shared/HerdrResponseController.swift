@@ -1,4 +1,5 @@
 import Foundation
+import VolantCore
 
 /// Serialized by the helper queue. Every displayed question receives a single-use response token.
 final class HerdrResponseController {

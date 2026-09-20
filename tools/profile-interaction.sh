@@ -2,6 +2,7 @@
 # Isolated native search/Return/dismiss/reopen fixture; no owner apps are launched.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source tools/core-module.sh
 output=${1:?Usage: tools/profile-interaction.sh NEW_OUTPUT_DIRECTORY [cycles=30] [idle_ms=250] [release_app=/Applications/Volant.app]}
 cycles=${2:-30}
 idle_ms=${3:-250}
@@ -22,7 +23,7 @@ path.write_bytes(plistlib.dumps({'CFBundleIdentifier':'com.mysticcoders.volant.I
 PY
 sources=()
 while IFS= read -r source; do sources+=("$source"); done < <(find Volant Shared -name '*.swift' ! -path 'Volant/App/*')
-swiftc -O "${sources[@]}" "$output/main.swift" -o "$bundle/Contents/MacOS/VolantInteractionFixture" 2> "$output/compile.log"
+swiftc -O "${VOLANT_CORE_FLAGS[@]}" "${sources[@]}" "$output/main.swift" -o "$bundle/Contents/MacOS/VolantInteractionFixture" 2> "$output/compile.log"
 codesign --force --sign - "$bundle" 2> "$output/signing.log"
 {
  date -u

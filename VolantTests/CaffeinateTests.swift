@@ -1,4 +1,5 @@
 import XCTest
+import VolantCore
 @testable import Volant
 
 final class CaffeinateTests: XCTestCase {

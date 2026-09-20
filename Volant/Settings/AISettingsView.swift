@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import VolantCore
 
 struct AISettingsView: View {
     @ObservedObject var model: ACPModel
