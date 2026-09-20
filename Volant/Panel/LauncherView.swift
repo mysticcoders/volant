@@ -398,7 +398,12 @@ private struct RowView: View {
         case .reloadConfig: Image(systemName: "arrow.clockwise")
         case .app(let a): Image(nsImage: NSWorkspace.shared.icon(forFile: a.url.path)).resizable()
         case .file(let f): Image(nsImage: NSWorkspace.shared.icon(forFile: f.url.path)).resizable()
-        case .contact: Image(systemName: "person.crop.circle.fill").font(.system(size: 20)).foregroundStyle(.secondary)
+        case .contact(let c):
+            if let image = model.contactImages[c.id] {
+                Image(nsImage: image).resizable().aspectRatio(contentMode: .fill).clipShape(Circle())
+            } else {
+                Image(systemName: "person.crop.circle.fill").font(.system(size: 20)).foregroundStyle(.secondary)
+            }
         case .event: Image(systemName: "calendar").font(.system(size: 20)).foregroundStyle(.secondary)
         case .clip(let c):
             if c.kind == .image, let data = c.imageData, let img = NSImage(data: data) { Image(nsImage: img).resizable().aspectRatio(contentMode: .fit) }

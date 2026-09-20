@@ -1,22 +1,16 @@
 import Contacts
 import VolantCore
 
-struct ContactEntry: Identifiable, Hashable {
-    let id: String
-    let name: String
-    let organization: String
-    let email: String?
-    let phone: String?
-
-    var copyValue: String? { email ?? phone }
-}
-
 /// Read-only contact lookup by name. Asks for access on first use; never writes.
+/// Everything past reading the framework's values lives in `ContactMapping`, which has no
+/// Contacts dependency and is tested without a permission grant.
 final class ContactSearch {
     private let store = CNContactStore()
     private let keys: [CNKeyDescriptor] = [
         CNContactGivenNameKey, CNContactFamilyNameKey, CNContactOrganizationNameKey,
         CNContactEmailAddressesKey, CNContactPhoneNumbersKey,
+        // The thumbnail is pre-scaled for small rows; the full-size image is never fetched.
+        CNContactThumbnailImageDataKey,
     ] as [CNKeyDescriptor]
 
     var isAuthorized: Bool { CNContactStore.authorizationStatus(for: .contacts) == .authorized }
@@ -32,18 +26,30 @@ final class ContactSearch {
                 request.predicate = CNContact.predicateForContacts(matchingName: term)
                 var out: [ContactEntry] = []
                 try? self.store.enumerateContacts(with: request) { contact, stop in
-                    let name = [contact.givenName, contact.familyName].filter { !$0.isEmpty }.joined(separator: " ")
-                    out.append(ContactEntry(
-                        id: contact.identifier,
-                        name: name.isEmpty ? contact.organizationName : name,
-                        organization: contact.organizationName,
-                        email: contact.emailAddresses.first.map { String($0.value) },
-                        phone: contact.phoneNumbers.first?.value.stringValue))
+                    if let entry = Self.entry(for: contact) { out.append(entry) }
                     if out.count >= 5 { stop.pointee = true }
                 }
                 DispatchQueue.main.async { completion(out) }
             }
         }
+    }
+
+    /// Reads the framework's values and hands them to the mapping layer. Labels are localized
+    /// here because `CNLabeledValue` is the only thing that can localize them.
+    private static func entry(for contact: CNContact) -> ContactEntry? {
+        ContactMapping.entry(
+            id: contact.identifier,
+            givenName: contact.givenName,
+            familyName: contact.familyName,
+            organization: contact.organizationName,
+            emails: contact.emailAddresses.map { (label(for: $0.label), String($0.value)) },
+            phones: contact.phoneNumbers.map { (label(for: $0.label), $0.value.stringValue) },
+            thumbnail: contact.thumbnailImageData)
+    }
+
+    private static func label(for raw: String?) -> String {
+        guard let raw, !raw.isEmpty else { return "" }
+        return CNLabeledValue<NSString>.localizedString(forLabel: raw)
     }
 
     private func ensureAccess(_ completion: @escaping (Bool) -> Void) {
