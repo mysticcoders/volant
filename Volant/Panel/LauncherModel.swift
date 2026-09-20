@@ -270,7 +270,9 @@ final class LauncherModel: ObservableObject {
     let usage: UsageStore
     var config: Preferences { didSet { promotedHarness = config.promotedHarness; extensions.invalidateCatalog() } }
     var searchesSecondarySources = true
-    private let files = FileSearch()
+    let files: FileSearch
+    @Published private(set) var filesUnavailable = false
+    private var indexStateSubscription: AnyCancellable?
     private let contacts = ContactSearch()
     private let agenda = CalendarAgenda()
     private var searchesAppIndex = false
@@ -279,7 +281,8 @@ final class LauncherModel: ObservableObject {
     private var contactRows: [ResultRow] = []
     private var fileRows: [ResultRow] = []
 
-    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), caffeinate: CaffeinateService = CaffeinateService(), onNote: @escaping (LauncherAction) -> Void) {
+    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), caffeinate: CaffeinateService = CaffeinateService(), files: FileSearch = FileSearch(), onNote: @escaping (LauncherAction) -> Void) {
+        self.files = files
         self.caffeinate = caffeinate
         self.usage = usage
         self.index = index
@@ -298,6 +301,9 @@ final class LauncherModel: ObservableObject {
                 guard let self else { return }
                 if CaffeinateCommand.matches(self.query) { self.refreshCaffeinateResults() }
             }
+        }
+        indexStateSubscription = index.$unavailable.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] _ in
+            self?.objectWillChange.send()
         }
         // Spotlight may finish after the first window is already visible.
         // Receive on the next main turn, after @Published has assigned index.apps.
@@ -391,6 +397,37 @@ final class LauncherModel: ObservableObject {
         sections = (favorites.isEmpty ? [] : [ResultSection(title: "Favorites", rows: favorites)]) + (apps.isEmpty ? [] : [ResultSection(title: "Suggestions", rows: apps)]) + [ResultSection(title: "Commands", rows: CoreCommand.allCases.map(ResultRow.core) + [.settings, .reloadConfig])]
     }
 
+    var showingNotes: Bool {
+        let q = query.trimmingCharacters(in: .whitespaces).lowercased()
+        return q == "notes" || q == "note" || q.hasPrefix("note ")
+    }
+    var searchRecoveryMessage: String? {
+        if showingNotes { return notes.loadMessage }
+        var messages: [String] = []
+        if (query.isEmpty || searchesAppIndex) && index.unavailable {
+            messages.append("Spotlight couldn’t start app discovery. Existing app results have been kept.")
+        }
+        if filesUnavailable { messages.append("Spotlight couldn’t start file search.") }
+        return messages.isEmpty ? nil : messages.joined(separator: " ") + " Check Spotlight availability, then retry."
+    }
+    var searchRetryTitle: String { showingNotes ? "Retry Loading Notes" : "Retry Spotlight" }
+    func retrySearch() {
+        guard searchRecoveryMessage != nil else { return }
+        if showingNotes { notes.reload() }
+        else if index.unavailable { index.start() }
+        let selected = selectedRow?.id
+        refresh()
+        if let selected, let offset = rows.firstIndex(where: { $0.id == selected }) { selection = offset }
+    }
+    private func receiveFiles(_ result: FileSearch.SearchResult, generation: Int, limit: Int) {
+        deliver(generation) { model in
+            switch result {
+            case .success(let hits): model.fileRows = hits.prefix(limit).map(ResultRow.file); model.filesUnavailable = false
+            case .failure: model.fileRows = []; model.filesUnavailable = true
+            }
+        }
+    }
+
     var showingClipboard: Bool {
         let q = query.trimmingCharacters(in: .whitespaces).lowercased()
         return q == "clip" || q.hasPrefix("clip ")
@@ -415,6 +452,7 @@ final class LauncherModel: ObservableObject {
         generation += 1
         let gen = generation
         immediate = []; contactRows = []; fileRows = []
+        filesUnavailable = false
         notice = nil
         actionFeedback = nil
         wifiJoin = nil
@@ -445,7 +483,7 @@ final class LauncherModel: ObservableObject {
                 return
             }
         }
-        if q.lowercased() == "notes" { sections = [ResultSection(title: "Notes", rows: notes.search("").map { .note($0) } + [.newNote("")])]; return }
+        if q.lowercased() == "notes" { notes.reload(); sections = [ResultSection(title: "Notes", rows: notes.search("").map { .note($0) } + [.newNote("")])]; return }
         if connectivitySource != nil { refreshConnectivity(); return }
         if AudioRouteQuery(q) != nil { refreshAudioRoutes(); return }
         if VolumeCommand.matches(q) {
@@ -460,7 +498,7 @@ final class LauncherModel: ObservableObject {
         if q.hasPrefix("/") {
             let term = String(q.dropFirst()).trimmingCharacters(in: .whitespaces)
             sections = []
-            files.search(term) { [weak self] hits in self?.deliver(gen) { $0.fileRows = hits.map { .file($0) } } }
+            files.search(term) { [weak self] result in self?.receiveFiles(result, generation: gen, limit: 8) }
             return
         }
         if q.hasPrefix("@") {
@@ -566,7 +604,7 @@ final class LauncherModel: ObservableObject {
             }
         }
         if searchesSecondarySources && q.count >= 3 {
-            files.search(q) { [weak self] hits in self?.deliver(gen) { $0.fileRows = hits.prefix(5).map { .file($0) } } }
+            files.search(q) { [weak self] result in self?.receiveFiles(result, generation: gen, limit: 5) }
         }
     }
 

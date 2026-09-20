@@ -9,12 +9,20 @@ struct FileEntry: Identifiable, Hashable {
 
 /// Debounced Spotlight file search within the user's home. Sandbox-safe: opening a hit hands the URL to the system.
 final class FileSearch: NSObject {
+    enum Failure: Error { case unavailable }
+    typealias SearchResult = Result<[FileEntry], Failure>
+    private let startQuery: (NSMetadataQuery) -> Bool
+    init(startQuery: @escaping (NSMetadataQuery) -> Bool = { $0.start() }) {
+        self.startQuery = startQuery
+        super.init()
+    }
+    deinit { query?.stop(); NotificationCenter.default.removeObserver(self) }
     private var query: NSMetadataQuery?
-    private var completion: (([FileEntry]) -> Void)?
+    private var completion: ((SearchResult) -> Void)?
     private var pending: DispatchWorkItem?
 
-    func search(_ term: String, completion: @escaping ([FileEntry]) -> Void) {
-        pending?.cancel()
+    func search(_ term: String, completion: @escaping (SearchResult) -> Void) {
+        cancel()
         let work = DispatchWorkItem { [weak self] in self?.run(term, completion: completion) }
         pending = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: work)
@@ -22,12 +30,14 @@ final class FileSearch: NSObject {
 
     func cancel() {
         pending?.cancel()
+        pending = nil
         stop()
     }
 
-    private func run(_ term: String, completion: @escaping ([FileEntry]) -> Void) {
+    private func run(_ term: String, completion: @escaping (SearchResult) -> Void) {
+        pending = nil
         stop()
-        guard term.count >= 3 else { completion([]); return }
+        guard term.count >= 3 else { completion(.success([])); return }
         let q = NSMetadataQuery()
         q.predicate = NSPredicate(format: "kMDItemFSName CONTAINS[cd] %@ AND kMDItemContentType != 'com.apple.application-bundle'", term)
         q.searchScopes = [NSMetadataQueryUserHomeScope]
@@ -35,7 +45,10 @@ final class FileSearch: NSObject {
         self.completion = completion
         query = q
         NotificationCenter.default.addObserver(self, selector: #selector(gathered(_:)), name: .NSMetadataQueryDidFinishGathering, object: q)
-        q.start()
+        if !startQuery(q) {
+            stop()
+            completion(.failure(.unavailable))
+        }
     }
 
     @objc private func gathered(_ note: Notification) {
@@ -53,7 +66,7 @@ final class FileSearch: NSObject {
         }
         let done = completion
         stop()
-        done?(out)
+        done?(.success(out))
     }
 
     /// Hide library internals, caches, build products and dotfiles from the results.

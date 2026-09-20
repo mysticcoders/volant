@@ -14,7 +14,9 @@ let dark = CommandLine.arguments.contains("dark")
 app.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
 let entry = AppEntry(id: "/Applications/Fixture.app", name: "Fixture", url: URL(fileURLWithPath: "/Applications/Fixture.app"), lastUsed: Date())
 var launched = 0
-let index = AppIndex(entries: [entry], launch: { _ in launched += 1 })
+var spotlightAvailable = false
+let index = AppIndex(entries: [entry], launch: { _ in launched += 1 }, startQuery: { _ in spotlightAvailable })
+let fixtureFiles = FileSearch(startQuery: { _ in false })
 let clipboardKey = SymmetricKey(size: .bits256)
 var clipboardAvailable = true
 var clipboardRetryDelay: TimeInterval = 0
@@ -31,7 +33,7 @@ var settingsRequests = 0
 var extensionSettingsRequests = 0
 var chatConfig: AIConfiguration?
 var panel: LauncherPanel!
-panel = LauncherPanel(index: index, clipboard: clipboard, notes: NotesStore(directory: root.appendingPathComponent("Notes")), config: preferences, usage: UsageStore(url: root.appendingPathComponent("actions-usage.sqlite")), positionStore: UserDefaults(suiteName: "volant.actions.fixture")!) { action in
+panel = LauncherPanel(index: index, clipboard: clipboard, notes: NotesStore(directory: root.appendingPathComponent("Notes")), config: preferences, usage: UsageStore(url: root.appendingPathComponent("actions-usage.sqlite")), positionStore: UserDefaults(suiteName: "volant.actions.fixture")!, files: fixtureFiles) { action in
     switch action {
     case .ai:
         chatRequests += 1
@@ -519,3 +521,47 @@ verify(panel.model.notice == "No matching clipboard items" && panel.model.clipbo
 try render("clipboard-no-match")
 panel.orderOut(nil)
 print("PASS: clipboard error, native Retry shortcut, progress, retained history and empty search")
+
+// Refused Spotlight starts keep useful results and expose a native Retry action.
+index.start()
+panel.toggle(); settle(); panel.model.query = "Fixture"; settle()
+verify(panel.model.searchRecoveryMessage != nil && !panel.model.rows.isEmpty, "App discovery failure coexists with existing rows")
+try render("spotlight-app-unavailable")
+spotlightAvailable = true
+key("r", 15, .command)
+verify(panel.model.searchRecoveryMessage == nil, "Native Retry restarts app discovery")
+panel.model.query = "/fictional"; settle(); settle()
+verify(panel.model.filesUnavailable, "Refused file query produces a visible failure")
+try render("spotlight-file-unavailable")
+key("r", 15, .command); settle()
+verify(panel.model.filesUnavailable, "A repeated failure remains retryable")
+panel.model.query = "clip"; settle()
+verify(panel.model.searchRecoveryMessage == nil, "Search errors do not leak into another command")
+panel.orderOut(nil)
+
+let recoveryNotes = NotesStore(directory: root.appendingPathComponent("recovery-notes-\(UUID().uuidString)"))
+let damagedURL = recoveryNotes.directory.appendingPathComponent("Fictional travel plans.md")
+try Data([0xFF, 0xFE, 0xFA]).write(to: damagedURL)
+recoveryNotes.reload()
+let recoveryPanel = NotesPanel(store: recoveryNotes)
+recoveryPanel.setContentSize(NSSize(width: preferences.appearance.scale == 0.8 ? 380 : 560,
+                                   height: preferences.appearance.scale == 0.8 ? 300 : 620))
+recoveryPanel.open(noteID: damagedURL.lastPathComponent); settle()
+verify(recoveryNotes.notes.first?.readError != nil, "Unreadable note remains selectable")
+try render("notes-unreadable", view: recoveryPanel.contentView!)
+func notesKey(_ text: String, _ code: UInt16) {
+    let event = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: .command,
+        timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: recoveryPanel.windowNumber,
+        context: nil, characters: text, charactersIgnoringModifiers: text, isARepeat: false, keyCode: code)!
+    verify(recoveryPanel.performKeyEquivalent(with: event), "Notes keyboard shortcut is handled")
+    settle()
+}
+notesKey("p", 35)
+try render("notes-unreadable-browser", view: recoveryPanel.contentView!)
+recoveryPanel.cancelOperation(nil); settle()
+try "# Fictional travel plans\n\nRepaired Markdown note.".write(to: damagedURL, atomically: true, encoding: .utf8)
+notesKey("r", 15)
+verify(recoveryNotes.loadMessage == nil && recoveryNotes.notes.first?.readError == nil, "Native Notes Retry reloads repaired text")
+try render("notes-recovered", view: recoveryPanel.contentView!)
+recoveryPanel.close()
+print("PASS: Spotlight refusal/retry and unreadable Notes recovery with native keyboard controls")

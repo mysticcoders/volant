@@ -138,7 +138,7 @@ final class NotesModel: ObservableObject {
     }
 
     func copyMarkdown() {
-        guard let note = selected else { return }
+        guard let note = selected, note.readError == nil else { return }
         let pb = NSPasteboard.general
         pb.clearContents()
         pb.setString(note.text, forType: .string)
@@ -187,6 +187,15 @@ struct NotesView: View {
                 .padding(12)
                 .background(.quaternary)
                 .padding(.horizontal, NotesStyle.inset)
+            }
+            if let message = store.loadMessage {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(message).font(.callout).foregroundStyle(.secondary)
+                    Button("Retry Loading Notes") { store.reload(); model.selectIfNeeded() }
+                        .keyboardShortcut("r", modifiers: .command)
+                }
+                .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                .background(.quaternary).padding(.horizontal, NotesStyle.inset)
             }
             document
             footer
@@ -246,7 +255,15 @@ struct NotesView: View {
 
     @ViewBuilder private var document: some View {
         if let note = model.selected {
-            if model.editing {
+            if let error = note.readError {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Label("Note unavailable", systemImage: "exclamationmark.triangle").font(.headline)
+                        Text(error).foregroundStyle(.secondary)
+                        Button("Reveal in Finder") { NSWorkspace.shared.activateFileViewerSelecting([note.url]) }
+                    }.padding(NotesStyle.inset).frame(maxWidth: .infinity, alignment: .leading)
+                }.frame(maxHeight: .infinity)
+            } else if model.editing {
                 ZStack(alignment: .topLeading) {
                     LiveMarkdownEditor(text: Binding(get: { store.notes.first { $0.id == note.id }?.text ?? "" },
                                                      set: { store.update(note.id, text: $0) }),
@@ -305,7 +322,7 @@ struct NotesView: View {
                 Text(model.toast ?? (!store.saveErrors.isEmpty ? "Not saved" : !store.dirtyText.isEmpty ? "Saving…" : ""))
                     .font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 Spacer(minLength: 8)
-                if let note = model.selected {
+                if let note = model.selected, note.readError == nil {
                     Text("\(note.text.split(whereSeparator: { $0.isWhitespace }).count) words")
                         .font(.caption).foregroundStyle(.tertiary)
                     Menu {
@@ -341,7 +358,7 @@ struct NotesView: View {
             Button("Pin Note") { model.togglePin() }.keyboardShortcut("p", modifiers: [.command, .shift])
             Button("Trash Note") { model.deleteSelected() }.keyboardShortcut(.delete, modifiers: .command)
         }
-        .disabled(model.selected == nil || model.overlay != nil)
+        .disabled(model.selected == nil || model.selected?.readError != nil || model.overlay != nil)
         .hidden().accessibilityHidden(true)
     }
 }
@@ -371,7 +388,12 @@ struct NotesPicker: View {
         }
         var actions = [Entry(id: "new", title: "New Note", subtitle: "", symbol: "plus", shortcut: "⌘N") { model.newNote() },
                        Entry(id: "browse", title: "Browse Notes", subtitle: "", symbol: "square.on.square", shortcut: "⌘P") { model.show(.browse) }]
-        if let note = model.selected {
+        if let note = model.selected, note.readError != nil {
+            actions.append(Entry(id: "reveal", title: "Reveal in Finder", subtitle: "", symbol: "folder", shortcut: "") {
+                NSWorkspace.shared.activateFileViewerSelecting([note.url])
+            })
+        }
+        if let note = model.selected, note.readError == nil {
             actions += [
                 Entry(id: "duplicate", title: "Duplicate Note", subtitle: "", symbol: "plus.square.on.square", shortcut: "⌘D") { model.newNote(text: note.text) },
                 Entry(id: "pin", title: model.pinned.contains(note.id) ? "Unpin Note" : "Pin Note", subtitle: "", symbol: "pin", shortcut: "⇧⌘P") { model.togglePin() },

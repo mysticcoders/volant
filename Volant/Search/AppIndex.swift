@@ -12,10 +12,15 @@ struct AppEntry: Identifiable, Hashable {
 /// Application index built from Spotlight metadata, which works inside the sandbox without folder access.
 /// Only bundles in real application folders are indexed, so helper and system-internal apps stay out.
 final class AppIndex: NSObject {
+    @Published private(set) var unavailable = false
+    private let startQuery: (NSMetadataQuery) -> Bool
+    private var observing = false
+    private var started = false
     @Published private(set) var apps: [AppEntry] = []
     private let query = NSMetadataQuery()
     private let launchOverride: ((AppEntry) -> Void)?
-    init(entries: [AppEntry] = [], launch: ((AppEntry) -> Void)? = nil) {
+    init(entries: [AppEntry] = [], launch: ((AppEntry) -> Void)? = nil, startQuery: @escaping (NSMetadataQuery) -> Bool = { $0.start() }) {
+        self.startQuery = startQuery
         self.apps = entries
         self.launchOverride = launch
         super.init()
@@ -35,12 +40,19 @@ final class AppIndex: NSObject {
     }()
 
     func start() {
+        guard !started else { return }
         query.predicate = NSPredicate(format: "kMDItemContentType == 'com.apple.application-bundle'")
         query.searchScopes = [NSMetadataQueryLocalComputerScope]
-        NotificationCenter.default.addObserver(self, selector: #selector(gathered), name: .NSMetadataQueryDidFinishGathering, object: query)
-        NotificationCenter.default.addObserver(self, selector: #selector(gathered), name: .NSMetadataQueryDidUpdate, object: query)
-        query.start()
+        if !observing {
+            NotificationCenter.default.addObserver(self, selector: #selector(gathered), name: .NSMetadataQueryDidFinishGathering, object: query)
+            NotificationCenter.default.addObserver(self, selector: #selector(gathered), name: .NSMetadataQueryDidUpdate, object: query)
+            observing = true
+        }
+        started = startQuery(query)
+        unavailable = !started
     }
+
+    deinit { query.stop(); NotificationCenter.default.removeObserver(self) }
 
     @objc private func gathered() {
         query.disableUpdates()

@@ -7,14 +7,17 @@ struct Note: Identifiable, Hashable {
     var url: URL
     var text: String
     var modified: Date
+    var readError: String? = nil
 
     var title: String {
+        if readError != nil { return url.lastPathComponent }
         let first = text.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }.first { !$0.isEmpty } ?? ""
         let cleaned = first.drop(while: { $0 == "#" }).trimmingCharacters(in: .whitespaces)
         return cleaned.isEmpty ? "Untitled" : String(cleaned.prefix(80))
     }
 
     var preview: String {
+        if let readError { return readError }
         let lines = text.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         if let second = lines.dropFirst().first { return String(second) }
         return ""
@@ -27,6 +30,12 @@ final class NotesStore: ObservableObject {
     @Published private(set) var notes: [Note] = []
     @Published var lastError: String? = nil
     @Published private(set) var saveErrors: [String: String] = [:]
+    @Published private(set) var loadError: String?
+    var loadMessage: String? {
+        if let loadError { return loadError }
+        let count = notes.filter { $0.readError != nil }.count
+        return count == 0 ? nil : "\(count) unreadable note\(count == 1 ? "" : "s"). Files and pins have been kept."
+    }
     let directory: URL
     private let io = DispatchQueue(label: "com.mysticcoders.volant.notes", qos: .utility)
     private var pendingSave: [String: DispatchWorkItem] = [:]
@@ -41,7 +50,14 @@ final class NotesStore: ObservableObject {
     /// Re-reads the folder. Notes with unsaved edits keep their in-memory text; the disk copy never wins over a pending edit.
     func reload() {
         let fm = FileManager.default
-        let urls = (try? fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.contentModificationDateKey], options: [.skipsHiddenFiles])) ?? []
+        let urls: [URL]
+        do {
+            urls = try fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.contentModificationDateKey], options: [.skipsHiddenFiles])
+            loadError = nil
+        } catch {
+            loadError = "The notes folder couldn’t be read. Existing notes and unsaved edits have been kept. Check folder access, then retry."
+            return
+        }
         var fresh = urls
             .filter { $0.pathExtension == "md" }
             .compactMap { url -> Note? in
@@ -49,7 +65,10 @@ final class NotesStore: ObservableObject {
                 if let dirty = dirtyText[id] {
                     return Note(id: id, url: url, text: dirty, modified: Date())
                 }
-                guard let text = try? String(contentsOf: url, encoding: .utf8) else { return nil }
+                guard let text = try? String(contentsOf: url, encoding: .utf8) else {
+                    return Note(id: id, url: url, text: "", modified: notes.first { $0.id == id }?.modified ?? .distantPast,
+                                readError: "This note couldn’t be read as UTF-8 Markdown. Check the file’s access and encoding, then retry.")
+                }
                 let mod = (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
                 return Note(id: id, url: url, text: text, modified: mod)
             }
@@ -78,7 +97,7 @@ final class NotesStore: ObservableObject {
     }
 
     func update(_ id: String, text: String) {
-        guard let i = notes.firstIndex(where: { $0.id == id }) else { return }
+        guard let i = notes.firstIndex(where: { $0.id == id }), notes[i].readError == nil else { return }
         notes[i].text = text
         notes[i].modified = Date()
         dirtyText[id] = text
@@ -121,7 +140,7 @@ final class NotesStore: ObservableObject {
     }
 
     func delete(_ id: String) {
-        guard let i = notes.firstIndex(where: { $0.id == id }) else { return }
+        guard let i = notes.firstIndex(where: { $0.id == id }), notes[i].readError == nil else { return }
         // Drain writes before trashing so a queued save cannot recreate the deleted file.
         flush()
         guard dirtyText[id] == nil else { return }
@@ -138,6 +157,6 @@ final class NotesStore: ObservableObject {
     func search(_ term: String, limit: Int = 8) -> [Note] {
         let t = term.trimmingCharacters(in: .whitespaces)
         guard !t.isEmpty else { return Array(notes.prefix(limit)) }
-        return notes.filter { $0.text.localizedCaseInsensitiveContains(t) }.prefix(limit).map { $0 }
+        return notes.filter { $0.text.localizedCaseInsensitiveContains(t) || ($0.readError != nil && $0.id.localizedCaseInsensitiveContains(t)) }.prefix(limit).map { $0 }
     }
 }
