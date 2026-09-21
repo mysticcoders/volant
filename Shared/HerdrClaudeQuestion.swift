@@ -6,8 +6,8 @@ extension HerdrQuestion {
         let raw = text.components(separatedBy: "\n")
         let lines = raw.map { $0.trimmingCharacters(in: .whitespaces) }
         guard let footer = lines.lastIndex(where: { !$0.isEmpty }) else { return nil }
-        let permission = lines[footer] == "Esc to cancel · Tab to amend"
-        guard permission || lines[footer] == "Enter to select · ↑/↓ to navigate · Esc to cancel" else { return nil }
+        let permission = isClaudeApprovalFooter(lines[footer])
+        guard permission || isClaudeSelectFooter(lines[footer]) else { return nil }
         let rowPattern = try! NSRegularExpression(pattern: #"^(❯ )?([1-9])\. (.+)$"#)
         func row(_ line: String) -> (Int, String, Bool)? {
             let ns = line as NSString

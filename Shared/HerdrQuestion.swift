@@ -24,7 +24,7 @@ struct HerdrQuestion: Codable, Equatable {
         guard provider == "codex" else { return nil }
         let lines = text.components(separatedBy: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
         guard let header = lines.lastIndex(where: { $0.range(of: #"^Question [1-9][0-9]*/[1-9][0-9]* \([1-9][0-9]* unanswered\)$"#, options: .regularExpression) != nil }),
-              let footer = lines[(header + 1)...].firstIndex(of: "tab to add notes | enter to submit answer | esc to interrupt"),
+              let footer = lines[(header + 1)...].firstIndex(where: { Self.isCodexFooter($0) }),
               lines[(footer + 1)...].allSatisfy({ $0.isEmpty }) else { return nil }
         let body = lines[(header + 1)..<footer].filter { !$0.isEmpty }
         guard let title = body.first, title.count <= 500 else { return nil }
@@ -55,4 +55,39 @@ struct HerdrQuestion: Codable, Equatable {
         }
     }
     var answerChoices: [Choice] { choices.filter { !["None of the above", "Type something.", "Chat about this"].contains($0.label) } }
+}
+
+/// Footer recognition mirrors Herdr's own agent-detection rules rather than pinning the exact
+/// strings these agents happen to print today. Herdr matches case-insensitive substrings and
+/// accepts several spellings per hint, and its manifests are versioned and updated when an agent
+/// changes its wording; equality checks here would silently stop matching at that point.
+///
+/// This is a guard that the region is an interactive form, not the detector. Herdr has already
+/// reported the pane blocked before Volant reads it, and answering stays gated by the choice
+/// structure, the fingerprint and the pending token.
+extension HerdrQuestion {
+    static func footerContains(_ line: String, _ needles: [String]) -> Bool {
+        let value = line.lowercased()
+        return needles.contains { value.contains($0) }
+    }
+
+    /// Herdr `claude.toml` rule `live_blocked_form`.
+    static func isClaudeSelectFooter(_ line: String) -> Bool {
+        guard footerContains(line, ["esc to cancel"]) else { return false }
+        if footerContains(line, ["enter to confirm"]) { return true }
+        guard footerContains(line, ["enter to select"]) else { return false }
+        return footerContains(line, ["tab/arrow keys to navigate", "arrow keys to navigate",
+                                     "arrows to navigate", "\u{2191}/\u{2193} to navigate", "\u{2191}\u{2193} to navigate"])
+    }
+
+    /// Claude's approval screens end with a cancel and amend hint instead of a select hint.
+    static func isClaudeApprovalFooter(_ line: String) -> Bool {
+        footerContains(line, ["esc to cancel"]) && footerContains(line, ["tab to amend"])
+    }
+
+    /// Herdr `codex.toml` rule `live_strong_blocker`.
+    static func isCodexFooter(_ line: String) -> Bool {
+        footerContains(line, ["enter to submit answer", "enter to submit all",
+                              "press enter to confirm or esc to cancel"])
+    }
 }
