@@ -63,6 +63,22 @@ public final class HerdrMachineRouter {
         }
         return try run(["--machine", machine.id] + arguments)
     }
+    /// Enables or disables a saved machine in Herdr, which owns this state; Volant only reflects it.
+    /// The profile is revalidated by route identity first, so a catalog that changed underneath
+    /// cannot be edited from a stale row. Unlike `execute`, the current enabled flag is deliberately
+    /// not required to match: changing it is the point.
+    @discardableResult
+    public func setEnabled(_ machine: HerdrMachine, _ enabled: Bool) throws -> [HerdrMachine] {
+        guard let current = try profiles().first(where: { $0.routeIdentity == machine.routeIdentity }) else {
+            throw NSError(domain: "VolantHerdrResponse", code: 3,
+                          userInfo: [NSLocalizedDescriptionKey: "This saved machine changed or was removed. Refresh before continuing."])
+        }
+        if current.enabled != enabled {
+            _ = try run(["machine", enabled ? "enable" : "disable", current.id])
+        }
+        return try profiles()
+    }
+
     public func agents(on machine: HerdrMachine?) throws -> [AgentSession] {
         try AgentSession.decodeList(execute(machine, ["agent", "list"]), machine: machine)
     }

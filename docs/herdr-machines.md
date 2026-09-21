@@ -10,6 +10,25 @@ Herdr still has no atomic compare-and-send operation. A change between validatio
 
 The helper passes only its minimal process environment plus the SSH authentication socket reference when available. Standard input is closed. Output remains bounded in memory; processes time out, and inherited stdout handles cannot keep a read pending forever. No terminal contents or SSH credentials are logged or persisted.
 
+## Enabling and disabling from the launcher
+
+`herdr machine` (or `agents machine`) lists saved destinations instead of panes, so a machine can
+be switched on or off without leaving the launcher. Local is listed first and reads "Always on":
+it is not a saved machine and has nothing to toggle. A trailing term filters by label or id, so
+`herdr machine acu` narrows to one row.
+
+Herdr owns this state; Volant only reflects it. Return runs `herdr machine enable|disable <id>`
+through the agent helper, and the refreshed catalog that comes back is what the row renders — the
+value the launcher asked for is never displayed as fact. A successful toggle is followed by a full
+refresh, so panes on a machine just switched on appear and panes on one just switched off are
+dropped.
+
+The saved profile is revalidated by route identity before anything runs, which covers the SSH
+target and session as well as the id, so a row that went stale cannot edit a machine that changed
+underneath it. `setEnabled` deliberately does not share `execute`'s requirement that the profile
+already be enabled; a disabled machine could otherwise never be switched back on. One toggle runs
+at a time, and a failure leaves the row where it was and surfaces Herdr's message.
+
 ## Evidence and follow-up
 
 Regression coverage includes identical IDs on different machines, machine/session retargeting, disabled and removed profiles, partial outages in either direction, single-use remote answer routing, and process timeout. Native fixtures cover machine labels, filtering, status details, unavailable state, and provider answer buttons in light/dark compact/default/large layouts. Final check and installed-artifact evidence is recorded in the PR.

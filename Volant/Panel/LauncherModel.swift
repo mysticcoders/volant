@@ -26,6 +26,7 @@ enum ResultRow: Identifiable, Hashable {
     case volume(VolumeCommand, detail: String)
     case agents
     case agentSession(AgentSession)
+    case herdrMachine(HerdrMachine?, enabled: Bool, busy: Bool)
     case snippet(Snippet)
     case emoji(EmojiEntry)
     case quicklink(Quicklink, query: String)
@@ -47,6 +48,7 @@ enum ResultRow: Identifiable, Hashable {
         case .core(let command): return "core:" + command.rawValue
         case .caffeinate(let command): return "caffeinate:" + command.id
         case .agentSession(let session): return "agent:" + session.id
+        case .herdrMachine(let machine, _, _): return "herdr-machine:" + (machine?.id ?? "local")
         case .connectivity(let item): return item.id
         case .audioRoute(let route): return "audio:" + route.id
         case .volume(let command, _): return "volume:" + command.id
@@ -77,6 +79,7 @@ enum ResultRow: Identifiable, Hashable {
         case .appleShortcut: return "Apple Shortcut"
         case .core, .caffeinate: return "Command"
         case .agentSession(let session): return session.status
+        case .herdrMachine(_, let enabled, _): return enabled ? "Enabled" : "Disabled"
         case .connectivity: return "Connectivity"
         case .audioRoute(let route): return route.current ? "Current" : "Device"
         case .volume: return "System"
@@ -113,6 +116,10 @@ enum ResultRow: Identifiable, Hashable {
         case .core: return "Open Command"
         case .caffeinate(let command): return command.stop ? "Stop" : "Start"
         case .agentSession: return "Focus in Herdr"
+        case .herdrMachine(let machine, let enabled, let busy):
+            if busy { return "Working…" }
+            guard machine != nil else { return "Always on" }
+            return enabled ? "Disable Machine" : "Enable Machine"
         case .connectivity(let item):
             if case .wifi(let network) = item { return network.current ? "Connected" : "Join Network" }
             if case .refresh = item { return "Refresh" }
@@ -215,7 +222,7 @@ final class LauncherModel: ObservableObject {
     private var shortcutsSubscription: AnyCancellable?
     private var shortcutRunQuery: String?
     var showingAppleShortcuts: Bool { AppleShortcut.queryTerm(query) != nil }
-    let agents = AgentsModel()
+    let agents: AgentsModel
     let acp = ACPModel()
     @Published private(set) var showingACP = false
     @Published var promotedHarness: String?
@@ -225,6 +232,13 @@ final class LauncherModel: ObservableObject {
     var showingAgents: Bool {
         let q = query.trimmingCharacters(in: .whitespaces).lowercased()
         return q == "agents" || q == "herdr" || q.hasPrefix("agents ") || q.hasPrefix("herdr ")
+    }
+    /// `herdr machine` lists saved destinations instead of panes, so enabling one is reachable
+    /// without leaving the launcher. A trailing term filters by label.
+    var showingMachines: Bool {
+        let q = query.trimmingCharacters(in: .whitespaces).lowercased()
+        return ["agents machine", "herdr machine", "agents machines", "herdr machines"].contains(q)
+            || ["agents machine ", "herdr machine ", "agents machines ", "herdr machines "].contains(where: q.hasPrefix)
     }
     var promotedTitle: String { Preferences.harnessOptions.first { $0.id == promotedHarness }?.title ?? "Agents" }
     var promotedSessions: [AgentSession] { agents.sessions.filter { promotedHarness == "all" || $0.agent == promotedHarness } }
@@ -241,8 +255,27 @@ final class LauncherModel: ObservableObject {
     func showPromotedAgents() {
         query = "agents" + (promotedHarness == "all" ? "" : " " + (promotedHarness ?? ""))
     }
+    private func refreshMachineResults() {
+        let selectedID = selectedRow?.id
+        let parts = query.trimmingCharacters(in: .whitespaces).split(separator: " ", maxSplits: 2)
+        let term = parts.count > 2 ? String(parts[2]) : ""
+        var rows: [ResultRow] = []
+        let localMatches = term.isEmpty || "local".localizedCaseInsensitiveContains(term)
+        if localMatches { rows.append(.herdrMachine(nil, enabled: true, busy: false)) }
+        for machine in agents.profiles where term.isEmpty || machine.label.localizedCaseInsensitiveContains(term) || machine.id.localizedCaseInsensitiveContains(term) {
+            rows.append(.herdrMachine(machine, enabled: machine.enabled, busy: agents.machineToggleInFlight == machine.id))
+        }
+        sections = rows.isEmpty ? [] : [ResultSection(title: "Herdr machines", rows: rows)]
+        if !agents.connected { notice = agents.message }
+        else if rows.isEmpty { notice = agents.profiles.isEmpty ? "No machines saved in Herdr. Add one with herdr machine add." : "No matching machines" }
+        else { notice = agents.actionMessage }
+        if let selectedID, let index = self.rows.firstIndex(where: { $0.id == selectedID }) { selection = index }
+        else { selection = min(selection, max(0, self.rows.count - 1)) }
+    }
+
     private func refreshAgentResults() {
         guard showingAgents else { return }
+        if showingMachines { refreshMachineResults(); return }
         let selectedID = selectedRow?.id
         let parts = query.trimmingCharacters(in: .whitespaces).split(separator: " ", maxSplits: 1)
         let term = parts.count > 1 ? String(parts[1]) : ""
@@ -284,7 +317,8 @@ final class LauncherModel: ObservableObject {
     private var contactRows: [ResultRow] = []
     private var fileRows: [ResultRow] = []
 
-    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), caffeinate: CaffeinateService = CaffeinateService(), files: FileSearch = FileSearch(), onNote: @escaping (LauncherAction) -> Void) {
+    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), caffeinate: CaffeinateService = CaffeinateService(), files: FileSearch = FileSearch(), agents: AgentsModel = AgentsModel(), onNote: @escaping (LauncherAction) -> Void) {
+        self.agents = agents
         self.files = files
         self.caffeinate = caffeinate
         self.usage = usage
@@ -815,6 +849,10 @@ final class LauncherModel: ObservableObject {
             } else { copy(clip.text) }
         case .app(let app): index.launch(app)
         case .file(let file): FileSearch.open(file)
+        case .herdrMachine(let machine, let enabled, let busy):
+            guard let machine, !busy else { return }
+            agents.setMachineEnabled(machine, !enabled)
+            return
         case .contact(let contact): if let field = contact.primaryField { copy(field.value) }
         case .event(let event): CalendarAgenda.open(event)
         case .note(let note): onNote(.open(note.id))
