@@ -27,6 +27,7 @@ struct AISettingsView: View {
                         if kind == .local { discovery.discover() }
                     }
                 if config.connection == .acp { acpControls }
+                else if config.connection == .apple { appleControls }
                 else { apiControls }
                 if model.active {
                     Text("Current conversation: \(model.providerTitle). Settings apply to the next conversation.").font(.callout).foregroundStyle(.secondary)
@@ -34,7 +35,7 @@ struct AISettingsView: View {
                 } else {
                     Button(config.connection == .acp ? "Connect ACP" : "Open AI Chat") {
                         if persist() { openConversation(config) }
-                    }.disabled(!config.isConfigured || !loaded)
+                    }.disabled(!config.isConfigured || !loaded || (config.connection == .apple && !appleAvailability.isReady))
                 }
                 if let feedback {
                     Text(feedback).font(.callout).foregroundStyle(failed ? Color.red : Color.secondary).accessibilityLabel(feedback)
@@ -50,6 +51,24 @@ struct AISettingsView: View {
         .onChange(of: config.http.endpoint) { _, _ in discovery.endpointChanged(config.http.endpoint); keyDraft = "" }
         .onDisappear { discovery.cancel(); keyDraft = ""; if loaded && config != saved { persist() } }
     }
+    private var appleAvailability: AppleFoundationModel.Availability { AppleFoundationModel.availability }
+
+    /// Apple's model has nothing to configure. What matters is whether it can run here at all, and
+    /// the reason is shown rather than leaving a disabled button unexplained.
+    @ViewBuilder private var appleControls: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Runs Apple's on-device model. No API key, no network request and no helper process; the conversation stays on this Mac.")
+                .font(.callout).foregroundStyle(.secondary)
+            if let reason = appleAvailability.reason {
+                Label(reason, systemImage: "exclamationmark.triangle")
+                    .font(.callout).foregroundStyle(.secondary)
+            } else {
+                Label("Available on this Mac.", systemImage: "checkmark.circle")
+                    .font(.callout).foregroundStyle(.secondary)
+            }
+        }
+    }
+
     private var acpControls: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("ACP connections").font(.headline)

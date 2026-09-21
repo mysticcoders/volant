@@ -9,9 +9,19 @@ import Foundation
 }
 
 public enum AIConnectionKind: String, Codable, CaseIterable, Identifiable {
-    case acp, byok, local
+    case acp, byok, local, apple
     public var id: String { rawValue }
-    public var title: String { switch self { case .acp: return "ACP"; case .byok: return "BYOK"; case .local: return "Local Models" } }
+    public var title: String {
+        switch self {
+        case .acp: return "ACP"
+        case .byok: return "BYOK"
+        case .local: return "Local Models"
+        case .apple: return "Apple Intelligence"
+        }
+    }
+    /// Apple's model runs on this Mac through the system, so it needs no endpoint, key or helper.
+    /// The other kinds all describe a service to reach.
+    public var usesHTTP: Bool { self == .byok || self == .local }
 }
 public enum AIAPIProvider: String, Codable, CaseIterable, Identifiable {
     case openAI, anthropic, compatible

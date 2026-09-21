@@ -40,3 +40,42 @@ Before claiming installed provider readiness, verify Keychain save/read/remove a
 Keep the API transport separate from ACP so provider tools and CLI credentials cannot leak into BYOK/local requests. Preserve connection ownership across Settings edits, use explicit cancellation and validate the final streamed completion marker. Fake discovery/credentials are injectable in native fixtures; opening a preview must not contact owner servers or Keychain. Build, rendered UI, real HTTP, signed XPC and live provider evidence are distinct.
 
 Fixture lessons: CI may start Python more slowly than a developer machine; use the configured test interpreter, a bounded 30-second readiness wait, and preserve startup diagnostics. Chat rendering fixtures need a real hosting window and semantic background before inspecting light/dark output.
+
+## Apple Intelligence — September 21, 2026
+
+A fourth connection kind, `apple`, runs Apple's on-device model through FoundationModels. It is the
+only kind that needs no endpoint, no API key, no credential in the Keychain and no helper process:
+the conversation runs inside the sandboxed app itself and never reaches the network.
+
+Verified in a signed bundle carrying Volant's own entitlements, so App Sandbox is not in the way:
+the model reported `available` and a streamed prompt returned its answer. That check matters because
+the sandbox does block other system services; it was measured rather than assumed.
+
+### Supporting macOS 15 and macOS 26 from one build
+
+FoundationModels is macOS 26 and later while Volant's deployment target is macOS 15. Every entry
+point is behind `#if canImport(FoundationModels)` and `#available(macOS 26.0, *)`, and the framework
+weak-links, so an older Mac runs the same binary with the option present but unavailable.
+
+`AppleFoundationModel.Availability` is the only thing the rest of the app asks. It answers `ready`
+or `unavailable` with a sentence the owner can act on: the Mac is ineligible, Apple Intelligence is
+switched off in System Settings, the model is still downloading, or the system is older than macOS
+26. Settings shows that sentence rather than leaving a disabled button unexplained, and availability
+is rechecked when a conversation starts, because it can be switched off between the two.
+
+### Streaming is cumulative, not incremental
+
+`LanguageModelSession.streamResponse` yields the complete text so far on each chunk, and it repeats
+values and may rewrite them. Measured directly: a five-word reply arrived as seven chunks of
+lengths 5, 9, 14, 20, 21, 21, 21. The first implementation here treated those as deltas, which would
+have produced badly duplicated text in the transcript.
+
+The conversation API therefore delivers a `snapshot` and the chat model replaces its assistant
+message instead of appending. Unchanged snapshots are dropped rather than republished. This is the
+opposite of the HTTP path, where `AIStreamDecoder` genuinely emits deltas.
+
+### Not covered
+
+Live use through the installed signed app, and behavior on a Mac where Apple Intelligence is off or
+ineligible — both availability branches are reasoned from the framework's own enum rather than
+observed. There is no model picker: the kind uses `SystemLanguageModel.default`.
