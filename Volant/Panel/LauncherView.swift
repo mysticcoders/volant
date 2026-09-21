@@ -330,6 +330,7 @@ private struct RowView: View {
         case .core(let command): return command.title
         case .caffeinate(let command): return command.title
         case .agentSession(let session): return session.project
+        case .herdrMachine(let machine, _, _): return machine?.label ?? "Local"
         case .connectivity(let item): return item.title
         case .audioRoute(let route): return route.name
         case .volume(let command, _): return command.title
@@ -362,6 +363,7 @@ private struct RowView: View {
         case .settings: return "Preferences, app shortcuts and backups"
         case .reloadConfig: return "Apply changes from config.json"
         case .agentSession(let session): return session.machineLabel + " · " + session.provider + " · " + session.paneID
+        case .herdrMachine(let machine, _, _): return machine.map { $0.target + " · " + $0.session } ?? "This Mac"
         case .connectivity(let item): return item.detail
         case .audioRoute(let route): return route.direction.rawValue.capitalized
         case .volume(_, let detail): return detail.isEmpty ? nil : detail
@@ -388,6 +390,9 @@ private struct RowView: View {
         case .core(let command): Image(systemName: command.symbol).font(.system(size: 20)).foregroundStyle(.secondary)
         case .caffeinate: Image(systemName: "cup.and.saucer").font(.system(size: 20)).foregroundStyle(.secondary)
         case .agentSession(let session): Image(systemName: session.agentStatus == "blocked" ? "exclamationmark.bubble" : "terminal").font(.system(size: 20)).foregroundStyle(session.agentStatus == "blocked" ? Color.orange : Color.secondary)
+        case .herdrMachine(let machine, let enabled, _):
+            Image(systemName: machine == nil ? "desktopcomputer" : (enabled ? "network" : "network.slash"))
+                .font(.system(size: 20)).foregroundStyle(enabled ? Color.secondary : Color.secondary.opacity(0.5))
         case .connectivity(let item): Image(systemName: item.id.hasPrefix("wifi:") ? "wifi" : "antenna.radiowaves.left.and.right").font(.system(size: 20)).foregroundStyle(.secondary)
         case .audioRoute(let route): Image(systemName: route.direction == .input ? "mic" : "speaker.wave.2").font(.system(size: 20)).foregroundStyle(.secondary)
         case .volume(let command, _): Image(systemName: command == .mute ? "speaker.slash" : "speaker.wave.2").font(.system(size: 20)).foregroundStyle(.secondary)

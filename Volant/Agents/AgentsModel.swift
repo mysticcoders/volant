@@ -26,8 +26,10 @@ final class AgentsModel: ObservableObject {
     var attentionReader: ((AgentSession, @escaping (Data?, String?) -> Void) -> Void)?
     // Injectable transport for deterministic, isolated progressive-loading tests.
     var inventoryReader: ((HerdrMachine?, @escaping (Data?, String?) -> Void) -> Void)?
+    var machineWriter: ((HerdrMachine, Bool, @escaping (Data?, String?) -> Void) -> Void)?
+    @Published private(set) var machineToggleInFlight: String?
     var machineReader: ((@escaping (Data?, String?) -> Void) -> Void)?
-    private var profiles: [HerdrMachine] = []
+    @Published private(set) var profiles: [HerdrMachine] = []
     private var catalogRequest: UUID?
     private var inventoryRequests: [String: UUID] = [:]
     private var connection: NSXPCConnection?
@@ -57,7 +59,7 @@ final class AgentsModel: ObservableObject {
         watchAttention(nil)
         timer?.invalidate(); timer = nil
         connection?.invalidate(); connection = nil
-        connected = false; busy = false; focusInFlight = false; sessions = []; machines = []; actionMessage = nil
+        connected = false; busy = false; focusInFlight = false; sessions = []; machines = []; actionMessage = nil; machineToggleInFlight = nil
         message = "Connect to Local and enabled machines saved in Herdr."
     }
     private func failed(_ error: String, generation current: Int) {
@@ -110,6 +112,33 @@ final class AgentsModel: ObservableObject {
         }
         if let machineReader { machineReader(reply) }
         else { inventoryProxy()?.listHerdrMachines(reply: reply) }
+    }
+
+    /// Turns a saved machine on or off. Herdr owns the state, so the reply's catalog is applied
+    /// rather than the value that was requested, and a full refresh follows so panes on a machine
+    /// just switched on appear and panes on one just switched off are dropped.
+    func setMachineEnabled(_ machine: HerdrMachine, _ enabled: Bool) {
+        guard connected, machineToggleInFlight == nil else { return }
+        guard let data = try? JSONEncoder().encode(machine) else { return }
+        let current = generation
+        machineToggleInFlight = machine.id
+        actionMessage = (enabled ? "Enabling " : "Disabling ") + machine.label + "…"
+        let apply: (Data?, String?) -> Void = { [weak self] reply, error in
+            DispatchQueue.main.async {
+                guard let self, current == self.generation else { return }
+                self.machineToggleInFlight = nil
+                if let reply, let profiles = try? HerdrMachine.decode(reply), error == nil {
+                    self.profiles = profiles
+                    let state = profiles.first { $0.id == machine.id }?.enabled
+                    self.actionMessage = machine.label + " is " + ((state ?? enabled) ? "enabled" : "disabled") + "."
+                    self.refresh()
+                } else {
+                    self.actionMessage = error ?? "Couldn’t change this machine in Herdr."
+                }
+            }
+        }
+        if let machineWriter { machineWriter(machine, enabled, apply) }
+        else { inventoryProxy()?.setHerdrMachine(machine: data, enabled: enabled, reply: apply) }
     }
 
     private func inventoryProxy() -> VolantAgentHostProtocol? {

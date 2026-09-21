@@ -12,6 +12,9 @@ import Foundation
     func answerAgentQuestion(token: String, choice: Int, reply: @escaping (String?, String?) -> Void)
     func readAgentAttention(target: Data, reply: @escaping (Data?, String?) -> Void)
     func listHerdrMachines(reply: @escaping (Data?, String?) -> Void)
+    /// Turns a saved machine on or off in Herdr, which owns that state, and replies with the
+    /// refreshed catalog so the caller never renders the value it requested.
+    func setHerdrMachine(machine: Data, enabled: Bool, reply: @escaping (Data?, String?) -> Void)
     func listAgents(machine: Data?, reply: @escaping (Data?, String?) -> Void)
     func focusAgent(target: Data, reply: @escaping (String?) -> Void)
 }

@@ -56,6 +56,17 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
             catch { reply(nil, "Couldn’t read saved machines. Check Herdr 0.9.1 or later is installed.") }
         }
     }
+    func setHerdrMachine(machine data: Data, enabled: Bool, reply: @escaping (Data?, String?) -> Void) {
+        catalogQueue.async {
+            do {
+                guard data.count <= 32_000 else { throw CocoaError(.fileReadCorruptFile) }
+                let machine = try JSONDecoder().decode(HerdrMachine.self, from: data)
+                reply(try JSONEncoder().encode(self.machines.setEnabled(machine, enabled)), nil)
+            } catch {
+                reply(nil, error.localizedDescription)
+            }
+        }
+    }
     func listAgents(machine data: Data?, reply: @escaping (Data?, String?) -> Void) {
         let work = {
             do {
