@@ -6,6 +6,40 @@ Approval context is displayed as literal selectable text above the choices in a 
 
 The controller revalidates pane, terminal, provider/session, blocked-state sequence and screen fingerprint, navigates separately, confirms the selected row, then sends Enter. Claude-specific parsing does not add a generic input API. Herdr still lacks atomic conditional input: a last read/send race remains. Custom keybindings, unrecognized screens and uncertain delivery need manual pane review; no automatic resend is attempted.
 
+## Footer recognition follows Herdr's rules
+
+Volant reads the pane through `herdr agent read --source detection`, so the region it parses is
+already the one Herdr's detection engine selected. What it then does with that region used to pin
+the exact footer strings the agents print:
+
+```swift
+lines[footer] == "Enter to select · ↑/↓ to navigate · Esc to cancel"
+```
+
+Those are UI strings and they change between agent releases. Herdr tracks that in versioned
+manifests under `~/.local/state/herdr/agent-detection/`, which it updates; an equality check here
+silently stops matching at the same moment, so a real question becomes unparseable while Herdr
+still correctly reports the pane blocked. That is a false negative with no signal attached to it.
+
+The checks now mirror Herdr's own rules, case-insensitively:
+
+- Claude select forms follow `live_blocked_form` in `claude.toml`: "esc to cancel" together with
+  "enter to confirm", or with "enter to select" and any of five navigation spellings.
+- Claude approval screens are recognized separately by "esc to cancel" with "tab to amend", since
+  that path decides whether a screen is a file or command approval rather than a question.
+- Codex follows `live_strong_blocker` in `codex.toml`: "enter to submit answer", "enter to submit
+  all", or "press enter to confirm or esc to cancel".
+
+This is a guard that the region is an interactive form, not the detector. Herdr has already
+reported the pane blocked before Volant reads it, and answering remains gated by the choice
+structure, the fingerprint, the pending token and the answerable-choice filter, none of which
+were loosened.
+
+Not adopted: reading Herdr's manifest files directly. They are versioned and would track upstream
+changes automatically, but their path and TOML shape are Herdr internals rather than a published
+interface. Herdr does not expose a parsed question over its API either — the schema carries agent
+state and the detection region, not choices — so the structure has to be derived here.
+
 ## Evidence
 
 Claude Code 2.1.274 was tested in a disposable directory with customizations disabled and explicit ask rules for the test tools. A real single-select fictional Amber/Violet question accepted Violet. In standalone terminal tests, No rejected a fictional file creation and left the file absent; Yes created only the fictional file and Claude returned `ACK: written`.
