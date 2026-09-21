@@ -6,7 +6,15 @@ public struct AIConfiguration: Codable, Equatable {
     public var api = AIHTTPConfiguration()
     public var localAPI = AIHTTPConfiguration(provider: .compatible, endpoint: "http://127.0.0.1:11434/v1", local: true)
     public var http: AIHTTPConfiguration { connection == .local ? localAPI : api }
-    public var isConfigured: Bool { connection == .acp ? ACPProvider(rawValue: provider) != nil : (try? http.validate()) != nil }
+    /// Apple Intelligence carries no settings of its own; whether the model is actually usable is
+    /// a runtime question the app answers, because this layer cannot import FoundationModels.
+    public var isConfigured: Bool {
+        switch connection {
+        case .acp: return ACPProvider(rawValue: provider) != nil
+        case .apple: return true
+        case .byok, .local: return (try? http.validate()) != nil
+        }
+    }
     public var project = ""
     public enum CodingKeys: String, CodingKey { case provider, project, connection, api, localAPI }
     public init() {}

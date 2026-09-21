@@ -12,9 +12,18 @@ final class ACPModel: ObservableObject {
     @Published var submitting = false
     private var configuration = AIConfiguration()
     var credentials = AICredentials.keychain
-    var usesAPI: Bool { configuration.connection != .acp }
-    var providerTitle: String { usesAPI ? configuration.http.model : (ACPProvider(rawValue: provider)?.title ?? provider) }
-    var configured: Bool { usesAPI ? configuration.isConfigured : ACPProvider(rawValue: provider) != nil }
+    /// Apple's model runs in this process, so it uses neither helper.
+    var usesApple: Bool { configuration.connection == .apple }
+    var usesAPI: Bool { configuration.connection.usesHTTP }
+    private var apple: AppleFoundationModel.Conversation?
+    var providerTitle: String {
+        if usesApple { return AIConnectionKind.apple.title }
+        return usesAPI ? configuration.http.model : (ACPProvider(rawValue: provider)?.title ?? provider)
+    }
+    var configured: Bool {
+        if usesApple { return AppleFoundationModel.availability.isReady }
+        return usesAPI ? configuration.isConfigured : ACPProvider(rawValue: provider) != nil
+    }
 
     func configure(_ value: AIConfiguration) {
         guard !active else { return }
@@ -43,6 +52,7 @@ final class ACPModel: ObservableObject {
 
     func start() {
         disconnect()
+        if usesApple { startApple(); return }
         if usesAPI { startAPI(); return }
         let current = generation
         state = ACPState(); state.phase = "starting"; state.status = "Connecting…"; error = nil
@@ -79,7 +89,8 @@ final class ACPModel: ObservableObject {
                 self.read()
             }
         }
-        if usesAPI { apiProxy()?.prompt(text: text, reply: reply) }
+        if usesApple { promptApple(text, reply: reply) }
+        else if usesAPI { apiProxy()?.prompt(text: text, reply: reply) }
         else { proxy()?.acpPrompt(text: text, reply: reply) }
     }
     func cancel() {
@@ -90,7 +101,8 @@ final class ACPModel: ObservableObject {
             guard let self, self.generation == current else { return }
             self.error = error; self.read()
         } }
-        if usesAPI { apiProxy()?.cancel { reply(nil) } }
+        if usesApple { apple?.cancel(); state.phase = "ready"; state.status = "Ready."; submitting = false }
+        else if usesAPI { apiProxy()?.cancel { reply(nil) } }
         else { proxy()?.acpCancel(reply: reply) }
     }
     func choose(_ permission: ACPPermission, _ option: ACPPermission.Option) {
@@ -103,6 +115,7 @@ final class ACPModel: ObservableObject {
     }
     func disconnect() {
         generation = UUID(); timer?.invalidate(); timer = nil; reading = false; submitting = false
+        apple?.cancel(); apple = nil
         // Invalidation stops the provider even if it is waiting on a permission request.
         connection?.invalidate(); connection = nil
         state.phase = "disconnected"; state.status = "Conversation ended."; state.permissions = []; state.sessionID = nil
@@ -156,6 +169,42 @@ final class ACPModel: ObservableObject {
             }
         } catch { failed((error as? LocalizedError)?.errorDescription ?? "Couldn’t open AI connection.", current: current) }
     }
+    /// Apple Intelligence runs in this process: no helper, no polling, no network. Availability is
+    /// rechecked at connect time because the owner can switch it off in System Settings.
+    private func startApple() {
+        let availability = AppleFoundationModel.availability
+        guard availability.isReady else {
+            failed(availability.reason ?? "Apple Intelligence is unavailable.", current: generation)
+            return
+        }
+        apple = AppleFoundationModel.Conversation()
+        state = ACPState()
+        state.phase = "ready"
+        state.status = "Ready."
+        state.agentName = AIConnectionKind.apple.title
+        error = nil
+    }
+
+    private func promptApple(_ text: String, reply: @escaping (String?) -> Void) {
+        let current = generation
+        state.messages.append(ACPMessage(role: "You", text: text))
+        // The reply slot is created now and replaced as snapshots arrive, because FoundationModels
+        // streams the whole text so far rather than deltas.
+        let index = state.messages.count
+        state.messages.append(ACPMessage(role: "Assistant", text: ""))
+        reply(nil)
+        apple?.send(text, snapshot: { [weak self] snapshot in
+            guard let self, self.generation == current, self.state.messages.indices.contains(index) else { return }
+            self.state.messages[index] = ACPMessage(id: self.state.messages[index].id, role: "Assistant", text: snapshot)
+        }, finished: { [weak self] failure in
+            guard let self, self.generation == current else { return }
+            self.submitting = false
+            self.state.phase = "ready"
+            self.state.status = failure ?? "Ready."
+            if let failure { self.error = failure }
+        })
+    }
+
     private func startAPIPolling() {
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in self?.read() }
