@@ -844,6 +844,29 @@ sendCoreKey("\u{1b}", code: 53)
 verify(!corePanel.isVisible && dictionary.input.isEmpty, "Escape dismisses and clears dictionary")
 print("PASS: dictionary routing, native text editing, Return, mode exit and Escape cleanup")
 
+/// Finds a control by its accessibility label or title and returns its frame in window coordinates,
+/// so Settings clicks follow the layout instead of hard-coded points. On a miss it prints every
+/// label it saw so a layout change is diagnosable from one run.
+func accessibilityFrame(_ name: String, in window: NSWindow) -> NSRect? {
+    var seen: [String] = []
+    func search(_ element: AnyObject, depth: Int) -> NSRect? {
+        guard depth < 60 else { return nil }
+        let label = element.accessibilityLabel?() ?? nil
+        let title = element.accessibilityTitle?() ?? nil
+        for text in [label, title].compactMap({ $0 }) where !text.isEmpty {
+            seen.append(text)
+            if text == name, let frame = element.accessibilityFrame?(), frame.width > 0 { return window.convertFromScreen(frame) }
+        }
+        for child in (element.accessibilityChildren?() ?? nil) ?? [] {
+            if let found = search(child as AnyObject, depth: depth + 1) { return found }
+        }
+        return nil
+    }
+    if let found = search(window.contentView!, depth: 0) { return found }
+    print("Accessibility labels seen while looking for \(name): \(seen)")
+    return nil
+}
+
 // Settings navigation uses real clicks across the sidebar row, with isolated configuration.
 app.setActivationPolicy(.regular)
 app.activate(ignoringOtherApps: true)
@@ -874,11 +897,15 @@ func clickSettings(_ point: NSPoint) {
     }
     RunLoop.main.run(until: Date().addingTimeInterval(0.15))
 }
-clickSettings(NSPoint(x: 175, y: 500 - 124))
-verify(settingsController.state.section == "Status Bar", "Whole Status Bar sidebar row is clickable")
-clickSettings(NSPoint(x: 175, y: 500 - 166))
-verify(settingsController.state.section == "AI", "Whole AI sidebar row is clickable")
-for section in ["General", "Status Bar", "AI"] {
+func clickSettings(_ name: String, trailing: Bool = false) {
+    guard let frame = accessibilityFrame(name, in: settingsWindow) else { verify(false, "Settings shows \(name)"); return }
+    clickSettings(NSPoint(x: trailing ? frame.maxX - 16 : frame.midX, y: frame.midY))
+}
+clickSettings("Status Bar")
+verify(settingsController.state.section == "Status Bar", "Status Bar sidebar row is clickable")
+clickSettings("AI")
+verify(settingsController.state.section == "AI", "AI sidebar row is clickable")
+for section in ["General", "Status Bar", "AI", "Extensions", "App Shortcuts", "Data & Configuration"] {
     settingsController.state.section = section
     RunLoop.main.run(until: Date().addingTimeInterval(0.15))
     let content = settingsWindow.contentView!
@@ -897,10 +924,10 @@ settingsController.showWindow(nil)
 settingsController.state.section = "AI"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 print("CHECK: Settings Connect ACP")
-clickSettings(NSPoint(x: 280, y: 500 - 309))
+clickSettings("Connect ACP")
 verify(openedAI.count == 1 && openedAI[0].provider == "claude" && openedAI[0].project.isEmpty, "Connect ACP starts general chat with no project selection")
 print("CHECK: Settings project sheet")
-clickSettings(NSPoint(x: 600, y: 500 - 226))
+clickSettings("Choose Folder…")
 let sheetDeadline = Date().addingTimeInterval(3)
 while settingsWindow.attachedSheet == nil && Date() < sheetDeadline { RunLoop.main.run(until: Date().addingTimeInterval(0.05)) }
 verify(settingsWindow.attachedSheet != nil, "Choose Project opens a native sheet")
@@ -911,9 +938,9 @@ RunLoop.main.run(until: Date().addingTimeInterval(0.3))
 verify(settingsWindow.attachedSheet == nil, "Project selection can be cancelled")
 settingsController.state.section = "Status Bar"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
-clickSettings(NSPoint(x: 243, y: 500 - 120))
+clickSettings("Herdr agent activity", trailing: true)
 verify(settingsController.state.config.promotedHarness == nil, "Disabling Herdr hides its status source")
-clickSettings(NSPoint(x: 243, y: 500 - 120))
+clickSettings("Herdr agent activity", trailing: true)
 verify(settingsController.state.config.promotedHarness == "claude", "Re-enabling Herdr preserves the chosen filter")
 settingsWindow.cancelOperation(nil)
 print("PASS: Status Bar and AI Settings native navigation, minimum size and dismissal")

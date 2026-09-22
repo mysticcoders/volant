@@ -11,9 +11,9 @@ struct ShortcutControl: View {
     @State private var error: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .trailing, spacing: 3) {
             ShortcutRecorder(value: Binding(get: { value }, set: { persist($0) }), removable: true)
-                .frame(height: 32)
+                .frame(height: 26)
                 .accessibilityLabel(title + " shortcut: " + (value.isEmpty ? "Not set" : value))
                 .accessibilityAction(named: "Remove shortcut") { persist("") }
             if let error {

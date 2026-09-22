@@ -79,31 +79,27 @@ private struct SettingsView: View {
     @State private var error: String?
     @State private var loginStatus = SMAppService.mainApp.status
     private let sections = ["General", "Status Bar", "AI", "Extensions", "App Shortcuts", "Data & Configuration"]
+    private let symbols = ["General": "gearshape", "Status Bar": "menubar.rectangle", "AI": "sparkles",
+                           "Extensions": "puzzlepiece.extension", "App Shortcuts": "command", "Data & Configuration": "externaldrive"]
 
     var body: some View {
         HStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Volant").font(.title2.bold()).padding(.bottom, 18)
+            List(selection: Binding(get: { state.section }, set: { if let section = $0 { state.section = section } })) {
                 ForEach(sections, id: \.self) { section in
-                    Button { state.section = section } label: {
-                        Text(section).frame(maxWidth: .infinity, alignment: .leading).padding(10)
-                            .contentShape(Rectangle())
-                            .background(state.section == section ? Color.accentColor.opacity(0.16) : .clear, in: RoundedRectangle(cornerRadius: 7))
-                    }.buttonStyle(.plain)
+                    Label(section, systemImage: symbols[section] ?? "circle").tag(section)
                 }
-                Spacer()
-            }.padding(18).frame(width: 205)
+            }
+            .listStyle(.sidebar)
+            .frame(width: 190)
             Divider()
-            VStack(alignment: .leading, spacing: 18) {
-                Text(state.section).font(.title2.bold())
+            Group {
                 if state.section == "General" { general }
                 else if state.section == "Status Bar" { statusBar }
                 else if state.section == "AI" { AISettingsView(model: acp, configURL: configURL, onChange: onChange, openConversation: openAI, chooseProject: chooseAIProject) }
                 else if state.section == "Extensions" { ExtensionSettingsView(configURL: configURL, onChange: onChange) }
                 else if state.section == "App Shortcuts" { shortcuts }
                 else { data }
-                Spacer(minLength: 0)
-            }.padding(24).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .sheet(item: $state.editing) { app in
@@ -115,91 +111,123 @@ private struct SettingsView: View {
     }
 
     private var general: some View {
-        ScrollView {
-        VStack(alignment: .leading, spacing: 14) {
-            Toggle("Show Volant in the Dock", isOn: boolean("showInDock", state.config.showInDock))
-            Toggle("Show launcher when Volant starts", isOn: boolean("showOnLaunch", state.config.showOnLaunch))
-            Toggle("Launch at Login", isOn: Binding(get: { loginStatus == .enabled }, set: { enabled in
-                do {
-                    if enabled { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
-                    loginStatus = SMAppService.mainApp.status
-                } catch { self.error = error.localizedDescription; loginStatus = SMAppService.mainApp.status }
-            }))
-            if loginStatus == .requiresApproval {
-                Text("Allow Volant in System Settings → General → Login Items.").font(.callout).foregroundStyle(.secondary)
-                Button("Open Login Items") { SMAppService.openSystemSettingsLoginItems() }
+        Form {
+            Section {
+                Toggle("Show Volant in the Dock", isOn: boolean("showInDock", state.config.showInDock))
+                Toggle("Show launcher when Volant starts", isOn: boolean("showOnLaunch", state.config.showOnLaunch))
+                Toggle("Launch at Login", isOn: Binding(get: { loginStatus == .enabled }, set: { enabled in
+                    do {
+                        if enabled { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
+                        loginStatus = SMAppService.mainApp.status
+                    } catch { self.error = error.localizedDescription; loginStatus = SMAppService.mainApp.status }
+                }))
+                if loginStatus == .requiresApproval {
+                    LabeledContent {
+                        Button("Open Login Items") { SMAppService.openSystemSettingsLoginItems() }
+                    } label: {
+                        Text("Allow Volant in System Settings → General → Login Items.").foregroundStyle(.secondary)
+                    }
+                }
             }
-            Divider()
-            if !state.registrationErrors.isEmpty { Text(state.registrationErrors.joined(separator: "\n")).font(.callout).foregroundStyle(.red) }
-            GlobalShortcutRow(title: "Show Volant", key: "summonHotKey", value: state.config.summonHotKey, configURL: configURL, onChange: onChange)
-            GlobalShortcutRow(title: "Open Notes", key: "notesHotKey", value: state.config.notesHotKey, configURL: configURL, onChange: onChange)
-            GlobalShortcutRow(title: "Search Emoji", key: "emojiHotKey", value: state.config.emojiHotKey, configURL: configURL, onChange: onChange)
-            GlobalShortcutRow(title: "Dictate Text", key: "talkHotKey", value: state.config.talkHotKey, configURL: configURL, onChange: onChange)
-            Text("Hold the dictation shortcut while you speak and let go to copy the text, or tap it once to start and again to stop.").font(.callout).foregroundStyle(.secondary)
-            Text("Click a shortcut and press a new combination. Changes save automatically. Hover to remove a shortcut.").font(.callout).foregroundStyle(.secondary)
-        }.frame(maxWidth: .infinity, alignment: .leading)
-        }.onAppear { loginStatus = SMAppService.mainApp.status }
+            Section {
+                if !state.registrationErrors.isEmpty { Text(state.registrationErrors.joined(separator: "\n")).foregroundStyle(.red) }
+                GlobalShortcutRow(title: "Show Volant", key: "summonHotKey", value: state.config.summonHotKey, configURL: configURL, onChange: onChange)
+                GlobalShortcutRow(title: "Open Notes", key: "notesHotKey", value: state.config.notesHotKey, configURL: configURL, onChange: onChange)
+                GlobalShortcutRow(title: "Search Emoji", key: "emojiHotKey", value: state.config.emojiHotKey, configURL: configURL, onChange: onChange)
+                GlobalShortcutRow(title: "Dictate Text", key: "talkHotKey", value: state.config.talkHotKey, configURL: configURL, onChange: onChange)
+            } header: {
+                Text("Keyboard Shortcuts")
+            } footer: {
+                Text("Click a shortcut and press a new combination; changes save immediately. Hold the dictation shortcut while you speak and let go to copy the text, or tap it to start and again to stop.")
+            }
+        }
+        .formStyle(.grouped)
+        .onAppear { loginStatus = SMAppService.mainApp.status }
     }
 
     @AppStorage("showHerdrDetails") private var showHerdrDetails = false
     private var statusBar: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("Pin the sources you want below the launcher’s search field. Each source is independent; unpin all to hide the status area.").foregroundStyle(.secondary)
-            Toggle("Herdr agent activity", isOn: Binding(get: { state.config.statusBar.sources.contains("herdr") }, set: { value in
-                apply { try Preferences.updateStatusBar(enabled: value, at: configURL) }
-            }))
-            Picker("Agents", selection: Binding(get: { state.config.statusBar.herdrFilter }, set: { value in
-                apply { try Preferences.updateStatusBar(filter: value, at: configURL) }
-            })) {
-                ForEach(Preferences.harnessOptions, id: \.id) { Text($0.title).tag($0.id) }
-            }.disabled(!state.config.statusBar.sources.contains("herdr"))
-            Toggle("Show pane details", isOn: $showHerdrDetails)
-                .disabled(!state.config.statusBar.sources.contains("herdr"))
-            Text("Includes Local and enabled machines saved in Herdr. Manage remote connections in Herdr. AI connections are configured separately in AI.").font(.callout).foregroundStyle(.secondary)
-            Divider()
-            Toggle("AI Chat activity", isOn: Binding(get: { state.config.statusBar.sources.contains("ai-chat") }, set: { value in
-                apply { try Preferences.updateStatusBar(source: "ai-chat", enabled: value, at: configURL) }
-            }))
-            Text("Show a shortcut to your active Volant conversation, its provider, and whether it needs your attention. Hidden when no conversation is active.")
-                .font(.callout).foregroundStyle(.secondary)
+        Form {
+            Section {
+                Toggle("Herdr agent activity", isOn: Binding(get: { state.config.statusBar.sources.contains("herdr") }, set: { value in
+                    apply { try Preferences.updateStatusBar(enabled: value, at: configURL) }
+                }))
+                Picker("Agents", selection: Binding(get: { state.config.statusBar.herdrFilter }, set: { value in
+                    apply { try Preferences.updateStatusBar(filter: value, at: configURL) }
+                })) {
+                    ForEach(Preferences.harnessOptions, id: \.id) { Text($0.title).tag($0.id) }
+                }.disabled(!state.config.statusBar.sources.contains("herdr"))
+                Toggle("Show pane details", isOn: $showHerdrDetails)
+                    .disabled(!state.config.statusBar.sources.contains("herdr"))
+            } header: {
+                Text("Herdr")
+            } footer: {
+                Text("Includes Local and enabled machines saved in Herdr. Manage remote connections in Herdr.")
+            }
+            Section {
+                Toggle("AI Chat activity", isOn: Binding(get: { state.config.statusBar.sources.contains("ai-chat") }, set: { value in
+                    apply { try Preferences.updateStatusBar(source: "ai-chat", enabled: value, at: configURL) }
+                }))
+            } header: {
+                Text("AI Chat")
+            } footer: {
+                Text("Links to your active conversation, its provider, and whether it needs you. Hidden when no conversation is active. Sources appear below the launcher’s search field; turn all of them off to hide the status area.")
+            }
         }
+        .formStyle(.grouped)
     }
 
     private var shortcuts: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Add an alias or record a hotkey. Aliases save on Return or when you leave the field.").foregroundStyle(.secondary)
-            TextField("Search applications", text: $search).textFieldStyle(.roundedBorder)
-            if !state.registrationErrors.isEmpty {
-                Text(state.registrationErrors.joined(separator: "\n")).font(.callout).foregroundStyle(.red).textSelection(.enabled)
-            }
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 6) {
+                TextField("Search applications", text: $search).textFieldStyle(.roundedBorder)
+                Text("Type an alias to open the app from the launcher, or record a global hotkey. Aliases save on Return or when you leave the field.")
+                    .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                if !state.registrationErrors.isEmpty {
+                    Text(state.registrationErrors.joined(separator: "\n")).font(.callout).foregroundStyle(.red).textSelection(.enabled)
+                }
+            }.padding(12)
+            Divider()
             List {
                 ForEach(state.apps.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }) { app in
                     AppBindingRow(app: app, config: state.config, configURL: configURL, onChange: onChange)
                 }
-            }.listStyle(.inset).overlay {
-                if state.apps.isEmpty { Text("No applications indexed yet. This list updates automatically.").foregroundStyle(.secondary).padding() }
+            }.listStyle(.plain).overlay {
+                if state.apps.isEmpty { Text("No applications indexed yet. This list updates automatically.").foregroundStyle(.secondary) }
             }
         }
     }
 
     private var data: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("Configuration").font(.headline)
-            Text("Keep your aliases, shortcuts and preferences in a portable JSON file.").foregroundStyle(.secondary)
-            HStack {
-                Button("Open Configuration…") { NSWorkspace.shared.open(configURL) }
-                Button("Reveal in Finder") { NSWorkspace.shared.activateFileViewerSelecting([configURL]) }
+        Form {
+            Section {
+                LabeledContent("config.json") {
+                    Button("Open") { NSWorkspace.shared.open(configURL) }
+                    Button("Reveal in Finder") { NSWorkspace.shared.activateFileViewerSelecting([configURL]) }
+                }
+                LabeledContent("Apply edits made outside Settings") {
+                    Button("Reload Configuration") { onChange() }
+                }
+            } header: {
+                Text("Configuration")
+            } footer: {
+                Text("Aliases, shortcuts and preferences live in one portable JSON file.")
             }
-            Button("Reload Configuration") { onChange() }
-            Divider()
-            Text("Import & Backup").font(.headline)
-            Button("Import from Raycast…", action: importRaycast)
-            HStack {
-                Button("Import Backup…") { if Backup.importBackup() { onChange() } }
-                Button("Export Backup…") { Backup.export() }
+            Section {
+                LabeledContent("Raycast") {
+                    Button("Import from Raycast…", action: importRaycast)
+                }
+                LabeledContent("Volant backup") {
+                    Button("Import…") { if Backup.importBackup() { onChange() } }
+                    Button("Export…") { Backup.export() }
+                }
+            } header: {
+                Text("Import & Backup")
+            } footer: {
+                Text("Imports show a preview before applying changes. Export a backup before moving to another Mac.")
             }
-            Text("Imports show a preview before applying changes. Back up your data before moving it to another Mac.").font(.callout).foregroundStyle(.secondary)
         }
+        .formStyle(.grouped)
     }
     private func boolean(_ key: String, _ value: Bool) -> Binding<Bool> {
         Binding(get: { value }, set: { newValue in apply { try Preferences.updateBoolean(key, value: newValue, at: configURL) } })

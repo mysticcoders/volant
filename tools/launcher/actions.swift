@@ -281,7 +281,7 @@ key("\r", 36)
 verify(extensionSettingsRequests == 1 && panel.model.pendingExtension == nil, "Master off routes to Settings without offering enable or executing")
 func renderCommunitySettings(_ name: String) throws {
     let view = NSHostingView(rootView: ExtensionSettingsView(configURL: panel.model.actionConfigURL, onChange: {}, roots: extensionRoots)
-        .padding(16).background(Color(nsColor: .windowBackgroundColor)))
+        .background(Color(nsColor: .windowBackgroundColor)))
     let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 440), styleMask: [.titled], backing: .buffered, defer: false)
     window.contentView = view; window.makeKeyAndOrderFront(nil); settle()
     try render(name, view: view)
@@ -443,6 +443,29 @@ UserDefaults.standard.set(false, forKey: "showHerdrDetails"); settle()
 panel.orderOut(nil)
 print("PASS: passive Herdr question previews, target changes, loading, error, and resolved states")
 
+/// Finds a control by its accessibility label or title and returns its frame in window coordinates,
+/// so Settings clicks follow the layout instead of hard-coded points. On a miss it prints every
+/// label it saw so a layout change is diagnosable from one run.
+func accessibilityFrame(_ name: String, in window: NSWindow) -> NSRect? {
+    var seen: [String] = []
+    func search(_ element: AnyObject, depth: Int) -> NSRect? {
+        guard depth < 60 else { return nil }
+        let label = element.accessibilityLabel?() ?? nil
+        let title = element.accessibilityTitle?() ?? nil
+        for text in [label, title].compactMap({ $0 }) where !text.isEmpty {
+            seen.append(text)
+            if text == name, let frame = element.accessibilityFrame?(), frame.width > 0 { return window.convertFromScreen(frame) }
+        }
+        for child in (element.accessibilityChildren?() ?? nil) ?? [] {
+            if let found = search(child as AnyObject, depth: depth + 1) { return found }
+        }
+        return nil
+    }
+    if let found = search(window.contentView!, depth: 0) { return found }
+    print("Accessibility labels seen while looking for \(name): \(seen)")
+    return nil
+}
+
 // API/local Settings use fictional discovery and credentials, never host services or owner keys.
 let aiFixtureURL = root.appendingPathComponent("api-settings.json")
 try Data("{}".utf8).write(to: aiFixtureURL)
@@ -458,13 +481,14 @@ func renderAPISettings(_ kind: AIConnectionKind, provider: AIAPIProvider = .open
     }
     let model = ACPModel()
     let view = NSHostingView(rootView: AISettingsView(model: model, configURL: aiFixtureURL, onChange: {}, openConversation: { _ in }, chooseProject: { _ in }, credentials: fakeCredentials, discovery: discovery)
-        .padding(16).background(Color(nsColor: .windowBackgroundColor)))
+        .background(Color(nsColor: .windowBackgroundColor)))
     let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 660), styleMask: [.titled], backing: .buffered, defer: false)
     window.contentView = view; window.makeKeyAndOrderFront(nil); settle()
     try render("ai-\(kind.rawValue)-\(provider.rawValue)\(offline ? "-offline" : "")", view: view)
     verify(!model.active && credentialWrites == 0, "Opening AI Settings never starts chat or writes credentials")
     if kind == .local && !offline {
-        let point = NSPoint(x: 435, y: 660 - 100)
+        guard let use = accessibilityFrame("Use", in: window) else { verify(false, "Local server offers Use"); return }
+        let point = NSPoint(x: use.midX, y: use.midY)
         func event(_ type: NSEvent.EventType) -> NSEvent {
             NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
                               windowNumber: window.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: type == .leftMouseDown ? 1 : 0)!

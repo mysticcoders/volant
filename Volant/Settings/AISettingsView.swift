@@ -17,8 +17,8 @@ struct AISettingsView: View {
     @State private var loaded = false
     @State private var keyDraft = ""
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+        Form {
+            Section {
                 Picker("Connection", selection: $config.connection) {
                     ForEach(AIConnectionKind.allCases) { Text($0.title).tag($0) }
                 }.pickerStyle(.segmented).disabled(!loaded)
@@ -26,22 +26,32 @@ struct AISettingsView: View {
                         keyDraft = ""; discovery.cancel(); persist()
                         if kind == .local { discovery.discover() }
                     }
-                if config.connection == .acp { acpControls }
-                else if config.connection == .apple { appleControls }
-                else { apiControls }
+            }
+            if config.connection == .acp { acpControls }
+            else if config.connection == .apple { appleControls }
+            else { apiControls }
+            Section {
                 if model.active {
-                    Text("Current conversation: \(model.providerTitle). Settings apply to the next conversation.").font(.callout).foregroundStyle(.secondary)
-                    Button("Open Current Conversation") { openConversation(config) }
+                    LabeledContent("Current conversation: \(model.providerTitle)") {
+                        Button("Open Current Conversation") { openConversation(config) }
+                    }
                 } else {
-                    Button(config.connection == .acp ? "Connect ACP" : "Open AI Chat") {
-                        if persist() { openConversation(config) }
-                    }.disabled(!config.isConfigured || !loaded || (config.connection == .apple && !appleAvailability.isReady))
+                    LabeledContent(config.isConfigured ? "Ready" : "Finish the settings above to connect") {
+                        Button(config.connection == .acp ? "Connect ACP" : "Open AI Chat") {
+                            if persist() { openConversation(config) }
+                        }.disabled(!config.isConfigured || !loaded || (config.connection == .apple && !appleAvailability.isReady))
+                    }
                 }
-                if let feedback {
-                    Text(feedback).font(.callout).foregroundStyle(failed ? Color.red : Color.secondary).accessibilityLabel(feedback)
+            } footer: {
+                VStack(alignment: .leading, spacing: 4) {
+                    if model.active { Text("Settings apply to the next conversation.") }
+                    if let feedback {
+                        Text(feedback).foregroundStyle(failed ? Color.red : Color.secondary).accessibilityLabel(feedback)
+                    }
                 }
-            }.frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
+        .formStyle(.grouped)
         .onAppear {
             do {
                 config = try AIConfiguration.load(at: configURL); saved = config; loaded = true
@@ -55,62 +65,56 @@ struct AISettingsView: View {
 
     /// Apple's model has nothing to configure. What matters is whether it can run here at all, and
     /// the reason is shown rather than leaving a disabled button unexplained.
-    @ViewBuilder private var appleControls: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Runs Apple's on-device model. No API key, no network request and no helper process; the conversation stays on this Mac.")
-                .font(.callout).foregroundStyle(.secondary)
+    private var appleControls: some View {
+        Section {
             if let reason = appleAvailability.reason {
-                Label(reason, systemImage: "exclamationmark.triangle")
-                    .font(.callout).foregroundStyle(.secondary)
+                Label(reason, systemImage: "exclamationmark.triangle").foregroundStyle(.secondary)
             } else {
                 Label("Available on this Mac.", systemImage: "checkmark.circle")
-                    .font(.callout).foregroundStyle(.secondary)
             }
+        } header: {
+            Text("Apple Intelligence")
+        } footer: {
+            Text("Runs Apple's on-device model. No API key, no network request and no helper process; the conversation stays on this Mac.")
         }
     }
 
     private var acpControls: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("ACP connections").font(.headline)
+        Section {
             Picker("Provider", selection: $config.provider) {
                 Text("Choose a provider…").tag("")
                 ForEach(ACPProvider.allCases) { Text($0.title).tag($0.rawValue) }
             }.disabled(!loaded).onChange(of: config.provider) { _, _ in persist() }
-            Text("Uses your agent’s existing CLI login. Sign in with that provider before connecting.").foregroundStyle(.secondary)
-            HStack {
-                Text(config.project.isEmpty ? "General chat (no project)" : URL(fileURLWithPath: config.project).lastPathComponent)
-                    .lineLimit(1).help(config.project)
-                Spacer()
+            LabeledContent("Working folder") {
+                Text(config.project.isEmpty ? "General chat" : URL(fileURLWithPath: config.project).lastPathComponent)
+                    .lineLimit(1).help(config.project).foregroundStyle(.secondary)
+                if !config.project.isEmpty { Button("Clear") { config.project = ""; persist() }.help("Use General Chat") }
                 Button("Choose Folder…") { chooseProject { url in if let url { config.project = url.path; persist() } } }.disabled(!loaded)
             }
-            if !config.project.isEmpty { Button("Use General Chat") { config.project = ""; persist() } }
-            Text("A working folder is optional. General chat uses Volant’s own folder. Your agent’s permissions still control tool access.").font(.callout).foregroundStyle(.secondary)
+        } header: {
+            Text("ACP")
+        } footer: {
+            Text("Uses your agent’s existing CLI login; sign in with that provider first. A working folder is optional and is not a sandbox: your agent’s permissions still control tool access.")
         }
     }
     private var httpBinding: Binding<AIHTTPConfiguration> {
         Binding(get: { config.http }, set: { if config.connection == .local { config.localAPI = $0 } else { config.api = $0 } })
     }
-    private var apiControls: some View {
-        VStack(alignment: .leading, spacing: 12) {
+    @ViewBuilder private var apiControls: some View {
+        if config.connection == .local { localServers }
+        Section {
             if config.connection == .byok {
-                Text("Bring your own key").font(.headline)
                 Picker("Provider", selection: $config.api.provider) {
                     ForEach(AIAPIProvider.allCases) { Text($0.title).tag($0) }
                 }.onChange(of: config.api.provider) { _, provider in
                     config.api.endpoint = provider.endpoint; config.api.model = ""; keyDraft = ""; discovery.cancel(); persist()
                 }
-                Text("Uses your API account and its billing. Keys stay in macOS Keychain and are excluded from configuration backups.")
-                    .font(.callout).foregroundStyle(.secondary)
-            } else {
-                localServers
-                Text("Connects to a model server already running on this Mac. Detection lists available models; it does not load or download them.")
-                    .font(.callout).foregroundStyle(.secondary)
             }
             if config.http.provider == .compatible {
-                TextField("API base URL", text: httpBinding.endpoint).textFieldStyle(.roundedBorder)
+                TextField("API base URL", text: httpBinding.endpoint)
                     .onSubmit { discovery.cancel(); keyDraft = ""; persist() }
             }
-            TextField("Model ID", text: httpBinding.model).textFieldStyle(.roundedBorder).onSubmit { persist() }
+            TextField("Model ID", text: httpBinding.model).onSubmit { persist() }
             if !discovery.models.isEmpty {
                 Picker("Available models", selection: httpBinding.model) {
                     Text("Choose a model…").tag("")
@@ -118,37 +122,50 @@ struct AISettingsView: View {
                     ForEach(discovery.models, id: \.self) { Text($0).tag($0) }
                 }.onChange(of: config.http.model) { _, _ in persist() }
             }
-            SecureField(config.connection == .local ? "API key (optional)" : "API key", text: $keyDraft).textFieldStyle(.roundedBorder)
-            HStack {
+            SecureField(config.connection == .local ? "API key (optional)" : "API key", text: $keyDraft)
+            LabeledContent {
                 Button("Save Key") { saveKey() }.disabled(keyDraft.isEmpty || !loaded)
                 Button("Remove Key") { removeKey() }.disabled(!loaded)
-                Spacer()
-                if discovery.loading { ProgressView().controlSize(.small) }
                 Button("Test Connection") { testConnection() }.disabled(discovery.loading || !loaded)
+            } label: {
+                HStack(spacing: 6) {
+                    if discovery.loading { ProgressView().controlSize(.small) }
+                    if let message = discovery.message { Text(message).foregroundStyle(.secondary) }
+                }
             }
-            if let message = discovery.message { Text(message).font(.callout).foregroundStyle(.secondary) }
-            Text("Text chat only. API connections do not get ACP’s filesystem, terminal or other agent tools.").font(.caption).foregroundStyle(.secondary)
-        }.disabled(!loaded)
+        } header: {
+            Text(config.connection == .byok ? "Bring Your Own Key" : "Model")
+        } footer: {
+            Text(config.connection == .byok
+                 ? "Uses your API account and its billing. Keys stay in macOS Keychain and are excluded from configuration backups. Text chat only: no filesystem, terminal or other agent tools."
+                 : "Text chat only: no filesystem, terminal or other agent tools.")
+        }
+        .disabled(!loaded)
     }
     private var localServers: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack { Text("Local model servers").font(.headline); Spacer(); Button("Scan Again") { discovery.discover() } }
+        Section {
+            if discovery.servers.isEmpty { Text("No servers found yet.").foregroundStyle(.secondary) }
             ForEach(discovery.servers) { server in
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text(server.name)
-                        Spacer()
-                        if !server.models.isEmpty {
-                            Button("Use") {
-                                config.localAPI = server.configuration; config.localAPI.model = server.models[0]
-                                discovery.select(server); keyDraft = ""; persist()
-                            }
+                LabeledContent {
+                    if !server.models.isEmpty {
+                        Button("Use") {
+                            config.localAPI = server.configuration; config.localAPI.model = server.models[0]
+                            discovery.select(server); keyDraft = ""; persist()
                         }
                     }
-                    Text(server.message).font(.caption).foregroundStyle(.secondary)
-                }.padding(8).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+                } label: {
+                    Text(server.name)
+                    Text(server.message)
+                }
             }
+        } header: {
+            HStack {
+                Text("Local Model Servers")
+                Spacer()
+                Button("Scan Again") { discovery.discover() }.controlSize(.small)
+            }
+        } footer: {
+            Text("Connects to a model server already running on this Mac. Detection lists available models; it does not load or download them.")
         }
     }
     private func saveKey() {

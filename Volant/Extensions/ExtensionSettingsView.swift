@@ -14,41 +14,40 @@ struct ExtensionSettingsView: View {
         installed = manager.extensions; problems = manager.loadErrors; communityAllowed = manager.communityAllowed
     }
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+        Form {
+            Section {
                 Toggle("Allow Community Extensions", isOn: Binding(get: { communityAllowed }, set: { allowed in
                     do { try manager.setCommunityAllowed(allowed, expected: communityAllowed); reload(); onChange() }
                     catch { self.error = error.localizedDescription; reload() }
                 })).accessibilityIdentifier("community-extensions-toggle")
+            } footer: {
                 Text("Off blocks community commands and discards results from active runs. Your individual choices are kept. Bundled extensions are controlled separately below.")
-                    .font(.callout).foregroundStyle(.secondary)
-                Text("Extensions start off. Enable one here or choose Enable and Run the first time you use it.")
-                    .font(.callout).foregroundStyle(.secondary)
-                Text("Try the bundled example: hello Andrew").font(.callout)
-                HStack {
-                    Button("Open Extensions Folder") { NSWorkspace.shared.open(ExtensionManager.directory) }
-                    Button("Refresh") { reload(); onChange() }
-                }
+            }
+            Section {
                 if installed.isEmpty { Text("No extensions installed.").foregroundStyle(.secondary) }
                 ForEach(installed) { ext in
-                    VStack(alignment: .leading, spacing: 6) {
-                        Toggle(ext.name, isOn: Binding(get: { ext.enabled }, set: { enabled in
-                            do { try manager.setEnabled(ext, enabled); reload(); onChange() }
-                            catch { self.error = error.localizedDescription; reload() }
-                        })).disabled(ext.communityBlocked).accessibilityIdentifier("extension-toggle-" + ext.id)
-                        Text(ext.isCommunity ? (ext.communityBlocked ? "Community · Blocked by master switch" : "Community") : "Bundled with Volant")
-                            .font(.caption).foregroundStyle(.secondary)
-                        Text(ext.accessDescription).font(.callout).foregroundStyle(.secondary)
-                        Text("Version \(ext.manifest.version)")
-                            .font(.caption).foregroundStyle(.secondary)
-                    }.padding(12).frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+                    Toggle(isOn: Binding(get: { ext.enabled }, set: { enabled in
+                        do { try manager.setEnabled(ext, enabled); reload(); onChange() }
+                        catch { self.error = error.localizedDescription; reload() }
+                    })) {
+                        Text(ext.name)
+                        Text((ext.isCommunity ? (ext.communityBlocked ? "Community · Blocked by master switch" : "Community") : "Bundled with Volant")
+                             + " · Version \(ext.manifest.version) · " + ext.accessDescription)
+                    }.disabled(ext.communityBlocked).accessibilityIdentifier("extension-toggle-" + ext.id)
                 }
-                ForEach(problems, id: \.self) { Text($0).font(.callout).foregroundStyle(.secondary) }
-                Text("Changed code or permissions require enabling again. Extensions run only when you invoke them.")
-                    .font(.caption).foregroundStyle(.secondary)
+                ForEach(problems, id: \.self) { Text($0).foregroundStyle(.secondary) }
+            } header: {
+                HStack {
+                    Text("Installed")
+                    Spacer()
+                    Button("Open Folder") { NSWorkspace.shared.open(ExtensionManager.directory) }.controlSize(.small)
+                    Button("Refresh") { reload(); onChange() }.controlSize(.small)
+                }
+            } footer: {
+                Text("Extensions start off and run only when you invoke them. Enable one here or choose Enable and Run the first time you use it; changed code or permissions require enabling again. Try the bundled example: hello Andrew")
             }
         }
+        .formStyle(.grouped)
         .onAppear(perform: reload)
         .alert("Couldn’t change extension", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
             Button("OK") { error = nil }
