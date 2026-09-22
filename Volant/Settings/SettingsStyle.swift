@@ -2,12 +2,13 @@ import AppKit
 import SwiftUI
 
 /// Grouped-form footers default to trailing, primary text on macOS 15; explanatory copy reads as
-/// a caption under its section instead.
+/// a leading caption under its section instead.
 struct SettingsFooter: View {
     let text: String
     init(_ text: String) { self.text = text }
     var body: some View {
         Text(text).font(.callout).foregroundStyle(.secondary)
+            .multilineTextAlignment(.leading)
             .frame(maxWidth: .infinity, alignment: .leading)
             .fixedSize(horizontal: false, vertical: true)
     }

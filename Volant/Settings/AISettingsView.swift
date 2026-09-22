@@ -49,7 +49,7 @@ struct AISettingsView: View {
                     if let feedback {
                         Text(feedback).foregroundStyle(failed ? Color.red : Color.secondary).accessibilityLabel(feedback)
                     }
-                }.font(.callout).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
+                }.font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.leading).frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .formStyle(.grouped)
@@ -113,10 +113,10 @@ struct AISettingsView: View {
                 }
             }
             if config.http.provider == .compatible {
-                TextField("API base URL", text: httpBinding.endpoint)
+                TextField("API base URL", text: httpBinding.endpoint, prompt: Text("https://"))
                     .onSubmit { discovery.cancel(); keyDraft = ""; persist() }
             }
-            TextField("Model ID", text: httpBinding.model).onSubmit { persist() }
+            TextField("Model ID", text: httpBinding.model, prompt: Text("Model name")).onSubmit { persist() }
             if !discovery.models.isEmpty {
                 Picker("Available models", selection: httpBinding.model) {
                     Text("Choose a model…").tag("")
@@ -124,7 +124,7 @@ struct AISettingsView: View {
                     ForEach(discovery.models, id: \.self) { Text($0).tag($0) }
                 }.onChange(of: config.http.model) { _, _ in persist() }
             }
-            SecureField(config.connection == .local ? "API key (optional)" : "API key", text: $keyDraft)
+            SecureField(config.connection == .local ? "API key (optional)" : "API key", text: $keyDraft, prompt: Text("Paste a key to save it"))
             LabeledContent {
                 Button("Save Key") { saveKey() }.disabled(keyDraft.isEmpty || !loaded)
                 Button("Remove Key") { removeKey() }.disabled(!loaded)
@@ -164,7 +164,7 @@ struct AISettingsView: View {
             HStack {
                 Text("Local Model Servers")
                 Spacer()
-                Button("Scan Again") { discovery.discover() }.controlSize(.small)
+                Button("Scan Again") { discovery.discover() }.controlSize(.small).font(.callout)
             }
         } footer: {
             SettingsFooter("Connects to a model server already running on this Mac. Detection lists available models; it does not load or download them.")

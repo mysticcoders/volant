@@ -40,8 +40,8 @@ struct ExtensionSettingsView: View {
                 HStack {
                     Text("Installed")
                     Spacer()
-                    Button("Open Folder") { NSWorkspace.shared.open(ExtensionManager.directory) }.controlSize(.small)
-                    Button("Refresh") { reload(); onChange() }.controlSize(.small)
+                    Button("Open Folder") { NSWorkspace.shared.open(ExtensionManager.directory) }.controlSize(.small).font(.callout)
+                    Button("Refresh") { reload(); onChange() }.controlSize(.small).font(.callout)
                 }
             } footer: {
                 SettingsFooter("Extensions start off and run only when you invoke them. Enable one here or choose Enable and Run the first time you use it; changed code or permissions require enabling again. Try the bundled example: hello Andrew")
