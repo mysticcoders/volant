@@ -22,6 +22,7 @@ struct HerdrQuestion: Codable, Equatable {
         guard text.utf8.count <= 128_000 else { return nil }
         if provider == "claude" { return parseClaude(text) }
         guard provider == "codex" else { return nil }
+        if let approval = parseCodexApproval(text) { return approval }
         let lines = text.components(separatedBy: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
         guard let header = lines.lastIndex(where: { $0.range(of: #"^Question [1-9][0-9]*/[1-9][0-9]* \([1-9][0-9]* unanswered\)$"#, options: .regularExpression) != nil }),
               let footer = lines[(header + 1)...].firstIndex(where: { Self.isCodexFooter($0) }),
