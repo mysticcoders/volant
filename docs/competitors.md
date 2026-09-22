@@ -163,17 +163,119 @@ App and file search, clipboard history, snippets, quicklinks, calculator, emoji,
 - https://github.com/SuperCmdLabs/SuperCmd — README, language statistics, releases, license
 - https://github.com/SuperCmdLabs/SuperCmd-v2-releases — contents, releases, absence of a license
 
+## Tuna
+
+Reviewed 2026-09-21 from the published documentation at tunaformac.com. Documentation only: no
+binary was downloaded, installed or inspected, so nothing here is measured the way the Raycast
+footprint comparison is.
+
+### Snapshot
+
+- macOS only. Public beta. Free tier plus a **$49 one-time unlock**, no subscription, three Macs.
+- Built on Quicksilver's grammar: **subject, then action, then an optional target**. `hello` →
+  `Append to File` → `notes.txt`; `Safari` → `Open File…` → `invoice.pdf`.
+- Four modes: Fuzzy (conventional launcher), Text (calculation, conversion, text actions), Talk
+  (on-device dictation), and Combo (for Leader Key users).
+- Extensions are **native Swift compiled against a shared TunaKit binary and executed inside
+  Tuna's own process**, packaged as `.tunaextension` with integrity hashes.
+- Free tier caps third-party extensions at three, clipboard history at one month, and dictation to
+  Apple Speech. Pro removes the caps and adds Parakeet and MLX Audio dictation, custom script
+  folders, and units and currency in Text mode.
+
+### Where Tuna is ahead
+
+- **A different command grammar, not a cheaper Raycast.** Every other product in this document,
+  Volant included, shares one shape: type a query, get ranked results, Return performs the primary
+  action. Tuna composes a verb against a noun and optionally a destination. It is the only
+  competitor here competing on interaction model rather than feature count or price.
+- **Dictation.** Talk Mode runs local speech models, with the paid tier offering Parakeet and MLX
+  Audio. Volant has nothing comparable.
+- **Extension reach.** Because extensions run in-process as native code with Keychain and OAuth
+  facilities in the API, the account-bound integrations that dominate Raycast's install counts are
+  straightforward to build. Volant's WebAssembly extensions cannot reach a network or a credential
+  at all today.
+
+### Where Volant is ahead
+
+- **The security boundary is architectural rather than curated.** Tuna's own distribution page
+  states that installing a native extension "require[s] an explicit trust decision because
+  extensions execute inside Tuna's process." Its boundary is social: extensions must be open
+  source, are reviewed, and the maintainer builds and signs them. Volant's is technical: WebAssembly
+  in a separate sandboxed XPC service, an explicit import allowlist, bounded memory and output, and
+  consent pinned to the module hash so changed code needs fresh approval.
+- **A verifiable privacy claim.** Tuna's privacy page describes what the app does not collect. It
+  does not mention App Sandbox, entitlements or Accessibility anywhere. Volant's claim is checkable
+  from the shipped binary: sandboxed, no network entitlement in the main app, no Accessibility
+  grant, Carbon hotkeys.
+- **Agent work.** Tuna's documentation describes AI prompts; nothing in it corresponds to Herdr
+  panes, ACP sessions or answering an agent's question from the launcher.
+
+### Roughly at parity
+
+Clipboard history encrypted at rest with a random key in the Keychain, on-device AI, file finding,
+custom scripts, themes, emoji picker replacement, a CLI and URL schemes. Both projects document
+their limits honestly: Tuna states plainly that encryption at rest does not help against a
+compromised account and that neither it nor macOS can promise secure erasure from SSD or backups,
+which is the same register as `docs/release-quality.md`.
+
+### Implications
+
+The synthesis below needs revising twice over. It said the field converges on "Raycast
+compatibility, cheaper". Vicinae already broke that by being cross-platform; Tuna breaks it by
+changing the grammar. Feature-count competition was already a losing race, and it is now not even
+the axis two of the four competitors are running on.
+
+Tuna is also the clearest working example of the extension trade Volant refused. They get
+account-bound integrations because the boundary is review and open source rather than a runtime
+cage, and they say so openly. That is a coherent position and it is not obviously wrong; it is a
+different answer to the question in issue #65, and seeing it shipped makes the choice concrete
+rather than theoretical. What cannot be had is both.
+
+Worth noting what Volant already owns: the Actions menu is subject-then-action, so the Quicksilver
+grammar is a promotion of an existing affordance rather than a rewrite, should it ever be wanted.
+And the one clear feature gap, dictation, has a path that does not exist for the others — see
+`docs/ai-connections.md` for the availability pattern and the Memoret note below.
+
+### Dictation has an existing path
+
+Memoret already solves this twice, and only one half transfers. `memoret-mac`'s `RecTranscriber`
+shells out to `ffmpeg` and `parakeet-mlx`; that is the approach Tuna sells as Pro, and it is the
+one Volant structurally cannot run, because App Sandbox does not execute arbitrary external
+binaries and the tools are user-installed.
+
+The transferable half is `memoret/ios/Memoret/Sources/AppleSpeechTranscriber.swift`: an actor over
+Apple's `SpeechAnalyzer` and `SpeechTranscriber` with `AssetInventory` handling model download,
+gated at `@available(iOS 26.0, *)`. macOS 26 has the same API, and the availability shape matches
+what already shipped for Apple Intelligence, so an unsupported system shows a reason rather than
+breaking. That lands Tuna's free tier equivalent, Apple Speech, inside the sandbox with no
+subprocess and no new entitlement — though push-to-talk triggers may still want Input Monitoring,
+which Volant currently refuses.
+
+### Not verified
+
+Release cadence, how long the beta has run, team size, install counts, and any performance or
+footprint figure. The extension runtime being Swift is inferred from the API's shape; the docs do
+not state it. Pages not read: search scoring, app enrichment, smart links, the CLI and URL schemes.
+
+### Sources
+
+- https://tunaformac.com/docs/start-here, /docs/how-commands-work, /docs/talk-mode
+- https://tunaformac.com/docs/extension-api, /docs/extension-distribution
+- https://tunaformac.com/docs/privacy-and-local-processing
+- https://tunaformac.com/pro
+
 ## Where this leaves Volant
 
-Reviewed across Raycast, Vicinae, and SuperCmd on 2026-09-19.
+Reviewed across Raycast, Vicinae, and SuperCmd on 2026-09-19; revised 2026-09-21 after adding Tuna.
 
-Two of the three compete with Volant for the same person; one mostly does not. Platform scope is what separates them.
+Platform scope separates the first three. Tuna separates itself on something else entirely.
 
 | | macOS | Windows | Linux |
 | --- | --- | --- | --- |
 | Raycast | Yes, primary | Public beta | No, and no announced plans |
 | Vicinae | Beta, macOS 26 | New in v0.29.0, 2026-09-18 | Yes, center of gravity |
 | SuperCmd | Yes, macOS 26 | No | No |
+| Tuna | Yes, beta | No | No |
 | Volant | Yes, macOS 15, Intel and Apple Silicon | No | No |
 
 **SuperCmd is the direct competitor.** Mac-only, native, privacy-forward, anti-subscription — it wants the same user Volant wants, and it converges with Vicinae on the same tactic of Raycast extension compatibility at a lower price. Competing with that on feature count or ecosystem breadth is a losing race and is not worth entering.
@@ -182,10 +284,24 @@ Two of the three compete with Volant for the same person; one mostly does not. P
 
 **The most useful consequence is the inverse.** Being Mac-only is not a limitation Volant is working around; it is what makes the security posture possible. App Sandbox, no network entitlement, Carbon hotkeys that need no Accessibility grant, and an AppKit and SwiftUI interface are all macOS-specific. A launcher targeting three operating systems structurally cannot offer them without maintaining a separate architecture per platform. Mac-only is therefore load-bearing, and the doc's scoping note at the top — that Linux and Windows support is not counted against Volant — understates it: the absence of those platforms is what the differentiation rests on.
 
+**Tuna is the counterexample to this document's own framing.** The synthesis above was built on
+the observation that the field converges on Raycast compatibility at a lower price. Vicinae already
+strained that by being cross-platform. Tuna breaks it outright: it is Mac-only, paid once, and
+competes on Quicksilver's subject-action-target grammar rather than on matching Raycast's feature
+list. Two of four competitors are therefore not running on the axis this document originally
+assumed, which is worth remembering before any decision justified by "keeping up".
+
+Tuna also matters as the clearest shipped example of the extension trade Volant declined. Its
+extensions are native Swift running inside the app's own process, with Keychain and OAuth in the
+API, and its boundary is curation: open source, reviewed, maintainer-signed. That buys the
+account-bound integrations Volant cannot reach. Volant's boundary is a WebAssembly cage in a
+separate XPC service with hash-pinned consent. Both are coherent; neither gets the other's benefit.
+Issue #65 is the place that decision belongs, and Tuna is evidence rather than an argument.
+
 Two positions are defensible because they are structural rather than a matter of effort.
 
-1. **A security posture the operating system enforces rather than one the vendor promises.** Every competitor reviewed runs unsandboxed, executes extensions with full Node privileges, and ships some form of telemetry. Volant is sandboxed, holds no network entitlement, requests no Accessibility or Input Monitoring grant, encrypts clipboard history by default, sends no telemetry, and is open source as shipped. Each of those is checkable against entitlements and source, which is precisely what the competitors cannot offer.
-2. **Agent workflows.** None of Raycast, Vicinae, or SuperCmd has Herdr pane discovery or native ACP conversations. This is the only capability Volant has that the category does not, and the competitive review reinforces that it is the wedge rather than a side feature.
+1. **A security posture the operating system enforces rather than one the vendor promises.** Every competitor reviewed runs unsandboxed and executes extension code with full process privileges — Node for the Raycast-compatible ones, native Swift in-process for Tuna — and ships some form of telemetry. Volant is sandboxed, holds no network entitlement, requests no Accessibility or Input Monitoring grant, encrypts clipboard history by default, sends no telemetry, and is open source as shipped. Each of those is checkable against entitlements and source, which is precisely what the competitors cannot offer.
+2. **Agent workflows.** None of Raycast, Vicinae, SuperCmd or Tuna has Herdr pane discovery or native ACP conversations. This is the only capability Volant has that the category does not, and the competitive review reinforces that it is the wedge rather than a side feature.
 
 A shared weakness worth using: both Vicinae and SuperCmd require macOS 26. Volant runs on macOS 15 and still ships Intel builds.
 
