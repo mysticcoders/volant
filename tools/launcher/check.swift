@@ -915,9 +915,18 @@ func clickHerdrSwitch() {
     guard let frame = topSwitchFrame(in: settingsWindow) else { verify(false, "Status Bar shows the Herdr switch"); return }
     clickSettings(NSPoint(x: frame.midX, y: frame.midY))
 }
-clickSettings("Status Bar")
+/// SwiftUI draws sidebar text without a readable field, so rows are found by their fixed order.
+func clickSidebarRow(_ index: Int) {
+    func views(_ view: NSView) -> [NSView] { [view] + view.subviews.flatMap(views) }
+    guard let table = views(settingsWindow.contentView!).compactMap({ $0 as? NSTableView }).first(where: { $0.numberOfRows == 6 }) else {
+        verify(false, "Settings shows a six-row sidebar"); return
+    }
+    let frame = table.convert(table.rect(ofRow: index), to: nil)
+    clickSettings(NSPoint(x: frame.midX, y: frame.midY))
+}
+clickSidebarRow(1)
 verify(settingsController.state.section == "Status Bar", "Status Bar sidebar row is clickable")
-clickSettings("AI")
+clickSidebarRow(2)
 verify(settingsController.state.section == "AI", "AI sidebar row is clickable")
 for section in ["General", "Status Bar", "AI", "Extensions", "App Shortcuts", "Data & Configuration"] {
     settingsController.state.section = section
