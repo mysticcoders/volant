@@ -138,7 +138,7 @@ private struct SettingsView: View {
             } header: {
                 Text("Keyboard Shortcuts")
             } footer: {
-                Text("Click a shortcut and press a new combination; changes save immediately. Hold the dictation shortcut while you speak and let go to copy the text, or tap it to start and again to stop.")
+                SettingsFooter("Click a shortcut and press a new combination; changes save immediately. Hold the dictation shortcut while you speak and let go to copy the text, or tap it to start and again to stop.")
             }
         }
         .formStyle(.grouped)
@@ -162,7 +162,7 @@ private struct SettingsView: View {
             } header: {
                 Text("Herdr")
             } footer: {
-                Text("Includes Local and enabled machines saved in Herdr. Manage remote connections in Herdr.")
+                SettingsFooter("Includes Local and enabled machines saved in Herdr. Manage remote connections in Herdr.")
             }
             Section {
                 Toggle("AI Chat activity", isOn: Binding(get: { state.config.statusBar.sources.contains("ai-chat") }, set: { value in
@@ -171,7 +171,7 @@ private struct SettingsView: View {
             } header: {
                 Text("AI Chat")
             } footer: {
-                Text("Links to your active conversation, its provider, and whether it needs you. Hidden when no conversation is active. Sources appear below the launcher’s search field; turn all of them off to hide the status area.")
+                SettingsFooter("Links to your active conversation, its provider, and whether it needs you. Hidden when no conversation is active. Sources appear below the launcher’s search field; turn all of them off to hide the status area.")
             }
         }
         .formStyle(.grouped)
@@ -211,7 +211,7 @@ private struct SettingsView: View {
             } header: {
                 Text("Configuration")
             } footer: {
-                Text("Aliases, shortcuts and preferences live in one portable JSON file.")
+                SettingsFooter("Aliases, shortcuts and preferences live in one portable JSON file.")
             }
             Section {
                 LabeledContent("Raycast") {
@@ -224,7 +224,7 @@ private struct SettingsView: View {
             } header: {
                 Text("Import & Backup")
             } footer: {
-                Text("Imports show a preview before applying changes. Export a backup before moving to another Mac.")
+                SettingsFooter("Imports show a preview before applying changes. Export a backup before moving to another Mac.")
             }
         }
         .formStyle(.grouped)

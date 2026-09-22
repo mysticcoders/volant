@@ -40,6 +40,7 @@ struct AISettingsView: View {
                         Button(config.connection == .acp ? "Connect ACP" : "Open AI Chat") {
                             if persist() { openConversation(config) }
                         }.disabled(!config.isConfigured || !loaded || (config.connection == .apple && !appleAvailability.isReady))
+                            .background(ControlAnchor("settings.connect"))
                     }
                 }
             } footer: {
@@ -48,7 +49,7 @@ struct AISettingsView: View {
                     if let feedback {
                         Text(feedback).foregroundStyle(failed ? Color.red : Color.secondary).accessibilityLabel(feedback)
                     }
-                }
+                }.font(.callout).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .formStyle(.grouped)
@@ -75,7 +76,7 @@ struct AISettingsView: View {
         } header: {
             Text("Apple Intelligence")
         } footer: {
-            Text("Runs Apple's on-device model. No API key, no network request and no helper process; the conversation stays on this Mac.")
+            SettingsFooter("Runs Apple's on-device model. No API key, no network request and no helper process; the conversation stays on this Mac.")
         }
     }
 
@@ -90,11 +91,12 @@ struct AISettingsView: View {
                     .lineLimit(1).help(config.project).foregroundStyle(.secondary)
                 if !config.project.isEmpty { Button("Clear") { config.project = ""; persist() }.help("Use General Chat") }
                 Button("Choose Folder…") { chooseProject { url in if let url { config.project = url.path; persist() } } }.disabled(!loaded)
+                    .background(ControlAnchor("settings.choose-folder"))
             }
         } header: {
             Text("ACP")
         } footer: {
-            Text("Uses your agent’s existing CLI login; sign in with that provider first. A working folder is optional and is not a sandbox: your agent’s permissions still control tool access.")
+            SettingsFooter("Uses your agent’s existing CLI login; sign in with that provider first. A working folder is optional and is not a sandbox: your agent’s permissions still control tool access.")
         }
     }
     private var httpBinding: Binding<AIHTTPConfiguration> {
@@ -136,7 +138,7 @@ struct AISettingsView: View {
         } header: {
             Text(config.connection == .byok ? "Bring Your Own Key" : "Model")
         } footer: {
-            Text(config.connection == .byok
+            SettingsFooter(config.connection == .byok
                  ? "Uses your API account and its billing. Keys stay in macOS Keychain and are excluded from configuration backups. Text chat only: no filesystem, terminal or other agent tools."
                  : "Text chat only: no filesystem, terminal or other agent tools.")
         }
@@ -151,7 +153,7 @@ struct AISettingsView: View {
                         Button("Use") {
                             config.localAPI = server.configuration; config.localAPI.model = server.models[0]
                             discovery.select(server); keyDraft = ""; persist()
-                        }
+                        }.background(ControlAnchor("settings.use-server"))
                     }
                 } label: {
                     Text(server.name)
@@ -165,7 +167,7 @@ struct AISettingsView: View {
                 Button("Scan Again") { discovery.discover() }.controlSize(.small)
             }
         } footer: {
-            Text("Connects to a model server already running on this Mac. Detection lists available models; it does not load or download them.")
+            SettingsFooter("Connects to a model server already running on this Mac. Detection lists available models; it does not load or download them.")
         }
     }
     private func saveKey() {

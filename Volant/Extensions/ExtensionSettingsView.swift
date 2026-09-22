@@ -21,7 +21,7 @@ struct ExtensionSettingsView: View {
                     catch { self.error = error.localizedDescription; reload() }
                 })).accessibilityIdentifier("community-extensions-toggle")
             } footer: {
-                Text("Off blocks community commands and discards results from active runs. Your individual choices are kept. Bundled extensions are controlled separately below.")
+                SettingsFooter("Off blocks community commands and discards results from active runs. Your individual choices are kept. Bundled extensions are controlled separately below.")
             }
             Section {
                 if installed.isEmpty { Text("No extensions installed.").foregroundStyle(.secondary) }
@@ -44,7 +44,7 @@ struct ExtensionSettingsView: View {
                     Button("Refresh") { reload(); onChange() }.controlSize(.small)
                 }
             } footer: {
-                Text("Extensions start off and run only when you invoke them. Enable one here or choose Enable and Run the first time you use it; changed code or permissions require enabling again. Try the bundled example: hello Andrew")
+                SettingsFooter("Extensions start off and run only when you invoke them. Enable one here or choose Enable and Run the first time you use it; changed code or permissions require enabling again. Try the bundled example: hello Andrew")
             }
         }
         .formStyle(.grouped)

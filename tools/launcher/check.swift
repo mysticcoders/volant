@@ -844,29 +844,23 @@ sendCoreKey("\u{1b}", code: 53)
 verify(!corePanel.isVisible && dictionary.input.isEmpty, "Escape dismisses and clears dictionary")
 print("PASS: dictionary routing, native text editing, Return, mode exit and Escape cleanup")
 
-/// Finds a hosted AppKit control by title, falling back to accessibility, and returns its frame in
-/// window coordinates so Settings clicks follow the layout instead of hard-coded points. SwiftUI
-/// builds its accessibility tree lazily, so without an assistive client the view walk does the
-/// work. On a miss it prints every title it saw so a layout change is diagnosable from one run.
-func accessibilityFrame(_ name: String, in window: NSWindow) -> NSRect? {
+/// Finds a control's frame in window coordinates by the identifier of the `ControlAnchor` behind
+/// it, or by an AppKit button title, so Settings clicks follow the layout instead of hard-coded
+/// points. On a miss it prints what it saw so a layout change is diagnosable from one run.
+func controlFrame(_ name: String, in window: NSWindow) -> NSRect? {
     var seen: [String] = []
     func views(_ view: NSView) -> [NSView] { [view] + view.subviews.flatMap(views) }
-    let all = views(window.contentView!)
-    for view in all {
+    for view in views(window.contentView!) where !view.isHiddenOrHasHiddenAncestor {
+        if let identifier = view.identifier?.rawValue, identifier.hasPrefix("settings.") {
+            seen.append(identifier)
+            if identifier == name { return view.convert(view.bounds, to: nil) }
+        }
         if let button = view as? NSButton, !button.title.isEmpty {
             seen.append(button.title)
-            if button.title == name && !button.isHiddenOrHasHiddenAncestor { return button.convert(button.bounds, to: nil) }
+            if button.title == name { return button.convert(button.bounds, to: nil) }
         }
     }
-    for table in all.compactMap({ $0 as? NSTableView }) {
-        for row in 0..<table.numberOfRows {
-            guard let cell = table.view(atColumn: 0, row: row, makeIfNecessary: true) else { continue }
-            let texts = views(cell).compactMap { ($0 as? NSTextField)?.stringValue } + [cell.accessibilityLabel() ?? ""]
-            seen += texts
-            if texts.contains(name) { return table.convert(table.rect(ofRow: row), to: nil) }
-        }
-    }
-    print("Titles seen while looking for \(name): \(seen)")
+    print("Controls seen while looking for \(name): \(seen)")
     return nil
 }
 
@@ -908,7 +902,7 @@ func clickSettings(_ point: NSPoint) {
     RunLoop.main.run(until: Date().addingTimeInterval(0.15))
 }
 func clickSettings(_ name: String) {
-    guard let frame = accessibilityFrame(name, in: settingsWindow) else { verify(false, "Settings shows \(name)"); return }
+    guard let frame = controlFrame(name, in: settingsWindow) else { verify(false, "Settings shows \(name)"); return }
     clickSettings(NSPoint(x: frame.midX, y: frame.midY))
 }
 func clickHerdrSwitch() {
@@ -916,6 +910,9 @@ func clickHerdrSwitch() {
     clickSettings(NSPoint(x: frame.midX, y: frame.midY))
 }
 /// SwiftUI draws sidebar text without a readable field, so rows are found by their fixed order.
+/// A native table ignores a first click while its window is not key, which is how the headless
+/// guest leaves this fixture; the row is then selected through the table so the SwiftUI selection
+/// binding is still exercised, and the miss is reported.
 func clickSidebarRow(_ index: Int) {
     func views(_ view: NSView) -> [NSView] { [view] + view.subviews.flatMap(views) }
     guard let table = views(settingsWindow.contentView!).compactMap({ $0 as? NSTableView }).first(where: { $0.numberOfRows == 6 }) else {
@@ -924,15 +921,15 @@ func clickSidebarRow(_ index: Int) {
     let frame = table.convert(table.rect(ofRow: index), to: nil)
     clickSettings(NSPoint(x: frame.midX, y: frame.midY))
     if table.selectedRow != index {
-        print("DIAG: sidebar click at \(frame) left selectedRow \(table.selectedRow); key \(settingsWindow.isKeyWindow); hit \(String(describing: settingsWindow.contentView?.hitTest(NSPoint(x: frame.midX, y: frame.midY)).map { type(of: $0) }))")
+        print("NOTE: sidebar click not delivered (Settings key: \(settingsWindow.isKeyWindow)); selecting row \(index) through the table")
         table.selectRowIndexes(IndexSet(integer: index), byExtendingSelection: false)
         RunLoop.main.run(until: Date().addingTimeInterval(0.2))
     }
 }
 clickSidebarRow(1)
-verify(settingsController.state.section == "Status Bar", "Status Bar sidebar row is clickable")
+verify(settingsController.state.section == "Status Bar", "Status Bar sidebar row selects its section")
 clickSidebarRow(2)
-verify(settingsController.state.section == "AI", "AI sidebar row is clickable")
+verify(settingsController.state.section == "AI", "AI sidebar row selects its section")
 for section in ["General", "Status Bar", "AI", "Extensions", "App Shortcuts", "Data & Configuration"] {
     settingsController.state.section = section
     RunLoop.main.run(until: Date().addingTimeInterval(0.15))
@@ -952,10 +949,10 @@ settingsController.showWindow(nil)
 settingsController.state.section = "AI"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 print("CHECK: Settings Connect ACP")
-clickSettings("Connect ACP")
+clickSettings("settings.connect")
 verify(openedAI.count == 1 && openedAI[0].provider == "claude" && openedAI[0].project.isEmpty, "Connect ACP starts general chat with no project selection")
 print("CHECK: Settings project sheet")
-clickSettings("Choose Folder…")
+clickSettings("settings.choose-folder")
 let sheetDeadline = Date().addingTimeInterval(3)
 while settingsWindow.attachedSheet == nil && Date() < sheetDeadline { RunLoop.main.run(until: Date().addingTimeInterval(0.05)) }
 verify(settingsWindow.attachedSheet != nil, "Choose Project opens a native sheet")

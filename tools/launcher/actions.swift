@@ -443,29 +443,23 @@ UserDefaults.standard.set(false, forKey: "showHerdrDetails"); settle()
 panel.orderOut(nil)
 print("PASS: passive Herdr question previews, target changes, loading, error, and resolved states")
 
-/// Finds a hosted AppKit control by title, falling back to accessibility, and returns its frame in
-/// window coordinates so Settings clicks follow the layout instead of hard-coded points. SwiftUI
-/// builds its accessibility tree lazily, so without an assistive client the view walk does the
-/// work. On a miss it prints every title it saw so a layout change is diagnosable from one run.
-func accessibilityFrame(_ name: String, in window: NSWindow) -> NSRect? {
+/// Finds a control's frame in window coordinates by the identifier of the `ControlAnchor` behind
+/// it, or by an AppKit button title, so Settings clicks follow the layout instead of hard-coded
+/// points. On a miss it prints what it saw so a layout change is diagnosable from one run.
+func controlFrame(_ name: String, in window: NSWindow) -> NSRect? {
     var seen: [String] = []
     func views(_ view: NSView) -> [NSView] { [view] + view.subviews.flatMap(views) }
-    let all = views(window.contentView!)
-    for view in all {
+    for view in views(window.contentView!) where !view.isHiddenOrHasHiddenAncestor {
+        if let identifier = view.identifier?.rawValue, identifier.hasPrefix("settings.") {
+            seen.append(identifier)
+            if identifier == name { return view.convert(view.bounds, to: nil) }
+        }
         if let button = view as? NSButton, !button.title.isEmpty {
             seen.append(button.title)
-            if button.title == name && !button.isHiddenOrHasHiddenAncestor { return button.convert(button.bounds, to: nil) }
+            if button.title == name { return button.convert(button.bounds, to: nil) }
         }
     }
-    for table in all.compactMap({ $0 as? NSTableView }) {
-        for row in 0..<table.numberOfRows {
-            guard let cell = table.view(atColumn: 0, row: row, makeIfNecessary: true) else { continue }
-            let texts = views(cell).compactMap { ($0 as? NSTextField)?.stringValue } + [cell.accessibilityLabel() ?? ""]
-            seen += texts
-            if texts.contains(name) { return table.convert(table.rect(ofRow: row), to: nil) }
-        }
-    }
-    print("Titles seen while looking for \(name): \(seen)")
+    print("Controls seen while looking for \(name): \(seen)")
     return nil
 }
 
@@ -490,7 +484,7 @@ func renderAPISettings(_ kind: AIConnectionKind, provider: AIAPIProvider = .open
     try render("ai-\(kind.rawValue)-\(provider.rawValue)\(offline ? "-offline" : "")", view: view)
     verify(!model.active && credentialWrites == 0, "Opening AI Settings never starts chat or writes credentials")
     if kind == .local && !offline {
-        guard let use = accessibilityFrame("Use", in: window) else { verify(false, "Local server offers Use"); return }
+        guard let use = controlFrame("settings.use-server", in: window) else { verify(false, "Local server offers Use"); return }
         let point = NSPoint(x: use.midX, y: use.midY)
         func event(_ type: NSEvent.EventType) -> NSEvent {
             NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
