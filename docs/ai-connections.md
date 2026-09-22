@@ -110,7 +110,14 @@ through LaunchServices so nothing was inherited from a terminal.
 `talk` toggles: Return starts listening, Return stops and copies. The dedicated hotkey does both
 shapes — hold it for longer than 0.4 s and releasing stops, tap it and it keeps listening until the
 next tap. The panel shows a live microphone indicator and the text heard so far, so dictation is
-never running invisibly.
+never running invisibly: while listening or transcribing, the panel stays up through focus loss
+instead of hiding with the microphone still live.
+
+The hotkey is recorded in Settings → General → Dictate Text and is unset until the owner picks one.
+It joins the same duplicate checks as the other global shortcuts and app shortcuts, so one
+combination cannot be bound twice. Escape while listening cancels and discards the transcript
+without touching the clipboard; once transcription has started it runs to the end, because the
+stop completion would otherwise still copy.
 
 Availability is rechecked at start, because microphone permission can be revoked between uses. On
 macOS 15 the command is present and reports that it needs macOS 26, the same pattern Apple

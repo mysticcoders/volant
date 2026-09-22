@@ -4,12 +4,19 @@ import VolantCore
 
 /// Patches one global binding without discarding edits elsewhere in configuration.
 enum GlobalShortcutStore {
+    /// Every built-in global binding by configuration key, so duplicate checks here and in app
+    /// shortcuts cannot drift apart.
+    static func bindings(_ config: Preferences) -> [String: String] {
+        ["summonHotKey": config.summonHotKey, "notesHotKey": config.notesHotKey,
+         "emojiHotKey": config.emojiHotKey, "talkHotKey": config.talkHotKey]
+    }
+
     static func save(key: String, value: String, expectedValue: String, at url: URL,
                      available: (KeyCombo) -> Bool) throws {
-        guard ["summonHotKey", "notesHotKey", "emojiHotKey"].contains(key) else { throw BindingFailure(message: "Unknown global shortcut.") }
         let data = try Data(contentsOf: url)
         let config = try JSONDecoder().decode(Preferences.self, from: data)
-        let bindings = ["summonHotKey": config.summonHotKey, "notesHotKey": config.notesHotKey, "emojiHotKey": config.emojiHotKey]
+        let bindings = bindings(config)
+        guard bindings.keys.contains(key) else { throw BindingFailure(message: "Unknown global shortcut.") }
         let current = bindings[key] ?? ""
         guard current == expectedValue else { throw BindingFailure(message: "This shortcut changed in the configuration file. Reload Configuration before saving again.") }
         if !value.isEmpty {

@@ -104,6 +104,7 @@ struct LauncherView: View {
         .onKeyPress(.rightArrow) { guard model.showingEmoji else { return .ignored }; model.moveEmojiSelection(1); return .handled }
         .onKeyPress(.escape) {
             if model.actionTarget != nil { closeActions(); return .handled }
+            if model.dictation.isListening { model.cancelDictation(); return .handled }
             if model.wifiJoin != nil { guard !model.connectivityBusy else { return .handled }; model.wifiJoin = nil; model.searchFocusRequest = UUID() }
             else { model.dismiss() }
             return .handled

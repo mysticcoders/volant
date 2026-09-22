@@ -24,7 +24,7 @@ enum AppBindingStore {
             guard let combo = KeyCombo(parsing: hotKey), combo.carbonModifiers & UInt32(cmdKey | controlKey | optionKey) != 0 else {
                 throw BindingFailure(message: "Include Command, Control or Option in a global shortcut.")
             }
-            let others = [config.summonHotKey, config.notesHotKey, config.emojiHotKey] + config.appHotKeys.filter { $0.bundleIdentifier != bundleID }.map(\.hotKey)
+            let others = Array(GlobalShortcutStore.bindings(config).values) + config.appHotKeys.filter { $0.bundleIdentifier != bundleID }.map(\.hotKey)
             guard !others.contains(where: { KeyCombo(parsing: $0) == combo }) else { throw BindingFailure(message: "That shortcut is already assigned in Volant.") }
             guard available(combo) else { throw BindingFailure(message: "macOS or another app is using that shortcut. Choose another combination.") }
         }
