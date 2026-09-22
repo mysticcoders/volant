@@ -129,6 +129,24 @@ condition stands in for "built against an SDK new enough to see these symbols". 
 macOS 26 API from a framework that also exists on macOS 15 needs the same treatment, and the
 compiled-out branch should be type-checked deliberately rather than assumed.
 
+### Microphone buffers must be resampled first
+
+The first version shipped a crash. It installed a tap on the input node and handed each buffer
+straight to `AnalyzerInput(buffer:)`. The microphone runs at the hardware rate, measured here at
+48 kHz, while the analyzer's format is 16 kHz, and `AnalyzerInput` traps on a mismatch. The tap
+runs on the realtime audio thread, so the trap took the whole process down rather than surfacing
+as an error: `EXC_BREAKPOINT` in `AnalyzerInput.data(from:)`, every time dictation started.
+
+`SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith:considering:)` gives the format the
+analyzer wants, and an `AVAudioConverter` resamples each buffer before it is yielded. The
+conversion lives in `SpeechDictation.convert(_:using:to:)` rather than inline in the tap, so it can
+be tested with synthesized buffers and no microphone.
+
+Two rules follow from this. Nothing inside an audio tap may trap, so the conversion returns nil for
+anything it cannot handle and the buffer is dropped. And a file-based test does not cover the live
+path: `analyzeSequence(from: audioFile)` converts internally, which is exactly why the original
+check passed while the real feature crashed.
+
 ### Not covered
 
 Live dictation through the signed installed app, the accuracy of long transcripts, locale

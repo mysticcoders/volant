@@ -1,3 +1,4 @@
+import AVFoundation
 import XCTest
 import VolantCore
 
@@ -59,5 +60,64 @@ final class SpeechDictationTests: XCTestCase {
             return XCTFail("an unavailable system must land in failed")
         }
         XCTAssertFalse(reason.isEmpty)
+    }
+}
+
+/// The crash that shipped in #85: microphone buffers were handed straight to AnalyzerInput, which
+/// traps on a format mismatch — on the realtime audio thread, where a trap kills the process.
+/// These use synthesized buffers, so they need no microphone and no macOS 26.
+final class SpeechDictationConversionTests: XCTestCase {
+    private func format(_ rate: Double, _ channels: AVAudioChannelCount = 1) -> AVAudioFormat {
+        AVAudioFormat(standardFormatWithSampleRate: rate, channels: channels)!
+    }
+
+    private func tone(_ format: AVAudioFormat, frames: AVAudioFrameCount = 4800) -> AVAudioPCMBuffer {
+        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames)!
+        buffer.frameLength = frames
+        for channel in 0..<Int(format.channelCount) {
+            guard let data = buffer.floatChannelData?[channel] else { continue }
+            for frame in 0..<Int(frames) {
+                data[frame] = sin(Float(frame) * 0.05) * 0.25
+            }
+        }
+        return buffer
+    }
+
+    func testMicrophoneRateIsResampledToTheAnalyzerRate() throws {
+        let input = format(48000), analyzer = format(16000)
+        let converter = try XCTUnwrap(AVAudioConverter(from: input, to: analyzer))
+
+        let converted = try XCTUnwrap(SpeechDictation.convert(tone(input), using: converter, to: analyzer))
+
+        XCTAssertEqual(converted.format.sampleRate, 16000, "a mismatched rate is what made AnalyzerInput trap")
+        XCTAssertGreaterThan(converted.frameLength, 0)
+        XCTAssertLessThan(converted.frameLength, 4800, "downsampling produces fewer frames")
+    }
+
+    func testAnEmptyBufferIsDroppedRatherThanConverted() throws {
+        let input = format(48000), analyzer = format(16000)
+        let converter = try XCTUnwrap(AVAudioConverter(from: input, to: analyzer))
+        let empty = AVAudioPCMBuffer(pcmFormat: input, frameCapacity: 4096)!
+        empty.frameLength = 0
+
+        XCTAssertNil(SpeechDictation.convert(empty, using: converter, to: analyzer),
+                     "the audio thread must not be asked to convert silence-length buffers")
+    }
+
+    func testMatchingFormatsStillProduceAUsableBuffer() throws {
+        let shared = format(16000)
+        let converter = try XCTUnwrap(AVAudioConverter(from: shared, to: shared))
+
+        let converted = try XCTUnwrap(SpeechDictation.convert(tone(shared), using: converter, to: shared))
+        XCTAssertEqual(converted.format.sampleRate, 16000)
+        XCTAssertGreaterThan(converted.frameLength, 0)
+    }
+
+    func testStereoInputIsFoldedToTheAnalyzerChannelCount() throws {
+        let input = format(48000, 2), analyzer = format(16000, 1)
+        let converter = try XCTUnwrap(AVAudioConverter(from: input, to: analyzer))
+
+        let converted = try XCTUnwrap(SpeechDictation.convert(tone(input), using: converter, to: analyzer))
+        XCTAssertEqual(converted.format.channelCount, 1)
     }
 }
