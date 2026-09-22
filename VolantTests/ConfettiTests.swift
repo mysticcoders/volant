@@ -16,29 +16,60 @@ final class ConfettiTests: XCTestCase {
         XCTAssertTrue(LauncherRouting.isReserved("confetti"))
     }
 
-    func testTheEmitterCoversTheScreenWidthAndStartsAtTheTopEdge() {
-        let emitter = ConfettiWindow.emitter(width: 1440)
-        XCTAssertEqual(emitter.emitterSize.width, 1440, "confetti spans the display, not a corner")
-        XCTAssertEqual(emitter.emitterPosition.x, 720)
-        XCTAssertEqual(emitter.emitterShape, .line)
-        XCTAssertFalse(emitter.emitterCells?.isEmpty ?? true)
+    func testConfettiIsThrownUpwardFromTheBottomCorners() {
+        let emitters = ConfettiWindow.emitters(width: 1440)
+        XCTAssertEqual(emitters.count, 2, "two cannons read as a throw; one reads as a fountain")
+        XCTAssertEqual(emitters.map(\.emitterPosition.y), [0, 0], "confetti is thrown from the floor, not dropped from the ceiling")
+        XCTAssertEqual(emitters.map(\.emitterPosition.x), [0, 1440], "one cannon per bottom corner")
     }
 
-    func testEveryPieceFallsAndFadesWithinItsLifetime() throws {
-        let cells = ConfettiWindow.cells()
-        XCTAssertEqual(cells.count, ConfettiWindow.colors.count, "one cell per colour")
-        for cell in cells {
-            XCTAssertNotNil(cell.contents, "a cell with no image draws nothing")
-            XCTAssertGreaterThan(cell.birthRate, 0)
-            XCTAssertGreaterThan(cell.yAcceleration, 0, "gravity pulls pieces down the screen")
-            XCTAssertLessThan(cell.alphaSpeed, 0, "pieces fade rather than vanishing")
-            XCTAssertEqual(Double(cell.lifetime), ConfettiWindow.settleDuration, accuracy: 0.01,
-                           "nothing outlives the window that closes over it")
+    /// The first version had gravity pushing pieces up the screen while they were fired sideways,
+    /// which is why it looked wrong. These pin the signs.
+    func testPiecesAreLaunchedUpAndPulledBackDown() {
+        for emitter in ConfettiWindow.emitters(width: 1440) {
+            for cell in emitter.emitterCells ?? [] {
+                XCTAssertGreaterThan(cell.velocity, 0, "a throw needs launch speed")
+                XCTAssertLessThan(cell.yAcceleration, 0, "+y is up on an unflipped layer, so gravity is negative")
+                XCTAssertGreaterThan(sin(Double(cell.emissionLongitude)), 0.5,
+                                     "the cannon aims upward rather than sideways")
+            }
+        }
+    }
+
+    func testTheCannonsAimInwardFromOppositeCorners() throws {
+        let emitters = ConfettiWindow.emitters(width: 1440)
+        let left = try XCTUnwrap(emitters.first?.emitterCells?.first)
+        let right = try XCTUnwrap(emitters.last?.emitterCells?.first)
+        // Angles are measured from +x, so the left cannon leans right and the right one leans left.
+        XCTAssertLessThan(left.emissionLongitude, .pi / 2)
+        XCTAssertGreaterThan(right.emissionLongitude, .pi / 2)
+    }
+
+    func testTheBurstRisesHighEnoughToReadAsAThrow() {
+        // Peak of a vertical launch is v² / 2g; anything low would look like a fizzle.
+        XCTAssertGreaterThan(ConfettiWindow.peakHeight, 200,
+                             "the arc has to clear enough screen to be visible")
+        let timeToPeak = Double(ConfettiWindow.launchSpeed / abs(ConfettiWindow.gravity))
+        XCTAssertLessThan(timeToPeak * 2, ConfettiWindow.settleDuration,
+                          "pieces must land before the window closes over them")
+    }
+
+    func testEveryPieceFadesWithinItsLifetime() {
+        for emitter in ConfettiWindow.emitters(width: 1440) {
+            let cells = try? XCTUnwrap(emitter.emitterCells)
+            XCTAssertEqual(cells?.count, ConfettiWindow.colors.count, "one cell per colour")
+            for cell in cells ?? [] {
+                XCTAssertNotNil(cell.contents, "a cell with no image draws nothing")
+                XCTAssertGreaterThan(cell.birthRate, 0)
+                XCTAssertLessThan(cell.alphaSpeed, 0, "pieces fade rather than vanishing")
+                XCTAssertEqual(Double(cell.lifetime), ConfettiWindow.settleDuration, accuracy: 0.01,
+                               "nothing outlives the window that closes over it")
+            }
         }
     }
 
     func testTheBurstIsShortEnoughToBeDecoration() {
-        XCTAssertLessThanOrEqual(ConfettiWindow.emitDuration, 2, "a burst, not a screensaver")
+        XCTAssertLessThanOrEqual(ConfettiWindow.emitDuration, 1, "a throw is a burst, not a stream")
         XCTAssertLessThanOrEqual(ConfettiWindow.emitDuration + ConfettiWindow.settleDuration, 6,
                                  "the whole thing is over quickly")
     }
