@@ -9,7 +9,7 @@ from pathlib import Path
 UI_PATTERNS = (
     "Volant/**/*View.swift", "Volant/**/*Panel.swift", "Volant/**/*WindowController.swift",
     "Volant/Search/AppIndex.swift", "Volant/Files/FileSearch.swift", "Volant/Notes/NotesStore.swift", "Volant/Clipboard/*", "Volant/Extensions/*", "Core/Sources/VolantCore/Extensions/*", "VolantExtensionHost/*", "extensions/*", "Volant/Panel/*", "Volant/Usage/UsageStore.swift", "Volant/Shortcuts/*", "Core/Sources/VolantCore/Shortcuts/*", "Volant/Emoji/*", "Volant/Translation/*", "Volant/Dictionary/*", "Volant/Settings/Shortcut*.swift", "Volant/Settings/GlobalShortcutRow.swift",
-    "Core/Sources/VolantCore/Settings/*", "Core/Sources/VolantCore/AI/*", "Volant/Settings/AppBindingEditor.swift", "Volant/Settings/AppBindingRow.swift", "Volant/HotKeys/KeyCombo.swift", "Volant/Settings/StatusMenu.swift",
+    "Core/Sources/VolantCore/Settings/*", "Core/Sources/VolantCore/AI/*", "Volant/Settings/AppBindingEditor.swift", "Volant/Settings/AppBindingRow.swift", "Volant/HotKeys/KeyCombo.swift", "Volant/Settings/StatusMenu.swift", "Volant/Settings/SettingsStyle.swift",
     "Volant/Notes/LiveMarkdown*.swift", "Volant/Agents/*Model.swift", "Volant/Agents/HarnessStatusStrip.swift",
     "Volant/App/main.swift", "Volant/App/AppDelegate.swift", "Volant/Resources/*",
     "Volant/Settings/AIModelDiscovery.swift", "Volant/Settings/AICredentials.swift", "Core/Sources/VolantCore/Clipboard/*", "Core/Sources/VolantCore/Emoji/*", "Core/Sources/VolantCore/Launcher/*", "Core/Sources/VolantCore/Agents/*", "Core/Sources/VolantCore/Herdr/*", "Shared/HerdrQuestion.swift", "Shared/HerdrClaudeQuestion.swift", "Shared/HerdrResponseController.swift", "Volant/SystemControl/SystemSettingsDestination.swift",
