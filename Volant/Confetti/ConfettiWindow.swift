@@ -6,8 +6,8 @@ import QuartzCore
 /// click, or outlive its welcome if the launcher is dismissed underneath it.
 final class ConfettiWindow: NSWindow {
     /// How long new confetti is emitted, and how long the last pieces get to fall afterwards.
-    static let emitDuration: TimeInterval = 1.2
-    static let settleDuration: TimeInterval = 2.6
+    static let emitDuration: TimeInterval = 0.35
+    static let settleDuration: TimeInterval = 3.2
 
     private var dismissal: DispatchWorkItem?
 
@@ -41,13 +41,13 @@ final class ConfettiWindow: NSWindow {
 
     private func start() {
         guard let layer = contentView?.layer else { return }
-        let emitter = Self.emitter(width: frame.width)
-        layer.addSublayer(emitter)
+        let emitters = Self.emitters(width: frame.width)
+        emitters.forEach(layer.addSublayer)
         orderFrontRegardless()
 
-        // Stop making new confetti, then let what is already falling finish before closing.
-        DispatchQueue.main.asyncAfter(deadline: .now() + Self.emitDuration) { [weak emitter] in
-            emitter?.birthRate = 0
+        // A throw is a burst, not a stream: stop emitting quickly, then let the arc play out.
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.emitDuration) {
+            emitters.forEach { $0.birthRate = 0 }
         }
         let dismissal = DispatchWorkItem { [weak self] in self?.finish() }
         self.dismissal = dismissal
@@ -61,33 +61,48 @@ final class ConfettiWindow: NSWindow {
         close()
     }
 
-    /// Emits from just above the top edge so pieces fall into view rather than appearing mid-air.
-    static func emitter(width: CGFloat) -> CAEmitterLayer {
-        let emitter = CAEmitterLayer()
-        emitter.emitterShape = .line
-        emitter.emitterPosition = CGPoint(x: width / 2, y: 12)
-        emitter.emitterSize = CGSize(width: width, height: 1)
-        emitter.renderMode = .additive
-        emitter.emitterCells = cells()
-        return emitter
+    /// Two cannons at the bottom corners, fired up and inward. Gravity arcs the pieces over and
+    /// brings them back down, which is what throwing confetti looks like; emitting from the top
+    /// and letting it fall is snow.
+    ///
+    /// The layer is not flipped, so on macOS +y points up the screen: the launch velocity is
+    /// positive and `yAcceleration` is negative.
+    static let launchSpeed: CGFloat = 620
+    static let gravity: CGFloat = -820
+
+    /// How high a piece launched straight up reaches before falling back, from v² / 2g. Used to
+    /// keep the burst tall enough to read as a throw rather than a fizzle.
+    static var peakHeight: CGFloat { (launchSpeed * launchSpeed) / (2 * abs(gravity)) }
+
+    static func emitters(width: CGFloat) -> [CAEmitterLayer] {
+        // Angles measured from +x, so just past vertical and leaning towards the far corner.
+        [(CGPoint(x: 0, y: 0), CGFloat.pi / 2 - .pi / 7),
+         (CGPoint(x: width, y: 0), CGFloat.pi / 2 + .pi / 7)].map { origin, angle in
+            let emitter = CAEmitterLayer()
+            emitter.emitterShape = .point
+            emitter.emitterPosition = origin
+            emitter.emitterSize = .zero
+            emitter.emitterCells = cells(angle: angle)
+            return emitter
+        }
     }
 
-    static func cells() -> [CAEmitterCell] {
+    static func cells(angle: CGFloat) -> [CAEmitterCell] {
         colors.map { color in
             let cell = CAEmitterCell()
             cell.contents = piece(color: color).cgImage(forProposedRect: nil, context: nil, hints: nil)
-            cell.birthRate = 14
+            cell.birthRate = 90
             cell.lifetime = Float(settleDuration)
-            cell.velocity = 180
-            cell.velocityRange = 90
-            // The layer is flipped relative to the screen, so a positive Y sends pieces downward.
-            cell.emissionLongitude = .pi
-            cell.emissionRange = .pi / 6
+            cell.velocity = launchSpeed
+            cell.velocityRange = launchSpeed * 0.35
+            cell.emissionLongitude = angle
+            cell.emissionRange = .pi / 5
+            cell.yAcceleration = gravity
             cell.spin = 3
-            cell.spinRange = 4
+            cell.spinRange = 5
             cell.scale = 0.5
             cell.scaleRange = 0.3
-            cell.yAcceleration = 90
+            // Stay solid through the arc and fade only as the pieces land.
             cell.alphaSpeed = -1 / Float(settleDuration)
             return cell
         }
