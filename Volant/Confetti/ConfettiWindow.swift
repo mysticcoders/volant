@@ -6,8 +6,8 @@ import QuartzCore
 /// click, or outlive its welcome if the launcher is dismissed underneath it.
 final class ConfettiWindow: NSWindow {
     /// How long new confetti is emitted, and how long the last pieces get to fall afterwards.
-    static let emitDuration: TimeInterval = 0.35
-    static let settleDuration: TimeInterval = 3.2
+    static let emitDuration: TimeInterval = 0.25
+    static let settleDuration: TimeInterval = 4.2
 
     private var dismissal: DispatchWorkItem?
 
@@ -61,18 +61,27 @@ final class ConfettiWindow: NSWindow {
         close()
     }
 
-    /// Cannons along the bottom edge, fired up and inward. Gravity arcs the pieces over and brings
-    /// them back down, which is what throwing confetti looks like; emitting from the top and
-    /// letting it fall is snow.
+    /// Two cannons, one in each bottom corner, like party poppers fired up and across the screen.
+    /// Each sprays a cone, so the burst fans out as a triangle from its corner, then gravity arcs
+    /// the pieces over and brings them back down through the bottom edge. It is a plain ballistic
+    /// arc: CAEmitterCell has no air drag, so there is no flutter at the end.
     ///
     /// The layer is not flipped, so on macOS +y points up the screen: launch velocity is positive
-    /// and `yAcceleration` is negative.
+    /// and `yAcceleration` is negative. Angles run counterclockwise from +x.
     static let gravity: CGFloat = -2000
 
-    /// Roughly how many pieces the whole burst throws, across every cannon and colour. This is the
-    /// dial worth turning: birth rate is derived from it, so changing the number of cannons or
-    /// colours does not silently change how dense the burst looks.
+    /// Width of the spray cone. Each cannon's aim is capped so that even a piece at the edge of the
+    /// cone stays below vertical, so nothing fires backwards off the screen from a corner.
+    static let sprayCone: CGFloat = .pi / 6
+
+    /// How high the burst reaches, as a fraction of the screen, along the aim direction.
+    static let peakFraction: CGFloat = 0.7
+
+    /// Roughly how many pieces the whole burst throws, across both cannons and every colour. This
+    /// is the dial worth turning: birth rate is derived from it.
     static let pieceCount = 120
+
+    static let cannonCount = 2
 
     static func birthRate(cannons: Int) -> Float {
         let cells = Double(max(cannons, 1) * colors.count)
@@ -84,35 +93,61 @@ final class ConfettiWindow: NSWindow {
         Int((Double(birthRate(cannons: cannons)) * emitDuration * Double(cannons * colors.count)).rounded())
     }
 
-    /// Launch speed is derived from the screen rather than fixed, so the burst fills a display of
-    /// any height instead of dying in the corners. From v = sqrt(2gh), with headroom so the
-    /// fastest pieces carry past the top edge rather than stalling just below it.
-    static func launchSpeed(forHeight height: CGFloat) -> CGFloat {
-        sqrt(2 * abs(gravity) * max(height, 1) * 1.15)
+    /// Elevation of each cannon's aim, from the horizontal, chosen so the arc peaks over the middle
+    /// of the screen and the two sprays cross there. For a peak height H the apex sits 2H/tan(aim)
+    /// in from the corner, so aiming at the centre means tan(aim) = 4H / width.
+    static func aimElevation(for size: CGSize) -> CGFloat {
+        let height = max(size.height, 1) * peakFraction
+        let ideal = atan(4 * height / max(size.width, 1))
+        let steepestSafe = .pi / 2 - sprayCone - .pi / 90
+        return min(ideal, steepestSafe)
     }
 
-    /// Peak of a vertical launch, v² / 2g.
-    static func peakHeight(forHeight height: CGFloat) -> CGFloat {
-        let speed = launchSpeed(forHeight: height)
-        return (speed * speed) / (2 * abs(gravity))
+    /// Launch speed from the screen, so the arc scales with the display. The vertical part of the
+    /// launch, v·sin(aim), has to reach `peakFraction` of the height: v·sin(aim) = sqrt(2gh).
+    static func launchSpeed(for size: CGSize) -> CGFloat {
+        sqrt(2 * abs(gravity) * max(size.height, 1) * peakFraction) / sin(aimElevation(for: size))
     }
 
-    /// Five cannons rather than two: corners alone read as a pair of hoses, while spreading the
-    /// sources across the bottom edge fills the width.
+    /// Peak of a piece fired exactly along the aim, (v·sin(aim))² / 2g.
+    static func peakHeight(for size: CGSize) -> CGFloat {
+        let vertical = launchSpeed(for: size) * sin(aimElevation(for: size))
+        return (vertical * vertical) / (2 * abs(gravity))
+    }
+
+    /// How far in from its corner a piece fired along the aim reaches its apex.
+    static func apexDistance(for size: CGSize) -> CGFloat {
+        let speed = launchSpeed(for: size), aim = aimElevation(for: size)
+        return speed * speed * sin(aim) * cos(aim) / abs(gravity)
+    }
+
+    /// Longest time any piece spends in the air: the fastest piece at the steepest angle in the
+    /// cone, up and back down to the bottom edge.
+    static func longestFlight(for size: CGSize) -> TimeInterval {
+        let fastest = launchSpeed(for: size) * (1 + speedSpread)
+        let steepest = min(aimElevation(for: size) + sprayCone, .pi / 2)
+        return TimeInterval(2 * fastest * sin(steepest) / abs(gravity))
+    }
+
+    /// Speeds vary this much either side of the launch speed, so some pieces fall short and some
+    /// carry further across the screen.
+    static let speedSpread: CGFloat = 0.25
+
     static func emitters(size: CGSize) -> [CAEmitterLayer] {
-        let speed = launchSpeed(forHeight: size.height)
-        let positions: [CGFloat] = [0, 0.25, 0.5, 0.75, 1]
-        let rate = birthRate(cannons: positions.count)
-        return positions.map { fraction in
+        let speed = launchSpeed(for: size)
+        let aim = aimElevation(for: size)
+        let rate = birthRate(cannons: cannonCount)
+        // Left corner aims up and right; right corner is its mirror, up and left.
+        let cannons: [(CGPoint, CGFloat)] = [
+            (CGPoint(x: 0, y: 0), aim),
+            (CGPoint(x: size.width, y: 0), .pi - aim),
+        ]
+        return cannons.map { origin, angle in
             let emitter = CAEmitterLayer()
             emitter.emitterShape = .point
-            emitter.emitterPosition = CGPoint(x: size.width * fraction, y: 0)
+            emitter.emitterPosition = origin
             emitter.emitterSize = .zero
-            // Angles run counterclockwise from +x, so an angle below .pi/2 leans right and above it
-            // leans left. Each cannon aims towards the far side of the screen; the middle one fires
-            // straight up. Getting this backwards aims the corner cannons off-screen.
-            let lean = (fraction - 0.5) * (.pi / 5)
-            emitter.emitterCells = cells(angle: .pi / 2 + lean, speed: speed, birthRate: rate)
+            emitter.emitterCells = cells(angle: angle, speed: speed, birthRate: rate)
             return emitter
         }
     }
@@ -124,17 +159,17 @@ final class ConfettiWindow: NSWindow {
             cell.birthRate = birthRate
             cell.lifetime = Float(settleDuration)
             cell.velocity = speed
-            // A wide spread of speeds is what fills the middle of the screen rather than leaving a
-            // band of confetti all at the same height.
-            cell.velocityRange = speed * 0.55
+            cell.velocityRange = speed * speedSpread
             cell.emissionLongitude = angle
-            cell.emissionRange = .pi / 3
+            cell.emissionRange = sprayCone
             cell.yAcceleration = gravity
             cell.spin = 3
             cell.spinRange = 6
             cell.scale = 0.5
             cell.scaleRange = 0.3
-            cell.alphaSpeed = -1 / Float(settleDuration)
+            // Paper does not fade in the air. Pieces leave through the bottom edge before their
+            // lifetime ends, so they are simply gone rather than dissolving mid-fall.
+            cell.alphaSpeed = 0
             return cell
         }
     }
