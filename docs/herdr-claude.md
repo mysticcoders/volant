@@ -40,6 +40,28 @@ changes automatically, but their path and TOML shape are Herdr internals rather 
 interface. Herdr does not expose a parsed question over its API either — the schema carries agent
 state and the detection region, not choices — so the structure has to be derived here.
 
+## Codex asks two different kinds of question
+
+The numbered survey form has a `Question 1/1 (1 unanswered)` header and two-column options. The
+approval form has neither: it asks "Would you like to run the following command?", lists options in
+a single column, and ends with "Press enter to confirm or esc to cancel". Only the survey form was
+ever parsed, so an approval screen was detected as blocked, showed its excerpt, and then offered
+nothing to answer — the reported symptom of seeing a question but not being able to reply to it.
+
+`parseCodexApproval` handles the approval form and is tried first, falling back to the survey
+parser. Prompt wording is matched by substring against what Herdr's `codex.toml` recognizes
+("allow command?", "do you want to") plus the observed run-command phrasing, for the same reason
+the footers are: these are UI strings that get reworded.
+
+Approving one of these runs a command, so the guards match the Claude approval path rather than
+being relaxed for convenience. The prompt must be present, the command block must not contain an
+ellipsis, exactly one option may carry a selection marker, the numbering must be contiguous, and a
+wrapped option is only joined when its continuation is indented. Anything unrecognized is refused
+rather than guessed at.
+
+Verified against a real blocked pane as well as fixtures: the live screen parsed to three
+answerable options with the first selected.
+
 ## Evidence
 
 Claude Code 2.1.274 was tested in a disposable directory with customizations disabled and explicit ask rules for the test tools. A real single-select fictional Amber/Violet question accepted Violet. In standalone terminal tests, No rejected a fictional file creation and left the file absent; Yes created only the fictional file and Claude returned `ACK: written`.

@@ -142,6 +142,7 @@ targets:
       - path: Shared/HerdrProcess.swift
       - path: Shared/HerdrQuestion.swift
       - path: Shared/HerdrClaudeQuestion.swift
+      - path: Shared/HerdrCodexApproval.swift
       - path: Shared/HerdrResponseController.swift
     dependencies:
       - package: VolantCore
