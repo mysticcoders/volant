@@ -81,7 +81,13 @@ own margins and scrolling, so no pane adds padding of its own. App Shortcuts rem
 under a compact search header, with shorter rows and a visible alias field. Recorders are 26 pt
 tall instead of 32.
 
-Fixtures no longer click hard-coded coordinates. `accessibilityFrame(_:in:)` in the launcher and
-Actions fixtures locates the sidebar rows, Connect ACP, Choose Folder, the Herdr toggle and the
-local server's Use button by accessibility label, and prints every label it saw on a miss. The
-launcher fixture and `tools/preview-settings.sh --render` now render all six sections.
+Fixtures no longer click hard-coded coordinates. SwiftUI builds its accessibility tree only for an
+assistive client, and form buttons have no `NSButton` to search, so the few buttons a fixture clicks
+(Connect ACP, Choose Folder, a local server's Use) carry an empty `ControlAnchor` view with a
+`settings.` identifier, which `controlFrame(_:in:)` finds. The Herdr source is the topmost
+`NSSwitch`, and sidebar rows are found by their fixed order in the native table. In the headless
+guest the Settings fixture window is never key, and a native table ignores a first click in a
+non-key window, so the fixture reports the undelivered click and selects the row through the table.
+That still exercises the SwiftUI selection binding but is not evidence of a physical sidebar click;
+check that in a live preview or the installed app. The launcher fixture and
+`tools/preview-settings.sh --render` now render all six sections.
