@@ -915,8 +915,8 @@ func clickHerdrSwitch() {
 /// binding is still exercised, and the miss is reported.
 func clickSidebarRow(_ index: Int) {
     func views(_ view: NSView) -> [NSView] { [view] + view.subviews.flatMap(views) }
-    guard let table = views(settingsWindow.contentView!).compactMap({ $0 as? NSTableView }).first(where: { $0.numberOfRows == 6 }) else {
-        verify(false, "Settings shows a six-row sidebar"); return
+    guard let table = views(settingsWindow.contentView!).compactMap({ $0 as? NSTableView }).first(where: { $0.numberOfRows == 7 }) else {
+        verify(false, "Settings shows a seven-row sidebar"); return
     }
     let frame = table.convert(table.rect(ofRow: index), to: nil)
     clickSettings(NSPoint(x: frame.midX, y: frame.midY))
@@ -926,11 +926,11 @@ func clickSidebarRow(_ index: Int) {
         RunLoop.main.run(until: Date().addingTimeInterval(0.2))
     }
 }
-clickSidebarRow(1)
-verify(settingsController.state.section == "Status Bar", "Status Bar sidebar row selects its section")
 clickSidebarRow(2)
+verify(settingsController.state.section == "Status Bar", "Status Bar sidebar row selects its section")
+clickSidebarRow(3)
 verify(settingsController.state.section == "AI", "AI sidebar row selects its section")
-for section in ["General", "Status Bar", "AI", "Extensions", "App Shortcuts", "Data & Configuration"] {
+for section in ["General", "Appearance", "Status Bar", "AI", "Extensions", "App Shortcuts", "Data & Configuration"] {
     settingsController.state.section = section
     RunLoop.main.run(until: Date().addingTimeInterval(0.15))
     let content = settingsWindow.contentView!
@@ -945,6 +945,13 @@ verify(!settingsWindow.isVisible, "Escape dismisses Settings")
 verify(openedAI.isEmpty, "Navigating AI settings never connects automatically")
 let settingsAfterNavigation = try Data(contentsOf: settingsURL)
 verify(settingsAfterNavigation == settingsBeforeNavigation, "Navigating AI settings never rewrites configuration")
+settingsController.showWindow(nil)
+settingsController.state.section = "Appearance"
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+clickSettings("settings.theme-dark")
+verify(settingsController.state.config.appearance.theme == .dark, "Dark theme tile saves the theme")
+clickSettings("settings.theme-system")
+verify(settingsController.state.config.appearance.theme == .system, "System theme tile restores following macOS")
 settingsController.showWindow(nil)
 settingsController.state.section = "AI"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))

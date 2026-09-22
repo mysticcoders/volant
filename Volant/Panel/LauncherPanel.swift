@@ -22,8 +22,8 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
     init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), positionStore: UserDefaults = .standard, caffeinate: CaffeinateService = CaffeinateService(), preparesWhenHidden: Bool = true, files: FileSearch = FileSearch(), onNote: @escaping (LauncherAction) -> Void) {
         self.positionStore = positionStore
         self.preparesWhenHidden = preparesWhenHidden
-        LauncherPanel.scale = min(1.4, max(0.8, config.appearance.scale))
-        LauncherPanel.opacity = min(1.0, max(0.5, config.appearance.opacity))
+        LauncherPanel.scale = config.appearance.clampedScale
+        LauncherPanel.opacity = config.appearance.clampedOpacity
         model = LauncherModel(index: index, clipboard: clipboard, notes: notes, config: config, usage: usage, caffeinate: caffeinate, files: files, onNote: onNote)
         super.init(contentRect: NSRect(origin: .zero, size: LauncherPanel.size),
                    styleMask: [.nonactivatingPanel, .borderless, .fullSizeContentView],
@@ -265,7 +265,21 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
     /// Development aid for screenshots: `Volant --show --query saf`.
     func setQuery(_ text: String) { model.query = text }
 
-    func apply(config: Preferences) { model.config = config }
+    /// Size and opacity apply live. A resize keeps the top edge where it was, so the search field
+    /// stays under the pointer and a remembered position remains reachable.
+    func apply(config: Preferences) {
+        model.config = config
+        LauncherPanel.opacity = config.appearance.clampedOpacity
+        let scale = config.appearance.clampedScale
+        if scale != LauncherPanel.scale {
+            LauncherPanel.scale = scale
+            var resized = frame
+            resized.origin.y = frame.maxY - LauncherPanel.size.height
+            resized.size = LauncherPanel.size
+            setFrame(resized, display: isVisible)
+        }
+        model.objectWillChange.send()
+    }
 
     override func sendEvent(_ event: NSEvent) {
         if event.type == .keyDown, event.keyCode == 43,
