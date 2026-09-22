@@ -75,6 +75,25 @@ final class ConfettiTests: XCTestCase {
                           "the arc has to complete inside the window's lifetime")
     }
 
+    /// The first pass threw roughly 1,960 pieces, which filled the screen solid instead of
+    /// reading as a handful of confetti in the air.
+    func testTheBurstThrowsAReadableNumberOfPieces() {
+        let emitters = ConfettiWindow.emitters(size: screen)
+        let total = ConfettiWindow.totalPieces(cannons: emitters.count)
+        XCTAssertEqual(total, ConfettiWindow.pieceCount, accuracy: 2,
+                       "the derived birth rate has to produce the piece count that was asked for")
+        XCTAssertLessThan(total, 600, "more than this stops looking like individual pieces")
+        XCTAssertGreaterThan(total, 80, "fewer than this does not read as a celebration")
+    }
+
+    func testDensityDoesNotDriftWhenCannonsOrColoursChange() {
+        // Birth rate is per cell, so it has to fall as cells are added or the burst silently
+        // gets denser every time a cannon or a colour is introduced.
+        XCTAssertGreaterThan(ConfettiWindow.birthRate(cannons: 2), ConfettiWindow.birthRate(cannons: 5))
+        XCTAssertEqual(ConfettiWindow.totalPieces(cannons: 2), ConfettiWindow.pieceCount, accuracy: 2)
+        XCTAssertEqual(ConfettiWindow.totalPieces(cannons: 8), ConfettiWindow.pieceCount, accuracy: 2)
+    }
+
     func testEveryPieceFadesWithinItsLifetime() {
         for emitter in ConfettiWindow.emitters(size: screen) {
             let cells = emitter.emitterCells ?? []

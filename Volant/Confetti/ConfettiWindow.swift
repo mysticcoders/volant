@@ -69,6 +69,21 @@ final class ConfettiWindow: NSWindow {
     /// and `yAcceleration` is negative.
     static let gravity: CGFloat = -2000
 
+    /// Roughly how many pieces the whole burst throws, across every cannon and colour. This is the
+    /// dial worth turning: birth rate is derived from it, so changing the number of cannons or
+    /// colours does not silently change how dense the burst looks.
+    static let pieceCount = 240
+
+    static func birthRate(cannons: Int) -> Float {
+        let cells = Double(max(cannons, 1) * colors.count)
+        return Float(Double(pieceCount) / (emitDuration * cells))
+    }
+
+    /// What the burst actually throws, for the parameters in use.
+    static func totalPieces(cannons: Int) -> Int {
+        Int((Double(birthRate(cannons: cannons)) * emitDuration * Double(cannons * colors.count)).rounded())
+    }
+
     /// Launch speed is derived from the screen rather than fixed, so the burst fills a display of
     /// any height instead of dying in the corners. From v = sqrt(2gh), with headroom so the
     /// fastest pieces carry past the top edge rather than stalling just below it.
@@ -87,6 +102,7 @@ final class ConfettiWindow: NSWindow {
     static func emitters(size: CGSize) -> [CAEmitterLayer] {
         let speed = launchSpeed(forHeight: size.height)
         let positions: [CGFloat] = [0, 0.25, 0.5, 0.75, 1]
+        let rate = birthRate(cannons: positions.count)
         return positions.map { fraction in
             let emitter = CAEmitterLayer()
             emitter.emitterShape = .point
@@ -96,16 +112,16 @@ final class ConfettiWindow: NSWindow {
             // leans left. Each cannon aims towards the far side of the screen; the middle one fires
             // straight up. Getting this backwards aims the corner cannons off-screen.
             let lean = (fraction - 0.5) * (.pi / 5)
-            emitter.emitterCells = cells(angle: .pi / 2 + lean, speed: speed)
+            emitter.emitterCells = cells(angle: .pi / 2 + lean, speed: speed, birthRate: rate)
             return emitter
         }
     }
 
-    static func cells(angle: CGFloat, speed: CGFloat) -> [CAEmitterCell] {
+    static func cells(angle: CGFloat, speed: CGFloat, birthRate: Float) -> [CAEmitterCell] {
         colors.map { color in
             let cell = CAEmitterCell()
             cell.contents = piece(color: color).cgImage(forProposedRect: nil, context: nil, hints: nil)
-            cell.birthRate = 160
+            cell.birthRate = birthRate
             cell.lifetime = Float(settleDuration)
             cell.velocity = speed
             // A wide spread of speeds is what fills the middle of the screen rather than leaving a
