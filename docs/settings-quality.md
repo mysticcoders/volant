@@ -65,3 +65,29 @@ The launcher now searches 18 curated pane titles and synonyms (for example `sett
 Pane identifiers were checked against the installed Apple extension bundles. These are pane-level URL links, not Apple's private search index; matching a permission keyword opens Privacy & Security, not an individual permission control. URL acceptance does not prove the OS navigated to the correct pane. The native preview's Login Items result was clicked and the resulting System Settings Login Items screen was confirmed. Other destinations and macOS 15 remain to be exercised individually. Release build, SwiftLint, launcher routing/ranking tests, and light/dark destination-row fixtures passed; renders use the actual LauncherPanel size. The dedicated `tools/preview-settings.sh --destinations` fixture supports manual navigation checks without owner preference writes.
 
 Next concrete work: finish the pane-link matrix on supported macOS versions and refresh the notarized delivery. Caffeinate is not implemented: use public IOKit idle-sleep assertions with duration, optional display assertion, clear active/stop state, release on stop/quit and OS timeout; do not mutate power preferences. Translation remains issue #5: use Apple's TranslationSession on macOS 15+, runtime language-pair checks and system-managed model-download consent, then show source/target text and Copy Translation. Both are separate features from this search change.
+
+## Native grouped forms — September 22, 2026
+
+The owner found Settings padded and uneven. Every pane was a hand-built `VStack` inside a detail
+column that already added 24 pt, so nested lists, scroll views and cards stacked their own insets
+on top; spacing varied between 4 and 18 pt with no shared rule, captions sat 18 pt from the control
+they explained, and each pane repeated its sidebar name as a large title.
+
+Settings now follows the System Settings pattern. The sidebar is a native `.sidebar` list with a
+symbol per section. General, Status Bar, AI, Extensions and Data & Configuration are grouped
+`Form` sections: labels align on the leading edge and controls on the trailing edge, and
+explanatory text is a section footer directly under the controls it describes. The form owns its
+own margins and scrolling, so no pane adds padding of its own. App Shortcuts remains a plain list
+under a compact search header, with shorter rows and a visible alias field. Recorders are 26 pt
+tall instead of 32.
+
+Fixtures no longer click hard-coded coordinates. SwiftUI builds its accessibility tree only for an
+assistive client, and form buttons have no `NSButton` to search, so the few buttons a fixture clicks
+(Connect ACP, Choose Folder, a local server's Use) carry an empty `ControlAnchor` view with a
+`settings.` identifier, which `controlFrame(_:in:)` finds. The Herdr source is the topmost
+`NSSwitch`, and sidebar rows are found by their fixed order in the native table. In the headless
+guest the Settings fixture window is never key, and a native table ignores a first click in a
+non-key window, so the fixture reports the undelivered click and selects the row through the table.
+That still exercises the SwiftUI selection binding but is not evidence of a physical sidebar click;
+check that in a live preview or the installed app. The launcher fixture and
+`tools/preview-settings.sh --render` now render all six sections.

@@ -25,15 +25,15 @@ struct AppBindingRow: View {
         _expectedAliases = State(initialValue: aliases)
     }
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: 3) {
             HStack(alignment: .top, spacing: 10) {
                 HStack(spacing: 8) {
-                    Image(nsImage: NSWorkspace.shared.icon(forFile: app.url.path)).resizable().frame(width: 22, height: 22)
+                    Image(nsImage: NSWorkspace.shared.icon(forFile: app.url.path)).resizable().frame(width: 20, height: 20)
                     Text(app.name).lineLimit(1).help(app.name)
-                }.frame(maxWidth: .infinity, alignment: .leading).frame(height: 32)
-                VStack(alignment: .leading, spacing: 4) {
-                    TextField("Add Alias", text: $alias).textFieldStyle(.plain)
-                        .frame(height: 32).focused($editingAlias)
+                }.frame(maxWidth: .infinity, alignment: .leading).frame(height: 26)
+                VStack(alignment: .leading, spacing: 3) {
+                    TextField("Alias", text: $alias).textFieldStyle(.roundedBorder)
+                        .frame(height: 26).focused($editingAlias)
                         .accessibilityLabel(app.name + " alias")
                         .help(storedAliases.keys.sorted().joined(separator: ", "))
                         .onSubmit { saveAlias() }
@@ -41,13 +41,13 @@ struct AppBindingRow: View {
                     if saved && alias == originalAlias {
                         Label("Saved", systemImage: "checkmark.circle.fill").font(.caption).foregroundStyle(.secondary)
                     }
-                }.frame(width: 80)
+                }.frame(width: 90)
                 ShortcutControl(title: app.name, value: hotKey) { replacement in
                     guard let bundleID else { throw BindingFailure(message: "This app has no bundle identifier.") }
                     _ = try AppBindingStore.updateHotKey(bundleID: bundleID, value: replacement, expectedValue: hotKey,
                         at: configURL, available: { HotKeyCenter.shared.isAvailable($0) })
                     onChange()
-                }.frame(width: 140).disabled(bundleID == nil)
+                }.frame(width: 160).disabled(bundleID == nil)
                     .help(bundleID == nil ? "This app has no bundle identifier for a global shortcut." : "Record a global shortcut")
             }
             if let error {
@@ -58,7 +58,7 @@ struct AppBindingRow: View {
                 }.font(.caption)
             }
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 2)
         .onChange(of: storedAliases) { _, latest in
             if alias == originalAlias { adopt(latest) }
         }
