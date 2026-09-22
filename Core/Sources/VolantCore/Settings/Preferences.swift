@@ -5,6 +5,8 @@ public struct Preferences: Codable {
     public var summonHotKey: String = "option+space"
     public var emojiHotKey: String = ""
     public var notesHotKey: String = "option+n"
+    /// Dictation is the one hotkey that also acts on release, so holding it talks.
+    public var talkHotKey: String = ""
     public var appHotKeys: [AppHotKey] = []
     public var clipboardRetention: Int = 500
     public var showOnLaunch: Bool = true
@@ -27,7 +29,7 @@ public struct Preferences: Codable {
     public var help: String = "Edit and choose Reload Configuration in Settings. Hotkeys: cmd|ctrl|option|shift|meh|hyper + key. App hotkeys use the bundle identifier. Snippets: {date} {isodate} {time} {datetime} {clipboard} {uuid}. Quicklinks: {query}. Aliases map a word to an app name or query. Appearance: scale 0.8–1.4, opacity 0.5–1.0."
 
     public enum CodingKeys: String, CodingKey {
-        case favoriteApps, summonHotKey, notesHotKey, emojiHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, statusBar, snippets, quicklinks, aliases, appearance
+        case favoriteApps, summonHotKey, notesHotKey, emojiHotKey, talkHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, statusBar, snippets, quicklinks, aliases, appearance
         case help = "_help"
     }
 
@@ -47,6 +49,7 @@ public struct Preferences: Codable {
         let d = Preferences()
         summonHotKey = try c.decodeIfPresent(String.self, forKey: .summonHotKey) ?? d.summonHotKey
         notesHotKey = try c.decodeIfPresent(String.self, forKey: .notesHotKey) ?? d.notesHotKey
+        talkHotKey = try c.decodeIfPresent(String.self, forKey: .talkHotKey) ?? d.talkHotKey
         emojiHotKey = try c.decodeIfPresent(String.self, forKey: .emojiHotKey) ?? d.emojiHotKey
         appHotKeys = try c.decodeIfPresent([AppHotKey].self, forKey: .appHotKeys) ?? d.appHotKeys
         clipboardRetention = try c.decodeIfPresent(Int.self, forKey: .clipboardRetention) ?? d.clipboardRetention
