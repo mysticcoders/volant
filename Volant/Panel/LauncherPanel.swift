@@ -50,7 +50,8 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         (model.showingACP && (model.acp.active || model.acp.submitting ||
         !model.acp.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)) ||
         model.pendingExtension != nil || model.extensionRunning || model.wifiJoin != nil || model.connectivityBusy ||
-        (model.showingTranslation && model.translation.hasDraft)
+        (model.showingTranslation && model.translation.hasDraft) ||
+        model.dictation.phase == .listening || model.dictation.phase == .finishing
     }
 
     override func resignKey() {
@@ -301,6 +302,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
 
     override func cancelOperation(_ sender: Any?) {
         if model.actionTarget != nil { model.actionTarget = nil; model.searchFocusRequest = UUID() }
+        else if model.dictation.isListening { model.cancelDictation() }
         else { orderOut(nil) }
     }
 }

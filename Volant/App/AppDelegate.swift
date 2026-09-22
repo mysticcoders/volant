@@ -276,7 +276,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         dictationPressedAt = Date()
         panel.showForDictation()
-        model.toggleDictation()
+        model.toggleDictation(stopHint: "release or press \(KeyCombo.display(config.talkHotKey)) to stop")
     }
 
     private func endDictationFromHotkey() {

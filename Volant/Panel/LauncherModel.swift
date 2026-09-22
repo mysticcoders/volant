@@ -654,18 +654,26 @@ final class LauncherModel: ObservableObject {
     /// Dictation goes to the clipboard rather than into whatever app was focused. Typing into
     /// another app needs the Accessibility grant Volant deliberately does not request, so the
     /// transcript is copied and the paste stays the owner's keystroke.
-    func toggleDictation() {
+    func toggleDictation(stopHint: String = "press Return to stop") {
         if dictation.isListening { finishDictation(); return }
         let availability = SpeechDictation.availability
         guard availability.isReady else {
             actionFeedback = availability.reason
             return
         }
-        actionFeedback = "Listening… press Return to stop."
+        actionFeedback = "Listening… \(stopHint), or Escape to cancel."
         dictation.start { [weak self] _ in
             guard let self, case .failed(let reason) = self.dictation.phase else { return }
             self.actionFeedback = reason
         }
+    }
+
+    /// Escape discards what was heard rather than copying it, so the microphone can always be
+    /// stopped without touching the clipboard. Once transcription has begun it runs to the end.
+    func cancelDictation() {
+        guard dictation.isListening else { return }
+        dictation.cancel()
+        actionFeedback = "Dictation cancelled."
     }
 
     func finishDictation() {

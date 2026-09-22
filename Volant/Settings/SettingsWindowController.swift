@@ -134,6 +134,8 @@ private struct SettingsView: View {
             GlobalShortcutRow(title: "Show Volant", key: "summonHotKey", value: state.config.summonHotKey, configURL: configURL, onChange: onChange)
             GlobalShortcutRow(title: "Open Notes", key: "notesHotKey", value: state.config.notesHotKey, configURL: configURL, onChange: onChange)
             GlobalShortcutRow(title: "Search Emoji", key: "emojiHotKey", value: state.config.emojiHotKey, configURL: configURL, onChange: onChange)
+            GlobalShortcutRow(title: "Dictate Text", key: "talkHotKey", value: state.config.talkHotKey, configURL: configURL, onChange: onChange)
+            Text("Hold the dictation shortcut while you speak and let go to copy the text, or tap it once to start and again to stop.").font(.callout).foregroundStyle(.secondary)
             Text("Click a shortcut and press a new combination. Changes save automatically. Hover to remove a shortcut.").font(.callout).foregroundStyle(.secondary)
         }.frame(maxWidth: .infinity, alignment: .leading)
         }.onAppear { loginStatus = SMAppService.mainApp.status }

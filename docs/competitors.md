@@ -248,8 +248,8 @@ Apple's `SpeechAnalyzer` and `SpeechTranscriber` with `AssetInventory` handling 
 gated at `@available(iOS 26.0, *)`. macOS 26 has the same API, and the availability shape matches
 what already shipped for Apple Intelligence, so an unsupported system shows a reason rather than
 breaking. That lands Tuna's free tier equivalent, Apple Speech, inside the sandbox with no
-subprocess and no new entitlement — though push-to-talk triggers may still want Input Monitoring,
-which Volant currently refuses.
+subprocess and no new entitlement. Push-to-talk turned out not to need Input Monitoring: Carbon
+delivers the hotkey release event on its own (measured in `docs/ai-connections.md`).
 
 ### Not verified
 

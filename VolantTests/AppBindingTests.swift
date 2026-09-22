@@ -38,4 +38,25 @@ final class AppBindingTests: XCTestCase {
         XCTAssertNil(latest.aliases["new"])
         XCTAssertEqual(latest.aliases["another"], "/Fixture.app")
     }
+
+    func testDictationShortcutSavesFromSettingsAndJoinsDuplicateChecks() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let url = root.appendingPathComponent("config.json")
+        try Data(#"{"summonHotKey":"option+space","unknown":{"preserve":true}}"#.utf8).write(to: url)
+        try GlobalShortcutStore.save(key: "talkHotKey", value: "option+d", expectedValue: "", at: url, available: { _ in true })
+        let object = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as! [String: Any]
+        XCTAssertEqual(object["talkHotKey"] as? String, "option+d")
+        XCTAssertEqual((object["unknown"] as? [String: Bool])?["preserve"], true)
+        let saved = try Data(contentsOf: url)
+        XCTAssertThrowsError(try GlobalShortcutStore.save(key: "notesHotKey", value: "option+d", expectedValue: "", at: url, available: { _ in true }),
+                             "another global binding cannot reuse the dictation shortcut")
+        XCTAssertThrowsError(try AppBindingStore.save(bundleID: "test.fixture", path: "/Fixture.app", originalAlias: "", alias: "", hotKey: "option+d",
+                                                      expected: saved, at: url, available: { _ in true }),
+                             "an app shortcut cannot reuse the dictation shortcut")
+        XCTAssertThrowsError(try GlobalShortcutStore.save(key: "talkHotKey", value: "option+e", expectedValue: "", at: url, available: { _ in true }),
+                             "a stale snapshot is rejected")
+        XCTAssertEqual(try Data(contentsOf: url), saved)
+    }
 }
