@@ -26,6 +26,13 @@ final class SpeechDictation: ObservableObject {
         var reason: String? { if case .unavailable(let text) = self { return text }; return nil }
     }
 
+    enum DictationError: LocalizedError {
+        case noCompatibleAudioFormat
+        var errorDescription: String? {
+            "This Mac's microphone format cannot be used for dictation."
+        }
+    }
+
     enum Phase: Equatable {
         case idle, listening, finishing, failed(String)
     }
@@ -65,6 +72,7 @@ final class SpeechDictation: ObservableObject {
         var transcriber: SpeechTranscriber?
         var stream: AsyncStream<AnalyzerInput>.Continuation?
         var collector: Task<Void, Never>?
+        var converter: AVAudioConverter?
     }
     private var session: Any?
     #endif
@@ -116,11 +124,28 @@ final class SpeechDictation: ObservableObject {
                 let analyzer = SpeechAnalyzer(modules: [transcriber])
                 session.analyzer = analyzer
 
+                // The microphone runs at the hardware rate, typically 48 kHz, while the analyzer
+                // wants its own format, typically 16 kHz. AnalyzerInput traps on a mismatched
+                // buffer, and the tap runs on the realtime audio thread where a trap kills the
+                // process, so the conversion happens before anything is handed over.
+                let inputFormat = session.engine.inputNode.inputFormat(forBus: 0)
+                guard let analyzerFormat = await SpeechAnalyzer.bestAvailableAudioFormat(
+                    compatibleWith: [transcriber], considering: inputFormat) else {
+                    throw DictationError.noCompatibleAudioFormat
+                }
+                guard let converter = AVAudioConverter(from: inputFormat, to: analyzerFormat) else {
+                    throw DictationError.noCompatibleAudioFormat
+                }
+                session.converter = converter
+
                 let (stream, continuation) = AsyncStream<AnalyzerInput>.makeStream()
                 session.stream = continuation
-                let format = session.engine.inputNode.inputFormat(forBus: 0)
-                session.engine.inputNode.installTap(onBus: 0, bufferSize: 4096, format: format) { buffer, _ in
-                    continuation.yield(AnalyzerInput(buffer: buffer))
+                session.engine.inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { buffer, _ in
+                    // Nothing in here may trap: this is the realtime audio thread, where a trap
+                    // takes the whole process down rather than surfacing as an error.
+                    guard let converted = SpeechDictation.convert(buffer, using: converter, to: analyzerFormat)
+                    else { return }
+                    continuation.yield(AnalyzerInput(buffer: converted))
                 }
                 session.engine.prepare()
                 try session.engine.start()
@@ -153,6 +178,29 @@ final class SpeechDictation: ObservableObject {
         }
     }
     #endif
+
+
+    /// Resamples a microphone buffer into the analyzer's format. `AnalyzerInput` traps on a buffer
+    /// whose format does not match, and the caller is the realtime audio thread, so this returns
+    /// nil for anything it cannot convert rather than raising.
+    static func convert(_ buffer: AVAudioPCMBuffer,
+                        using converter: AVAudioConverter,
+                        to format: AVAudioFormat) -> AVAudioPCMBuffer? {
+        guard buffer.frameLength > 0 else { return nil }
+        let ratio = format.sampleRate / buffer.format.sampleRate
+        let capacity = AVAudioFrameCount(Double(buffer.frameLength) * ratio) + 1024
+        guard let converted = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: capacity) else { return nil }
+        var error: NSError?
+        var supplied = false
+        converter.convert(to: converted, error: &error) { _, status in
+            if supplied { status.pointee = .noDataNow; return nil }
+            supplied = true
+            status.pointee = .haveData
+            return buffer
+        }
+        guard error == nil, converted.frameLength > 0 else { return nil }
+        return converted
+    }
 
     /// Stops capture and reports the transcript. Safe to call when not listening.
     func stop(finished: @escaping (String?) -> Void) {
