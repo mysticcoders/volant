@@ -72,7 +72,7 @@ final class ConfettiWindow: NSWindow {
     /// Roughly how many pieces the whole burst throws, across every cannon and colour. This is the
     /// dial worth turning: birth rate is derived from it, so changing the number of cannons or
     /// colours does not silently change how dense the burst looks.
-    static let pieceCount = 240
+    static let pieceCount = 120
 
     static func birthRate(cannons: Int) -> Float {
         let cells = Double(max(cannons, 1) * colors.count)
