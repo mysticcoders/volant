@@ -31,6 +31,7 @@ struct AppearanceSettingsView: View {
             Section {
                 Slider(value: $scale, in: Appearance.scaleRange, step: 0.05) {
                     Text("Size")
+                    Text("\(Int((scale * 100).rounded()))%")
                 } minimumValueLabel: {
                     Image(systemName: "textformat.size.smaller").accessibilityLabel("Smaller")
                 } maximumValueLabel: {
@@ -38,9 +39,9 @@ struct AppearanceSettingsView: View {
                 } onEditingChanged: { editing in
                     if !editing { save { $0.scale = scale } }
                 }
-                LabeledContent("Current size", value: "\(Int((scale * 100).rounded()))%")
                 Slider(value: $opacity, in: Appearance.opacityRange, step: 0.05) {
                     Text("Opacity")
+                    Text("\(Int((opacity * 100).rounded()))%")
                 } minimumValueLabel: {
                     Image(systemName: "circle.dotted").accessibilityLabel("More transparent")
                 } maximumValueLabel: {
@@ -48,7 +49,6 @@ struct AppearanceSettingsView: View {
                 } onEditingChanged: { editing in
                     if !editing { save { $0.opacity = opacity } }
                 }
-                LabeledContent("Current opacity", value: "\(Int((opacity * 100).rounded()))%")
                 if appearance.clampedScale != 1 || appearance.clampedOpacity != 1 {
                     LabeledContent("Launcher") {
                         Button("Restore Defaults") { save { $0.scale = 1; $0.opacity = 1 } }
