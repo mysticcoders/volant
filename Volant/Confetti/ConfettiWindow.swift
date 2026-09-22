@@ -41,7 +41,7 @@ final class ConfettiWindow: NSWindow {
 
     private func start() {
         guard let layer = contentView?.layer else { return }
-        let emitters = Self.emitters(width: frame.width)
+        let emitters = Self.emitters(size: frame.size)
         emitters.forEach(layer.addSublayer)
         orderFrontRegardless()
 
@@ -61,48 +61,63 @@ final class ConfettiWindow: NSWindow {
         close()
     }
 
-    /// Two cannons at the bottom corners, fired up and inward. Gravity arcs the pieces over and
-    /// brings them back down, which is what throwing confetti looks like; emitting from the top
-    /// and letting it fall is snow.
+    /// Cannons along the bottom edge, fired up and inward. Gravity arcs the pieces over and brings
+    /// them back down, which is what throwing confetti looks like; emitting from the top and
+    /// letting it fall is snow.
     ///
-    /// The layer is not flipped, so on macOS +y points up the screen: the launch velocity is
-    /// positive and `yAcceleration` is negative.
-    static let launchSpeed: CGFloat = 620
-    static let gravity: CGFloat = -820
+    /// The layer is not flipped, so on macOS +y points up the screen: launch velocity is positive
+    /// and `yAcceleration` is negative.
+    static let gravity: CGFloat = -2000
 
-    /// How high a piece launched straight up reaches before falling back, from v² / 2g. Used to
-    /// keep the burst tall enough to read as a throw rather than a fizzle.
-    static var peakHeight: CGFloat { (launchSpeed * launchSpeed) / (2 * abs(gravity)) }
+    /// Launch speed is derived from the screen rather than fixed, so the burst fills a display of
+    /// any height instead of dying in the corners. From v = sqrt(2gh), with headroom so the
+    /// fastest pieces carry past the top edge rather than stalling just below it.
+    static func launchSpeed(forHeight height: CGFloat) -> CGFloat {
+        sqrt(2 * abs(gravity) * max(height, 1) * 1.15)
+    }
 
-    static func emitters(width: CGFloat) -> [CAEmitterLayer] {
-        // Angles measured from +x, so just past vertical and leaning towards the far corner.
-        [(CGPoint(x: 0, y: 0), CGFloat.pi / 2 - .pi / 7),
-         (CGPoint(x: width, y: 0), CGFloat.pi / 2 + .pi / 7)].map { origin, angle in
+    /// Peak of a vertical launch, v² / 2g.
+    static func peakHeight(forHeight height: CGFloat) -> CGFloat {
+        let speed = launchSpeed(forHeight: height)
+        return (speed * speed) / (2 * abs(gravity))
+    }
+
+    /// Five cannons rather than two: corners alone read as a pair of hoses, while spreading the
+    /// sources across the bottom edge fills the width.
+    static func emitters(size: CGSize) -> [CAEmitterLayer] {
+        let speed = launchSpeed(forHeight: size.height)
+        let positions: [CGFloat] = [0, 0.25, 0.5, 0.75, 1]
+        return positions.map { fraction in
             let emitter = CAEmitterLayer()
             emitter.emitterShape = .point
-            emitter.emitterPosition = origin
+            emitter.emitterPosition = CGPoint(x: size.width * fraction, y: 0)
             emitter.emitterSize = .zero
-            emitter.emitterCells = cells(angle: angle)
+            // Angles run counterclockwise from +x, so an angle below .pi/2 leans right and above it
+            // leans left. Each cannon aims towards the far side of the screen; the middle one fires
+            // straight up. Getting this backwards aims the corner cannons off-screen.
+            let lean = (fraction - 0.5) * (.pi / 5)
+            emitter.emitterCells = cells(angle: .pi / 2 + lean, speed: speed)
             return emitter
         }
     }
 
-    static func cells(angle: CGFloat) -> [CAEmitterCell] {
+    static func cells(angle: CGFloat, speed: CGFloat) -> [CAEmitterCell] {
         colors.map { color in
             let cell = CAEmitterCell()
             cell.contents = piece(color: color).cgImage(forProposedRect: nil, context: nil, hints: nil)
-            cell.birthRate = 90
+            cell.birthRate = 160
             cell.lifetime = Float(settleDuration)
-            cell.velocity = launchSpeed
-            cell.velocityRange = launchSpeed * 0.35
+            cell.velocity = speed
+            // A wide spread of speeds is what fills the middle of the screen rather than leaving a
+            // band of confetti all at the same height.
+            cell.velocityRange = speed * 0.55
             cell.emissionLongitude = angle
-            cell.emissionRange = .pi / 5
+            cell.emissionRange = .pi / 3
             cell.yAcceleration = gravity
             cell.spin = 3
-            cell.spinRange = 5
+            cell.spinRange = 6
             cell.scale = 0.5
             cell.scaleRange = 0.3
-            // Stay solid through the arc and fade only as the pieces land.
             cell.alphaSpeed = -1 / Float(settleDuration)
             return cell
         }
