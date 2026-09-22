@@ -38,6 +38,8 @@
 	<string>macOS requires Location access to show Wi-Fi network names. Volant does not request your coordinates.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>macOS requires Location access to show Wi-Fi network names. Volant does not request your coordinates.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Volant transcribes dictation on this Mac. Audio is never sent anywhere and is not saved.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>SUEnableDownloaderService</key>

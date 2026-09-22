@@ -79,3 +79,58 @@ opposite of the HTTP path, where `AIStreamDecoder` genuinely emits deltas.
 Live use through the installed signed app, and behavior on a Mac where Apple Intelligence is off or
 ineligible — both availability branches are reasoned from the framework's own enum rather than
 observed. There is no model picker: the kind uses `SystemLanguageModel.default`.
+
+## On-device dictation — September 21, 2026
+
+`talk` in the launcher, or a hotkey of its own, records through Apple's `SpeechAnalyzer` and copies
+the transcript to the clipboard. Audio never leaves the Mac and nothing is written to disk.
+
+### What it costs, measured before it was written
+
+Four questions were answered with signed probes carrying Volant's own entitlements, launched
+through LaunchServices so nothing was inherited from a terminal.
+
+- **Transcription in App Sandbox: free.** `SpeechTranscriber.isAvailable` is true, 45 locales are
+  supported, and the system already had the assets installed, so there is no download and no
+  entitlement. A generated sample transcribed accurately.
+- **Microphone capture: one entitlement.** `com.apple.security.device.audio-input` plus
+  `NSMicrophoneUsageDescription` and the ordinary microphone prompt. Verified by checking sample
+  amplitudes rather than trusting `engine.start`, which returns OK *without* the entitlement while
+  capturing digital silence — the same false positive `CGEvent.tapCreate` gives.
+- **Hold-to-talk: free.** Carbon delivers `kEventHotKeyReleased` for a registered combination.
+  Measured sandboxed with a real keypress: two presses, two releases, three-second and two-second
+  holds. No Input Monitoring and no Accessibility.
+- **Auto-insert into the focused app: not done.** Both routes, synthesising Command-V and writing
+  through `AXUIElement`, need the Accessibility grant Volant refuses and `docs/competitors.md`
+  cites as a differentiator. The transcript is copied instead and the paste stays the owner's
+  keystroke.
+
+### Behavior
+
+`talk` toggles: Return starts listening, Return stops and copies. The dedicated hotkey does both
+shapes — hold it for longer than 0.4 s and releasing stops, tap it and it keeps listening until the
+next tap. The panel shows a live microphone indicator and the text heard so far, so dictation is
+never running invisibly.
+
+Availability is rechecked at start, because microphone permission can be revoked between uses. On
+macOS 15 the command is present and reports that it needs macOS 26, the same pattern Apple
+Intelligence uses.
+
+### The availability gate is not the same as Apple Intelligence's
+
+`canImport(FoundationModels)` works as a gate because that framework is absent from the macOS 15
+SDK entirely. `Speech` is not: it has existed since macOS 10.15, so `canImport(Speech)` is true on
+the older SDK while `SpeechAnalyzer`, `SpeechTranscriber` and `AnalyzerInput` are missing from it.
+Gating on `canImport(Speech)` alone compiled here and failed on CI's macOS 15 runner with three
+"cannot find type in scope" errors.
+
+The gate is therefore `canImport(Speech) && canImport(FoundationModels)`, where the second
+condition stands in for "built against an SDK new enough to see these symbols". Anything using a
+macOS 26 API from a framework that also exists on macOS 15 needs the same treatment, and the
+compiled-out branch should be type-checked deliberately rather than assumed.
+
+### Not covered
+
+Live dictation through the signed installed app, the accuracy of long transcripts, locale
+selection on a Mac whose language the engine does not support, and behaviour when a microphone is
+removed mid-session. The native fixtures do not render the dictation indicator.

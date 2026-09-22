@@ -207,6 +207,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.panel.showEmoji()
             }) == nil { failures.append("Search Emoji shortcut unavailable: " + KeyCombo.display(config.emojiHotKey)) }
         }
+        if let combo = KeyCombo(parsing: config.talkHotKey) {
+            // The only hotkey that also acts on release: hold it to dictate, let go to transcribe.
+            // A quick tap starts and the next tap stops, so both habits work.
+            if HotKeyCenter.shared.register(combo, handler: { [weak self] in
+                self?.beginDictationFromHotkey()
+            }, onRelease: { [weak self] in
+                self?.endDictationFromHotkey()
+            }) == nil { failures.append("Dictate Text shortcut unavailable: " + KeyCombo.display(config.talkHotKey)) }
+        }
         failures += AppHotKeys.register(config.appHotKeys) { [weak self] message in
             guard let state = self?.settingsPanel.state else { return }
             if !state.registrationErrors.contains(message) { state.registrationErrors.append(message) }
@@ -252,6 +261,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func toggleNotes() { notesPanel.toggle() }
+
+    /// Held long enough to be a hold rather than a tap, the release stops dictation. A tap leaves
+    /// it listening so the same key can stop it, which is how push-to-talk and toggle both work.
+    private var dictationPressedAt: Date?
+
+    private func beginDictationFromHotkey() {
+        let model = panel.model
+        if model.dictation.isListening {
+            dictationPressedAt = nil
+            model.finishDictation()
+            return
+        }
+        dictationPressedAt = Date()
+        panel.showForDictation()
+        model.toggleDictation()
+    }
+
+    private func endDictationFromHotkey() {
+        guard let pressedAt = dictationPressedAt else { return }
+        dictationPressedAt = nil
+        guard Date().timeIntervalSince(pressedAt) >= 0.4 else { return }
+        panel.model.finishDictation()
+    }
 
     private func togglePanelFromHotkey() {
         let started = ProcessInfo.processInfo.systemUptime

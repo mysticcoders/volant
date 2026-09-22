@@ -257,6 +257,7 @@ struct LauncherView: View {
                     .lineLimit(1).truncationMode(.tail).help(feedback)
                     .accessibilityLabel("Status: " + feedback).layoutPriority(-1)
             }
+            DictationStatusView(dictation: model.dictation)
             CaffeinateStatusView(service: model.caffeinate)
             Spacer(minLength: 8)
             if let row = model.selectedRow {
@@ -420,6 +421,29 @@ private struct RowView: View {
         case .quicklink: Image(systemName: "link").font(.system(size: 20)).foregroundStyle(.secondary)
         case .extensionRun: Image(systemName: "puzzlepiece.extension").font(.system(size: 20)).foregroundStyle(.secondary)
         case .extensionResult: Image(systemName: "checkmark.circle").font(.system(size: 20)).foregroundStyle(.secondary)
+        }
+    }
+}
+
+
+/// Shows that the microphone is live and what has been heard so far, so dictation is never
+/// running invisibly.
+struct DictationStatusView: View {
+    @ObservedObject var dictation: SpeechDictation
+
+    var body: some View {
+        if dictation.phase == .listening || dictation.phase == .finishing {
+            HStack(spacing: 6) {
+                Image(systemName: dictation.phase == .listening ? "mic.fill" : "waveform")
+                    .font(.system(size: 12))
+                    .foregroundStyle(dictation.phase == .listening ? Color.accentColor : Color.secondary)
+                    .accessibilityLabel(dictation.phase == .listening ? "Listening" : "Transcribing")
+                if !dictation.transcript.isEmpty {
+                    Text(dictation.transcript).font(.system(size: 12)).foregroundStyle(.secondary)
+                        .lineLimit(1).truncationMode(.head)
+                        .accessibilityLabel("Heard so far: " + dictation.transcript)
+                }
+            }
         }
     }
 }

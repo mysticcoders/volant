@@ -307,6 +307,7 @@ final class LauncherModel: ObservableObject {
     @Published private(set) var filesUnavailable = false
     private var indexStateSubscription: AnyCancellable?
     private let contacts = ContactSearch()
+    let dictation = SpeechDictation()
     /// Row images are built once per result set. Building an NSImage inside a row body rebuilds
     /// it on every redraw, which is the cost issue #33 describes for application icons.
     @Published private(set) var contactImages: [String: NSImage] = [:]
@@ -649,6 +650,38 @@ final class LauncherModel: ObservableObject {
         }
     }
 
+    /// Dictation goes to the clipboard rather than into whatever app was focused. Typing into
+    /// another app needs the Accessibility grant Volant deliberately does not request, so the
+    /// transcript is copied and the paste stays the owner's keystroke.
+    func toggleDictation() {
+        if dictation.isListening { finishDictation(); return }
+        let availability = SpeechDictation.availability
+        guard availability.isReady else {
+            actionFeedback = availability.reason
+            return
+        }
+        actionFeedback = "Listening… press Return to stop."
+        dictation.start { [weak self] _ in
+            guard let self, case .failed(let reason) = self.dictation.phase else { return }
+            self.actionFeedback = reason
+        }
+    }
+
+    func finishDictation() {
+        guard dictation.isListening else { return }
+        actionFeedback = "Transcribing…"
+        dictation.stop { [weak self] transcript in
+            guard let self else { return }
+            guard let transcript else {
+                if case .failed(let reason) = self.dictation.phase { self.actionFeedback = reason }
+                else { self.actionFeedback = "Nothing was heard." }
+                return
+            }
+            self.copy(transcript)
+            self.actionFeedback = "Copied \(transcript.count) characters. Press Command-V to paste."
+        }
+    }
+
     private func cacheContactImages(_ entries: [ContactEntry]) {
         var images: [String: NSImage] = [:]
         for entry in entries {
@@ -793,7 +826,9 @@ final class LauncherModel: ObservableObject {
         switch row {
         case .appleShortcut(let shortcut): shortcutRunQuery = query; appleShortcuts.run(shortcut); return
         case .core(let command):
-            if command == .ai { presentAIChat() } else { query = command.query }
+            if command == .ai { presentAIChat() }
+            else if command == .talk { toggleDictation() }
+            else { query = command.query }
             return
         case .caffeinate(let command):
             let succeeded = caffeinate.perform(command)
