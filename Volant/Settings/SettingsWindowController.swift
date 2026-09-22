@@ -90,7 +90,7 @@ private struct SettingsView: View {
                 }
             }
             .listStyle(.sidebar)
-            .frame(width: 190)
+            .frame(width: 215)
             Divider()
             Group {
                 if state.section == "General" { general }

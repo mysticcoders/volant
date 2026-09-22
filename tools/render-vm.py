@@ -19,6 +19,9 @@ os.chdir(ROOT)
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--vm", default=os.environ.get("VOLANT_RENDER_VM", "volant-render-27"))
 args = parser.parse_args()
+KEY = Path.home() / ".ssh" / "volant-render-vm"
+if not KEY.exists():
+    raise SystemExit(f"Install an SSH key in the guest first; see docs/ui-testing.md ({KEY} is missing).")
 output = Path(tempfile.mkdtemp(prefix="volant-render-vm-"))
 print(f"Render artifacts: {output}", flush=True)
 
@@ -70,6 +73,12 @@ sw_vers > "$output/guest-version.txt"
 : > "$output/summary.txt"
 {steps}
 mkdir -p "$output/images"
+# A window-server capture of live Settings, because offscreen caching cannot draw glass backdrops.
+"$root/bundles/VolantSettingsPreview.app/Contents/MacOS/VolantSettingsPreview" > "$output/live-settings.log" 2>&1 &
+preview=$!
+sleep 4
+screencapture -x "$output/images/live-settings-light.png" >> "$output/live-settings.log" 2>&1 || echo "screencapture failed: $?" >> "$output/live-settings.log"
+kill "$preview" 2>/dev/null || true
 for image in /tmp/volant-*.png /tmp/volant-*.jpg /tmp/volant-settings-renders/*.png; do
     [[ ! -f "$image" ]] || cp "$image" "$output/images/"
 done
@@ -86,21 +95,23 @@ log = (output / "tart.log").open("w")
 process = subprocess.Popen(["tart", "run", args.vm, "--no-graphics", "--no-audio", "--no-clipboard", f"--dir=artifacts:{output}"],
                            stdout=log, stderr=subprocess.STDOUT)
 try:
-    deadline = time.monotonic() + 240
+    # Cirrus's vanilla images have no Tart guest agent, only SSH for admin, who is logged in on the
+    # console. Fixtures must run in that GUI session to reach the window server.
+    ssh = ["ssh", "-i", str(KEY), "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null",
+           "-o", "LogLevel=ERROR", "-o", "ConnectTimeout=5"]
+    deadline = time.monotonic() + 300
     while True:
         if process.poll() is not None:
             raise RuntimeError(f"Tart stopped during boot; see {output / 'tart.log'}")
-        try:
-            ready = subprocess.run(["tart", "exec", args.vm, "/usr/bin/true"], stdout=subprocess.DEVNULL,
-                                   stderr=subprocess.DEVNULL, timeout=15).returncode == 0
-        except subprocess.TimeoutExpired:
-            ready = False
-        if ready:
+        address = subprocess.run(["tart", "ip", args.vm], capture_output=True, text=True).stdout.strip()
+        if address and subprocess.run(ssh + [f"admin@{address}", "who | grep -q console"],
+                                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
             break
         if time.monotonic() >= deadline:
-            raise RuntimeError("Tart guest agent did not become ready within 240 seconds")
-        time.sleep(2)
-    subprocess.run(["tart", "exec", args.vm, "/bin/bash", "/Volumes/My Shared Files/artifacts/guest.sh"], check=True, timeout=1800)
+            raise RuntimeError("Guest SSH or console login did not become ready within 300 seconds")
+        time.sleep(3)
+    subprocess.run(ssh + [f"admin@{address}", "sudo launchctl asuser $(id -u admin) sudo -u admin /bin/bash '/Volumes/My Shared Files/artifacts/guest.sh'"],
+                   check=True, timeout=1800)
     print((output / "guest-version.txt").read_text(), (output / "summary.txt").read_text(), sep="", flush=True)
     print(f"Images: {output / 'images'}", flush=True)
 finally:
