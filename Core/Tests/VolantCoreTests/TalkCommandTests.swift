@@ -40,3 +40,19 @@ final class TalkCommandTests: XCTestCase {
         XCTAssertEqual(CoreCommand.ai.title, "AI Chat")
     }
 }
+
+/// Confetti is a command like any other, so the routing rules apply to it too.
+final class ConfettiCommandTests: XCTestCase {
+    func testConfettiIsDiscoverableAndReserved() {
+        XCTAssertTrue(CoreCommand.allCases.contains(.confetti))
+        XCTAssertEqual(CoreCommand.confetti.query, "confetti")
+        XCTAssertTrue(LauncherRouting.isReserved("confetti"))
+        XCTAssertFalse(LauncherRouting.isReserved("confettis"), "only the whole first word is reserved")
+    }
+
+    func testAddingItLeftTheExistingCommandsAlone() {
+        XCTAssertEqual(CoreCommand.talk.query, "talk")
+        XCTAssertEqual(CoreCommand.emoji.query, ":")
+        XCTAssertEqual(CoreCommand.clipboard.query, "clip")
+    }
+}

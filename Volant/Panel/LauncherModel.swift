@@ -12,6 +12,7 @@ enum LauncherAction {
     case agents
     case open(String)
     case create(String)
+    case confetti
 }
 
 enum ResultRow: Identifiable, Hashable {
@@ -828,6 +829,7 @@ final class LauncherModel: ObservableObject {
         case .core(let command):
             if command == .ai { presentAIChat() }
             else if command == .talk { toggleDictation() }
+            else if command == .confetti { onNote(.confetti); dismiss(); return }
             else { query = command.query }
             return
         case .caffeinate(let command):
