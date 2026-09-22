@@ -50,6 +50,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .agents: self?.showAgents()
         case .open(let id): self?.notesPanel.open(noteID: id)
         case .create(let text): self?.notesPanel.openNew(text: text)
+        case .confetti: ConfettiWindow.celebrate()
         }
     }
 
