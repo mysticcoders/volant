@@ -297,6 +297,47 @@ struct KeyCap: View {
     }
 }
 
+/// Draws a command's glyph filled and white on a tinted rounded square, sized to sit level with
+/// the full-color app icons in the rows around it.
+private struct CommandTile: View {
+    let symbol: String
+    let tint: Color
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 5.5, style: .continuous)
+            .fill(tint.gradient)
+            .frame(width: 22, height: 22)
+            .overlay {
+                Image(systemName: symbol).symbolVariant(.fill)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+            .shadow(color: .black.opacity(0.18), radius: 0.5, y: 0.5)
+            .accessibilityHidden(true)
+    }
+}
+
+private extension CoreCommand {
+    /// Keeps related commands in one color family so the list reads by kind at a glance.
+    var tint: Color {
+        switch self {
+        case .ai: return .purple
+        case .talk: return .red
+        case .confetti: return .pink
+        case .shortcuts: return .indigo
+        case .define: return .brown
+        case .translate: return .teal
+        case .caffeinate: return .orange
+        case .emoji: return .green
+        case .notes: return Color(red: 0.93, green: 0.66, blue: 0.0)
+        case .clipboard: return Color(red: 0.36, green: 0.46, blue: 0.62)
+        case .agents: return Color(white: 0.22)
+        case .wifi, .bluetooth: return .blue
+        case .audio: return .mint
+        }
+    }
+}
+
 private struct RowView: View {
     let initialRow: ResultRow
     private var row: ResultRow { model.rows.first(where: { $0.id == initialRow.id }) ?? initialRow }
@@ -387,21 +428,23 @@ private struct RowView: View {
 
     @ViewBuilder private var icon: some View {
         switch row {
-        case .appleShortcut: Image(systemName: "square.stack.3d.up.fill").font(.system(size: 20)).foregroundStyle(.secondary)
-        case .core(let command): Image(systemName: command.symbol).font(.system(size: 20)).foregroundStyle(.secondary)
-        case .caffeinate: Image(systemName: "cup.and.saucer").font(.system(size: 20)).foregroundStyle(.secondary)
+        case .appleShortcut: CommandTile(symbol: "square.stack.3d.up", tint: CoreCommand.shortcuts.tint)
+        case .core(let command): CommandTile(symbol: command.symbol, tint: command.tint)
+        case .caffeinate: CommandTile(symbol: "cup.and.saucer", tint: CoreCommand.caffeinate.tint)
         case .agentSession(let session): Image(systemName: session.agentStatus == "blocked" ? "exclamationmark.bubble" : "terminal").font(.system(size: 20)).foregroundStyle(session.agentStatus == "blocked" ? Color.orange : Color.secondary)
         case .herdrMachine(let machine, let enabled, _):
             Image(systemName: machine == nil ? "desktopcomputer" : (enabled ? "network" : "network.slash"))
                 .font(.system(size: 20)).foregroundStyle(enabled ? Color.secondary : Color.secondary.opacity(0.5))
-        case .connectivity(let item): Image(systemName: item.id.hasPrefix("wifi:") ? "wifi" : "antenna.radiowaves.left.and.right").font(.system(size: 20)).foregroundStyle(.secondary)
-        case .audioRoute(let route): Image(systemName: route.direction == .input ? "mic" : "speaker.wave.2").font(.system(size: 20)).foregroundStyle(.secondary)
-        case .volume(let command, _): Image(systemName: command == .mute ? "speaker.slash" : "speaker.wave.2").font(.system(size: 20)).foregroundStyle(.secondary)
-        case .agents: Image(systemName: "terminal").font(.system(size: 20)).foregroundStyle(.secondary)
+        case .connectivity(let item):
+            let wifi = item.id.hasPrefix("wifi:")
+            CommandTile(symbol: wifi ? "wifi" : "antenna.radiowaves.left.and.right", tint: (wifi ? CoreCommand.wifi : .bluetooth).tint)
+        case .audioRoute(let route): CommandTile(symbol: route.direction == .input ? "mic" : "speaker.wave.2", tint: CoreCommand.audio.tint)
+        case .volume(let command, _): CommandTile(symbol: command == .mute ? "speaker.slash" : "speaker.wave.2", tint: CoreCommand.audio.tint)
+        case .agents: CommandTile(symbol: "terminal", tint: CoreCommand.agents.tint)
         case .calculation: Image(systemName: "equal.circle.fill").font(.system(size: 20)).foregroundStyle(.secondary)
         case .unit: Image(systemName: "arrow.left.arrow.right.circle.fill").font(.system(size: 20)).foregroundStyle(.secondary)
-        case .systemSettings, .settings: Image(systemName: "gearshape")
-        case .reloadConfig: Image(systemName: "arrow.clockwise")
+        case .systemSettings, .settings: CommandTile(symbol: "gearshape", tint: .gray)
+        case .reloadConfig: CommandTile(symbol: "arrow.clockwise", tint: .gray)
         case .app(let a): Image(nsImage: NSWorkspace.shared.icon(forFile: a.url.path)).resizable()
         case .file(let f): Image(nsImage: NSWorkspace.shared.icon(forFile: f.url.path)).resizable()
         case .contact(let c):
