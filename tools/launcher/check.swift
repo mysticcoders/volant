@@ -923,6 +923,11 @@ func clickSidebarRow(_ index: Int) {
     }
     let frame = table.convert(table.rect(ofRow: index), to: nil)
     clickSettings(NSPoint(x: frame.midX, y: frame.midY))
+    if table.selectedRow != index {
+        print("DIAG: sidebar click at \(frame) left selectedRow \(table.selectedRow); key \(settingsWindow.isKeyWindow); hit \(String(describing: settingsWindow.contentView?.hitTest(NSPoint(x: frame.midX, y: frame.midY)).map { type(of: $0) }))")
+        table.selectRowIndexes(IndexSet(integer: index), byExtendingSelection: false)
+        RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+    }
 }
 clickSidebarRow(1)
 verify(settingsController.state.section == "Status Bar", "Status Bar sidebar row is clickable")
