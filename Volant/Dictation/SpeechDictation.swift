@@ -2,7 +2,11 @@ import AVFoundation
 import Foundation
 import VolantCore
 
-#if canImport(Speech)
+// Speech has existed since macOS 10.15, so canImport(Speech) is true even on the macOS 15 SDK
+// where SpeechAnalyzer, SpeechTranscriber and AnalyzerInput do not exist. FoundationModels only
+// ships in the macOS 26 SDK, so it stands in for "this was built against an SDK new enough to see
+// those symbols". Without it the whole feature compiles out and reports that it needs macOS 26.
+#if canImport(Speech) && canImport(FoundationModels)
 import Speech
 #endif
 
@@ -32,7 +36,7 @@ final class SpeechDictation: ObservableObject {
     var isListening: Bool { phase == .listening }
 
     nonisolated static var availability: Availability {
-        #if canImport(Speech)
+        #if canImport(Speech) && canImport(FoundationModels)
         guard #available(macOS 26.0, *) else { return .unavailable(requiresNewerSystem) }
         guard SpeechTranscriber.isAvailable else {
             return .unavailable("On-device dictation is unavailable on this Mac.")
@@ -53,7 +57,7 @@ final class SpeechDictation: ObservableObject {
         return "Dictation needs macOS 26 or later. This Mac runs macOS \(version.majorVersion).\(version.minorVersion)."
     }
 
-    #if canImport(Speech)
+    #if canImport(Speech) && canImport(FoundationModels)
     @available(macOS 26.0, *)
     private final class Session {
         let engine = AVAudioEngine()
@@ -75,7 +79,7 @@ final class SpeechDictation: ObservableObject {
             return
         }
         transcript = ""
-        #if canImport(Speech)
+        #if canImport(Speech) && canImport(FoundationModels)
         guard #available(macOS 26.0, *) else { phase = .failed(Self.requiresNewerSystem); finished(nil); return }
         AVCaptureDevice.requestAccess(for: .audio) { granted in
             DispatchQueue.main.async { [weak self] in
@@ -94,7 +98,7 @@ final class SpeechDictation: ObservableObject {
         #endif
     }
 
-    #if canImport(Speech)
+    #if canImport(Speech) && canImport(FoundationModels)
     @available(macOS 26.0, *)
     private func begin(finished: @escaping (String?) -> Void) {
         let session = Session()
@@ -152,7 +156,7 @@ final class SpeechDictation: ObservableObject {
 
     /// Stops capture and reports the transcript. Safe to call when not listening.
     func stop(finished: @escaping (String?) -> Void) {
-        #if canImport(Speech)
+        #if canImport(Speech) && canImport(FoundationModels)
         guard #available(macOS 26.0, *), let session = session as? Session, phase == .listening else {
             finished(nil); return
         }
@@ -176,7 +180,7 @@ final class SpeechDictation: ObservableObject {
     }
 
     func cancel() {
-        #if canImport(Speech)
+        #if canImport(Speech) && canImport(FoundationModels)
         if #available(macOS 26.0, *), let session = session as? Session {
             session.engine.inputNode.removeTap(onBus: 0)
             session.engine.stop()
@@ -189,7 +193,7 @@ final class SpeechDictation: ObservableObject {
         phase = .idle
     }
 
-    #if canImport(Speech)
+    #if canImport(Speech) && canImport(FoundationModels)
     @available(macOS 26.0, *)
     private static func bestLocale() async -> Locale {
         let supported = await SpeechTranscriber.supportedLocales

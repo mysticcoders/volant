@@ -116,6 +116,19 @@ Availability is rechecked at start, because microphone permission can be revoked
 macOS 15 the command is present and reports that it needs macOS 26, the same pattern Apple
 Intelligence uses.
 
+### The availability gate is not the same as Apple Intelligence's
+
+`canImport(FoundationModels)` works as a gate because that framework is absent from the macOS 15
+SDK entirely. `Speech` is not: it has existed since macOS 10.15, so `canImport(Speech)` is true on
+the older SDK while `SpeechAnalyzer`, `SpeechTranscriber` and `AnalyzerInput` are missing from it.
+Gating on `canImport(Speech)` alone compiled here and failed on CI's macOS 15 runner with three
+"cannot find type in scope" errors.
+
+The gate is therefore `canImport(Speech) && canImport(FoundationModels)`, where the second
+condition stands in for "built against an SDK new enough to see these symbols". Anything using a
+macOS 26 API from a framework that also exists on macOS 15 needs the same treatment, and the
+compiled-out branch should be type-checked deliberately rather than assumed.
+
 ### Not covered
 
 Live dictation through the signed installed app, the accuracy of long transcripts, locale
