@@ -264,9 +264,91 @@ not state it. Pages not read: search scoring, app enrichment, smart links, the C
 - https://tunaformac.com/docs/privacy-and-local-processing
 - https://tunaformac.com/pro
 
+## JetBrains Air
+
+Reviewed 2026-09-26 from the product page at jetbrains.com/air only. Nothing was installed or
+signed into, and no documentation beyond that page was read, so everything below is JetBrains'
+own description.
+
+### Snapshot
+
+- "One system for building software with agents." Not a launcher: an agent workspace reached from
+  JetBrains IDEs, the browser (air.jetbrains.cloud), a CLI and mobile.
+- Agents: Claude Agent, Codex, Junie, Copilot, OpenCode, and "any you can connect via ACP".
+- Agents can run in JetBrains' cloud, so work is not tied to one machine.
+- Alpha / early access. Cloud runs reach "some customers" first, with rollout "over the coming
+  months". Usage is billed in AI credits at public API rates; existing provider subscriptions, API
+  keys and custom base URLs are also accepted.
+- A Teams tier adds shared cloud projects, automations triggered by repository events (merges,
+  pull requests, issues, commits), per-project VM size, network policy and secrets, and
+  organization-wide control over which models and agents people may use.
+
+### Where Air is ahead
+
+- **Agent discovery.** "Air finds compatible agents on your machine" and connects them in one
+  click, with a registry for adding more. Volant needs Node 22+, a manual
+  `Scripts/install-acp-adapters.sh`, and looks for executables only in fixed paths.
+- **Session state at a glance.** Each project tracks "unread updates, changed files, and outgoing
+  commits" across several parallel sessions. Volant's agent list shows status only.
+- **Review in the loop.** Diffs open straight from a session, and inline comments on specific lines
+  go back to the agent as instructions. Volant can answer an agent's question but cannot send a new
+  prompt to an existing Herdr pane.
+- **Context in prompts.** Files, folders, git branches, commits, local changes, symbols, terminals
+  and MCP servers can be attached. Volant's AI Chat cannot attach even a note or the clipboard.
+- **MCP configured once.** Servers are connected once and shared by every agent. Volant's ACP
+  handshake sends an empty `mcpServers` list (`VolantAgentHost/ACPConnection.swift`).
+- **Provider switching mid-session.**
+
+### Where Volant is ahead
+
+- **The moment Air does not cover.** An agent is blocked while you are in another app. One global
+  hotkey, two keys to answer, no IDE or browser brought forward. Air lives in the IDE, a browser tab
+  or the cloud.
+- **Local by construction.** Nothing Volant does needs a JetBrains account, a cloud VM or credits.
+  Air's headline capabilities (cloud runs, automations, team environments) are server products.
+- **Herdr.** Air orchestrates agents it starts. Volant also reaches agents already running in
+  terminal panes, locally and on saved remote machines.
+
+### Roughly at parity
+
+Both speak ACP to the same agents, accept bring-your-own-key and custom endpoints, and treat Claude
+Code and Codex as first-class.
+
+### Implications
+
+Air is JetBrains putting ACP and multi-agent orchestration inside the IDE, which makes it the first
+entry here competing on Volant's agent wedge rather than on launcher features. It does not take
+the wedge: Air starts from the IDE and the cloud, Volant from the desktop and the moment of
+interruption. But it sets the expectations people will bring. Worth taking, in order:
+
+1. **Detect agents on the Mac.** List Claude Code, Codex, Gemini, OpenCode, Cursor and others in
+   Settings → AI as ready, needs adapter or needs sign-in, with Connect. This also closes the
+   missing-Gemini gap.
+2. **Per-session change state.** Unread output, changed files and unpushed commits next to each
+   Herdr pane and ACP session, computed locally by the unsandboxed agent helper.
+3. **An @ context picker in AI Chat** over what the launcher already indexes: clipboard history,
+   notes, Spotlight files and a Herdr pane's recent output.
+4. **One MCP server list** in Settings, passed to every ACP `session/new`.
+5. **Review then comment back.** Depends on first exposing prompt delivery to existing Herdr panes,
+   which the XPC protocol does not offer today.
+
+Not worth copying: cloud VMs, team projects, repository-event automations, credits and
+organization governance. They are a server business, and matching them would give up the local,
+sandboxed, no-account position the rest of this document argues is Volant's advantage.
+
+### Not verified
+
+Everything. No build was run, so how discovery works, which ACP features Air implements, how
+review comments reach an agent, and how local and cloud sessions differ are all JetBrains'
+description only. Pricing beyond "AI credits" was not published on the page.
+
+### Sources
+
+- https://www.jetbrains.com/air/
+
 ## Where this leaves Volant
 
-Reviewed across Raycast, Vicinae, and SuperCmd on 2026-09-19; revised 2026-09-21 after adding Tuna.
+Reviewed across Raycast, Vicinae, and SuperCmd on 2026-09-19; revised 2026-09-21 after adding Tuna and 2026-09-26 after adding JetBrains Air.
 
 Platform scope separates the first three. Tuna separates itself on something else entirely.
 
@@ -301,7 +383,7 @@ Issue #65 is the place that decision belongs, and Tuna is evidence rather than a
 Two positions are defensible because they are structural rather than a matter of effort.
 
 1. **A security posture the operating system enforces rather than one the vendor promises.** Every competitor reviewed runs unsandboxed and executes extension code with full process privileges — Node for the Raycast-compatible ones, native Swift in-process for Tuna — and ships some form of telemetry. Volant is sandboxed, holds no network entitlement, requests no Accessibility or Input Monitoring grant, encrypts clipboard history by default, sends no telemetry, and is open source as shipped. Each of those is checkable against entitlements and source, which is precisely what the competitors cannot offer.
-2. **Agent workflows.** None of Raycast, Vicinae, SuperCmd or Tuna has Herdr pane discovery or native ACP conversations. This is the only capability Volant has that the category does not, and the competitive review reinforces that it is the wedge rather than a side feature.
+2. **Agent workflows.** None of Raycast, Vicinae, SuperCmd or Tuna has Herdr pane discovery or native ACP conversations. This is the only capability Volant has that the category does not, and the competitive review reinforces that it is the wedge rather than a side feature. JetBrains Air now does ACP orchestration too, from the IDE and the cloud. It is not a launcher and does not reach agents already running in terminal panes, so the wedge narrows to answering and steering agents from anywhere on the desktop, locally, the moment one needs you. Air's agent discovery and per-session change tracking are the table stakes to meet there.
 
 A shared weakness worth using: both Vicinae and SuperCmd require macOS 26. Volant runs on macOS 15 and still ships Intel builds.
 
