@@ -32,6 +32,24 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
     }
     func acpStop(reply: @escaping () -> Void) { acp.queue.async { self.acp.stop(); reply() } }
     func invalidate() { acp.queue.async { self.acp.stop() } }
+    private let inspectionQueue = DispatchQueue(label: "com.mysticcoders.volant.inspection")
+    func detectACPAgents(reply: @escaping (Data?, String?) -> Void) {
+        inspectionQueue.async {
+            do { reply(try JSONEncoder().encode(ACPAgentResolver.system.detectAll()), nil) }
+            catch { reply(nil, "Couldn’t check for installed agents.") }
+        }
+    }
+    func repositoryStates(paths data: Data, reply: @escaping (Data?, String?) -> Void) {
+        inspectionQueue.async {
+            do {
+                guard data.count <= 64_000 else { throw CocoaError(.fileReadTooLarge) }
+                let paths = try JSONDecoder().decode([String].self, from: data)
+                reply(try JSONEncoder().encode(RepositoryInspector.states(for: paths)), nil)
+            } catch {
+                reply(nil, "Couldn’t read repository changes.")
+            }
+        }
+    }
     private let queue = DispatchQueue(label: "com.mysticcoders.volant.agent-host")
     private let localInventoryQueue = DispatchQueue(label: "com.mysticcoders.volant.herdr-local")
     private let catalogQueue = DispatchQueue(label: "com.mysticcoders.volant.herdr-catalog")

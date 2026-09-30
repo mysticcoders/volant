@@ -17,6 +17,10 @@ import Foundation
     func setHerdrMachine(machine: Data, enabled: Bool, reply: @escaping (Data?, String?) -> Void)
     func listAgents(machine: Data?, reply: @escaping (Data?, String?) -> Void)
     func focusAgent(target: Data, reply: @escaping (String?) -> Void)
+    /// Every known ACP provider and whether its executable is present. Starts nothing.
+    func detectACPAgents(reply: @escaping (Data?, String?) -> Void)
+    /// Change counts for up to 32 local working folders, as a JSON map from path to state.
+    func repositoryStates(paths: Data, reply: @escaping (Data?, String?) -> Void)
 }
 
 public struct AgentSession: Codable, Identifiable, Hashable {
@@ -35,6 +39,8 @@ public struct AgentSession: Codable, Identifiable, Hashable {
     public var machine: HerdrMachine? = nil
     public var machineLabel: String { machine?.label ?? "Local" }
     public var stateChangeSequence: UInt64? = nil
+    /// Whether Herdr reports this pane as the one in front, which counts as having looked at it.
+    public var focused: Bool? = nil
     public var sessionIdentity: String { agent + ":" + (agentSession?.value ?? terminalID) }
     public var id: String { (machine.map { "remote:" + $0.routeIdentity + ":" } ?? "local:") + terminalID + ":" + paneID }
     public var project: String { cwd.map { URL(fileURLWithPath: $0).lastPathComponent } ?? "Unknown project" }
@@ -44,6 +50,8 @@ public struct AgentSession: Codable, Identifiable, Hashable {
         case "codex": return "Codex"
         case "opencode": return "OpenCode"
         case "cursor": return "Cursor"
+        case "gemini": return "Gemini CLI"
+        case "qwen": return "Qwen Code"
         default: return agent.capitalized
         }
     }
@@ -58,7 +66,7 @@ public struct AgentSession: Codable, Identifiable, Hashable {
     }
     public var priority: Int { ["blocked": 0, "working": 1, "done": 2, "idle": 3][agentStatus] ?? 4 }
     public enum CodingKeys: String, CodingKey {
-        case agent, cwd, machine
+        case agent, cwd, machine, focused
         case stateChangeSequence = "state_change_seq"
         case agentStatus = "agent_status"
         case paneID = "pane_id"

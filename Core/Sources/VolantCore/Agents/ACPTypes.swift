@@ -59,7 +59,7 @@ public struct ACPState: Codable, Equatable {
 
 
 public enum ACPProvider: String, CaseIterable, Identifiable {
-    case opencode, cursor, claude, codex
+    case opencode, cursor, claude, codex, gemini, qwen
     public var id: String { rawValue }
     public var title: String {
         switch self {
@@ -67,6 +67,8 @@ public enum ACPProvider: String, CaseIterable, Identifiable {
         case .cursor: return "Cursor"
         case .claude: return "Claude Code"
         case .codex: return "Codex"
+        case .gemini: return "Gemini CLI"
+        case .qwen: return "Qwen Code"
         }
     }
 }

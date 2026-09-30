@@ -28,35 +28,10 @@ final class ACPConnection {
         guard task == nil, state.phase == "disconnected" else { throw failure("End this conversation before starting another.") }
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         guard let selected = ACPProvider(rawValue: provider) else { throw failure("Unknown ACP provider.") }
-        var arguments = ["acp"]
-        var providerEnvironment: [String: String] = [:]
-        let executable: String
-        if selected == .claude || selected == .codex {
-            let package = selected == .claude ? "claude-agent-acp" : "codex-acp"
-            let adapter = home + "/.local/share/volant/acp/node_modules/@agentclientprotocol/" + package + "/dist/index.js"
-            guard FileManager.default.fileExists(atPath: adapter) else {
-                throw failure(selected.title + "’s ACP adapter is missing. Install Volant’s ACP adapters and retry.")
-            }
-            var nodes = ["/opt/homebrew/bin/node", "/usr/local/bin/node", home + "/.local/bin/node"]
-            for root in [home + "/.local/share/mise/installs/node", home + "/.nvm/versions/node"] {
-                let versions = (try? FileManager.default.contentsOfDirectory(atPath: root)) ?? []
-                nodes += versions.sorted { $0.compare($1, options: .numeric) == .orderedDescending }.map { root + "/" + $0 + "/bin/node" }
-            }
-            guard let node = nodes.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else { throw failure("The ACP adapters require Node.js 22 or newer.") }
-            let cli = selected == .claude ? "claude" : "codex"
-            guard let installed = [home + "/.local/bin/" + cli, "/opt/homebrew/bin/" + cli, "/usr/local/bin/" + cli].first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else { throw failure("Install and sign in to " + selected.title + " first.") }
-            providerEnvironment[selected == .claude ? "CLAUDE_CODE_EXECUTABLE" : "CODEX_PATH"] = installed
-            executable = node
-            arguments = [adapter]
-        } else {
-            let names = selected == .opencode
-                ? ["/opt/homebrew/bin/opencode", home + "/.opencode/bin/opencode", home + "/.local/bin/opencode", "/usr/local/bin/opencode"]
-                : [home + "/.local/bin/agent", "/opt/homebrew/bin/agent", "/usr/local/bin/agent"]
-            guard let installed = names.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
-                throw failure(selected == .cursor ? "Cursor CLI is not installed. Install and sign in to Cursor CLI, then retry." : "OpenCode was not found. Install it and run opencode auth login, then retry.")
-            }
-            executable = installed
-        }
+        let launch: ACPLaunch
+        do { launch = try ACPAgentResolver.system.launch(selected) }
+        catch { throw failure(error.localizedDescription) }
+        let executable = launch.executable, arguments = launch.arguments, providerEnvironment = launch.environment
         let chatDirectory = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/Volant/Chat", isDirectory: true)
         do { self.project = try ACPWorkingDirectory.resolve(project: project, generalChat: chatDirectory) }
         catch { throw failure("Could not open the working folder. Choose another folder or use General Chat in AI Settings.") }

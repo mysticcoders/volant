@@ -157,7 +157,8 @@ struct LauncherView: View {
                            pinned: model.promotedHarness != nil,
                            onOpen: { model.showPromotedAgents() },
                            onConnect: { if agents.connected { agents.disconnect() } else { agents.connect() } },
-                           onPromote: { model.promoteHarness($0) }, machines: agents.machines)
+                           onPromote: { model.promoteHarness($0) }, machines: agents.machines,
+                           unread: (model.promotedHarness == nil ? agents.sessions : model.promotedSessions).filter(agents.isUnread).count)
     }
 
     private var results: some View {
@@ -236,7 +237,7 @@ struct LauncherView: View {
 
     private func resultButton(_ row: ResultRow) -> some View {
         Button { model.activate(rowID: row.id) } label: {
-            RowView(initialRow: row, model: model)
+            RowView(initialRow: row, model: model, agents: agents)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -344,6 +345,8 @@ private struct RowView: View {
     private var row: ResultRow { model.rows.first(where: { $0.id == initialRow.id }) ?? initialRow }
     // Lazy rows must observe selection themselves; parent closure updates can retain stale styling.
     @ObservedObject var model: LauncherModel
+    // Change counts and unread state arrive after the pane list, so agent rows observe them directly.
+    @ObservedObject var agents: AgentsModel
     private var selected: Bool { model.selectedRow?.id == row.id }
 
     var body: some View {
@@ -405,7 +408,8 @@ private struct RowView: View {
         case .systemSettings: return "Open this pane in System Settings"
         case .settings: return "Preferences, app shortcuts and backups"
         case .reloadConfig: return "Apply changes from config.json"
-        case .agentSession(let session): return session.machineLabel + " · " + session.provider + " · " + session.paneID
+        case .agentSession(let session):
+            return session.machineLabel + " · " + session.provider + " · " + (agents.repository(for: session)?.summary ?? session.paneID)
         case .herdrMachine(let machine, _, _): return machine.map { $0.target + " · " + $0.session } ?? "This Mac"
         case .connectivity(let item): return item.detail
         case .audioRoute(let route): return route.direction.rawValue.capitalized
@@ -432,7 +436,15 @@ private struct RowView: View {
         case .appleShortcut: CommandTile(symbol: "square.stack.3d.up", tint: CoreCommand.shortcuts.tint)
         case .core(let command): CommandTile(symbol: command.symbol, tint: command.tint)
         case .caffeinate: CommandTile(symbol: "cup.and.saucer", tint: CoreCommand.caffeinate.tint)
-        case .agentSession(let session): Image(systemName: session.agentStatus == "blocked" ? "exclamationmark.bubble" : "terminal").font(.system(size: 20)).foregroundStyle(session.agentStatus == "blocked" ? Color.orange : Color.secondary)
+        case .agentSession(let session):
+            Image(systemName: session.agentStatus == "blocked" ? "exclamationmark.bubble" : "terminal").font(.system(size: 20))
+                .foregroundStyle(session.agentStatus == "blocked" ? Color.orange : Color.secondary)
+                .overlay(alignment: .topTrailing) {
+                    if agents.isUnread(session) {
+                        Circle().fill(Color.accentColor).frame(width: 8, height: 8).offset(x: 3, y: -2)
+                            .accessibilityLabel("Changed since you last looked")
+                    }
+                }
         case .herdrMachine(let machine, let enabled, _):
             Image(systemName: machine == nil ? "desktopcomputer" : (enabled ? "network" : "network.slash"))
                 .font(.system(size: 20)).foregroundStyle(enabled ? Color.secondary : Color.secondary.opacity(0.5))

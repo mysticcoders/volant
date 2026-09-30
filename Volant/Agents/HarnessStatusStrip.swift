@@ -11,6 +11,8 @@ struct HarnessStatusStrip: View {
     let onConnect: () -> Void
     let onPromote: (String?) -> Void
     var machines: [HerdrMachineStatus] = []
+    /// Panes whose agent finished or stopped since the owner last looked at them.
+    var unread = 0
     @AppStorage("showHerdrDetails") private var showDetails = false
     var body: some View {
         VStack(spacing: 0) {
@@ -24,10 +26,11 @@ struct HarnessStatusStrip: View {
                 if connected {
                     let attention = sessions.filter { $0.agentStatus == "blocked" }.count
                     let working = sessions.filter { $0.agentStatus == "working" }.count
-                    Text("\(sessions.count) panes · \(working) working" + (attention > 0 ? " · \(attention) \(attention == 1 ? "needs" : "need") you" : ""))
+                    Text("\(sessions.count) panes · \(working) working" + (attention > 0 ? " · \(attention) \(attention == 1 ? "needs" : "need") you" : "")
+                         + (unread > 0 ? " · \(unread) new" : ""))
                         .foregroundStyle(attention > 0 ? Color.orange : Color.secondary)
                         .lineLimit(1)
-                        .accessibilityLabel("\(sessions.count) panes, \(working) working, \(attention) need attention")
+                        .accessibilityLabel("\(sessions.count) panes, \(working) working, \(attention) need attention, \(unread) changed since you last looked")
                 } else {
                     Text("Not connected").foregroundStyle(.secondary)
                 }

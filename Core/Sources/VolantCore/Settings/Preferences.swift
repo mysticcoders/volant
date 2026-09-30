@@ -20,7 +20,7 @@ public struct Preferences: Codable {
             if let newValue { statusBar.sources.append("herdr"); statusBar.herdrFilter = newValue }
         }
     }
-    public static let harnessOptions: [(id: String, title: String)] = [("all", "All Herdr agents"), ("opencode", "OpenCode"), ("cursor", "Cursor"), ("claude", "Claude Code"), ("codex", "Codex")]
+    public static let harnessOptions: [(id: String, title: String)] = [("all", "All Herdr agents"), ("opencode", "OpenCode"), ("cursor", "Cursor"), ("claude", "Claude Code"), ("codex", "Codex"), ("gemini", "Gemini CLI"), ("qwen", "Qwen Code")]
     public var snippets: [Snippet] = []
     public var quicklinks: [Quicklink] = [Quicklink(name: "Google", url: "https://www.google.com/search?q={query}")]
     public var favoriteApps: [String] = []
