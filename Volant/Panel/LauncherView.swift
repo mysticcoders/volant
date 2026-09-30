@@ -419,6 +419,7 @@ private struct RowView: View {
         switch row {
         case .appleShortcut(let shortcut): return shortcut.name
         case .core(let command): return command.title
+        case .systemAction(let action): return action.title
         case .caffeinate(let command): return command.title
         case .agentSession(let session): return session.project
         case .herdrMachine(let machine, _, _): return machine?.label ?? "Local"
@@ -448,6 +449,7 @@ private struct RowView: View {
     private var subtitle: String? {
         switch row {
         case .core(let command): return command.detail
+        case .systemAction(let action): return action.detail
         case .caffeinate(let command): return command.detail
         case .systemSettings: return "Open this pane in System Settings"
         case .settings: return "Preferences, app shortcuts and backups"
@@ -479,6 +481,8 @@ private struct RowView: View {
         switch row {
         case .appleShortcut: CommandTile(symbol: "square.stack.3d.up", tint: CoreCommand.shortcuts.tint)
         case .core(let command): CommandTile(symbol: command.symbol, tint: command.tint)
+        case .systemAction(let action):
+            CommandTile(symbol: action.symbol, tint: action.loginwindowEvent == nil ? Color(red: 0.25, green: 0.3, blue: 0.45) : Color(red: 0.75, green: 0.22, blue: 0.2))
         case .caffeinate: CommandTile(symbol: "cup.and.saucer", tint: CoreCommand.caffeinate.tint)
         case .agentSession(let session):
             Image(systemName: session.agentStatus == "blocked" ? "exclamationmark.bubble" : "terminal").font(.system(size: 20))
