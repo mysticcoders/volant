@@ -5,8 +5,8 @@ Scope requested: Herdr panes plus OpenCode, Cursor, Claude Code and Codex sessio
 - Herdr: local socket API for discovery, state, focus and explicit prompts. Installed at ~/.local/bin/herdr; CLI exposes api schema, agent list/get/focus/prompt and pane operations.
 - OpenCode: ACP over stdio. Installed at /opt/homebrew/bin/opencode; acp subcommand confirmed locally. Negotiate installed capabilities instead of assuming current website docs match this version.
 - Cursor: ACP via agent acp. The agent executable was not found on PATH; detect its supported installation path and present setup instructions if absent.
-- Claude Code: Agent SDK adapter for structured events and permissions; Herdr for existing terminal panes. Installed CLI found.
-- Codex: native app-server protocol, confirmed by installed CLI help; threads, turns and approval events. Do not equate saved thread discovery with attaching to arbitrary running desktop conversations.
+- Claude Code: researched as an Agent SDK integration; shipped through the `@agentclientprotocol/claude-agent-acp` ACP adapter (see the note above). Herdr for existing terminal panes.
+- Codex: researched as the native app-server protocol; shipped through the `codex-acp` ACP adapter. Do not equate saved thread discovery with attaching to arbitrary running desktop conversations.
 
 Sources: https://herdr.dev/docs/socket-api/ ; https://opencode.ai/v2/docs/cli/acp/ ; https://cursor.com/docs/cli/acp ; https://code.claude.com/docs/en/agent-sdk/overview ; https://learn.chatgpt.com/docs/app-server
 
@@ -75,3 +75,40 @@ Sources: [Claude ACP adapter](https://github.com/agentclientprotocol/claude-agen
 Next: verify real provider tool approvals and live keyboard/project selection; Cursor setup; negotiated model/mode selection and session restore. Provider-specific extensions and notes/context handoff remain outside this slice.
 
 Installed verification: both `--acp-provider claude` and `--acp-provider codex` passed session creation and expected-response checks from `/Applications/Volant.app`; the installed app passed deep/strict signature verification. Claude/Codex provider labels were inspected in native light/dark view renders. Actual provider tool approvals and live keyboard/project-picker behavior remain unverified.
+
+
+## Agent detection and per-pane change state — September 30, 2026
+
+Prompted by JetBrains Air's agent discovery and per-session change tracking (see
+`docs/competitors.md`).
+
+**Detection.** Settings → AI (ACP) lists every provider as ready, needs adapter, needs Node, or not
+installed, with Use for a ready one. `ACPAgentResolver` in Core is the single lookup behind both
+detection and Connect, so Settings cannot report an agent ready that Connect then fails to find.
+It searches `~/.local/bin`, Homebrew, `/usr/local/bin` and mise/nvm Node bins; node and OpenCode
+keep their original search order. Detection only checks files through the helper's
+`detectACPAgents`: it starts nothing and reads no credentials, so "ready" does not mean signed in.
+Gemini CLI and Qwen Code are new providers, both started with `--acp` (Gemini's docs deprecate
+`--experimental-acp`). Qwen Code 0.23.3 on the development Mac answered a real `initialize` with
+protocol version 1 and `embeddedContext`, image and audio prompt capabilities. Gemini was not
+installed there and is unverified beyond its documentation.
+
+**Change state.** Local Herdr panes show `branch · N changed · N ahead · N behind` (or `clean`)
+from their working folder, and a dot when the pane's Herdr state counter moved since the owner last
+looked and the agent is now blocked, done or idle rather than working. Focusing a pane from Volant,
+answering its question, or Herdr reporting it focused all count as looking. The status strip adds
+"N new". Unread state is in memory only.
+
+The helper runs exactly `RepositoryStatusCommand`:
+`git -c core.fsmonitor=false --no-optional-locks status --porcelain=v2 --branch
+--untracked-files=normal --ignore-submodules=all`. Environment is minimal with
+`GIT_OPTIONAL_LOCKS=0` and no terminal prompts; timeout 3 s; at most 32 folders per request; counts
+and branch only, no file names. `/usr/bin/git` is never used, because on a Mac without the Command
+Line Tools it opens an installer dialog. The model re-reads a folder only when one of its panes
+changed state or 30 seconds have passed, not on every five-second pane refresh. Remote panes are
+not inspected yet; that needs the same command over the Herdr machine's SSH route.
+
+Evidence: resolver, parser and command tests in Core, including the exact command against a
+throwaway repository (and that it leaves no `index.lock`); model tests for unread, per-folder
+sharing, re-read throttling, remote exclusion and late-reply rejection; `tools/check-acp.sh`.
+Not verified: the Settings list and row decorations in the signed installed app with real panes.
