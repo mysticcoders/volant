@@ -701,6 +701,7 @@ corePanel.model.query = "lock screen"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 verify(requestedSystemActions.isEmpty, "Typing never performs a system action")
 verify(corePanel.model.selectedRow?.id == "system-action:lockScreen", "Lock Screen is selected for its name")
+verify(corePanel.makeFirstResponder(coreSearchField(in: corePanel.contentView!)!), "Restore native editor after render capture")
 sendCoreKey("\r", code: 36)
 verify(requestedSystemActions == [.lockScreen], "Return hands Lock Screen to the app delegate once")
 print("PASS: system actions are searchable, render as commands, and run only on Return")
