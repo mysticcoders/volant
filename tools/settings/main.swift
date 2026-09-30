@@ -215,7 +215,7 @@ if CommandLine.arguments.contains("--render") {
         try! FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
         for theme in ["light", "dark"] {
             app.appearance = NSAppearance(named: theme == "dark" ? .darkAqua : .aqua)
-            for section in ["General", "App Shortcuts", "Data & Configuration"] {
+            for section in ["General", "Status Bar", "AI", "Extensions", "App Shortcuts", "Data & Configuration"] {
                 controller.state.section = section
                 controller.window!.setFrame(NSWindow.frameRect(forContentRect: NSRect(x: 100, y: 100, width: 680, height: 500), styleMask: controller.window!.styleMask), display: true)
                 RunLoop.main.run(until: Date().addingTimeInterval(0.15))

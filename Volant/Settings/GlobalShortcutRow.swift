@@ -46,13 +46,12 @@ struct GlobalShortcutRow: View {
     let configURL: URL
     let onChange: () -> Void
     var body: some View {
-        HStack(alignment: .top) {
-            Text(title).frame(width: 95, alignment: .leading).padding(.top, 8)
+        LabeledContent(title) {
             ShortcutControl(title: title, value: value) { replacement in
                 try GlobalShortcutStore.save(key: key, value: replacement, expectedValue: value, at: configURL,
                                              available: { HotKeyCenter.shared.isAvailable($0) })
                 onChange()
-            }
+            }.frame(width: 160)
         }
     }
 }

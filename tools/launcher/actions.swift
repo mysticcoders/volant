@@ -281,7 +281,7 @@ key("\r", 36)
 verify(extensionSettingsRequests == 1 && panel.model.pendingExtension == nil, "Master off routes to Settings without offering enable or executing")
 func renderCommunitySettings(_ name: String) throws {
     let view = NSHostingView(rootView: ExtensionSettingsView(configURL: panel.model.actionConfigURL, onChange: {}, roots: extensionRoots)
-        .padding(16).background(Color(nsColor: .windowBackgroundColor)))
+        .background(Color(nsColor: .windowBackgroundColor)))
     let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 440), styleMask: [.titled], backing: .buffered, defer: false)
     window.contentView = view; window.makeKeyAndOrderFront(nil); settle()
     try render(name, view: view)
@@ -443,6 +443,26 @@ UserDefaults.standard.set(false, forKey: "showHerdrDetails"); settle()
 panel.orderOut(nil)
 print("PASS: passive Herdr question previews, target changes, loading, error, and resolved states")
 
+/// Finds a control's frame in window coordinates by the identifier of the `ControlAnchor` behind
+/// it, or by an AppKit button title, so Settings clicks follow the layout instead of hard-coded
+/// points. On a miss it prints what it saw so a layout change is diagnosable from one run.
+func controlFrame(_ name: String, in window: NSWindow) -> NSRect? {
+    var seen: [String] = []
+    func views(_ view: NSView) -> [NSView] { [view] + view.subviews.flatMap(views) }
+    for view in views(window.contentView!) where !view.isHiddenOrHasHiddenAncestor {
+        if let identifier = view.identifier?.rawValue, identifier.hasPrefix("settings.") {
+            seen.append(identifier)
+            if identifier == name { return view.convert(view.bounds, to: nil) }
+        }
+        if let button = view as? NSButton, !button.title.isEmpty {
+            seen.append(button.title)
+            if button.title == name { return button.convert(button.bounds, to: nil) }
+        }
+    }
+    print("Controls seen while looking for \(name): \(seen)")
+    return nil
+}
+
 // API/local Settings use fictional discovery and credentials, never host services or owner keys.
 let aiFixtureURL = root.appendingPathComponent("api-settings.json")
 try Data("{}".utf8).write(to: aiFixtureURL)
@@ -458,13 +478,14 @@ func renderAPISettings(_ kind: AIConnectionKind, provider: AIAPIProvider = .open
     }
     let model = ACPModel()
     let view = NSHostingView(rootView: AISettingsView(model: model, configURL: aiFixtureURL, onChange: {}, openConversation: { _ in }, chooseProject: { _ in }, credentials: fakeCredentials, discovery: discovery)
-        .padding(16).background(Color(nsColor: .windowBackgroundColor)))
+        .background(Color(nsColor: .windowBackgroundColor)))
     let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 660), styleMask: [.titled], backing: .buffered, defer: false)
     window.contentView = view; window.makeKeyAndOrderFront(nil); settle()
     try render("ai-\(kind.rawValue)-\(provider.rawValue)\(offline ? "-offline" : "")", view: view)
     verify(!model.active && credentialWrites == 0, "Opening AI Settings never starts chat or writes credentials")
     if kind == .local && !offline {
-        let point = NSPoint(x: 435, y: 660 - 100)
+        guard let use = controlFrame("settings.use-server", in: window) else { verify(false, "Local server offers Use"); return }
+        let point = NSPoint(x: use.midX, y: use.midY)
         func event(_ type: NSEvent.EventType) -> NSEvent {
             NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
                               windowNumber: window.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: type == .leftMouseDown ? 1 : 0)!

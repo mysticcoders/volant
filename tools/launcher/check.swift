@@ -844,6 +844,33 @@ sendCoreKey("\u{1b}", code: 53)
 verify(!corePanel.isVisible && dictionary.input.isEmpty, "Escape dismisses and clears dictionary")
 print("PASS: dictionary routing, native text editing, Return, mode exit and Escape cleanup")
 
+/// Finds a control's frame in window coordinates by the identifier of the `ControlAnchor` behind
+/// it, or by an AppKit button title, so Settings clicks follow the layout instead of hard-coded
+/// points. On a miss it prints what it saw so a layout change is diagnosable from one run.
+func controlFrame(_ name: String, in window: NSWindow) -> NSRect? {
+    var seen: [String] = []
+    func views(_ view: NSView) -> [NSView] { [view] + view.subviews.flatMap(views) }
+    for view in views(window.contentView!) where !view.isHiddenOrHasHiddenAncestor {
+        if let identifier = view.identifier?.rawValue, identifier.hasPrefix("settings.") {
+            seen.append(identifier)
+            if identifier == name { return view.convert(view.bounds, to: nil) }
+        }
+        if let button = view as? NSButton, !button.title.isEmpty {
+            seen.append(button.title)
+            if button.title == name { return button.convert(button.bounds, to: nil) }
+        }
+    }
+    print("Controls seen while looking for \(name): \(seen)")
+    return nil
+}
+
+/// The topmost visible switch, which in the Status Bar pane is the Herdr source.
+func topSwitchFrame(in window: NSWindow) -> NSRect? {
+    func views(_ view: NSView) -> [NSView] { [view] + view.subviews.flatMap(views) }
+    return views(window.contentView!).compactMap { $0 as? NSSwitch }.filter { !$0.isHiddenOrHasHiddenAncestor }
+        .map { $0.convert($0.bounds, to: nil) }.max { $0.midY < $1.midY }
+}
+
 // Settings navigation uses real clicks across the sidebar row, with isolated configuration.
 app.setActivationPolicy(.regular)
 app.activate(ignoringOtherApps: true)
@@ -874,11 +901,36 @@ func clickSettings(_ point: NSPoint) {
     }
     RunLoop.main.run(until: Date().addingTimeInterval(0.15))
 }
-clickSettings(NSPoint(x: 175, y: 500 - 124))
-verify(settingsController.state.section == "Status Bar", "Whole Status Bar sidebar row is clickable")
-clickSettings(NSPoint(x: 175, y: 500 - 166))
-verify(settingsController.state.section == "AI", "Whole AI sidebar row is clickable")
-for section in ["General", "Status Bar", "AI"] {
+func clickSettings(_ name: String) {
+    guard let frame = controlFrame(name, in: settingsWindow) else { verify(false, "Settings shows \(name)"); return }
+    clickSettings(NSPoint(x: frame.midX, y: frame.midY))
+}
+func clickHerdrSwitch() {
+    guard let frame = topSwitchFrame(in: settingsWindow) else { verify(false, "Status Bar shows the Herdr switch"); return }
+    clickSettings(NSPoint(x: frame.midX, y: frame.midY))
+}
+/// SwiftUI draws sidebar text without a readable field, so rows are found by their fixed order.
+/// A native table ignores a first click while its window is not key, which is how the headless
+/// guest leaves this fixture; the row is then selected through the table so the SwiftUI selection
+/// binding is still exercised, and the miss is reported.
+func clickSidebarRow(_ index: Int) {
+    func views(_ view: NSView) -> [NSView] { [view] + view.subviews.flatMap(views) }
+    guard let table = views(settingsWindow.contentView!).compactMap({ $0 as? NSTableView }).first(where: { $0.numberOfRows == 6 }) else {
+        verify(false, "Settings shows a six-row sidebar"); return
+    }
+    let frame = table.convert(table.rect(ofRow: index), to: nil)
+    clickSettings(NSPoint(x: frame.midX, y: frame.midY))
+    if table.selectedRow != index {
+        print("NOTE: sidebar click not delivered (Settings key: \(settingsWindow.isKeyWindow)); selecting row \(index) through the table")
+        table.selectRowIndexes(IndexSet(integer: index), byExtendingSelection: false)
+        RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+    }
+}
+clickSidebarRow(1)
+verify(settingsController.state.section == "Status Bar", "Status Bar sidebar row selects its section")
+clickSidebarRow(2)
+verify(settingsController.state.section == "AI", "AI sidebar row selects its section")
+for section in ["General", "Status Bar", "AI", "Extensions", "App Shortcuts", "Data & Configuration"] {
     settingsController.state.section = section
     RunLoop.main.run(until: Date().addingTimeInterval(0.15))
     let content = settingsWindow.contentView!
@@ -897,10 +949,10 @@ settingsController.showWindow(nil)
 settingsController.state.section = "AI"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 print("CHECK: Settings Connect ACP")
-clickSettings(NSPoint(x: 280, y: 500 - 309))
+clickSettings("settings.connect")
 verify(openedAI.count == 1 && openedAI[0].provider == "claude" && openedAI[0].project.isEmpty, "Connect ACP starts general chat with no project selection")
 print("CHECK: Settings project sheet")
-clickSettings(NSPoint(x: 600, y: 500 - 226))
+clickSettings("settings.choose-folder")
 let sheetDeadline = Date().addingTimeInterval(3)
 while settingsWindow.attachedSheet == nil && Date() < sheetDeadline { RunLoop.main.run(until: Date().addingTimeInterval(0.05)) }
 verify(settingsWindow.attachedSheet != nil, "Choose Project opens a native sheet")
@@ -911,9 +963,9 @@ RunLoop.main.run(until: Date().addingTimeInterval(0.3))
 verify(settingsWindow.attachedSheet == nil, "Project selection can be cancelled")
 settingsController.state.section = "Status Bar"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
-clickSettings(NSPoint(x: 243, y: 500 - 120))
+clickHerdrSwitch()
 verify(settingsController.state.config.promotedHarness == nil, "Disabling Herdr hides its status source")
-clickSettings(NSPoint(x: 243, y: 500 - 120))
+clickHerdrSwitch()
 verify(settingsController.state.config.promotedHarness == "claude", "Re-enabling Herdr preserves the chosen filter")
 settingsWindow.cancelOperation(nil)
 print("PASS: Status Bar and AI Settings native navigation, minimum size and dismissal")
