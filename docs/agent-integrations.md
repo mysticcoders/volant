@@ -112,3 +112,29 @@ Evidence: resolver, parser and command tests in Core, including the exact comman
 throwaway repository (and that it leaves no `index.lock`); model tests for unread, per-folder
 sharing, re-read throttling, remote exclusion and late-reply rejection; `tools/check-acp.sh`.
 Not verified: the Settings list and row decorations in the signed installed app with real panes.
+
+## Do the ACP adapters load existing MCP configuration? — September 30, 2026
+
+Yes, both do, so Volant does not keep its own MCP server list.
+
+**Source.** `claude-agent-acp` 0.76.0 starts the Claude Agent SDK with
+`settingSources: ["user", "project", "local"]`, so Claude Code's own MCP configuration applies.
+Servers sent in ACP `session/new` are merged on top and win on a name clash. `codex-acp` 1.11.0
+drives Codex's own app-server, so `~/.codex/config.toml` layers apply. ACP-provided servers are
+added as a config overlay and, by default, skipped when a configured server has the same name.
+The Codex adapter also marks the session's working folders `trust_level = "trusted"` in that
+overlay, which is one more reason the working folder is not a sandbox.
+
+**Live check, zero tokens.** Each adapter was started exactly as Volant starts it, sent
+`initialize` and `session/new` with `mcpServers: []` in a throwaway folder, and never prompted.
+Every configured stdio server then appeared as a child process: 8 of 8 for Claude Code. The two
+remote HTTP/SSE servers could not be checked this way. For Codex, 2 of 3 appeared; the third is
+`enabled = false` in the owner's config and correctly did not start. Only server names were
+recorded, never command lines, which can carry credentials. All adapter processes were stopped
+afterwards.
+
+**Consequence.** A Volant-wide MCP list would duplicate servers for Claude Code and Codex. Its only
+value would be agents without their own configuration. Gemini CLI and Qwen Code both keep their
+own settings files, which have not been checked here. Revisit only if an agent is found that
+ignores its own configuration under ACP, or if Volant itself should be offered to agents as an MCP
+server, which is a separate design with sandbox implications.
