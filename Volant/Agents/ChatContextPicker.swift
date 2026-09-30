@@ -43,7 +43,7 @@ struct ChatContextPicker: View {
                             }
                         }.padding(4)
                     }
-                    .frame(maxHeight: 190)
+                    .frame(height: min(190, CGFloat(items.count) * 44 + 8))
                     .onChange(of: selection) { _, value in
                         if items.indices.contains(value) { proxy.scrollTo(items[value].id) }
                     }

@@ -476,18 +476,22 @@ final class LauncherModel: ObservableObject {
     /// left out of this first version.
     func contextCandidates(_ query: String) -> [ChatAttachment] {
         let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        let age = RelativeDateTimeFormatter()
+        let formatter = RelativeDateTimeFormatter()
+        // Anything from the last minute reads as just now, including a copy stamped a moment ahead.
+        let age: (Date) -> String = { date in
+            Date().timeIntervalSince(date) < 60 ? "just now" : formatter.localizedString(for: date, relativeTo: Date())
+        }
         let clips = clipboard.recent(limit: 16, matching: term).filter {
             $0.kind == .text && !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 && (term.isEmpty || $0.text.localizedCaseInsensitiveContains(term))
         }.prefix(8).map { clip in
             let first = clip.text.split(whereSeparator: \.isNewline).first.map(String.init) ?? clip.text
             return ChatAttachment(id: "clip:\(clip.id)", kind: .clipboard, title: String(first.trimmingCharacters(in: .whitespaces).prefix(60)),
-                                  detail: "Clipboard · " + age.localizedString(for: clip.copiedAt, relativeTo: Date()), text: clip.text)
+                                  detail: "Clipboard · " + age(clip.copiedAt), text: clip.text)
         }
         let found = notes.search(term, limit: 16).filter { $0.readError == nil }.prefix(8).map { note in
             ChatAttachment(id: "note:" + note.id, kind: .note, title: note.title,
-                           detail: "Note · edited " + age.localizedString(for: note.modified, relativeTo: Date()),
+                           detail: "Note · edited " + age(note.modified),
                            text: notes.dirtyText[note.id] ?? note.text)
         }
         return Array(clips) + Array(found)
