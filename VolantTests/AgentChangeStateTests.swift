@@ -14,7 +14,7 @@ final class AgentChangeStateTests: XCTestCase {
         return session
     }
 
-    private func model(local: @escaping () -> [AgentSession], repositories: @escaping ([String], Reply) -> Void) -> AgentsModel {
+    private func model(local: @escaping () -> [AgentSession], repositories: @escaping ([String], @escaping Reply) -> Void) -> AgentsModel {
         let model = AgentsModel()
         model.machineReader = { $0(try? JSONEncoder().encode([HerdrMachine]()), nil) }
         model.inventoryReader = { machine, reply in if machine == nil { reply(try? JSONEncoder().encode(local()), nil) } }
