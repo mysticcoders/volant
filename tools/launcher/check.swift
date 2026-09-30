@@ -828,6 +828,12 @@ Task { @MainActor in translator.start() }
 RunLoop.main.run(until: Date().addingTimeInterval(0.3))
 verify(translator.pairState == .unsupported && !translator.busy)
 try renderCore("translation-unsupported")
+translator.availability = { _ in .installed }
+translator.target = "es"
+translator.text = "Good morning"
+RunLoop.main.run(until: Date().addingTimeInterval(1.2))
+verify(translator.output == "Hola\n¿Cómo estás?" && !translator.outputIsStale, "A pause in typing translates without ⌘T")
+translator.text = "Hello\nHow are you?"
 corePanel.orderOut(nil)
 RunLoop.main.run(until: Date().addingTimeInterval(0.25))
 verify(corePanel.model.query == "translate" && translator.text == "Hello\nHow are you?", "Hidden idle work preserves translation draft")

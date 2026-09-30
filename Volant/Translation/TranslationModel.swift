@@ -21,10 +21,17 @@ struct TranslationResult {
 /// Memory-only draft. All mutations and completions run on the main thread.
 final class TranslationModel: ObservableObject {
     static let textLimit = 16_000
-    @Published var text = "" { didSet { if text != oldValue { invalidate() } } }
-    @Published var source = "" { didSet { if source != oldValue { invalidate() } } }
-    @Published var target = "en" { didSet { if target != oldValue { invalidate() } } }
+    @Published var text = "" { didSet { if text != oldValue { invalidate(keepingOutput: true); scheduleAutomatic() } } }
+    @Published var source = "" { didSet { if source != oldValue { invalidate(); scheduleAutomatic() } } }
+    @Published var target = "en" { didSet { if target != oldValue { invalidate(); scheduleAutomatic() } } }
     @Published private(set) var output = ""
+    /// The previous translation stays on screen, dimmed, while the text is being edited, so the
+    /// result does not blank out on every keystroke. It cannot be copied or swapped until the new
+    /// translation replaces it.
+    @Published private(set) var outputIsStale = false
+    /// Translation starts after this pause in editing; nil turns it off, as isolated tests do.
+    var automaticDelay: TimeInterval? = 0.6
+    private var pendingAutomatic: Task<Void, Never>?
     @Published private(set) var detectedSource: String?
     @Published private(set) var languages: [String] = []
     @Published private(set) var request: TranslationRequest?
@@ -56,7 +63,7 @@ final class TranslationModel: ObservableObject {
     var translateFixture: ((TranslationRequest) async throws -> TranslationResult)?
 
     var canTranslate: Bool { !busy && !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && text.count <= Self.textLimit }
-    var canSwap: Bool { (detectedSource != nil || !source.isEmpty) && !busy }
+    var canSwap: Bool { (detectedSource != nil || !source.isEmpty) && !busy && !outputIsStale }
     var hasDraft: Bool { !text.isEmpty || busy }
     var status: String {
         if let message { return message }
@@ -85,19 +92,38 @@ final class TranslationModel: ObservableObject {
         } catch { catalogFailed = true }
     }
 
-    func invalidate() {
+    func invalidate(keepingOutput: Bool = false) {
         generation = UUID()
         checking?.cancel(); checking = nil
+        pendingAutomatic?.cancel(); pendingAutomatic = nil
         request = nil; busy = false
-        output = ""; detectedSource = nil; pairState = nil; message = nil
+        if keepingOutput && !output.isEmpty && !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            outputIsStale = true
+        } else {
+            output = ""; detectedSource = nil; outputIsStale = false
+        }
+        pairState = nil; message = nil
+    }
+
+    /// Waits for a pause, then translates the text as it stands. A newer edit cancels the wait.
+    private func scheduleAutomatic() {
+        guard let delay = automaticDelay, canTranslate else { return }
+        let token = generation
+        pendingAutomatic = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            guard let self, !Task.isCancelled, self.generation == token else { return }
+            self.start(automatic: true)
+        }
     }
 
     func cancel() { invalidate(); message = "Translation canceled. Your text is still here." }
     func clear() { text = ""; invalidate() }
 
-    @MainActor func start() {
+    /// An automatic start never begins a language download: macOS asks for consent to download,
+    /// and that request should follow ⌘T, not a pause in typing.
+    @MainActor func start(automatic: Bool = false) {
         guard canTranslate else { return }
-        invalidate()
+        invalidate(keepingOutput: true)
         let current = TranslationRequest(text: text, source: source, target: target)
         let token = generation
         busy = true
@@ -108,6 +134,11 @@ final class TranslationModel: ObservableObject {
                 guard self.generation == token, !Task.isCancelled else { return }
                 self.pairState = state
                 guard state != .unsupported else { self.busy = false; return }
+                if automatic && state == .downloadable {
+                    self.busy = false
+                    self.message = "These languages need a download from macOS. Press ⌘T to download and translate."
+                    return
+                }
                 self.request = current
             } catch {
                 guard self.generation == token, !Task.isCancelled else { return }
@@ -122,7 +153,7 @@ final class TranslationModel: ObservableObject {
         do {
             let result = try await translate(current)
             guard request?.id == current.id, !Task.isCancelled else { return }
-            output = result.text; detectedSource = result.source
+            output = result.text; detectedSource = result.source; outputIsStale = false
             pairState = .installed; busy = false; request = nil
         } catch {
             guard request?.id == current.id else { return }
@@ -140,7 +171,7 @@ final class TranslationModel: ObservableObject {
     }
 
     func copy(using action: (String) -> Void) {
-        guard !output.isEmpty, !busy else { return }
+        guard !output.isEmpty, !busy, !outputIsStale else { return }
         action(output); message = "Translation copied"
     }
 }
