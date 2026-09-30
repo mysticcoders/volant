@@ -6,6 +6,8 @@ import Foundation
     func acpStart(provider: String, project: String, reply: @escaping (String?) -> Void)
     func acpRead(reply: @escaping (Data?, String?) -> Void)
     func acpPrompt(text: String, reply: @escaping (String?) -> Void)
+    /// A prompt with owner-chosen attachments, a JSON array of `ChatAttachment`.
+    func acpPromptWithContext(text: String, attachments: Data, reply: @escaping (String?) -> Void)
     func acpCancel(reply: @escaping (String?) -> Void)
     func acpPermission(request: String, option: String, reply: @escaping (String?) -> Void)
     func acpStop(reply: @escaping () -> Void)

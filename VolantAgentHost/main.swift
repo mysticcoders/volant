@@ -26,6 +26,15 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
     func acpPrompt(text: String, reply: @escaping (String?) -> Void) {
         acp.queue.async { do { try self.acp.prompt(text); reply(nil) } catch { reply(error.localizedDescription) } }
     }
+    func acpPromptWithContext(text: String, attachments data: Data, reply: @escaping (String?) -> Void) {
+        acp.queue.async {
+            do {
+                guard data.count <= 512_000 else { throw CocoaError(.fileReadTooLarge) }
+                try self.acp.prompt(text, attachments: try JSONDecoder().decode([ChatAttachment].self, from: data))
+                reply(nil)
+            } catch { reply(error.localizedDescription) }
+        }
+    }
     func acpCancel(reply: @escaping (String?) -> Void) { acp.queue.async { self.acp.cancel(); reply(nil) } }
     func acpPermission(request: String, option: String, reply: @escaping (String?) -> Void) {
         acp.queue.async { do { try self.acp.choose(request: request, option: option); reply(nil) } catch { reply(error.localizedDescription) } }

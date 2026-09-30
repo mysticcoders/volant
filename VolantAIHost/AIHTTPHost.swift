@@ -17,13 +17,19 @@ actor AIHTTPConversation {
         state = ACPState(); state.phase = "ready"; state.status = "Ready"; state.agentName = config.model
     }
     func snapshot() throws -> Data { try JSONEncoder().encode(state) }
-    func prompt(_ text: String) throws {
+    /// The transcript shows the prompt and attachment titles; the model receives the attachments
+    /// inline, and that composed text is what later turns carry as history.
+    func prompt(_ text: String, attachments: [ChatAttachment] = []) throws {
         guard let config, turn == nil, state.phase == "ready", !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw AIHTTPError.configuration }
-        guard text.utf8.count <= 65_536, history.count < 98, state.messages.count < 100,
-              state.messages.reduce(0, { $0 + $1.text.utf8.count }) + text.utf8.count <= 262_144 else { throw AIHTTPError.limit }
-        let user = ACPMessage(role: "You", text: text), reply = ACPMessage(role: "Agent", text: "")
+        guard ChatAttachmentLimits.problem(attachments) == nil else { throw AIHTTPError.limit }
+        let composed = ChatPromptComposer.inline(prompt: text, attachments: attachments)
+        guard composed.utf8.count <= 65_536, history.count < 98, state.messages.count < 100,
+              history.reduce(0, { $0 + $1.text.utf8.count }) + composed.utf8.count <= 262_144 else { throw AIHTTPError.limit }
+        let user = ACPMessage(role: "You", text: text, attachments: attachments.isEmpty ? nil : attachments.map(\.title))
+        let reply = ACPMessage(role: "Agent", text: "")
         state.messages += [user, reply]; state.phase = "working"; state.status = "Responding…"
-        generation = UUID(); let token = generation, key = key, input = history + [user]
+        let sent = ACPMessage(id: user.id, role: "You", text: composed)
+        generation = UUID(); let token = generation, key = key, input = history + [sent]
         turn = Task {
             do {
                 try await transport.stream(config, key: key, messages: input) { chunk in try self.append(chunk, token: token) }
@@ -59,6 +65,15 @@ final class AIHTTPHost: NSObject, VolantAIHostProtocol {
     }
     func read(reply: @escaping (Data?, String?) -> Void) { Task { do { reply(try await conversation.snapshot(), nil) } catch { reply(nil, "Couldn’t read conversation.") } } }
     func prompt(text: String, reply: @escaping (String?) -> Void) { Task { do { try await conversation.prompt(text); reply(nil) } catch { reply(AIHTTPError.message(error)) } } }
+    func promptWithContext(text: String, attachments data: Data, reply: @escaping (String?) -> Void) {
+        Task {
+            do {
+                guard data.count <= 512_000 else { throw AIHTTPError.limit }
+                try await conversation.prompt(text, attachments: try JSONDecoder().decode([ChatAttachment].self, from: data))
+                reply(nil)
+            } catch { reply(AIHTTPError.message(error)) }
+        }
+    }
     func cancel(reply: @escaping () -> Void) { Task { await conversation.cancel(); reply() } }
     func models(configuration: Data, key: String, reply: @escaping (Data?, String?) -> Void) {
         Task { do { guard configuration.count <= 8192 else { throw AIHTTPError.configuration }

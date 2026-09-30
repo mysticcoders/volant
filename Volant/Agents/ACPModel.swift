@@ -7,6 +7,8 @@ final class ACPModel: ObservableObject {
     @Published var provider = "opencode"
     @Published var project = ""
     @Published var draft = ""
+    /// Owner-chosen context for the next prompt. Kept in memory with the draft, cleared once sent.
+    @Published private(set) var attachments: [ChatAttachment] = []
     @Published var state = ACPState()
     @Published var error: String?
     @Published var submitting = false
@@ -70,9 +72,24 @@ final class ACPModel: ObservableObject {
             }
         }
     }
+    /// Adds a snapshot unless it is already attached; refuses one that would break the limits
+    /// for this connection, leaving the draft and existing attachments unchanged.
+    @discardableResult func attach(_ attachment: ChatAttachment) -> Bool {
+        guard !attachments.contains(where: { $0.id == attachment.id }) else { return true }
+        if let problem = ChatAttachmentLimits.problem(attachments + [attachment], apple: usesApple) {
+            error = problem
+            return false
+        }
+        attachments.append(attachment)
+        error = nil
+        return true
+    }
+
+    func detach(_ id: String) { attachments.removeAll { $0.id == id } }
+
     func send() {
         guard canSend else { return }
-        let text = draft, current = generation
+        let text = draft, sent = attachments, current = generation
         revision += 1
         submitting = true; error = nil
         let reply: (String?) -> Void = { [weak self] error in
@@ -82,6 +99,7 @@ final class ACPModel: ObservableObject {
                 if let error { self.error = error }
                 else {
                     if self.draft == text { self.draft = "" }
+                    if self.attachments == sent { self.attachments = [] }
                     // Keep Send disabled until a subsequent snapshot shows the completed turn.
                     self.state.phase = "working"
                 }
@@ -89,9 +107,17 @@ final class ACPModel: ObservableObject {
                 self.read()
             }
         }
-        if usesApple { promptApple(text, reply: reply) }
-        else if usesAPI { apiProxy()?.prompt(text: text, reply: reply) }
-        else { proxy()?.acpPrompt(text: text, reply: reply) }
+        if let problem = ChatAttachmentLimits.problem(sent, apple: usesApple) { submitting = false; error = problem; return }
+        // Without attachments the original text-only path is used unchanged.
+        guard !sent.isEmpty, let data = try? JSONEncoder().encode(sent) else {
+            if usesApple { promptApple(text, reply: reply) }
+            else if usesAPI { apiProxy()?.prompt(text: text, reply: reply) }
+            else { proxy()?.acpPrompt(text: text, reply: reply) }
+            return
+        }
+        if usesApple { promptApple(text, attachments: sent, reply: reply) }
+        else if usesAPI { apiProxy()?.promptWithContext(text: text, attachments: data, reply: reply) }
+        else { proxy()?.acpPromptWithContext(text: text, attachments: data, reply: reply) }
     }
     func cancel() {
         let current = generation
@@ -185,15 +211,15 @@ final class ACPModel: ObservableObject {
         error = nil
     }
 
-    private func promptApple(_ text: String, reply: @escaping (String?) -> Void) {
+    private func promptApple(_ text: String, attachments: [ChatAttachment] = [], reply: @escaping (String?) -> Void) {
         let current = generation
-        state.messages.append(ACPMessage(role: "You", text: text))
+        state.messages.append(ACPMessage(role: "You", text: text, attachments: attachments.isEmpty ? nil : attachments.map(\.title)))
         // The reply slot is created now and replaced as snapshots arrive, because FoundationModels
         // streams the whole text so far rather than deltas.
         let index = state.messages.count
         state.messages.append(ACPMessage(role: "Assistant", text: ""))
         reply(nil)
-        apple?.send(text, snapshot: { [weak self] snapshot in
+        apple?.send(ChatPromptComposer.inline(prompt: text, attachments: attachments), snapshot: { [weak self] snapshot in
             guard let self, self.generation == current, self.state.messages.indices.contains(index) else { return }
             self.state.messages[index] = ACPMessage(id: self.state.messages[index].id, role: "Assistant", text: snapshot)
         }, finished: { [weak self] failure in

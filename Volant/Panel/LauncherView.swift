@@ -13,7 +13,8 @@ struct LauncherView: View {
             } else if model.showingTranslation {
                 TranslationView(model: model.translation, caffeinate: model.caffeinate, back: { model.query = ""; model.searchFocusRequest = UUID() }, copy: model.copyText)
             } else if model.showingACP {
-                ACPConversationView(model: model.acp, settings: model.openAISettings, back: { model.query = "" }, caffeinate: model.caffeinate, focusRequest: model.searchFocusRequest)
+                ACPConversationView(model: model.acp, settings: model.openAISettings, back: { model.query = "" }, caffeinate: model.caffeinate, focusRequest: model.searchFocusRequest,
+                                    contextCandidates: model.contextCandidates)
                     .onAppear { model.openAIChat() }
             } else {
             searchField

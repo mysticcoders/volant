@@ -6,6 +6,8 @@ struct ACPPromptView: NSViewRepresentable {
     @Binding var text: String
     let focusRequest: UUID
     let send: () -> Void
+    /// Called with the location of an @ typed at the start of a word, after it is inserted.
+    var mention: (Int) -> Void = { _ in }
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeNSView(context: Context) -> PromptScrollView {
@@ -51,6 +53,19 @@ struct ACPPromptView: NSViewRepresentable {
     final class Coordinator: NSObject, NSTextViewDelegate {
         var parent: ACPPromptView
         init(_ parent: ACPPromptView) { self.parent = parent }
+        /// An @ opens the picker only at the start of a word, so email addresses and handles typed
+        /// mid-word stay ordinary text, and never while an input method is composing.
+        func textView(_ textView: NSTextView, shouldChangeTextIn range: NSRange, replacementString text: String?) -> Bool {
+            guard text == "@", !textView.hasMarkedText() else { return true }
+            let source = textView.string as NSString
+            let atWordStart = range.location == 0 || (range.location <= source.length
+                && CharacterSet.whitespacesAndNewlines.contains(UnicodeScalar(source.character(at: range.location - 1)) ?? " "))
+            if atWordStart {
+                let location = range.location
+                DispatchQueue.main.async { [weak self] in self?.parent.mention(location) }
+            }
+            return true
+        }
         func textDidChange(_ notification: Notification) {
             guard let editor = notification.object as? NSTextView else { return }
             parent.text = editor.string

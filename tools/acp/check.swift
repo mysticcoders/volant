@@ -1,4 +1,5 @@
 import Foundation
+import VolantCore
 
 func require(_ condition: @autoclosure () -> Bool, _ message: String) { precondition(condition(), message) }
 func frame(_ object: [String: Any]) -> Data {
@@ -63,3 +64,40 @@ oversized.queue.sync {
     require(oversized.state.phase == "failed", "unterminated frame limit")
 }
 print("Passed: retained approval details and oversized unterminated frame rejection.")
+
+/// Attachments are shaped by what the agent advertised and re-checked here, not trusted from the app.
+func contextSession(_ capabilities: [String: Any]) -> (ACPConnection, () -> [String: Any]?) {
+    let connection = ACPConnection()
+    var log: [[String: Any]] = []
+    connection.testSend = { log.append($0) }
+    connection.queue.sync {
+        connection.beginHandshake(project: "/tmp/fictional-project")
+        connection.receive(frame(["jsonrpc": "2.0", "id": 1, "result": ["protocolVersion": 1, "agentCapabilities": capabilities]]))
+        connection.receive(frame(["jsonrpc": "2.0", "id": 2, "result": ["sessionId": "context-session"]]))
+    }
+    return (connection, { log.last })
+}
+let note = ChatAttachment(id: "Plan.md", kind: .note, title: "Plan", detail: "Note", text: "Ship the fixture.")
+let (embedded, lastEmbedded) = contextSession(["promptCapabilities": ["embeddedContext": true]])
+try embedded.queue.sync {
+    try embedded.prompt("Summarize", attachments: [note])
+    let blocks = (lastEmbedded()?["params"] as? [String: Any])?["prompt"] as? [[String: Any]] ?? []
+    require(blocks.count == 2 && blocks[0]["type"] as? String == "resource", "embedded context sends a resource block")
+    require(((blocks[0]["resource"] as? [String: Any])?["text"] as? String) == "Ship the fixture.", "resource carries the snapshot text")
+    require(blocks[1]["text"] as? String == "Summarize", "prompt follows its attachments")
+    require(embedded.state.messages.last?.text == "Summarize" && embedded.state.messages.last?.attachments == ["Plan"], "transcript shows the prompt and titles only")
+}
+let (plain, lastPlain) = contextSession(["loadSession": true])
+try plain.queue.sync {
+    try plain.prompt("Summarize", attachments: [note])
+    let blocks = (lastPlain()?["params"] as? [String: Any])?["prompt"] as? [[String: Any]] ?? []
+    require(blocks.count == 1 && blocks[0]["type"] as? String == "text", "agents without embedded context get one text block")
+    require((blocks[0]["text"] as? String)?.contains("<attachment kind=\"note\" title=\"Plan\">") == true, "inline form labels the note")
+}
+let (limited, lastLimited) = contextSession(["promptCapabilities": ["embeddedContext": true]])
+limited.queue.sync {
+    let huge = ChatAttachment(id: "big", kind: .clipboard, title: "Big", detail: "", text: String(repeating: "x", count: ChatAttachmentLimits.perItem + 1))
+    do { try limited.prompt("Too much", attachments: [huge]); fatalError("oversized attachment accepted") } catch {}
+    require(lastLimited()?["method"] as? String == "session/new" && limited.state.phase == "ready", "refused prompts send nothing")
+}
+print("Passed: attachments follow embeddedContext, keep the transcript short, and are re-checked before sending.")

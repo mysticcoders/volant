@@ -42,6 +42,21 @@ import VolantCore
         check(unauthorized.status == AIHTTPError.http(401).errorDescription, "Authentication error is generic")
         check(!unauthorized.status.contains("secret"), "Provider bodies never surfaced")
         await host.stop()
+        let context = AIHTTPConversation(transport: transport)
+        try await context.start(config, key: "")
+        try await context.prompt("what is attached?", attachments: [ChatAttachment(id: "note:Plan.md", kind: .note, title: "Plan", detail: "Note", text: "Ship the fixture.")])
+        let seen = try await ready(context)
+        check(seen.messages.last?.text == "SAW 1 ATTACHMENTS", "Model receives attachments inline")
+        check(seen.messages.first?.text == "what is attached?" && seen.messages.first?.attachments == ["Plan"], "Transcript shows the prompt and titles only")
+        try await context.prompt("history?")
+        let history = try await ready(context)
+        check(history.messages.last?.text == "HISTORY HAS ATTACHMENT", "Later turns keep the attached context")
+        do {
+            try await context.prompt("too much", attachments: [ChatAttachment(id: "big", kind: .clipboard, title: "Big", detail: "", text: String(repeating: "x", count: ChatAttachmentLimits.perItem + 1))])
+            fatalError("Oversized attachment accepted")
+        } catch AIHTTPError.limit {}
+        await context.stop()
+        print("PASS: attachments reach the model inline, stay in history, keep the transcript short, and oversized ones are refused")
         print("PASS: real loopback HTTP discovery, Unicode streaming, denied redirects, concurrent prompts, cancellation, stale chunks, truncation and generic authentication errors")
     }
 }

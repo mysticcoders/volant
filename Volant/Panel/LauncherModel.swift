@@ -471,6 +471,32 @@ final class LauncherModel: ObservableObject {
         let q = query.trimmingCharacters(in: .whitespaces).lowercased()
         return q == "clip" || q.hasPrefix("clip ")
     }
+    /// What the chat's @ picker offers: recent clipboard text and notes, snapshotted when chosen.
+    /// A note with unsaved edits contributes the text on screen. Images and unreadable notes are
+    /// left out of this first version.
+    func contextCandidates(_ query: String) -> [ChatAttachment] {
+        let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let formatter = RelativeDateTimeFormatter()
+        // Anything from the last minute reads as just now, including a copy stamped a moment ahead.
+        let age: (Date) -> String = { date in
+            Date().timeIntervalSince(date) < 60 ? "just now" : formatter.localizedString(for: date, relativeTo: Date())
+        }
+        let clips = clipboard.recent(limit: 16, matching: term).filter {
+            $0.kind == .text && !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                && (term.isEmpty || $0.text.localizedCaseInsensitiveContains(term))
+        }.prefix(8).map { clip in
+            let first = clip.text.split(whereSeparator: \.isNewline).first.map(String.init) ?? clip.text
+            return ChatAttachment(id: "clip:\(clip.id)", kind: .clipboard, title: String(first.trimmingCharacters(in: .whitespaces).prefix(60)),
+                                  detail: "Clipboard · " + age(clip.copiedAt), text: clip.text)
+        }
+        let found = notes.search(term, limit: 16).filter { $0.readError == nil }.prefix(8).map { note in
+            ChatAttachment(id: "note:" + note.id, kind: .note, title: note.title,
+                           detail: "Note · edited " + age(note.modified),
+                           text: notes.dirtyText[note.id] ?? note.text)
+        }
+        return Array(clips) + Array(found)
+    }
+
     var clipboardMessage: String? { showingClipboard ? clipboard.state.message : nil }
     var clipboardRetrying: Bool { clipboard.state == .retrying }
     func retryClipboard() { guard showingClipboard else { return }; clipboard.retry() }

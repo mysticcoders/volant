@@ -172,6 +172,24 @@ panel.model.acp.state.messages[1].text += "\n```\n\nSee [the example](https://ex
 settle()
 verify(panel.model.acp.draft == "A fictional follow-up", "Streaming Markdown preserves the prompt draft")
 try render("chat")
+// The @ picker is driven by real keystrokes against a fictional clipboard entry.
+clipboard.record("Fictional build error: expected ';' after expression"); settle()
+if let editor = panel.firstResponder as? NSTextView { editor.setSelectedRange(NSRange(location: (editor.string as NSString).length, length: 0)) }
+key(" ", 49); key("@", 19, [.shift]); settle()
+verify(controlFrame("chat.picker", in: panel) != nil, "Typing @ at the start of a word opens the picker")
+try render("chat-context-picker")
+key("\r", 36)
+verify(panel.model.acp.attachments.count == 1 && panel.model.acp.attachments.first?.kind == .clipboard, "Return attaches the first candidate")
+verify(!panel.model.acp.draft.contains("@"), "Choosing removes the @ that opened the picker")
+verify(controlFrame("chat.picker", in: panel) == nil, "The picker closes after choosing")
+verify(!panel.model.acp.submitting, "Choosing an attachment never sends")
+panel.model.acp.state.messages.append(ACPMessage(role: "You", text: "Why does this fail?", attachments: ["Fictional build error: expected ';' after expression"]))
+settle()
+try render("chat-attached")
+panel.model.acp.detach(panel.model.acp.attachments[0].id)
+panel.model.acp.state.messages.removeLast()
+panel.model.acp.draft = "A fictional follow-up"; settle()
+print("PASS: @ opens the context picker at a word start, Return attaches a snapshot and removes the @, without sending")
 let savedMessages = panel.model.acp.state.messages
 let savedDraft = panel.model.acp.draft
 panel.orderOut(nil); settle(); panel.toggle(); settle()
@@ -450,7 +468,7 @@ func controlFrame(_ name: String, in window: NSWindow) -> NSRect? {
     var seen: [String] = []
     func views(_ view: NSView) -> [NSView] { [view] + view.subviews.flatMap(views) }
     for view in views(window.contentView!) where !view.isHiddenOrHasHiddenAncestor {
-        if let identifier = view.identifier?.rawValue, identifier.hasPrefix("settings.") {
+        if let identifier = view.identifier?.rawValue, identifier.hasPrefix("settings.") || identifier.hasPrefix("chat.") {
             seen.append(identifier)
             if identifier == name { return view.convert(view.bounds, to: nil) }
         }
