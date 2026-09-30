@@ -914,9 +914,22 @@ final class LauncherModel: ObservableObject {
         var out = immediate
         if !contactRows.isEmpty { out.append(ResultSection(title: "Contacts", rows: contactRows)) }
         if !fileRows.isEmpty { out.append(ResultSection(title: "Files", rows: fileRows)) }
-        sections = out
+        sections = Self.promoting(usage.choice(forQuery: query.trimmingCharacters(in: .whitespaces)), in: out)
         if let selectedID, let i = rows.firstIndex(where: { $0.id == selectedID }) { selection = i }
         else { selection = 0 }
+    }
+
+    /// What was chosen last time for exactly this query comes first: its row leads its section
+    /// and that section leads the results. Apps already did this inside their own section; this
+    /// extends it to commands, system actions, settings panes and everything else that records use.
+    static func promoting(_ id: String?, in sections: [ResultSection]) -> [ResultSection] {
+        guard let id, let index = sections.firstIndex(where: { $0.rows.contains { $0.id == id } }) else { return sections }
+        let rows = sections[index].rows
+        let promoted = rows.filter { $0.id == id } + rows.filter { $0.id != id }
+        var result = sections
+        result.remove(at: index)
+        result.insert(ResultSection(title: sections[index].title, rows: promoted), at: 0)
+        return result
     }
 
     private var connectivitySource: String? {
