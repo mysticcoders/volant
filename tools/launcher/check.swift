@@ -656,8 +656,11 @@ final class FixtureCaffeinateAssertions: CaffeinateAssertions {
 }
 let power = FixtureCaffeinateAssertions()
 let awake = CaffeinateService(assertions: power, automaticTimer: false)
+var requestedSystemActions: [SystemAction] = []
 let corePanel = LauncherPanel(index: AppIndex(entries: []), clipboard: clipboard, notes: notes,
-    config: Preferences(), usage: usage, positionStore: positionDefaults, caffeinate: awake, onNote: { _ in })
+    config: Preferences(), usage: usage, positionStore: positionDefaults, caffeinate: awake, onNote: { action in
+        if case .systemAction(let system) = action { requestedSystemActions.append(system) }
+    })
 corePanel.model.searchesSecondarySources = false
 var copiedEmoji: [String] = []
 corePanel.model.copyText = { copiedEmoji.append($0) }
@@ -686,6 +689,22 @@ func renderCore(_ name: String) throws {
     try bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "/tmp/volant-core-\(name)-\(dark ? "dark" : "light").png"))
 }
 try renderCore("commands")
+// System actions are only requested from the app delegate on Return; searching never performs one.
+corePanel.model.query = "restart"
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+verify(corePanel.model.rows.first?.id == "system-action:restart", "Restart is found by name")
+corePanel.model.query = "sleep"
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+verify(corePanel.model.rows.contains { $0.id == "system-action:sleep" } && corePanel.model.rows.contains { $0.id == "system-action:sleepDisplays" }, "Sleep lists both sleep actions")
+try renderCore("system-actions")
+corePanel.model.query = "lock screen"
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+verify(requestedSystemActions.isEmpty, "Typing never performs a system action")
+verify(corePanel.model.selectedRow?.id == "system-action:lockScreen", "Lock Screen is selected for its name")
+verify(corePanel.makeFirstResponder(coreSearchField(in: corePanel.contentView!)!), "Restore native editor after render capture")
+sendCoreKey("\r", code: 36)
+verify(requestedSystemActions == [.lockScreen], "Return hands Lock Screen to the app delegate once")
+print("PASS: system actions are searchable, render as commands, and run only on Return")
 // Fictional Apple Shortcuts: native Return uses stable IDs and late catalogs keep selection.
 let recipe = AppleShortcut(id: "11111111-1111-4111-8111-111111111111", name: "Leftover Recipes")
 let volumeShortcut = AppleShortcut(id: "22222222-2222-4222-8222-222222222222", name: "Set Volume to 50%")
@@ -809,6 +828,12 @@ Task { @MainActor in translator.start() }
 RunLoop.main.run(until: Date().addingTimeInterval(0.3))
 verify(translator.pairState == .unsupported && !translator.busy)
 try renderCore("translation-unsupported")
+translator.availability = { _ in .installed }
+translator.target = "es"
+translator.text = "Good morning"
+RunLoop.main.run(until: Date().addingTimeInterval(1.2))
+verify(translator.output == "Hola\n¿Cómo estás?" && !translator.outputIsStale, "A pause in typing translates without ⌘T")
+translator.text = "Hello\nHow are you?"
 corePanel.orderOut(nil)
 RunLoop.main.run(until: Date().addingTimeInterval(0.25))
 verify(corePanel.model.query == "translate" && translator.text == "Hello\nHow are you?", "Hidden idle work preserves translation draft")

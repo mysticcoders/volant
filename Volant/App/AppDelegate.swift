@@ -51,6 +51,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .open(let id): self?.notesPanel.open(noteID: id)
         case .create(let text): self?.notesPanel.openNew(text: text)
         case .confetti: ConfettiWindow.celebrate()
+        case .systemAction(let action): self?.performSystemAction(action)
         }
     }
 
@@ -218,6 +219,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.endDictationFromHotkey()
             }) == nil { failures.append("Dictate Text shortcut unavailable: " + KeyCombo.display(config.talkHotKey)) }
         }
+        for (value, action) in [(config.lockScreenHotKey, SystemAction.lockScreen), (config.sleepDisplaysHotKey, .sleepDisplays)] {
+            guard let combo = KeyCombo(parsing: value) else { continue }
+            if HotKeyCenter.shared.register(combo, handler: { [weak self] in self?.performSystemAction(action) }) == nil {
+                failures.append(action.title + " shortcut unavailable: " + KeyCombo.display(value))
+            }
+        }
         failures += AppHotKeys.register(config.appHotKeys) { [weak self] message in
             guard let state = self?.settingsPanel.state else { return }
             if !state.registrationErrors.contains(message) { state.registrationErrors.append(message) }
@@ -292,6 +299,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.toggle(source: .hotkey, requestedAt: started)
     }
     @objc private func togglePanel() { panel.toggle(source: .menu) }
+
+    /// One path for the launcher and the hotkeys. The launcher is hidden first and the action
+    /// runs a moment later, so it is not on screen when the Mac locks or a dialog appears. A
+    /// failure reopens the launcher with the reason rather than failing silently.
+    private func performSystemAction(_ action: SystemAction) {
+        panel.orderOut(nil)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+            guard let self, let problem = SystemActions.perform(action) else { return }
+            if !self.panel.isVisible { self.panel.toggle() }
+            self.panel.model.actionFeedback = problem
+        }
+    }
 
     /// A nil appearance follows macOS, including its automatic light and dark switching.
     private func applyTheme() {
