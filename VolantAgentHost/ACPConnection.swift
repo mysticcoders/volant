@@ -72,14 +72,20 @@ final class ACPConnection {
         state.phase = "starting"
         request("initialize", ["protocolVersion": 1, "clientCapabilities": ["fs": ["readTextFile": false, "writeTextFile": false], "terminal": false], "clientInfo": ["name": "volant", "title": "Volant", "version": "0.1.0"]])
     }
-    func prompt(_ text: String) throws {
+    /// Attachments are re-checked here rather than trusted from the app, and shaped by what this
+    /// agent advertised at initialization.
+    func prompt(_ text: String, attachments: [ChatAttachment] = []) throws {
         guard state.phase == "ready", let id = state.sessionID else { throw failure("The conversation is not ready for another prompt.") }
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, text.utf8.count <= 64_000 else { throw failure("Enter a prompt of at most 64 KB.") }
-        guard textBytes + text.utf8.count < 1_000_000 else { throw failure("This conversation reached its display limit. Start a new conversation.") }
-        textBytes += text.utf8.count
-        state.messages.append(ACPMessage(role: "You", text: text))
+        if let problem = ChatAttachmentLimits.problem(attachments) { throw failure(problem) }
+        let size = text.utf8.count + attachments.reduce(0) { $0 + $1.size }
+        guard textBytes + size < 1_000_000 else { throw failure("This conversation reached its display limit. Start a new conversation.") }
+        textBytes += size
+        state.messages.append(ACPMessage(role: "You", text: text, attachments: attachments.isEmpty ? nil : attachments.map(\.title)))
         state.phase = "working"; state.status = "Working…"; turn = UUID()
-        request("session/prompt", ["sessionId": id, "prompt": [["type": "text", "text": text]]])
+        let blocks = ChatPromptComposer.acpBlocks(prompt: text, attachments: attachments,
+                                                  embeddedContext: ChatPromptComposer.supportsEmbeddedContext(capabilities: state.capabilities))
+        request("session/prompt", ["sessionId": id, "prompt": blocks])
     }
     func cancel() {
         guard ["working", "cancelling"].contains(state.phase), let id = state.sessionID else { return }

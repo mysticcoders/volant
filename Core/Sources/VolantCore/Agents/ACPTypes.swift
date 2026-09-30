@@ -4,11 +4,15 @@ public struct ACPMessage: Codable, Identifiable, Equatable {
     public var id = UUID().uuidString
     public var role: String
     public var text: String
+    /// Titles of what was attached to a prompt. The transcript shows these rather than the
+    /// attached text, which went to the agent but would bury the conversation.
+    public var attachments: [String]?
 
-    public init(id: String = UUID().uuidString, role: String, text: String) {
+    public init(id: String = UUID().uuidString, role: String, text: String, attachments: [String]? = nil) {
         self.id = id
         self.role = role
         self.text = text
+        self.attachments = attachments
     }
 }
 public struct ACPPermission: Codable, Identifiable, Equatable {

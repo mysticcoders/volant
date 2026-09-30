@@ -7,7 +7,12 @@ struct ACPConversationView: View {
     var back: () -> Void = {}
     var caffeinate: CaffeinateService?
     var focusRequest: UUID = UUID()
+    /// Notes and clipboard text offered by the @ picker; none when the host provides no source.
+    var contextCandidates: ((String) -> [ChatAttachment])?
     @State private var follow = true
+    @State private var picking = false
+    @State private var mentionLocation: Int?
+    @State private var editorFocus = UUID()
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
@@ -37,7 +42,7 @@ struct ACPConversationView: View {
                             .font(.headline)
                         Text(model.usesAPI ? "Chat with your selected model." : "Chat with your configured AI provider. A project folder is optional.")
                             .font(.callout).foregroundStyle(.secondary)
-                        Text(model.usesAPI ? "Your messages and this conversation’s completed turns are sent to the configured server. This connection has no agent tools." : "Volant sends only the prompt you write here. Sign in through the provider’s CLI before starting.")
+                        Text(model.usesAPI ? "Your messages and this conversation’s completed turns are sent to the configured server. This connection has no agent tools." : "Volant sends only what you write here and anything you attach with @. Sign in through the provider’s CLI before starting.")
                             .font(.callout).foregroundStyle(.secondary)
                     }
                     ForEach(model.state.messages) { message in
@@ -84,8 +89,24 @@ struct ACPConversationView: View {
                     Button("Cancel", action: model.cancel).disabled(model.state.phase == "cancelling")
                 }
             }.padding(.horizontal, 16).padding(.vertical, 6)
+            if picking, let contextCandidates {
+                ChatContextPicker(candidates: contextCandidates, choose: attach, close: closePicker)
+                    .padding(.horizontal, 16).padding(.bottom, 8)
+            }
+            if !model.attachments.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(model.attachments) { attachment in
+                            ChatAttachmentChip(attachment: attachment) { model.detach(attachment.id) }
+                        }
+                    }
+                }
+                .padding(.horizontal, 16).padding(.bottom, 6)
+                .accessibilityLabel("Attached: " + model.attachments.map(\.title).joined(separator: ", "))
+            }
             HStack(alignment: .bottom, spacing: 10) {
-                ACPPromptView(text: $model.draft, focusRequest: focusRequest, send: model.send)
+                ACPPromptView(text: $model.draft, focusRequest: editorFocus, send: model.send,
+                              mention: { location in if contextCandidates != nil { mentionLocation = location; picking = true } })
                     .frame(height: 64)
                     .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 7))
                     .overlay(alignment: .topLeading) {
@@ -94,10 +115,35 @@ struct ACPConversationView: View {
                                 .padding(9).allowsHitTesting(false).accessibilityHidden(true)
                         }
                     }
+                if contextCandidates != nil {
+                    Button { mentionLocation = nil; picking.toggle() } label: { Image(systemName: "at") }
+                        .help("Attach a note or clipboard item (type @)")
+                        .accessibilityLabel("Attach a note or clipboard item")
+                        .background(ControlAnchor("chat.attach"))
+                }
                 Button("Send", action: model.send).disabled(!model.canSend)
                     .help("Return to send; Shift-Return for a new line")
             }.padding(.horizontal, 16).padding(.bottom, 12)
         }
+        .onAppear { editorFocus = focusRequest }
+        .onChange(of: focusRequest) { _, value in editorFocus = value }
+    }
+
+    /// Choosing removes the @ that opened the picker, if it is still where it was typed.
+    private func attach(_ attachment: ChatAttachment) {
+        if model.attach(attachment), let location = mentionLocation {
+            let draft = model.draft as NSString
+            if location < draft.length, draft.substring(with: NSRange(location: location, length: 1)) == "@" {
+                model.draft = draft.replacingCharacters(in: NSRange(location: location, length: 1), with: "")
+            }
+        }
+        closePicker()
+    }
+
+    private func closePicker() {
+        picking = false
+        mentionLocation = nil
+        editorFocus = UUID()
     }
     private func permissionButtons(_ permission: ACPPermission) -> some View {
         ForEach(permission.options) { option in
@@ -143,6 +189,11 @@ private struct ACPMessageView: View {
             } else {
                 Text(message.text).font(.system(size: 14)).textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                if let attachments = message.attachments, !attachments.isEmpty {
+                    Label(attachments.joined(separator: " · "), systemImage: "paperclip")
+                        .font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                        .accessibilityLabel("Attached: " + attachments.joined(separator: ", "))
+                }
             }
         }
         .padding(message.role == "You" ? 12 : 0)

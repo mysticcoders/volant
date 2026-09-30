@@ -18,6 +18,11 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if prompt == 'slow': time.sleep(1)
             text = 'OLD cancelled response' if prompt == 'slow' else 'Hello caf\u00e9 \u2615'
+            # Attachment checks answer with counts only, never the attached text.
+            if '<attachment ' in prompt: text = 'SAW %d ATTACHMENTS' % prompt.count('<attachment ')
+            if prompt == 'history?':
+                earlier = [m['content'] for m in body['messages'][:-1] if m['role'] == 'user']
+                text = 'HISTORY HAS ATTACHMENT' if any('<attachment ' in m for m in earlier) else 'HISTORY LOST ATTACHMENT'
             payload = json.dumps({'choices': [{'delta': {'content': text}}]}, ensure_ascii=False)
             self.wfile.write(('data: '+payload+'\n\n').encode()); self.wfile.flush()
             if prompt != 'truncated': self.wfile.write(b'data: [DONE]\n\n'); self.wfile.flush()

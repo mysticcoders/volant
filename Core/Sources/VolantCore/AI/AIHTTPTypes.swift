@@ -4,6 +4,8 @@ import Foundation
     func start(configuration: Data, key: String, reply: @escaping (String?) -> Void)
     func read(reply: @escaping (Data?, String?) -> Void)
     func prompt(text: String, reply: @escaping (String?) -> Void)
+    /// A prompt with owner-chosen attachments, a JSON array of `ChatAttachment`.
+    func promptWithContext(text: String, attachments: Data, reply: @escaping (String?) -> Void)
     func cancel(reply: @escaping () -> Void)
     func models(configuration: Data, key: String, reply: @escaping (Data?, String?) -> Void)
 }
