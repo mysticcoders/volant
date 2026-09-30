@@ -505,6 +505,42 @@ try renderAPISettings(.byok, provider: .anthropic)
 try renderAPISettings(.byok, provider: .compatible)
 try renderAPISettings(.local)
 try renderAPISettings(.local, offline: true)
+// ACP detection renders a fictional result; the real helper and the owner's installs are never read.
+do {
+    var config = AIConfiguration(); config.connection = .acp; config.provider = "claude"
+    try config.save(at: aiFixtureURL)
+    let detection = ACPAgentDetection()
+    detection.reader = { reply in
+        reply(try? JSONEncoder().encode([
+            ACPAgentAvailability(provider: "claude", state: .ready, detail: "Found at ~/.local/bin/claude", path: "/Users/fixture/.local/bin/claude"),
+            ACPAgentAvailability(provider: "qwen", state: .ready, detail: "Found at /opt/homebrew/bin/qwen", path: "/opt/homebrew/bin/qwen"),
+            ACPAgentAvailability(provider: "codex", state: .needsAdapter, detail: "Codex’s ACP adapter is missing. Install Volant’s ACP adapters and retry.", path: nil),
+            ACPAgentAvailability(provider: "gemini", state: .notInstalled, detail: "Gemini CLI was not found. Install it and sign in, then retry.", path: nil)
+        ]), nil)
+    }
+    let model = ACPModel()
+    let view = NSHostingView(rootView: AISettingsView(model: model, configURL: aiFixtureURL, onChange: {}, openConversation: { _ in }, chooseProject: { _ in },
+                                                      credentials: fakeCredentials, discovery: AIModelDiscovery(), agentDetection: detection)
+        .background(Color(nsColor: .windowBackgroundColor)))
+    let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 760), styleMask: [.titled], backing: .buffered, defer: false)
+    window.contentView = view; window.makeKeyAndOrderFront(nil); settle()
+    try render("ai-acp-detected", view: view)
+    verify(detection.agents.map(\.provider) == ["claude", "qwen", "codex", "gemini"], "Detected agents list ready providers first")
+    guard let use = controlFrame("settings.use-agent-qwen", in: window) else { verify(false, "A ready agent offers Use"); exit(1) }
+    func event(_ type: NSEvent.EventType) -> NSEvent {
+        NSEvent.mouseEvent(with: type, location: NSPoint(x: use.midX, y: use.midY), modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                          windowNumber: window.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: type == .leftMouseDown ? 1 : 0)!
+    }
+    app.postEvent(event(.leftMouseUp), atStart: true)
+    window.sendEvent(event(.leftMouseDown))
+    if let release = app.nextEvent(matching: .leftMouseUp, until: .distantPast, inMode: .default, dequeue: true) { window.sendEvent(release) }
+    settle()
+    verify(try! AIConfiguration.load(at: aiFixtureURL).provider == "qwen", "Use saves a detected provider")
+    verify(!model.active, "Choosing a detected agent never connects")
+    try render("ai-acp-detected-selected", view: view)
+    window.orderOut(nil)
+}
+print("PASS: detected ACP agents render, sort and select without connecting")
 let apiModel = ACPModel()
 var localConfig = AIConfiguration(); localConfig.connection = .local; localConfig.localAPI.model = "Fictional local model"
 apiModel.configure(localConfig); apiModel.state.phase = "ready"
