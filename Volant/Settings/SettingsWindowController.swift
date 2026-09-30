@@ -136,6 +136,8 @@ private struct SettingsView: View {
                 GlobalShortcutRow(title: "Open Notes", key: "notesHotKey", value: state.config.notesHotKey, configURL: configURL, onChange: onChange)
                 GlobalShortcutRow(title: "Search Emoji", key: "emojiHotKey", value: state.config.emojiHotKey, configURL: configURL, onChange: onChange)
                 GlobalShortcutRow(title: "Dictate Text", key: "talkHotKey", value: state.config.talkHotKey, configURL: configURL, onChange: onChange)
+                GlobalShortcutRow(title: "Lock Screen", key: "lockScreenHotKey", value: state.config.lockScreenHotKey, configURL: configURL, onChange: onChange)
+                GlobalShortcutRow(title: "Sleep Displays", key: "sleepDisplaysHotKey", value: state.config.sleepDisplaysHotKey, configURL: configURL, onChange: onChange)
             } header: {
                 Text("Keyboard Shortcuts")
             } footer: {

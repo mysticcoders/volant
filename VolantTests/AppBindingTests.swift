@@ -59,4 +59,18 @@ final class AppBindingTests: XCTestCase {
                              "a stale snapshot is rejected")
         XCTAssertEqual(try Data(contentsOf: url), saved)
     }
+
+    func testSystemActionShortcutsSaveAndJoinDuplicateChecks() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let url = root.appendingPathComponent("config.json")
+        try Data(#"{"talkHotKey":"option+d"}"#.utf8).write(to: url)
+        try GlobalShortcutStore.save(key: "lockScreenHotKey", value: "control+option+l", expectedValue: "", at: url, available: { _ in true })
+        XCTAssertEqual(try JSONDecoder().decode(Preferences.self, from: Data(contentsOf: url)).lockScreenHotKey, "control+option+l")
+        XCTAssertThrowsError(try GlobalShortcutStore.save(key: "sleepDisplaysHotKey", value: "option+d", expectedValue: "", at: url, available: { _ in true }),
+                             "cannot reuse the dictation shortcut")
+        XCTAssertThrowsError(try GlobalShortcutStore.save(key: "sleepDisplaysHotKey", value: "control+option+l", expectedValue: "", at: url, available: { _ in true }),
+                             "cannot reuse the Lock Screen shortcut")
+    }
 }

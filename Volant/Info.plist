@@ -24,6 +24,8 @@
 	<string>15.0</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Volant asks macOS to show its restart, shut down and log out confirmations when you choose those commands.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Volant lists connected Bluetooth devices when you open the Bluetooth command.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
