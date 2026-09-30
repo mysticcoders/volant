@@ -108,6 +108,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         NSApp.setActivationPolicy(config.showInDock ? .regular : .accessory)
+        applyTheme()
         if let ai = try? AIConfiguration.load() { panel.model.acp.configure(ai) }
         updater.start()
         installApplicationMenu()
@@ -292,6 +293,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     @objc private func togglePanel() { panel.toggle(source: .menu) }
 
+    /// A nil appearance follows macOS, including its automatic light and dark switching.
+    private func applyTheme() {
+        switch config.appearance.theme {
+        case .system: NSApp.appearance = nil
+        case .light: NSApp.appearance = NSAppearance(named: .aqua)
+        case .dark: NSApp.appearance = NSAppearance(named: .darkAqua)
+        }
+    }
+
     @objc private func reloadConfig() {
         let loaded = Preferences.load()
         if let error = Preferences.loadError {
@@ -303,6 +313,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         config = loaded
         NSApp.setActivationPolicy(config.showInDock ? .regular : .accessory)
+        applyTheme()
         settingsPanel.refresh(config, apps: index.apps)
         registerHotKeys()
         panel.apply(config: config)

@@ -28,3 +28,24 @@ Non-UI checks stay local. When UI checks are selected, `tools/test-ui-vm.py` sna
 `tools/ui-vm-dispatch-tests.py` verifies that successful and failed VM dispatch do not reach host UI execution. Builds, functional fixtures, rendered-screen inspection and installed hardware checks remain separate evidence.
 
 Verified on 2026-09-15: `Scripts/test.sh --ui only` passed in `volant-ui-xcode` (macOS 15.7.7, Xcode 16.4, four cores, 8 GB). Both light/dark launcher fixtures and the selected XCTest rendering/editor tests passed. Logs, rendered fixtures and xcresults were collected, and Tart stopped the VM automatically. The first setup attempt failed because `xcodegen` was absent; installing it in the guest resolved the setup gap. No host UI fallback was used.
+
+## Renders on a newer macOS — September 22, 2026
+
+`tools/render-vm.py` renders native fixtures in `volant-render-27`, a clone of
+`ghcr.io/cirruslabs/macos-golden-gate-vanilla:27.0` (macOS 27, no Xcode). The host compiles the
+launcher, Actions and Settings fixtures against its own SDK, bundled with the compiled asset
+catalog. The SDK is what decides whether AppKit and SwiftUI draw Liquid Glass. The guest only
+runs the finished bundles. It is render evidence, not a test gate: the fixtures' app-ranking checks
+assume the Xcode image's installed apps and stop early on the vanilla guest, and whatever they
+rendered before stopping is still collected.
+
+Cirrus's vanilla images have no Tart guest agent. Setup is one-time: generate
+`~/.ssh/volant-render-vm`, install it for `admin` (password `admin`) with `ssh-copy-id`, and confirm
+`admin` is logged in on the console. The runner connects over SSH and starts fixtures in that GUI
+session with `launchctl asuser`.
+
+Offscreen captures (`cacheDisplay`) cannot draw Liquid Glass backdrop layers: a glass sidebar
+selection comes out as a solid black capsule. Layout, type metrics and glass-styled controls such
+as sliders and switches do render. The guest denies `screencapture` (Screen Recording is not
+granted and SIP stays on), so glass selection and material appearance still need a look on a real
+macOS 26 or 27 display.

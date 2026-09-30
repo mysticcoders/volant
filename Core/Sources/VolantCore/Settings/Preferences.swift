@@ -26,7 +26,7 @@ public struct Preferences: Codable {
     public var favoriteApps: [String] = []
     public var aliases: [String: String] = [:]
     public var appearance: Appearance = Appearance()
-    public var help: String = "Edit and choose Reload Configuration in Settings. Hotkeys: cmd|ctrl|option|shift|meh|hyper + key. App hotkeys use the bundle identifier. Snippets: {date} {isodate} {time} {datetime} {clipboard} {uuid}. Quicklinks: {query}. Aliases map a word to an app name or query. Appearance: scale 0.8–1.4, opacity 0.5–1.0."
+    public var help: String = "Edit and choose Reload Configuration in Settings. Hotkeys: cmd|ctrl|option|shift|meh|hyper + key. App hotkeys use the bundle identifier. Snippets: {date} {isodate} {time} {datetime} {clipboard} {uuid}. Quicklinks: {query}. Aliases map a word to an app name or query. Appearance: theme system|light|dark, scale 0.8–1.4, opacity 0.5–1.0."
 
     public enum CodingKeys: String, CodingKey {
         case favoriteApps, summonHotKey, notesHotKey, emojiHotKey, talkHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, statusBar, snippets, quicklinks, aliases, appearance
@@ -83,6 +83,29 @@ public struct Preferences: Codable {
         // Reject invalid known settings before changing the file.
         _ = try JSONDecoder().decode(Preferences.self, from: updated)
         try updated.write(to: url, options: .atomic)
+    }
+
+    /// Patch the appearance block against an expected snapshot, keeping unknown keys inside it and
+    /// elsewhere. Values are clamped to their supported ranges before they are written.
+    public static func updateAppearance(_ appearance: Appearance, expected: Appearance, at url: URL = configURL) throws {
+        let data = try Data(contentsOf: url)
+        guard var object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        let current = try JSONDecoder().decode(Preferences.self, from: data).appearance
+        guard current == expected else { throw AppearanceConflict() }
+        var block = object["appearance"] as? [String: Any] ?? [:]
+        block["theme"] = appearance.theme.rawValue
+        block["scale"] = (appearance.clampedScale * 100).rounded() / 100
+        block["opacity"] = (appearance.clampedOpacity * 100).rounded() / 100
+        object["appearance"] = block
+        let updated = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
+        _ = try JSONDecoder().decode(Preferences.self, from: updated)
+        try updated.write(to: url, options: .atomic)
+    }
+
+    public struct AppearanceConflict: LocalizedError {
+        public var errorDescription: String? { "Appearance changed in the configuration file. Reload Configuration before changing it again." }
     }
 
     /// Patch only this app's membership against the latest document.
@@ -153,15 +176,38 @@ public struct Preferences: Codable {
 }
 
 public struct Appearance: Codable, Equatable {
+    /// Follows macOS unless the owner pins Volant to one appearance.
+    public enum Theme: String, Codable, CaseIterable, Identifiable {
+        case system, light, dark
+        public var id: String { rawValue }
+        public var title: String { rawValue.capitalized }
+    }
+    public static let scaleRange = 0.8...1.4
+    public static let opacityRange = 0.5...1.0
+
+    public var theme: Theme = .system
     /// 1.0 is the default 750×480 panel; 0.8 to 1.4 are sensible.
     public var scale: Double = 1.0
     /// 1.0 is the system material; lower values let the desktop show through more.
     public var opacity: Double = 1.0
 
-    public init(scale: Double = 1.0, opacity: Double = 1.0) {
+    public init(theme: Theme = .system, scale: Double = 1.0, opacity: Double = 1.0) {
+        self.theme = theme
         self.scale = scale
         self.opacity = opacity
     }
+
+    /// Each field falls back on its own, so a hand-edited block with only one key still loads and an
+    /// unknown theme name follows the system rather than rejecting the whole configuration.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        theme = (try? c.decodeIfPresent(Theme.self, forKey: .theme)) ?? .system
+        scale = try c.decodeIfPresent(Double.self, forKey: .scale) ?? 1.0
+        opacity = try c.decodeIfPresent(Double.self, forKey: .opacity) ?? 1.0
+    }
+
+    public var clampedScale: Double { min(Self.scaleRange.upperBound, max(Self.scaleRange.lowerBound, scale)) }
+    public var clampedOpacity: Double { min(Self.opacityRange.upperBound, max(Self.opacityRange.lowerBound, opacity)) }
 }
 
 public struct AppHotKey: Codable {

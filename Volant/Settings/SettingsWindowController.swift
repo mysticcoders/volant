@@ -78,8 +78,8 @@ private struct SettingsView: View {
     @State private var search = ""
     @State private var error: String?
     @State private var loginStatus = SMAppService.mainApp.status
-    private let sections = ["General", "Status Bar", "AI", "Extensions", "App Shortcuts", "Data & Configuration"]
-    private let symbols = ["General": "gearshape", "Status Bar": "menubar.rectangle", "AI": "sparkles",
+    private let sections = ["General", "Appearance", "Status Bar", "AI", "Extensions", "App Shortcuts", "Data & Configuration"]
+    private let symbols = ["General": "gearshape", "Appearance": "circle.lefthalf.filled", "Status Bar": "menubar.rectangle", "AI": "sparkles",
                            "Extensions": "puzzlepiece.extension", "App Shortcuts": "command", "Data & Configuration": "externaldrive"]
 
     var body: some View {
@@ -90,10 +90,11 @@ private struct SettingsView: View {
                 }
             }
             .listStyle(.sidebar)
-            .frame(width: 190)
+            .frame(width: 215)
             Divider()
             Group {
                 if state.section == "General" { general }
+                else if state.section == "Appearance" { AppearanceSettingsView(appearance: state.config.appearance, configURL: configURL, onChange: onChange) }
                 else if state.section == "Status Bar" { statusBar }
                 else if state.section == "AI" { AISettingsView(model: acp, configURL: configURL, onChange: onChange, openConversation: openAI, chooseProject: chooseAIProject) }
                 else if state.section == "Extensions" { ExtensionSettingsView(configURL: configURL, onChange: onChange) }

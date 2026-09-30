@@ -91,3 +91,19 @@ non-key window, so the fixture reports the undelivered click and selects the row
 That still exercises the SwiftUI selection binding but is not evidence of a physical sidebar click;
 check that in a live preview or the installed app. The launcher fixture and
 `tools/preview-settings.sh --render` now render all six sections.
+
+## Appearance — September 22, 2026
+
+Settings → Appearance chooses System, Light or Dark and sets the launcher's size and opacity, which
+were previously editable only as `appearance.scale` and `appearance.opacity` in config.json.
+System sets `NSApp.appearance` to nil so macOS's automatic switching still applies; Light and Dark
+pin every Volant window. Theme tiles use fixed colors so each previews its own appearance whatever
+the current one is.
+
+Sliders keep a local draft and write once on release. A write reloads configuration, which
+re-registers hotkeys, so writing on every drag step would be wasteful. Size and opacity now apply to
+the running launcher: a resize keeps the top edge in place. Writes patch only the appearance block
+against the expected snapshot, keep unknown keys inside and outside it, and clamp to 0.8–1.4 scale
+and 0.5–1.0 opacity. A partial or unknown block loads with per-field defaults instead of failing.
+On macOS 26 and later the native sliders and switches take the system's Liquid Glass styling with
+no code of their own; the headless macOS 15 guest cannot show that.
