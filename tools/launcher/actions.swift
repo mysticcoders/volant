@@ -468,7 +468,7 @@ func controlFrame(_ name: String, in window: NSWindow) -> NSRect? {
     var seen: [String] = []
     func views(_ view: NSView) -> [NSView] { [view] + view.subviews.flatMap(views) }
     for view in views(window.contentView!) where !view.isHiddenOrHasHiddenAncestor {
-        if let identifier = view.identifier?.rawValue, identifier.hasPrefix("settings.") {
+        if let identifier = view.identifier?.rawValue, identifier.hasPrefix("settings.") || identifier.hasPrefix("chat.") {
             seen.append(identifier)
             if identifier == name { return view.convert(view.bounds, to: nil) }
         }

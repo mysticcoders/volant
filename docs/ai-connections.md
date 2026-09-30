@@ -159,3 +159,45 @@ check passed while the real feature crashed.
 Live dictation through the signed installed app, the accuracy of long transcripts, locale
 selection on a Mac whose language the engine does not support, and behaviour when a microphone is
 removed mid-session. The native fixtures do not render the dictation indicator.
+
+## Attaching notes and clipboard text with @ — September 30, 2026
+
+In AI Chat, typing `@` at the start of a word, or pressing the @ button, opens a picker over recent
+clipboard text and notes. Arrow keys move, Return attaches, Escape closes and leaves the typed `@`
+in place. An `@` in the middle of a word, such as an email address, is ordinary text, and none
+opens the picker while an input method is composing. Choosing removes the `@` that opened the
+picker and adds a chip showing the title and size; chips are removed with their button.
+
+**Snapshots.** An attachment copies the text when it is chosen. Editing the note or copying
+something else afterwards does not change what is sent. A note with unsaved edits contributes
+the text on screen. Attachments stay in memory with the draft, survive focus loss like the draft,
+and are cleared once the message is sent. Nothing is attached implicitly and nothing is logged.
+
+**Per connection.**
+
+| Connection | What the agent or model receives | Transcript |
+|---|---|---|
+| ACP agent advertising `promptCapabilities.embeddedContext` | One `resource` block per attachment (`volant://note/…` or `volant://clipboard/…`, MIME type, text), then the prompt | Prompt plus attachment titles |
+| Any other ACP agent | One text block: each attachment in `<attachment kind title>` tags, then the prompt | Same |
+| Bring your own key, Local Models | The inline form, which also stays in history for later turns | Same |
+| Apple Intelligence | The inline form under a 6 KB budget | Same |
+
+Sends without attachments use the original text-only calls unchanged.
+
+**Limits.** 32 KB per item, 48 KB per message, 8 items, and 6 KB for Apple Intelligence's small
+context. Oversized attachments are refused with a reason, never truncated, so an agent never
+answers from part of a note without knowing it. Both helpers re-check the limits rather than
+trusting the app, and a closing tag inside attached text is escaped so it cannot end its block.
+
+**Not in this version.** Files, Herdr pane output and images. Files need care in the sandbox: ACP
+agents can be given a link and read it with their own tools, but connections without tools need
+the owner to grant access through an Open panel.
+
+**Evidence.** Core tests for the composer, the capability check and the limits. `tools/check-acp.sh`
+asserts the exact blocks for agents with and without `embeddedContext`, the short transcript, and
+that a refused prompt sends nothing. `tools/check-ai-http.sh` sends a real request to a loopback
+fixture and checks that the model saw the attachment, that the next turn's history still carries
+it, and that oversized attachments are refused. The Actions fixture types `@` into the chat
+editor, checks that the picker opens, presses Return, and checks that the clipboard item is
+attached and the `@` removed without sending. Not verified: a live prompt with attachments
+against a real provider.
