@@ -30,6 +30,16 @@ final class AgentsModel: ObservableObject {
     @Published private(set) var machineToggleInFlight: String?
     var machineReader: ((@escaping (Data?, String?) -> Void) -> Void)?
     @Published private(set) var profiles: [HerdrMachine] = []
+    /// Change counts keyed by local working folder, shared by every pane in that folder.
+    @Published private(set) var repositories: [String: RepositoryState] = [:]
+    // Injected only by isolated fixtures; production reads through the signed helper.
+    var repositoryReader: (([String], @escaping (Data?, String?) -> Void) -> Void)?
+    private var repositoryRequest: UUID?
+    private var repositoryMarks: [String: UInt64] = [:]
+    private var repositoryCheckedAt: [String: Date] = [:]
+    /// Herdr's state-change counter as of the last time the owner looked at each pane. A pane is
+    /// unread when the counter has moved since then and the agent is now waiting, not working.
+    @Published private var seen: [String: UInt64] = [:]
     private var catalogRequest: UUID?
     private var inventoryRequests: [String: UUID] = [:]
     private var connection: NSXPCConnection?
@@ -60,6 +70,7 @@ final class AgentsModel: ObservableObject {
         timer?.invalidate(); timer = nil
         connection?.invalidate(); connection = nil
         connected = false; busy = false; focusInFlight = false; sessions = []; machines = []; actionMessage = nil; machineToggleInFlight = nil
+        repositories = [:]; repositoryRequest = nil; repositoryMarks = [:]; repositoryCheckedAt = [:]
         message = "Connect to Local and enabled machines saved in Herdr."
     }
     private func failed(_ error: String, generation current: Int) {
@@ -165,6 +176,8 @@ final class AgentsModel: ObservableObject {
                 let values = data.flatMap { try? JSONDecoder().decode([AgentSession].self, from: $0) }
                 if let values, error == nil, values.allSatisfy({ $0.machine?.routeIdentity == machine?.routeIdentity }) {
                     self.sessions = AgentSession.sorted(self.sessions + values)
+                    self.noteSeen(values)
+                    if machine == nil { self.refreshRepositories() }
                     self.setMachine(.init(id: id, label: machine?.label ?? "Local", state: "connected", detail: "\(values.count) panes"))
                 } else {
                     self.setMachine(.init(id: id, label: machine?.label ?? "Local", state: "unavailable", detail: error ?? "Couldn’t read panes."))
@@ -178,6 +191,66 @@ final class AgentsModel: ObservableObject {
             do { inventoryProxy()?.listAgents(machine: try machine.map { try JSONEncoder().encode($0) }, reply: reply) }
             catch { reply(nil, "Invalid saved machine.") }
         }
+    }
+
+    private func seenKey(_ session: AgentSession) -> String { session.id + "|" + session.sessionIdentity }
+
+    /// A pane seen for the first time starts read, and one Herdr reports as focused is read.
+    private func noteSeen(_ values: [AgentSession]) {
+        for session in values {
+            let key = seenKey(session), sequence = session.stateChangeSequence ?? 0
+            if seen[key] == nil || session.focused == true { seen[key] = sequence }
+        }
+    }
+
+    func isUnread(_ session: AgentSession) -> Bool {
+        guard let sequence = session.stateChangeSequence, let last = seen[seenKey(session)] else { return false }
+        return sequence > last && ["blocked", "done", "idle"].contains(session.agentStatus)
+    }
+
+    func markSeen(_ session: AgentSession) {
+        if let sequence = session.stateChangeSequence { seen[seenKey(session)] = sequence }
+    }
+
+    var unreadCount: Int { sessions.filter(isUnread).count }
+
+    func repository(for session: AgentSession) -> RepositoryState? {
+        guard session.machine == nil, let cwd = session.cwd else { return nil }
+        return repositories[cwd]
+    }
+
+    /// Re-reads a folder only when one of its panes changed state or thirty seconds have passed,
+    /// so the five-second pane refresh does not run git in every repository each time.
+    private func refreshRepositories() {
+        guard repositoryRequest == nil else { return }
+        var marks: [String: UInt64] = [:]
+        for session in sessions where session.machine == nil {
+            guard let cwd = session.cwd else { continue }
+            marks[cwd] = max(marks[cwd] ?? 0, session.stateChangeSequence ?? 0)
+        }
+        repositories = repositories.filter { marks[$0.key] != nil }
+        let now = Date()
+        let due = Array(marks.keys.filter {
+            repositoryMarks[$0] != marks[$0] || now.timeIntervalSince(repositoryCheckedAt[$0] ?? .distantPast) > 30
+        }.sorted().prefix(RepositoryStateLimit.paths))
+        guard !due.isEmpty, let data = try? JSONEncoder().encode(due) else { return }
+        let request = UUID(), current = generation
+        repositoryRequest = request
+        let reply: (Data?, String?) -> Void = { [weak self] data, error in
+            DispatchQueue.main.async {
+                guard let self, self.connected, current == self.generation, self.repositoryRequest == request else { return }
+                self.repositoryRequest = nil
+                let states = error == nil ? data.flatMap { try? JSONDecoder().decode([String: RepositoryState].self, from: $0) } : nil
+                for cwd in due {
+                    self.repositoryCheckedAt[cwd] = Date()
+                    guard let states else { continue }
+                    self.repositoryMarks[cwd] = marks[cwd]
+                    self.repositories[cwd] = states[cwd]
+                }
+            }
+        }
+        if let repositoryReader { repositoryReader(due, reply) }
+        else { inventoryProxy()?.repositoryStates(paths: data, reply: reply) }
     }
 
     private func setMachine(_ value: HerdrMachineStatus) {
@@ -261,6 +334,7 @@ final class AgentsModel: ObservableObject {
                 guard let self, self.answerRequest == request else { return }
                 self.attentionAnswering = false
                 self.attentionResponse = error ?? status
+                if error == nil { self.markSeen(target) }
                 self.actionMessage = error ?? status
                 self.attentionError = error
                 self.refresh()
@@ -285,6 +359,7 @@ final class AgentsModel: ObservableObject {
                 guard let self, self.generation == current else { return }
                 self.focusInFlight = false
                 self.lastFocusSucceeded = error == nil
+                if error == nil { self.markSeen(session) }
                 self.actionMessage = error ?? "Focused on \(session.machineLabel). Switch to that machine in Herdr to continue."
                 if error == nil { self.refresh() }
             }

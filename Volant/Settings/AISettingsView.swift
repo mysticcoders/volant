@@ -10,6 +10,7 @@ struct AISettingsView: View {
     let chooseProject: (@escaping (URL?) -> Void) -> Void
     var credentials = AICredentials.keychain
     @StateObject var discovery = AIModelDiscovery()
+    @StateObject var agentDetection = ACPAgentDetection()
     @State private var config = AIConfiguration()
     @State private var saved = AIConfiguration()
     @State private var feedback: String?
@@ -25,9 +26,10 @@ struct AISettingsView: View {
                     .onChange(of: config.connection) { _, kind in
                         keyDraft = ""; discovery.cancel(); persist()
                         if kind == .local { discovery.discover() }
+                        if kind == .acp { agentDetection.detect() } else { agentDetection.cancel() }
                     }
             }
-            if config.connection == .acp { acpControls }
+            if config.connection == .acp { detectedAgents; acpControls }
             else if config.connection == .apple { appleControls }
             else { apiControls }
             Section {
@@ -57,10 +59,11 @@ struct AISettingsView: View {
             do {
                 config = try AIConfiguration.load(at: configURL); saved = config; loaded = true
                 if config.connection == .local { discovery.discover() }
+                if config.connection == .acp { agentDetection.detect() }
             } catch { report("Couldn’t load AI settings. Fix or reload the configuration before editing.", failure: true) }
         }
         .onChange(of: config.http.endpoint) { _, _ in discovery.endpointChanged(config.http.endpoint); keyDraft = "" }
-        .onDisappear { discovery.cancel(); keyDraft = ""; if loaded && config != saved { persist() } }
+        .onDisappear { discovery.cancel(); agentDetection.cancel(); keyDraft = ""; if loaded && config != saved { persist() } }
     }
     private var appleAvailability: AppleFoundationModel.Availability { AppleFoundationModel.availability }
 
@@ -77,6 +80,43 @@ struct AISettingsView: View {
             Text("Apple Intelligence")
         } footer: {
             SettingsFooter("Runs Apple's on-device model. No API key, no network request and no helper process; the conversation stays on this Mac.")
+        }
+    }
+
+    /// What is installed, so choosing a provider is not a guess. Ready means the files are present;
+    /// whether the provider is signed in is only known once a conversation starts.
+    private var detectedAgents: some View {
+        Section {
+            if let message = agentDetection.message { Text(message).foregroundStyle(.secondary) }
+            else if agentDetection.agents.isEmpty { Text(agentDetection.checking ? "Checking…" : "No results yet.").foregroundStyle(.secondary) }
+            ForEach(agentDetection.agents) { agent in
+                LabeledContent {
+                    if agent.provider == config.provider {
+                        Text("Selected").foregroundStyle(.secondary)
+                    } else if agent.state == .ready {
+                        Button("Use") { config.provider = agent.provider; persist() }
+                            .disabled(!loaded)
+                            .background(ControlAnchor("settings.use-agent-" + agent.provider))
+                    }
+                } label: {
+                    Label {
+                        Text(agent.title)
+                        Text(agent.detail)
+                    } icon: {
+                        Image(systemName: agent.symbol)
+                            .foregroundStyle(agent.state == .ready ? Color.green : agent.state == .notInstalled ? Color.secondary : Color.orange)
+                    }
+                }
+            }
+        } header: {
+            HStack {
+                Text("Agents on This Mac")
+                Spacer()
+                if agentDetection.checking { ProgressView().controlSize(.small) }
+                Button("Check Again") { agentDetection.detect() }.controlSize(.small).font(.callout).disabled(agentDetection.checking)
+            }
+        } footer: {
+            SettingsFooter("Detection only looks for installed programs; your first conversation confirms you are signed in. Claude Code and Codex also need Volant’s ACP adapters and Node.js 22 or newer.")
         }
     }
 
