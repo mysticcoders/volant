@@ -9,6 +9,7 @@ final class SettingsState: ObservableObject {
     @Published var section = "General"
     @Published var editing: AppEntry?
     @Published var registrationErrors: [String] = []
+    @Published var iCloudStatus = ICloudSettingsSync.Status.off.text
 }
 
 /// Native settings; the injected configuration URL also supports isolated UI fixtures.
@@ -213,6 +214,16 @@ private struct SettingsView: View {
                 Text("Configuration")
             } footer: {
                 SettingsFooter("Aliases, shortcuts and preferences live in one portable JSON file.")
+            }
+            Section {
+                Toggle("Sync settings with iCloud", isOn: boolean("syncSettingsWithICloud", state.config.syncSettingsWithICloud))
+                if state.config.syncSettingsWithICloud {
+                    LabeledContent("Status") { Text(state.iCloudStatus).foregroundStyle(.secondary).multilineTextAlignment(.trailing) }
+                }
+            } header: {
+                Text("iCloud")
+            } footer: {
+                SettingsFooter("Keyboard shortcuts, snippets, quicklinks, aliases, appearance and clipboard history length follow you to Macs signed in to the same Apple Account. App shortcuts, favorites, Dock, status bar, AI and extension settings stay on this Mac. When turned on, settings already in iCloud replace these, and a copy of this Mac's config.json is kept beside it.")
             }
             Section {
                 LabeledContent("Raycast") {

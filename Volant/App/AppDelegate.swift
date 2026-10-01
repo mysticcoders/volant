@@ -26,6 +26,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if !acp.openChat(configuration: try? AIConfiguration.load(), connect: acp.start) { showAISettings() }
     }
 
+    private lazy var settingsSync: ICloudSettingsSync = {
+        let sync = ICloudSettingsSync(onApplied: { [weak self] in self?.reloadConfig() })
+        sync.onStatus = { [weak self] status in self?.settingsPanel.state.iCloudStatus = status.text }
+        return sync
+    }()
+
     private let updater = AppUpdater()
     private var statusItem: NSStatusItem?
     private var config = Preferences.load()
@@ -110,6 +116,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(config.showInDock ? .regular : .accessory)
         applyTheme()
         if let ai = try? AIConfiguration.load() { panel.model.acp.configure(ai) }
+        if config.syncSettingsWithICloud { settingsSync.update(enabled: true) }
         updater.start()
         installApplicationMenu()
         installStatusItem()
@@ -319,6 +326,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.apply(config: config)
         if let ai = try? AIConfiguration.load() { panel.model.acp.configure(ai) }
         clipboardStore.retention = config.clipboardRetention
-
+        settingsSync.update(enabled: config.syncSettingsWithICloud)
     }
 }

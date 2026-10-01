@@ -9,7 +9,7 @@ app.appearance = NSAppearance(named: CommandLine.arguments.contains("dark") ? .d
 let root = FileManager.default.temporaryDirectory.appendingPathComponent("volant-settings-" + UUID().uuidString)
 try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 let configURL = root.appendingPathComponent("config.json")
-try Data(#"{"aliases":{"safari":"/Applications/Safari.app"},"appHotKeys":[]}"#.utf8).write(to: configURL)
+try Data(#"{"aliases":{"safari":"/Applications/Safari.app"},"appHotKeys":[],"syncSettingsWithICloud":true}"#.utf8).write(to: configURL)
 let apps = [AppEntry(id: "/System/Applications/Calculator.app", name: "Calculator", url: URL(fileURLWithPath: "/System/Applications/Calculator.app"), lastUsed: nil), AppEntry(id: "/Applications/Safari.app", name: "Safari", url: URL(fileURLWithPath: "/Applications/Safari.app"), lastUsed: nil)]
 var controller: SettingsWindowController!
 controller = SettingsWindowController(configURL: configURL) {
@@ -18,6 +18,7 @@ controller = SettingsWindowController(configURL: configURL) {
     controller.refresh(try! JSONDecoder().decode(Preferences.self, from: Data(contentsOf: configURL)), apps: apps)
 }
 controller.refresh(try JSONDecoder().decode(Preferences.self, from: Data(contentsOf: configURL)), apps: apps)
+controller.state.iCloudStatus = ICloudSettingsSync.Status.synced(Calendar.current.date(bySettingHour: 9, minute: 41, second: 0, of: Date())!).text
 let clipboard = ClipboardStore(retention: 10, storageURL: root.appendingPathComponent("clipboard.sqlite"), encryptionKey: SymmetricKey(size: .bits256))
 let notes = NotesStore(directory: root.appendingPathComponent("Notes"))
 let usage = UsageStore(url: root.appendingPathComponent("usage.sqlite"))
