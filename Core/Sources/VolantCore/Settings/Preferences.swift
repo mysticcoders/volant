@@ -11,6 +11,8 @@ public struct Preferences: Codable {
     public var clipboardRetention: Int = 500
     public var showOnLaunch: Bool = true
     public var showInDock: Bool = true
+    /// Per-Mac switch for mirroring the settings in SettingsSync.keys through iCloud.
+    public var syncSettingsWithICloud: Bool = false
     public var statusBar = StatusBarConfiguration()
     // Compatibility for existing callers and older configuration files.
     public var promotedHarness: String? {
@@ -29,7 +31,7 @@ public struct Preferences: Codable {
     public var help: String = "Edit and choose Reload Configuration in Settings. Hotkeys: cmd|ctrl|option|shift|meh|hyper + key. App hotkeys use the bundle identifier. Snippets: {date} {isodate} {time} {datetime} {clipboard} {uuid}. Quicklinks: {query}. Aliases map a word to an app name or query. Appearance: theme system|light|dark, scale 0.8–1.4, opacity 0.5–1.0."
 
     public enum CodingKeys: String, CodingKey {
-        case favoriteApps, summonHotKey, notesHotKey, emojiHotKey, talkHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, statusBar, snippets, quicklinks, aliases, appearance
+        case favoriteApps, summonHotKey, notesHotKey, emojiHotKey, talkHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, syncSettingsWithICloud, statusBar, snippets, quicklinks, aliases, appearance
         case help = "_help"
     }
 
@@ -55,6 +57,7 @@ public struct Preferences: Codable {
         clipboardRetention = try c.decodeIfPresent(Int.self, forKey: .clipboardRetention) ?? d.clipboardRetention
         showOnLaunch = try c.decodeIfPresent(Bool.self, forKey: .showOnLaunch) ?? d.showOnLaunch
         showInDock = try c.decodeIfPresent(Bool.self, forKey: .showInDock) ?? d.showInDock
+        syncSettingsWithICloud = try c.decodeIfPresent(Bool.self, forKey: .syncSettingsWithICloud) ?? d.syncSettingsWithICloud
         statusBar = try c.decodeIfPresent(StatusBarConfiguration.self, forKey: .statusBar) ?? StatusBarConfiguration()
         if !c.contains(.statusBar) {
             let legacy = try decoder.container(keyedBy: LegacyKeys.self)
@@ -73,7 +76,7 @@ public struct Preferences: Codable {
 
     /// Patch a single setting, preserving externally edited and unknown configuration fields.
     public static func updateBoolean(_ key: String, value: Bool, at url: URL = configURL) throws {
-        precondition(["showInDock", "showOnLaunch"].contains(key))
+        precondition(["showInDock", "showOnLaunch", "syncSettingsWithICloud"].contains(key))
         let data = try Data(contentsOf: url)
         guard var object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw CocoaError(.fileReadCorruptFile)
