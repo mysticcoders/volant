@@ -46,7 +46,7 @@ Define temperature separately: absolute Celsius/Fahrenheit conversions are affin
 
 ## Time-zone decisions
 
-- Literal, explicitly supported standard/daylight abbreviations map to stated fixed offsets (PST −08:00, PDT −07:00, CET +01:00, CEST +02:00). Their result labels include the offset. This is a proposed Volant rule, deliberately distinct from treating a standard abbreviation as a regional zone.
+- Superseded: regional abbreviations now select their region's clock and label the abbreviation in effect; see `calculator-timezones.md`. The original proposal mapped them to fixed offsets (PST −08:00, CET +01:00), which put summer answers an hour away from what people mean.
 - City/IANA forms use date-dependent rules from the OS time-zone database. Begin with a small independently maintained alias list plus IANA identifiers. Do not copy Numen's place database or silently choose a zone for a multi-zone country/state.
 - Date omitted: use today's calendar date in the source zone and show that assumed date in the result. Preserve next/previous-day rollover and the resolved source/destination offsets. Support explicit ISO dates first; ambiguous numeric dates need locale-aware handling or a clearer input.
 - Ambiguous abbreviations such as CST/IST and duplicate city names need disambiguation rather than a guessed answer. Offer explicit zones/offsets.

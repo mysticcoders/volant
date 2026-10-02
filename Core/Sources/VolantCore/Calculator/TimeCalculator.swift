@@ -1,17 +1,22 @@
 import Foundation
 
-/// Bounded, whole-query time conversion. Explicit abbreviations are fixed offsets;
-/// cities and IANA identifiers follow the system timezone database.
+/// Bounded, whole-query time conversion. UTC and GMT are fixed offsets. Regional abbreviations
+/// name that region's clock as people use them, so "4pm CET" in July means Central European wall
+/// time; they, cities and IANA identifiers follow the system timezone database.
 public enum TimeCalculator {
     public struct Result: Equatable {
         public let date: Date
         public let text: String
     }
 
-    private static let fixed: [String: Int] = [
-        "utc": 0, "gmt": 0, "est": -5, "edt": -4, "pst": -8, "pdt": -7,
-        "mst": -7, "mdt": -6, "cet": 1, "cest": 2, "bst": 1, "jst": 9
-    ]
+    private static let fixed: [String: Int] = ["utc": 0, "gmt": 0]
+    /// Either spelling selects the region; the label shows whichever is in effect on that date.
+    private static let regions: [String: (zone: String, standard: String, daylight: String)] = {
+        let eastern = ("America/New_York", "EST", "EDT"), mountain = ("America/Denver", "MST", "MDT")
+        let pacific = ("America/Los_Angeles", "PST", "PDT"), central = ("Europe/Berlin", "CET", "CEST")
+        return ["est": eastern, "edt": eastern, "mst": mountain, "mdt": mountain, "pst": pacific, "pdt": pacific,
+                "cet": central, "cest": central, "bst": ("Europe/London", "GMT", "BST"), "jst": ("Asia/Tokyo", "JST", "JST")]
+    }()
     private static let cities: [String: String] = [
         "paris": "Europe/Paris", "berlin": "Europe/Berlin", "london": "Europe/London",
         "ldn": "Europe/London", "new york": "America/New_York", "nyc": "America/New_York",
@@ -35,7 +40,7 @@ public enum TimeCalculator {
         if query.hasPrefix("time in ") || query.hasPrefix("now in ") {
             let name = String(query.dropFirst(query.hasPrefix("time") ? 8 : 7))
             guard let zone = resolve(name, local: localZone) else { return nil }
-            return result(now, zone: zone, label: destinationLabel(name, zone: zone), baseline: baseline, explicitDate: false, locale: locale)
+            return result(now, zone: zone, label: destinationLabel(name, zone: zone, date: now), baseline: baseline, explicitDate: false, locale: locale)
         }
         guard let match = expression.firstMatch(in: query, range: NSRange(query.startIndex..., in: query)) else { return nil }
         func part(_ index: Int) -> String? {
@@ -74,19 +79,20 @@ public enum TimeCalculator {
               let last = calendar.nextDate(after: anchor, matching: clock, matchingPolicy: .strict, repeatedTimePolicy: .last),
               first == last else { return nil } // Never guess DST gaps or repeated wall times.
         let name = targets.count == 2 ? targets[1] : "local"
-        return result(first, zone: destination, label: destinationLabel(name, zone: destination), baseline: baseline, explicitDate: part(1) != nil, locale: locale)
+        return result(first, zone: destination, label: destinationLabel(name, zone: destination, date: first), baseline: baseline, explicitDate: part(1) != nil, locale: locale)
     }
 
     private static func resolve(_ name: String, local: TimeZone) -> TimeZone? {
         if ["local", "here", "my time"].contains(name) { return local }
         if let hours = fixed[name] { return TimeZone(secondsFromGMT: hours * 3600) }
-        if let identifier = cities[name] ?? identifiers[name] { return TimeZone(identifier: identifier) }
+        if let identifier = regions[name]?.zone ?? cities[name] ?? identifiers[name] { return TimeZone(identifier: identifier) }
         return nil // CST/IST and broad geographic names are intentionally ambiguous.
     }
 
-    private static func destinationLabel(_ name: String, zone: TimeZone) -> String {
+    private static func destinationLabel(_ name: String, zone: TimeZone, date: Date) -> String {
         if ["local", "here", "my time"].contains(name) { return "· your time" }
         if fixed[name] != nil { return name.uppercased() }
+        if let region = regions[name] { return zone.isDaylightSavingTime(for: date) ? region.daylight : region.standard }
         let city = zone.identifier.split(separator: "/").last.map(String.init)?.replacingOccurrences(of: "_", with: " ")
         return city.map { "in \($0)" } ?? zone.identifier
     }
