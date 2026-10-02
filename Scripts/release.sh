@@ -29,6 +29,7 @@ xcodegen generate --quiet
 xcodebuild -project Volant.xcodeproj -scheme Volant -configuration Release \
   -derivedDataPath "$ROOT/build" -archivePath "$OUT/Volant.xcarchive" archive \
   CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$IDENTITY" DEVELOPMENT_TEAM=REMBT6JY4N \
+  VOLANT_PROVISIONING_PROFILE="Volant Developer ID" \
   VOLANT_UPDATE_PUBLIC_KEY="$VOLANT_UPDATE_PUBLIC_KEY" VOLANT_UPDATE_FEED_URL="$FEED" \
   OTHER_CODE_SIGN_FLAGS="--timestamp --options runtime" > "$OUT/archive.log" 2>&1
 # Export re-signs Sparkle's nested tools and XPC services, not just the framework.
@@ -44,7 +45,9 @@ assert ent.get('com.apple.security.app-sandbox') is True
 assert not ent.get('com.apple.security.get-task-allow')
 assert not ent.get('com.apple.security.network.client')
 assert not ent.get('com.apple.security.network.server')
+assert ent.get('com.apple.developer.ubiquity-kvstore-identifier') == 'REMBT6JY4N.com.mysticcoders.volant'
 PY
+test -f "$APP/Contents/embedded.provisionprofile"
 codesign -dvvv "$APP" 2> "$OUT/signature.txt"
 grep -q 'Authority=Developer ID Application' "$OUT/signature.txt"
 ditto -c -k --keepParent "$APP" "$OUT/notarize.zip"
