@@ -19,8 +19,22 @@ final class TimeCalculatorTests: XCTestCase {
         XCTAssertTrue(answer("5pm ldn in sf")?.text.hasPrefix("9:00 AM") == true)
         XCTAssertTrue(answer("2026-03-15 3pm Los Angeles in Berlin")?.text.hasPrefix("11:00 PM") == true)
         XCTAssertTrue(answer("2026-07-15 1pm New York in Paris")?.text.hasPrefix("7:00 PM") == true)
-        XCTAssertTrue(answer("2026-07-15 1pm EST in CET")?.text.hasPrefix("7:00 PM") == true)
-        XCTAssertTrue(answer("2026-07-15 1pm EST in Paris")?.text.hasPrefix("8:00 PM") == true)
+        XCTAssertEqual(answer("2026-07-15 1pm EST in CET")?.text, "7:00 PM CEST · Jul 15, 2026")
+        XCTAssertEqual(answer("2026-07-15 1pm EST in Paris"), answer("2026-07-15 1pm New York in Paris"))
+        XCTAssertEqual(answer("2026-07-15 1pm EDT in CEST"), answer("2026-07-15 1pm EST in CET"))
+    }
+
+    func testRegionalAbbreviationsFollowTheRegionsSummerTime() {
+        let october = ISO8601DateFormatter().date(from: "2026-10-02T09:00:00Z")!
+        func summer(_ query: String) -> String? {
+            TimeCalculator.evaluate(query, now: october, localZone: paris, locale: Locale(identifier: "en_US"))?.text
+        }
+        XCTAssertEqual(summer("4pm in CET"), "4:00 PM · your time")
+        XCTAssertEqual(summer("4pm CET"), "4:00 PM · your time")
+        XCTAssertEqual(summer("1pm EST in CET"), "7:00 PM CEST")
+        XCTAssertEqual(summer("9am PST in EST"), "Noon EDT")
+        XCTAssertEqual(summer("5pm BST in UTC"), "4:00 PM UTC")
+        XCTAssertEqual(summer("4pm UTC in CET"), "6:00 PM CEST")
     }
 
     func testClockQueriesAndIANAIdentifiers() {
@@ -43,7 +57,7 @@ final class TimeCalculatorTests: XCTestCase {
         XCTAssertEqual(answer("3pm PST in CET")?.text, "Midnight CET · tomorrow")
         XCTAssertEqual(answer("1am Tokyo in sf")?.text, "8:00 AM in Los Angeles · yesterday")
         XCTAssertEqual(answer("11am UTC in CET")?.text, "Noon CET")
-        XCTAssertEqual(answer("2026-07-15 1pm EST in Paris")?.text, "8:00 PM in Paris · Jul 15, 2026")
+        XCTAssertEqual(answer("2026-07-15 1pm EST in Paris")?.text, "7:00 PM in Paris · Jul 15, 2026")
         XCTAssertEqual(answer("time in Tokyo")?.text, "9:00 PM in Tokyo")
     }
 
