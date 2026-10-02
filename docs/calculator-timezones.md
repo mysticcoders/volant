@@ -33,6 +33,10 @@ Cause: abbreviations were literal fixed offsets, so CET was always UTC+1 even wh
 Prevention: regional abbreviations resolve to a representative region zone; the label reports the standard or daylight abbreviation actually in effect, so a strict reading stays visible. This supersedes the fixed-offset rule proposed in `calculator-expression-design.md`. MST follows Denver, not Arizona; CST and IST remain rejected as ambiguous.
 Evidence: core tests cover the reported query, summer and winter labels, either spelling of a pair, and UTC against a regional zone.
 
+## Calculator card
+
+Every calculator answer (time, arithmetic, unit) renders as one card under a "Calculator" heading: the query on the left and the answer on the right, separated by an arrow, each with a detail tag. Time answers tag the query's weekday and date in its own zone (or "Now") and the answer's day as Today, Tomorrow or Yesterday, otherwise a weekday and date, prefixed "Your time" for the local zone. Arithmetic tags small whole numbers in words and larger ones with grouping. Unit conversions tag both unit names. Colons are dimmed so clock times scan as one number. Selection lightens the card instead of tinting it. Copy still puts the single-line answer on the clipboard. `CalculationAnswer` in VolantCore builds the card content and is tested there; the launcher fixture captures time, arithmetic and unit cards in both appearances.
+
 ## Next concrete work
 
 1. Surface ambiguous/repeated times with explicit choices and nonexistent-time explanations, without error banners during incomplete typing.

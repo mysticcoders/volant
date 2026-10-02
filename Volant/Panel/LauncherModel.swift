@@ -35,8 +35,7 @@ enum ResultRow: Identifiable, Hashable {
     case extensionResult(String)
     case note(Note)
     case newNote(String)
-    case calculation(String)
-    case unit(String)
+    case calculation(CalculationAnswer)
     case app(AppEntry)
     case file(FileEntry)
     case contact(ContactEntry)
@@ -57,8 +56,7 @@ enum ResultRow: Identifiable, Hashable {
         case .settings: return "command:settings"
         case .reloadConfig: return "command:reload"
         case .agents: return "command:agents"
-        case .calculation(let s): return "calc:\(s)"
-        case .unit(let s): return "unit:\(s)"
+        case .calculation(let answer): return "calc:\(answer.input)=\(answer.copyText)"
         case .app(let a): return "app:\(a.id)"
         case .file(let f): return "file:\(f.id)"
         case .contact(let c): return "contact:\(c.id)"
@@ -88,7 +86,6 @@ enum ResultRow: Identifiable, Hashable {
         case .settings, .reloadConfig: return "Command"
         case .agents: return "Command"
         case .calculation: return "Calculation"
-        case .unit: return "Conversion"
         case .app: return "Application"
         case .file: return "File"
         case .contact: return "Contact"
@@ -130,7 +127,7 @@ enum ResultRow: Identifiable, Hashable {
         case .settings, .systemSettings: return "Open Settings"
         case .reloadConfig: return "Reload Configuration"
         case .agents: return "Open Agents"
-        case .calculation, .unit: return "Copy Result"
+        case .calculation: return "Copy Result"
         case .app: return "Open Application"
         case .file: return "Open File"
         case .contact(let c): return c.primaryField?.copyTitle ?? "Open Contact"
@@ -632,10 +629,7 @@ final class LauncherModel: ObservableObject {
         }
 
         searchesAppIndex = true
-        var answers: [ResultRow] = []
-        if let time = TimeCalculator.evaluate(q) { answers.append(.calculation(time.text)) }
-        if let value = Calculator.evaluate(q) { answers.append(.calculation(Calculator.format(value))) }
-        if let conv = UnitConverter.convert(q) { answers.append(.unit(UnitConverter.format(conv))) }
+        let answers = CalculationAnswer.answers(for: q).map(ResultRow.calculation)
         immediate = []
         let builtins: [(String, ResultRow)] = [("Volant Settings", .settings), ("Reload Configuration", .reloadConfig)]
         let matchingCommands = CoreCommand.search(q).map(ResultRow.core) + builtins.filter { $0.0.localizedCaseInsensitiveContains(q) }.map { $0.1 }
@@ -645,7 +639,7 @@ final class LauncherModel: ObservableObject {
         if let target = config.aliases[head] ?? config.aliases.sorted(by: { $0.key < $1.key }).first(where: { $0.key.lowercased() == head })?.value, words.count == 1, let app = index.resolveAlias(target) {
             immediate.append(ResultSection(title: "Alias", rows: [.app(app)]))
         }
-        if !answers.isEmpty { immediate.append(ResultSection(title: "Answer", rows: answers)) }
+        if !answers.isEmpty { immediate.append(ResultSection(title: "Calculator", rows: answers)) }
         let snips = config.snippets.filter { $0.keyword.lowercased() == q.lowercased() }.map { ResultRow.snippet($0) }
         if !snips.isEmpty { immediate.append(ResultSection(title: "Snippets", rows: snips)) }
         let links = QuicklinkResolver.search(config.quicklinks, head).map { ResultRow.quicklink($0, query: tail) }
@@ -856,7 +850,7 @@ final class LauncherModel: ObservableObject {
     func activateSelection() {
         guard let row = selectedRow else { return }
         switch row {
-        case .appleShortcut, .connectivity, .audioRoute, .volume, .extensionResult, .newNote, .calculation, .unit: break
+        case .appleShortcut, .connectivity, .audioRoute, .volume, .extensionResult, .newNote, .calculation: break
         default: usage.record(key: row.id, query: query)
         }
         switch row {
@@ -913,8 +907,7 @@ final class LauncherModel: ObservableObject {
         case .reloadConfig: dismiss(); onNote(.reloadConfig); return
         case .agentSession(let session): agents.focus(session); return
         case .agents: query = "agents"; return
-        case .calculation(let text): copy(text)
-        case .unit(let text): copy(text.components(separatedBy: " = ").last ?? text)
+        case .calculation(let answer): copy(answer.copyText)
         case .clip(let clip):
             if clip.kind == .image, let data = clip.imageData {
                 let pb = NSPasteboard.general; pb.clearContents(); pb.setData(data, forType: .png)

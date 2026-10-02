@@ -238,8 +238,12 @@ struct LauncherView: View {
 
     private func resultButton(_ row: ResultRow) -> some View {
         Button { model.activate(rowID: row.id) } label: {
-            RowView(initialRow: row, model: model, agents: agents)
-                .contentShape(Rectangle())
+            if case .calculation(let answer) = row {
+                CalculatorCard(answer: answer, rowID: row.id, model: model)
+            } else {
+                RowView(initialRow: row, model: model, agents: agents)
+                    .contentShape(Rectangle())
+            }
         }
         .buttonStyle(.plain)
         .focusable(false)
@@ -382,8 +386,7 @@ private struct RowView: View {
         case .audioRoute(let route): return route.name
         case .volume(let command, _): return command.title
         case .agents: return "Open Agents"
-        case .calculation(let s): return "= \(s)"
-        case .unit(let s): return s
+        case .calculation(let answer): return answer.input + " = " + answer.result
         case .systemSettings(let pane): return pane.title
         case .settings: return "Volant Settings"
         case .reloadConfig: return "Reload Configuration"
@@ -416,7 +419,7 @@ private struct RowView: View {
         case .audioRoute(let route): return route.direction.rawValue.capitalized
         case .volume(_, let detail): return detail.isEmpty ? nil : detail
         case .agents: return "Find Herdr sessions and focus a pane"
-        case .appleShortcut, .calculation, .unit, .app: return nil
+        case .appleShortcut, .calculation, .app: return nil
         case .file(let f): return f.url.deletingLastPathComponent().path.replacingOccurrences(of: NSHomeDirectory(), with: "~")
         case .contact(let c): return c.email ?? c.phone ?? (c.organization.isEmpty ? nil : c.organization)
         case .event(let e):
@@ -456,7 +459,6 @@ private struct RowView: View {
         case .volume(let command, _): CommandTile(symbol: command == .mute ? "speaker.slash" : "speaker.wave.2", tint: CoreCommand.audio.tint)
         case .agents: CommandTile(symbol: "terminal", tint: CoreCommand.agents.tint)
         case .calculation: Image(systemName: "equal.circle.fill").font(.system(size: 20)).foregroundStyle(.secondary)
-        case .unit: Image(systemName: "arrow.left.arrow.right.circle.fill").font(.system(size: 20)).foregroundStyle(.secondary)
         case .systemSettings, .settings: CommandTile(symbol: "gearshape", tint: .gray)
         case .reloadConfig: CommandTile(symbol: "arrow.clockwise", tint: .gray)
         case .app(let a): Image(nsImage: NSWorkspace.shared.icon(forFile: a.url.path)).resizable()

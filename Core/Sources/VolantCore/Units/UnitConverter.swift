@@ -7,12 +7,16 @@ public enum UnitConverter {
         public let fromSymbol: String
         public let result: Double
         public let toSymbol: String
+        public let fromUnit: Dimension?
+        public let toUnit: Dimension?
 
-        public init(value: Double, fromSymbol: String, result: Double, toSymbol: String) {
+        public init(value: Double, fromSymbol: String, result: Double, toSymbol: String, fromUnit: Dimension? = nil, toUnit: Dimension? = nil) {
             self.value = value
             self.fromSymbol = fromSymbol
             self.result = result
             self.toSymbol = toSymbol
+            self.fromUnit = fromUnit
+            self.toUnit = toUnit
         }
     }
 
@@ -28,11 +32,16 @@ public enum UnitConverter {
               type(of: from.unit) == type(of: to.unit) else { return nil }
         let measurement = Measurement(value: value, unit: from.unit)
         let converted = measurement.converted(to: to.unit)
-        return Conversion(value: value, fromSymbol: from.symbol, result: converted.value, toSymbol: to.symbol)
+        return Conversion(value: value, fromSymbol: from.symbol, result: converted.value, toSymbol: to.symbol, fromUnit: from.unit, toUnit: to.unit)
     }
 
     public static func format(_ c: Conversion) -> String {
-        "\(Calculator.format(c.value)) \(c.fromSymbol) = \(Calculator.format((c.result * 1e6).rounded() / 1e6)) \(c.toSymbol)"
+        "\(Calculator.format(c.value)) \(c.fromSymbol) = \(formatResult(c))"
+    }
+
+    /// The converted side alone, rounded to six decimal places, as Copy puts it on the clipboard.
+    public static func formatResult(_ c: Conversion) -> String {
+        "\(Calculator.format((c.result * 1e6).rounded() / 1e6)) \(c.toSymbol)"
     }
 
     /// Splits "<number><unit> (in|to|as|=) <unit>" allowing the number and unit to touch, as in "72f".
