@@ -57,21 +57,21 @@ host.layoutSubtreeIfNeeded()
 let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds)!
 host.cacheDisplay(in: host.bounds, to: rep)
 try rep.representation(using: .jpeg, properties: [.compressionFactor: 0.75])!.write(to: URL(fileURLWithPath: "/tmp/volant-launcher-\(dark ? "dark" : "light").jpg"))
-// Time answers use the existing native result row and copy the complete date/zone.
+// Calculator answers render as cards and copy the complete single-line answer.
 model.searchesSecondarySources = false
-for query in ["1pm EST in CET", "2026-12-31 3pm PST in CET", "time in Tokyo"] {
+for query in ["1pm EST in CET", "2026-12-31 3pm PST in CET", "time in Tokyo", "2 + 2", "5 km in mi"] {
     model.query = query
     RunLoop.main.run(until: Date().addingTimeInterval(0.2))
     guard case .calculation(let answer) = model.selectedRow else { fatalError("Missing timezone answer") }
-    verify(!answer.contains("UTC") && !answer.contains("GMT+"), "Timezone answer uses a human-readable label")
+    verify(!answer.copyText.contains("UTC") && !answer.copyText.contains("GMT+"), "Calculator answer uses a human-readable label")
     var copied = ""
     model.copyText = { copied = $0 }
     model.activate(rowID: model.selectedRow!.id)
-    verify(copied == answer, "Copy retains the readable time and day context")
+    verify(copied == answer.copyText, "Copy retains the readable answer and day context")
     host.layoutSubtreeIfNeeded()
     let image = host.bitmapImageRepForCachingDisplay(in: host.bounds)!
     host.cacheDisplay(in: host.bounds, to: image)
-    let name = query.hasPrefix("2026") ? "rollover" : (query.hasPrefix("time") ? "clock" : "conversion")
+    let name = query.hasPrefix("2026") ? "rollover" : query.hasPrefix("time") ? "clock" : query.hasPrefix("2 +") ? "arithmetic" : query.hasPrefix("5 km") ? "unit" : "conversion"
     try image.representation(using: .jpeg, properties: [.compressionFactor: 0.85])!.write(to:
         URL(fileURLWithPath: "/tmp/volant-launcher-time-\(name)-\(dark ? "dark" : "light").jpg"))
 }

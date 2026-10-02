@@ -6,7 +6,14 @@ import Foundation
 public enum TimeCalculator {
     public struct Result: Equatable {
         public let date: Date
+        /// The single-line answer Copy uses, such as "Midnight CET · tomorrow".
         public let text: String
+        /// The clock and zone without day context, such as "Midnight CET" or "4:00 PM" for local time.
+        public let headline: String
+        /// Day context for the answer, such as "Tomorrow" or "Your time · Today".
+        public let detail: String
+        /// When the query's time falls in its own zone, such as "Friday, October 2", or "Now".
+        public let source: String
     }
 
     private static let fixed: [String: Int] = ["utc": 0, "gmt": 0]
@@ -40,7 +47,8 @@ public enum TimeCalculator {
         if query.hasPrefix("time in ") || query.hasPrefix("now in ") {
             let name = String(query.dropFirst(query.hasPrefix("time") ? 8 : 7))
             guard let zone = resolve(name, local: localZone) else { return nil }
-            return result(now, zone: zone, label: destinationLabel(name, zone: zone, date: now), baseline: baseline, explicitDate: false, locale: locale)
+            return result(now, zone: zone, label: destinationLabel(name, zone: zone, date: now), baseline: baseline, explicitDate: false,
+                          source: "Now", now: now, locale: locale)
         }
         guard let match = expression.firstMatch(in: query, range: NSRange(query.startIndex..., in: query)) else { return nil }
         func part(_ index: Int) -> String? {
@@ -79,7 +87,8 @@ public enum TimeCalculator {
               let last = calendar.nextDate(after: anchor, matching: clock, matchingPolicy: .strict, repeatedTimePolicy: .last),
               first == last else { return nil } // Never guess DST gaps or repeated wall times.
         let name = targets.count == 2 ? targets[1] : "local"
-        return result(first, zone: destination, label: destinationLabel(name, zone: destination, date: first), baseline: baseline, explicitDate: part(1) != nil, locale: locale)
+        return result(first, zone: destination, label: destinationLabel(name, zone: destination, date: first), baseline: baseline,
+                      explicitDate: part(1) != nil, source: describe(first, in: source, now: now, locale: locale), now: now, locale: locale)
     }
 
     private static func resolve(_ name: String, local: TimeZone) -> TimeZone? {
@@ -97,8 +106,21 @@ public enum TimeCalculator {
         return city.map { "in \($0)" } ?? zone.identifier
     }
 
+    /// Weekday and date of an instant in the zone it was written in; the year appears only when it differs from now.
+    private static func describe(_ date: Date, in zone: TimeZone, now: Date, locale: Locale) -> String {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = zone
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.timeZone = zone
+        formatter.locale = locale
+        let sameYear = calendar.component(.year, from: date) == calendar.component(.year, from: now)
+        formatter.setLocalizedDateFormatFromTemplate(sameYear ? "EEEEMMMMd" : "EEEEMMMMdyyyy")
+        return formatter.string(from: date)
+    }
+
     private static func result(_ date: Date, zone: TimeZone, label: String,
-                               baseline: DateComponents, explicitDate: Bool, locale: Locale) -> Result {
+                               baseline: DateComponents, explicitDate: Bool, source: String, now: Date, locale: Locale) -> Result {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = zone
         let parts = calendar.dateComponents([.hour, .minute], from: date)
@@ -111,19 +133,25 @@ public enum TimeCalculator {
         if parts.hour == 0 && parts.minute == 0 { clock = "Midnight" }
         else if parts.hour == 12 && parts.minute == 0 { clock = "Noon" }
         else { clock = formatter.string(from: date) }
-        var suffix = ""
-        if explicitDate {
-            formatter.setLocalizedDateFormatFromTemplate("MMM d yyyy")
-            suffix = " · " + formatter.string(from: date)
-        } else if let base = calendar.date(from: baseline),
-                  let days = calendar.dateComponents([.day], from: base, to: calendar.startOfDay(for: date)).day {
-            if days == 1 { suffix = " · tomorrow" }
-            else if days == -1 { suffix = " · yesterday" }
-            else if days != 0 {
-                formatter.setLocalizedDateFormatFromTemplate("MMM d yyyy")
-                suffix = " · " + formatter.string(from: date)
-            }
+        let offset = calendar.date(from: baseline).flatMap {
+            calendar.dateComponents([.day], from: $0, to: calendar.startOfDay(for: date)).day
         }
-        return Result(date: date, text: "\(clock) \(label)\(suffix)")
+        var day: String?
+        if explicitDate || ![0, 1, -1].contains(offset) {
+            formatter.setLocalizedDateFormatFromTemplate("MMM d yyyy")
+            day = formatter.string(from: date)
+        } else if offset == 1 { day = "tomorrow" }
+        else if offset == -1 { day = "yesterday" }
+        let local = label == "· your time"
+        let when: String
+        switch offset {
+        case 0: when = "Today"
+        case 1: when = "Tomorrow"
+        case -1: when = "Yesterday"
+        default: when = describe(date, in: zone, now: now, locale: locale)
+        }
+        return Result(date: date, text: "\(clock) \(label)" + (day.map { " · " + $0 } ?? ""),
+                      headline: local ? clock : "\(clock) \(label)",
+                      detail: local ? "Your time · " + when : when, source: source)
     }
 }
