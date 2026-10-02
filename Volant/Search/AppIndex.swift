@@ -33,7 +33,8 @@ final class AppIndex: NSObject {
     }
 
     static let applicationRoots: [String] = {
-        var roots = ["/Applications/", "/System/Applications/", "/System/Applications/Utilities/", "/Applications/Utilities/"]
+        var roots = ["/Applications/", "/System/Applications/", "/System/Applications/Utilities/", "/Applications/Utilities/",
+                     "/System/Library/CoreServices/Applications/"]
         roots.append(NSHomeDirectory() + "/Applications/")
         if let real = try? FileManager.default.destinationOfSymbolicLink(atPath: NSHomeDirectory()) { roots.append(real + "/Applications/") }
         return roots
@@ -73,9 +74,14 @@ final class AppIndex: NSObject {
         apps = result.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
+    /// User-facing apps in CoreServices outside its Applications folder. The rest of CoreServices is
+    /// background agents and UI services, so it is never indexed as a whole.
+    static let systemApps: Set<String> = ["/System/Library/CoreServices/Finder.app"]
+
     /// An app the user would launch: directly inside one of the application folders (one level of subfolder allowed), not nested in another bundle.
     static func isUserFacingApp(_ path: String) -> Bool {
         guard path.hasSuffix(".app"), !path.contains("/Contents/") else { return false }
+        if systemApps.contains(path) { return true }
         for root in applicationRoots where path.hasPrefix(root) {
             let rest = path.dropFirst(root.count)
             return rest.split(separator: "/").count <= 2
