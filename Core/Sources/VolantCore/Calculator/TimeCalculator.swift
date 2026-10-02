@@ -29,12 +29,12 @@ public enum TimeCalculator {
     public static func evaluate(_ text: String, now: Date = Date(), localZone: TimeZone = .current, locale: Locale = .current) -> Result? {
         guard text.utf8.count <= 256 else { return nil }
         let query = text.lowercased().split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
+        var localCalendar = Calendar(identifier: .gregorian)
+        localCalendar.timeZone = localZone
+        let baseline = localCalendar.dateComponents([.year, .month, .day], from: now)
         if query.hasPrefix("time in ") || query.hasPrefix("now in ") {
             let name = String(query.dropFirst(query.hasPrefix("time") ? 8 : 7))
             guard let zone = resolve(name, local: localZone) else { return nil }
-            var localCalendar = Calendar(identifier: .gregorian)
-            localCalendar.timeZone = localZone
-            let baseline = localCalendar.dateComponents([.year, .month, .day], from: now)
             return result(now, zone: zone, label: destinationLabel(name, zone: zone), baseline: baseline, explicitDate: false, locale: locale)
         }
         guard let match = expression.firstMatch(in: query, range: NSRange(query.startIndex..., in: query)) else { return nil }
@@ -74,7 +74,7 @@ public enum TimeCalculator {
               let last = calendar.nextDate(after: anchor, matching: clock, matchingPolicy: .strict, repeatedTimePolicy: .last),
               first == last else { return nil } // Never guess DST gaps or repeated wall times.
         let name = targets.count == 2 ? targets[1] : "local"
-        return result(first, zone: destination, label: destinationLabel(name, zone: destination), baseline: day, explicitDate: part(1) != nil, locale: locale)
+        return result(first, zone: destination, label: destinationLabel(name, zone: destination), baseline: baseline, explicitDate: part(1) != nil, locale: locale)
     }
 
     private static func resolve(_ name: String, local: TimeZone) -> TimeZone? {

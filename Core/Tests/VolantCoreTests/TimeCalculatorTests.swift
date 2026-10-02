@@ -47,6 +47,17 @@ final class TimeCalculatorTests: XCTestCase {
         XCTAssertEqual(answer("time in Tokyo")?.text, "9:00 PM in Tokyo")
     }
 
+    func testRelativeDaysFollowTheUsersLocalDay() {
+        let late = ISO8601DateFormatter().date(from: "2026-01-15T23:30:00Z")!
+        let early = ISO8601DateFormatter().date(from: "2026-01-15T16:00:00Z")!
+        XCTAssertEqual(TimeCalculator.evaluate("1pm EST", now: late, localZone: paris,
+                                              locale: Locale(identifier: "en_US"))?.text,
+                       "7:00 PM · your time · yesterday")
+        XCTAssertEqual(TimeCalculator.evaluate("1am Tokyo in sf", now: early, localZone: paris,
+                                              locale: Locale(identifier: "en_US"))?.text,
+                       "8:00 AM in Los Angeles")
+    }
+
     func testRejectsMalformedAmbiguousAndDSTTimes() {
         for query in ["Safari", "1pm", "1pm EST in", "1pm CST in CET", "1pm IST", "1pm France",
                       "25:00 EST", "0pm EST", "13pm EST", "1:60pm EST", "1 EST", "1pm EST garbage",
