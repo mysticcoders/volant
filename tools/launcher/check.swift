@@ -63,11 +63,11 @@ for query in ["1pm EST in CET", "2026-12-31 3pm PST in CET", "time in Tokyo"] {
     model.query = query
     RunLoop.main.run(until: Date().addingTimeInterval(0.2))
     guard case .calculation(let answer) = model.selectedRow else { fatalError("Missing timezone answer") }
-    verify(answer.contains("UTC"), "Timezone answer exposes resolved offset")
+    verify(!answer.contains("UTC") && !answer.contains("GMT+"), "Timezone answer uses a human-readable label")
     var copied = ""
     model.copyText = { copied = $0 }
     model.activate(rowID: model.selectedRow!.id)
-    verify(copied == answer, "Copy retains time, date and zone")
+    verify(copied == answer, "Copy retains the readable time and day context")
     host.layoutSubtreeIfNeeded()
     let image = host.bitmapImageRepForCachingDisplay(in: host.bounds)!
     host.cacheDisplay(in: host.bounds, to: image)
