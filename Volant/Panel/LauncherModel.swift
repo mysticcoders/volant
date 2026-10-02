@@ -633,6 +633,7 @@ final class LauncherModel: ObservableObject {
 
         searchesAppIndex = true
         var answers: [ResultRow] = []
+        if let time = TimeCalculator.evaluate(q) { answers.append(.calculation(time.text)) }
         if let value = Calculator.evaluate(q) { answers.append(.calculation(Calculator.format(value))) }
         if let conv = UnitConverter.convert(q) { answers.append(.unit(UnitConverter.format(conv))) }
         immediate = []

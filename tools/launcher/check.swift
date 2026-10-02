@@ -57,6 +57,27 @@ host.layoutSubtreeIfNeeded()
 let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds)!
 host.cacheDisplay(in: host.bounds, to: rep)
 try rep.representation(using: .jpeg, properties: [.compressionFactor: 0.75])!.write(to: URL(fileURLWithPath: "/tmp/volant-launcher-\(dark ? "dark" : "light").jpg"))
+// Time answers use the existing native result row and copy the complete date/zone.
+model.searchesSecondarySources = false
+for query in ["1pm EST in CET", "2026-12-31 3pm PST in CET", "time in Tokyo"] {
+    model.query = query
+    RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+    guard case .calculation(let answer) = model.selectedRow else { fatalError("Missing timezone answer") }
+    verify(answer.contains("UTC"), "Timezone answer exposes resolved offset")
+    var copied = ""
+    model.copyText = { copied = $0 }
+    model.activate(rowID: model.selectedRow!.id)
+    verify(copied == answer, "Copy retains time, date and zone")
+    host.layoutSubtreeIfNeeded()
+    let image = host.bitmapImageRepForCachingDisplay(in: host.bounds)!
+    host.cacheDisplay(in: host.bounds, to: image)
+    let name = query.hasPrefix("2026") ? "rollover" : (query.hasPrefix("time") ? "clock" : "conversion")
+    try image.representation(using: .jpeg, properties: [.compressionFactor: 0.85])!.write(to:
+        URL(fileURLWithPath: "/tmp/volant-launcher-time-\(name)-\(dark ? "dark" : "light").jpg"))
+}
+model.query = "1pm EST in"
+verify(!model.rows.contains { if case .calculation = $0 { return true }; return false }, "Incomplete time query has no answer")
+model.query = "snip screen"
 window.orderOut(nil)
 print("PASS: launcher row identity, stale click, snippet identity, Screen Sharing eligibility, and native focus restoration")
 
