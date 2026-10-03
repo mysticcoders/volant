@@ -304,7 +304,7 @@ export default function Home() {
             Download for Mac <ArrowRight size={17} />
           </a>
           <span className="availability">
-            Version 0.1.4 · macOS 15+ · Apple silicon & Intel
+            Version 0.1.5 · macOS 15+ · Apple silicon & Intel
           </span>
         </section>
       </main>
