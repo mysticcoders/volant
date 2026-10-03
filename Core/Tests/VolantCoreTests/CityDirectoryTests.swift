@@ -1,0 +1,96 @@
+import XCTest
+@testable import VolantCore
+
+final class CityDirectoryTests: XCTestCase {
+    private let fixture = """
+    America/Los_Angeles\tAmerica/New_York\tAmerica/Chicago\tEurope/Madrid\tAmerica/Caracas\tAmerica/Detroit\tEurope/Warsaw\tAmerica/Toronto\tEurope/London
+    Portland\t\tUS\tOR\t652503\t0
+    Portland\t\tUS\tME\t66881\t1
+    Springfield\t\tUS\tMO\t170188\t2
+    Springfield\t\tUS\tMA\t154341\t1
+    Barcelona\t\tES\t56\t1686208\t3
+    Barcelona\t\tVE\t02\t815141\t4
+    Columbus\t\tUS\tOH\t905748\t1
+    Columbus\t\tUS\tMI\t800000\t5
+    Kraków\tKrakow\tPL\t77\t755050\t6
+    London\t\tGB\tENG\t8961989\t8
+    London\t\tCA\t08\t422324\t7
+    St. Louis\t\tUS\tMO\t315685\t2
+    """
+
+    private func directory() -> CityDirectory { CityDirectory(load: { self.fixture }) }
+
+    func testDominantCityWinsAndSameClockRivalsDoNotMatter() {
+        let cities = directory()
+        XCTAssertEqual(cities.lookup("Portland")?.zone.identifier, "America/Los_Angeles")
+        XCTAssertEqual(cities.lookup("barcelona")?.zone.identifier, "Europe/Madrid")
+        XCTAssertEqual(cities.lookup("Barcelona")?.name, "Barcelona")
+        XCTAssertEqual(cities.lookup("columbus")?.zone.identifier, "America/New_York")
+        XCTAssertEqual(cities.lookup("london")?.zone.identifier, "Europe/London")
+    }
+
+    func testCloseRivalsOnDifferentClocksNeedAQualifier() {
+        let cities = directory()
+        XCTAssertNil(cities.lookup("Springfield"))
+        XCTAssertEqual(cities.lookup("Springfield, MA")?.zone.identifier, "America/New_York")
+        XCTAssertEqual(cities.lookup("springfield mo")?.zone.identifier, "America/Chicago")
+        XCTAssertEqual(cities.lookup("Portland, ME")?.zone.identifier, "America/New_York")
+        XCTAssertEqual(cities.lookup("barcelona, venezuela")?.zone.identifier, "America/Caracas")
+        XCTAssertEqual(cities.lookup("london, ca")?.zone.identifier, "America/Toronto")
+        XCTAssertEqual(cities.lookup("London, UK")?.zone.identifier, "Europe/London")
+        XCTAssertNil(cities.lookup("Springfield, TX"))
+        XCTAssertNil(cities.lookup("Springfield, Atlantis"))
+    }
+
+    func testAccentsCasePeriodsAndSpacingAreIgnored() {
+        let cities = directory()
+        XCTAssertEqual(cities.lookup("krakow")?.name, "Kraków")
+        XCTAssertEqual(cities.lookup("KRAKÓW")?.name, "Kraków")
+        XCTAssertEqual(cities.lookup("st louis")?.zone.identifier, "America/Chicago")
+        XCTAssertEqual(cities.lookup("  St.   Louis ")?.zone.identifier, "America/Chicago")
+        XCTAssertNil(cities.lookup("Atlantis"))
+    }
+
+    func testEmptyDirectoryAnswersNothingAndLoadsOnce() {
+        var loads = 0
+        let cities = CityDirectory(load: { loads += 1; return nil })
+        XCTAssertNil(cities.lookup("Portland"))
+        XCTAssertNil(cities.lookup("Seattle"))
+        XCTAssertEqual(loads, 1)
+    }
+
+    func testTimeQueriesUseDirectoryCitiesAndTheirOwnNames() {
+        let saved = CityDirectory.shared
+        CityDirectory.shared = directory()
+        defer { CityDirectory.shared = saved }
+        let now = ISO8601DateFormatter().date(from: "2026-10-02T09:00:00Z")!
+        let paris = TimeZone(identifier: "Europe/Paris")!
+        func answer(_ query: String) -> String? {
+            TimeCalculator.evaluate(query, now: now, localZone: paris, locale: Locale(identifier: "en_US"))?.text
+        }
+        XCTAssertEqual(answer("9am Portland in Barcelona"), "6:00 PM in Barcelona")
+        XCTAssertEqual(answer("9am Portland, ME in Barcelona"), "3:00 PM in Barcelona")
+        XCTAssertEqual(answer("time in Springfield, MA"), answer("time in New York")?.replacingOccurrences(of: "New York", with: "Springfield"))
+        XCTAssertNil(answer("9am Springfield in Barcelona"))
+    }
+
+    /// The generated table from tools/cities/build.py, read as the app reads it.
+    func testBundledTableResolvesWellKnownCities() throws {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Volant/Resources/cities.tsv.deflate")
+        let data = try (Data(contentsOf: url) as NSData).decompressed(using: .zlib) as Data
+        let text = try XCTUnwrap(String(data: data, encoding: .utf8))
+        let cities = CityDirectory(load: { text })
+        let start = Date()
+        XCTAssertEqual(cities.lookup("Seattle")?.zone.identifier, "America/Los_Angeles")
+        XCTAssertLessThan(Date().timeIntervalSince(start), 1.0, "First lookup loads the whole table")
+        XCTAssertEqual(cities.lookup("Barcelona")?.zone.identifier, "Europe/Madrid")
+        XCTAssertEqual(cities.lookup("Portland")?.zone.identifier, "America/Los_Angeles")
+        XCTAssertEqual(cities.lookup("Portland, ME")?.zone.identifier, "America/New_York")
+        XCTAssertNil(cities.lookup("Springfield"))
+        XCTAssertEqual(cities.lookup("Munich")?.zone.identifier, "Europe/Berlin")
+        XCTAssertEqual(cities.lookup("sao paulo")?.zone.identifier, "America/Sao_Paulo")
+        XCTAssertEqual(cities.lookup("Austin")?.zone.identifier, "America/Chicago")
+        XCTAssertEqual(cities.lookup("Bangalore")?.zone.identifier ?? cities.lookup("Bengaluru")?.zone.identifier, "Asia/Kolkata")
+    }
+}

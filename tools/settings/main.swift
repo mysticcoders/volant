@@ -238,6 +238,19 @@ if CommandLine.arguments.contains("--render") {
                 view.cacheDisplay(in: view.bounds, to: rep)
                 try! rep.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent(theme + "-" + section + ".png"))
                 print("Rendered \(theme) \(section): \(view.bounds.size)")
+                if section == "Data & Configuration" {
+                    func scrollViews(_ view: NSView) -> [NSScrollView] {
+                        (view as? NSScrollView).map { [$0] } ?? view.subviews.flatMap(scrollViews)
+                    }
+                    for scroll in scrollViews(view) {
+                        guard let document = scroll.documentView else { continue }
+                        document.scroll(NSPoint(x: 0, y: document.isFlipped ? document.bounds.height : 0))
+                    }
+                    RunLoop.main.run(until: Date().addingTimeInterval(0.15))
+                    let bottom = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
+                    view.cacheDisplay(in: view.bounds, to: bottom)
+                    try! bottom.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent(theme + "-" + section + "-bottom.png"))
+                }
             }
         }
         app.terminate(nil)

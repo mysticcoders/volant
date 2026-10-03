@@ -238,6 +238,15 @@ private struct SettingsView: View {
             } footer: {
                 SettingsFooter("Imports show a preview before applying changes. Export a backup before moving to another Mac.")
             }
+            Section {
+                LabeledContent("City time zones") {
+                    Link("GeoNames", destination: URL(string: "https://www.geonames.org")!)
+                }
+            } header: {
+                Text("Acknowledgements")
+            } footer: {
+                SettingsFooter("City names for calculator time conversions come from GeoNames, licensed under Creative Commons Attribution 4.0.")
+            }
         }
         .formStyle(.grouped)
     }

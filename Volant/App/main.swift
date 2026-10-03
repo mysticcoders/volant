@@ -65,6 +65,7 @@ if CommandLine.arguments.contains("--wifi-interface-check") {
     print("Interfaces: \(client.interfaces()?.count ?? -1); default: \(client.interface() != nil); named: \(client.interface(withName: "en0") != nil)")
     exit(0)
 }
+CityDirectory.shared = .bundled()
 let delegate = AppDelegate()
 app.delegate = delegate
 app.setActivationPolicy(.accessory)
