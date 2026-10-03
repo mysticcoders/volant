@@ -43,6 +43,15 @@ final class CalculationAnswerTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(answers("2026-10-03 9am EST in CET").first).resultDetail, "Tomorrow")
     }
 
+    func testRelativeDayCardMatchesTheReferenceLayout() throws {
+        let answer = try XCTUnwrap(answers("7:30pm tomorrow").first)
+        XCTAssertEqual(answer.input, "7:30pm tomorrow")
+        XCTAssertEqual(answer.inputDetail, "Saturday, October 3")
+        XCTAssertEqual(answer.result, "Tomorrow at 7:30 PM")
+        XCTAssertEqual(answer.resultDetail, "Saturday")
+        XCTAssertEqual(answer.copyText, "Saturday, October 3 at 7:30 PM")
+    }
+
     func testArithmeticReadsSmallWholeNumbersAsWords() throws {
         let sum = try XCTUnwrap(answers("2 + 2").first)
         XCTAssertEqual(sum.input, "2 + 2")

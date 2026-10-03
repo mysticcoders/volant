@@ -7,6 +7,9 @@ The launcher now recognizes whole-query timezone expressions locally, without a 
 - `5pm ldn in sf`, `17:30 Europe/London to America/Los_Angeles`.
 - `time in Tokyo`, `now in Dubai`.
 - `2026-03-15 3pm Los Angeles in Berlin` → `11:00 PM in Berlin · Mar 15, 2026` (with localized date order).
+- `7:30pm tomorrow` → `Tomorrow at 7:30 PM`, tagged with its weekday; `monday 9am` → `Monday at 9:00 AM`, tagged `In 3 days`.
+- `tomorrow 9am EST in CET`, `9am EST tomorrow in CET` → `3:00 PM CEST · tomorrow`.
+- `3pm Lisbon in Tokyo`: any IANA city name works without its region.
 
 Results use a readable AM/PM clock, Midnight/Noon for exact boundaries, the requested abbreviation or city, and “your time” for the local destination. Same-day implicit conversions omit the date; day rollover adds tomorrow/yesterday relative to the user's local calendar day. Explicit-date queries retain a localized calendar date. Current-time queries compare destination day with the injected local day. Return copies the same readable answer through the existing Calculation row. Date omitted means today's date in the source zone. `local`, `here` and `my time` select the Mac's timezone. UTC and GMT are fixed offsets. Regional abbreviations (EST/EDT, PST/PDT, MST/MDT, CET/CEST, BST, JST) select their region's clock, like cities and IANA identifiers, and the label names the abbreviation in effect on that date: in summer `1pm EST in CET` is `7:00 PM CEST`.
 
@@ -36,6 +39,12 @@ Evidence: core tests cover the reported query, summer and winter labels, either 
 ## Calculator card
 
 Every calculator answer (time, arithmetic, unit) renders as one card under a "Calculator" heading: the query on the left and the answer on the right, separated by an arrow, each with a detail tag. Time answers tag the query's weekday and date in its own zone (or "Now") and the answer's day as Today, Tomorrow or Yesterday, otherwise a weekday and date, prefixed "Your time" for the local zone. Arithmetic tags small whole numbers in words and larger ones with grouping. Unit conversions tag both unit names. Colons are dimmed so clock times scan as one number. Selection lightens the card instead of tinting it. Copy still puts the single-line answer on the clipboard. `CalculationAnswer` in VolantCore builds the card content and is tested there; the launcher fixture captures time, arithmetic and unit cards in both appearances.
+
+## Relative days and city names
+
+One day word may appear anywhere in a time query: today, tonight, tomorrow, yesterday, or a weekday (full or short name), which means its next occurrence with today included. It counts from the owner's local day, and an optional "at" next to it is ignored. A time with a day word needs no zone and resolves a local moment: the card reads `Tomorrow at 7:30 PM` (or the weekday name), tags the weekday or `In N days`, and Copy puts the absolute `Saturday, October 3 at 7:30 PM` on the clipboard, which still makes sense after it is pasted. Without a day word, a bare time stays unanswered, so `1pm` never takes over app search. Two day words, a day word with an explicit date, and `time in … tomorrow` are rejected. "next friday" is not supported, because people disagree on what it means.
+
+City names come from three sources, in order: a small alias list (`ldn`, `nyc`, `sf`, `la`, `mumbai` and others), full IANA identifiers (`Europe/Lisbon`), and the city part of every IANA identifier (`lisbon`, `buenos aires`). The last covers roughly 400 cities, the ones the system timezone database names, offline and with no geocoder. Places without their own zone entry (for example Barcelona or Seattle) need an alias.
 
 ## Next concrete work
 
