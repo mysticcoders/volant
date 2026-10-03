@@ -4,7 +4,8 @@ import Foundation
 /// name that region's clock as people use them, so "4pm CET" in July means Central European wall
 /// time; they, cities and IANA identifiers follow the system timezone database. One day word
 /// (today, tonight, tomorrow, yesterday or a weekday) may appear anywhere, counted from the owner's
-/// local day; with a day word, a time needs no zone, as in "7:30pm tomorrow".
+/// local day; with a day word, a time needs no zone, as in "7:30pm tomorrow". Names the built-in
+/// lists do not know fall back to `CityDirectory`.
 public enum TimeCalculator {
     public struct Result: Equatable {
         public let date: Date
@@ -133,6 +134,7 @@ public enum TimeCalculator {
         if let identifier = regions[name]?.zone ?? cities[name] ?? identifiers[name] ?? zoneCities[name] {
             return TimeZone(identifier: identifier)
         }
+        if let match = CityDirectory.shared.lookup(name) { return match.zone }
         return nil // CST/IST and broad geographic names are intentionally ambiguous.
     }
 
@@ -140,6 +142,9 @@ public enum TimeCalculator {
         if ["local", "here", "my time"].contains(name) { return "· your time" }
         if fixed[name] != nil { return name.uppercased() }
         if let region = regions[name] { return zone.isDaylightSavingTime(for: date) ? region.daylight : region.standard }
+        if cities[name] == nil, identifiers[name] == nil, zoneCities[name] == nil, let match = CityDirectory.shared.lookup(name) {
+            return "in \(match.name)"
+        }
         let city = zone.identifier.split(separator: "/").last.map(String.init)?.replacingOccurrences(of: "_", with: " ")
         return city.map { "in \($0)" } ?? zone.identifier
     }

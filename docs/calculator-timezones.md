@@ -44,7 +44,15 @@ Every calculator answer (time, arithmetic, unit) renders as one card under a "Ca
 
 One day word may appear anywhere in a time query: today, tonight, tomorrow, yesterday, or a weekday (full or short name), which means its next occurrence with today included. It counts from the owner's local day, and an optional "at" next to it is ignored. A time with a day word needs no zone and resolves a local moment: the card reads `Tomorrow at 7:30 PM` (or the weekday name), tags the weekday or `In N days`, and Copy puts the absolute `Saturday, October 3 at 7:30 PM` on the clipboard, which still makes sense after it is pasted. Without a day word, a bare time stays unanswered, so `1pm` never takes over app search. Two day words, a day word with an explicit date, and `time in … tomorrow` are rejected. "next friday" is not supported, because people disagree on what it means.
 
-City names come from three sources, in order: a small alias list (`ldn`, `nyc`, `sf`, `la`, `mumbai` and others), full IANA identifiers (`Europe/Lisbon`), and the city part of every IANA identifier (`lisbon`, `buenos aires`). The last covers roughly 400 cities, the ones the system timezone database names, offline and with no geocoder. Places without their own zone entry (for example Barcelona or Seattle) need an alias.
+City names come from four sources, in order: a small alias list (`ldn`, `nyc`, `sf`, `la`, `mumbai` and others), full IANA identifiers (`Europe/Lisbon`), the city part of every IANA identifier (`lisbon`, `buenos aires`), and `CityDirectory`, about 34,000 cities over 15,000 people from GeoNames.
+
+## GeoNames city directory
+
+Source: GeoNames `cities15000`, Creative Commons Attribution 4.0, credited in Settings → Data & Configuration → Acknowledgements. `tools/cities/build.py` downloads it and writes `Volant/Resources/cities.tsv.deflate` (raw DEFLATE, about 480 KB), keeping every city's name, ASCII name, country, admin1 code, population and IANA zone. Rerun it to refresh the data; it prints the source checksum for the PR.
+
+Resolution: case, accents, periods and spacing are ignored ("st louis", "krakow"). A bare name resolves when every same-named city keeps the same clock (compared by January and July offsets), or the largest is at least twice the size of any that does not: Seattle, Barcelona (Spain over Venezuela) and Portland (Oregon over Maine) answer, while Springfield does not. A qualifier after a comma, or after a space, picks a US state or a country by code or English name: "Portland, ME", "Springfield MA", "Barcelona, Venezuela", "London, UK". Labels use the city's own name, so "3pm Tokyo in Barcelona" reads "in Barcelona", not "in Madrid".
+
+Cost: nothing until a query names a city the built-in lists do not know. The first such lookup loads the table in about 60 ms and adds about 12 MB in a release build; later lookups take under 2 µs. Fixtures and unit tests use an empty or injected directory.
 
 ## Next concrete work
 
