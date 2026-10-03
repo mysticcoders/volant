@@ -102,13 +102,22 @@ export default function Launcher() {
       <h2>Calculating and converting</h2>
       <p>
         Type an expression such as <code>2^10 / 3</code> or{' '}
-        <code>sqrt(2)*pi</code> and the result appears; Return copies it.
+        <code>sqrt(2)*pi</code> and the result appears as a card, your input on
+        the left and the answer on the right; Return copies it.
       </p>
       <p>
         Conversions work the same way: <code>5 km in mi</code>,{' '}
         <code>72f to c</code>, <code>1 gib in mb</code>. These run entirely
         offline through Foundation&rsquo;s measurement units. There is no
         currency conversion, because that would need a network source.
+      </p>
+      <p>
+        Times convert too: <code>1pm EST in CET</code>,{' '}
+        <code>3pm Lisbon in Tokyo</code>, <code>time in Sydney</code>, or{' '}
+        <code>7:30pm tomorrow</code>. Zone abbreviations follow daylight saving
+        the way people use them, and about 34,000 city names from GeoNames work
+        offline. Where two cities share a name across time zones, add a state
+        or country: <code>Portland, ME</code>.
       </p>
 
       <h2>Today&rsquo;s agenda</h2>
