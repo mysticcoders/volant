@@ -15,6 +15,50 @@ final class CalculatorTests: XCTestCase {
         XCTAssertEqual(Calculator.evaluate("round(2.5) * 2"), 6)
     }
 
+    func testUnaryMinusBindsLooserThanExponent() {
+        XCTAssertEqual(Calculator.evaluate("-2^2"), -4)
+        XCTAssertEqual(Calculator.evaluate("(-2)^2"), 4)
+        XCTAssertEqual(Calculator.evaluate("2^-1"), 0.5)
+        XCTAssertEqual(Calculator.evaluate("2 * -3"), -6)
+        XCTAssertEqual(Calculator.evaluate("-2 * 3"), -6)
+        XCTAssertEqual(Calculator.evaluate("--2"), 2)
+        XCTAssertEqual(Calculator.evaluate("10 - -3"), 13)
+        XCTAssertEqual(Calculator.evaluate("-(2 + 3)"), -5)
+        XCTAssertEqual(Calculator.evaluate("2 ^ -2 ^ 2"), 0.0625)
+    }
+
+    func testRemainderFunctionsAndConstants() {
+        XCTAssertEqual(Calculator.evaluate("10 % 3"), 1)
+        XCTAssertEqual(Calculator.evaluate("-7 % 3"), -1)
+        XCTAssertEqual(Calculator.evaluate("2 + 10 % 4 * 3"), 8)
+        XCTAssertNil(Calculator.evaluate("5 % 0"))
+        XCTAssertEqual(Calculator.evaluate("floor(2.7) + ceil(2.1)"), 5)
+        XCTAssertEqual(Calculator.evaluate("floor(-2.5)"), -3)
+        XCTAssertEqual(Calculator.evaluate("round(-2.5)"), -3)
+        XCTAssertEqual(Calculator.evaluate("sqrt(abs(-16))"), 4)
+        XCTAssertEqual(Calculator.evaluate("SQRT(9)"), 3)
+        XCTAssertEqual(try XCTUnwrap(Calculator.evaluate("pi")), Double.pi, accuracy: 1e-12)
+        XCTAssertEqual(try XCTUnwrap(Calculator.evaluate("2 * pi")), 2 * Double.pi, accuracy: 1e-12)
+        XCTAssertEqual(try XCTUnwrap(Calculator.evaluate("e ^ 2")), M_E * M_E, accuracy: 1e-12)
+        XCTAssertEqual(Calculator.evaluate("  ( 1 + 2 )*3 "), 9)
+        XCTAssertEqual(Calculator.evaluate("0.5 + .25"), 0.75)
+    }
+
+    func testRejectsUnknownFunctionsAndMalformedNumbers() {
+        for query in ["sin(1)", "foo(2)", "2 pi", "1..2 + 1", "1.2.3", "2 ** 3", "()", "3 +* 4", "sqrt()", "2 $ 3"] {
+            XCTAssertNil(Calculator.evaluate(query), query)
+        }
+    }
+
+    func testRecognizesOnlyCalculationShapedText() {
+        XCTAssertTrue(Calculator.looksNumeric("2 + 2"))
+        XCTAssertTrue(Calculator.looksNumeric("pi"))
+        XCTAssertTrue(Calculator.looksNumeric("e"))
+        XCTAssertFalse(Calculator.looksNumeric("Safari"))
+        XCTAssertFalse(Calculator.looksNumeric(""))
+        XCTAssertFalse(Calculator.looksNumeric("2 + 2 = 4"))
+    }
+
     func testRejectsAppNamesAndGarbage() {
         XCTAssertNil(Calculator.evaluate("Safari"))
         XCTAssertNil(Calculator.evaluate("2 +"))
@@ -25,5 +69,11 @@ final class CalculatorTests: XCTestCase {
     func testFormatting() {
         XCTAssertEqual(Calculator.format(42), "42")
         XCTAssertEqual(Calculator.format(0.1 + 0.2), "0.3")
+        XCTAssertEqual(Calculator.format(-12), "-12")
+        XCTAssertEqual(Calculator.format(1_234_567), "1234567")
+        XCTAssertEqual(Calculator.format(2.5), "2.5")
+        XCTAssertEqual(Calculator.format(1.0 / 3), "0.3333333333")
+        XCTAssertEqual(Calculator.format(.infinity), "undefined")
+        XCTAssertEqual(Calculator.format(.nan), "undefined")
     }
 }

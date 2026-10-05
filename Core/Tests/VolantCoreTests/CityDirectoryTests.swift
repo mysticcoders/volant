@@ -74,6 +74,22 @@ final class CityDirectoryTests: XCTestCase {
         XCTAssertNil(answer("9am Springfield in Barcelona"))
     }
 
+    func testAccentedCitiesResolveThroughTheDirectoryWithTheirOwnSpelling() {
+        let saved = CityDirectory.shared
+        defer { CityDirectory.shared = saved }
+        let now = ISO8601DateFormatter().date(from: "2026-10-02T09:00:00Z")!
+        let paris = TimeZone(identifier: "Europe/Paris")!
+        func answer(_ query: String) -> String? {
+            TimeCalculator.evaluate(query, now: now, localZone: paris, locale: Locale(identifier: "en_US"))?.text
+        }
+        CityDirectory.shared = CityDirectory(load: { nil })
+        XCTAssertEqual(answer("time in sao paulo"), "6:00 AM in Sao Paulo")
+        XCTAssertNil(answer("time in são paulo"))
+        CityDirectory.shared = CityDirectory(load: { "America/Sao_Paulo\nSão Paulo\tSao Paulo\tBR\t27\t10021295\t0\n" })
+        XCTAssertEqual(answer("time in São Paulo"), "6:00 AM in São Paulo")
+        XCTAssertEqual(answer("time in SÃO PAULO"), "6:00 AM in São Paulo")
+    }
+
     /// The generated table from tools/cities/build.py, read as the app reads it.
     func testBundledTableResolvesWellKnownCities() throws {
         let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()

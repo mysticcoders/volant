@@ -69,10 +69,12 @@ public enum Calculator {
         return tokens
     }
 
+    /// Unary minus sits between exponent and multiplication, so "-2^2" is -(2^2) as in written
+    /// math, while "-2 * 3" and "2^-1" still read naturally.
     private static func precedence(_ op: Character) -> Int {
         switch op {
-        case "u": return 4
-        case "^": return 3
+        case "^": return 4
+        case "u": return 3
         case "*", "/", "%": return 2
         default: return 1
         }
@@ -92,7 +94,8 @@ public enum Calculator {
                 var op = op
                 let unary = op == "-" && (prev == nil || { if case .op = prev! { return true }; return prev == .lparen }())
                 if unary { op = "u" }
-                while let top = stack.last, case .op(let t) = top,
+                // A prefix operator has no left operand, so nothing on the stack can be complete yet.
+                while !unary, let top = stack.last, case .op(let t) = top,
                       precedence(t) > precedence(op) || (precedence(t) == precedence(op) && op != "^" && op != "u") {
                     output.append(stack.removeLast())
                 }

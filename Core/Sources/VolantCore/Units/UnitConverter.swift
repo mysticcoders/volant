@@ -30,9 +30,13 @@ public enum UnitConverter {
         guard let (value, fromText, toText) = split(lowered),
               let from = lookup(fromText), let to = lookup(toText),
               type(of: from.unit) == type(of: to.unit) else { return nil }
-        let measurement = Measurement(value: value, unit: from.unit)
-        let converted = measurement.converted(to: to.unit)
-        return Conversion(value: value, fromSymbol: from.symbol, result: converted.value, toSymbol: to.symbol, fromUnit: from.unit, toUnit: to.unit)
+        let result: Double
+        if let fromFactor = factor(from.unit), let toFactor = factor(to.unit) {
+            result = value * fromFactor / toFactor
+        } else {
+            result = Measurement(value: value, unit: from.unit).converted(to: to.unit).value
+        }
+        return Conversion(value: value, fromSymbol: from.symbol, result: result, toSymbol: to.symbol, fromUnit: from.unit, toUnit: to.unit)
     }
 
     public static func format(_ c: Conversion) -> String {
@@ -42,6 +46,27 @@ public enum UnitConverter {
     /// The converted side alone, rounded to six decimal places, as Copy puts it on the clipboard.
     public static func formatResult(_ c: Conversion) -> String {
         "\(Calculator.format((c.result * 1e6).rounded() / 1e6)) \(c.toSymbol)"
+    }
+
+    /// Exact legal definitions where Foundation's coefficients are rounded to about six digits,
+    /// which showed in answers ("10 kn in kph" gave 18.519969). Cup is the US customary cup
+    /// (236.588 mL); Foundation's 0.24 L is the US nutrition-label cup.
+    private static let exactFactors: [(Dimension, Double)] = [
+        (UnitMass.pounds, 0.45359237), (UnitMass.ounces, 0.028349523125), (UnitMass.stones, 6.35029318),
+        (UnitVolume.gallons, 3.785411784), (UnitVolume.quarts, 0.946352946), (UnitVolume.pints, 0.473176473),
+        (UnitVolume.cups, 0.2365882365), (UnitVolume.fluidOunces, 0.0295735295625),
+        (UnitVolume.tablespoons, 0.01478676478125), (UnitVolume.teaspoons, 0.00492892159375),
+        (UnitSpeed.kilometersPerHour, 1 / 3.6), (UnitSpeed.knots, 1852.0 / 3600),
+        (UnitPower.horsepower, 745.69987158227022),
+        (UnitPressure.poundsForcePerSquareInch, 6894.757293168361), (UnitPressure.millimetersOfMercury, 133.322387415)
+    ]
+
+    /// A linear unit's size in its dimension's base unit; nil for offset scales such as
+    /// temperature, which convert through Foundation.
+    private static func factor(_ unit: Dimension) -> Double? {
+        if let exact = exactFactors.first(where: { $0.0 == unit })?.1 { return exact }
+        guard let linear = unit.converter as? UnitConverterLinear, linear.constant == 0 else { return nil }
+        return linear.coefficient
     }
 
     /// Splits "<number><unit> (in|to|as|=) <unit>" allowing the number and unit to touch, as in "72f".
