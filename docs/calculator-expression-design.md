@@ -68,3 +68,13 @@ A comparison with Raycast's advertised calculator found one arithmetic defect an
 - **Unary minus:** `-2^2` gave 4. Unary minus outranked `^`. It now sits between `^` and multiplication and is pushed without popping, so `-2^2` is -4, while `2^-1`, `2 * -3` and `-2 * 3` are unchanged.
 - **Unit factors:** Foundation rounds several coefficients to about six digits (pound, ounce, stone, US gallon/quart/pint, fluid ounce, tablespoon, teaspoon, km/h, knot, horsepower, psi, mmHg). That surfaced in answers: `10 kn in kph` gave 18.519969, and `1 tbsp in tsp` gave 3.000008. `UnitConverter` now uses exact legal definitions for those units and Foundation for everything else, including the affine temperature scales. Cup is the US customary cup (236.5882365 mL); Foundation's 0.24 L is the US nutrition-label cup.
 - **Coverage now tested:** remainder, floor/ceil/round of negatives, constants, nested functions, malformed numbers and unknown functions, number formatting (negative, fractional, infinity), every unit family against reference factors, temperature edges (-40, absolute zero, `°F`, spelled names), decimal versus binary storage, long and plural unit names, and accented city names with and without the city directory.
+
+## Percentages — October 5, 2026
+
+`%` is a percentage rather than remainder, matching how people write it and Raycast's calculator; remainder is `mod`. A percentage is a value that remembers it was written with `%`:
+
+- `52% of 900` → 468, `20% off 80` → 64, `15% on 42` and `15% tip on 42` → 48.3. The card tags a tip with its amount ("Tip 6.3"); Copy gives the total.
+- `+` and `-` with a percentage on the right take that share of the left side: `19 + 47%` → 27.93, `100 - 10% - 10%` → 81.
+- Elsewhere `%` divides by 100: `200 * 15%` → 30, `50%` → 0.5.
+- `of`, `off` and `on` require a percentage on the left and a plain number on the right; `52 of 900`, `50% of 20%` and `10 % 3` give no answer.
+- The word operators share multiplication's precedence and associate left: `20% of 50 + 10` → 20.

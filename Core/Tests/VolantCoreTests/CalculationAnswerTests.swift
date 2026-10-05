@@ -62,6 +62,14 @@ final class CalculationAnswerTests: XCTestCase {
         XCTAssertNil(try XCTUnwrap(answers("10 / 4").first).resultDetail)
     }
 
+    func testTipAnswersTheTotalAndTagsTheTip() throws {
+        let tip = try XCTUnwrap(answers("15% tip on 42").first)
+        XCTAssertEqual(tip.result, "48.3")
+        XCTAssertEqual(tip.resultDetail, "Tip 6.3")
+        XCTAssertEqual(tip.copyText, "48.3")
+        XCTAssertEqual(try XCTUnwrap(answers("52% of 900").first).resultDetail, "Four hundred sixty-eight")
+    }
+
     func testUnitConversionNamesBothUnitsAndCopiesTheResult() throws {
         let answer = try XCTUnwrap(answers("5 km in mi").first)
         XCTAssertEqual(answer.input, "5 km")
