@@ -59,7 +59,7 @@ host.cacheDisplay(in: host.bounds, to: rep)
 try rep.representation(using: .jpeg, properties: [.compressionFactor: 0.75])!.write(to: URL(fileURLWithPath: "/tmp/volant-launcher-\(dark ? "dark" : "light").jpg"))
 // Calculator answers render as cards and copy the complete single-line answer.
 model.searchesSecondarySources = false
-for query in ["1pm EST in CET", "2026-12-31 3pm PST in CET", "time in Tokyo", "2 + 2", "5 km in mi", "7:30pm tomorrow", "15% tip on 42"] {
+for query in ["1pm EST in CET", "2026-12-31 3pm PST in CET", "time in Tokyo", "2 + 2", "5 km in mi", "7:30pm tomorrow", "15% tip on 42", "days until 31 Mar", "145 mins to timespan"] {
     model.query = query
     RunLoop.main.run(until: Date().addingTimeInterval(0.2))
     guard case .calculation(let answer) = model.selectedRow else { fatalError("Missing timezone answer") }
@@ -71,7 +71,7 @@ for query in ["1pm EST in CET", "2026-12-31 3pm PST in CET", "time in Tokyo", "2
     host.layoutSubtreeIfNeeded()
     let image = host.bitmapImageRepForCachingDisplay(in: host.bounds)!
     host.cacheDisplay(in: host.bounds, to: image)
-    let name = query.hasPrefix("2026") ? "rollover" : query.hasPrefix("time") ? "clock" : query.hasPrefix("2 +") ? "arithmetic" : query.hasPrefix("5 km") ? "unit" : query.hasSuffix("tomorrow") ? "relative" : query.contains("tip") ? "percent" : "conversion"
+    let name = query.hasPrefix("2026") ? "rollover" : query.hasPrefix("time") ? "clock" : query.hasPrefix("2 +") ? "arithmetic" : query.hasPrefix("5 km") ? "unit" : query.hasSuffix("tomorrow") ? "relative" : query.contains("tip") ? "percent" : query.hasPrefix("days") ? "count" : query.hasSuffix("timespan") ? "span" : "conversion"
     try image.representation(using: .jpeg, properties: [.compressionFactor: 0.85])!.write(to:
         URL(fileURLWithPath: "/tmp/volant-launcher-time-\(name)-\(dark ? "dark" : "light").jpg"))
 }

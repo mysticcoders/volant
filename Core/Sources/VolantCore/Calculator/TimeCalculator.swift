@@ -150,7 +150,7 @@ public enum TimeCalculator {
     }
 
     /// Weekday and date of an instant in the zone it was written in; the year appears only when it differs from now.
-    private static func describe(_ date: Date, in zone: TimeZone, now: Date, locale: Locale) -> String {
+    static func describe(_ date: Date, in zone: TimeZone, now: Date, locale: Locale) -> String {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = zone
         let formatter = DateFormatter()
@@ -177,7 +177,7 @@ public enum TimeCalculator {
 
     /// The clock as people say it: Midnight and Noon by name, otherwise the locale's hour and
     /// minute, which follows the owner's 24-hour setting.
-    private static func clockText(_ date: Date, zone: TimeZone, locale: Locale) -> String {
+    static func clockText(_ date: Date, zone: TimeZone, locale: Locale) -> String {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = zone
         let parts = calendar.dateComponents([.hour, .minute], from: date)

@@ -1,0 +1,315 @@
+import Foundation
+
+/// Date and duration questions, answered in the owner's local calendar: day words on their own
+/// ("today", "now"), counting ("days until 31 Mar", "days since Jan 1", "days between Jan 1 and
+/// Mar 1"), offsets ("in 3 weeks", "35 days ago", "monday in 3 weeks"), arithmetic ("August 5 + 5",
+/// "3:45pm + 5") and timespans ("145 mins to timespan").
+///
+/// Hours and minutes are elapsed time; days and longer are calendar steps, so a daylight-saving
+/// change never shifts "in 2 days" off midnight. A plain number after a date means days and after
+/// a clock time means hours. A date without a year means its next occurrence after "until", its
+/// last after "since", and this year elsewhere. Numeric dates such as 12/25 are left alone, since
+/// their order depends on locale.
+public enum DateCalculator {
+    enum Step: Equatable {
+        case seconds(Double)
+        case days(Int), months(Int), years(Int)
+    }
+
+    private enum DateWord {
+        case day(Date)
+        case calendar(month: Int, day: Int, year: Int?)
+    }
+
+    private struct Context {
+        let now: Date
+        let calendar: Calendar
+        let locale: Locale
+        var today: Date { calendar.startOfDay(for: now) }
+    }
+
+    private static let months: [String: Int] = [
+        "january": 1, "jan": 1, "february": 2, "feb": 2, "march": 3, "mar": 3, "april": 4, "apr": 4, "may": 5,
+        "june": 6, "jun": 6, "july": 7, "jul": 7, "august": 8, "aug": 8, "september": 9, "sep": 9, "sept": 9,
+        "october": 10, "oct": 10, "november": 11, "nov": 11, "december": 12, "dec": 12
+    ]
+    private static let weekdays: [String: Int] = [
+        "sunday": 1, "sun": 1, "monday": 2, "mon": 2, "tuesday": 3, "tue": 3, "tues": 3, "wednesday": 4, "wed": 4,
+        "thursday": 5, "thu": 5, "thurs": 5, "friday": 6, "fri": 6, "saturday": 7, "sat": 7
+    ]
+
+    public static func evaluate(_ text: String, now: Date = Date(), localZone: TimeZone = .current,
+                                locale: Locale = .current) -> CalculationAnswer? {
+        guard text.utf8.count <= 256 else { return nil }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = localZone
+        calendar.locale = locale
+        let context = Context(now: now, calendar: calendar, locale: locale)
+        let input = text.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
+        let words = normalize(text)
+        guard !words.isEmpty else { return nil }
+        return dayAlone(words, input: input, context)
+            ?? counting(words, input: input, context)
+            ?? timespan(words, input: input, context)
+            ?? offset(words, input: input, context)
+            ?? weekdayInWeeks(words, input: input, context)
+            ?? arithmetic(words, input: input, context)
+    }
+
+    /// Lowercase words with commas and ordinal suffixes removed, and numbers split from units
+    /// they touch ("90min", "31st", "3:45pm").
+    static func normalize(_ text: String) -> [String] {
+        var value = text.lowercased().replacingOccurrences(of: ",", with: " ")
+        value = value.replacingOccurrences(of: #"\b(\d+)(st|nd|rd|th)\b"#, with: "$1", options: .regularExpression)
+        value = value.replacingOccurrences(of: #"(\d)([a-z])"#, with: "$1 $2", options: .regularExpression)
+        value = value.replacingOccurrences(of: "+", with: " + ")
+        value = value.replacingOccurrences(of: #"(?<!\d)-|-(?!\d)"#, with: " - ", options: .regularExpression)
+        return value.split(whereSeparator: { $0.isWhitespace }).map(String.init)
+    }
+
+    // MARK: Forms
+
+    private static func dayAlone(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
+        guard words.count == 1 else { return nil }
+        if words[0] == "now" {
+            let full = dateText(c.now, c)
+            let clock = TimeCalculator.clockText(c.now, zone: c.calendar.timeZone, locale: c.locale)
+            return CalculationAnswer(input: input, inputDetail: nil, result: clock, resultDetail: full, copyText: "\(full) at \(clock)")
+        }
+        guard ["today", "tomorrow", "yesterday"].contains(words[0]), case .day(let day)? = dateWord(words[...], c) else { return nil }
+        let text = dateText(day, c)
+        return CalculationAnswer(input: input, inputDetail: nil, result: text, resultDetail: relative(day, c), copyText: text)
+    }
+
+    /// "days until 31 Mar", "weeks since Jan 1", "days between Jan 1 and Mar 1".
+    private static func counting(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
+        guard words.count >= 3, let unit = ["days": 1, "day": 1, "weeks": 7, "week": 7][words[0]] else { return nil }
+        let start: Date, end: Date
+        switch words[1] {
+        case "until", "till", "to":
+            guard let target = date(words[2...], c, direction: 1) else { return nil }
+            (start, end) = (c.today, target)
+        case "since", "from":
+            guard let target = date(words[2...], c, direction: -1) else { return nil }
+            (start, end) = (target, c.today)
+        case "between":
+            guard let and = words.firstIndex(of: "and"), and > 2,
+                  let first = date(words[2..<and], c, direction: 0), let second = date(words[(and + 1)...], c, direction: 0) else { return nil }
+            (start, end) = (first, second)
+        default: return nil
+        }
+        guard let days = c.calendar.dateComponents([.day], from: start, to: end).day else { return nil }
+        let span = unit == 7 ? weeksText(abs(days)) : count(abs(days), "day")
+        let text = days < 0 ? span + " ago" : span
+        let anchor = words[1] == "between" ? nil : (words[1] == "since" || words[1] == "from" ? start : end)
+        return CalculationAnswer(input: input, inputDetail: nil, result: text,
+                                 resultDetail: anchor.map { dateText($0, c) } ?? "\(dateText(start, c)) to \(dateText(end, c))", copyText: text)
+    }
+
+    /// "145 mins to timespan", "100000 s as duration".
+    private static func timespan(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
+        guard words.count >= 4, ["to", "in", "as"].contains(words[words.count - 2]) || words.suffix(3) == ["to", "time", "span"] else { return nil }
+        let target = words.last == "span" ? "timespan" : words.last!
+        guard ["timespan", "duration"].contains(target) else { return nil }
+        let amount = words.last == "span" ? words.dropLast(3) : words.dropLast(2)
+        let seconds: Double
+        switch quantity(amount)?.1 {
+        case .seconds(let value)?: seconds = value
+        case .days(let value)?: seconds = Double(value) * 86_400
+        default: return nil
+        }
+        guard seconds > 0 else { return nil }
+        let text = spanText(seconds)
+        return CalculationAnswer(input: input, inputDetail: nil, result: text, resultDetail: nil, copyText: text)
+    }
+
+    /// "in 3 weeks", "10 days from now", "35 days ago", "in 4 hours".
+    private static func offset(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
+        var amount: ArraySlice<String>, sign = 1
+        if words.first == "in" { amount = words.dropFirst() }
+        else if words.suffix(2) == ["from", "now"] { amount = words.dropLast(2) }
+        else if words.last == "ago" { amount = words.dropLast(); sign = -1 }
+        else { return nil }
+        guard let (_, step) = quantity(amount) else { return nil }
+        return answer(applying: step, sign: sign, to: c.now, input: input, inputDetail: nil, c)
+    }
+
+    /// "monday in 3 weeks": that weekday in the week (Monday to Sunday) three weeks from now.
+    private static func weekdayInWeeks(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
+        guard words.count >= 3, let weekday = weekdays[words[0]], words[1] == "in",
+              let (_, step) = quantity(words[2...]), case .days(let days) = step, days % 7 == 0,
+              let ahead = c.calendar.date(byAdding: .day, value: days, to: c.today) else { return nil }
+        let mondayOffset = (c.calendar.component(.weekday, from: ahead) + 5) % 7
+        guard let monday = c.calendar.date(byAdding: .day, value: -mondayOffset, to: ahead),
+              let target = c.calendar.date(byAdding: .day, value: (weekday + 5) % 7, to: monday) else { return nil }
+        let text = dateText(target, c)
+        return CalculationAnswer(input: input, inputDetail: nil, result: text, resultDetail: relative(target, c), copyText: text)
+    }
+
+    /// "<date> + 5" (days), "<date> - 2 weeks", "3:45pm + 5" (hours), "9am + 90 min".
+    private static func arithmetic(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
+        guard let operatorIndex = words.lastIndex(where: { $0 == "+" || $0 == "-" }), operatorIndex > 0 else { return nil }
+        let base = words[..<operatorIndex], amount = words[(operatorIndex + 1)...]
+        let sign = words[operatorIndex] == "+" ? 1 : -1
+        if let start = clock(base, c) {
+            let step = amount.count == 1 ? Double(amount.first!).map { Step.seconds($0 * 3600) } : quantity(amount)?.1
+            guard let step, case .seconds = step else { return nil }
+            return answer(applying: step, sign: sign, to: start, input: input,
+                          inputDetail: TimeCalculator.clockText(start, zone: c.calendar.timeZone, locale: c.locale), c)
+        }
+        guard let start = date(base, c, direction: 0) else { return nil }
+        let step = amount.count == 1 ? Int(amount.first!).map { Step.days($0) } : quantity(amount)?.1
+        guard let step else { return nil }
+        if case .seconds = step { return nil }
+        return answer(applying: step, sign: sign, to: start, input: input, inputDetail: dateText(start, c), c)
+    }
+
+    // MARK: Results
+
+    private static func answer(applying step: Step, sign: Int, to start: Date, input: String, inputDetail: String?, _ c: Context) -> CalculationAnswer? {
+        guard let target = apply(step, sign: sign, to: start, c) else { return nil }
+        if case .seconds = step {
+            let clock = TimeCalculator.clockText(target, zone: c.calendar.timeZone, locale: c.locale)
+            let day = relative(c.calendar.startOfDay(for: target), c)
+            let copy = day == "Today" ? clock : "\(dateText(target, c)) at \(clock)"
+            return CalculationAnswer(input: input, inputDetail: inputDetail, result: clock, resultDetail: day, copyText: copy)
+        }
+        let text = dateText(target, c)
+        return CalculationAnswer(input: input, inputDetail: inputDetail, result: text, resultDetail: relative(target, c), copyText: text)
+    }
+
+    static func apply(_ step: Step, sign: Int, to date: Date, _ calendar: Calendar) -> Date? {
+        switch step {
+        case .seconds(let value): return date.addingTimeInterval(Double(sign) * value)
+        case .days(let value): return calendar.date(byAdding: .day, value: sign * value, to: date)
+        case .months(let value): return calendar.date(byAdding: .month, value: sign * value, to: date)
+        case .years(let value): return calendar.date(byAdding: .year, value: sign * value, to: date)
+        }
+    }
+
+    private static func apply(_ step: Step, sign: Int, to date: Date, _ c: Context) -> Date? {
+        apply(step, sign: sign, to: date, c.calendar)
+    }
+
+    private static func dateText(_ date: Date, _ c: Context) -> String {
+        TimeCalculator.describe(date, in: c.calendar.timeZone, now: c.now, locale: c.locale)
+    }
+
+    /// Today, Tomorrow, Yesterday, otherwise "In 21 days" or "35 days ago".
+    private static func relative(_ date: Date, _ c: Context) -> String {
+        guard let days = c.calendar.dateComponents([.day], from: c.today, to: c.calendar.startOfDay(for: date)).day else { return "" }
+        switch days {
+        case 0: return "Today"
+        case 1: return "Tomorrow"
+        case -1: return "Yesterday"
+        case let n where n > 0: return "In \(count(n, "day"))"
+        default: return "\(count(-days, "day")) ago"
+        }
+    }
+
+    private static func count(_ value: Int, _ unit: String) -> String {
+        "\(value.formatted()) \(unit)\(abs(value) == 1 ? "" : "s")"
+    }
+
+    private static func weeksText(_ days: Int) -> String {
+        let weeks = days / 7, rest = days % 7
+        return rest == 0 ? count(weeks, "week") : "\(count(weeks, "week")) \(count(rest, "day"))"
+    }
+
+    /// Days, hours, minutes and seconds, largest first, skipping empty parts.
+    static func spanText(_ seconds: Double) -> String {
+        var remaining = Int(seconds.rounded())
+        var parts: [String] = []
+        for (size, unit) in [(86_400, "day"), (3600, "hour"), (60, "minute"), (1, "second")] where remaining >= size {
+            parts.append(count(remaining / size, unit))
+            remaining %= size
+        }
+        return parts.isEmpty ? "0 seconds" : parts.joined(separator: " ")
+    }
+
+    // MARK: Parsing
+
+    /// "3 weeks", "a week", "90 min", "1.5 hours". Calendar steps need whole numbers.
+    static func quantity(_ words: ArraySlice<String>) -> (Double, Step)? {
+        guard words.count == 2, let first = words.first, let unit = words.last else { return nil }
+        guard let number = first == "a" || first == "an" ? 1 : Double(first), number >= 0 else { return nil }
+        let whole = number == number.rounded() ? Int(number) : nil
+        switch unit {
+        case "s", "sec", "secs", "second", "seconds": return (number, .seconds(number))
+        case "m", "min", "mins", "minute", "minutes": return (number, .seconds(number * 60))
+        case "h", "hr", "hrs", "hour", "hours": return (number, .seconds(number * 3600))
+        case "d", "day", "days": return whole.map { (number, .days($0)) }
+        case "w", "wk", "wks", "week", "weeks": return whole.map { (number, .days($0 * 7)) }
+        case "mo", "month", "months": return whole.map { (number, .months($0)) }
+        case "y", "yr", "yrs", "year", "years": return whole.map { (number, .years($0)) }
+        default: return nil
+        }
+    }
+
+    /// A clock time today: "3:45 pm", "15:45", "9 am".
+    private static func clock(_ words: ArraySlice<String>, _ c: Context) -> Date? {
+        guard (1...2).contains(words.count), let first = words.first else { return nil }
+        let meridiem = words.count == 2 ? words.last : nil
+        guard meridiem == nil || meridiem == "am" || meridiem == "pm" else { return nil }
+        let pieces = first.split(separator: ":", omittingEmptySubsequences: false)
+        guard (1...2).contains(pieces.count), var hour = Int(pieces[0]) else { return nil }
+        let minute = pieces.count == 2 ? Int(pieces[1]) : 0
+        guard let minute, (0..<60).contains(minute), pieces.count == 2 || meridiem != nil else { return nil }
+        if let meridiem {
+            guard (1...12).contains(hour) else { return nil }
+            hour = hour % 12 + (meridiem == "pm" ? 12 : 0)
+        } else {
+            guard hour < 24 else { return nil }
+        }
+        return c.calendar.date(bySettingHour: hour, minute: minute, second: 0, of: c.today)
+    }
+
+    /// A date at the start of its day. `direction` picks the next (1), last (-1) or this-year (0)
+    /// occurrence of a date written without a year.
+    private static func date(_ words: ArraySlice<String>, _ c: Context, direction: Int) -> Date? {
+        switch dateWord(words, c) {
+        case .day(let day)?: return day
+        case .calendar(let month, let day, let year)?:
+            let thisYear = c.calendar.component(.year, from: c.now)
+            func make(_ year: Int) -> Date? {
+                let components = DateComponents(year: year, month: month, day: day)
+                guard let date = c.calendar.date(from: components),
+                      c.calendar.dateComponents([.year, .month, .day], from: date) == components else { return nil }
+                return date
+            }
+            if let year { return make(year) }
+            guard let candidate = make(thisYear) else { return nil }
+            if direction > 0 && candidate < c.today { return make(thisYear + 1) }
+            if direction < 0 && candidate > c.today { return make(thisYear - 1) }
+            return candidate
+        case nil: return nil
+        }
+    }
+
+    private static func dateWord(_ words: ArraySlice<String>, _ c: Context) -> DateWord? {
+        let parts = Array(words)
+        if parts.count == 1 {
+            switch parts[0] {
+            case "today": return .day(c.today)
+            case "tomorrow": return c.calendar.date(byAdding: .day, value: 1, to: c.today).map(DateWord.day)
+            case "yesterday": return c.calendar.date(byAdding: .day, value: -1, to: c.today).map(DateWord.day)
+            default: break
+            }
+            if let weekday = weekdays[parts[0]] {
+                let ahead = (weekday - c.calendar.component(.weekday, from: c.now) + 7) % 7
+                return c.calendar.date(byAdding: .day, value: ahead, to: c.today).map(DateWord.day)
+            }
+            let fields = parts[0].split(separator: "-").compactMap { Int($0) }
+            if parts[0].range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil, fields.count == 3 {
+                return .calendar(month: fields[1], day: fields[2], year: fields[0])
+            }
+            return nil
+        }
+        guard (2...3).contains(parts.count) else { return nil }
+        let year = parts.count == 3 ? Int(parts[2]) : nil
+        guard parts.count == 2 || (year.map { (1...9999).contains($0) } ?? false) else { return nil }
+        if let month = months[parts[0]], let day = Int(parts[1]) { return .calendar(month: month, day: day, year: year) }
+        if let month = months[parts[1]], let day = Int(parts[0]) { return .calendar(month: month, day: day, year: year) }
+        return nil
+    }
+}

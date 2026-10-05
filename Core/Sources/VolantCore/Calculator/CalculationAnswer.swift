@@ -17,8 +17,8 @@ public struct CalculationAnswer: Hashable {
         self.copyText = copyText
     }
 
-    /// Every answer the query has, in the order the launcher lists them: time conversion,
-    /// arithmetic, then unit conversion. The input side keeps the owner's wording, trimmed.
+    /// Every answer the query has, in the order the launcher lists them: time conversion, dates
+    /// and durations, arithmetic, then unit conversion. The input side keeps the owner's wording, trimmed.
     public static func answers(for query: String, now: Date = Date(), localZone: TimeZone = .current,
                                locale: Locale = .current) -> [CalculationAnswer] {
         let input = query.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
@@ -26,6 +26,9 @@ public struct CalculationAnswer: Hashable {
         if let time = TimeCalculator.evaluate(query, now: now, localZone: localZone, locale: locale) {
             answers.append(CalculationAnswer(input: input, inputDetail: time.source, result: time.headline,
                                              resultDetail: time.detail, copyText: time.text))
+        }
+        if let date = DateCalculator.evaluate(query, now: now, localZone: localZone, locale: locale) {
+            answers.append(date)
         }
         if let value = Calculator.evaluate(query) {
             let text = Calculator.format(value)
