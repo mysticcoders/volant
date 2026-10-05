@@ -1,6 +1,11 @@
 import Foundation
 
-/// Arithmetic evaluator: + - * / ^ %, parentheses, unary minus, pi, e, sqrt, abs, round, floor, ceil. Pure; no NSExpression.
+/// Arithmetic evaluator: + - * / ^ mod, parentheses, unary minus, pi, e, sqrt, abs, round, floor, ceil, and
+/// percentages. Pure; no NSExpression.
+///
+/// `%` is a percentage, as people write it: "52% of 900", "20% off 80", "15% tip on 42", and
+/// "19 + 47%" or "100 - 10%" add or subtract that share of the left side. Elsewhere `%` divides by
+/// 100, so "200 * 15%" is 30. Remainder is `mod`.
 public enum Calculator {
     public enum CalcError: Error { case syntax, divisionByZero }
 
@@ -40,6 +45,10 @@ public enum Calculator {
         return f.string(from: NSNumber(value: value)) ?? String(value)
     }
 
+    /// Word operators, each one character on the operator stack: "of", "off", "on" ("tip on" reads the
+    /// same) and "mod".
+    private static let words: [String: Character] = ["of": "o", "off": "f", "on": "n", "mod": "m"]
+
     private static func tokenize(_ text: String) throws -> [Token] {
         var tokens: [Token] = []
         let chars = Array(text)
@@ -56,12 +65,22 @@ public enum Calculator {
             if ch.isLetter {
                 var j = i
                 while j < chars.count && chars[j].isLetter { j += 1 }
-                tokens.append(.ident(String(chars[i..<j]).lowercased())); i = j; continue
+                let word = String(chars[i..<j]).lowercased()
+                i = j
+                if word == "tip" {
+                    while i < chars.count && chars[i].isWhitespace { i += 1 }
+                    var k = i
+                    while k < chars.count && chars[k].isLetter { k += 1 }
+                    guard String(chars[i..<k]).lowercased() == "on" else { throw CalcError.syntax }
+                    tokens.append(.op("n")); i = k; continue
+                }
+                tokens.append(words[word].map { .op($0) } ?? .ident(word)); continue
             }
             switch ch {
             case "(": tokens.append(.lparen)
             case ")": tokens.append(.rparen)
-            case "+", "-", "*", "/", "^", "%": tokens.append(.op(ch))
+            case "+", "-", "*", "/", "^": tokens.append(.op(ch))
+            case "%": tokens.append(.op("p"))
             default: throw CalcError.syntax
             }
             i += 1
@@ -75,7 +94,7 @@ public enum Calculator {
         switch op {
         case "^": return 4
         case "u": return 3
-        case "*", "/", "%": return 2
+        case "*", "/", "o", "f", "n", "m": return 2
         default: return 1
         }
     }
@@ -90,9 +109,15 @@ public enum Calculator {
                 output.append(token)
             case .ident(let name):
                 if ["pi", "e"].contains(name) { output.append(token) } else { stack.append(token) }
+            case .op("p"):
+                // Postfix: applies to the operand just completed, before any pending operator.
+                switch prev {
+                case .number?, .rparen?, .ident?, .op("p")?: output.append(token)
+                default: throw CalcError.syntax
+                }
             case .op(let op):
                 var op = op
-                let unary = op == "-" && (prev == nil || { if case .op = prev! { return true }; return prev == .lparen }())
+                let unary = op == "-" && (prev == nil || prev == .lparen || { if case .op(let last) = prev!, last != "p" { return true }; return false }())
                 if unary { op = "u" }
                 // A prefix operator has no left operand, so nothing on the stack can be complete yet.
                 while !unary, let top = stack.last, case .op(let t) = top,
@@ -116,40 +141,58 @@ public enum Calculator {
         return output
     }
 
+    /// A value remembers whether it was written as a percentage, so "+" and "-" can take that
+    /// share of the left side and the word operators can insist on a percentage.
+    private struct Value {
+        var number: Double
+        var percent = false
+    }
+
     private static func evalRPN(_ rpn: [Token]) throws -> Double {
-        var stack: [Double] = []
-        func pop() throws -> Double { guard let v = stack.popLast() else { throw CalcError.syntax }; return v }
+        var stack: [Value] = []
+        func pop() throws -> Value { guard let v = stack.popLast() else { throw CalcError.syntax }; return v }
         for token in rpn {
             switch token {
-            case .number(let v): stack.append(v)
-            case .ident("pi"): stack.append(Double.pi)
-            case .ident("e"): stack.append(M_E)
+            case .number(let v): stack.append(Value(number: v))
+            case .ident("pi"): stack.append(Value(number: Double.pi))
+            case .ident("e"): stack.append(Value(number: M_E))
             case .ident(let fn):
-                let x = try pop()
+                let x = try pop().number
                 switch fn {
-                case "sqrt": stack.append(x.squareRoot())
-                case "abs": stack.append(abs(x))
-                case "round": stack.append(x.rounded())
-                case "floor": stack.append(x.rounded(.down))
-                case "ceil": stack.append(x.rounded(.up))
+                case "sqrt": stack.append(Value(number: x.squareRoot()))
+                case "abs": stack.append(Value(number: abs(x)))
+                case "round": stack.append(Value(number: x.rounded()))
+                case "floor": stack.append(Value(number: x.rounded(.down)))
+                case "ceil": stack.append(Value(number: x.rounded(.up)))
                 default: throw CalcError.syntax
                 }
-            case .op("u"): stack.append(-(try pop()))
+            case .op("p"):
+                let x = try pop()
+                guard !x.percent else { throw CalcError.syntax }
+                stack.append(Value(number: x.number / 100, percent: true))
+            case .op("u"):
+                let x = try pop()
+                stack.append(Value(number: -x.number, percent: x.percent))
             case .op(let op):
                 let b = try pop(), a = try pop()
                 switch op {
-                case "+": stack.append(a + b)
-                case "-": stack.append(a - b)
-                case "*": stack.append(a * b)
-                case "/": guard b != 0 else { throw CalcError.divisionByZero }; stack.append(a / b)
-                case "%": guard b != 0 else { throw CalcError.divisionByZero }; stack.append(a.truncatingRemainder(dividingBy: b))
-                case "^": stack.append(pow(a, b))
+                case "+": stack.append(Value(number: b.percent && !a.percent ? a.number * (1 + b.number) : a.number + b.number))
+                case "-": stack.append(Value(number: b.percent && !a.percent ? a.number * (1 - b.number) : a.number - b.number))
+                case "*": stack.append(Value(number: a.number * b.number))
+                case "/": guard b.number != 0 else { throw CalcError.divisionByZero }; stack.append(Value(number: a.number / b.number))
+                case "m": guard b.number != 0 else { throw CalcError.divisionByZero }
+                    stack.append(Value(number: a.number.truncatingRemainder(dividingBy: b.number)))
+                case "^": stack.append(Value(number: pow(a.number, b.number)))
+                case "o", "f", "n":
+                    guard a.percent, !b.percent else { throw CalcError.syntax }
+                    let share = op == "o" ? a.number : op == "f" ? 1 - a.number : 1 + a.number
+                    stack.append(Value(number: b.number * share))
                 default: throw CalcError.syntax
                 }
             default: throw CalcError.syntax
             }
         }
         guard stack.count == 1 else { throw CalcError.syntax }
-        return stack[0]
+        return stack[0].number
     }
 }

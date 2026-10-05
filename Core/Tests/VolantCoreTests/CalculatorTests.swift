@@ -28,10 +28,10 @@ final class CalculatorTests: XCTestCase {
     }
 
     func testRemainderFunctionsAndConstants() {
-        XCTAssertEqual(Calculator.evaluate("10 % 3"), 1)
-        XCTAssertEqual(Calculator.evaluate("-7 % 3"), -1)
-        XCTAssertEqual(Calculator.evaluate("2 + 10 % 4 * 3"), 8)
-        XCTAssertNil(Calculator.evaluate("5 % 0"))
+        XCTAssertEqual(Calculator.evaluate("10 mod 3"), 1)
+        XCTAssertEqual(Calculator.evaluate("-7 mod 3"), -1)
+        XCTAssertEqual(Calculator.evaluate("2 + 10 MOD 4 * 3"), 8)
+        XCTAssertNil(Calculator.evaluate("5 mod 0"))
         XCTAssertEqual(Calculator.evaluate("floor(2.7) + ceil(2.1)"), 5)
         XCTAssertEqual(Calculator.evaluate("floor(-2.5)"), -3)
         XCTAssertEqual(Calculator.evaluate("round(-2.5)"), -3)
@@ -42,6 +42,31 @@ final class CalculatorTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(Calculator.evaluate("e ^ 2")), M_E * M_E, accuracy: 1e-12)
         XCTAssertEqual(Calculator.evaluate("  ( 1 + 2 )*3 "), 9)
         XCTAssertEqual(Calculator.evaluate("0.5 + .25"), 0.75)
+    }
+
+    func testPercentagesReadAsWritten() throws {
+        XCTAssertEqual(try XCTUnwrap(Calculator.evaluate("52% of 900")), 468, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(Calculator.evaluate("20% off 80")), 64, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(Calculator.evaluate("15% tip on 42")), 48.3, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(Calculator.evaluate("15% on 42")), 48.3, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(Calculator.evaluate("19 + 47%")), 27.93, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(Calculator.evaluate("100 - 10%")), 90, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(Calculator.evaluate("100 - 10% - 10%")), 81, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(Calculator.evaluate("100 + -10%")), 90, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(Calculator.evaluate("200 * 15%")), 30, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(Calculator.evaluate("30 / 50%")), 60, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(Calculator.evaluate("50%")), 0.5, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(Calculator.evaluate("(10 + 5)% of 200")), 30, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(Calculator.evaluate("20% of 50 + 10")), 20, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(Calculator.evaluate("10% - 5")), -4.9, accuracy: 1e-9)
+        XCTAssertEqual(try XCTUnwrap(Calculator.evaluate("12.5% OF 80")), 10, accuracy: 1e-9)
+    }
+
+    func testPercentWordsNeedAPercentage() {
+        for query in ["10 % 3", "52 of 900", "20 off 80", "15 tip on 42", "15% tip 42", "50% of 20%",
+                      "%5", "(%5)", "5 +% 3", "10%%", "of 5", "5 of", "20% off"] {
+            XCTAssertNil(Calculator.evaluate(query), query)
+        }
     }
 
     func testRejectsUnknownFunctionsAndMalformedNumbers() {
