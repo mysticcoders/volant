@@ -78,3 +78,21 @@ A comparison with Raycast's advertised calculator found one arithmetic defect an
 - Elsewhere `%` divides by 100: `200 * 15%` → 30, `50%` → 0.5.
 - `of`, `off` and `on` require a percentage on the left and a plain number on the right; `52 of 900`, `50% of 20%` and `10 % 3` give no answer.
 - The word operators share multiplication's precedence and associate left: `20% of 50 + 10` → 20.
+
+## Dates and durations — October 6, 2026
+
+`DateCalculator` answers date questions in the owner's local calendar and produces card content directly:
+
+| Form | Example | Answer |
+| --- | --- | --- |
+| Day words alone | `now`, `today`, `tomorrow`, `yesterday` | the clock or date, tagged Today/Tomorrow |
+| Counting | `days until 31 Mar`, `days since Jan 1`, `weeks until 2026-12-25`, `days between Jan 1 and Mar 1` | `176 days`, tagged with the target date; past targets read `643 days ago` |
+| Offsets | `in 3 weeks`, `10 days from now`, `35 days ago`, `in 4 hours` | a date tagged `In 21 days`, or a clock tagged Today/Tomorrow |
+| Weekday in N weeks | `monday in 3 weeks` | that weekday in the Monday-to-Sunday week N weeks from today |
+| Date arithmetic | `August 5 + 5`, `5 Aug 2027 - 2 weeks`, `2028-01-31 + 1 month` | a plain number means days; months clamp to the month's last day |
+| Clock arithmetic | `3:45pm + 5`, `9am + 90 min` | a plain number means hours |
+| Timespans | `145 mins to timespan`, `100000 s as duration` | `2 hours 25 minutes` |
+
+Rules: hours, minutes and seconds are elapsed time; days, weeks, months and years are calendar steps, so across the October 25 fall-back "in 1 day" still lands on midnight while "in 24 hours" lands at 11 PM. A date without a year means its next occurrence after "until", its last after "since", and this year elsewhere. Dates are `Mar 31`, `31 Mar`, `March 31st 2027` or ISO `2027-03-31`; numeric dates such as `12/25` are rejected because their order depends on locale. Day words count from the local day, and a weekday means its next occurrence with today included. Copy gives the headline, or the full date and time when an elapsed-time answer falls on another day.
+
+Not yet: workdays, "next friday", month-name-only queries ("days until March"), holidays by name, durations added together (`2h 20min + 55min`), and time-zone-qualified date arithmetic.
