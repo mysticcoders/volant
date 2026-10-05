@@ -60,3 +60,11 @@ Evaluate only recognizable calculator input, consume the whole expression, and i
 Backend work should first add pure tests without opening UI: the two requested examples, mixed dimensions, precedence/parentheses, negative quantities, division by zero, incomplete expressions, exact reference factors, DST gaps/overlaps, midnight/year rollover, ambiguous zones and locale variants. The clock and any currency provider must be injected. Wire results into launcher rows in a separate UI-affecting change, then run scoped keyboard, copy and light/dark checks. That makes the new conditional CI policy useful immediately.
 
 No need to build a programming language, equation solver, variables or a broad natural-language interpreter for the first release. Start with the owner's two concrete expressions and make their semantics reliable.
+
+## Correctness pass — October 5, 2026
+
+A comparison with Raycast's advertised calculator found one arithmetic defect and several conversion-precision defects in existing behavior, all of which lacked tests.
+
+- **Unary minus:** `-2^2` gave 4. Unary minus outranked `^`. It now sits between `^` and multiplication and is pushed without popping, so `-2^2` is -4, while `2^-1`, `2 * -3` and `-2 * 3` are unchanged.
+- **Unit factors:** Foundation rounds several coefficients to about six digits (pound, ounce, stone, US gallon/quart/pint, fluid ounce, tablespoon, teaspoon, km/h, knot, horsepower, psi, mmHg). That surfaced in answers: `10 kn in kph` gave 18.519969, and `1 tbsp in tsp` gave 3.000008. `UnitConverter` now uses exact legal definitions for those units and Foundation for everything else, including the affine temperature scales. Cup is the US customary cup (236.5882365 mL); Foundation's 0.24 L is the US nutrition-label cup.
+- **Coverage now tested:** remainder, floor/ceil/round of negatives, constants, nested functions, malformed numbers and unknown functions, number formatting (negative, fractional, infinity), every unit family against reference factors, temperature edges (-40, absolute zero, `°F`, spelled names), decimal versus binary storage, long and plural unit names, and accented city names with and without the city directory.
