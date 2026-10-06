@@ -137,3 +137,11 @@ Not yet: workdays, "next friday", month-name-only queries ("days until March"), 
 ## Use Answer — October 6, 2026
 
 On any calculator card, Command-Return puts the answer (its Copy text) into the search field and keeps the launcher open, so `2 + 2`, Command-Return, ` * 3` gives 12. The footer labels it "Use Answer". Return still copies. The launcher fixture checks the label, the replaced query and the continued calculation.
+
+## Currency — October 6, 2026
+
+`CurrencyConverter` converts with European Central Bank daily reference rates (about 30 currencies, euro-based, one business day): `100 usd in eur`, `$100 in gbp`, `€50 to yen`, `USD1K in CHF`, `20 pounds in euros`. Cross rates go through the euro. The card tags the rate (`1 USD = 0.8 EUR`) and the rate date (`ECB rates · Oct 5`, or `Old ECB rates · …` after eight days), and Copy gives the formatted amount. Symbols and names map to one currency each ($/dollars to USD, ¥/yen to JPY); other dollars need their code. "pounds" is currency only when the other side is a currency, so `5 pounds in kg` stays a weight. Without rates there is no answer.
+
+Network: the app keeps no network entitlement. `VolantRatesHost` is a sandboxed XPC helper with only `network.client`; its one method takes no input and fetches the fixed ECB URL with an ephemeral session (no cookies or cache), refuses redirects, caps the response at 64 KB and replies only with data that parses as the feed. `CurrencyRatesStore` in the app fetches nothing until a query is shaped like a currency conversion, then refreshes at most every twelve hours while conversions are used, waits an hour after a failure, and caches the rates with their date in the support directory so conversions work offline. When rates arrive for the query still being typed, the launcher redraws while keeping the selected row. `tools/check-rates-xpc.sh` runs the real signed helper from a built app inside a sandboxed client and fetches the live feed once.
+
+The website's privacy page lists the app's network exceptions; the release that ships this must add exchange rates there.

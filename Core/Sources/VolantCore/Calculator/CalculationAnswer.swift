@@ -59,6 +59,9 @@ public struct CalculationAnswer: Hashable {
         if let screen = ScreenUnits.evaluate(query, locale: locale) {
             answers.append(screen)
         }
+        if let money = CurrencyConverter.evaluate(query, now: now, locale: locale) {
+            answers.append(money)
+        }
         if let conversion = UnitConverter.convert(query, locale: locale) {
             let result = UnitConverter.formatResult(conversion, locale: locale)
             answers.append(CalculationAnswer(input: "\(Calculator.format(conversion.value, locale: locale)) \(conversion.fromSymbol)",
