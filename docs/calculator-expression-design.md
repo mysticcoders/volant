@@ -96,3 +96,14 @@ A comparison with Raycast's advertised calculator found one arithmetic defect an
 Rules: hours, minutes and seconds are elapsed time; days, weeks, months and years are calendar steps, so across the October 25 fall-back "in 1 day" still lands on midnight while "in 24 hours" lands at 11 PM. A date without a year means its next occurrence after "until", its last after "since", and this year elsewhere. Dates are `Mar 31`, `31 Mar`, `March 31st 2027` or ISO `2027-03-31`; numeric dates such as `12/25` are rejected because their order depends on locale. Day words count from the local day, and a weekday means its next occurrence with today included. Copy gives the headline, or the full date and time when an elapsed-time answer falls on another day.
 
 Not yet: workdays, "next friday", month-name-only queries ("days until March"), holidays by name, durations added together (`2h 20min + 55min`), and time-zone-qualified date arithmetic.
+
+## Number input — October 6, 2026
+
+`NumberLiteral` reads numbers for both the calculator and the unit converter, following the Mac's locale:
+
+- Grouping is accepted only in real groups of three: `1,000`, `12,345,678`, `1,234.5` in English; `1,5`, `1,00` and `1,000,00` are rejected rather than guessed. The decimal separator is the locale's, so German reads `2,5` and `1.000` (a thousand) and rejects `1.5`. Spaces as grouping (French) are not supported.
+- Scientific notation: `1e3`, `2.5E-3`, `1e+2`.
+- Magnitudes in the calculator only: suffixes `k`/`K`, `M`, `B` and the words `thousand`, `million`, `billion` (`10K`, `2.5M`, `2.5 million`). Lowercase `m` and `b` stay meters and bytes, and the unit converter takes no suffixes, so `100k in c` is kelvin.
+- Unit names ignore spacing: `sq ft`, `square feet`, `fl oz`, `nautical miles`. Square miles, yards, inches and centimeters were added.
+- The converter tries every separator position, so `5 in in cm` reads inches.
+- Calculator and converter tests now pass an explicit locale instead of depending on the machine's.

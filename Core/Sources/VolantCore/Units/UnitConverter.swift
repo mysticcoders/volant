@@ -25,11 +25,10 @@ public enum UnitConverter {
         let symbol: String
     }
 
-    public static func convert(_ text: String) -> Conversion? {
+    /// Numbers follow `locale` (see `NumberLiteral`), without magnitude suffixes, since "100k" here is kelvin.
+    public static func convert(_ text: String, locale: Locale = .current) -> Conversion? {
         let lowered = text.lowercased().trimmingCharacters(in: .whitespaces)
-        guard let (value, fromText, toText) = split(lowered),
-              let from = lookup(fromText), let to = lookup(toText),
-              type(of: from.unit) == type(of: to.unit) else { return nil }
+        guard let (value, from, to) = split(lowered, locale: locale), type(of: from.unit) == type(of: to.unit) else { return nil }
         let result: Double
         if let fromFactor = factor(from.unit), let toFactor = factor(to.unit) {
             result = value * fromFactor / toFactor
@@ -39,13 +38,13 @@ public enum UnitConverter {
         return Conversion(value: value, fromSymbol: from.symbol, result: result, toSymbol: to.symbol, fromUnit: from.unit, toUnit: to.unit)
     }
 
-    public static func format(_ c: Conversion) -> String {
-        "\(Calculator.format(c.value)) \(c.fromSymbol) = \(formatResult(c))"
+    public static func format(_ c: Conversion, locale: Locale = .current) -> String {
+        "\(Calculator.format(c.value, locale: locale)) \(c.fromSymbol) = \(formatResult(c, locale: locale))"
     }
 
     /// The converted side alone, rounded to six decimal places, as Copy puts it on the clipboard.
-    public static func formatResult(_ c: Conversion) -> String {
-        "\(Calculator.format((c.result * 1e6).rounded() / 1e6)) \(c.toSymbol)"
+    public static func formatResult(_ c: Conversion, locale: Locale = .current) -> String {
+        "\(Calculator.format((c.result * 1e6).rounded() / 1e6, locale: locale)) \(c.toSymbol)"
     }
 
     /// Exact legal definitions where Foundation's coefficients are rounded to about six digits,
@@ -69,28 +68,30 @@ public enum UnitConverter {
         return linear.coefficient
     }
 
-    /// Splits "<number><unit> (in|to|as|=) <unit>" allowing the number and unit to touch, as in "72f".
-    private static func split(_ text: String) -> (Double, String, String)? {
-        let separators = [" in ", " to ", " as ", " = ", "="]
-        var parts: [String]? = nil
-        for sep in separators where text.contains(sep) {
-            let p = text.components(separatedBy: sep)
-            if p.count == 2 { parts = p.map { $0.trimmingCharacters(in: .whitespaces) }; break }
+    /// Splits "<number><unit> (in|to|as|=) <unit>", allowing the number and unit to touch ("72f").
+    /// Every separator position is tried, so "5 in in cm" reads inches even though "in" also
+    /// introduces the target.
+    private static func split(_ text: String, locale: Locale) -> (Double, Spec, Spec)? {
+        let separators = NumberLiteral.Separators(locale)
+        for separator in [" in ", " to ", " as ", " = ", "="] {
+            var search = text.startIndex
+            while let range = text.range(of: separator, range: search..<text.endIndex) {
+                search = range.lowerBound < text.endIndex ? text.index(after: range.lowerBound) : text.endIndex
+                let lhs = Array(text[..<range.lowerBound].trimmingCharacters(in: .whitespaces))
+                guard let to = lookup(String(text[range.upperBound...])) else { continue }
+                let negative = lhs.first == "-"
+                guard let (magnitude, end) = NumberLiteral.scan(lhs, from: negative ? 1 : 0, separators, magnitudes: false),
+                      let from = lookup(String(lhs[end...])) else { continue }
+                return (negative ? -magnitude : magnitude, from, to)
+            }
         }
-        guard let parts, let toText = parts.last, !toText.isEmpty else { return nil }
-        let lhs = parts[0]
-        let scalars = Array(lhs)
-        var i = 0
-        while i < scalars.count, scalars[i].isNumber || scalars[i] == "." || (i == 0 && scalars[i] == "-") { i += 1 }
-        guard i > 0, let value = Double(String(scalars[0..<i])) else { return nil }
-        let fromText = String(scalars[i...]).trimmingCharacters(in: .whitespaces)
-        guard !fromText.isEmpty else { return nil }
-        return (value, fromText, toText)
+        return nil
     }
 
+    /// Unit names ignore spacing and the degree sign: "sq ft", "fl oz", "square feet", "°F".
     private static func lookup(_ raw: String) -> Spec? {
-        let key = raw.replacingOccurrences(of: "°", with: "").trimmingCharacters(in: .whitespaces)
-        return table[key]
+        let key = raw.replacingOccurrences(of: "°", with: "").filter { !$0.isWhitespace }
+        return key.isEmpty ? nil : table[key]
     }
 
     private static let table: [String: Spec] = {
@@ -130,9 +131,13 @@ public enum UnitConverter {
         add(["s", "sec", "secs", "second", "seconds"], UnitDuration.seconds, "s")
         add(["min", "mins", "minute", "minutes"], UnitDuration.minutes, "min")
         add(["h", "hr", "hrs", "hour", "hours"], UnitDuration.hours, "h")
-        add(["m2", "sqm", "squaremeters"], UnitArea.squareMeters, "m²")
+        add(["m2", "sqm", "squaremeter", "squaremeters", "squaremetre", "squaremetres"], UnitArea.squareMeters, "m²")
         add(["km2", "sqkm"], UnitArea.squareKilometers, "km²")
-        add(["ft2", "sqft", "squarefeet"], UnitArea.squareFeet, "ft²")
+        add(["ft2", "sqft", "squarefoot", "squarefeet"], UnitArea.squareFeet, "ft²")
+        add(["mi2", "sqmi", "squaremile", "squaremiles"], UnitArea.squareMiles, "mi²")
+        add(["yd2", "sqyd", "squareyard", "squareyards"], UnitArea.squareYards, "yd²")
+        add(["in2", "sqin", "squareinch", "squareinches"], UnitArea.squareInches, "in²")
+        add(["cm2", "sqcm", "squarecentimeter", "squarecentimeters"], UnitArea.squareCentimeters, "cm²")
         add(["acre", "acres", "ac"], UnitArea.acres, "acre")
         add(["ha", "hectare", "hectares"], UnitArea.hectares, "ha")
         add(["b", "byte", "bytes"], UnitInformationStorage.bytes, "B")

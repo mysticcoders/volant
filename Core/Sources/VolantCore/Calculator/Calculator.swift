@@ -13,10 +13,12 @@ public enum Calculator {
         case number(Double), op(Character), lparen, rparen, ident(String)
     }
 
-    public static func evaluate(_ text: String) -> Double? {
+    /// Numbers follow `locale`: its decimal and grouping separators, plus scientific notation and
+    /// magnitudes ("10K", "2.5 million"). See `NumberLiteral`.
+    public static func evaluate(_ text: String, locale: Locale = .current) -> Double? {
         guard looksNumeric(text) else { return nil }
         do {
-            let tokens = try tokenize(text)
+            let tokens = try tokenize(text, separators: NumberLiteral.Separators(locale))
             guard !tokens.isEmpty else { return nil }
             let rpn = try toRPN(tokens)
             return try evalRPN(rpn)
@@ -29,12 +31,12 @@ public enum Calculator {
     public static func looksNumeric(_ text: String) -> Bool {
         let t = text.trimmingCharacters(in: .whitespaces)
         guard !t.isEmpty else { return false }
-        let allowed = CharacterSet(charactersIn: "0123456789.+-*/^%() ").union(.letters)
+        let allowed = CharacterSet(charactersIn: "0123456789.,+-*/^%() ").union(.letters)
         guard t.unicodeScalars.allSatisfy({ allowed.contains($0) }) else { return false }
         return t.unicodeScalars.contains { CharacterSet.decimalDigits.contains($0) } || t.contains("pi") || t == "e"
     }
 
-    public static func format(_ value: Double) -> String {
+    public static func format(_ value: Double, locale: Locale = .current) -> String {
         if value.isNaN || value.isInfinite { return "undefined" }
         if value == value.rounded() && abs(value) < 1e15 { return String(Int64(value)) }
         let f = NumberFormatter()
@@ -42,6 +44,7 @@ public enum Calculator {
         f.minimumFractionDigits = 0
         f.numberStyle = .decimal
         f.usesGroupingSeparator = false
+        f.locale = locale
         return f.string(from: NSNumber(value: value)) ?? String(value)
     }
 
@@ -49,17 +52,18 @@ public enum Calculator {
     /// same) and "mod".
     private static let words: [String: Character] = ["of": "o", "off": "f", "on": "n", "mod": "m"]
 
-    private static func tokenize(_ text: String) throws -> [Token] {
+    private static func tokenize(_ text: String, separators: NumberLiteral.Separators) throws -> [Token] {
         var tokens: [Token] = []
         let chars = Array(text)
         var i = 0
         while i < chars.count {
             let ch = chars[i]
             if ch.isWhitespace { i += 1; continue }
-            if ch.isNumber || ch == "." {
-                var j = i
-                while j < chars.count && (chars[j].isNumber || chars[j] == ".") { j += 1 }
-                guard let v = Double(String(chars[i..<j])) else { throw CalcError.syntax }
+            if ch.isNumber || ch == separators.decimal {
+                guard let (v, j) = NumberLiteral.scan(chars, from: i, separators),
+                      j == chars.count || !(chars[j].isNumber || chars[j] == separators.decimal || chars[j] == separators.grouping) else {
+                    throw CalcError.syntax
+                }
                 tokens.append(.number(v)); i = j; continue
             }
             if ch.isLetter {
@@ -73,6 +77,10 @@ public enum Calculator {
                     while k < chars.count && chars[k].isLetter { k += 1 }
                     guard String(chars[i..<k]).lowercased() == "on" else { throw CalcError.syntax }
                     tokens.append(.op("n")); i = k; continue
+                }
+                if let scale = NumberLiteral.words[word] {
+                    guard case .number(let v)? = tokens.last else { throw CalcError.syntax }
+                    tokens[tokens.count - 1] = .number(v * scale); continue
                 }
                 tokens.append(words[word].map { .op($0) } ?? .ident(word)); continue
             }
