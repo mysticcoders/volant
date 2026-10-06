@@ -67,13 +67,13 @@ export default function Calculator() {
         rows={[
           ['2^10 / 3', '341.3333333333'],
           ['-2^2', '-4, as written math reads it'],
-          ['52% of 900', '468'],
-          ['20% off 80', '64'],
-          ['15% tip on 42', '48.3, tagged with the 6.3 tip'],
+          ['35% of 260', '91'],
+          ['25% off 64', '48'],
+          ['18% tip on 65', '76.7, tagged with the 11.7 tip'],
           ['100 - 10%', '90'],
           ['10 mod 3', '1 (% always means percent)'],
           ['sin(90°)', '1 (radians unless marked °, deg)'],
-          ['square root of 625', '25'],
+          ['cube root of 343', '7'],
           ['5!', '120'],
           ['max(3, 7, 5)', '7'],
           ['nCr(10, 3)', '120'],
@@ -92,7 +92,7 @@ export default function Calculator() {
         Numbers follow your Mac&rsquo;s region: <code>1,000</code> in English,
         {' '}<code>2,5</code> in German, <code>1 000</code> in French.
         Scientific notation (<code>1e3</code>) and magnitudes
-        (<code>10K</code>, <code>2.5 million</code>) work too.
+        (<code>25K</code>, <code>2.5 million</code>) work too.
       </p>
 
       <h2>Units</h2>
@@ -103,8 +103,9 @@ export default function Calculator() {
           ['1 cup in ml', '236.588237 mL (US cup)'],
           ['5 sq ft in m2', '0.464515 m²'],
           ['1 gib in mb', '1073.741824 MB'],
-          ['2rem in px', '32px'],
-          ['2 inches in px at 72 ppi', '144px'],
+          ['1.5rem in px', '24px'],
+          ['48px in rem at 12px', '4rem'],
+          ['3 cm in px at 300 dpi', '354.3307px'],
         ]}
       />
       <p>
@@ -120,8 +121,8 @@ export default function Calculator() {
           ['1pm EST in CET', '7:00 PM CEST'],
           ['3pm Lisbon in Tokyo', '11:00 PM in Tokyo'],
           ['time in JFK', 'the time in New York, by airport code'],
-          ['time diff Tokyo', 'how far ahead or behind your clock it is'],
-          ['time in 4 hours in Tokyo', 'the clock there later'],
+          ['time diff Sydney', 'how far ahead or behind your clock it is'],
+          ['time in 90 minutes in Denver', 'the clock there later'],
           ['2024-03-15T14:30:00Z', 'the timestamp in your time'],
           ['unix 1700000000', 'a Unix time in your time'],
         ]}
@@ -141,10 +142,10 @@ export default function Calculator() {
           ['days until christmas', 'a count, tagged with the date'],
           ['workdays until Dec 25', 'skips your region’s public holidays'],
           ['in 10 business days', 'a date'],
-          ['monday in 3 weeks', 'that Monday'],
-          ['August 5 + 5', 'August 10'],
+          ['friday in 2 weeks', 'that Friday'],
+          ['March 3 + 10', 'March 13'],
           ['2h 20min + 55min', '3 hours 15 minutes'],
-          ['145 mins to timespan', '2 hours 25 minutes'],
+          ['200 mins to timespan', '3 hours 20 minutes'],
         ]}
       />
       <p>
@@ -157,7 +158,7 @@ export default function Calculator() {
       <h2>Colors</h2>
       <Examples
         rows={[
-          ['#ff6363', 'rgb(255 99 99), with a swatch'],
+          ['#3a7bd5', 'rgb(58 123 213), with a swatch'],
           ['hsl(120 100% 50%)', '#00ff00'],
           ['#ff0000 in oklch', 'oklch(62.8% 0.2577 29.23)'],
           ['rebeccapurple in hex', '#663399'],
@@ -171,8 +172,8 @@ export default function Calculator() {
 
       <h2>Currency and crypto</h2>
       <p>
-        <code>100 usd in eur</code>, <code>$100 in gbp</code> and{' '}
-        <code>USD1K in CHF</code> convert with the European Central
+        <code>250 usd in sek</code>, <code>£40 in eur</code> and{' '}
+        <code>CHF2.5K in USD</code> convert with the European Central
         Bank&rsquo;s daily reference rates, tagged with their date. Volant
         fetches the rates through a small separate helper the first time you
         type a currency conversion, then at most twice a day while you use
@@ -180,8 +181,8 @@ export default function Calculator() {
       </p>
       <p>
         With your own free CoinGecko Demo key in Settings → Data &amp;
-        Configuration, major coins convert too: <code>0.5 btc in usd</code>,
-        {' '}<code>100 eur in eth</code>. Prices refresh at most every ten
+        Configuration, major coins convert too: <code>0.02 btc in chf</code>,
+        {' '}<code>300 gbp in sol</code>. Prices refresh at most every ten
         minutes while you convert crypto. Data provided by{' '}
         <a href="https://www.coingecko.com">CoinGecko</a>. See{' '}
         <a href="/docs/privacy-and-security">Privacy and security</a> for what
