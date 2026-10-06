@@ -2,7 +2,7 @@ import SwiftUI
 import VolantCore
 
 /// A calculator answer drawn as two halves, the query and its result, each with a detail tag,
-/// separated by an arrow. Selection lightens the card rather than tinting it, and only semantic
+/// separated by an arrow; color answers show a swatch beside the query. Selection lightens the card rather than tinting it, and only semantic
 /// colors are used so it follows light and dark appearances.
 struct CalculatorCard: View {
     let answer: CalculationAnswer
@@ -13,7 +13,7 @@ struct CalculatorCard: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            side(answer.input, detail: answer.inputDetail)
+            side(answer.input, detail: answer.inputDetail, swatch: answer.swatch)
             divider
             side(answer.result, detail: answer.resultDetail)
         }
@@ -29,14 +29,22 @@ struct CalculatorCard: View {
 
     /// One half: the large text centered, with its tag below. The tag space is kept when there is
     /// no tag so both halves line up.
-    private func side(_ text: String, detail: String?) -> some View {
+    private func side(_ text: String, detail: String?, swatch: CalculationAnswer.Swatch? = nil) -> some View {
         VStack(spacing: 0) {
             Spacer(minLength: 10)
-            Text(dimmedColons(text))
-                .font(.system(size: 26, weight: .semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.45)
-                .padding(.horizontal, 18)
+            HStack(spacing: 10) {
+                if let swatch {
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(Color(.sRGB, red: swatch.red, green: swatch.green, blue: swatch.blue, opacity: swatch.alpha))
+                        .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).strokeBorder(Color.primary.opacity(0.25), lineWidth: 1))
+                        .frame(width: 30, height: 30)
+                }
+                Text(dimmedColons(text))
+                    .font(.system(size: 26, weight: .semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.45)
+            }
+            .padding(.horizontal, 18)
             Spacer(minLength: 10)
             Text(detail ?? " ")
                 .font(.system(size: 12, weight: .medium))
