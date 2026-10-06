@@ -242,10 +242,13 @@ private struct SettingsView: View {
                 LabeledContent("City time zones") {
                     Link("GeoNames", destination: URL(string: "https://www.geonames.org")!)
                 }
+                LabeledContent("Airport codes") {
+                    Link("mwgg/Airports", destination: URL(string: "https://github.com/mwgg/Airports")!)
+                }
             } header: {
                 Text("Acknowledgements")
             } footer: {
-                SettingsFooter("City names for calculator time conversions come from GeoNames, licensed under Creative Commons Attribution 4.0.")
+                SettingsFooter("City names for calculator time conversions come from GeoNames, licensed under Creative Commons Attribution 4.0. Airport codes come from mwgg/Airports, licensed under MIT; its license is included with Volant.")
             }
         }
         .formStyle(.grouped)

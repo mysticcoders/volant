@@ -6,7 +6,7 @@ import Foundation
 /// (today, tonight, tomorrow, yesterday or a weekday) may appear anywhere, counted from the owner's
 /// local day; with a day word, a time needs no zone, as in "7:30pm tomorrow". "time diff Paris"
 /// reports how far a place's clock is from the owner's. Names the built-in
-/// lists do not know fall back to `CityDirectory`.
+/// lists do not know fall back to `CityDirectory`, then IATA codes in `AirportDirectory`.
 public enum TimeCalculator {
     public struct Result: Equatable {
         public let date: Date
@@ -163,6 +163,7 @@ public enum TimeCalculator {
             return TimeZone(identifier: identifier)
         }
         if let match = CityDirectory.shared.lookup(name) { return match.zone }
+        if let airport = AirportDirectory.shared.lookup(name) { return airport.zone }
         return nil // CST/IST and broad geographic names are intentionally ambiguous.
     }
 
@@ -170,8 +171,9 @@ public enum TimeCalculator {
         if ["local", "here", "my time"].contains(name) { return "· your time" }
         if fixed[name] != nil { return name.uppercased() }
         if let region = regions[name] { return zone.isDaylightSavingTime(for: date) ? region.daylight : region.standard }
-        if cities[name] == nil, identifiers[name] == nil, zoneCities[name] == nil, let match = CityDirectory.shared.lookup(name) {
-            return "in \(match.name)"
+        if cities[name] == nil, identifiers[name] == nil, zoneCities[name] == nil {
+            if let match = CityDirectory.shared.lookup(name) { return "in \(match.name)" }
+            if let airport = AirportDirectory.shared.lookup(name) { return "in \(airport.city) (\(airport.code))" }
         }
         let city = zone.identifier.split(separator: "/").last.map(String.init)?.replacingOccurrences(of: "_", with: " ")
         return city.map { "in \($0)" } ?? zone.identifier
