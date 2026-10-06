@@ -91,6 +91,29 @@ final class DateCalculatorTests: XCTestCase {
         XCTAssertNil(answer("0 min to timespan"))
     }
 
+    func testISOTimestampsShowInLocalTime() {
+        XCTAssertEqual(card("2024-03-15T14:30:00Z"), ["3:30 PM", "Friday, March 15, 2024", "Friday, March 15, 2024 at 3:30 PM"])
+        XCTAssertEqual(answer("2024-03-15T14:30:00Z")?.inputDetail, "935 days ago")
+        XCTAssertEqual(card("2026-10-06T09:00:00-04:00").first, "3:00 PM")
+        XCTAssertEqual(card("2026-10-06t13:15:00.250z").first, "3:15 PM")
+        XCTAssertEqual(card("2026-10-06 13:15:00Z").first, "3:15 PM")
+        XCTAssertEqual(card("2026-10-07T08:00"), ["8:00 AM", "Wednesday, October 7", "Wednesday, October 7 at 8:00 AM"])
+        XCTAssertEqual(answer("2026-10-07T08:00")?.inputDetail, "Tomorrow")
+        XCTAssertNil(answer("2026-13-07T08:00:00Z"))
+        XCTAssertNil(answer("2026-10-07T25:00"))
+    }
+
+    func testUnixTime() {
+        XCTAssertEqual(card("unix 1700000000"), ["11:13 PM", "Tuesday, November 14, 2023", "Tuesday, November 14, 2023 at 11:13 PM"])
+        XCTAssertEqual(answer("1700000000 unix")?.inputDetail, "Seconds")
+        XCTAssertEqual(card("epoch 1700000000000").first, "11:13 PM")
+        XCTAssertEqual(answer("epoch 1700000000000")?.inputDetail, "Milliseconds")
+        XCTAssertEqual(card("unix now"), ["1791288900", "Seconds since 1970", "1791288900"])
+        XCTAssertEqual(card("now in unix").first, "1791288900")
+        XCTAssertNil(answer("unix 12345"))
+        XCTAssertNil(answer("unix abc"))
+    }
+
     func testNeverAnswersOrdinaryOrAmbiguousText() {
         for query in ["Safari", "2 + 2", "5 - 3", "now playing", "today show", "12/25 + 5", "days until", "days until someday",
                       "in 3 parsecs", "in 1.5 days", "Feb 30 + 1", "13pm + 1", "3:75pm + 1", "monday in", "3 weeks",

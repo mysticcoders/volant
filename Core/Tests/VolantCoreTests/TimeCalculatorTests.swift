@@ -118,6 +118,24 @@ final class TimeCalculatorTests: XCTestCase {
         }
     }
 
+    func testTimeDifferenceFromTheOwnersClock() throws {
+        let tokyo = try XCTUnwrap(friday("time diff Tokyo"))
+        XCTAssertEqual(tokyo.headline, "7 hours ahead")
+        XCTAssertEqual(tokyo.text, "Tokyo is 7 hours ahead")
+        XCTAssertEqual(tokyo.detail, "6:00 PM in Tokyo")
+        XCTAssertEqual(tokyo.source, "Now")
+        XCTAssertEqual(friday("diff New York")?.text, "New York is 6 hours behind")
+        XCTAssertEqual(friday("time difference with Kolkata")?.headline, "3 hours 30 minutes ahead")
+        XCTAssertEqual(friday("diff to berlin")?.headline, "Same time")
+        XCTAssertEqual(friday("diff Berlin")?.text, "Berlin is on your time")
+        XCTAssertEqual(friday("diff EST")?.text, "EDT is 6 hours behind")
+        XCTAssertEqual(friday("diff EST")?.detail, "5:00 AM EDT")
+        XCTAssertEqual(friday("diff Adelaide")?.headline, "7 hours 30 minutes ahead")
+        XCTAssertNil(friday("diff"))
+        XCTAssertNil(friday("diff Atlantis"))
+        XCTAssertNil(friday("diff tokyo tomorrow"))
+    }
+
     func testRejectsMalformedAmbiguousAndDSTTimes() {
         for query in ["Safari", "1pm", "1pm EST in", "1pm CST in CET", "1pm IST", "1pm France",
                       "25:00 EST", "0pm EST", "13pm EST", "1:60pm EST", "1 EST", "1pm EST garbage",

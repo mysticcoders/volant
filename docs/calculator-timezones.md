@@ -54,6 +54,10 @@ Resolution: case, accents, periods and spacing are ignored ("st louis", "krakow"
 
 Cost: nothing until a query names a city the built-in lists do not know. The first such lookup loads the table in about 60 ms and adds about 12 MB in a release build; later lookups take under 2 µs. Fixtures and unit tests use an empty or injected directory.
 
+## Time difference
+
+`time diff Tokyo`, `diff New York`, `time difference with Kolkata` compare a place's clock with the owner's right now: `7 hours ahead`, `6 hours behind`, `3 hours 30 minutes ahead`, or `Same time`, tagged with the time there (`6:00 PM in Tokyo`). Any name the converter resolves works, including regional abbreviations, which name the abbreviation in effect (`EDT is 6 hours behind`). Copy gives the sentence (`Tokyo is 7 hours ahead`). The offset is the current one, so it changes across either side's daylight-saving switch.
+
 ## Next concrete work
 
 1. Surface ambiguous/repeated times with explicit choices and nonexistent-time explanations, without error banners during incomplete typing.

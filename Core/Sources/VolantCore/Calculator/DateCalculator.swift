@@ -3,7 +3,7 @@ import Foundation
 /// Date and duration questions, answered in the owner's local calendar: day words on their own
 /// ("today", "now"), counting ("days until 31 Mar", "days since Jan 1", "days between Jan 1 and
 /// Mar 1"), offsets ("in 3 weeks", "35 days ago", "monday in 3 weeks"), arithmetic ("August 5 + 5",
-/// "3:45pm + 5") and timespans ("145 mins to timespan").
+/// "3:45pm + 5"), timespans ("145 mins to timespan"), ISO 8601 timestamps and Unix time.
 ///
 /// Hours and minutes are elapsed time; days and longer are calendar steps, so a daylight-saving
 /// change never shifts "in 2 days" off midnight. A plain number after a date means days and after
@@ -46,9 +46,11 @@ public enum DateCalculator {
         calendar.locale = locale
         let context = Context(now: now, calendar: calendar, locale: locale)
         let input = text.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
+        if let stamp = timestamp(input, context) { return stamp }
         let words = normalize(text)
         guard !words.isEmpty else { return nil }
-        return dayAlone(words, input: input, context)
+        return unix(words, input: input, context)
+            ?? dayAlone(words, input: input, context)
             ?? counting(words, input: input, context)
             ?? timespan(words, input: input, context)
             ?? offset(words, input: input, context)
@@ -79,6 +81,51 @@ public enum DateCalculator {
         guard ["today", "tomorrow", "yesterday"].contains(words[0]), case .day(let day)? = dateWord(words[...], c) else { return nil }
         let text = dateText(day, c)
         return CalculationAnswer(input: input, inputDetail: nil, result: text, resultDetail: relative(day, c), copyText: text)
+    }
+
+    /// An ISO 8601 timestamp shown in local time: "2024-03-15T14:30:00Z", "…+02:00", fractional
+    /// seconds, or "2024-03-15T14:30" without a zone, which is already local.
+    private static func timestamp(_ input: String, _ c: Context) -> CalculationAnswer? {
+        guard input.count >= 16, input.range(of: #"^\d{4}-\d{2}-\d{2}[Tt ]\d{2}:\d{2}"#, options: .regularExpression) != nil else { return nil }
+        let text = input.uppercased().replacingOccurrences(of: " ", with: "T")
+        var date: Date?
+        for options: ISO8601DateFormatter.Options in [[.withInternetDateTime], [.withInternetDateTime, .withFractionalSeconds]] where date == nil {
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = options
+            date = formatter.date(from: text)
+        }
+        if date == nil {
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.timeZone = c.calendar.timeZone
+            for format in ["yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd'T'HH:mm"] where date == nil {
+                formatter.dateFormat = format
+                date = formatter.date(from: text)
+            }
+        }
+        guard let date else { return nil }
+        return moment(date, input: input, inputDetail: relative(date, c), c)
+    }
+
+    /// Unix time: "unix 1700000000", "1700000000 unix" (milliseconds when 13 digits), and
+    /// "unix now" or "now in unix" for the current value.
+    private static func unix(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
+        if words == ["unix", "now"] || words == ["now", "in", "unix"] || words == ["unix", "time"] {
+            let seconds = String(Int(c.now.timeIntervalSince1970))
+            return CalculationAnswer(input: input, inputDetail: nil, result: seconds, resultDetail: "Seconds since 1970", copyText: seconds)
+        }
+        guard words.count == 2, words.contains("unix") || words.contains("epoch"),
+              let digits = words.first(where: { $0 != "unix" && $0 != "epoch" }),
+              digits.allSatisfy(\.isNumber), (9...13).contains(digits.count), let value = Double(digits) else { return nil }
+        let date = Date(timeIntervalSince1970: digits.count == 13 ? value / 1000 : value)
+        return moment(date, input: input, inputDetail: digits.count == 13 ? "Milliseconds" : "Seconds", c)
+    }
+
+    /// A moment in local time: the clock, tagged with its date, copied with both.
+    private static func moment(_ date: Date, input: String, inputDetail: String?, _ c: Context) -> CalculationAnswer {
+        let clock = TimeCalculator.clockText(date, zone: c.calendar.timeZone, locale: c.locale)
+        let day = dateText(date, c)
+        return CalculationAnswer(input: input, inputDetail: inputDetail, result: clock, resultDetail: day, copyText: "\(day) at \(clock)")
     }
 
     /// "days until 31 Mar", "weeks since Jan 1", "days between Jan 1 and Mar 1".
