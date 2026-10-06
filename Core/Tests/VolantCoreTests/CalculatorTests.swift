@@ -72,8 +72,73 @@ final class CalculatorTests: XCTestCase {
         }
     }
 
+    private func value(_ query: String) throws -> Double { try XCTUnwrap(Calculator.evaluate(query, locale: Self.english), query) }
+
+    func testTrigonometryInRadiansUnlessMarkedDegrees() throws {
+        XCTAssertEqual(try value("sin(pi/2)"), 1, accuracy: 1e-12)
+        XCTAssertEqual(try value("cos(pi)"), -1, accuracy: 1e-12)
+        XCTAssertEqual(try value("sin(90°)"), 1, accuracy: 1e-12)
+        XCTAssertEqual(try value("sin 30 deg"), 0.5, accuracy: 1e-12)
+        XCTAssertEqual(try value("cos(60 degrees)"), 0.5, accuracy: 1e-12)
+        XCTAssertEqual(try value("tan(45°)"), 1, accuracy: 1e-12)
+        XCTAssertEqual(try value("cot(45°)"), 1, accuracy: 1e-12)
+        XCTAssertEqual(try value("sec(60°)"), 2, accuracy: 1e-12)
+        XCTAssertEqual(try value("csc(30°)"), 2, accuracy: 1e-12)
+        XCTAssertEqual(try value("asin(1)"), .pi / 2, accuracy: 1e-12)
+        XCTAssertEqual(try value("acos(0)"), .pi / 2, accuracy: 1e-12)
+        XCTAssertEqual(try value("atan(1) * 4"), .pi, accuracy: 1e-12)
+        XCTAssertEqual(try value("sinh(0) + cosh(0) + tanh(0)"), 1, accuracy: 1e-12)
+        XCTAssertEqual(try value("asinh(sinh(2))"), 2, accuracy: 1e-12)
+        XCTAssertEqual(try value("sin(1 rad)"), Foundation.sin(1), accuracy: 1e-12)
+        XCTAssertEqual(Calculator.format(try value("sin(pi)"), locale: Self.english), "0")
+    }
+
+    func testLogarithmsRootsAndFactorial() throws {
+        XCTAssertEqual(try value("ln(e)"), 1, accuracy: 1e-12)
+        XCTAssertEqual(try value("log(1000)"), 3, accuracy: 1e-12)
+        XCTAssertEqual(try value("log10 100"), 2, accuracy: 1e-12)
+        XCTAssertEqual(try value("log2(1024)"), 10, accuracy: 1e-12)
+        XCTAssertEqual(try value("exp(0)"), 1, accuracy: 1e-12)
+        XCTAssertEqual(try value("cbrt(27)"), 3, accuracy: 1e-12)
+        XCTAssertEqual(try value("cbrt(-8)"), -2, accuracy: 1e-12)
+        XCTAssertEqual(try value("5!"), 120)
+        XCTAssertEqual(try value("0!"), 1)
+        XCTAssertEqual(try value("3! + 1"), 7)
+        XCTAssertEqual(try value("-3!"), -6)
+        XCTAssertEqual(try value("(2 + 1)!"), 6)
+        XCTAssertEqual(try value("2^3!"), 64)
+        XCTAssertEqual(try value("20!"), 2_432_902_008_176_640_000)
+    }
+
+    func testEverydayPhrasings() throws {
+        XCTAssertEqual(try value("square root of 625"), 25)
+        XCTAssertEqual(try value("Square Root Of 2") , 2.squareRoot(), accuracy: 1e-12)
+        XCTAssertEqual(try value("cube root of 27"), 3, accuracy: 1e-12)
+        XCTAssertEqual(try value("2 power 10"), 1024)
+        XCTAssertEqual(try value("4 power 6"), 4096)
+        XCTAssertEqual(try value("2 to the power of 10"), 1024)
+        XCTAssertEqual(try value("5 squared"), 25)
+        XCTAssertEqual(try value("3 cubed + 1"), 28)
+        XCTAssertEqual(try value("5 factorial"), 120)
+    }
+
+    func testFunctionsBindToTheValueRightAfterThem() throws {
+        XCTAssertEqual(try value("sqrt 16 + 9"), 13)
+        XCTAssertEqual(try value("sqrt(16 + 9)"), 5)
+        XCTAssertEqual(try value("2 * sqrt 16"), 8)
+        XCTAssertEqual(try value("abs -3 + 1"), 4)
+        XCTAssertEqual(try value("sqrt sqrt 16"), 2)
+        XCTAssertEqual(try value("floor(2.7) + ceil(2.1)"), 5)
+    }
+
+    func testNonRealResultsGiveNoAnswer() {
+        for query in ["sqrt(-1)", "asin(2)", "ln(0)", "log(-1)", "acosh(0.5)", "(-1)!", "2.5!", "171!", "1e308 * 10", "atanh(1)"] {
+            XCTAssertNil(Calculator.evaluate(query, locale: Self.english), query)
+        }
+    }
+
     func testRejectsUnknownFunctionsAndMalformedNumbers() {
-        for query in ["sin(1)", "foo(2)", "2 pi", "1..2 + 1", "1.2.3", "2 ** 3", "()", "3 +* 4", "sqrt()", "2 $ 3"] {
+        for query in ["sine(1)", "foo(2)", "2 pi", "1..2 + 1", "1.2.3", "2 ** 3", "()", "3 +* 4", "sqrt()", "2 $ 3"] {
             XCTAssertNil(Calculator.evaluate(query, locale: Self.english), query)
         }
     }

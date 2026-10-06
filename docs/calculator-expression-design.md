@@ -111,3 +111,12 @@ Not yet: workdays, "next friday", month-name-only queries ("days until March"), 
 ## Timestamps — October 6, 2026
 
 `DateCalculator` also shows timestamps in local time. ISO 8601 with a zone (`2024-03-15T14:30:00Z`, `…-04:00`, fractional seconds, a space instead of `T`) or without one (`2026-10-07T08:00`, already local) gives the local clock, tagged with its date and, on the input side, how long ago or ahead it is. Unix time reads `unix 1700000000`, `1700000000 unix` or `epoch …`, as seconds, or milliseconds at 13 digits; `unix now` and `now in unix` give the current value. Bare numbers are never treated as timestamps, so arithmetic stays arithmetic.
+||||||| parent of d9672c6 (Add math functions, factorial and everyday phrasings to the calculator)
+## Functions and phrasings — October 6, 2026
+
+- Functions: `sqrt cbrt abs round floor ceil`, `sin cos tan cot sec csc`, `asin acos atan`, `sinh cosh tanh asinh acosh atanh`, `ln`, `log` (base 10), `log10`, `log2`, `exp`. Names are case-insensitive.
+- Angles are radians, matching mathematical convention; `°`, `deg`, `degree(s)` mark degrees and `rad`/`radian(s)` is accepted as a no-op: `sin(90°)`, `cos 60 deg`.
+- A function name binds to the value right after it, so `sqrt 16 + 9` is 13 and `abs -3 + 1` is 4; parentheses widen the argument.
+- Factorial: `5!` and `5 factorial`, for whole numbers 0–170. It binds tighter than unary minus and `^` (`-3!` is -6, `2^3!` is 64).
+- Phrasings: `square root of`, `cube root of`, `power`, `to the power of`, `squared`, `cubed`.
+- Results that are not real finite numbers (`sqrt(-1)`, `asin(2)`, `ln(0)`, overflow) give no answer instead of "undefined".
