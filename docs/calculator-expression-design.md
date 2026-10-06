@@ -95,7 +95,7 @@ A comparison with Raycast's advertised calculator found one arithmetic defect an
 
 Rules: hours, minutes and seconds are elapsed time; days, weeks, months and years are calendar steps, so across the October 25 fall-back "in 1 day" still lands on midnight while "in 24 hours" lands at 11 PM. A date without a year means its next occurrence after "until", its last after "since", and this year elsewhere. Dates are `Mar 31`, `31 Mar`, `March 31st 2027` or ISO `2027-03-31`; numeric dates such as `12/25` are rejected because their order depends on locale. Day words count from the local day, and a weekday means its next occurrence with today included. Copy gives the headline, or the full date and time when an elapsed-time answer falls on another day.
 
-Not yet: workdays, "next friday", month-name-only queries ("days until March"), holidays by name, durations added together (`2h 20min + 55min`), and time-zone-qualified date arithmetic.
+Not yet: month-name-only queries ("days until March") and time-zone-qualified date arithmetic.
 
 ## Number input — October 6, 2026
 
@@ -242,3 +242,19 @@ Week numbers always follow ISO 8601 (weeks start Monday; week 1 holds the year's
 - Units made here and Foundation's built-in units are now matched by dimension rather than exact class: Foundation's units are private `_NSStatic_` subclasses, so a class comparison rejected every pairing of a custom unit with a built-in one.
 - Forgiving input: a leading `what is`, `what's` or `calculate`, and trailing `=` or `?`, are dropped before any calculator sees the query, so `what is 5 km in mi?` and `5 + 5 =` answer. The card shows the query without them.
 - Missing closing parentheses at the end are supplied for arithmetic: `2 * (3 + 4` gives 14 and the card shows `2 * (3 + 4)`. An extra `)` still gives no answer, and an expression that ends in an operator or an empty call (`2 * (3 +`, `sqrt(`) stays unanswered rather than guessed.
+
+## Raycast's remaining examples — October 6, 2026
+
+Raycast's published calculator examples that had no answer, or a misleading one, now work in Volant's own way:
+
+- `time` alone is the local clock, the same card as `now`. `time in 4 hours` and `time in 90 minutes` give the local clock after that much elapsed time, tagged `Your time · Today`; with a place (`time in 4 hours in Tokyo`) nothing changes.
+- Nicknames label the city typed: `sf` and `san francisco` answer "in San Francisco" and `la` "in Los Angeles", both on Los Angeles time; `ldn`, `nyc` and `mumbai` likewise name London, New York and Mumbai.
+- Ratios need the word "ratio", since `3:45` alone is a clock and `3 to 5` alone a range: `ratio of 3 to 5`, `ratio 16:9`, `1920:1080 ratio`, `4 to 6 ratio`. The answer is the quotient (0.6) tagged with the percentage and the lowest terms (`60% · 3:5`); decimals scale up to four places before reducing. A zero divisor gives no answer.
+- Work periods: `workhours in 2027`, `work hours in May 2027`, `workdays in november`, `workdays this month`, `business days next year`. Workdays skip the region's public holidays as workday counts do, and a work hour total is eight hours per workday, tagged with the count and the holiday note. A month without a year is this year's.
+- Hours as workdays: `55h in workdays` gives `6.875 workdays`, tagged `6 workdays 7 hours` and `8-hour days`; summed durations work (`2h 30min in workdays`) and `3 workdays in hours` goes back. Days and weeks are not converted, since a calendar day is not a workday.
+- Swift colors: `in nscolor`, `in uicolor` and `in swiftui` give `NSColor(srgbRed: 1, green: 0.388, blue: 0.388, alpha: 1)`, `UIColor(red: …)` or `Color(red: …, opacity: …)`, with sRGB components to three decimals and the hex as the tag. Colors outside sRGB use their clamped color, tagged "Outside sRGB". These cards have no swap, since the initializers are not parsed back.
+- Rates per unit of time: `8 dollars/hour in gbp` gives `£5.12 per hour`; `/h`, `per hour`, `a day`, `/month` and `/year` work, and the target may repeat the same unit (`in chf/month`). Changing the unit (`usd/hour in eur/day`) gives no answer, since a work day and a calendar day differ. Swap keeps the unit (`5.12 GBP/hour in USD`).
+
+- Arithmetic on money: `MoneyCalculator` answers in one currency without exchange rates. `18% tip on $65` gives `$76.70` tagged `Tip $11.70`; `20% off $80`, `$65 + 18%`, `$20 * 3`, `$1,200 / 4`, `€50 + €20` and `£12.50 x 4` (also `×`) answer formatted like currency results. Amounts are a symbol before or after a number, an ECB reference currency's code before or after it (`usd 20`, `65 USD`, `USD1K`) or a currency name (`42 euros`); other words never take a number, so `20% off 80 usd` still reads 80 as dollars. The marks are removed and `Calculator` evaluates the rest. Mixed currencies (`10 usd + 5 eur`) and one amount multiplied or divided by another (`$100 / $20`) give no answer; a bare amount (`$65`) is left alone.
+
+`19m + 47%` still gives no answer: lowercase `m` stays meters, and `19M` is the magnitude.

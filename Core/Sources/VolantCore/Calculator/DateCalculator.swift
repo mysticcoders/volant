@@ -14,8 +14,9 @@ import Foundation
 ///
 /// "this friday" is the coming Friday, today included; "next friday" is the next one that is not
 /// today, one to seven days ahead; "friday after next" is a week later; "last friday" is the most
-/// recent one before today. Workdays are Monday to Friday, minus the region's public
-/// holidays where `PublicHolidays` knows them. Holidays are the US and widely shared ones: Christmas and its eve, New Year's Day
+/// recent one before today. Workdays are Monday to Friday, minus the region's public holidays
+/// where `PublicHolidays` knows them ("workhours in 2027", "55h in workdays" with eight-hour
+/// days). Holidays are the US and widely shared ones: Christmas and its eve, New Year's Day
 /// and Eve, Halloween, Valentine's Day, St Patrick's Day, Independence Day, US Thanksgiving (fourth
 /// Thursday of November) and Western Easter.
 ///
@@ -118,17 +119,12 @@ public enum DateCalculator {
         let words = normalize(text)
         guard !words.isEmpty else { return nil }
         typealias Reader = ([String], String, Context) -> CalculationAnswer?
-        let readers: [Reader] = [unix, dayAlone, weekdayOf, weekNumber, dayOfYear, daysIn, leapYear, age]
+        let readers: [Reader] = [unix, dayAlone, weekdayOf, weekNumber, dayOfYear, daysIn, leapYear, age, counting, workPeriod,
+                                 workConversion, timespan, durationSum, offset, weekdayInWeeks, difference, arithmetic]
         for reader in readers {
             if let answer = reader(words, input, context) { return answer }
         }
-        return counting(words, input: input, context)
-            ?? timespan(words, input: input, context)
-            ?? durationSum(words, input: input, context)
-            ?? offset(words, input: input, context)
-            ?? weekdayInWeeks(words, input: input, context)
-            ?? difference(words, input: input, context)
-            ?? arithmetic(words, input: input, context)
+        return nil
     }
 
     /// Lowercase words with commas, apostrophes and ordinal suffixes removed, numbers split from
@@ -137,7 +133,8 @@ public enum DateCalculator {
     static func normalize(_ text: String) -> [String] {
         var value = text.lowercased().replacingOccurrences(of: ",", with: " ")
         value = value.replacingOccurrences(of: #"['’]"#, with: "", options: .regularExpression)
-        value = value.replacingOccurrences(of: #"\b(business|working)\s+(day|days)\b"#, with: "workdays", options: .regularExpression)
+        value = value.replacingOccurrences(of: #"\b(business|working|work)\s+(day|days)\b"#, with: "workdays", options: .regularExpression)
+        value = value.replacingOccurrences(of: #"\b(business|working|work)\s+(hour|hours)\b"#, with: "workhours", options: .regularExpression)
         value = value.replacingOccurrences(of: #"\b(\d+)(st|nd|rd|th)\b"#, with: "$1", options: .regularExpression)
         value = value.replacingOccurrences(of: #"(\d)([a-z])"#, with: "$1 $2", options: .regularExpression)
         value = value.replacingOccurrences(of: "+", with: " + ")
@@ -145,7 +142,7 @@ public enum DateCalculator {
         return value.split(whereSeparator: { $0.isWhitespace }).map(String.init)
     }
 
-    /// "now", "today", "tomorrow", "yesterday", or "next friday", "this friday", "last friday" and
+    /// "now" or "time", "today", "tomorrow", "yesterday", or "next friday", "this friday", "last friday" and
     /// "friday after next" on their own.
     /// Holiday names alone are left to search, so "christmas" still finds apps and files.
     private static func dayAlone(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
@@ -155,7 +152,7 @@ public enum DateCalculator {
             return CalculationAnswer(input: input, inputDetail: nil, result: text, resultDetail: relative(day, c), copyText: text)
         }
         guard words.count == 1 else { return nil }
-        if words[0] == "now" {
+        if words[0] == "now" || words[0] == "time" {
             let full = dateText(c.now, c)
             let clock = TimeCalculator.clockText(c.now, zone: c.calendar.timeZone, locale: c.locale)
             return CalculationAnswer(input: input, inputDetail: nil, result: clock, resultDetail: full, copyText: "\(full) at \(clock)")
@@ -444,6 +441,21 @@ public enum DateCalculator {
             if words.last == "timespan" || words.last == "duration" { body = words.dropLast(2) }
             else if let unit = units[words.last!] { target = unit; body = words.dropLast(2) }
         }
+        guard let (total, pairs) = elapsed(body), pairs >= 2, total > 0 else { return nil }
+        let text: String
+        if let target {
+            let value = (total / target.seconds * 10_000).rounded() / 10_000
+            text = "\(Calculator.format(value, locale: c.locale)) \(target.name)\(value == 1 ? "" : "s")"
+        } else {
+            text = spanText(total)
+        }
+        return CalculationAnswer(input: input, inputDetail: nil, result: text, resultDetail: nil, copyText: text)
+    }
+
+    /// Seconds in durations added and subtracted, such as "2h 20min + 55min", with the number of
+    /// quantities read. Calendar steps longer than a day have no fixed length and give nil, as do
+    /// days when `hoursOnly` is set.
+    private static func elapsed(_ body: ArraySlice<String>, hoursOnly: Bool = false) -> (total: Double, pairs: Int)? {
         var total = 0.0, sign = 1.0, terms = 0, pairs = 0, index = body.startIndex
         while index < body.endIndex {
             let word = body[index]
@@ -456,22 +468,78 @@ public enum DateCalculator {
             guard index + 1 < body.endIndex, let (_, step) = quantity(body[index...(index + 1)]) else { return nil }
             switch step {
             case .seconds(let value): total += sign * value
-            case .days(let value): total += sign * Double(value) * 86_400
+            case .days(let value) where !hoursOnly: total += sign * Double(value) * 86_400
             default: return nil
             }
             if index == body.startIndex || ["+", "-"].contains(body[index - 1]) { terms += 1 }
             pairs += 1
             index += 2
         }
-        guard pairs >= 2, total > 0 else { return nil }
-        let text: String
-        if let target {
-            let value = (total / target.seconds * 10_000).rounded() / 10_000
-            text = "\(Calculator.format(value, locale: c.locale)) \(target.name)\(value == 1 ? "" : "s")"
-        } else {
-            text = spanText(total)
+        return pairs > 0 ? (total, pairs) : nil
+    }
+
+    /// Hours in a workday, for converting between work hours and workdays.
+    private static let workdayHours = 8.0
+
+    /// "workhours in 2027", "workdays in March", "work hours in May 2027", "workdays this year":
+    /// the region's workdays in that period, and eight hours for each. A month without a year is
+    /// this year's.
+    private static func workPeriod(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
+        guard words.count >= 3, ["workhours", "workhour", "workdays", "workday"].contains(words[0]) else { return nil }
+        let thisYear = c.calendar.component(.year, from: c.now)
+        let period = Array(words[1...])
+        var year: Int, month: Int?
+        switch period.count {
+        case 2 where ["this", "next", "last"].contains(period[0]) && ["year", "month"].contains(period[1]):
+            let step = ["this": 0, "next": 1, "last": -1][period[0]]!
+            guard let shifted = c.calendar.date(byAdding: period[1] == "year" ? .year : .month, value: step, to: c.today) else { return nil }
+            year = c.calendar.component(.year, from: shifted)
+            month = period[1] == "month" ? c.calendar.component(.month, from: shifted) : nil
+        case 2 where period[0] == "in":
+            if let value = Int(period[1]), period[1].count == 4 { year = value; month = nil }
+            else if let value = months[period[1]] { year = thisYear; month = value }
+            else { return nil }
+        case 3 where period[0] == "in":
+            guard let value = months[period[1]], period[2].count == 4, let named = Int(period[2]) else { return nil }
+            year = named
+            month = value
+        default: return nil
         }
-        return CalculationAnswer(input: input, inputDetail: nil, result: text, resultDetail: nil, copyText: text)
+        guard (1...9999).contains(year) else { return nil }
+        guard let start = c.calendar.date(from: DateComponents(year: year, month: month ?? 1, day: 1)),
+              let next = c.calendar.date(byAdding: month == nil ? .year : .month, value: 1, to: start),
+              let before = c.calendar.date(byAdding: .day, value: -1, to: start),
+              let end = c.calendar.date(byAdding: .day, value: -1, to: next) else { return nil }
+        let days = workdays(after: before, through: end, c)
+        let hours = count(days * Int(workdayHours), "hour"), dayText = count(days, "workday")
+        let hoursFirst = words[0].hasPrefix("workhour")
+        return CalculationAnswer(input: input, inputDetail: holidayNote(c), result: hoursFirst ? hours : dayText,
+                                 resultDetail: hoursFirst ? dayText : "\((days * Int(workdayHours)).formatted()) work hours", copyText: hoursFirst ? hours : dayText)
+    }
+
+    /// "55h in workdays" gives 6.875 workdays, tagged "6 workdays 7 hours"; "3 workdays in hours"
+    /// goes the other way. A workday is eight hours, so days and weeks, which mix in nights and
+    /// weekends, are not converted.
+    private static func workConversion(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
+        guard words.count >= 4, ["in", "to", "as"].contains(words[words.count - 2]) else { return nil }
+        let body = words.dropLast(2), target = words.last!
+        let day = workdayHours * 3600
+        if ["workdays", "workday"].contains(target) {
+            guard let (total, _) = elapsed(body, hoursOnly: true), total > 0 else { return nil }
+            let value = total / day
+            let whole = Int(value), rest = total - Double(whole) * day
+            let text = "\(Calculator.format((value * 10_000).rounded() / 10_000, locale: c.locale)) workday\(value == 1 ? "" : "s")"
+            let parts = [whole > 0 ? count(whole, "workday") : nil, rest >= 1 ? spanText(rest) : nil].compactMap { $0 }
+            return CalculationAnswer(input: input, inputDetail: "8-hour days", result: text,
+                                     resultDetail: parts.joined(separator: " "), copyText: text)
+        }
+        let units: [String: (Double, String)] = ["hours": (3600, "hour"), "hour": (3600, "hour"), "h": (3600, "hour"),
+                                                 "minutes": (60, "minute"), "minute": (60, "minute"), "min": (60, "minute")]
+        guard body.count == 2, ["workdays", "workday"].contains(body.last!), let number = Double(body.first!), number > 0,
+              let (size, name) = units[target] else { return nil }
+        let value = number * day / size
+        let text = "\(Calculator.format(value, locale: c.locale)) \(name)\(value == 1 ? "" : "s")"
+        return CalculationAnswer(input: input, inputDetail: "8-hour days", result: text, resultDetail: nil, copyText: text)
     }
 
     /// "in 3 weeks", "10 days from now", "35 days ago", "in 4 hours".

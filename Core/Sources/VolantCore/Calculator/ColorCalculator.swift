@@ -20,34 +20,46 @@ public enum ColorCalculator {
         case hex, rgb, hsl, hwb, lab, lch, oklab, oklch
     }
 
+    /// Swift initializers for the Apple frameworks, answered on request and never parsed back.
+    enum Platform: String {
+        case nscolor, uicolor, swiftui
+    }
+
     private static let target = try! NSRegularExpression(pattern:
-        #"^(.+?)\s+(?:in|to|as)\s+(hex|rgba?|hsla?|hwb|lab|lch|oklab|oklch)$"#)
+        #"^(.+?)\s+(?:in|to|as)\s+(hex|rgba?|hsla?|hwb|lab|lch|oklab|oklch|nscolor|uicolor|swiftui)$"#)
 
     public static func evaluate(_ text: String) -> CalculationAnswer? {
         let input = text.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
         let query = input.lowercased()
         guard query.utf8.count <= 128 else { return nil }
-        var colorText = query, requested: Format?
+        var colorText = query, requested: Format?, platform: Platform?
         if let match = target.firstMatch(in: query, range: NSRange(query.startIndex..., in: query)),
            let colorRange = Range(match.range(at: 1), in: query), let formatRange = Range(match.range(at: 2), in: query) {
             colorText = String(query[colorRange])
             let name = String(query[formatRange])
             requested = Format(rawValue: ["rgba": "rgb", "hsla": "hsl"][name] ?? name)
+            platform = Platform(rawValue: name)
         }
-        let namedValue = requested == nil ? nil : NamedColors.values[colorText.replacingOccurrences(of: " ", with: "")]
+        let namedValue = requested == nil && platform == nil ? nil : NamedColors.values[colorText.replacingOccurrences(of: " ", with: "")]
         let named = namedValue.map { value in
             (Color(red: Double(value >> 16 & 0xff) / 255, green: Double(value >> 8 & 0xff) / 255, blue: Double(value & 0xff) / 255, alpha: 1), Format.hex)
         }
         guard let (color, source) = parse(colorText) ?? named else { return nil }
+        let shown = clamped(color)
+        let swatch = CalculationAnswer.Swatch(red: shown.red, green: shown.green, blue: shown.blue, alpha: shown.alpha)
+        if let platform {
+            let result = code(color, for: platform)
+            let detail = (inGamut(color) ? "" : "Outside sRGB · ") + format(color, as: .hex)
+            return CalculationAnswer(input: input, inputDetail: named == nil ? nil : format(color, as: .hex), result: result,
+                                     resultDetail: detail, copyText: result, swatch: swatch)
+        }
         let primary = requested ?? (source == .hex ? .rgb : .hex)
         let secondary: Format = primary == .hex ? (source == .rgb ? .hsl : .rgb) : (primary == .rgb ? .hsl : .hex)
         let result = format(color, as: primary)
         var detail = format(color, as: secondary)
         if !inGamut(color) && [.hex, .rgb, .hsl, .hwb].contains(primary) { detail = "Outside sRGB · " + detail }
-        let shown = clamped(color)
         return CalculationAnswer(input: input, inputDetail: named == nil ? nil : format(color, as: .hex), result: result,
-                                 resultDetail: detail, copyText: result,
-                                 swatch: .init(red: shown.red, green: shown.green, blue: shown.blue, alpha: shown.alpha),
+                                 resultDetail: detail, copyText: result, swatch: swatch,
                                  swapQuery: named == nil && primary != source ? "\(result) in \(source.rawValue)" : nil)
     }
 
@@ -211,6 +223,19 @@ public enum ColorCalculator {
             let (l, a, b) = linearToOklab(toLinear(color))
             let (c, h) = polar(a, b, epsilon: 0.000004)
             return "oklch(\(trim(l * 100, 1))% \(trim(c, 4)) \(trim(h, 2))\(alpha))"
+        }
+    }
+
+    /// The color as a Swift initializer with sRGB components to three decimals, such as
+    /// `NSColor(srgbRed: 1, green: 0.388, blue: 0.388, alpha: 1)`. Colors outside sRGB use their
+    /// nearest sRGB color.
+    static func code(_ color: Color, for platform: Platform) -> String {
+        let srgb = clamped(color)
+        let (red, green, blue, alpha) = (trim(srgb.red, 3), trim(srgb.green, 3), trim(srgb.blue, 3), trim(color.alpha, 3))
+        switch platform {
+        case .nscolor: return "NSColor(srgbRed: \(red), green: \(green), blue: \(blue), alpha: \(alpha))"
+        case .uicolor: return "UIColor(red: \(red), green: \(green), blue: \(blue), alpha: \(alpha))"
+        case .swiftui: return "Color(red: \(red), green: \(green), blue: \(blue)" + (color.alpha < 1 ? ", opacity: \(alpha))" : ")")
         }
     }
 

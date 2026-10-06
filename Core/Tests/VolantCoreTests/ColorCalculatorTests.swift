@@ -92,4 +92,18 @@ final class ColorCalculatorTests: XCTestCase {
         let answers = CalculationAnswer.answers(for: "rgb(255, 99, 99)", locale: Locale(identifier: "en_US"))
         XCTAssertEqual(answers.map(\.result), ["#ff6363"])
     }
+
+    func testSwiftInitializersForAppleFrameworks() {
+        XCTAssertEqual(card("#ff6363 in nscolor"),
+                       ["NSColor(srgbRed: 1, green: 0.388, blue: 0.388, alpha: 1)", "#ff6363",
+                        "NSColor(srgbRed: 1, green: 0.388, blue: 0.388, alpha: 1)"])
+        XCTAssertEqual(convert("#ff6363 to UIColor"), "UIColor(red: 1, green: 0.388, blue: 0.388, alpha: 1)")
+        XCTAssertEqual(convert("#ff6363 as swiftui"), "Color(red: 1, green: 0.388, blue: 0.388)")
+        XCTAssertEqual(convert("rgb(255 99 99 / 50%) in swiftui"), "Color(red: 1, green: 0.388, blue: 0.388, opacity: 0.5)")
+        XCTAssertEqual(convert("rebeccapurple in nscolor"), "NSColor(srgbRed: 0.4, green: 0.2, blue: 0.6, alpha: 1)")
+        XCTAssertEqual(card("oklch(70% 0.4 30) in uicolor")[1]?.hasPrefix("Outside sRGB · #"), true)
+        XCTAssertNil(ColorCalculator.evaluate("#ff6363 in nscolor")?.swapQuery)
+        XCTAssertNil(ColorCalculator.evaluate("nscolor(1, 0, 0)"))
+        XCTAssertNil(ColorCalculator.evaluate("red"))
+    }
 }

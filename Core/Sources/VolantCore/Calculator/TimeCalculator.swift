@@ -30,15 +30,19 @@ public enum TimeCalculator {
         return ["est": eastern, "edt": eastern, "mst": mountain, "mdt": mountain, "pst": pacific, "pdt": pacific,
                 "cet": central, "cest": central, "bst": ("Europe/London", "GMT", "BST"), "jst": ("Asia/Tokyo", "JST", "JST")]
     }()
-    private static let cities: [String: String] = [
-        "paris": "Europe/Paris", "berlin": "Europe/Berlin", "london": "Europe/London",
-        "ldn": "Europe/London", "new york": "America/New_York", "nyc": "America/New_York",
-        "los angeles": "America/Los_Angeles", "la": "America/Los_Angeles",
-        "san francisco": "America/Los_Angeles", "sf": "America/Los_Angeles",
-        "tokyo": "Asia/Tokyo", "dubai": "Asia/Dubai", "singapore": "Asia/Singapore",
-        "sydney": "Australia/Sydney", "chicago": "America/Chicago", "toronto": "America/Toronto",
-        "kolkata": "Asia/Kolkata", "mumbai": "Asia/Kolkata", "hong kong": "Asia/Hong_Kong"
-    ]
+    /// Common names and nicknames, with the city each one labels: "sf" answers "in San Francisco"
+    /// on Los Angeles time.
+    private static let cities: [String: (zone: String, name: String)] = {
+        let losAngeles = ("America/Los_Angeles", "Los Angeles"), sanFrancisco = ("America/Los_Angeles", "San Francisco")
+        let newYork = ("America/New_York", "New York"), london = ("Europe/London", "London")
+        return ["paris": ("Europe/Paris", "Paris"), "berlin": ("Europe/Berlin", "Berlin"), "london": london, "ldn": london,
+                "new york": newYork, "nyc": newYork, "los angeles": losAngeles, "la": losAngeles,
+                "san francisco": sanFrancisco, "sf": sanFrancisco, "tokyo": ("Asia/Tokyo", "Tokyo"),
+                "dubai": ("Asia/Dubai", "Dubai"), "singapore": ("Asia/Singapore", "Singapore"),
+                "sydney": ("Australia/Sydney", "Sydney"), "chicago": ("America/Chicago", "Chicago"),
+                "toronto": ("America/Toronto", "Toronto"), "kolkata": ("Asia/Kolkata", "Kolkata"),
+                "mumbai": ("Asia/Kolkata", "Mumbai"), "hong kong": ("Asia/Hong_Kong", "Hong Kong")]
+    }()
     private static let identifiers = Dictionary(uniqueKeysWithValues:
         TimeZone.knownTimeZoneIdentifiers.map { ($0.lowercased(), $0) })
     /// The city part of every IANA identifier, so "lisbon" finds Europe/Lisbon. Where two
@@ -91,7 +95,7 @@ public enum TimeCalculator {
         if query.hasPrefix("time in ") || query.hasPrefix("now in ") {
             guard relativeDay == nil else { return nil }
             let name = String(query.dropFirst(query.hasPrefix("time") ? 8 : 7))
-            if let later = elapsed(name), let zone = resolve(later.place, local: localZone) {
+            if let later = elapsed(name) ?? elapsed(name + " in local"), let zone = resolve(later.place, local: localZone) {
                 let date = now.addingTimeInterval(later.seconds)
                 return result(date, zone: zone, label: destinationLabel(later.place, zone: zone, date: date), baseline: baseline,
                               explicitDate: false, source: later.phrase, now: now, locale: locale)
@@ -168,6 +172,7 @@ public enum TimeCalculator {
         #"^(\d+(?:\.\d+)?)\s*(minutes?|mins?|hours?|hrs?|h|days?)\s+in\s+(.+)$"#)
 
     /// "4 hours in san francisco" after "time in": elapsed minutes, hours or days, then a place.
+    /// "time in 4 hours" passes its place as "local".
     private static func elapsed(_ text: String) -> (seconds: Double, place: String, phrase: String)? {
         guard let found = elapsedPattern.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
               let numberRange = Range(found.range(at: 1), in: text), let unitRange = Range(found.range(at: 2), in: text),
@@ -232,7 +237,7 @@ public enum TimeCalculator {
     private static func resolve(_ name: String, local: TimeZone) -> TimeZone? {
         if ["local", "here", "my time"].contains(name) { return local }
         if let hours = fixed[name] { return TimeZone(secondsFromGMT: hours * 3600) }
-        if let identifier = regions[name]?.zone ?? cities[name] ?? identifiers[name] ?? zoneCities[name] {
+        if let identifier = regions[name]?.zone ?? cities[name]?.zone ?? identifiers[name] ?? zoneCities[name] {
             return TimeZone(identifier: identifier)
         }
         if let match = CityDirectory.shared.lookup(name) { return match.zone }
@@ -244,7 +249,8 @@ public enum TimeCalculator {
         if ["local", "here", "my time"].contains(name) { return "· your time" }
         if fixed[name] != nil { return name.uppercased() }
         if let region = regions[name] { return zone.isDaylightSavingTime(for: date) ? region.daylight : region.standard }
-        if cities[name] == nil, identifiers[name] == nil, zoneCities[name] == nil {
+        if let city = cities[name] { return "in \(city.name)" }
+        if identifiers[name] == nil, zoneCities[name] == nil {
             if let match = CityDirectory.shared.lookup(name) { return "in \(match.name)" }
             if let airport = AirportDirectory.shared.lookup(name) { return "in \(airport.city) (\(airport.code))" }
         }

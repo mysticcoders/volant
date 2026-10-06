@@ -300,4 +300,37 @@ final class DateCalculatorTests: XCTestCase {
         XCTAssertEqual(card("Dec 25 - 5").first, "Sunday, December 20", "a plain number still means days")
         XCTAssertEqual(card("today - 3 days").first, "Saturday, October 3")
     }
+
+    func testTimeAloneIsTheClock() {
+        XCTAssertEqual(card("time"), card("now"))
+        XCTAssertEqual(card("Time").first, "2:15 PM")
+        XCTAssertNil(answer("time machine"))
+    }
+
+    func testWorkHoursAndWorkdaysInAPeriod() {
+        XCTAssertEqual(card("workhours in 2023"), ["1,992 hours", "249 workdays", "1,992 hours"])
+        XCTAssertEqual(answer("workhours in 2023")?.inputDetail, "Skips US holidays")
+        XCTAssertEqual(card("work hours in 2023").first, "1,992 hours")
+        XCTAssertEqual(card("workdays in 2027"), ["249 workdays", "1,992 work hours", "249 workdays"])
+        XCTAssertEqual(card("workdays in november").first, "19 workdays")
+        XCTAssertEqual(card("workhours in May 2027").first, "160 hours")
+        XCTAssertEqual(card("workdays this month").first, "21 workdays")
+        XCTAssertEqual(card("business days next year").first, "249 workdays")
+        XCTAssertNil(answer("workhours in tokyo"))
+        XCTAssertNil(answer("workdays in 20000"))
+        let germany = DateCalculator.evaluate("workdays in 2027", now: now, localZone: paris, locale: Locale(identifier: "de_DE"))
+        XCTAssertEqual(germany?.inputDetail, "Skips German holidays")
+    }
+
+    func testHoursInEightHourWorkdays() {
+        XCTAssertEqual(card("55h in workdays"), ["6.875 workdays", "6 workdays 7 hours", "6.875 workdays"])
+        XCTAssertEqual(answer("55h in workdays")?.inputDetail, "8-hour days")
+        XCTAssertEqual(card("8 hours in workdays").first, "1 workday")
+        XCTAssertEqual(card("2h 30min in workdays"), ["0.3125 workdays", "2 hours 30 minutes", "0.3125 workdays"])
+        XCTAssertEqual(card("3 workdays in hours").first, "24 hours")
+        XCTAssertEqual(card("1.5 workdays in minutes").first, "720 minutes")
+        XCTAssertNil(answer("0h in workdays"))
+        XCTAssertNil(answer("3 weeks in workdays"))
+        XCTAssertNil(answer("2 days in workdays"))
+    }
 }

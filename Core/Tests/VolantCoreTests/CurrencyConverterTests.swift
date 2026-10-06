@@ -75,4 +75,19 @@ final class CurrencyConverterTests: XCTestCase {
             XCTAssertFalse(CurrencyConverter.looksLikeConversion(query, locale: english), query)
         }
     }
+
+    func testRatesPerUnitOfTimeKeepTheirUnit() throws {
+        XCTAssertEqual(try card("8 dollars/hour in gbp"), ["£5.12 per hour", "1 USD = 0.64 GBP", "ECB rates · Oct 5", "£5.12 per hour"])
+        XCTAssertEqual(try card("8 usd/h in eur").first, "€6.40 per hour")
+        XCTAssertEqual(try card("$50 per hour in eur").first, "€40.00 per hour")
+        XCTAssertEqual(try card("€90 a day to usd").first, "$112.50 per day")
+        XCTAssertEqual(try card("1000 eur/month in chf/month").first, "CHF 950.00 per month")
+        XCTAssertEqual(try card("100 usd in eur").first, "€80.00")
+        XCTAssertEqual(CurrencyConverter.evaluate("8 usd/hour in gbp", rates: try rates(), now: now, locale: english)?.swapQuery,
+                       "5.12 GBP/hour in USD")
+        XCTAssertEqual(try card("5.12 GBP/hour in USD").first, "$8.00 per hour")
+        XCTAssertEqual(try card("50 usd/hour in eur/day"), [])
+        XCTAssertEqual(try card("50 usd in eur/hour"), [])
+        XCTAssertTrue(CurrencyConverter.looksLikeConversion("8 dollars/hour in gbp", locale: english))
+    }
 }
