@@ -30,14 +30,14 @@ public struct CalculationAnswer: Hashable {
         if let date = DateCalculator.evaluate(query, now: now, localZone: localZone, locale: locale) {
             answers.append(date)
         }
-        if let value = Calculator.evaluate(query) {
-            let text = Calculator.format(value)
+        if let value = Calculator.evaluate(query, locale: locale) {
+            let text = Calculator.format(value, locale: locale)
             answers.append(CalculationAnswer(input: input, inputDetail: nil, result: text,
-                                             resultDetail: tip(query) ?? spoken(value, locale: locale), copyText: text))
+                                             resultDetail: tip(query, locale: locale) ?? spoken(value, locale: locale), copyText: text))
         }
-        if let conversion = UnitConverter.convert(query) {
-            let result = UnitConverter.formatResult(conversion)
-            answers.append(CalculationAnswer(input: "\(Calculator.format(conversion.value)) \(conversion.fromSymbol)",
+        if let conversion = UnitConverter.convert(query, locale: locale) {
+            let result = UnitConverter.formatResult(conversion, locale: locale)
+            answers.append(CalculationAnswer(input: "\(Calculator.format(conversion.value, locale: locale)) \(conversion.fromSymbol)",
                                              inputDetail: unitName(conversion.fromUnit, locale: locale), result: result,
                                              resultDetail: unitName(conversion.toUnit, locale: locale), copyText: result))
         }
@@ -45,11 +45,11 @@ public struct CalculationAnswer: Hashable {
     }
 
     /// "15% tip on 42" answers the total, so the tag names the tip itself.
-    static func tip(_ query: String) -> String? {
+    static func tip(_ query: String, locale: Locale) -> String? {
         let lowered = query.lowercased()
         guard let range = lowered.range(of: #"\btip\s+on\b"#, options: .regularExpression),
-              let amount = Calculator.evaluate(lowered.replacingCharacters(in: range, with: "of")) else { return nil }
-        return "Tip " + Calculator.format(amount)
+              let amount = Calculator.evaluate(lowered.replacingCharacters(in: range, with: "of"), locale: locale) else { return nil }
+        return "Tip " + Calculator.format(amount, locale: locale)
     }
 
     /// Small whole numbers read as words; larger ones gain thousands separators. Fractions and
