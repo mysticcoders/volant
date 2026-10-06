@@ -4,7 +4,8 @@ import Foundation
 /// name that region's clock as people use them, so "4pm CET" in July means Central European wall
 /// time; they, cities and IANA identifiers follow the system timezone database. One day word
 /// (today, tonight, tomorrow, yesterday or a weekday) may appear anywhere, counted from the owner's
-/// local day; with a day word, a time needs no zone, as in "7:30pm tomorrow". Names the built-in
+/// local day; with a day word, a time needs no zone, as in "7:30pm tomorrow". "time diff Paris"
+/// reports how far a place's clock is from the owner's. Names the built-in
 /// lists do not know fall back to `CityDirectory`.
 public enum TimeCalculator {
     public struct Result: Equatable {
@@ -72,6 +73,10 @@ public enum TimeCalculator {
             else if index > 0, words[index - 1] == "at" { words.remove(at: index - 1) }
         }
         let query = words.joined(separator: " ")
+        if let name = differenceTarget(query) {
+            guard relativeDay == nil, let zone = resolve(name, local: localZone) else { return nil }
+            return difference(zone, label: destinationLabel(name, zone: zone, date: now), local: localZone, now: now, locale: locale)
+        }
         if query.hasPrefix("time in ") || query.hasPrefix("now in ") {
             guard relativeDay == nil else { return nil }
             let name = String(query.dropFirst(query.hasPrefix("time") ? 8 : 7))
@@ -126,6 +131,29 @@ public enum TimeCalculator {
         let name = targets.count == 2 ? targets[1] : "local"
         return result(first, zone: destination, label: destinationLabel(name, zone: destination, date: first), baseline: baseline,
                       explicitDate: part(1) != nil, source: describe(first, in: source, now: now, locale: locale), now: now, locale: locale)
+    }
+
+    /// The place in "time diff Paris", "diff to Tokyo" or "time difference with New York".
+    private static func differenceTarget(_ query: String) -> String? {
+        guard let prefix = ["time difference ", "time diff ", "difference ", "diff "].first(where: query.hasPrefix) else { return nil }
+        var name = String(query.dropFirst(prefix.count))
+        if let joiner = ["to ", "with ", "in ", "from "].first(where: name.hasPrefix) { name.removeFirst(joiner.count) }
+        return name.isEmpty ? nil : name
+    }
+
+    /// How far a place's clock is from the owner's right now: "1 hour ahead", "5 hours 30 minutes
+    /// behind" or "Same time", tagged with the time there.
+    private static func difference(_ zone: TimeZone, label: String, local: TimeZone, now: Date, locale: Locale) -> Result {
+        let offset = zone.secondsFromGMT(for: now) - local.secondsFromGMT(for: now)
+        let place = label.hasPrefix("in ") ? String(label.dropFirst(3)) : label
+        let hours = abs(offset) / 3600, minutes = abs(offset) % 3600 / 60
+        let span = [hours > 0 ? "\(hours) hour\(hours == 1 ? "" : "s")" : nil, minutes > 0 ? "\(minutes) minutes" : nil]
+            .compactMap { $0 }.joined(separator: " ")
+        let headline = offset == 0 ? "Same time" : "\(span) \(offset > 0 ? "ahead" : "behind")"
+        let text = offset == 0 ? "\(place) is on your time" : "\(place) is \(headline)"
+        let clock = clockText(now, zone: zone, locale: locale)
+        let detail = label.hasPrefix("in ") ? "\(clock) \(label)" : "\(clock) \(place)"
+        return Result(date: now, text: text, headline: headline, detail: detail, source: "Now")
     }
 
     private static func resolve(_ name: String, local: TimeZone) -> TimeZone? {
