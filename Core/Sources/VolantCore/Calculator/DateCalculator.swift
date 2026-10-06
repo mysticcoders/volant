@@ -8,7 +8,8 @@ import Foundation
 /// christmas", "easter 2027"), "next friday", ISO 8601 timestamps and Unix time.
 ///
 /// "this friday" is the coming Friday, today included; "next friday" is the next one that is not
-/// today, one to seven days ahead. Workdays are Monday to Friday; public holidays are not
+/// today, one to seven days ahead; "friday after next" is a week later; "last friday" is the most
+/// recent one before today. Workdays are Monday to Friday; public holidays are not
 /// subtracted. Holidays are the US and widely shared ones: Christmas and its eve, New Year's Day
 /// and Eve, Halloween, Valentine's Day, St Patrick's Day, Independence Day, US Thanksgiving (fourth
 /// Thursday of November) and Western Easter.
@@ -114,10 +115,12 @@ public enum DateCalculator {
         return value.split(whereSeparator: { $0.isWhitespace }).map(String.init)
     }
 
-    /// "now", "today", "tomorrow", "yesterday", or "next friday" and "this friday" on their own.
+    /// "now", "today", "tomorrow", "yesterday", or "next friday", "this friday", "last friday" and
+    /// "friday after next" on their own.
     /// Holiday names alone are left to search, so "christmas" still finds apps and files.
     private static func dayAlone(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
-        if words.count == 2, ["next", "this"].contains(words[0]), case .day(let day)? = dateWord(words[...], c) {
+        if (words.count == 2 && ["next", "this", "last"].contains(words[0])) || (words.count == 3 && words[1...] == ["after", "next"]),
+           case .day(let day)? = dateWord(words[...], c) {
             let text = dateText(day, c)
             return CalculationAnswer(input: input, inputDetail: nil, result: text, resultDetail: relative(day, c), copyText: text)
         }
@@ -481,10 +484,16 @@ public enum DateCalculator {
             return .holiday(holiday, year: year)
         }
         if let holiday = holidays[parts.joined(separator: " ")] { return .holiday(holiday, year: nil) }
-        if parts.count == 2, ["next", "this"].contains(parts[0]), let weekday = weekdays[parts[1]] {
-            var ahead = (weekday - c.calendar.component(.weekday, from: c.now) + 7) % 7
-            if parts[0] == "next" && ahead == 0 { ahead = 7 }
-            return c.calendar.date(byAdding: .day, value: ahead, to: c.today).map(DateWord.day)
+        if parts.count == 2, ["next", "this", "last"].contains(parts[0]), let weekday = weekdays[parts[1]] {
+            let today = c.calendar.component(.weekday, from: c.now)
+            var offset = (weekday - today + 7) % 7
+            if parts[0] == "next" && offset == 0 { offset = 7 }
+            if parts[0] == "last" { let back = (today - weekday + 7) % 7; offset = -(back == 0 ? 7 : back) }
+            return c.calendar.date(byAdding: .day, value: offset, to: c.today).map(DateWord.day)
+        }
+        if parts.count == 3, let weekday = weekdays[parts[0]], parts[1] == "after", parts[2] == "next" {
+            let ahead = (weekday - c.calendar.component(.weekday, from: c.now) + 7) % 7
+            return c.calendar.date(byAdding: .day, value: (ahead == 0 ? 7 : ahead) + 7, to: c.today).map(DateWord.day)
         }
         if parts.count == 1 {
             switch parts[0] {

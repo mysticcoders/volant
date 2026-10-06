@@ -18,6 +18,8 @@ public enum TimeCalculator {
         public let detail: String
         /// When the query's time falls in its own zone, such as "Friday, October 2", or "Now".
         public let source: String
+        /// The same conversion the other way, for Shift-Command-Return: "7:00pm cet in est".
+        public var swap: String? = nil
     }
 
     private static let fixed: [String: Int] = ["utc": 0, "gmt": 0]
@@ -63,8 +65,13 @@ public enum TimeCalculator {
         localCalendar.timeZone = localZone
         let baseline = localCalendar.dateComponents([.year, .month, .day], from: now)
         var words = text.lowercased().split(whereSeparator: { $0.isWhitespace }).map(String.init)
+        for index in words.indices.reversed() where index + 2 < words.count
+            && weekdays[words[index]] != nil && words[index + 1] == "after" && words[index + 2] == "next" {
+            words.removeSubrange((index + 1)...(index + 2))
+            words[index] = "afternext " + words[index]
+        }
         for index in words.indices.reversed() where index + 1 < words.count
-            && ["next", "this"].contains(words[index]) && weekdays[words[index + 1]] != nil {
+            && ["next", "this", "last"].contains(words[index]) && weekdays[words[index + 1]] != nil {
             words[index] += " " + words.remove(at: index + 1)
         }
         let dayWords = words.indices.filter { dayOffset(words[$0], now: now, calendar: localCalendar) != nil }
@@ -84,6 +91,11 @@ public enum TimeCalculator {
         if query.hasPrefix("time in ") || query.hasPrefix("now in ") {
             guard relativeDay == nil else { return nil }
             let name = String(query.dropFirst(query.hasPrefix("time") ? 8 : 7))
+            if let later = elapsed(name), let zone = resolve(later.place, local: localZone) {
+                let date = now.addingTimeInterval(later.seconds)
+                return result(date, zone: zone, label: destinationLabel(later.place, zone: zone, date: date), baseline: baseline,
+                              explicitDate: false, source: later.phrase, now: now, locale: locale)
+            }
             guard let zone = resolve(name, local: localZone) else { return nil }
             return result(now, zone: zone, label: destinationLabel(name, zone: zone, date: now), baseline: baseline, explicitDate: false,
                           source: "Now", now: now, locale: locale)
@@ -133,8 +145,37 @@ public enum TimeCalculator {
             return localResult(first, offset: relativeDay, zone: localZone, now: now, locale: locale)
         }
         let name = targets.count == 2 ? targets[1] : "local"
-        return result(first, zone: destination, label: destinationLabel(name, zone: destination, date: first), baseline: baseline,
-                      explicitDate: part(1) != nil, source: describe(first, in: source, now: now, locale: locale), now: now, locale: locale)
+        var answer = result(first, zone: destination, label: destinationLabel(name, zone: destination, date: first), baseline: baseline,
+                            explicitDate: part(1) != nil, source: describe(first, in: source, now: now, locale: locale), now: now, locale: locale)
+        let sourceName = targets[0].hasPrefix("in ") ? String(targets[0].dropFirst(3)) : targets[0]
+        answer.swap = swapQuery(first, from: destination, name: name, to: sourceName, now: now)
+        return answer
+    }
+
+    /// The conversion reversed: the answer's wall time in its zone, converted back. The date is
+    /// written out when the answer falls on another day there, so the reverse stays exact.
+    private static func swapQuery(_ date: Date, from zone: TimeZone, name: String, to source: String, now: Date) -> String {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = zone
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = zone
+        formatter.dateFormat = calendar.isDate(date, inSameDayAs: now) ? "h:mma" : "yyyy-MM-dd h:mma"
+        return "\(formatter.string(from: date).lowercased()) \(name) in \(source)"
+    }
+
+    private static let elapsedPattern = try! NSRegularExpression(pattern:
+        #"^(\d+(?:\.\d+)?)\s*(minutes?|mins?|hours?|hrs?|h|days?)\s+in\s+(.+)$"#)
+
+    /// "4 hours in san francisco" after "time in": elapsed minutes, hours or days, then a place.
+    private static func elapsed(_ text: String) -> (seconds: Double, place: String, phrase: String)? {
+        guard let found = elapsedPattern.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+              let numberRange = Range(found.range(at: 1), in: text), let unitRange = Range(found.range(at: 2), in: text),
+              let placeRange = Range(found.range(at: 3), in: text), let value = Double(text[numberRange]) else { return nil }
+        let unit = String(text[unitRange])
+        let (size, name): (Double, String) = unit.hasPrefix("d") ? (86_400, "day") : unit.hasPrefix("m") ? (60, "minute") : (3600, "hour")
+        let amount = value == value.rounded() ? String(Int(value)) : String(value)
+        return (value * size, String(text[placeRange]), "In \(amount) \(name)\(value == 1 ? "" : "s")")
     }
 
     /// Qualified alternatives for a time question that failed only because a city name is
@@ -225,7 +266,8 @@ public enum TimeCalculator {
     }
 
     /// A day word's distance from the owner's local today: "friday" or "this friday" is the coming
-    /// one, today included; "next friday" is the next one that is not today.
+    /// one, today included; "next friday" is the next one that is not today; "friday after next"
+    /// is a week after that; "last friday" is the most recent one before today.
     private static func dayOffset(_ word: String, now: Date, calendar: Calendar) -> Int? {
         switch word {
         case "today", "tonight": return 0
@@ -233,9 +275,17 @@ public enum TimeCalculator {
         case "yesterday": return -1
         default:
             let parts = word.split(separator: " ")
-            guard let weekday = parts.last.flatMap({ weekdays[String($0)] }), parts.count == 1 || ["next", "this"].contains(parts[0]) else { return nil }
+            guard let weekday = parts.last.flatMap({ weekdays[String($0)] }),
+                  parts.count == 1 || ["next", "this", "last", "afternext"].contains(parts[0]) else { return nil }
             let ahead = (weekday - calendar.component(.weekday, from: now) + 7) % 7
-            return parts.first == "next" && ahead == 0 ? 7 : ahead
+            switch parts.count == 2 ? String(parts[0]) : "" {
+            case "next": return ahead == 0 ? 7 : ahead
+            case "afternext": return (ahead == 0 ? 7 : ahead) + 7
+            case "last":
+                let back = (calendar.component(.weekday, from: now) - weekday + 7) % 7
+                return -(back == 0 ? 7 : back)
+            default: return ahead
+            }
         }
     }
 
@@ -268,7 +318,7 @@ public enum TimeCalculator {
         if clock == "Midnight" || clock == "Noon" { clock = clock.lowercased() }
         let full = describe(date, in: zone, now: now, locale: locale)
         return Result(date: date, text: "\(full) at \(clock)", headline: "\(words[offset] ?? weekday) at \(clock)",
-                      detail: words[offset] == nil ? "In \(offset) days" : weekday, source: full)
+                      detail: words[offset] == nil ? (offset > 0 ? "In \(offset) days" : "\(-offset) days ago") : weekday, source: full)
     }
 
     private static func result(_ date: Date, zone: TimeZone, label: String,

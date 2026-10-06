@@ -20,8 +20,8 @@ final class TimeCalculatorTests: XCTestCase {
         XCTAssertTrue(answer("2026-03-15 3pm Los Angeles in Berlin")?.text.hasPrefix("11:00 PM") == true)
         XCTAssertTrue(answer("2026-07-15 1pm New York in Paris")?.text.hasPrefix("7:00 PM") == true)
         XCTAssertEqual(answer("2026-07-15 1pm EST in CET")?.text, "7:00 PM CEST · Jul 15, 2026")
-        XCTAssertEqual(answer("2026-07-15 1pm EST in Paris"), answer("2026-07-15 1pm New York in Paris"))
-        XCTAssertEqual(answer("2026-07-15 1pm EDT in CEST"), answer("2026-07-15 1pm EST in CET"))
+        XCTAssertEqual(answer("2026-07-15 1pm EST in Paris")?.text, answer("2026-07-15 1pm New York in Paris")?.text)
+        XCTAssertEqual(answer("2026-07-15 1pm EDT in CEST")?.text, answer("2026-07-15 1pm EST in CET")?.text)
     }
 
     func testRegionalAbbreviationsFollowTheRegionsSummerTime() {
@@ -40,8 +40,8 @@ final class TimeCalculatorTests: XCTestCase {
     func testClockQueriesAndIANAIdentifiers() {
         XCTAssertTrue(answer("time in Tokyo")?.text.hasPrefix("9:00 PM") == true)
         XCTAssertEqual(answer("now in Dubai"), answer("time in Dubai"))
-        XCTAssertEqual(answer("17:30 Europe/London to America/Los_Angeles"), answer("5:30pm london in sf"))
-        XCTAssertEqual(answer("  1 PM   EST in my time  "), answer("1pm EST"))
+        XCTAssertEqual(answer("17:30 Europe/London to America/Los_Angeles")?.text, answer("5:30pm london in sf")?.text)
+        XCTAssertEqual(answer("  1 PM   EST in my time  ")?.text, answer("1pm EST")?.text)
     }
 
     func testRolloverAndHalfHourOffsets() {
@@ -104,6 +104,35 @@ final class TimeCalculatorTests: XCTestCase {
         XCTAssertNil(friday("next 3pm"))
     }
 
+    func testSwapReversesConversionsExactly() throws {
+        let sameDay = try XCTUnwrap(friday("1pm EST in CET"))
+        XCTAssertEqual(sameDay.swap, "7:00pm cet in est")
+        XCTAssertEqual(friday("7:00pm cet in est")?.text, "1:00 PM EDT")
+        let nextDay = try XCTUnwrap(friday("10pm EST in CET"))
+        XCTAssertEqual(nextDay.swap, "2026-10-03 4:00am cet in est")
+        XCTAssertEqual(friday("2026-10-03 4:00am cet in est")?.text, "10:00 PM EDT · Oct 2, 2026")
+        XCTAssertEqual(friday("1pm in EST")?.swap, "7:00pm local in est")
+        XCTAssertEqual(friday("7:00pm local in est")?.text, "1:00 PM EDT")
+        XCTAssertNil(friday("time in Tokyo")?.swap)
+        XCTAssertNil(friday("7:30pm tomorrow")?.swap)
+        XCTAssertNil(friday("diff Tokyo")?.swap)
+    }
+
+    func testTimeAfterElapsedDurationSomewhere() {
+        XCTAssertEqual(friday("time in 4 hours in Tokyo")?.text, "10:00 PM in Tokyo")
+        XCTAssertEqual(friday("time in 4 hours in Tokyo")?.source, "In 4 hours")
+        XCTAssertEqual(friday("time in 90 minutes in New York")?.headline, "6:30 AM in New York")
+        XCTAssertEqual(friday("time in 1 day in LA")?.text, "2:00 AM in Los Angeles · tomorrow")
+        XCTAssertNil(friday("time in 4 parsecs in Tokyo"))
+    }
+
+    func testLastAndAfterNextWeekdays() {
+        XCTAssertEqual(friday("3pm last friday")?.headline, "Friday at 3:00 PM")
+        XCTAssertEqual(friday("3pm last friday")?.detail, "7 days ago")
+        XCTAssertEqual(friday("last thursday 9am")?.headline, "Yesterday at 9:00 AM")
+        XCTAssertEqual(friday("friday after next 3pm")?.detail, "In 14 days")
+    }
+
     func testDayWordsCombineWithZonesInAnyPosition() throws {
         let meeting = try XCTUnwrap(friday("tomorrow 9am EST in CET"))
         XCTAssertEqual(meeting.text, "3:00 PM CEST · tomorrow")
@@ -116,7 +145,7 @@ final class TimeCalculatorTests: XCTestCase {
     func testIANACityNamesWorkWithoutTheirRegion() {
         XCTAssertEqual(friday("3pm lisbon in tokyo")?.text, "11:00 PM in Tokyo")
         XCTAssertEqual(friday("time in buenos aires")?.headline.hasSuffix("in Buenos Aires"), true)
-        XCTAssertEqual(friday("3pm Europe/Lisbon in Tokyo"), friday("3pm lisbon in tokyo"))
+        XCTAssertEqual(friday("3pm Europe/Lisbon in Tokyo")?.text, friday("3pm lisbon in tokyo")?.text)
     }
 
     func testDayWordsNeverTurnPlainTextIntoAnAnswer() {

@@ -123,6 +123,13 @@ final class DateCalculatorTests: XCTestCase {
         XCTAssertEqual(card("next friday + 1 week").first, "Friday, October 16")
     }
 
+    func testLastAndAfterNextAlone() {
+        XCTAssertEqual(card("last friday"), ["Friday, October 2", "4 days ago", "Friday, October 2"])
+        XCTAssertEqual(card("last tuesday").first, "Tuesday, September 29")
+        XCTAssertEqual(card("friday after next"), ["Friday, October 16", "In 10 days", "Friday, October 16"])
+        XCTAssertEqual(card("days since last monday").first, "1 day")
+    }
+
     func testNamedHolidays() {
         XCTAssertEqual(card("days until christmas"), ["80 days", "Friday, December 25", "80 days"])
         XCTAssertEqual(card("days until Christmas Eve").first, "79 days")
