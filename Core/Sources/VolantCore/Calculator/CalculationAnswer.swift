@@ -40,8 +40,9 @@ public struct CalculationAnswer: Hashable {
     }
 
     /// Every answer the query has, in the order the launcher lists them: time conversion, dates
-    /// and durations, colors and color adjustments, fractions and Roman numerals, number bases, ratios, arithmetic,
-    /// then kitchen and unit conversion. The input side keeps the owner's wording, trimmed.
+    /// and durations, colors and color adjustments, fractions and Roman numerals, number bases, ratios, percentage
+    /// questions, arithmetic, then kitchen and unit conversion and unit arithmetic. The input side keeps the owner's
+    /// wording, trimmed.
     public static func answers(for query: String, now: Date = Date(), localZone: TimeZone = .current,
                                locale: Locale = .current) -> [CalculationAnswer] {
         let query = forgiving(query)
@@ -75,6 +76,9 @@ public struct CalculationAnswer: Hashable {
         if let ratio = RatioCalculator.evaluate(query, locale: locale) {
             answers.append(ratio)
         }
+        if let question = PercentQuestions.evaluate(query, locale: locale) {
+            answers.append(question)
+        }
         let closed = Calculator.closingParentheses(query)
         if let value = Calculator.evaluate(closed, locale: locale) {
             let text = Calculator.format(value, locale: locale)
@@ -99,6 +103,9 @@ public struct CalculationAnswer: Hashable {
                                              resultDetail: unitName(conversion.toUnit, locale: locale), copyText: result,
                                              swapQuery: UnitConverter.swapQuery(conversion, locale: locale)))
         }
+        if let arithmetic = UnitArithmetic.evaluate(query, locale: locale) {
+            answers.append(arithmetic)
+        }
         return answers
     }
 
@@ -121,9 +128,15 @@ public struct CalculationAnswer: Hashable {
         return "Tip " + Calculator.format(amount, locale: locale)
     }
 
-    /// Small whole numbers read as words; larger ones gain thousands separators. Fractions and
-    /// numbers that already read plainly get no detail.
+    /// Small whole numbers read as words; larger ones gain thousands separators, and numbers in
+    /// scientific notation read as a power of ten ("9.3326215444 × 10¹⁵⁷"). Fractions and numbers
+    /// that already read plainly get no detail.
     static func spoken(_ value: Double, locale: Locale) -> String? {
+        if let (mantissa, exponent) = Calculator.scientific(value) {
+            let superscripts: [Character: Character] = ["-": "⁻", "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
+                                                        "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹"]
+            return "\(Calculator.format(mantissa, locale: locale)) × 10" + String(String(exponent).compactMap { superscripts[$0] })
+        }
         guard value.isFinite, value == value.rounded() else { return nil }
         let formatter = NumberFormatter()
         formatter.locale = locale

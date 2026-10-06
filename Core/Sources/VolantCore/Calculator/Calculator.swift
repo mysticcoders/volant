@@ -21,7 +21,7 @@ import Foundation
 ///
 /// `%` is a percentage, as people write it: "52% of 900", "20% off 80", "15% tip on 42", and
 /// "19 + 47%" or "100 - 10%" add or subtract that share of the left side. Elsewhere `%` divides by
-/// 100, so "200 * 15%" is 30. Remainder is `mod`.
+/// 100, so "200 * 15%" is 30. The words "percent" and "pct" read as `%`. Remainder is `mod`.
 public enum Calculator {
     public enum CalcError: Error { case syntax, divisionByZero }
 
@@ -47,7 +47,7 @@ public enum Calculator {
     static let functions: [String: (Double) -> Double] = [
         "sqrt": { $0.squareRoot() }, "cbrt": { Foundation.cbrt($0) }, "abs": { Swift.abs($0) },
         "round": { $0.rounded() }, "floor": { $0.rounded(.down) }, "ceil": { $0.rounded(.up) },
-        "sin": { Foundation.sin($0) }, "cos": { Foundation.cos($0) }, "tan": { Foundation.tan($0) },
+        "sin": { snap(Foundation.sin($0)) }, "cos": { snap(Foundation.cos($0)) }, "tan": { snap(Foundation.tan($0)) },
         "cot": { 1 / Foundation.tan($0) }, "sec": { 1 / Foundation.cos($0) }, "csc": { 1 / Foundation.sin($0) },
         "asin": { Foundation.asin($0) }, "acos": { Foundation.acos($0) }, "atan": { Foundation.atan($0) },
         "sinh": { Foundation.sinh($0) }, "cosh": { Foundation.cosh($0) }, "tanh": { Foundation.tanh($0) },
@@ -125,6 +125,12 @@ public enum Calculator {
         return (Double(value), end)
     }
 
+    /// Trigonometry of multiples of pi lands a rounding error away from zero ("sin(pi)" is about
+    /// 1.2e-16); those read as zero, so tiny results can show in scientific notation without noise.
+    private static func snap(_ value: Double) -> Double {
+        abs(value) < 1e-15 ? 0 : value
+    }
+
     private static func whole(_ value: Double) -> Int? {
         value == value.rounded() && abs(value) < 9e15 ? Int(value) : nil
     }
@@ -154,7 +160,8 @@ public enum Calculator {
         }
         for (pattern, replacement) in [(#"\bsquare\s+root\s+of\b"#, " sqrt "), (#"\bcube\s+root\s+of\b"#, " cbrt "),
                                        (#"\bto\s+the\s+power\s+of\b"#, " ^ "), (#"\bpower\b"#, " ^ "),
-                                       (#"\bsquared\b"#, " ^ 2 "), (#"\bcubed\b"#, " ^ 3 "), (#"\bfactorial\b"#, " ! ")] {
+                                       (#"\bsquared\b"#, " ^ 2 "), (#"\bcubed\b"#, " ^ 3 "), (#"\bfactorial\b"#, " ! "),
+                                       (#"\b(percent|pct)\b"#, " % ")] {
             value = value.replacingOccurrences(of: pattern, with: replacement, options: [.regularExpression, .caseInsensitive])
         }
         return value
@@ -177,9 +184,13 @@ public enum Calculator {
             || t.range(of: #"\be\b"#, options: [.regularExpression, .caseInsensitive]) != nil
     }
 
+    /// Whole numbers print in full while a Double holds them exactly (up to 2^53). Larger values and
+    /// non-zero values below a millionth use scientific notation with ten decimals at most
+    /// ("1.8446744074e19", "1.5e-9"), which the calculator reads back, so no digit is invented.
     public static func format(_ value: Double, locale: Locale = .current) -> String {
         if value.isNaN || value.isInfinite { return "undefined" }
-        if value == value.rounded() && abs(value) < 1e15 { return String(Int64(value)) }
+        if value == value.rounded() && abs(value) <= exactIntegers { return String(Int64(value)) }
+        if let (mantissa, exponent) = scientific(value) { return format(mantissa, locale: locale) + "e\(exponent)" }
         let f = NumberFormatter()
         f.maximumFractionDigits = 10
         f.minimumFractionDigits = 0
@@ -187,6 +198,23 @@ public enum Calculator {
         f.usesGroupingSeparator = false
         f.locale = locale
         return f.string(from: NSNumber(value: value)) ?? String(value)
+    }
+
+    /// The largest magnitude below which every whole number is exact in a Double.
+    static let exactIntegers = 9_007_199_254_740_992.0
+
+    /// A mantissa from 1 to 10 (rounded to ten decimals) and its power of ten, for values too large
+    /// to print exactly or too small to show in ten decimal places; nil for everything else.
+    static func scientific(_ value: Double) -> (Double, Int)? {
+        let magnitude = abs(value)
+        guard magnitude > exactIntegers || (magnitude > 0 && magnitude < 1e-6) else { return nil }
+        var exponent = Int(Foundation.floor(Foundation.log10(magnitude)))
+        var mantissa = (value / Foundation.pow(10, Double(exponent)) * 1e10).rounded() / 1e10
+        if abs(mantissa) >= 10 {
+            mantissa /= 10
+            exponent += 1
+        }
+        return (mantissa, exponent)
     }
 
     /// Word operators, each one character on the operator stack: "of", "off", "on" ("tip on" reads the

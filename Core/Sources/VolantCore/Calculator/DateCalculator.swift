@@ -3,8 +3,9 @@ import Foundation
 /// Date and duration questions, answered in the owner's local calendar: day words on their own
 /// ("today", "now"), counting ("days until 31 Mar", "days since Jan 1", "days between Jan 1 and
 /// Mar 1"), offsets ("in 3 weeks", "35 days ago", "monday in 3 weeks"), arithmetic ("August 5 + 5",
-/// "3:45pm + 5"), timespans ("145 mins to timespan"), summed durations ("2h 20min + 55min in
-/// hours"), workdays ("workdays until Dec 25", "in 10 business days"), named holidays ("days until
+/// "3:45pm + 5", "10:30 + 2:45"), timespans ("145 mins to timespan"), summed and scaled durations
+/// ("2h 20min + 55min in hours", "1h 30m * 3"), clock spans ("9am to 5:30pm", "3pm - 9am"),
+/// workdays ("workdays until Dec 25", "in 10 business days"), named holidays ("days until
 /// christmas", "easter 2027"), "next friday", ISO 8601 timestamps and Unix time.
 ///
 /// Facts about a date: its weekday ("what day was 2000-01-01"), ISO 8601 week ("week number") and
@@ -22,7 +23,9 @@ import Foundation
 ///
 /// Hours and minutes are elapsed time; days and longer are calendar steps, so a daylight-saving
 /// change never shifts "in 2 days" off midnight. A plain number after a date means days and after
-/// a clock time means hours. A date without a year means its next occurrence after "until", its
+/// a clock time means hours; "H:MM" after a clock time means hours and minutes. Clock spans count
+/// wall-clock time and wrap past midnight ("10pm to 6am" is 8 hours). "noon" and "midnight" work
+/// wherever a clock time does. A date without a year means its next occurrence after "until", its
 /// last after "since", and this year elsewhere. Numeric dates such as 12/25 are left alone, since
 /// their order depends on locale.
 public enum DateCalculator {
@@ -120,7 +123,7 @@ public enum DateCalculator {
         guard !words.isEmpty else { return nil }
         typealias Reader = ([String], String, Context) -> CalculationAnswer?
         let readers: [Reader] = [unix, dayAlone, weekdayOf, weekNumber, dayOfYear, daysIn, leapYear, age, counting, workPeriod,
-                                 workConversion, timespan, durationSum, offset, weekdayInWeeks, difference, arithmetic]
+                                 workConversion, timespan, durationSum, clockSpan, offset, weekdayInWeeks, difference, arithmetic]
         for reader in readers {
             if let answer = reader(words, input, context) { return answer }
         }
@@ -137,7 +140,8 @@ public enum DateCalculator {
         value = value.replacingOccurrences(of: #"\b(business|working|work)\s+(hour|hours)\b"#, with: "workhours", options: .regularExpression)
         value = value.replacingOccurrences(of: #"\b(\d+)(st|nd|rd|th)\b"#, with: "$1", options: .regularExpression)
         value = value.replacingOccurrences(of: #"(\d)([a-z])"#, with: "$1 $2", options: .regularExpression)
-        value = value.replacingOccurrences(of: "+", with: " + ")
+        value = value.replacingOccurrences(of: #"([+*×/\u2013])"#, with: " $1 ", options: .regularExpression)
+        value = value.replacingOccurrences(of: "\u{2013}", with: "-")
         value = value.replacingOccurrences(of: #"(?<!\d)-|-(?!\d)"#, with: " - ", options: .regularExpression)
         return value.split(whereSeparator: { $0.isWhitespace }).map(String.init)
     }
@@ -430,18 +434,72 @@ public enum DateCalculator {
     }
 
     /// "2h 20min + 55min" gives a timespan, and "… in hours" a decimal: elapsed durations added and
-    /// subtracted. Needs more than a single quantity, which `UnitConverter` already handles.
+    /// subtracted. A number scales the duration it touches, as in written math: "1h 30m * 3",
+    /// "3 x 45 min", "2h / 4", and "2h + 30 min * 2" adds an hour. Needs more than a single quantity
+    /// or a scale, since `UnitConverter` already converts one quantity.
     private static func durationSum(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
-        var body = words[...], target: (seconds: Double, name: String)?
-        if words.count >= 3, ["in", "to", "as"].contains(words[words.count - 2]) {
-            let units: [String: (Double, String)] = ["seconds": (1, "second"), "second": (1, "second"), "s": (1, "second"),
-                                                     "minutes": (60, "minute"), "minute": (60, "minute"), "min": (60, "minute"),
-                                                     "hours": (3600, "hour"), "hour": (3600, "hour"), "h": (3600, "hour"),
-                                                     "days": (86_400, "day"), "day": (86_400, "day")]
-            if words.last == "timespan" || words.last == "duration" { body = words.dropLast(2) }
-            else if let unit = units[words.last!] { target = unit; body = words.dropLast(2) }
+        let (body, target) = durationTarget(words[...])
+        guard let (total, pairs, scaled) = elapsed(body), pairs >= 2 || scaled, total > 0 else { return nil }
+        return durationAnswer(total, target: target, input: input, inputDetail: nil, c)
+    }
+
+    /// Seconds in durations added, subtracted and scaled, such as "2h 20min + 55min * 2", with the
+    /// number of quantities read and whether a number scaled any. Calendar steps longer than a day
+    /// have no fixed length and give nil, as do days when `hoursOnly` is set.
+    private static func elapsed(_ body: ArraySlice<String>, hoursOnly: Bool = false) -> (total: Double, pairs: Int, scaled: Bool)? {
+        let scales: Set<String> = ["*", "x", "×", "times", "/"]
+        var total = 0.0, current = 0.0, sign = 1.0, factor = 1.0, pairs = 0, scaled = false, index = body.startIndex
+        while index < body.endIndex {
+            let word = body[index]
+            if word == "+" || word == "-" {
+                guard pairs > 0 else { return nil }
+                total += sign * current * factor
+                (current, factor, sign) = (0, 1, word == "+" ? 1 : -1)
+                index += 1
+                continue
+            }
+            if scales.contains(word) {
+                guard index + 1 < body.endIndex, let number = Double(body[index + 1]), number > 0 || (number == 0 && word != "/") else { return nil }
+                factor *= word == "/" ? 1 / number : number
+                scaled = true
+                index += 2
+                continue
+            }
+            if index + 2 < body.endIndex, let number = Double(word), scales.contains(body[index + 1]), body[index + 1] != "/",
+               body[index + 2].first?.isNumber ?? false {
+                factor *= number
+                scaled = true
+                index += 2
+                continue
+            }
+            guard index + 1 < body.endIndex, let (_, step) = quantity(body[index...(index + 1)]) else { return nil }
+            switch step {
+            case .seconds(let value): current += value
+            case .days(let value) where !hoursOnly: current += Double(value) * 86_400
+            default: return nil
+            }
+            pairs += 1
+            index += 2
         }
-        guard let (total, pairs) = elapsed(body), pairs >= 2, total > 0 else { return nil }
+        total += sign * current * factor
+        return pairs > 0 ? (total, pairs, scaled) : nil
+    }
+
+    /// Splits a trailing "in hours", "to minutes" or "as timespan" from a duration question.
+    private static func durationTarget(_ words: ArraySlice<String>) -> (ArraySlice<String>, (seconds: Double, name: String)?) {
+        guard words.count >= 3, ["in", "to", "as"].contains(words[words.endIndex - 2]) else { return (words, nil) }
+        let units: [String: (Double, String)] = ["seconds": (1, "second"), "second": (1, "second"), "s": (1, "second"),
+                                                 "minutes": (60, "minute"), "minute": (60, "minute"), "min": (60, "minute"),
+                                                 "mins": (60, "minute"), "hours": (3600, "hour"), "hour": (3600, "hour"),
+                                                 "h": (3600, "hour"), "hrs": (3600, "hour"), "days": (86_400, "day"), "day": (86_400, "day")]
+        if words.last == "timespan" || words.last == "duration" { return (words.dropLast(2), nil) }
+        if let unit = units[words.last!] { return (words.dropLast(2), unit) }
+        return (words, nil)
+    }
+
+    /// A duration as a timespan ("3 hours 15 minutes") or, with a target, a decimal ("3.25 hours").
+    private static func durationAnswer(_ total: Double, target: (seconds: Double, name: String)?, input: String,
+                                       inputDetail: String?, _ c: Context) -> CalculationAnswer {
         let text: String
         if let target {
             let value = (total / target.seconds * 10_000).rounded() / 10_000
@@ -449,33 +507,7 @@ public enum DateCalculator {
         } else {
             text = spanText(total)
         }
-        return CalculationAnswer(input: input, inputDetail: nil, result: text, resultDetail: nil, copyText: text)
-    }
-
-    /// Seconds in durations added and subtracted, such as "2h 20min + 55min", with the number of
-    /// quantities read. Calendar steps longer than a day have no fixed length and give nil, as do
-    /// days when `hoursOnly` is set.
-    private static func elapsed(_ body: ArraySlice<String>, hoursOnly: Bool = false) -> (total: Double, pairs: Int)? {
-        var total = 0.0, sign = 1.0, terms = 0, pairs = 0, index = body.startIndex
-        while index < body.endIndex {
-            let word = body[index]
-            if word == "+" || word == "-" {
-                guard terms > 0 else { return nil }
-                sign = word == "+" ? 1 : -1
-                index += 1
-                continue
-            }
-            guard index + 1 < body.endIndex, let (_, step) = quantity(body[index...(index + 1)]) else { return nil }
-            switch step {
-            case .seconds(let value): total += sign * value
-            case .days(let value) where !hoursOnly: total += sign * Double(value) * 86_400
-            default: return nil
-            }
-            if index == body.startIndex || ["+", "-"].contains(body[index - 1]) { terms += 1 }
-            pairs += 1
-            index += 2
-        }
-        return pairs > 0 ? (total, pairs) : nil
+        return CalculationAnswer(input: input, inputDetail: inputDetail, result: text, resultDetail: nil, copyText: text)
     }
 
     /// Hours in a workday, for converting between work hours and workdays.
@@ -525,7 +557,7 @@ public enum DateCalculator {
         let body = words.dropLast(2), target = words.last!
         let day = workdayHours * 3600
         if ["workdays", "workday"].contains(target) {
-            guard let (total, _) = elapsed(body, hoursOnly: true), total > 0 else { return nil }
+            guard let (total, _, _) = elapsed(body, hoursOnly: true), total > 0 else { return nil }
             let value = total / day
             let whole = Int(value), rest = total - Double(whole) * day
             let text = "\(Calculator.format((value * 10_000).rounded() / 10_000, locale: c.locale)) workday\(value == 1 ? "" : "s")"
@@ -540,6 +572,28 @@ public enum DateCalculator {
         let value = number * day / size
         let text = "\(Calculator.format(value, locale: c.locale)) \(name)\(value == 1 ? "" : "s")"
         return CalculationAnswer(input: input, inputDetail: "8-hour days", result: text, resultDetail: nil, copyText: text)
+    }
+
+    /// "9am to 5:30pm", "from 9am until 5pm", "3pm - 9am", "between 9am and noon": the wall-clock
+    /// time between two clock times, wrapping past midnight, as a timespan or "… in hours". After
+    /// "-" the end needs am/pm or a name, since "3:45pm - 1:30" subtracts an hour and a half.
+    private static func clockSpan(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
+        var (body, target) = durationTarget(words[...])
+        if let first = body.first, first == "from" || first == "between" { body = body.dropFirst() }
+        let joiners: Set<String> = words.first == "between" ? ["and"] : ["to", "until", "till", "-"]
+        guard let joiner = body.firstIndex(where: { joiners.contains($0) }), let start = clock(body[..<joiner], c),
+              let end = clock(body[(joiner + 1)...], c) else { return nil }
+        if body[joiner] == "-", let last = body.last, !["am", "pm", "noon", "midnight"].contains(last) { return nil }
+        let minutes = { (date: Date) -> Int in
+            let parts = c.calendar.dateComponents([.hour, .minute], from: date)
+            return parts.hour! * 60 + parts.minute!
+        }
+        let span = (minutes(end) - minutes(start) + 1440) % 1440
+        guard span > 0 else { return nil }
+        let zone = c.calendar.timeZone
+        var detail = "\(TimeCalculator.clockText(start, zone: zone, locale: c.locale)) to \(TimeCalculator.clockText(end, zone: zone, locale: c.locale))"
+        if minutes(end) < minutes(start) { detail += " · Overnight" }
+        return durationAnswer(Double(span * 60), target: target, input: input, inputDetail: detail, c)
     }
 
     /// "in 3 weeks", "10 days from now", "35 days ago", "in 4 hours".
@@ -571,7 +625,8 @@ public enum DateCalculator {
         let base = words[..<operatorIndex], amount = words[(operatorIndex + 1)...]
         let sign = words[operatorIndex] == "+" ? 1 : -1
         if let start = clock(base, c) {
-            let step = amount.count == 1 ? Double(amount.first!).map { Step.seconds($0 * 3600) } : quantity(amount)?.1
+            let step = amount.count == 1 ? (Double(amount.first!).map { Step.seconds($0 * 3600) } ?? hoursAndMinutes(amount.first!))
+                : quantity(amount)?.1
             guard let step, case .seconds = step else { return nil }
             return answer(applying: step, sign: sign, to: start, input: input,
                           inputDetail: TimeCalculator.clockText(start, zone: c.calendar.timeZone, locale: c.locale), c)
@@ -725,8 +780,19 @@ public enum DateCalculator {
         }
     }
 
-    /// A clock time today: "3:45 pm", "15:45", "9 am".
+    /// "2:45" as an amount: two hours forty-five minutes.
+    private static func hoursAndMinutes(_ word: String) -> Step? {
+        let pieces = word.split(separator: ":", omittingEmptySubsequences: false)
+        guard pieces.count == 2, pieces[1].count == 2, let hours = Int(pieces[0]), let minutes = Int(pieces[1]),
+              hours >= 0, (0..<60).contains(minutes) else { return nil }
+        return .seconds(Double(hours * 3600 + minutes * 60))
+    }
+
+    /// A clock time today: "3:45 pm", "15:45", "9 am", "noon", "midnight".
     private static func clock(_ words: ArraySlice<String>, _ c: Context) -> Date? {
+        if words.count == 1, let word = words.first, let hour = ["noon": 12, "midnight": 0][word] {
+            return c.calendar.date(bySettingHour: hour, minute: 0, second: 0, of: c.today)
+        }
         guard (1...2).contains(words.count), let first = words.first else { return nil }
         let meridiem = words.count == 2 ? words.last : nil
         guard meridiem == nil || meridiem == "am" || meridiem == "pm" else { return nil }
