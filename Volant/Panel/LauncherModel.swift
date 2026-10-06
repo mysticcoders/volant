@@ -1032,6 +1032,13 @@ final class LauncherModel: ObservableObject {
         onNote(.editApp(app))
     }
 
+    /// Shift-Command-Return on a conversion: run it the other way, with the answer as the input.
+    func activateSwap() {
+        guard case .calculation(let answer)? = selectedRow, let swap = answer.swapQuery else { return }
+        query = swap
+        searchFocusRequest = UUID()
+    }
+
     /// Command-Return: reveal, copy the other field, or for a calculation put its answer in the
     /// search field and stay open, so the next calculation can build on it.
     func activateSecondary() {

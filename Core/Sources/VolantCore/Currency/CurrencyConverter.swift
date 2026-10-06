@@ -24,8 +24,9 @@ public enum CurrencyConverter {
         let input = text.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
         let result = money(value, to, locale: locale)
         let unit = rate(toRate / fromRate, locale: locale)
+        let swap = "\(Calculator.format((value * 100).rounded() / 100, locale: locale)) \(to) in \(from)"
         return CalculationAnswer(input: input, inputDetail: "1 \(from) = \(unit) \(to)", result: result,
-                                 resultDetail: dateTag(rates.date, now: now, locale: locale), copyText: result)
+                                 resultDetail: dateTag(rates.date, now: now, locale: locale), copyText: result, swapQuery: swap)
     }
 
     /// Recognizes a currency conversion's shape without rates, so the app can fetch them on

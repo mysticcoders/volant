@@ -10,6 +10,8 @@ public struct CalculationAnswer: Hashable {
     public let copyText: String
     /// A color to show beside the input, for color conversions.
     public let swatch: Swatch?
+    /// The same conversion in the other direction, for Shift-Command-Return: "3.106856 mi in km".
+    public let swapQuery: String?
 
     /// An sRGB color with components from 0 to 1.
     public struct Swatch: Hashable {
@@ -26,13 +28,15 @@ public struct CalculationAnswer: Hashable {
         }
     }
 
-    public init(input: String, inputDetail: String?, result: String, resultDetail: String?, copyText: String, swatch: Swatch? = nil) {
+    public init(input: String, inputDetail: String?, result: String, resultDetail: String?, copyText: String,
+                swatch: Swatch? = nil, swapQuery: String? = nil) {
         self.input = input
         self.inputDetail = inputDetail
         self.result = result
         self.resultDetail = resultDetail
         self.copyText = copyText
         self.swatch = swatch
+        self.swapQuery = swapQuery
     }
 
     /// Every answer the query has, in the order the launcher lists them: time conversion, dates
@@ -72,7 +76,8 @@ public struct CalculationAnswer: Hashable {
             let result = UnitConverter.formatResult(conversion, locale: locale)
             answers.append(CalculationAnswer(input: "\(Calculator.format(conversion.value, locale: locale)) \(conversion.fromSymbol)",
                                              inputDetail: unitName(conversion.fromUnit, locale: locale), result: result,
-                                             resultDetail: unitName(conversion.toUnit, locale: locale), copyText: result))
+                                             resultDetail: unitName(conversion.toUnit, locale: locale), copyText: result,
+                                             swapQuery: "\(result) in \(conversion.fromSymbol)"))
         }
         return answers
     }

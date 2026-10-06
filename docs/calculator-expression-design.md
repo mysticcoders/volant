@@ -160,3 +160,7 @@ The 148 CSS named colors convert when a target format is given: `red in hex`, `R
 ## Multi-argument functions — October 6, 2026
 
 `max`, `min` (two or more arguments), `atan2(y, x)`, `hypot`, `pow`, `log(x, base)`, `round(x, digits)`, `gcd`, `lcm`, `nCr`/`choose` and `nPr`/`perm`. A comma separates arguments when it cannot be thousands grouping (`max(1,5)`, `max(1, 500)`); `;` always separates, for locales with a decimal comma (`max(2,5; 7)` in German). Because max and min need two arguments, an ambiguous `max(1,500)` gives no answer instead of a wrong one. Arguments outside a function's domain (`nCr(3, 5)`, `gcd(1.5, 3)`, `log(8, 1)`) give no answer.
+
+## Swap — October 6, 2026
+
+Shift-Command-Return on a conversion card replaces the search with the same conversion the other way, using the answer as the input: `5 km in mi` becomes `3.106856 mi in km`, `100 usd in eur` becomes `80 EUR in USD`, `2rem in px at 18px` becomes `36px in rem at 18px`, and `#ff6363` becomes `rgb(255 99 99) in hex`. The footer shows "Swap ⇧⌘↩" only when a swap exists; arithmetic, dates and time answers have none. The unit converter now reads its own symbols (`ft²`, `°F`), so swapped queries parse. Round trips return to the original value within the six-decimal display rounding.

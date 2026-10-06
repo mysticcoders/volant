@@ -47,7 +47,8 @@ public enum ColorCalculator {
         let shown = clamped(color)
         return CalculationAnswer(input: input, inputDetail: named == nil ? nil : format(color, as: .hex), result: result,
                                  resultDetail: detail, copyText: result,
-                                 swatch: .init(red: shown.red, green: shown.green, blue: shown.blue, alpha: shown.alpha))
+                                 swatch: .init(red: shown.red, green: shown.green, blue: shown.blue, alpha: shown.alpha),
+                                 swapQuery: named == nil && primary != source ? "\(result) in \(source.rawValue)" : nil)
     }
 
     // MARK: Parsing

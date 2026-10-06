@@ -112,7 +112,8 @@ struct LauncherView: View {
         }
         .onKeyPress(.return, phases: .down) { press in
             guard model.actionTarget == nil && !model.showingDictionary && !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }
-            if press.modifiers.contains(.command) { model.activateSecondary() } else { model.activateSelection() }
+            if press.modifiers.contains(.command) && press.modifiers.contains(.shift) { model.activateSwap() }
+            else if press.modifiers.contains(.command) { model.activateSecondary() } else { model.activateSelection() }
             return .handled
         }
     }
@@ -276,6 +277,15 @@ struct LauncherView: View {
                     Divider().frame(height: 16)
                     HStack(spacing: 8) {
                         Text(secondary).font(.system(size: 13, weight: .medium)).foregroundStyle(.secondary)
+                        KeyCap("⌘")
+                        KeyCap("↩")
+                    }
+                }
+                if case .calculation(let answer) = row, answer.swapQuery != nil {
+                    Divider().frame(height: 16)
+                    HStack(spacing: 8) {
+                        Text("Swap").font(.system(size: 13, weight: .medium)).foregroundStyle(.secondary)
+                        KeyCap("⇧")
                         KeyCap("⌘")
                         KeyCap("↩")
                     }
