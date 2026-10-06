@@ -1,7 +1,13 @@
 import Foundation
 
-/// Arithmetic evaluator: + - * / ^ mod, parentheses, unary minus, pi, e, sqrt, abs, round, floor, ceil, and
-/// percentages. Pure; no NSExpression.
+/// Arithmetic evaluator: + - * / ^ mod, parentheses, unary minus, factorial, pi, e, percentages and
+/// the functions in `functions`. Pure; no NSExpression.
+///
+/// Trigonometry takes radians unless an angle is marked in degrees ("sin(90°)", "cos 60 deg").
+/// Everyday phrasings read as their symbols: "square root of 625", "cube root of 27", "2 power 10",
+/// "2 to the power of 10", "5 squared", "3 cubed", "5 factorial". A function name binds to the
+/// value right after it, so "sqrt 16 + 9" is 13. Results that are not real numbers, such as
+/// "sqrt(-1)", give no answer.
 ///
 /// `%` is a percentage, as people write it: "52% of 900", "20% off 80", "15% tip on 42", and
 /// "19 + 47%" or "100 - 10%" add or subtract that share of the left side. Elsewhere `%` divides by
@@ -18,22 +24,47 @@ public enum Calculator {
     public static func evaluate(_ text: String, locale: Locale = .current) -> Double? {
         guard looksNumeric(text) else { return nil }
         do {
-            let tokens = try tokenize(text, separators: NumberLiteral.Separators(locale))
+            let tokens = try tokenize(phrases(text), separators: NumberLiteral.Separators(locale))
             guard !tokens.isEmpty else { return nil }
             let rpn = try toRPN(tokens)
-            return try evalRPN(rpn)
+            let value = try evalRPN(rpn)
+            return value.isFinite ? value : nil
         } catch {
             return nil
         }
+    }
+
+    static let functions: [String: (Double) -> Double] = [
+        "sqrt": { $0.squareRoot() }, "cbrt": { Foundation.cbrt($0) }, "abs": { Swift.abs($0) },
+        "round": { $0.rounded() }, "floor": { $0.rounded(.down) }, "ceil": { $0.rounded(.up) },
+        "sin": { Foundation.sin($0) }, "cos": { Foundation.cos($0) }, "tan": { Foundation.tan($0) },
+        "cot": { 1 / Foundation.tan($0) }, "sec": { 1 / Foundation.cos($0) }, "csc": { 1 / Foundation.sin($0) },
+        "asin": { Foundation.asin($0) }, "acos": { Foundation.acos($0) }, "atan": { Foundation.atan($0) },
+        "sinh": { Foundation.sinh($0) }, "cosh": { Foundation.cosh($0) }, "tanh": { Foundation.tanh($0) },
+        "asinh": { Foundation.asinh($0) }, "acosh": { Foundation.acosh($0) }, "atanh": { Foundation.atanh($0) },
+        "ln": { Foundation.log($0) }, "log": { Foundation.log10($0) }, "log10": { Foundation.log10($0) },
+        "log2": { Foundation.log2($0) }, "exp": { Foundation.exp($0) }
+    ]
+
+    /// Rewrites everyday phrasings into the symbols the tokenizer reads.
+    private static func phrases(_ text: String) -> String {
+        var value = text
+        for (pattern, replacement) in [(#"\bsquare\s+root\s+of\b"#, " sqrt "), (#"\bcube\s+root\s+of\b"#, " cbrt "),
+                                       (#"\bto\s+the\s+power\s+of\b"#, " ^ "), (#"\bpower\b"#, " ^ "),
+                                       (#"\bsquared\b"#, " ^ 2 "), (#"\bcubed\b"#, " ^ 3 "), (#"\bfactorial\b"#, " ! ")] {
+            value = value.replacingOccurrences(of: pattern, with: replacement, options: [.regularExpression, .caseInsensitive])
+        }
+        return value
     }
 
     /// Cheap gate so ordinary app names never reach the parser.
     public static func looksNumeric(_ text: String) -> Bool {
         let t = text.trimmingCharacters(in: .whitespaces)
         guard !t.isEmpty else { return false }
-        let allowed = CharacterSet(charactersIn: "0123456789.,+-*/^%() ").union(.letters)
+        let allowed = CharacterSet(charactersIn: "0123456789.,+-*/^%()!° ").union(.letters)
         guard t.unicodeScalars.allSatisfy({ allowed.contains($0) }) else { return false }
-        return t.unicodeScalars.contains { CharacterSet.decimalDigits.contains($0) } || t.contains("pi") || t == "e"
+        return t.unicodeScalars.contains { CharacterSet.decimalDigits.contains($0) } || t.lowercased().contains("pi")
+            || t.range(of: #"\be\b"#, options: [.regularExpression, .caseInsensitive]) != nil
     }
 
     public static func format(_ value: Double, locale: Locale = .current) -> String {
@@ -69,6 +100,9 @@ public enum Calculator {
             if ch.isLetter {
                 var j = i
                 while j < chars.count && chars[j].isLetter { j += 1 }
+                var k = j
+                while k < chars.count && chars[k].isASCII && chars[k].isNumber { k += 1 }
+                if k > j, functions[String(chars[i..<k]).lowercased()] != nil { j = k }
                 let word = String(chars[i..<j]).lowercased()
                 i = j
                 if word == "tip" {
@@ -78,6 +112,8 @@ public enum Calculator {
                     guard String(chars[i..<k]).lowercased() == "on" else { throw CalcError.syntax }
                     tokens.append(.op("n")); i = k; continue
                 }
+                if ["deg", "degree", "degrees"].contains(word) { tokens.append(.op("d")); continue }
+                if ["rad", "radian", "radians"].contains(word) { continue }
                 if let scale = NumberLiteral.words[word] {
                     guard case .number(let v)? = tokens.last else { throw CalcError.syntax }
                     tokens[tokens.count - 1] = .number(v * scale); continue
@@ -89,6 +125,8 @@ public enum Calculator {
             case ")": tokens.append(.rparen)
             case "+", "-", "*", "/", "^": tokens.append(.op(ch))
             case "%": tokens.append(.op("p"))
+            case "!": tokens.append(.op("!"))
+            case "°": tokens.append(.op("d"))
             default: throw CalcError.syntax
             }
             i += 1
@@ -117,19 +155,25 @@ public enum Calculator {
                 output.append(token)
             case .ident(let name):
                 if ["pi", "e"].contains(name) { output.append(token) } else { stack.append(token) }
-            case .op("p"):
+            case .op("p"), .op("!"), .op("d"):
                 // Postfix: applies to the operand just completed, before any pending operator.
                 switch prev {
-                case .number?, .rparen?, .ident?, .op("p")?: output.append(token)
+                case .number?, .rparen?, .ident?, .op("p")?, .op("!")?, .op("d")?: output.append(token)
                 default: throw CalcError.syntax
                 }
             case .op(let op):
                 var op = op
-                let unary = op == "-" && (prev == nil || prev == .lparen || { if case .op(let last) = prev!, last != "p" { return true }; return false }())
+                let unary = op == "-" && (prev == nil || prev == .lparen || {
+                    if case .op(let last) = prev!, !["p", "!", "d"].contains(last) { return true }
+                    if case .ident(let name) = prev!, functions[name] != nil { return true }
+                    return false
+                }())
                 if unary { op = "u" }
                 // A prefix operator has no left operand, so nothing on the stack can be complete yet.
-                while !unary, let top = stack.last, case .op(let t) = top,
-                      precedence(t) > precedence(op) || (precedence(t) == precedence(op) && op != "^" && op != "u") {
+                while !unary, let top = stack.last {
+                    if case .ident = top { output.append(stack.removeLast()); continue }
+                    guard case .op(let t) = top,
+                          precedence(t) > precedence(op) || (precedence(t) == precedence(op) && op != "^" && op != "u") else { break }
                     output.append(stack.removeLast())
                 }
                 stack.append(.op(op))
@@ -165,15 +209,14 @@ public enum Calculator {
             case .ident("pi"): stack.append(Value(number: Double.pi))
             case .ident("e"): stack.append(Value(number: M_E))
             case .ident(let fn):
+                guard let function = functions[fn] else { throw CalcError.syntax }
+                stack.append(Value(number: function(try pop().number)))
+            case .op("!"):
                 let x = try pop().number
-                switch fn {
-                case "sqrt": stack.append(Value(number: x.squareRoot()))
-                case "abs": stack.append(Value(number: abs(x)))
-                case "round": stack.append(Value(number: x.rounded()))
-                case "floor": stack.append(Value(number: x.rounded(.down)))
-                case "ceil": stack.append(Value(number: x.rounded(.up)))
-                default: throw CalcError.syntax
-                }
+                guard x >= 0, x == x.rounded(), x <= 170 else { throw CalcError.syntax }
+                stack.append(Value(number: tgamma(x + 1).rounded()))
+            case .op("d"):
+                stack.append(Value(number: try pop().number * .pi / 180))
             case .op("p"):
                 let x = try pop()
                 guard !x.percent else { throw CalcError.syntax }
