@@ -7,7 +7,7 @@ import VolantCore
 struct CalculatorCard: View {
     let answer: CalculationAnswer
     let rowID: String
-    // Lazy rows must observe selection themselves; parent closure updates can retain stale styling.
+    /// Lazy rows observe selection themselves; parent closure updates can retain stale styling.
     @ObservedObject var model: LauncherModel
     private var selected: Bool { model.selectedRow?.id == rowID }
 

@@ -76,7 +76,6 @@ for query in ["1pm EST in CET", "2026-12-31 3pm PST in CET", "time in Tokyo", "2
     try image.representation(using: .jpeg, properties: [.compressionFactor: 0.85])!.write(to:
         URL(fileURLWithPath: "/tmp/volant-launcher-time-\(name)-\(dark ? "dark" : "light").jpg"))
 }
-// Command-Return puts a calculation's answer in the search field and keeps calculating from it.
 model.query = "2 + 2"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 verify(model.selectedRow?.secondaryAction == "Use Answer", "Calculation offers Use Answer")

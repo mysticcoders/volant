@@ -114,8 +114,6 @@ public enum DateCalculator {
         return value.split(whereSeparator: { $0.isWhitespace }).map(String.init)
     }
 
-    // MARK: Forms
-
     /// "now", "today", "tomorrow", "yesterday", or "next friday" and "this friday" on their own.
     /// Holiday names alone are left to search, so "christmas" still finds apps and files.
     private static func dayAlone(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
@@ -312,8 +310,6 @@ public enum DateCalculator {
         return answer(applying: step, sign: sign, to: start, input: input, inputDetail: dateText(start, c), c)
     }
 
-    // MARK: Results
-
     private static func answer(applying step: Step, sign: Int, to start: Date, input: String, inputDetail: String?, _ c: Context) -> CalculationAnswer? {
         guard let target = apply(step, sign: sign, to: start, c) else { return nil }
         if case .seconds = step {
@@ -408,8 +404,6 @@ public enum DateCalculator {
         }
         return parts.isEmpty ? "0 seconds" : parts.joined(separator: " ")
     }
-
-    // MARK: Parsing
 
     /// "3 weeks", "a week", "90 min", "1.5 hours". Calendar steps need whole numbers.
     static func quantity(_ words: ArraySlice<String>) -> (Double, Step)? {

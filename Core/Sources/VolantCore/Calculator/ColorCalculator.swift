@@ -51,8 +51,6 @@ public enum ColorCalculator {
                                  swapQuery: named == nil && primary != source ? "\(result) in \(source.rawValue)" : nil)
     }
 
-    // MARK: Parsing
-
     static func parse(_ text: String) -> (Color, Format)? {
         if text.hasPrefix("#") { return hex(String(text.dropFirst())).map { ($0, .hex) } }
         guard let open = text.firstIndex(of: "("), text.hasSuffix(")") else { return nil }
@@ -182,8 +180,6 @@ public enum ColorCalculator {
         return fromLinear(oklabToLinear(l, c * cos(radians), c * sin(radians)))
     }
 
-    // MARK: Formatting
-
     static func format(_ color: Color, as format: Format) -> String {
         let alpha = color.alpha < 1 ? " / \(trim(color.alpha, 3))" : ""
         let srgb = clamped(color)
@@ -232,8 +228,6 @@ public enum ColorCalculator {
         let hue = atan2(b, a) * 180 / .pi
         return (chroma, hue < 0 ? hue + 360 : hue)
     }
-
-    // MARK: Color math
 
     static func inGamut(_ c: Color) -> Bool {
         [c.red, c.green, c.blue].allSatisfy { $0 >= -0.0005 && $0 <= 1.0005 }
