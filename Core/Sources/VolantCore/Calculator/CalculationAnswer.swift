@@ -47,7 +47,7 @@ public struct CalculationAnswer: Hashable {
         var answers: [CalculationAnswer] = []
         if let time = TimeCalculator.evaluate(query, now: now, localZone: localZone, locale: locale) {
             answers.append(CalculationAnswer(input: input, inputDetail: time.source, result: time.headline,
-                                             resultDetail: time.detail, copyText: time.text))
+                                             resultDetail: time.detail, copyText: time.text, swapQuery: time.swap))
         } else {
             for suggestion in TimeCalculator.suggestions(query, now: now, localZone: localZone, locale: locale) {
                 answers.append(CalculationAnswer(input: suggestion.query, inputDetail: suggestion.result.source,

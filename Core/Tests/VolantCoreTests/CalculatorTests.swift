@@ -197,6 +197,17 @@ final class CalculatorTests: XCTestCase {
         XCTAssertEqual(Calculator.format(2.5, locale: Self.german), "2,5")
     }
 
+    func testSpaceGroupedNumbersInSpaceGroupingLocales() {
+        let french = Locale(identifier: "fr_FR")
+        XCTAssertEqual(Calculator.evaluate("1 000 + 5", locale: french), 1005)
+        XCTAssertEqual(Calculator.evaluate("12 345,5 * 2", locale: french), 24_691)
+        XCTAssertEqual(Calculator.evaluate("1\u{202F}000 * 2", locale: french), 2000)
+        XCTAssertEqual(Calculator.evaluate("2 + 3", locale: french), 5)
+        XCTAssertNil(Calculator.evaluate("10 20", locale: french))
+        XCTAssertNil(Calculator.evaluate("1 000 + 5", locale: Self.english), "English does not group with spaces")
+        XCTAssertEqual(UnitConverter.convert("1 000 m in km", locale: french)?.result, 1)
+    }
+
     func testScientificNotationAndMagnitudes() {
         XCTAssertEqual(Calculator.evaluate("1e3 * 2", locale: Self.english), 2000)
         XCTAssertEqual(Calculator.evaluate("2.5E-3 * 1000", locale: Self.english), 2.5)

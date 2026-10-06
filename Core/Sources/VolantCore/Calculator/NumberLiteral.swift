@@ -14,11 +14,18 @@ public enum NumberLiteral {
     struct Separators {
         let decimal: Character
         let grouping: Character
+        /// Locales that group with a space (often a non-breaking one) accept a typed ordinary space.
+        let spaceGrouping: Bool
 
         init(_ locale: Locale) {
             decimal = locale.decimalSeparator?.first ?? "."
             let group = locale.groupingSeparator?.first ?? ","
             grouping = group == decimal ? (decimal == "." ? "," : ".") : group
+            spaceGrouping = grouping.isWhitespace
+        }
+
+        func groups(_ character: Character) -> Bool {
+            character == grouping || (spaceGrouping && character.isWhitespace && !character.isNewline)
         }
     }
 
@@ -47,7 +54,7 @@ public enum NumberLiteral {
                 if fraction != nil { fraction! += String(ch) } else { mantissa += String(ch); current += 1 }
             } else if ch == separators.decimal, fraction == nil, digit(index + 1) {
                 fraction = ""
-            } else if grouping, ch == separators.grouping, fraction == nil, digit(index + 1) {
+            } else if grouping, separators.groups(ch), fraction == nil, digit(index + 1) {
                 groups.append(current)
                 current = 0
             } else {

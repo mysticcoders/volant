@@ -108,7 +108,7 @@ public enum Calculator {
     public static func looksNumeric(_ text: String) -> Bool {
         let t = text.trimmingCharacters(in: .whitespaces)
         guard !t.isEmpty else { return false }
-        let allowed = CharacterSet(charactersIn: "0123456789.,;+-*/^%()!° ").union(.letters)
+        let allowed = CharacterSet(charactersIn: "0123456789.,;+-*/^%()!°").union(.letters).union(.whitespaces)
         guard t.unicodeScalars.allSatisfy({ allowed.contains($0) }) else { return false }
         return t.unicodeScalars.contains { CharacterSet.decimalDigits.contains($0) } || t.lowercased().contains("pi")
             || t.range(of: #"\be\b"#, options: [.regularExpression, .caseInsensitive]) != nil

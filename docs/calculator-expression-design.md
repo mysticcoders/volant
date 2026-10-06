@@ -164,3 +164,10 @@ The 148 CSS named colors convert when a target format is given: `red in hex`, `R
 ## Swap — October 6, 2026
 
 Shift-Command-Return on a conversion card replaces the search with the same conversion the other way, using the answer as the input: `5 km in mi` becomes `3.106856 mi in km`, `100 usd in eur` becomes `80 EUR in USD`, `2rem in px at 18px` becomes `36px in rem at 18px`, and `#ff6363` becomes `rgb(255 99 99) in hex`. The footer shows "Swap ⇧⌘↩" only when a swap exists; arithmetic, dates and time answers have none. The unit converter now reads its own symbols (`ft²`, `°F`), so swapped queries parse. Round trips return to the original value within the six-decimal display rounding.
+
+## Time and date polish — October 6, 2026
+
+- Time conversions swap with Shift-Command-Return: `1pm EST in CET` becomes `7:00pm cet in est`; when the answer falls on another day there, the swap names that date (`2026-10-03 4:00am cet in est`) so the reverse is exact; an implicit local destination swaps as `local`. Clocks, local moments and differences have no swap.
+- `time in 4 hours in Tokyo`, `time in 90 minutes in New York`, `time in 1 day in LA`: the clock there after that much elapsed time, tagged `In 4 hours`.
+- `last friday` is the most recent Friday before today; `friday after next` is a week after next Friday. Both work alone, in date questions and in time queries, and past local moments read `7 days ago`.
+- Locales that group digits with a space (French uses a narrow no-break space) accept a typed space: `1 000 + 5`, `12 345,5 * 2`.
