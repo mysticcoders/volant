@@ -162,6 +162,36 @@ final class CalculatorTests: XCTestCase {
         }
     }
 
+    func testListFunctions() throws {
+        XCTAssertEqual(try value("avg(1, 2, 3)"), 2)
+        XCTAssertEqual(try value("average(2, 4, 9)"), 5)
+        XCTAssertEqual(try value("MEAN(1;2;3)"), 2)
+        XCTAssertEqual(try value("sum(1, 2, 3)"), 6)
+        XCTAssertEqual(try value("sum(0.1, 0.2)"), 0.3, accuracy: 1e-12)
+        XCTAssertEqual(try value("median(3, 1, 2)"), 2)
+        XCTAssertEqual(try value("median(4, 1, 3, 2)"), 2.5)
+        XCTAssertEqual(try value("range(3, 9, -4)"), 13)
+        XCTAssertEqual(try value("stdev(2, 4, 4, 4, 5, 5, 7, 9)"), 2.138089935299395, accuracy: 1e-12)
+        XCTAssertEqual(try value("stddev(1, 1)"), 0)
+        XCTAssertEqual(try value("sum(1, 2) * avg(4, 6)"), 15)
+        XCTAssertEqual(Calculator.evaluate("avg(2,5; 3,5)", locale: Self.german), 3)
+    }
+
+    func testListPhrases() throws {
+        XCTAssertEqual(try value("average of 1, 2, 3"), 2)
+        XCTAssertEqual(try value("sum of 3, 5 and 8"), 16)
+        XCTAssertEqual(try value("the average of 4 and 8"), 6)
+        XCTAssertEqual(try value("Median of 9; 1; 5"), 5)
+        XCTAssertEqual(try value("sum of 1, 500 and 2"), 503)
+    }
+
+    func testListFunctionsNeedTwoValues() {
+        for query in ["sum(5)", "avg(1,500)", "mean of 10", "median()", "stdev(4)", "range of motion", "sum 1, 2",
+                      "average of", "sum of 1,,2"] {
+            XCTAssertNil(Calculator.evaluate(query, locale: Self.english), query)
+        }
+    }
+
     func testNonRealResultsGiveNoAnswer() {
         for query in ["sqrt(-1)", "asin(2)", "ln(0)", "log(-1)", "acosh(0.5)", "(-1)!", "2.5!", "171!", "1e308 * 10", "atanh(1)"] {
             XCTAssertNil(Calculator.evaluate(query, locale: Self.english), query)

@@ -222,4 +222,82 @@ final class DateCalculatorTests: XCTestCase {
         XCTAssertEqual(answers.map(\.result), ["Tuesday, October 6"])
         XCTAssertEqual(CalculationAnswer.answers(for: "2 + 2", now: now, localZone: paris).map(\.result), ["4"])
     }
+
+    func testWeekdayOfADate() {
+        XCTAssertEqual(card("what day was 2000-01-01"), ["Saturday", "Saturday, January 1, 2000", "Saturday"])
+        XCTAssertEqual(card("what day is christmas"), ["Friday", "Friday, December 25", "Friday"])
+        XCTAssertEqual(card("what day was christmas"), ["Thursday", "Thursday, December 25, 2025", "Thursday"])
+        XCTAssertEqual(card("What day of the week is Dec 25 2030").first, "Wednesday")
+        XCTAssertEqual(card("what weekday will be March 1st 2027").first, "Monday")
+        XCTAssertEqual(card("what day is it"), ["Tuesday", "Tuesday, October 6", "Tuesday"])
+        XCTAssertEqual(card("what day is 2028-02-29").first, "Tuesday")
+        XCTAssertNil(answer("what day is good"))
+        XCTAssertNil(answer("what day"))
+    }
+
+    func testISOWeekNumber() {
+        XCTAssertEqual(card("week number"), ["Week 41", "Monday, October 5 to Sunday, October 11", "Week 41"])
+        XCTAssertEqual(answer("week number")?.inputDetail, "ISO 8601")
+        XCTAssertEqual(card("week of the year").first, "Week 41")
+        XCTAssertEqual(card("what week is it").first, "Week 41")
+        XCTAssertEqual(card("week number of Dec 25").first, "Week 52")
+        XCTAssertEqual(card("week number of Jan 1 2027"), ["Week 53 of 2026", "Monday, December 28 to Sunday, January 3, 2027", "Week 53 of 2026"])
+        XCTAssertEqual(card("week number 2024-12-30").first, "Week 1 of 2025")
+        XCTAssertNil(answer("week number of"))
+        XCTAssertNil(answer("week number of nothing"))
+    }
+
+    func testDayOfYear() {
+        XCTAssertEqual(card("day of year"), ["Day 279", "86 days left in 2026", "Day 279"])
+        XCTAssertEqual(card("day of the year Dec 31").first, "Day 365")
+        XCTAssertEqual(card("day number of 2028-12-31"), ["Day 366", "0 days left in 2028", "Day 366"])
+        XCTAssertEqual(answer("day of the year Dec 31")?.inputDetail, "Thursday, December 31")
+    }
+
+    func testDaysInAMonthOrYear() {
+        XCTAssertEqual(card("days in february"), ["28 days", "February 2026", "28 days"])
+        XCTAssertEqual(card("days in Feb 2028"), ["29 days", "February 2028", "29 days"])
+        XCTAssertEqual(card("days in 2028"), ["366 days", "2028", "366 days"])
+        XCTAssertEqual(card("days in 1900").first, "365 days")
+        XCTAssertEqual(card("days in this month"), ["31 days", "October 2026", "31 days"])
+        XCTAssertEqual(card("days in this year").first, "365 days")
+        XCTAssertNil(answer("days in 2 weeks"))
+        XCTAssertNil(answer("days in feb 28"))
+        XCTAssertNil(answer("days in paris"))
+    }
+
+    func testLeapYears() {
+        XCTAssertEqual(card("is 2028 a leap year"), ["Yes", "2028 has 366 days", "2028 is a leap year"])
+        XCTAssertEqual(card("is 2027 a leap year"), ["No", "The next leap year is 2028", "2027 is not a leap year"])
+        XCTAssertEqual(card("is it a leap year").first, "No")
+        XCTAssertEqual(card("is this year a leap year").last, "2026 is not a leap year")
+        XCTAssertEqual(card("2000 leap year").first, "Yes")
+        XCTAssertEqual(card("1900 leap year"), ["No", "The next leap year is 1904", "1900 is not a leap year"])
+        XCTAssertEqual(card("next leap year"), ["2028", "Tuesday, February 29, 2028", "2028"])
+        XCTAssertNil(answer("is 28 a leap year"))
+    }
+
+    func testAgeFromABirthdate() {
+        XCTAssertEqual(card("age 1985-04-12"), ["41 years", "Next birthday in 188 days", "41 years"])
+        XCTAssertEqual(answer("age 1985-04-12")?.inputDetail, "Born Friday, April 12, 1985")
+        XCTAssertEqual(card("age April 12 1985").first, "41 years")
+        XCTAssertEqual(card("age 1985-04-12 on Jan 1 2030"), ["44 years", "On Tuesday, January 1, 2030", "44 years"])
+        XCTAssertEqual(card("age 1985-10-06"), ["41 years", "Birthday today", "41 years"])
+        XCTAssertEqual(card("age 1985-10-07"), ["40 years", "Next birthday in 1 day", "40 years"])
+        XCTAssertEqual(card("age 2026-01-01").first, "0 years")
+        XCTAssertEqual(card("age 2000-02-29 on 2001-02-28").first, "1 year", "a February 29 birthday falls on February 28 in common years")
+        XCTAssertEqual(card("age 2000-02-29 on 2004-02-29").first, "4 years")
+        XCTAssertNil(answer("age April 12"), "a birthdate needs its year")
+        XCTAssertNil(answer("age 2030-01-01"), "a birthdate cannot be in the future")
+        XCTAssertNil(answer("age of empires"))
+    }
+
+    func testDaysBetweenTwoDatesAsSubtraction() {
+        XCTAssertEqual(card("Dec 25 - Oct 6"), ["80 days", "Tuesday, October 6 to Friday, December 25", "80 days"])
+        XCTAssertEqual(card("Oct 6 - Dec 25").first, "-80 days")
+        XCTAssertEqual(card("2027-01-01 - today").first, "87 days")
+        XCTAssertEqual(card("christmas - thanksgiving").first, "29 days")
+        XCTAssertEqual(card("Dec 25 - 5").first, "Sunday, December 20", "a plain number still means days")
+        XCTAssertEqual(card("today - 3 days").first, "Saturday, October 3")
+    }
 }

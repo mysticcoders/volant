@@ -13,7 +13,11 @@ import Foundation
 /// "log(8, 2)", "round(3.14159, 2)". A comma separates arguments when it cannot be thousands
 /// grouping, so "max(1,5)" and "max(1, 500)" both work; ";" always separates, which suits locales
 /// with a decimal comma. max and min need at least two arguments, so an ambiguous "max(1,500)"
-/// gives no answer rather than a wrong one.
+/// gives no answer rather than a wrong one. The list functions avg (average, mean), sum, median,
+/// range and stdev (the sample standard deviation, as spreadsheets compute it) follow the same
+/// rule, and also read as phrases: "average of 4, 8 and 15", "sum of 3; 5".
+///
+/// Integers may be written in hexadecimal, binary or octal with a prefix: "0x1F + 0b1010", "0o17".
 ///
 /// `%` is a percentage, as people write it: "52% of 900", "20% off 80", "15% tip on 42", and
 /// "19 + 47%" or "100 - 10%" add or subtract that share of the left side. Elsewhere `%` divides by
@@ -73,8 +77,53 @@ public enum Calculator {
             return divisor == 0 ? 0 : Double(abs(a) / divisor) * Double(abs(b))
         },
         "ncr": { choose($0, ordered: false) }, "choose": { choose($0, ordered: false) },
-        "npr": { choose($0, ordered: true) }, "perm": { choose($0, ordered: true) }
+        "npr": { choose($0, ordered: true) }, "perm": { choose($0, ordered: true) },
+        "avg": { mean($0) }, "average": { mean($0) }, "mean": { mean($0) },
+        "sum": { $0.count >= 2 ? $0.reduce(0, +) : nil },
+        "median": { median($0) },
+        "range": { $0.count >= 2 ? $0.max()! - $0.min()! : nil },
+        "stdev": { deviation($0) }, "stddev": { deviation($0) }
     ]
+
+    /// Names that read as list phrases: "average of 1, 2 and 3".
+    private static let listNames = ["avg", "average", "mean", "sum", "median", "range", "stdev", "stddev"]
+
+    private static func mean(_ values: [Double]) -> Double? {
+        values.count >= 2 ? values.reduce(0, +) / Double(values.count) : nil
+    }
+
+    private static func median(_ values: [Double]) -> Double? {
+        guard values.count >= 2 else { return nil }
+        let sorted = values.sorted(), middle = sorted.count / 2
+        return sorted.count % 2 == 1 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2
+    }
+
+    /// Sample standard deviation, dividing by n - 1.
+    private static func deviation(_ values: [Double]) -> Double? {
+        guard let average = mean(values) else { return nil }
+        let squares = values.reduce(0) { $0 + ($1 - average) * ($1 - average) }
+        return (squares / Double(values.count - 1)).squareRoot()
+    }
+
+    /// A prefixed integer literal at `start`: "0x1F", "0b1010", "0o17". Returns nil when no prefix
+    /// starts there, and throws when the digits after one are malformed or too large to be exact.
+    static func prefixedInteger(_ chars: [Character], from start: Int) throws -> (Double, Int)? {
+        guard chars[start] == "0", start + 1 < chars.count else { return nil }
+        let radix: Int
+        switch chars[start + 1] {
+        case "x", "X": radix = 16
+        case "b", "B": radix = 2
+        case "o", "O": radix = 8
+        default: return nil
+        }
+        var end = start + 2
+        while end < chars.count, chars[end].isASCII, chars[end].hexDigitValue.map({ $0 < radix }) ?? false { end += 1 }
+        guard end > start + 2 else { return nil }
+        guard end == chars.count || !(chars[end].isLetter || chars[end].isNumber),
+              end - start - 2 <= 64, let value = UInt64(String(chars[(start + 2)..<end]), radix: radix),
+              value <= 1 << 53 else { throw CalcError.syntax }
+        return (Double(value), end)
+    }
 
     private static func whole(_ value: Double) -> Int? {
         value == value.rounded() && abs(value) < 9e15 ? Int(value) : nil
@@ -93,9 +142,16 @@ public enum Calculator {
         return ordered ? result : result.rounded()
     }
 
-    /// Rewrites everyday phrasings into the symbols the tokenizer reads.
+    /// Rewrites everyday phrasings into the symbols the tokenizer reads. A list phrase ("sum of
+    /// 3, 5 and 8") becomes a call, with "and" separating like ";".
     private static func phrases(_ text: String) -> String {
         var value = text
+        let list = "^\\s*(?:the\\s+)?(" + listNames.joined(separator: "|") + ")\\s+of\\s+(.+?)\\s*$"
+        if let match = value.range(of: list, options: [.regularExpression, .caseInsensitive]) {
+            let name = value[match].replacingOccurrences(of: list, with: "$1", options: [.regularExpression, .caseInsensitive])
+            let items = value[match].replacingOccurrences(of: list, with: "$2", options: [.regularExpression, .caseInsensitive])
+            value = name + "(" + items.replacingOccurrences(of: #"\s+and\s+"#, with: "; ", options: [.regularExpression, .caseInsensitive]) + ")"
+        }
         for (pattern, replacement) in [(#"\bsquare\s+root\s+of\b"#, " sqrt "), (#"\bcube\s+root\s+of\b"#, " cbrt "),
                                        (#"\bto\s+the\s+power\s+of\b"#, " ^ "), (#"\bpower\b"#, " ^ "),
                                        (#"\bsquared\b"#, " ^ 2 "), (#"\bcubed\b"#, " ^ 3 "), (#"\bfactorial\b"#, " ! ")] {
@@ -138,6 +194,9 @@ public enum Calculator {
         while i < chars.count {
             let ch = chars[i]
             if ch.isWhitespace { i += 1; continue }
+            if let (v, j) = try prefixedInteger(chars, from: i) {
+                tokens.append(.number(v)); i = j; continue
+            }
             if ch.isNumber || ch == separators.decimal {
                 let inCall = calls.last == true
                 guard let (v, j) = NumberLiteral.scan(chars, from: i, separators)
