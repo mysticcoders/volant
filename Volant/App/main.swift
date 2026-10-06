@@ -66,6 +66,7 @@ if CommandLine.arguments.contains("--wifi-interface-check") {
     exit(0)
 }
 CityDirectory.shared = .bundled()
+AirportDirectory.shared = .bundled()
 let delegate = AppDelegate()
 app.delegate = delegate
 app.setActivationPolicy(.accessory)

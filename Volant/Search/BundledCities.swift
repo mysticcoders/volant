@@ -12,3 +12,14 @@ extension CityDirectory {
         })
     }
 }
+
+extension AirportDirectory {
+    /// IATA airport time zones from the app bundle, decompressed on first use.
+    static func bundled(_ bundle: Bundle = .main) -> AirportDirectory {
+        AirportDirectory(load: {
+            guard let url = bundle.url(forResource: "airports.tsv", withExtension: "deflate"),
+                  let data = try? (Data(contentsOf: url) as NSData).decompressed(using: .zlib) else { return nil }
+            return String(data: data as Data, encoding: .utf8)
+        })
+    }
+}

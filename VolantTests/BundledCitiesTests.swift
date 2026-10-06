@@ -10,6 +10,13 @@ final class BundledCitiesTests: XCTestCase {
         XCTAssertNil(cities.lookup("Springfield"))
     }
 
+    func testAppBundleShipsAirportsAndTheirLicense() throws {
+        let bundle = Bundle(for: AppDelegate.self)
+        XCTAssertEqual(AirportDirectory.bundled(bundle).lookup("JFK")?.zone.identifier, "America/New_York")
+        let license = try XCTUnwrap(bundle.url(forResource: "Airports-LICENSE", withExtension: "txt"))
+        XCTAssertTrue(try String(contentsOf: license, encoding: .utf8).contains("MIT License"))
+    }
+
     func testMissingTableAnswersNothing() {
         XCTAssertNil(CityDirectory.bundled(Bundle(for: BundledCitiesTests.self)).lookup("Seattle"))
     }
