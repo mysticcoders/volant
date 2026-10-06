@@ -62,10 +62,32 @@ public final class CityDirectory {
         guard let place, let qualifier, let candidates = candidates(place) else { return nil }
         let upper = qualifier.uppercased()
         let inState = qualifier.count == 2 ? candidates.filter { $0.country == "US" && $0.admin1 == upper } : []
-        if !inState.isEmpty { return choose(inState) }
+        if !inState.isEmpty { return choose(inState).map { Match(zone: $0.zone, name: "\($0.name), \(upper)") } }
         guard let country = countries[qualifier] else { return nil }
         let inCountry = candidates.filter { $0.country == country }
-        return inCountry.isEmpty ? nil : choose(inCountry)
+        let shown = qualifier.count <= 3 ? upper : qualifier.split(separator: " ").map { $0.prefix(1).uppercased() + $0.dropFirst() }.joined(separator: " ")
+        return inCountry.isEmpty ? nil : choose(inCountry).map { Match(zone: $0.zone, name: "\($0.name), \(shown)") }
+    }
+
+    /// For a name that is ambiguous in time, up to `limit` qualified spellings, largest city
+    /// first, each of which resolves on its own: "Springfield, MO" for US cities and "Valencia,
+    /// Spain" elsewhere, since country names never clash with state codes. Empty when the name
+    /// resolves or is unknown.
+    public func alternatives(_ text: String, limit: Int = 3) -> [String] {
+        lock.lock()
+        defer { lock.unlock() }
+        loadIfNeeded()
+        guard let candidates = candidates(Self.key(text)), choose(candidates) == nil else { return [] }
+        let english = Locale(identifier: "en_US")
+        var seen = Set<String>(), result: [String] = []
+        for entry in candidates.sorted(by: { $0.population > $1.population }) where result.count < limit {
+            let group = entry.country == "US" ? candidates.filter { $0.country == "US" && $0.admin1 == entry.admin1 }
+                                              : candidates.filter { $0.country == entry.country }
+            guard let qualifier = entry.country == "US" ? entry.admin1 : english.localizedString(forRegionCode: entry.country),
+                  !qualifier.isEmpty, seen.insert(qualifier).inserted, choose(group) != nil else { continue }
+            result.append("\(entry.name), \(qualifier)")
+        }
+        return result
     }
 
     private func candidates(_ key: String) -> [Entry]? {

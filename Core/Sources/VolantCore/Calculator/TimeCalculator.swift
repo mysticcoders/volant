@@ -133,6 +133,34 @@ public enum TimeCalculator {
                       explicitDate: part(1) != nil, source: describe(first, in: source, now: now, locale: locale), now: now, locale: locale)
     }
 
+    /// Qualified alternatives for a time question that failed only because a city name is
+    /// ambiguous: "time in springfield" offers Springfield, MO, MA and IL. Runs only for queries
+    /// shaped like time questions, so ordinary searches never load the city table.
+    public static func suggestions(_ text: String, now: Date = Date(), localZone: TimeZone = .current,
+                                   locale: Locale = .current) -> [(query: String, result: Result)] {
+        guard text.utf8.count <= 256, evaluate(text, now: now, localZone: localZone, locale: locale) == nil else { return [] }
+        let lowered = text.lowercased().split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
+        let shaped = ["time in ", "now in ", "time diff ", "diff ", "time difference ", "difference "].contains(where: lowered.hasPrefix)
+            || lowered.range(of: #"^(\d{4}-\d{2}-\d{2}\s+)?\d{1,2}(:\d{2})?\s*(am|pm)?\s+\S"#, options: .regularExpression) != nil
+        guard shaped else { return [] }
+        let words = text.split(whereSeparator: { $0.isWhitespace }).map(String.init)
+        let skip: Set<String> = ["time", "now", "in", "to", "diff", "difference", "with", "from", "at", "am", "pm"]
+        for length in stride(from: min(3, words.count), through: 1, by: -1) {
+            for start in 0...(words.count - length) {
+                let span = words[start..<(start + length)]
+                guard !span.contains(where: { skip.contains($0.lowercased()) || $0.contains(where: \.isNumber) }) else { continue }
+                let alternatives = CityDirectory.shared.alternatives(span.joined(separator: " "))
+                guard !alternatives.isEmpty else { continue }
+                let found = alternatives.compactMap { alternative -> (query: String, result: Result)? in
+                    let query = (words[..<start] + [alternative] + words[(start + length)...]).joined(separator: " ")
+                    return evaluate(query, now: now, localZone: localZone, locale: locale).map { (query, $0) }
+                }
+                if !found.isEmpty { return found }
+            }
+        }
+        return []
+    }
+
     /// The place in "time diff Paris", "diff to Tokyo" or "time difference with New York".
     private static func differenceTarget(_ query: String) -> String? {
         guard let prefix = ["time difference ", "time diff ", "difference ", "diff "].first(where: query.hasPrefix) else { return nil }
