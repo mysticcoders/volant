@@ -69,7 +69,7 @@ public struct CalculationAnswer: Hashable {
         if let screen = ScreenUnits.evaluate(query, locale: locale) {
             answers.append(screen)
         }
-        if let money = CurrencyConverter.evaluate(query, now: now, locale: locale) {
+        if let money = CurrencyConverter.evaluate(query, now: now, zone: localZone, locale: locale) {
             answers.append(money)
         }
         if let conversion = UnitConverter.convert(query, locale: locale) {

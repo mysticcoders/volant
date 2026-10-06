@@ -331,5 +331,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let ai = try? AIConfiguration.load() { panel.model.acp.configure(ai) }
         clipboardStore.retention = config.clipboardRetention
         settingsSync.update(enabled: config.syncSettingsWithICloud)
+        currencyRates.keyChanged()
     }
 }
