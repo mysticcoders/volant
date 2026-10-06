@@ -59,6 +59,8 @@ public enum ScreenUnits {
         let rounded = (result * 10_000).rounded() / 10_000
         let text = Calculator.format(rounded, locale: locale) + to.symbol
         let detail = assumption ?? ([from, to].contains(.rem) ? "1rem = 16px" : [from, to].contains(.em) ? "1em = 16px" : "96px per inch")
-        return CalculationAnswer(input: input, inputDetail: detail, result: text, resultDetail: nil, copyText: text)
+        let setting = part(4).map { " at \($0)\(part(5) == "px" ? "px" : " " + part(5)!)" } ?? ""
+        return CalculationAnswer(input: input, inputDetail: detail, result: text, resultDetail: nil, copyText: text,
+                                 swapQuery: "\(text) in \(from.symbol)\(setting)")
     }
 }

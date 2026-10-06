@@ -87,6 +87,13 @@ model.query += " * 3"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 guard case .calculation(let continued) = model.selectedRow else { fatalError("Missing continued calculation") }
 verify(continued.copyText == "12", "Calculation continues from the answer")
+model.query = "5 km in mi"
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+model.activateSwap()
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+verify(model.query == "3.106856 mi in km", "Swap reverses the conversion")
+guard case .calculation(let swapped) = model.selectedRow else { fatalError("Missing swapped conversion") }
+verify(swapped.copyText == "5 km", "Swapped conversion returns to the original amount")
 model.query = "1pm EST in"
 verify(!model.rows.contains { if case .calculation = $0 { return true }; return false }, "Incomplete time query has no answer")
 model.query = "snip screen"

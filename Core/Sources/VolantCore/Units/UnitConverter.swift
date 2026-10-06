@@ -88,9 +88,10 @@ public enum UnitConverter {
         return nil
     }
 
-    /// Unit names ignore spacing and the degree sign: "sq ft", "fl oz", "square feet", "°F".
+    /// Unit names ignore spacing and the degree sign, and read superscript squares, so the
+    /// converter's own symbols ("ft²", "°F") work as input: "sq ft", "fl oz", "square feet".
     private static func lookup(_ raw: String) -> Spec? {
-        let key = raw.replacingOccurrences(of: "°", with: "").filter { !$0.isWhitespace }
+        let key = raw.replacingOccurrences(of: "°", with: "").replacingOccurrences(of: "²", with: "2").filter { !$0.isWhitespace }
         return key.isEmpty ? nil : table[key]
     }
 
