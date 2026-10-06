@@ -32,6 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return sync
     }()
 
+    private let currencyRates = CurrencyRatesStore()
     private let updater = AppUpdater()
     private var statusItem: NSStatusItem?
     private var config = Preferences.load()
@@ -117,6 +118,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         applyTheme()
         if let ai = try? AIConfiguration.load() { panel.model.acp.configure(ai) }
         if config.syncSettingsWithICloud { settingsSync.update(enabled: true) }
+        currencyRates.loadCache()
+        currencyRates.onUpdate = { [weak self] in self?.panel.model.refreshForCurrencyRates() }
+        panel.model.onCalculationQuery = { [weak self] query in self?.currencyRates.noteQuery(query) }
         updater.start()
         installApplicationMenu()
         installStatusItem()

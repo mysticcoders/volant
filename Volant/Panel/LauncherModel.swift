@@ -402,6 +402,19 @@ final class LauncherModel: ObservableObject {
         selection = 0
     }
 
+    /// Sees every typed query before calculator answers are built; the app uses it to fetch
+    /// exchange rates the first time a currency conversion is typed. Fixtures leave it empty.
+    var onCalculationQuery: (String) -> Void = { _ in }
+
+    /// Redraws answers when exchange rates arrive for the query still being typed, keeping the
+    /// selected row as same-query asynchronous updates do.
+    func refreshForCurrencyRates() {
+        guard isPresented, !query.isEmpty else { return }
+        let selectedID = selectedRow?.id
+        refresh()
+        if let selectedID, let offset = rows.firstIndex(where: { $0.id == selectedID }) { selection = offset }
+    }
+
     func refreshForAppIndex() {
         guard isPresented, query.isEmpty || searchesAppIndex else { return }
         let selectedID = selectedRow?.id
@@ -630,6 +643,7 @@ final class LauncherModel: ObservableObject {
         }
 
         searchesAppIndex = true
+        onCalculationQuery(q)
         let answers = CalculationAnswer.answers(for: q).map(ResultRow.calculation)
         immediate = []
         let builtins: [(String, ResultRow)] = [("Volant Settings", .settings), ("Reload Configuration", .reloadConfig)]

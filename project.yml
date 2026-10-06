@@ -77,6 +77,8 @@ targets:
         embed: true
       - target: VolantAIHost
         embed: true
+      - target: VolantRatesHost
+        embed: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant
@@ -135,6 +137,29 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.AIHost
+        GENERATE_INFOPLIST_FILE: NO
+  VolantRatesHost:
+    type: xpc-service
+    platform: macOS
+    sources:
+      - path: VolantRatesHost
+    dependencies:
+      - package: VolantCore
+    entitlements:
+      path: VolantRatesHost/VolantRatesHost.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+    info:
+      path: VolantRatesHost/Info.plist
+      properties:
+        CFBundleIdentifier: com.mysticcoders.volant.RatesHost
+        CFBundleName: VolantRatesHost
+        XPCService:
+          ServiceType: Application
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.RatesHost
         GENERATE_INFOPLIST_FILE: NO
   VolantAgentHost:
     type: xpc-service
