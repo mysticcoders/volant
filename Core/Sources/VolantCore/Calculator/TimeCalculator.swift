@@ -63,6 +63,10 @@ public enum TimeCalculator {
         localCalendar.timeZone = localZone
         let baseline = localCalendar.dateComponents([.year, .month, .day], from: now)
         var words = text.lowercased().split(whereSeparator: { $0.isWhitespace }).map(String.init)
+        for index in words.indices.reversed() where index + 1 < words.count
+            && ["next", "this"].contains(words[index]) && weekdays[words[index + 1]] != nil {
+            words[index] += " " + words.remove(at: index + 1)
+        }
         let dayWords = words.indices.filter { dayOffset(words[$0], now: now, calendar: localCalendar) != nil }
         guard dayWords.count <= 1 else { return nil }
         var relativeDay: Int?
@@ -220,16 +224,18 @@ public enum TimeCalculator {
         return formatter.string(from: date)
     }
 
-    /// A day word's distance from the owner's local today. A weekday means its next occurrence,
-    /// today included.
+    /// A day word's distance from the owner's local today: "friday" or "this friday" is the coming
+    /// one, today included; "next friday" is the next one that is not today.
     private static func dayOffset(_ word: String, now: Date, calendar: Calendar) -> Int? {
         switch word {
         case "today", "tonight": return 0
         case "tomorrow": return 1
         case "yesterday": return -1
         default:
-            guard let weekday = weekdays[word] else { return nil }
-            return (weekday - calendar.component(.weekday, from: now) + 7) % 7
+            let parts = word.split(separator: " ")
+            guard let weekday = parts.last.flatMap({ weekdays[String($0)] }), parts.count == 1 || ["next", "this"].contains(parts[0]) else { return nil }
+            let ahead = (weekday - calendar.component(.weekday, from: now) + 7) % 7
+            return parts.first == "next" && ahead == 0 ? 7 : ahead
         }
     }
 

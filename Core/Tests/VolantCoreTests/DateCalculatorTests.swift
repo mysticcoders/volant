@@ -114,6 +114,55 @@ final class DateCalculatorTests: XCTestCase {
         XCTAssertNil(answer("unix abc"))
     }
 
+    func testNextAndThisWeekday() {
+        XCTAssertEqual(card("next friday"), ["Friday, October 9", "In 3 days", "Friday, October 9"])
+        XCTAssertEqual(card("this friday").first, "Friday, October 9")
+        XCTAssertEqual(card("next tuesday"), ["Tuesday, October 13", "In 7 days", "Tuesday, October 13"])
+        XCTAssertEqual(card("this tuesday").first, "Tuesday, October 6")
+        XCTAssertEqual(card("days until next monday").first, "6 days")
+        XCTAssertEqual(card("next friday + 1 week").first, "Friday, October 16")
+    }
+
+    func testNamedHolidays() {
+        XCTAssertEqual(card("days until christmas"), ["80 days", "Friday, December 25", "80 days"])
+        XCTAssertEqual(card("days until Christmas Eve").first, "79 days")
+        XCTAssertEqual(card("days until halloween").first, "25 days")
+        XCTAssertEqual(card("days since new year's day").first, "278 days")
+        XCTAssertEqual(card("days until easter"), ["173 days", "Sunday, March 28, 2027", "173 days"])
+        XCTAssertEqual(card("thanksgiving + 1").first, "Friday, November 27")
+        XCTAssertEqual(card("christmas 2027 + 0").first, "Saturday, December 25, 2027")
+        XCTAssertEqual(card("days until 4th of July").first, "271 days")
+        XCTAssertEqual(DateCalculator.easter(2026).month * 100 + DateCalculator.easter(2026).day, 405)
+        XCTAssertEqual(DateCalculator.easter(2024).month * 100 + DateCalculator.easter(2024).day, 331)
+        XCTAssertEqual(DateCalculator.easter(2000).month * 100 + DateCalculator.easter(2000).day, 423)
+        XCTAssertEqual(DateCalculator.Holiday.thanksgiving.date(in: 2026).day, 26)
+        XCTAssertEqual(DateCalculator.Holiday.thanksgiving.date(in: 2027).day, 25)
+    }
+
+    func testWorkdays() {
+        XCTAssertEqual(card("workdays until Dec 25"), ["58 workdays", "Friday, December 25", "58 workdays"])
+        XCTAssertEqual(card("business days until christmas").first, "58 workdays")
+        XCTAssertEqual(card("in 10 workdays"), ["Tuesday, October 20", "In 14 days", "Tuesday, October 20"])
+        XCTAssertEqual(card("10 working days from now").first, "Tuesday, October 20")
+        XCTAssertEqual(card("5 business days ago").first, "Tuesday, September 29")
+        XCTAssertEqual(card("today + 10 workdays").first, "Tuesday, October 20")
+        XCTAssertEqual(card("workdays between 2026-12-24 and 2027-01-04").first, "7 workdays")
+        XCTAssertEqual(card("workdays until tomorrow").first, "1 workday")
+    }
+
+    func testSummedDurations() {
+        XCTAssertEqual(card("2h 20min + 55min"), ["3 hours 15 minutes", nil, "3 hours 15 minutes"])
+        XCTAssertEqual(card("2h 20min + 55min in hours").first, "3.25 hours")
+        XCTAssertEqual(card("1h 30m - 45m in minutes").first, "45 minutes")
+        XCTAssertEqual(card("2h 20min in minutes").first, "140 minutes")
+        XCTAssertEqual(card("2 days 3 hours").first, "2 days 3 hours")
+        XCTAssertEqual(card("1 hour + 1 hour in hours").first, "2 hours")
+        XCTAssertEqual(card("90 sec + 30 sec to timespan").first, "2 minutes")
+        for query in ["90 min in h", "1h - 2h", "2h + 3 months", "2h +", "+ 2h 30m", "2h 20min + banana"] {
+            XCTAssertNil(answer(query), query)
+        }
+    }
+
     func testNeverAnswersOrdinaryOrAmbiguousText() {
         for query in ["Safari", "2 + 2", "5 - 3", "now playing", "today show", "12/25 + 5", "days until", "days until someday",
                       "in 3 parsecs", "in 1.5 days", "Feb 30 + 1", "13pm + 1", "3:75pm + 1", "monday in", "3 weeks",
