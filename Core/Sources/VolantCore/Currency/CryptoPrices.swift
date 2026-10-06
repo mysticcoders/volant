@@ -1,9 +1,9 @@
 import Foundation
 
-/// Euro prices of major cryptocurrencies from CoinGecko's simple price API, fetched with the
-/// owner's own free Demo key. The request names a fixed list of coins, so nothing typed in Volant
-/// is sent; the key is the only input. CoinGecko's free tier requires attribution, which the card
-/// tag and Settings give.
+/// Euro prices of major cryptocurrencies from CoinGecko's simple price API, fetched through the
+/// keyless public API, or with the owner's own free Demo key for steadier limits when one is saved.
+/// The request names a fixed list of coins, so nothing typed in Volant is sent; the optional key is
+/// the only input. CoinGecko's free tiers require attribution, which the card tag and Settings give.
 public struct CryptoPrices: Codable, Equatable {
     /// CoinGecko id, ticker, and the names people type.
     public static let coins: [(id: String, code: String, names: [String])] = [
@@ -21,6 +21,8 @@ public struct CryptoPrices: Codable, Equatable {
         return parts.url!
     }
     public static let keyHeader = "x-cg-demo-api-key"
+    /// The helper's reply when CoinGecko answers 429, so the app can wait longer before retrying.
+    public static let busyMessage = "CoinGecko is busy. Try again later."
     /// The response for a dozen coins is under 1 KB.
     public static let maximumBytes = 16_384
 
@@ -33,7 +35,7 @@ public struct CryptoPrices: Codable, Equatable {
         self.euros = euros
     }
 
-    /// Installed by the app once prices are fetched or loaded; nil without a key or before first use.
+    /// Installed by the app once prices are fetched or loaded; nil before first use.
     public static var current: CryptoPrices?
 
     /// Parses `{"bitcoin": {"eur": 58123.4}, ...}`, requiring positive prices for at least half the

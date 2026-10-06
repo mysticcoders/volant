@@ -46,9 +46,10 @@ export default function PrivacyAndSecurity() {
           that can reach only two fixed addresses. It downloads the European
           Central Bank&rsquo;s public daily rates the first time you type a
           currency conversion, and never before. Crypto prices come from
-          CoinGecko only if you add your own key, which stays in your Keychain
-          and is the only thing sent. Nothing you type is included in either
-          request. See <a href="/docs/calculator">The calculator</a>.
+          CoinGecko&rsquo;s public price list the first time you convert a
+          coin. An optional CoinGecko key stays in your Keychain and is sent
+          only to CoinGecko. Nothing you type is included in either request.
+          See <a href="/docs/calculator">The calculator</a>.
         </li>
       </ul>
       <p>

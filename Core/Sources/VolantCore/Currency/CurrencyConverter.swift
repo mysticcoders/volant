@@ -8,7 +8,7 @@ import Foundation
 /// Japanese yen); other dollars and pesos need their ISO code. "pounds" is currency only when the
 /// other side is a currency, so "5 pounds in kg" stays a weight.
 ///
-/// With `CryptoPrices` from the owner's CoinGecko key, major coins convert too ("0.5 btc in usd",
+/// With `CryptoPrices` from CoinGecko, major coins convert too ("0.5 btc in usd",
 /// "100 eur in eth"), through their euro price; those cards tag CoinGecko and the fetch time.
 public enum CurrencyConverter {
     /// Units of a currency or coin per euro, from crypto prices first and ECB rates otherwise.

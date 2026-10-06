@@ -1,8 +1,9 @@
 import SwiftUI
 import VolantCore
 
-/// The optional CoinGecko key for crypto prices. The key lives in Keychain only, never in
-/// config.json, backups or logs, and is shown only as saved or not.
+/// The optional CoinGecko key for crypto prices, which otherwise come from CoinGecko's keyless
+/// public API. The key lives in Keychain only, never in config.json, backups or logs, and is shown
+/// only as saved or not.
 struct CryptoKeySection: View {
     var credentials = AICredentials.keychain
     let onChange: () -> Void
@@ -18,7 +19,7 @@ struct CryptoKeySection: View {
                     Button("Remove Key") { store(nil) }
                 } label: { EmptyView() }
             } else {
-                SecureField("CoinGecko key", text: $draft, prompt: Text("Paste a Demo key to save it"))
+                SecureField("CoinGecko key", text: $draft, prompt: Text("Optional Demo key"))
                 LabeledContent {
                     Button("Save Key") { store(draft.trimmingCharacters(in: .whitespaces)) }
                         .disabled(!CryptoPrices.validKey(draft.trimmingCharacters(in: .whitespaces)))
@@ -28,7 +29,7 @@ struct CryptoKeySection: View {
         } header: {
             Text("Crypto prices")
         } footer: {
-            SettingsFooter("Optional. With a free CoinGecko Demo key, conversions can include Bitcoin, Ether and other major coins. Prices refresh at most every 10 minutes while you convert crypto, and only the key is sent. Data provided by CoinGecko.")
+            SettingsFooter("Conversions include Bitcoin, Ether and other major coins without a key. A free CoinGecko Demo key is optional and gives steadier rate limits. Prices refresh at most every 10 minutes while you convert crypto, and nothing you type is sent. Data provided by CoinGecko.")
         }
         .onAppear { saved = ((try? credentials.read(CurrencyRatesStore.keyAccount)) ?? nil) != nil }
     }
