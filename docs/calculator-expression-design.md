@@ -107,3 +107,7 @@ Not yet: workdays, "next friday", month-name-only queries ("days until March"), 
 - Unit names ignore spacing: `sq ft`, `square feet`, `fl oz`, `nautical miles`. Square miles, yards, inches and centimeters were added.
 - The converter tries every separator position, so `5 in in cm` reads inches.
 - Calculator and converter tests now pass an explicit locale instead of depending on the machine's.
+
+## Timestamps — October 6, 2026
+
+`DateCalculator` also shows timestamps in local time. ISO 8601 with a zone (`2024-03-15T14:30:00Z`, `…-04:00`, fractional seconds, a space instead of `T`) or without one (`2026-10-07T08:00`, already local) gives the local clock, tagged with its date and, on the input side, how long ago or ahead it is. Unix time reads `unix 1700000000`, `1700000000 unix` or `epoch …`, as seconds, or milliseconds at 13 digits; `unix now` and `now in unix` give the current value. Bare numbers are never treated as timestamps, so arithmetic stays arithmetic.
