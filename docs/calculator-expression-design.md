@@ -131,3 +131,7 @@ Not yet: workdays, "next friday", month-name-only queries ("days until March"), 
 - hsl and hwb show one decimal so 8-bit colors survive a round trip (`hsl(0 100% 69.4%)`).
 - Colors outside sRGB keep exact values in lab/lch/oklab/oklch and show their clamped sRGB color elsewhere, tagged "Outside sRGB". This clamps channels rather than gamut-mapping in OKLCH.
 - Named colors (`red`) and hex without `#` are not read, since they collide with words and numbers.
+||||||| parent of 7db08d4 (Convert CSS and design units in the calculator)
+## CSS and design units — October 6, 2026
+
+`ScreenUnits` converts px, rem, em, pt, pc and the physical in, cm and mm they relate to: `2rem in px`, `32px in rem`, `12pt in px`, `2 inches in px at 72 ppi`, `1.5rem in px at 18px`. CSS fixes 1in = 96px, 1pt = 1/72in and 1pc = 12pt, and rem/em default to 16px; `at <n>px` sets the rem/em base and `at <n> ppi|dpi` switches to print and design math, where a pixel is 1/n inch. The input tag states the assumption (`1rem = 16px`, `72 ppi`). At least one side must be px, rem, em, pt or pc, so `1 pt in ml` stays pints and `5 in in cm` stays a length conversion. Results round to four decimals and copy in CSS form (`32px`).
