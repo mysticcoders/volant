@@ -96,6 +96,14 @@ final class TimeCalculatorTests: XCTestCase {
         XCTAssertEqual(friday("tomorrow 12pm")?.headline, "Tomorrow at noon")
     }
 
+    func testNextAndThisWeekdayInTimeQueries() {
+        XCTAssertEqual(friday("3pm next friday")?.headline, "Friday at 3:00 PM")
+        XCTAssertEqual(friday("3pm next friday")?.detail, "In 7 days")
+        XCTAssertEqual(friday("this friday 3pm")?.headline, "Today at 3:00 PM")
+        XCTAssertEqual(friday("next monday 9am EST in CET")?.source, "Monday, October 5")
+        XCTAssertNil(friday("next 3pm"))
+    }
+
     func testDayWordsCombineWithZonesInAnyPosition() throws {
         let meeting = try XCTUnwrap(friday("tomorrow 9am EST in CET"))
         XCTAssertEqual(meeting.text, "3:00 PM CEST · tomorrow")

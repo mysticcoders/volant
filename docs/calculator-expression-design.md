@@ -149,3 +149,10 @@ The website's privacy page lists the app's network exceptions; the release that 
 ## Named colors — October 6, 2026
 
 The 148 CSS named colors convert when a target format is given: `red in hex`, `RebeccaPurple to rgb`, `light gray in hex` (spaces ignored). The input side is tagged with the color's hex. A bare name (`red`, `orange`) is left to search. The table in `NamedColors.swift` is generated from the color-name package (MIT), which mirrors the CSS Color 4 list.
+
+## More dates — October 6, 2026
+
+- `next friday` is the next Friday that is not today (one to seven days ahead), `this friday` the coming one with today included. Both work alone, in date questions (`days until next monday`) and in time queries (`3pm next friday`); the card always shows the resolved date.
+- Workdays are Monday to Friday, without public holidays: `workdays until Dec 25` (also "business days", "working days") counts days after today through the target; `in 10 workdays`, `5 business days ago` and `today + 10 workdays` step over weekends.
+- Named holidays work wherever a date does, with an optional year: Christmas and its eve, New Year's Day and Eve, Halloween, Valentine's Day, St Patrick's Day, Independence Day (`4th of July`), US Thanksgiving (fourth Thursday of November) and Western Easter (anonymous Gregorian algorithm). Alone, a holiday name is left to search.
+- Durations add and subtract: `2h 20min + 55min` gives `3 hours 15 minutes`, `… in hours` gives `3.25 hours`, `2h 20min in minutes` gives `140 minutes`. A single quantity stays with `UnitConverter` (`90 min in h`), and negative totals give no answer.

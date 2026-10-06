@@ -3,7 +3,15 @@ import Foundation
 /// Date and duration questions, answered in the owner's local calendar: day words on their own
 /// ("today", "now"), counting ("days until 31 Mar", "days since Jan 1", "days between Jan 1 and
 /// Mar 1"), offsets ("in 3 weeks", "35 days ago", "monday in 3 weeks"), arithmetic ("August 5 + 5",
-/// "3:45pm + 5"), timespans ("145 mins to timespan"), ISO 8601 timestamps and Unix time.
+/// "3:45pm + 5"), timespans ("145 mins to timespan"), summed durations ("2h 20min + 55min in
+/// hours"), workdays ("workdays until Dec 25", "in 10 business days"), named holidays ("days until
+/// christmas", "easter 2027"), "next friday", ISO 8601 timestamps and Unix time.
+///
+/// "this friday" is the coming Friday, today included; "next friday" is the next one that is not
+/// today, one to seven days ahead. Workdays are Monday to Friday; public holidays are not
+/// subtracted. Holidays are the US and widely shared ones: Christmas and its eve, New Year's Day
+/// and Eve, Halloween, Valentine's Day, St Patrick's Day, Independence Day, US Thanksgiving (fourth
+/// Thursday of November) and Western Easter.
 ///
 /// Hours and minutes are elapsed time; days and longer are calendar steps, so a daylight-saving
 /// change never shifts "in 2 days" off midnight. A plain number after a date means days and after
@@ -13,13 +21,46 @@ import Foundation
 public enum DateCalculator {
     enum Step: Equatable {
         case seconds(Double)
-        case days(Int), months(Int), years(Int)
+        case days(Int), workdays(Int), months(Int), years(Int)
     }
 
     private enum DateWord {
         case day(Date)
         case calendar(month: Int, day: Int, year: Int?)
+        case holiday(Holiday, year: Int?)
     }
+
+    enum Holiday: String {
+        case christmas, christmasEve, newYear, newYearsEve, halloween, valentines, stPatricks, independence, thanksgiving, easter
+
+        /// Month and day of the holiday in `year`.
+        func date(in year: Int) -> (month: Int, day: Int) {
+            switch self {
+            case .christmas: return (12, 25)
+            case .christmasEve: return (12, 24)
+            case .newYear: return (1, 1)
+            case .newYearsEve: return (12, 31)
+            case .halloween: return (10, 31)
+            case .valentines: return (2, 14)
+            case .stPatricks: return (3, 17)
+            case .independence: return (7, 4)
+            case .thanksgiving:
+                let first = DateCalculator.weekday(year: year, month: 11, day: 1)
+                return (11, 1 + (5 - first + 7) % 7 + 21)
+            case .easter: return DateCalculator.easter(year)
+            }
+        }
+    }
+
+    private static let holidays: [String: Holiday] = [
+        "christmas": .christmas, "christmas day": .christmas, "xmas": .christmas, "christmas eve": .christmasEve,
+        "new year": .newYear, "new years": .newYear, "new years day": .newYear, "new year day": .newYear,
+        "new years eve": .newYearsEve, "new year eve": .newYearsEve, "halloween": .halloween,
+        "valentines": .valentines, "valentines day": .valentines, "valentine day": .valentines,
+        "st patricks": .stPatricks, "st patricks day": .stPatricks, "saint patricks day": .stPatricks,
+        "independence day": .independence, "4 of july": .independence, "fourth of july": .independence, "july 4": .independence,
+        "thanksgiving": .thanksgiving, "thanksgiving day": .thanksgiving, "easter": .easter, "easter sunday": .easter
+    ]
 
     private struct Context {
         let now: Date
@@ -53,15 +94,19 @@ public enum DateCalculator {
             ?? dayAlone(words, input: input, context)
             ?? counting(words, input: input, context)
             ?? timespan(words, input: input, context)
+            ?? durationSum(words, input: input, context)
             ?? offset(words, input: input, context)
             ?? weekdayInWeeks(words, input: input, context)
             ?? arithmetic(words, input: input, context)
     }
 
-    /// Lowercase words with commas and ordinal suffixes removed, and numbers split from units
-    /// they touch ("90min", "31st", "3:45pm").
+    /// Lowercase words with commas, apostrophes and ordinal suffixes removed, numbers split from
+    /// units they touch ("90min", "31st", "3:45pm"), and "business days" or "working days" read as
+    /// workdays.
     static func normalize(_ text: String) -> [String] {
         var value = text.lowercased().replacingOccurrences(of: ",", with: " ")
+        value = value.replacingOccurrences(of: #"['’]"#, with: "", options: .regularExpression)
+        value = value.replacingOccurrences(of: #"\b(business|working)\s+(day|days)\b"#, with: "workdays", options: .regularExpression)
         value = value.replacingOccurrences(of: #"\b(\d+)(st|nd|rd|th)\b"#, with: "$1", options: .regularExpression)
         value = value.replacingOccurrences(of: #"(\d)([a-z])"#, with: "$1 $2", options: .regularExpression)
         value = value.replacingOccurrences(of: "+", with: " + ")
@@ -71,7 +116,13 @@ public enum DateCalculator {
 
     // MARK: Forms
 
+    /// "now", "today", "tomorrow", "yesterday", or "next friday" and "this friday" on their own.
+    /// Holiday names alone are left to search, so "christmas" still finds apps and files.
     private static func dayAlone(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
+        if words.count == 2, ["next", "this"].contains(words[0]), case .day(let day)? = dateWord(words[...], c) {
+            let text = dateText(day, c)
+            return CalculationAnswer(input: input, inputDetail: nil, result: text, resultDetail: relative(day, c), copyText: text)
+        }
         guard words.count == 1 else { return nil }
         if words[0] == "now" {
             let full = dateText(c.now, c)
@@ -128,9 +179,10 @@ public enum DateCalculator {
         return CalculationAnswer(input: input, inputDetail: inputDetail, result: clock, resultDetail: day, copyText: "\(day) at \(clock)")
     }
 
-    /// "days until 31 Mar", "weeks since Jan 1", "days between Jan 1 and Mar 1".
+    /// "days until 31 Mar", "weeks since Jan 1", "days between Jan 1 and Mar 1", "workdays until
+    /// christmas". Workdays count Monday to Friday after the start, up to and including the end.
     private static func counting(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
-        guard words.count >= 3, let unit = ["days": 1, "day": 1, "weeks": 7, "week": 7][words[0]] else { return nil }
+        guard words.count >= 3, let unit = ["days": 1, "day": 1, "weeks": 7, "week": 7, "workdays": 0, "workday": 0][words[0]] else { return nil }
         let start: Date, end: Date
         switch words[1] {
         case "until", "till", "to":
@@ -146,7 +198,14 @@ public enum DateCalculator {
         default: return nil
         }
         guard let days = c.calendar.dateComponents([.day], from: start, to: end).day else { return nil }
-        let span = unit == 7 ? weeksText(abs(days)) : count(abs(days), "day")
+        let span: String
+        if unit == 0 {
+            guard abs(days) <= 36_600 else { return nil }
+            let (from, to) = days < 0 ? (end, start) : (start, end)
+            span = count(workdays(after: from, through: to, c.calendar), "workday")
+        } else {
+            span = unit == 7 ? weeksText(abs(days)) : count(abs(days), "day")
+        }
         let text = days < 0 ? span + " ago" : span
         let anchor = words[1] == "between" ? nil : (words[1] == "since" || words[1] == "from" ? start : end)
         return CalculationAnswer(input: input, inputDetail: nil, result: text,
@@ -167,6 +226,48 @@ public enum DateCalculator {
         }
         guard seconds > 0 else { return nil }
         let text = spanText(seconds)
+        return CalculationAnswer(input: input, inputDetail: nil, result: text, resultDetail: nil, copyText: text)
+    }
+
+    /// "2h 20min + 55min" gives a timespan, and "… in hours" a decimal: elapsed durations added and
+    /// subtracted. Needs more than a single quantity, which `UnitConverter` already handles.
+    private static func durationSum(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
+        var body = words[...], target: (seconds: Double, name: String)?
+        if words.count >= 3, ["in", "to", "as"].contains(words[words.count - 2]) {
+            let units: [String: (Double, String)] = ["seconds": (1, "second"), "second": (1, "second"), "s": (1, "second"),
+                                                     "minutes": (60, "minute"), "minute": (60, "minute"), "min": (60, "minute"),
+                                                     "hours": (3600, "hour"), "hour": (3600, "hour"), "h": (3600, "hour"),
+                                                     "days": (86_400, "day"), "day": (86_400, "day")]
+            if words.last == "timespan" || words.last == "duration" { body = words.dropLast(2) }
+            else if let unit = units[words.last!] { target = unit; body = words.dropLast(2) }
+        }
+        var total = 0.0, sign = 1.0, terms = 0, pairs = 0, index = body.startIndex
+        while index < body.endIndex {
+            let word = body[index]
+            if word == "+" || word == "-" {
+                guard terms > 0 else { return nil }
+                sign = word == "+" ? 1 : -1
+                index += 1
+                continue
+            }
+            guard index + 1 < body.endIndex, let (_, step) = quantity(body[index...(index + 1)]) else { return nil }
+            switch step {
+            case .seconds(let value): total += sign * value
+            case .days(let value): total += sign * Double(value) * 86_400
+            default: return nil
+            }
+            if index == body.startIndex || ["+", "-"].contains(body[index - 1]) { terms += 1 }
+            pairs += 1
+            index += 2
+        }
+        guard pairs >= 2, total > 0 else { return nil }
+        let text: String
+        if let target {
+            let value = (total / target.seconds * 10_000).rounded() / 10_000
+            text = "\(Calculator.format(value, locale: c.locale)) \(target.name)\(value == 1 ? "" : "s")"
+        } else {
+            text = spanText(total)
+        }
         return CalculationAnswer(input: input, inputDetail: nil, result: text, resultDetail: nil, copyText: text)
     }
 
@@ -229,6 +330,15 @@ public enum DateCalculator {
         switch step {
         case .seconds(let value): return date.addingTimeInterval(Double(sign) * value)
         case .days(let value): return calendar.date(byAdding: .day, value: sign * value, to: date)
+        case .workdays(let value):
+            guard value <= 26_000 else { return nil }
+            var day = date, remaining = value
+            while remaining > 0 {
+                guard let next = calendar.date(byAdding: .day, value: sign, to: day) else { return nil }
+                day = next
+                if !calendar.isDateInWeekend(day) { remaining -= 1 }
+            }
+            return day
         case .months(let value): return calendar.date(byAdding: .month, value: sign * value, to: date)
         case .years(let value): return calendar.date(byAdding: .year, value: sign * value, to: date)
         }
@@ -252,6 +362,31 @@ public enum DateCalculator {
         case let n where n > 0: return "In \(count(n, "day"))"
         default: return "\(count(-days, "day")) ago"
         }
+    }
+
+    /// Monday-to-Friday days after `start`, up to and including `end`.
+    private static func workdays(after start: Date, through end: Date, _ calendar: Calendar) -> Int {
+        var total = 0, day = start
+        while let next = calendar.date(byAdding: .day, value: 1, to: day), next <= end {
+            day = next
+            if !calendar.isDateInWeekend(day) { total += 1 }
+        }
+        return total
+    }
+
+    /// Weekday of a Gregorian date, Sunday being 1, by Zeller's congruence.
+    static func weekday(year: Int, month: Int, day: Int) -> Int {
+        let m = month < 3 ? month + 12 : month, y = month < 3 ? year - 1 : year
+        let h = (day + 13 * (m + 1) / 5 + y + y / 4 - y / 100 + y / 400) % 7
+        return (h + 6) % 7 + 1
+    }
+
+    /// Western (Gregorian) Easter Sunday by the anonymous Gregorian algorithm.
+    static func easter(_ year: Int) -> (month: Int, day: Int) {
+        let a = year % 19, b = year / 100, c = year % 100, d = b / 4, e = b % 4
+        let f = (b + 8) / 25, g = (b - f + 1) / 3, h = (19 * a + b - d - g + 15) % 30
+        let i = c / 4, k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = (a + 11 * h + 22 * l) / 451
+        return ((h + l - 7 * m + 114) / 31, (h + l - 7 * m + 114) % 31 + 1)
     }
 
     private static func count(_ value: Int, _ unit: String) -> String {
@@ -289,6 +424,7 @@ public enum DateCalculator {
         case "w", "wk", "wks", "week", "weeks": return whole.map { (number, .days($0 * 7)) }
         case "mo", "month", "months": return whole.map { (number, .months($0)) }
         case "y", "yr", "yrs", "year", "years": return whole.map { (number, .years($0)) }
+        case "workday", "workdays": return whole.map { (number, .workdays($0)) }
         default: return nil
         }
     }
@@ -316,6 +452,17 @@ public enum DateCalculator {
     private static func date(_ words: ArraySlice<String>, _ c: Context, direction: Int) -> Date? {
         switch dateWord(words, c) {
         case .day(let day)?: return day
+        case .holiday(let holiday, let year)?:
+            let thisYear = c.calendar.component(.year, from: c.now)
+            func make(_ year: Int) -> Date? {
+                let (month, day) = holiday.date(in: year)
+                return c.calendar.date(from: DateComponents(year: year, month: month, day: day))
+            }
+            if let year { return make(year) }
+            guard let candidate = make(thisYear) else { return nil }
+            if direction > 0 && candidate < c.today { return make(thisYear + 1) }
+            if direction < 0 && candidate > c.today { return make(thisYear - 1) }
+            return candidate
         case .calendar(let month, let day, let year)?:
             let thisYear = c.calendar.component(.year, from: c.now)
             func make(_ year: Int) -> Date? {
@@ -335,6 +482,16 @@ public enum DateCalculator {
 
     private static func dateWord(_ words: ArraySlice<String>, _ c: Context) -> DateWord? {
         let parts = Array(words)
+        if let last = parts.last, last.count == 4, let year = Int(last), parts.count > 1,
+           let holiday = holidays[parts.dropLast().joined(separator: " ")] {
+            return .holiday(holiday, year: year)
+        }
+        if let holiday = holidays[parts.joined(separator: " ")] { return .holiday(holiday, year: nil) }
+        if parts.count == 2, ["next", "this"].contains(parts[0]), let weekday = weekdays[parts[1]] {
+            var ahead = (weekday - c.calendar.component(.weekday, from: c.now) + 7) % 7
+            if parts[0] == "next" && ahead == 0 { ahead = 7 }
+            return c.calendar.date(byAdding: .day, value: ahead, to: c.today).map(DateWord.day)
+        }
         if parts.count == 1 {
             switch parts[0] {
             case "today": return .day(c.today)
