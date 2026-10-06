@@ -8,6 +8,10 @@ import Foundation
 /// Japanese yen); other dollars and pesos need their ISO code. "pounds" is currency only when the
 /// other side is a currency, so "5 pounds in kg" stays a weight.
 ///
+/// A rate per unit of time converts the amount and keeps the unit: "8 dollars/hour in gbp", "$50 per
+/// hour in eur", "€90 a day to usd". The target may repeat the same unit ("in eur/hour") but not
+/// change it, since a day of work and a calendar day differ.
+///
 /// With `CryptoPrices` from CoinGecko, major coins convert too ("0.5 btc in usd",
 /// "100 eur in eth"), through their euro price; those cards tag CoinGecko and the fetch time.
 public enum CurrencyConverter {
@@ -30,11 +34,14 @@ public enum CurrencyConverter {
         "rupee": "INR", "rupees": "INR", "won": "KRW", "krona": "SEK", "kronor": "SEK", "zloty": "PLN", "lira": "TRY"
     ]
     private static let pattern = try! NSRegularExpression(pattern: #"^(.+?)\s+(?:in|to|as)\s+(.+)$"#)
+    private static let ratePattern = try! NSRegularExpression(pattern:
+        #"^(.+?)\s*(?:/|\s+per\s+|\s+an?\s+)(hours?|hrs?|h|minutes?|mins?|days?|weeks?|wks?|months?|mo|years?|yrs?)$"#)
+    private static let timeUnits: [String: String] = ["h": "hour", "hr": "hour", "min": "minute", "wk": "week", "mo": "month", "yr": "year"]
 
     public static func evaluate(_ text: String, rates: CurrencyRates? = CurrencyRates.current, crypto: CryptoPrices? = CryptoPrices.current,
                                 now: Date = Date(), zone: TimeZone = .current, locale: Locale = .current) -> CalculationAnswer? {
         let book = Book(rates: rates, crypto: crypto)
-        guard rates != nil || crypto != nil, let (amount, from, to) = parse(text, locale: locale, known: book),
+        guard rates != nil || crypto != nil, let (amount, from, to, per) = parse(text, locale: locale, known: book),
               let fromRate = book.perEuro(from), let toRate = book.perEuro(to) else { return nil }
         let value = amount / fromRate * toRate
         let coins = CryptoPrices.codes
@@ -47,17 +54,17 @@ public enum CurrencyConverter {
             return nil
         }
         let input = text.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
-        let result = money(value, to, locale: locale)
+        let result = money(value, to, locale: locale) + (per.map { " per \($0)" } ?? "")
         let unit = rate(toRate / fromRate, locale: locale)
         let places = coins.contains(to) ? 1e8 : 100
-        let swap = "\(Calculator.format((value * places).rounded() / places, locale: locale)) \(to) in \(from)"
+        let swap = "\(Calculator.format((value * places).rounded() / places, locale: locale)) \(to)\(per.map { "/\($0)" } ?? "") in \(from)"
         return CalculationAnswer(input: input, inputDetail: "1 \(from) = \(unit) \(to)", result: result,
                                  resultDetail: tag, copyText: result, swapQuery: swap)
     }
 
     /// Whether a conversion names a coin, so the app fetches crypto prices only for those.
     public static func involvesCrypto(_ text: String, locale: Locale = .current) -> Bool {
-        guard let (_, from, to) = parse(text, locale: locale, known: nil) else { return false }
+        guard let (_, from, to, _) = parse(text, locale: locale, known: nil) else { return false }
         return CryptoPrices.codes.contains(from) || CryptoPrices.codes.contains(to)
     }
 
@@ -67,13 +74,25 @@ public enum CurrencyConverter {
         parse(text, locale: locale, known: nil) != nil
     }
 
-    private static func parse(_ text: String, locale: Locale, known: Book?) -> (Double, String, String)? {
+    private static func parse(_ text: String, locale: Locale, known: Book?) -> (Double, String, String, String?)? {
         let query = text.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
         guard query.utf8.count <= 64, let match = pattern.firstMatch(in: query, range: NSRange(query.startIndex..., in: query)),
-              let left = Range(match.range(at: 1), in: query), let right = Range(match.range(at: 2), in: query),
-              let to = currency(String(query[right]), known: known),
-              let (amount, from) = money(String(query[left]), locale: locale, known: known), from != to else { return nil }
-        return (amount, from, to)
+              let left = Range(match.range(at: 1), in: query), let right = Range(match.range(at: 2), in: query) else { return nil }
+        let (source, per) = perTime(String(query[left]))
+        let (target, targetPer) = perTime(String(query[right]))
+        guard targetPer == nil || targetPer == per, let to = currency(target, known: known),
+              let (amount, from) = money(source, locale: locale, known: known), from != to else { return nil }
+        return (amount, from, to, per)
+    }
+
+    /// Splits a rate's unit of time from its amount: "8 dollars/hour" gives "8 dollars" and
+    /// "hour". Text without one comes back whole.
+    private static func perTime(_ text: String) -> (String, String?) {
+        guard let match = ratePattern.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+              let body = Range(match.range(at: 1), in: text), let unit = Range(match.range(at: 2), in: text) else { return (text, nil) }
+        var name = text[unit].lowercased()
+        if name.count > 2, name.hasSuffix("s") { name.removeLast() }
+        return (String(text[body]), timeUnits[name] ?? name)
     }
 
     /// "100 usd", "usd 100", "$100", "100$", "USD1K", "20 pounds".

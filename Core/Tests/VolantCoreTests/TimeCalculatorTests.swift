@@ -40,7 +40,8 @@ final class TimeCalculatorTests: XCTestCase {
     func testClockQueriesAndIANAIdentifiers() {
         XCTAssertTrue(answer("time in Tokyo")?.text.hasPrefix("9:00 PM") == true)
         XCTAssertEqual(answer("now in Dubai"), answer("time in Dubai"))
-        XCTAssertEqual(answer("17:30 Europe/London to America/Los_Angeles")?.text, answer("5:30pm london in sf")?.text)
+        XCTAssertEqual(answer("17:30 Europe/London to America/Los_Angeles")?.text, answer("5:30pm london in la")?.text)
+        XCTAssertEqual(answer("17:30 Europe/London to America/Los_Angeles")?.date, answer("5:30pm london in sf")?.date)
         XCTAssertEqual(answer("  1 PM   EST in my time  ")?.text, answer("1pm EST")?.text)
     }
 
@@ -55,7 +56,7 @@ final class TimeCalculatorTests: XCTestCase {
         XCTAssertEqual(answer("1pm EST in CET")?.text, "7:00 PM CET")
         XCTAssertEqual(answer("1pm EST")?.text, "7:00 PM · your time")
         XCTAssertEqual(answer("3pm PST in CET")?.text, "Midnight CET · tomorrow")
-        XCTAssertEqual(answer("1am Tokyo in sf")?.text, "8:00 AM in Los Angeles · yesterday")
+        XCTAssertEqual(answer("1am Tokyo in sf")?.text, "8:00 AM in San Francisco · yesterday")
         XCTAssertEqual(answer("11am UTC in CET")?.text, "Noon CET")
         XCTAssertEqual(answer("2026-07-15 1pm EST in Paris")?.text, "7:00 PM in Paris · Jul 15, 2026")
         XCTAssertEqual(answer("time in Tokyo")?.text, "9:00 PM in Tokyo")
@@ -69,7 +70,7 @@ final class TimeCalculatorTests: XCTestCase {
                        "7:00 PM · your time · yesterday")
         XCTAssertEqual(TimeCalculator.evaluate("1am Tokyo in sf", now: early, localZone: paris,
                                               locale: Locale(identifier: "en_US"))?.text,
-                       "8:00 AM in Los Angeles")
+                       "8:00 AM in San Francisco")
     }
 
     private func friday(_ query: String) -> TimeCalculator.Result? {
@@ -181,5 +182,23 @@ final class TimeCalculatorTests: XCTestCase {
             XCTAssertNil(answer(query), query)
         }
         XCTAssertNil(answer(String(repeating: "1", count: 257)))
+    }
+
+    func testNicknamesLabelTheCityTheOwnerTyped() {
+        XCTAssertEqual(answer("5pm ldn in sf")?.headline, "9:00 AM in San Francisco")
+        XCTAssertEqual(answer("5pm ldn in sf")?.date, answer("5pm London in Los Angeles")?.date)
+        XCTAssertEqual(answer("5pm london in la")?.headline, "9:00 AM in Los Angeles")
+        XCTAssertEqual(answer("9am nyc in mumbai")?.headline, "7:30 PM in Mumbai")
+        XCTAssertEqual(answer("time diff sf")?.detail, "4:00 AM in San Francisco")
+        XCTAssertEqual(friday("time in 4 hours in San Francisco")?.headline, "6:00 AM in San Francisco")
+    }
+
+    func testTimeAfterElapsedDurationHere() {
+        XCTAssertEqual(friday("time in 4 hours")?.headline, "3:00 PM")
+        XCTAssertEqual(friday("time in 4 hours")?.detail, "Your time · Today")
+        XCTAssertEqual(friday("time in 4 hours")?.source, "In 4 hours")
+        XCTAssertEqual(friday("time in 90 minutes")?.headline, "12:30 PM")
+        XCTAssertEqual(friday("time in 4 hours in Tokyo")?.text, "10:00 PM in Tokyo")
+        XCTAssertNil(friday("time in 4 parsecs"))
     }
 }

@@ -40,8 +40,8 @@ public struct CalculationAnswer: Hashable {
     }
 
     /// Every answer the query has, in the order the launcher lists them: time conversion, dates
-    /// and durations, colors and color adjustments, fractions and Roman numerals, number bases, arithmetic, then unit
-    /// conversion. The input side keeps the owner's wording, trimmed.
+    /// and durations, colors and color adjustments, fractions and Roman numerals, number bases, ratios, arithmetic,
+    /// then unit conversion. The input side keeps the owner's wording, trimmed.
     public static func answers(for query: String, now: Date = Date(), localZone: TimeZone = .current,
                                locale: Locale = .current) -> [CalculationAnswer] {
         let query = forgiving(query)
@@ -71,6 +71,9 @@ public struct CalculationAnswer: Hashable {
         }
         if let base = NumberBases.evaluate(query, locale: locale) {
             answers.append(base)
+        }
+        if let ratio = RatioCalculator.evaluate(query, locale: locale) {
+            answers.append(ratio)
         }
         let closed = Calculator.closingParentheses(query)
         if let value = Calculator.evaluate(closed, locale: locale) {
