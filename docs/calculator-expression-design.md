@@ -111,7 +111,6 @@ Not yet: workdays, "next friday", month-name-only queries ("days until March"), 
 ## Timestamps — October 6, 2026
 
 `DateCalculator` also shows timestamps in local time. ISO 8601 with a zone (`2024-03-15T14:30:00Z`, `…-04:00`, fractional seconds, a space instead of `T`) or without one (`2026-10-07T08:00`, already local) gives the local clock, tagged with its date and, on the input side, how long ago or ahead it is. Unix time reads `unix 1700000000`, `1700000000 unix` or `epoch …`, as seconds, or milliseconds at 13 digits; `unix now` and `now in unix` give the current value. Bare numbers are never treated as timestamps, so arithmetic stays arithmetic.
-||||||| parent of d9672c6 (Add math functions, factorial and everyday phrasings to the calculator)
 ## Functions and phrasings — October 6, 2026
 
 - Functions: `sqrt cbrt abs round floor ceil`, `sin cos tan cot sec csc`, `asin acos atan`, `sinh cosh tanh asinh acosh atanh`, `ln`, `log` (base 10), `log10`, `log2`, `exp`. Names are case-insensitive.
@@ -131,7 +130,10 @@ Not yet: workdays, "next friday", month-name-only queries ("days until March"), 
 - hsl and hwb show one decimal so 8-bit colors survive a round trip (`hsl(0 100% 69.4%)`).
 - Colors outside sRGB keep exact values in lab/lch/oklab/oklch and show their clamped sRGB color elsewhere, tagged "Outside sRGB". This clamps channels rather than gamut-mapping in OKLCH.
 - Named colors (`red`) and hex without `#` are not read, since they collide with words and numbers.
-||||||| parent of 7db08d4 (Convert CSS and design units in the calculator)
 ## CSS and design units — October 6, 2026
 
 `ScreenUnits` converts px, rem, em, pt, pc and the physical in, cm and mm they relate to: `2rem in px`, `32px in rem`, `12pt in px`, `2 inches in px at 72 ppi`, `1.5rem in px at 18px`. CSS fixes 1in = 96px, 1pt = 1/72in and 1pc = 12pt, and rem/em default to 16px; `at <n>px` sets the rem/em base and `at <n> ppi|dpi` switches to print and design math, where a pixel is 1/n inch. The input tag states the assumption (`1rem = 16px`, `72 ppi`). At least one side must be px, rem, em, pt or pc, so `1 pt in ml` stays pints and `5 in in cm` stays a length conversion. Results round to four decimals and copy in CSS form (`32px`).
+
+## Use Answer — October 6, 2026
+
+On any calculator card, Command-Return puts the answer (its Copy text) into the search field and keeps the launcher open, so `2 + 2`, Command-Return, ` * 3` gives 12. The footer labels it "Use Answer". Return still copies. The launcher fixture checks the label, the replaced query and the continued calculation.

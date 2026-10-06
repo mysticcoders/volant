@@ -75,6 +75,17 @@ for query in ["1pm EST in CET", "2026-12-31 3pm PST in CET", "time in Tokyo", "2
     try image.representation(using: .jpeg, properties: [.compressionFactor: 0.85])!.write(to:
         URL(fileURLWithPath: "/tmp/volant-launcher-time-\(name)-\(dark ? "dark" : "light").jpg"))
 }
+// Command-Return puts a calculation's answer in the search field and keeps calculating from it.
+model.query = "2 + 2"
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+verify(model.selectedRow?.secondaryAction == "Use Answer", "Calculation offers Use Answer")
+model.activateSecondary()
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+verify(model.query == "4", "Use Answer replaces the query with the answer")
+model.query += " * 3"
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+guard case .calculation(let continued) = model.selectedRow else { fatalError("Missing continued calculation") }
+verify(continued.copyText == "12", "Calculation continues from the answer")
 model.query = "1pm EST in"
 verify(!model.rows.contains { if case .calculation = $0 { return true }; return false }, "Incomplete time query has no answer")
 model.query = "snip screen"

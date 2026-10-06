@@ -149,6 +149,7 @@ enum ResultRow: Identifiable, Hashable {
         case .file: return "Reveal in Finder"
         case .app: return "Reveal in Finder"
         case .contact(let c): return c.secondaryField?.copyTitle
+        case .calculation: return "Use Answer"
         default: return nil
         }
     }
@@ -1017,9 +1018,15 @@ final class LauncherModel: ObservableObject {
         onNote(.editApp(app))
     }
 
+    /// Command-Return: reveal, copy the other field, or for a calculation put its answer in the
+    /// search field and stay open, so the next calculation can build on it.
     func activateSecondary() {
         guard let row = selectedRow else { return }
         switch row {
+        case .calculation(let answer):
+            query = answer.copyText
+            searchFocusRequest = UUID()
+            return
         case .file(let file): FileSearch.reveal(file)
         case .app(let app): NSWorkspace.shared.activateFileViewerSelecting([app.url])
         case .contact(let contact): if let field = contact.secondaryField { copy(field.value) }
