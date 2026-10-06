@@ -82,4 +82,48 @@ final class CalculationAnswerTests: XCTestCase {
     func testOrdinaryTextHasNoAnswer() {
         XCTAssertTrue(answers("Safari").isEmpty)
     }
+
+    func testQuestionFramingIsIgnored() throws {
+        for query in ["what is 5 + 5", "What's 5 + 5?", "whats 5 + 5", "calculate 5 + 5", "5 + 5 =", "5 + 5 = ", "5 + 5?"] {
+            let answer = try XCTUnwrap(answers(query).first, query)
+            XCTAssertEqual(answer.input, "5 + 5", query)
+            XCTAssertEqual(answer.result, "10", query)
+        }
+        XCTAssertEqual(answers("what is 5 km in mi?").first?.result, "3.106856 mi")
+        XCTAssertTrue(answers("what is").isEmpty)
+        XCTAssertTrue(answers("what is love").isEmpty)
+        XCTAssertTrue(answers("?").isEmpty)
+        XCTAssertTrue(answers("=").isEmpty)
+    }
+
+    func testOpenParenthesesCloseAtTheEnd() throws {
+        let answer = try XCTUnwrap(answers("2 * (3 + 4").first)
+        XCTAssertEqual(answer.input, "2 * (3 + 4)")
+        XCTAssertEqual(answer.result, "14")
+        XCTAssertEqual(answers("sqrt(16").first?.input, "sqrt(16)")
+        XCTAssertEqual(answers("((1 + 2) * 3").first?.result, "9")
+        XCTAssertEqual(answers("2 * (3 + 4)").first?.input, "2 * (3 + 4)")
+        XCTAssertTrue(answers("2 * (3 + 4))").isEmpty)
+        XCTAssertTrue(answers("2 * (3 +").isEmpty)
+        XCTAssertTrue(answers("sqrt(").isEmpty)
+    }
+
+    func testCountWordsAndNewUnitCards() throws {
+        XCTAssertEqual(answers("2 dozen").first?.result, "24")
+        XCTAssertEqual(answers("3 gross").first?.result, "432")
+        XCTAssertEqual(answers("2 dozen + 3").first?.result, "27")
+        let dozens = try XCTUnwrap(answers("30 in dozens").first)
+        XCTAssertEqual(dozens.input, "30")
+        XCTAssertNil(dozens.inputDetail)
+        XCTAssertEqual(dozens.result, "2.5 dozen")
+        XCTAssertEqual(dozens.resultDetail, "Dozen")
+        XCTAssertEqual(dozens.swapQuery, "2.5 dozen in each")
+        let light = try XCTUnwrap(answers("speed of light").first)
+        XCTAssertEqual(light.inputDetail, "Speed of light")
+        XCTAssertEqual(light.result, "299792458 m/s")
+        let mach = try XCTUnwrap(answers("mach 2 in km/h").first)
+        XCTAssertEqual(mach.inputDetail, "Mach (sea level, 15 °C)")
+        XCTAssertEqual(answers("1 atm in pa").first?.resultDetail, "Pascals")
+        XCTAssertEqual(answers("1 btu in j").first?.inputDetail, "British thermal units (IT)")
+    }
 }

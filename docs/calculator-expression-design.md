@@ -231,3 +231,14 @@ All of these need an operation word or function, so plain color names and words 
 | Difference | `Dec 25 - Oct 6`, `2027-01-01 - today` | `80 days`, negative when the first date is earlier |
 
 Week numbers always follow ISO 8601 (weeks start Monday; week 1 holds the year's first Thursday), whatever the locale's own week rules, so the US Sunday-start convention is not used; the card says "ISO 8601". Age needs a birth year and a birthdate no later than the reference date; a February 29 birthday is reached on February 28 in common years, as Foundation adds years. A plain number after a date still means days (`Dec 25 - 5`).
+
+## More units and forgiving input — October 6, 2026
+
+- Astronomy: light-years (`ly`, `light year`), astronomical units (`au`) and parsecs (`pc`) use exact definitions: the IAU light-year of 9,460,730,472,580,800 m (a Julian year of light travel), 149,597,870,700 m for the au and 648,000/π au for the parsec. Foundation's coefficients are rounded to four digits, so these join the exact-factor table.
+- Pressure and energy: the standard atmosphere (`atm`, 101,325 Pa), the torr (1/760 atm), `hPa` and `mbar`, and the International Table BTU (1,055.05585262 J). The thermochemical calorie (4.184 J) was already Foundation's.
+- Mach: `1 mach in kph`, `mach 2 in mph`, `1500 km/h in mach`. Mach 1 is taken as 340.29 m/s, the speed of sound in the ISA sea-level atmosphere at 15 °C; the card's tag says so, because Mach really depends on air temperature.
+- Speed of light: `speed of light` alone answers in m/s, and `c` means the speed of light only when the other side is a speed (`c in mph`, `0.5 c in m/s`, swapping back with `… mph in c`). Beside a temperature `c` stays Celsius, and `c in f` without a number gives no answer.
+- Counts: `dozen` and `gross` are magnitude words in arithmetic (`2 dozen` → 24, `3 gross + 1`), and a count unit in conversions, where a bare number means items: `30 in dozens` → 2.5 dozen, `2 gross in dozen`, `3 dozen in each`. Swap writes the bare side as `each`.
+- Units made here and Foundation's built-in units are now matched by dimension rather than exact class: Foundation's units are private `_NSStatic_` subclasses, so a class comparison rejected every pairing of a custom unit with a built-in one.
+- Forgiving input: a leading `what is`, `what's` or `calculate`, and trailing `=` or `?`, are dropped before any calculator sees the query, so `what is 5 km in mi?` and `5 + 5 =` answer. The card shows the query without them.
+- Missing closing parentheses at the end are supplied for arithmetic: `2 * (3 + 4` gives 14 and the card shows `2 * (3 + 4)`. An extra `)` still gives no answer, and an expression that ends in an operator or an empty call (`2 * (3 +`, `sqrt(`) stays unanswered rather than guessed.

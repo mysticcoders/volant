@@ -44,6 +44,7 @@ public struct CalculationAnswer: Hashable {
     /// conversion. The input side keeps the owner's wording, trimmed.
     public static func answers(for query: String, now: Date = Date(), localZone: TimeZone = .current,
                                locale: Locale = .current) -> [CalculationAnswer] {
+        let query = forgiving(query)
         let input = query.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
         var answers: [CalculationAnswer] = []
         if let time = TimeCalculator.evaluate(query, now: now, localZone: localZone, locale: locale) {
@@ -71,9 +72,11 @@ public struct CalculationAnswer: Hashable {
         if let base = NumberBases.evaluate(query, locale: locale) {
             answers.append(base)
         }
-        if let value = Calculator.evaluate(query, locale: locale) {
+        let closed = Calculator.closingParentheses(query)
+        if let value = Calculator.evaluate(closed, locale: locale) {
             let text = Calculator.format(value, locale: locale)
-            answers.append(CalculationAnswer(input: input, inputDetail: nil, result: text,
+            let shown = closed == query ? input : closed.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
+            answers.append(CalculationAnswer(input: shown, inputDetail: nil, result: text,
                                              resultDetail: tip(query, locale: locale) ?? spoken(value, locale: locale), copyText: text))
         }
         if let screen = ScreenUnits.evaluate(query, locale: locale) {
@@ -84,12 +87,23 @@ public struct CalculationAnswer: Hashable {
         }
         if let conversion = UnitConverter.convert(query, locale: locale) {
             let result = UnitConverter.formatResult(conversion, locale: locale)
-            answers.append(CalculationAnswer(input: "\(Calculator.format(conversion.value, locale: locale)) \(conversion.fromSymbol)",
+            answers.append(CalculationAnswer(input: UnitConverter.formatSource(conversion, locale: locale),
                                              inputDetail: unitName(conversion.fromUnit, locale: locale), result: result,
                                              resultDetail: unitName(conversion.toUnit, locale: locale), copyText: result,
-                                             swapQuery: "\(result) in \(conversion.fromSymbol)"))
+                                             swapQuery: UnitConverter.swapQuery(conversion, locale: locale)))
         }
         return answers
+    }
+
+    /// Drops the framing people type around a question: a leading "what is", "what's" or
+    /// "calculate", and trailing "=" or "?" marks, so "what is 5 + 5?" reads as "5 + 5".
+    static func forgiving(_ query: String) -> String {
+        var text = query.trimmingCharacters(in: .whitespaces)
+        if let range = text.range(of: #"^(what\s+is|what['’]?s|calculate)\s+"#, options: [.regularExpression, .caseInsensitive]) {
+            text.removeSubrange(range)
+        }
+        while let last = text.last, last == "=" || last == "?" || last.isWhitespace { text.removeLast() }
+        return text.isEmpty ? query : text
     }
 
     /// "15% tip on 42" answers the total, so the tag names the tip itself.
@@ -117,6 +131,8 @@ public struct CalculationAnswer: Hashable {
 
     static func unitName(_ unit: Dimension?, locale: Locale) -> String? {
         guard let unit else { return nil }
+        if unit is UnitCount, UnitConverter.name(of: unit) == nil { return nil }
+        if let custom = UnitConverter.name(of: unit) { return custom }
         let formatter = MeasurementFormatter()
         formatter.locale = locale
         formatter.unitStyle = .long

@@ -6,10 +6,11 @@ import Foundation
 /// "12,345,678"), so "1,5" is rejected in English rather than read as a list or a decimal. The
 /// decimal separator is the locale's: "2,5" in German, where "1.000" is a thousand. Scientific
 /// notation ("1e3", "2.5E-3") and magnitude suffixes ("10K", "2.5M", "1B") are accepted;
-/// lowercase m and b stay free for meters and bytes.
+/// lowercase m and b stay free for meters and bytes. The calculator also reads magnitude words,
+/// counts among them ("2.5 million", "2 dozen", "3 gross").
 public enum NumberLiteral {
     static let suffixes: [Character: Double] = ["k": 1e3, "K": 1e3, "M": 1e6, "B": 1e9]
-    static let words: [String: Double] = ["thousand": 1e3, "million": 1e6, "billion": 1e9]
+    static let words: [String: Double] = ["thousand": 1e3, "million": 1e6, "billion": 1e9, "dozen": 12, "gross": 144]
 
     struct Separators {
         let decimal: Character

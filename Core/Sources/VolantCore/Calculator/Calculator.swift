@@ -160,6 +160,13 @@ public enum Calculator {
         return value
     }
 
+    /// Closes parentheses left open at the end, as people type "2 * (3 + 4" and stop. Extra
+    /// closing parentheses are left alone, so they still give no answer.
+    public static func closingParentheses(_ text: String) -> String {
+        let open = text.filter { $0 == "(" }.count - text.filter { $0 == ")" }.count
+        return open > 0 ? text + String(repeating: ")", count: open) : text
+    }
+
     /// Cheap gate so ordinary app names never reach the parser.
     public static func looksNumeric(_ text: String) -> Bool {
         let t = text.trimmingCharacters(in: .whitespaces)

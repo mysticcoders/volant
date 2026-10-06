@@ -113,4 +113,51 @@ final class UnitConverterTests: XCTestCase {
         XCTAssertEqual(UnitConverter.formatResult(UnitConverter.convert("10 kn in kph", locale: Self.english)!), "18.52 km/h")
         XCTAssertEqual(UnitConverter.formatResult(UnitConverter.convert("1 tbsp in tsp", locale: Self.english)!), "3 tsp")
     }
+
+    func testAstronomicalLengthsUseExactDefinitions() throws {
+        XCTAssertEqual(try result("1 ly in km"), 9_460_730_472_580.8, accuracy: 1e-3)
+        XCTAssertEqual(try result("1 light year in m"), 9_460_730_472_580_800, accuracy: 1)
+        XCTAssertEqual(try result("1 au in km"), 149_597_870.7, accuracy: 1e-6)
+        XCTAssertEqual(try result("1 parsec in au"), 648_000 / Double.pi, accuracy: 1e-6)
+        XCTAssertEqual(try result("1 pc in ly"), 3.261563777, accuracy: 1e-8)
+    }
+
+    func testPressureEnergyAndMachUnits() throws {
+        XCTAssertEqual(try result("1 atm in pa"), 101_325, accuracy: 1e-9)
+        XCTAssertEqual(try result("1 atmosphere in psi"), 14.6959488, accuracy: 1e-6)
+        XCTAssertEqual(try result("760 torr in atm"), 1, accuracy: 1e-12)
+        XCTAssertEqual(try result("1 atm in mmhg"), 760, accuracy: 1e-3)
+        XCTAssertEqual(try result("1013.25 hpa in atm"), 1, accuracy: 1e-12)
+        XCTAssertEqual(try result("1000 mbar in bar"), 1, accuracy: 1e-12)
+        XCTAssertEqual(try result("1 btu in j"), 1055.05585262, accuracy: 1e-9)
+        XCTAssertEqual(try result("3412.14163 btu in kwh"), 1, accuracy: 1e-6)
+        XCTAssertEqual(try result("1 mach in m/s"), 340.29, accuracy: 1e-9)
+        XCTAssertEqual(try result("mach 2 in km/h"), 2450.088, accuracy: 1e-6)
+        XCTAssertEqual(try result("1225.044 kph in mach"), 1, accuracy: 1e-9)
+        XCTAssertNil(UnitConverter.convert("mach two in kph", locale: Self.english))
+    }
+
+    func testCountsConvertFromABareNumber() throws {
+        XCTAssertEqual(try result("30 in dozens"), 2.5, accuracy: 1e-12)
+        XCTAssertEqual(try result("288 to gross"), 2, accuracy: 1e-12)
+        XCTAssertEqual(try result("2 gross in dozen"), 24, accuracy: 1e-12)
+        XCTAssertEqual(try result("3 dozen in each"), 36, accuracy: 1e-12)
+        let bare = try XCTUnwrap(UnitConverter.convert("30 in dozens", locale: Self.english))
+        XCTAssertEqual(UnitConverter.formatSource(bare, locale: Self.english), "30")
+        XCTAssertEqual(UnitConverter.swapQuery(bare, locale: Self.english), "2.5 dozen in each")
+        let back = try XCTUnwrap(UnitConverter.convert("3 dozen in each", locale: Self.english))
+        XCTAssertEqual(UnitConverter.formatResult(back, locale: Self.english), "36")
+        XCTAssertNil(UnitConverter.convert("30 in km", locale: Self.english))
+    }
+
+    func testSpeedOfLightOnlyWhereCelsiusCannotFit() throws {
+        XCTAssertEqual(try result("speed of light"), 299_792_458, accuracy: 0)
+        XCTAssertEqual(try result("speed of light in km/h"), 1_079_252_848.8, accuracy: 1e-3)
+        XCTAssertEqual(try result("c in m/s"), 299_792_458, accuracy: 0)
+        XCTAssertEqual(try result("0.5 c in m/s"), 149_896_229, accuracy: 0)
+        XCTAssertEqual(try result("670616629.384395 mph in c"), 1, accuracy: 1e-12)
+        XCTAssertEqual(try result("100 c in f"), 212, accuracy: 1e-9)
+        XCTAssertEqual(try result("300 k in c"), 26.85, accuracy: 1e-9)
+        XCTAssertNil(UnitConverter.convert("c in f", locale: Self.english))
+    }
 }
