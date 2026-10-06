@@ -1,6 +1,7 @@
 #!/bin/bash
 # Signed fixture: runs the real rates helper from a built Volant.app inside a sandboxed client and
-# fetches the live ECB feed once. No owner UI, data or settings are involved.
+# fetches the live ECB feed and CoinGecko prices once each; crypto is keyless unless
+# VOLANT_COINGECKO_KEY is set. No owner UI, data or settings are involved.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 source tools/core-module.sh

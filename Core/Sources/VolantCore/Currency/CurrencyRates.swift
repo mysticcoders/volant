@@ -2,11 +2,11 @@ import Foundation
 
 /// The rates-only XPC helper's interface: it fetches the ECB daily reference feed, and CoinGecko
 /// prices for a fixed coin list, replying with validated data or an error message. Its only input
-/// is the owner's CoinGecko key, so no query ever leaves Volant.
+/// is the owner's optional CoinGecko key, so no query ever leaves Volant.
 @objc public protocol VolantRatesHostProtocol {
     func fetchRates(reply: @escaping (Data?, String?) -> Void)
-    /// CoinGecko euro prices for the fixed coin list in `CryptoPrices`, with the owner's key.
-    func fetchCrypto(key: String, reply: @escaping (Data?, String?) -> Void)
+    /// CoinGecko euro prices for the fixed coin list in `CryptoPrices`, keyless unless the owner saved a key.
+    func fetchCrypto(key: String?, reply: @escaping (Data?, String?) -> Void)
 }
 
 /// European Central Bank daily reference rates: units of each currency per euro, for one

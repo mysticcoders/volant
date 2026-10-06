@@ -10,8 +10,9 @@ final class CurrencyRatesStoreTests: XCTestCase {
     private var cacheURL: URL!
     private var cryptoCacheURL: URL!
     private var key: String?
-    private var cryptoRequests: [String] = []
+    private var cryptoRequests: [String?] = []
     private var cryptoReply: Data?
+    private var cryptoMessage: String?
     private let cryptoBody = Data(#"{"bitcoin":{"eur":50000},"ethereum":{"eur":2000},"solana":{"eur":100},"ripple":{"eur":0.5},"binancecoin":{"eur":400},"cardano":{"eur":0.25}}"#.utf8)
     private var clock = Date(timeIntervalSince1970: 1_790_000_000)
     private var requests = 0
@@ -23,6 +24,7 @@ final class CurrencyRatesStoreTests: XCTestCase {
         key = nil
         cryptoRequests = []
         cryptoReply = cryptoBody
+        cryptoMessage = nil
         CurrencyRates.current = nil
         CryptoPrices.current = nil
         requests = 0
@@ -42,7 +44,7 @@ final class CurrencyRatesStoreTests: XCTestCase {
             completion(self.reply)
         }, fetchCrypto: { key, completion in
             self.cryptoRequests.append(key)
-            completion(self.cryptoReply)
+            completion(self.cryptoReply, self.cryptoReply == nil ? self.cryptoMessage : nil)
         }, cryptoKey: { self.key })
     }
 
@@ -92,21 +94,24 @@ final class CurrencyRatesStoreTests: XCTestCase {
         XCTAssertEqual(requests, 1, "Fresh cached rates need no fetch")
     }
 
-    func testCryptoFetchesOnlyWithAKeyAndACoinInTheQuery() {
+    func testCryptoFetchesKeylessForCoinQueriesOnly() {
         let rates = store()
-        rates.noteQuery("0.5 btc in usd"); settle()
-        XCTAssertTrue(cryptoRequests.isEmpty, "No key, no crypto request")
-        key = "CG-fixturekey123"
         rates.noteQuery("100 usd in eur"); settle()
         XCTAssertTrue(cryptoRequests.isEmpty, "Fiat conversions never fetch crypto")
         rates.noteQuery("0.5 btc in usd"); settle()
-        XCTAssertEqual(cryptoRequests, ["CG-fixturekey123"])
+        XCTAssertEqual(cryptoRequests, [nil], "No key still fetches, keyless")
         XCTAssertEqual(CryptoPrices.current?.euros["BTC"], 50000)
         XCTAssertTrue(FileManager.default.fileExists(atPath: cryptoCacheURL.path))
     }
 
-    func testCryptoRefreshesAtMostEveryTenMinutes() {
+    func testCryptoSendsASavedKey() {
         key = "CG-fixturekey123"
+        let rates = store()
+        rates.noteQuery("0.5 btc in usd"); settle()
+        XCTAssertEqual(cryptoRequests, ["CG-fixturekey123"])
+    }
+
+    func testCryptoRefreshesAtMostEveryTenMinutes() {
         let rates = store()
         rates.noteQuery("1 eth in eur"); settle()
         clock += 300
@@ -120,20 +125,49 @@ final class CurrencyRatesStoreTests: XCTestCase {
         clock += 60
         rates.noteQuery("1 eth in eur"); settle()
         XCTAssertEqual(cryptoRequests.count, 2, "Waits after a failure")
+        clock += CurrencyRatesStore.cryptoRetryInterval
+        rates.noteQuery("1 eth in eur"); settle()
+        XCTAssertEqual(cryptoRequests.count, 3)
     }
 
-    func testRemovingTheKeyForgetsCryptoPrices() {
+    func testCryptoWaitsLongerWhenCoinGeckoIsBusy() {
+        cryptoReply = nil
+        cryptoMessage = CryptoPrices.busyMessage
+        let rates = store()
+        rates.noteQuery("1 btc in eur"); settle()
+        clock += CurrencyRatesStore.cryptoRetryInterval + 1
+        rates.noteQuery("1 btc in eur"); settle()
+        XCTAssertEqual(cryptoRequests.count, 1, "A 429 waits longer than an ordinary failure")
+        rates.keyChanged()
+        rates.noteQuery("1 btc in eur"); settle()
+        XCTAssertEqual(cryptoRequests.count, 1, "Unrelated settings changes keep the wait")
+        clock += CurrencyRatesStore.cryptoBusyInterval
+        cryptoReply = cryptoBody
+        rates.noteQuery("1 btc in eur"); settle()
+        XCTAssertEqual(cryptoRequests.count, 2)
+    }
+
+    func testChangingTheKeyKeepsPricesAndRetriesWithTheNewSetting() {
         key = "CG-fixturekey123"
         let rates = store()
         rates.noteQuery("1 btc in eur"); settle()
         XCTAssertNotNil(CryptoPrices.current)
         key = nil
         rates.keyChanged()
-        XCTAssertNil(CryptoPrices.current)
-        XCTAssertFalse(FileManager.default.fileExists(atPath: cryptoCacheURL.path))
+        XCTAssertEqual(CryptoPrices.current?.euros["BTC"], 50000, "Prices are the same public data without a key")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: cryptoCacheURL.path))
+        CryptoPrices.current = nil
         let restarted = store()
         restarted.loadCache()
-        XCTAssertNil(CryptoPrices.current)
+        XCTAssertEqual(CryptoPrices.current?.euros["BTC"], 50000, "Cached prices load without a key")
+        cryptoReply = nil
+        clock += CurrencyRatesStore.cryptoRefreshInterval
+        rates.noteQuery("1 btc in eur"); settle()
+        XCTAssertEqual(cryptoRequests, ["CG-fixturekey123", nil])
+        key = "CG-otherkey45678"
+        rates.keyChanged()
+        rates.noteQuery("1 btc in eur"); settle()
+        XCTAssertEqual(cryptoRequests.last, "CG-otherkey45678", "A new key skips the failure wait")
     }
 
     func testRejectsAResponseThatIsNotTheFeed() {
