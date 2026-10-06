@@ -34,7 +34,13 @@ export const docGroups: DocGroup[] = [
         slug: 'launcher',
         title: 'The launcher',
         summary:
-          'Search apps, files, and contacts. Calculate, convert units, and join today’s meetings.',
+          'Search apps, files, and contacts, calculate and convert, and join today’s meetings.',
+      },
+      {
+        slug: 'calculator',
+        title: 'The calculator',
+        summary:
+          'Arithmetic, percentages, units, time zones, dates, colors and currency, answered as you type.',
       },
       {
         slug: 'notes',
