@@ -8,17 +8,35 @@ public struct CalculationAnswer: Hashable {
     public let result: String
     public let resultDetail: String?
     public let copyText: String
+    /// A color to show beside the input, for color conversions.
+    public let swatch: Swatch?
 
-    public init(input: String, inputDetail: String?, result: String, resultDetail: String?, copyText: String) {
+    /// An sRGB color with components from 0 to 1.
+    public struct Swatch: Hashable {
+        public let red: Double
+        public let green: Double
+        public let blue: Double
+        public let alpha: Double
+
+        public init(red: Double, green: Double, blue: Double, alpha: Double) {
+            self.red = red
+            self.green = green
+            self.blue = blue
+            self.alpha = alpha
+        }
+    }
+
+    public init(input: String, inputDetail: String?, result: String, resultDetail: String?, copyText: String, swatch: Swatch? = nil) {
         self.input = input
         self.inputDetail = inputDetail
         self.result = result
         self.resultDetail = resultDetail
         self.copyText = copyText
+        self.swatch = swatch
     }
 
     /// Every answer the query has, in the order the launcher lists them: time conversion, dates
-    /// and durations, arithmetic, then unit conversion. The input side keeps the owner's wording, trimmed.
+    /// and durations, colors, arithmetic, then unit conversion. The input side keeps the owner's wording, trimmed.
     public static func answers(for query: String, now: Date = Date(), localZone: TimeZone = .current,
                                locale: Locale = .current) -> [CalculationAnswer] {
         let input = query.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
@@ -29,6 +47,9 @@ public struct CalculationAnswer: Hashable {
         }
         if let date = DateCalculator.evaluate(query, now: now, localZone: localZone, locale: locale) {
             answers.append(date)
+        }
+        if let color = ColorCalculator.evaluate(query) {
+            answers.append(color)
         }
         if let value = Calculator.evaluate(query, locale: locale) {
             let text = Calculator.format(value, locale: locale)

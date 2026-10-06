@@ -120,3 +120,14 @@ Not yet: workdays, "next friday", month-name-only queries ("days until March"), 
 - Factorial: `5!` and `5 factorial`, for whole numbers 0–170. It binds tighter than unary minus and `^` (`-3!` is -6, `2^3!` is 64).
 - Phrasings: `square root of`, `cube root of`, `power`, `to the power of`, `squared`, `cubed`.
 - Results that are not real finite numbers (`sqrt(-1)`, `asin(2)`, `ln(0)`, overflow) give no answer instead of "undefined".
+
+## Colors — October 6, 2026
+
+`ColorCalculator` converts CSS colors: hex (`#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`), `rgb()`/`rgba()`, `hsl()`/`hsla()`, `hwb()`, `lab()`, `lch()`, `oklab()` and `oklch()`, in legacy comma or modern space syntax, with percentages, `deg`/`rad`/`grad`/`turn` hues and `/ alpha`.
+
+- Hex answers in `rgb(…)` tagged with `hsl(…)`; other inputs answer in hex tagged with `rgb(…)` (or `hsl(…)` for rgb input). `in`/`to`/`as <format>` picks the target: `#ff6363 in oklch`.
+- The card shows a swatch beside the input, outlined so pale and dark colors stay visible in both appearances.
+- Math follows CSS Color 4: the sRGB transfer curve, lab/lch relative to D50 via Bradford, OKLab from linear sRGB. Tests check sRGB red against the specification's worked values and round-trip `#3a7bd5` through every format.
+- hsl and hwb show one decimal so 8-bit colors survive a round trip (`hsl(0 100% 69.4%)`).
+- Colors outside sRGB keep exact values in lab/lch/oklab/oklch and show their clamped sRGB color elsewhere, tagged "Outside sRGB". This clamps channels rather than gamut-mapping in OKLCH.
+- Named colors (`red`) and hex without `#` are not read, since they collide with words and numbers.
