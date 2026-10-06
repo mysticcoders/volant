@@ -156,3 +156,7 @@ The 148 CSS named colors convert when a target format is given: `red in hex`, `R
 - Workdays are Monday to Friday, without public holidays: `workdays until Dec 25` (also "business days", "working days") counts days after today through the target; `in 10 workdays`, `5 business days ago` and `today + 10 workdays` step over weekends.
 - Named holidays work wherever a date does, with an optional year: Christmas and its eve, New Year's Day and Eve, Halloween, Valentine's Day, St Patrick's Day, Independence Day (`4th of July`), US Thanksgiving (fourth Thursday of November) and Western Easter (anonymous Gregorian algorithm). Alone, a holiday name is left to search.
 - Durations add and subtract: `2h 20min + 55min` gives `3 hours 15 minutes`, `… in hours` gives `3.25 hours`, `2h 20min in minutes` gives `140 minutes`. A single quantity stays with `UnitConverter` (`90 min in h`), and negative totals give no answer.
+
+## Multi-argument functions — October 6, 2026
+
+`max`, `min` (two or more arguments), `atan2(y, x)`, `hypot`, `pow`, `log(x, base)`, `round(x, digits)`, `gcd`, `lcm`, `nCr`/`choose` and `nPr`/`perm`. A comma separates arguments when it cannot be thousands grouping (`max(1,5)`, `max(1, 500)`); `;` always separates, for locales with a decimal comma (`max(2,5; 7)` in German). Because max and min need two arguments, an ambiguous `max(1,500)` gives no answer instead of a wrong one. Arguments outside a function's domain (`nCr(3, 5)`, `gcd(1.5, 3)`, `log(8, 1)`) give no answer.

@@ -9,6 +9,12 @@ import Foundation
 /// value right after it, so "sqrt 16 + 9" is 13. Results that are not real numbers, such as
 /// "sqrt(-1)", give no answer.
 ///
+/// Functions in `multiFunctions` take several arguments: "max(3, 7, 5)", "atan2(1, 1)", "nCr(10, 3)",
+/// "log(8, 2)", "round(3.14159, 2)". A comma separates arguments when it cannot be thousands
+/// grouping, so "max(1,5)" and "max(1, 500)" both work; ";" always separates, which suits locales
+/// with a decimal comma. max and min need at least two arguments, so an ambiguous "max(1,500)"
+/// gives no answer rather than a wrong one.
+///
 /// `%` is a percentage, as people write it: "52% of 900", "20% off 80", "15% tip on 42", and
 /// "19 + 47%" or "100 - 10%" add or subtract that share of the left side. Elsewhere `%` divides by
 /// 100, so "200 * 15%" is 30. Remainder is `mod`.
@@ -16,7 +22,7 @@ public enum Calculator {
     public enum CalcError: Error { case syntax, divisionByZero }
 
     private enum Token: Equatable {
-        case number(Double), op(Character), lparen, rparen, ident(String)
+        case number(Double), op(Character), lparen, rparen, ident(String), comma, call(String, Int)
     }
 
     /// Numbers follow `locale`: its decimal and grouping separators, plus scientific notation and
@@ -46,6 +52,47 @@ public enum Calculator {
         "log2": { Foundation.log2($0) }, "exp": { Foundation.exp($0) }
     ]
 
+    /// Functions of several arguments; nil marks arguments outside the function's domain.
+    static let multiFunctions: [String: ([Double]) -> Double?] = [
+        "max": { $0.count >= 2 ? $0.max() : nil }, "min": { $0.count >= 2 ? $0.min() : nil },
+        "atan2": { $0.count == 2 ? Foundation.atan2($0[0], $0[1]) : nil }, "hypot": { $0.count == 2 ? Foundation.hypot($0[0], $0[1]) : nil },
+        "pow": { $0.count == 2 ? Foundation.pow($0[0], $0[1]) : nil },
+        "log": { $0.count == 2 && $0[1] > 0 && $0[1] != 1 ? Foundation.log($0[0]) / Foundation.log($0[1]) : nil },
+        "round": { args in
+            guard args.count == 2, let digits = whole(args[1]), (-10...15).contains(digits) else { return nil }
+            let scale = Foundation.pow(10, Double(digits))
+            return (args[0] * scale).rounded() / scale
+        },
+        "gcd": { args in
+            guard args.count == 2, let a = whole(args[0]), let b = whole(args[1]) else { return nil }
+            return Double(gcd(abs(a), abs(b)))
+        },
+        "lcm": { args in
+            guard args.count == 2, let a = whole(args[0]), let b = whole(args[1]) else { return nil }
+            let divisor = gcd(abs(a), abs(b))
+            return divisor == 0 ? 0 : Double(abs(a) / divisor) * Double(abs(b))
+        },
+        "ncr": { choose($0, ordered: false) }, "choose": { choose($0, ordered: false) },
+        "npr": { choose($0, ordered: true) }, "perm": { choose($0, ordered: true) }
+    ]
+
+    private static func whole(_ value: Double) -> Int? {
+        value == value.rounded() && abs(value) < 9e15 ? Int(value) : nil
+    }
+
+    private static func gcd(_ a: Int, _ b: Int) -> Int { b == 0 ? a : gcd(b, a % b) }
+
+    /// Combinations ("nCr") or permutations ("nPr") of whole numbers with 0 ≤ r ≤ n.
+    private static func choose(_ args: [Double], ordered: Bool) -> Double? {
+        guard args.count == 2, let n = whole(args[0]), let r = whole(args[1]), n >= 0, (0...n).contains(r), n <= 10_000 else { return nil }
+        var result = 1.0
+        for step in 0..<r {
+            result *= Double(n - step)
+            if !ordered { result /= Double(step + 1) }
+        }
+        return ordered ? result : result.rounded()
+    }
+
     /// Rewrites everyday phrasings into the symbols the tokenizer reads.
     private static func phrases(_ text: String) -> String {
         var value = text
@@ -61,7 +108,7 @@ public enum Calculator {
     public static func looksNumeric(_ text: String) -> Bool {
         let t = text.trimmingCharacters(in: .whitespaces)
         guard !t.isEmpty else { return false }
-        let allowed = CharacterSet(charactersIn: "0123456789.,+-*/^%()!° ").union(.letters)
+        let allowed = CharacterSet(charactersIn: "0123456789.,;+-*/^%()!° ").union(.letters)
         guard t.unicodeScalars.allSatisfy({ allowed.contains($0) }) else { return false }
         return t.unicodeScalars.contains { CharacterSet.decimalDigits.contains($0) } || t.lowercased().contains("pi")
             || t.range(of: #"\be\b"#, options: [.regularExpression, .caseInsensitive]) != nil
@@ -85,14 +132,17 @@ public enum Calculator {
 
     private static func tokenize(_ text: String, separators: NumberLiteral.Separators) throws -> [Token] {
         var tokens: [Token] = []
+        var calls: [Bool] = []
         let chars = Array(text)
         var i = 0
         while i < chars.count {
             let ch = chars[i]
             if ch.isWhitespace { i += 1; continue }
             if ch.isNumber || ch == separators.decimal {
-                guard let (v, j) = NumberLiteral.scan(chars, from: i, separators),
-                      j == chars.count || !(chars[j].isNumber || chars[j] == separators.decimal || chars[j] == separators.grouping) else {
+                let inCall = calls.last == true
+                guard let (v, j) = NumberLiteral.scan(chars, from: i, separators)
+                        ?? (inCall ? NumberLiteral.scan(chars, from: i, separators, grouping: false) : nil),
+                      j == chars.count || !(chars[j].isNumber || chars[j] == separators.decimal || (chars[j] == separators.grouping && !inCall)) else {
                     throw CalcError.syntax
                 }
                 tokens.append(.number(v)); i = j; continue
@@ -102,7 +152,7 @@ public enum Calculator {
                 while j < chars.count && chars[j].isLetter { j += 1 }
                 var k = j
                 while k < chars.count && chars[k].isASCII && chars[k].isNumber { k += 1 }
-                if k > j, functions[String(chars[i..<k]).lowercased()] != nil { j = k }
+                if k > j, functions[String(chars[i..<k]).lowercased()] != nil || multiFunctions[String(chars[i..<k]).lowercased()] != nil { j = k }
                 let word = String(chars[i..<j]).lowercased()
                 i = j
                 if word == "tip" {
@@ -121,8 +171,16 @@ public enum Calculator {
                 tokens.append(words[word].map { .op($0) } ?? .ident(word)); continue
             }
             switch ch {
-            case "(": tokens.append(.lparen)
-            case ")": tokens.append(.rparen)
+            case "(":
+                if case .ident(let name)? = tokens.last, functions[name] != nil || multiFunctions[name] != nil { calls.append(true) }
+                else { calls.append(false) }
+                tokens.append(.lparen)
+            case ")":
+                guard calls.popLast() != nil else { throw CalcError.syntax }
+                tokens.append(.rparen)
+            case ",", ";":
+                guard calls.last == true else { throw CalcError.syntax }
+                tokens.append(.comma)
             case "+", "-", "*", "/", "^": tokens.append(.op(ch))
             case "%": tokens.append(.op("p"))
             case "!": tokens.append(.op("!"))
@@ -145,9 +203,14 @@ public enum Calculator {
         }
     }
 
+    /// Shunting-yard ordering. Postfix operators (%, !, °) apply to the operand just completed,
+    /// before any pending operator. Unary minus is a prefix operator with no left operand, so it
+    /// pops nothing. A function name without parentheses binds to the next value; with
+    /// parentheses, commas count its arguments and the closing parenthesis emits the call.
     private static func toRPN(_ tokens: [Token]) throws -> [Token] {
         var output: [Token] = []
         var stack: [Token] = []
+        var arity: [Int] = []
         var prev: Token? = nil
         for token in tokens {
             switch token {
@@ -156,20 +219,18 @@ public enum Calculator {
             case .ident(let name):
                 if ["pi", "e"].contains(name) { output.append(token) } else { stack.append(token) }
             case .op("p"), .op("!"), .op("d"):
-                // Postfix: applies to the operand just completed, before any pending operator.
                 switch prev {
                 case .number?, .rparen?, .ident?, .op("p")?, .op("!")?, .op("d")?: output.append(token)
                 default: throw CalcError.syntax
                 }
             case .op(let op):
                 var op = op
-                let unary = op == "-" && (prev == nil || prev == .lparen || {
+                let unary = op == "-" && (prev == nil || prev == .lparen || prev == .comma || {
                     if case .op(let last) = prev!, !["p", "!", "d"].contains(last) { return true }
                     if case .ident(let name) = prev!, functions[name] != nil { return true }
                     return false
                 }())
                 if unary { op = "u" }
-                // A prefix operator has no left operand, so nothing on the stack can be complete yet.
                 while !unary, let top = stack.last {
                     if case .ident = top { output.append(stack.removeLast()); continue }
                     guard case .op(let t) = top,
@@ -178,11 +239,27 @@ public enum Calculator {
                 }
                 stack.append(.op(op))
             case .lparen:
+                if case .ident? = stack.last, case .ident? = prev { arity.append(0) } else { arity.append(-1) }
                 stack.append(token)
+            case .comma:
+                while let top = stack.last, top != .lparen { output.append(stack.removeLast()) }
+                guard stack.last == .lparen, let count = arity.last, count >= 0, prev != .lparen, prev != .comma else { throw CalcError.syntax }
+                arity[arity.count - 1] = count + 1
             case .rparen:
                 while let top = stack.last, top != .lparen { output.append(stack.removeLast()) }
-                guard stack.popLast() == .lparen else { throw CalcError.syntax }
-                if let top = stack.last, case .ident = top { output.append(stack.removeLast()) }
+                guard stack.popLast() == .lparen, let commas = arity.popLast(), prev != .comma else { throw CalcError.syntax }
+                if let top = stack.last, case .ident(let name) = top {
+                    stack.removeLast()
+                    if commas > 0 || (functions[name] == nil && multiFunctions[name] != nil) {
+                        guard multiFunctions[name] != nil else { throw CalcError.syntax }
+                        output.append(.call(name, commas + 1))
+                    } else {
+                        output.append(top)
+                    }
+                } else if commas > 0 {
+                    throw CalcError.syntax
+                }
+            case .call: throw CalcError.syntax
             }
             prev = token
         }
@@ -211,6 +288,12 @@ public enum Calculator {
             case .ident(let fn):
                 guard let function = functions[fn] else { throw CalcError.syntax }
                 stack.append(Value(number: function(try pop().number)))
+            case .call(let name, let count):
+                guard let function = multiFunctions[name], stack.count >= count else { throw CalcError.syntax }
+                let args = stack.suffix(count).map(\.number)
+                stack.removeLast(count)
+                guard let value = function(args) else { throw CalcError.syntax }
+                stack.append(Value(number: value))
             case .op("!"):
                 let x = try pop().number
                 guard x >= 0, x == x.rounded(), x <= 170 else { throw CalcError.syntax }
