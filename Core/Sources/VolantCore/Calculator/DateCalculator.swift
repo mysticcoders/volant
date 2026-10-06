@@ -7,10 +7,15 @@ import Foundation
 /// hours"), workdays ("workdays until Dec 25", "in 10 business days"), named holidays ("days until
 /// christmas", "easter 2027"), "next friday", ISO 8601 timestamps and Unix time.
 ///
+/// Facts about a date: its weekday ("what day was 2000-01-01"), ISO 8601 week ("week number") and
+/// day of the year, the days in a month or year ("days in february"), leap years ("is 2028 a leap
+/// year", "next leap year"), age from a birthdate ("age 1985-04-12", "age 1985-04-12 on Jan 1
+/// 2030") and the days between two dates written as a subtraction ("Dec 25 - Oct 6").
+///
 /// "this friday" is the coming Friday, today included; "next friday" is the next one that is not
 /// today, one to seven days ahead; "friday after next" is a week later; "last friday" is the most
-/// recent one before today. Workdays are Monday to Friday; public holidays are not
-/// subtracted. Holidays are the US and widely shared ones: Christmas and its eve, New Year's Day
+/// recent one before today. Workdays are Monday to Friday, minus the region's public
+/// holidays where `PublicHolidays` knows them. Holidays are the US and widely shared ones: Christmas and its eve, New Year's Day
 /// and Eve, Halloween, Valentine's Day, St Patrick's Day, Independence Day, US Thanksgiving (fourth
 /// Thursday of November) and Western Easter.
 ///
@@ -112,13 +117,17 @@ public enum DateCalculator {
         if let stamp = timestamp(input, context) { return stamp }
         let words = normalize(text)
         guard !words.isEmpty else { return nil }
-        return unix(words, input: input, context)
-            ?? dayAlone(words, input: input, context)
-            ?? counting(words, input: input, context)
+        typealias Reader = ([String], String, Context) -> CalculationAnswer?
+        let readers: [Reader] = [unix, dayAlone, weekdayOf, weekNumber, dayOfYear, daysIn, leapYear, age]
+        for reader in readers {
+            if let answer = reader(words, input, context) { return answer }
+        }
+        return counting(words, input: input, context)
             ?? timespan(words, input: input, context)
             ?? durationSum(words, input: input, context)
             ?? offset(words, input: input, context)
             ?? weekdayInWeeks(words, input: input, context)
+            ?? difference(words, input: input, context)
             ?? arithmetic(words, input: input, context)
     }
 
@@ -154,6 +163,178 @@ public enum DateCalculator {
         guard ["today", "tomorrow", "yesterday"].contains(words[0]), case .day(let day)? = dateWord(words[...], c) else { return nil }
         let text = dateText(day, c)
         return CalculationAnswer(input: input, inputDetail: nil, result: text, resultDetail: relative(day, c), copyText: text)
+    }
+
+    /// "what day was 2000-01-01", "what day is christmas", "what day of the week is Dec 25 2030",
+    /// "what day is it". "was" means a yearless date's last occurrence; otherwise its next one.
+    private static func weekdayOf(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
+        guard words.first == "what" else { return nil }
+        var rest = words.dropFirst()
+        if rest.starts(with: ["day", "of", "the", "week"]) { rest = rest.dropFirst(4) }
+        else if rest.starts(with: ["day", "of", "week"]) { rest = rest.dropFirst(3) }
+        else if rest.first == "day" || rest.first == "weekday" { rest = rest.dropFirst() }
+        else { return nil }
+        var direction = 1
+        if rest.first == "was" { direction = -1; rest = rest.dropFirst() }
+        else if rest.first == "is" { rest = rest.dropFirst() }
+        else if rest.starts(with: ["will", "be"]) { rest = rest.dropFirst(2) }
+        else { return nil }
+        if rest.first == "on" { rest = rest.dropFirst() }
+        guard let day = rest == ["it"] ? c.today : date(rest, c, direction: direction) else { return nil }
+        let name = formatted(day, "EEEE", c)
+        return CalculationAnswer(input: input, inputDetail: nil, result: name, resultDetail: dateText(day, c), copyText: name)
+    }
+
+    /// "week number", "week of the year", "what week is it", "week number of Dec 25": the ISO 8601
+    /// week, which starts on Monday and belongs to the year holding its Thursday, whatever the
+    /// locale's own week rules.
+    private static func weekNumber(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
+        let rest: ArraySlice<String>
+        if words == ["what", "week", "is", "it"] { rest = [] }
+        else if let prefix = [["week", "number"], ["week", "of", "the", "year"], ["week", "of", "year"], ["iso", "week"]]
+                    .first(where: { words.starts(with: $0) }) { rest = words.dropFirst(prefix.count) }
+        else { return nil }
+        guard let day = factDate(rest, c) else { return nil }
+        var iso = Calendar(identifier: .iso8601)
+        iso.timeZone = c.calendar.timeZone
+        let week = iso.component(.weekOfYear, from: day), weekYear = iso.component(.yearForWeekOfYear, from: day)
+        guard let interval = iso.dateInterval(of: .weekOfYear, for: day),
+              let sunday = c.calendar.date(byAdding: .day, value: 6, to: interval.start) else { return nil }
+        let text = weekYear == c.calendar.component(.year, from: day) ? "Week \(week)" : "Week \(week) of \(weekYear)"
+        return CalculationAnswer(input: input, inputDetail: "ISO 8601", result: text,
+                                 resultDetail: "\(dateText(interval.start, c)) to \(dateText(sunday, c))", copyText: text)
+    }
+
+    /// "day of the year", "day of year Dec 25", "day number".
+    private static func dayOfYear(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
+        guard let prefix = [["day", "of", "the", "year"], ["day", "of", "year"], ["day", "number"]].first(where: { words.starts(with: $0) }),
+              let day = factDate(words.dropFirst(prefix.count), c),
+              let ordinal = c.calendar.ordinality(of: .day, in: .year, for: day),
+              let length = c.calendar.range(of: .day, in: .year, for: day)?.count else { return nil }
+        let year = c.calendar.component(.year, from: day)
+        let text = "Day \(ordinal)"
+        return CalculationAnswer(input: input, inputDetail: words.count > prefix.count ? dateText(day, c) : nil, result: text,
+                                 resultDetail: "\(count(length - ordinal, "day")) left in \(year)", copyText: text)
+    }
+
+    /// "days in february" (this year), "days in Feb 2028", "days in 2028", "days in this month".
+    private static func daysIn(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
+        guard words.count >= 3, words[0] == "days", words[1] == "in" else { return nil }
+        let rest = Array(words[2...])
+        let thisYear = c.calendar.component(.year, from: c.now)
+        var components = DateComponents(day: 1), unit = Calendar.Component.month
+        if rest == ["this", "month"] {
+            components.year = thisYear
+            components.month = c.calendar.component(.month, from: c.now)
+        } else if rest == ["this", "year"] {
+            components.year = thisYear
+            components.month = 1
+            unit = .year
+        } else if rest.count == 1, rest[0].count == 4, let year = Int(rest[0]), year >= 1 {
+            components.year = year
+            components.month = 1
+            unit = .year
+        } else if (1...2).contains(rest.count), let month = months[rest[0]] {
+            guard rest.count == 1 || (rest[1].count == 4 && Int(rest[1]) != nil) else { return nil }
+            components.year = rest.count == 2 ? Int(rest[1])! : thisYear
+            components.month = month
+        } else {
+            return nil
+        }
+        guard let start = c.calendar.date(from: components), let length = c.calendar.range(of: .day, in: unit, for: start)?.count else { return nil }
+        let label = unit == .year ? String(components.year!) : formatted(start, "MMMM yyyy", c)
+        let text = count(length, "day")
+        return CalculationAnswer(input: input, inputDetail: nil, result: text, resultDetail: label, copyText: text)
+    }
+
+    /// "is 2028 a leap year", "is it a leap year" (this year), "2028 leap year", "next leap year".
+    private static func leapYear(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
+        let thisYear = c.calendar.component(.year, from: c.now)
+        if words == ["next", "leap", "year"] {
+            var year = thisYear + 1
+            while !isLeap(year) { year += 1 }
+            let day = c.calendar.date(from: DateComponents(year: year, month: 2, day: 29))
+            return CalculationAnswer(input: input, inputDetail: nil, result: String(year),
+                                     resultDetail: day.map { dateText($0, c) }, copyText: String(year))
+        }
+        let year: Int?
+        switch words.count {
+        case 5 where words[0] == "is" && words[2...] == ["a", "leap", "year"]:
+            year = words[1] == "it" ? thisYear : (words[1].count == 4 ? Int(words[1]) : nil)
+        case 6 where words == ["is", "this", "year", "a", "leap", "year"]: year = thisYear
+        case 3 where words[1...] == ["leap", "year"]: year = words[0].count == 4 ? Int(words[0]) : nil
+        default: year = nil
+        }
+        guard let year, year >= 1 else { return nil }
+        if isLeap(year) {
+            return CalculationAnswer(input: input, inputDetail: nil, result: "Yes", resultDetail: "\(year) has 366 days",
+                                     copyText: "\(year) is a leap year")
+        }
+        var next = year + 1
+        while !isLeap(next) { next += 1 }
+        return CalculationAnswer(input: input, inputDetail: nil, result: "No", resultDetail: "The next leap year is \(next)",
+                                 copyText: "\(year) is not a leap year")
+    }
+
+    /// "age 1985-04-12", "age April 12 1985", "age 1985-04-12 on Jan 1 2030". The birthdate needs
+    /// its year. A February 29 birthday counts as reached on February 28 in common years, as
+    /// Foundation's calendar adds years.
+    private static func age(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
+        guard words.count >= 2, words[0] == "age" else { return nil }
+        var birthWords = words.dropFirst()
+        if birthWords.first == "of" || birthWords.first == "born" { birthWords = birthWords.dropFirst() }
+        var reference = c.today, onDate = false
+        if let split = birthWords.firstIndex(where: { $0 == "on" || $0 == "at" }) {
+            guard let target = date(birthWords[(split + 1)...], c, direction: 0) else { return nil }
+            reference = target
+            onDate = true
+            birthWords = birthWords[..<split]
+        }
+        switch dateWord(birthWords, c) {
+        case .calendar(_, _, _?)?, .holiday(_, _?)?: break
+        default: return nil
+        }
+        guard let birth = date(birthWords, c, direction: -1), birth <= reference,
+              let years = c.calendar.dateComponents([.year], from: birth, to: reference).year,
+              let next = c.calendar.date(byAdding: .year, value: years + 1, to: birth),
+              let last = c.calendar.date(byAdding: .year, value: years, to: birth) else { return nil }
+        let text = count(years, "year")
+        let detail: String
+        if onDate { detail = "On " + dateText(reference, c) }
+        else if c.calendar.isDate(last, inSameDayAs: reference) { detail = "Birthday today" }
+        else { detail = "Next birthday in " + count(c.calendar.dateComponents([.day], from: reference, to: next).day ?? 0, "day") }
+        return CalculationAnswer(input: input, inputDetail: "Born " + dateText(birth, c), result: text, resultDetail: detail, copyText: text)
+    }
+
+    /// "Dec 25 - Oct 6", "2027-01-01 - today": the days from the second date to the first.
+    private static func difference(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
+        guard words.filter({ $0 == "-" }).count == 1, !words.contains("+"), let minus = words.firstIndex(of: "-"), minus > 0,
+              let first = date(words[..<minus], c, direction: 0), let second = date(words[(minus + 1)...], c, direction: 0),
+              let days = c.calendar.dateComponents([.day], from: second, to: first).day else { return nil }
+        let text = count(days, "day")
+        return CalculationAnswer(input: input, inputDetail: nil, result: text,
+                                 resultDetail: "\(dateText(second, c)) to \(dateText(first, c))", copyText: text)
+    }
+
+    /// The date a fact asks about: today when none is given, else the words after an optional
+    /// "of", "for" or "on", with a yearless date read in this year.
+    private static func factDate(_ words: ArraySlice<String>, _ c: Context) -> Date? {
+        var rest = words
+        if let first = rest.first, ["of", "for", "on"].contains(first) { rest = rest.dropFirst() }
+        if rest.isEmpty { return words.isEmpty ? c.today : nil }
+        return date(rest, c, direction: 0)
+    }
+
+    private static func formatted(_ date: Date, _ template: String, _ c: Context) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = c.locale
+        formatter.timeZone = c.calendar.timeZone
+        formatter.setLocalizedDateFormatFromTemplate(template)
+        return formatter.string(from: date)
+    }
+
+    private static func isLeap(_ year: Int) -> Bool {
+        (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
     }
 
     /// An ISO 8601 timestamp shown in local time: "2024-03-15T14:30:00Z", "…+02:00", fractional

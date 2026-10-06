@@ -206,3 +206,28 @@ Adding, replacing or removing a key clears the failure wait so the next coin que
 - `contrast #fff #3a7bd5` (also `contrast ratio of white and navy`, `contrast #777 on #fff`): the WCAG 2 ratio of the first color as text on the second, tagged Passes AAA (7), Passes AA · AAA for large text (4.5), AA for large text only (3) or Fails AA. A translucent background is composited over white and translucent text over the background. The ratio is floored to two decimals, so `#777` on white reads 4.47:1 and fails AA, where tools that round show 4.48.
 
 All of these need an operation word or function, so plain color names and words stay searches. The card's swatch shows the resulting color (the text color for contrast); there is no swap. `rgbToHSL` now treats channel spreads under 10⁻⁶ as gray, so OKLab mixes of grays do not show a stray hue.
+## Number bases, list functions and date facts — October 6, 2026
+
+**Number bases.** `NumberBases` converts whole numbers: `255 in hex`, `255 to binary`, `255 as octal`, `0x1F in decimal`, `0b1010 in hex` (also `hexadecimal`, `bin`, `oct`, `dec`). The calculator reads prefixed literals anywhere a number goes (`0x1F + 0b1010`, `max(0x10, 0b11)`, `0o17`), case-insensitive. Rules:
+
+- Integers only, up to 2^53 in size, the range a calculator value holds exactly; fractions and larger values give no answer, as do malformed digits (`0b102`, `0x1G`).
+- Negative numbers keep their sign (`-0xFF`) rather than a two's-complement pattern, which would need a word size the query does not state.
+- Copy gives the prefixed form, with uppercase hex digits. Binary longer than a byte shows in groups of four on the card (`0b1111 1111 1111`) and copies without spaces.
+- Converting to decimal needs a prefixed literal on the left, so `1010 in decimal` and `cafe in decimal` stay searches. `#ff6363 in hex` and `red in hex` stay color conversions.
+- Swap converts back: `255 in hex` becomes `0xFF in decimal`, `0b1010 in hex` becomes `0xA in binary`. An expression on the left has no swap to decimal.
+
+**List functions.** `avg` (`average`, `mean`), `sum`, `median`, `range` (max minus min) and `stdev` (`stddev`, the sample standard deviation dividing by n − 1, as spreadsheets' STDEV does) join the multi-argument functions. Like max and min they need at least two values, so an ambiguous `sum(1,500)` gives no answer. Phrases read as calls: `average of 1, 2, 3`, `sum of 3, 5 and 8`, `the average of 4 and 8`; "and" separates like `;`.
+
+**Date facts.** `DateCalculator` answers questions about a date, in the local calendar with the injected clock:
+
+| Form | Example | Answer |
+| --- | --- | --- |
+| Weekday | `what day was 2000-01-01`, `what day is christmas`, `what day of the week is Dec 25 2030`, `what day is it` | `Saturday`, tagged with the full date; "was" picks a yearless date's last occurrence, otherwise its next |
+| ISO week | `week number`, `week of the year`, `what week is it`, `week number of Jan 1 2027` | `Week 41`, tagged with its Monday-to-Sunday span; `Week 53 of 2026` when the week belongs to another year |
+| Day of year | `day of year`, `day of the year Dec 31` | `Day 279`, tagged `86 days left in 2026` |
+| Days in | `days in february`, `days in Feb 2028`, `days in 2028`, `days in this month` | `28 days`, tagged with the month |
+| Leap years | `is 2028 a leap year`, `is it a leap year`, `1900 leap year`, `next leap year` | `Yes`/`No`, tagged with the day count or the next leap year; Copy gives the sentence |
+| Age | `age 1985-04-12`, `age April 12 1985`, `age 1985-04-12 on Jan 1 2030` | `41 years`, tagged with the next birthday or "Birthday today" |
+| Difference | `Dec 25 - Oct 6`, `2027-01-01 - today` | `80 days`, negative when the first date is earlier |
+
+Week numbers always follow ISO 8601 (weeks start Monday; week 1 holds the year's first Thursday), whatever the locale's own week rules, so the US Sunday-start convention is not used; the card says "ISO 8601". Age needs a birth year and a birthdate no later than the reference date; a February 29 birthday is reached on February 28 in common years, as Foundation adds years. A plain number after a date still means days (`Dec 25 - 5`).
