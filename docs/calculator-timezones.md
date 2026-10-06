@@ -54,6 +54,10 @@ Resolution: case, accents, periods and spacing are ignored ("st louis", "krakow"
 
 Cost: nothing until a query names a city the built-in lists do not know. The first such lookup loads the table in about 60 ms and adds about 12 MB in a release build; later lookups take under 2 µs. Fixtures and unit tests use an empty or injected directory.
 
+## Ambiguous cities
+
+When a time question fails only because a city name is ambiguous in time, the launcher offers up to three cards, one per likely city, largest first: `time in springfield` shows Springfield, MO, MA and IL; `time in valencia` shows Venezuela, Spain and California. Each card's input is the qualified query, so Return copies that answer and Command-Return continues from it. US cities are qualified by state and others by country name, which never clashes with a state code; every alternative is checked to resolve on its own. Qualified answers name their qualifier (`in Portland, ME`). Only time-shaped queries look for alternatives, so ordinary searches never load the city table.
+
 ## Airport codes
 
 IATA codes resolve after every city source: `time in JFK`, `3pm LAX in LHR`, `diff NRT`. Labels name the city and code (`5:00 AM in New York (JFK)`). Data: mwgg/Airports (MIT), 7,918 airports with IATA codes, each with an IANA zone; `tools/cities/airports.py` writes `Volant/Resources/airports.tsv.deflate` (about 80 KB) and copies the license to `Volant/Resources/Licenses/Airports-LICENSE.txt`, which ships with the app and is credited in Settings → Data & Configuration → Acknowledgements. Because cities come first, a code that is also a city name (Ely, England versus ELY, Nevada) stays the city. The table loads on the first code the city sources cannot answer.

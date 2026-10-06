@@ -44,6 +44,12 @@ public struct CalculationAnswer: Hashable {
         if let time = TimeCalculator.evaluate(query, now: now, localZone: localZone, locale: locale) {
             answers.append(CalculationAnswer(input: input, inputDetail: time.source, result: time.headline,
                                              resultDetail: time.detail, copyText: time.text))
+        } else {
+            for suggestion in TimeCalculator.suggestions(query, now: now, localZone: localZone, locale: locale) {
+                answers.append(CalculationAnswer(input: suggestion.query, inputDetail: suggestion.result.source,
+                                                 result: suggestion.result.headline, resultDetail: suggestion.result.detail,
+                                                 copyText: suggestion.result.text))
+            }
         }
         if let date = DateCalculator.evaluate(query, now: now, localZone: localZone, locale: locale) {
             answers.append(date)

@@ -42,6 +42,41 @@ final class CityDirectoryTests: XCTestCase {
         XCTAssertNil(cities.lookup("Springfield, Atlantis"))
     }
 
+    func testQualifiedMatchesNameTheirQualifier() {
+        let cities = directory()
+        XCTAssertEqual(cities.lookup("springfield, ma")?.name, "Springfield, MA")
+        XCTAssertEqual(cities.lookup("barcelona, venezuela")?.name, "Barcelona, Venezuela")
+        XCTAssertEqual(cities.lookup("London, UK")?.name, "London, UK")
+        XCTAssertEqual(cities.lookup("Portland")?.name, "Portland")
+    }
+
+    func testAlternativesOfferEachResolvableCityLargestFirst() {
+        let cities = directory()
+        XCTAssertEqual(cities.alternatives("Springfield"), ["Springfield, MO", "Springfield, MA"])
+        XCTAssertEqual(cities.alternatives("springfield", limit: 1), ["Springfield, MO"])
+        XCTAssertEqual(cities.alternatives("Portland"), [])
+        XCTAssertEqual(cities.alternatives("Atlantis"), [])
+        for alternative in cities.alternatives("Springfield") { XCTAssertNotNil(cities.lookup(alternative), alternative) }
+    }
+
+    func testAmbiguousTimeQueriesSuggestEachCity() {
+        let saved = CityDirectory.shared
+        CityDirectory.shared = directory()
+        defer { CityDirectory.shared = saved }
+        let now = ISO8601DateFormatter().date(from: "2026-10-02T09:00:00Z")!
+        let paris = TimeZone(identifier: "Europe/Paris")!
+        func suggest(_ query: String) -> [String] {
+            CalculationAnswer.answers(for: query, now: now, localZone: paris, locale: Locale(identifier: "en_US")).map { "\($0.input) → \($0.result)" }
+        }
+        XCTAssertEqual(suggest("time in springfield"), ["time in Springfield, MO → 4:00 AM in Springfield, MO",
+                                                        "time in Springfield, MA → 5:00 AM in Springfield, MA"])
+        XCTAssertEqual(suggest("3pm Springfield in Barcelona").count, 2)
+        XCTAssertEqual(suggest("diff springfield").first, "diff Springfield, MO → 7 hours behind")
+        XCTAssertEqual(suggest("time in Portland").count, 1, "Unambiguous names answer directly")
+        XCTAssertTrue(suggest("springfield").isEmpty, "Only time-shaped queries look for alternatives")
+        XCTAssertTrue(suggest("time in atlantis").isEmpty)
+    }
+
     func testAccentsCasePeriodsAndSpacingAreIgnored() {
         let cities = directory()
         XCTAssertEqual(cities.lookup("krakow")?.name, "Kraków")
@@ -70,7 +105,7 @@ final class CityDirectoryTests: XCTestCase {
         }
         XCTAssertEqual(answer("9am Portland in Barcelona"), "6:00 PM in Barcelona")
         XCTAssertEqual(answer("9am Portland, ME in Barcelona"), "3:00 PM in Barcelona")
-        XCTAssertEqual(answer("time in Springfield, MA"), answer("time in New York")?.replacingOccurrences(of: "New York", with: "Springfield"))
+        XCTAssertEqual(answer("time in Springfield, MA"), answer("time in New York")?.replacingOccurrences(of: "New York", with: "Springfield, MA"))
         XCTAssertNil(answer("9am Springfield in Barcelona"))
     }
 
