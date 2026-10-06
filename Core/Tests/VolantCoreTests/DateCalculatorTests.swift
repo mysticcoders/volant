@@ -146,15 +146,54 @@ final class DateCalculatorTests: XCTestCase {
         XCTAssertEqual(DateCalculator.Holiday.thanksgiving.date(in: 2027).day, 25)
     }
 
-    func testWorkdays() {
-        XCTAssertEqual(card("workdays until Dec 25"), ["58 workdays", "Friday, December 25", "58 workdays"])
-        XCTAssertEqual(card("business days until christmas").first, "58 workdays")
-        XCTAssertEqual(card("in 10 workdays"), ["Tuesday, October 20", "In 14 days", "Tuesday, October 20"])
-        XCTAssertEqual(card("10 working days from now").first, "Tuesday, October 20")
+    private func card(_ query: String, region: String) -> [String?] {
+        guard let a = DateCalculator.evaluate(query, now: now, localZone: paris, locale: Locale(identifier: region)) else { return [] }
+        return [a.result, a.inputDetail, a.copyText]
+    }
+
+    func testWorkdaysSkipTheRegionsPublicHolidays() {
+        XCTAssertEqual(card("workdays until Dec 25"), ["54 workdays", "Friday, December 25", "54 workdays"])
+        XCTAssertEqual(answer("workdays until Dec 25")?.inputDetail, "Skips US holidays")
+        XCTAssertEqual(card("business days until christmas").first, "54 workdays")
+        XCTAssertEqual(card("in 10 workdays"), ["Wednesday, October 21", "In 15 days", "Wednesday, October 21"])
+        XCTAssertEqual(answer("in 10 workdays")?.inputDetail, "Skips US holidays")
+        XCTAssertEqual(card("10 working days from now").first, "Wednesday, October 21")
         XCTAssertEqual(card("5 business days ago").first, "Tuesday, September 29")
-        XCTAssertEqual(card("today + 10 workdays").first, "Tuesday, October 20")
-        XCTAssertEqual(card("workdays between 2026-12-24 and 2027-01-04").first, "7 workdays")
+        XCTAssertEqual(card("today + 10 workdays").first, "Wednesday, October 21")
+        XCTAssertEqual(card("workdays between 2026-12-24 and 2027-01-04").first, "5 workdays")
         XCTAssertEqual(card("workdays until tomorrow").first, "1 workday")
+    }
+
+    func testWorkdaysWithoutRulesCountWeekendsOnly() {
+        XCTAssertEqual(card("workdays until Dec 25", region: "en_JP"), ["58 workdays", "Weekends only", "58 workdays"])
+        XCTAssertEqual(card("in 10 workdays", region: "en_JP").first, "Tuesday, October 20")
+        XCTAssertEqual(card("workdays between 2026-12-24 and 2027-01-04", region: "en_JP").first, "7 workdays")
+        XCTAssertEqual(card("workdays between 2026-12-24 and 2027-01-04", region: "en_GB"), ["4 workdays", "Skips UK holidays", "4 workdays"])
+    }
+
+    /// Official 2026 and 2027 lists: OPM federal holidays, GOV.UK bank holidays (England and Wales),
+    /// German national and Canadian federal holidays.
+    func testPublicHolidayRulesMatchPublishedLists() {
+        func list(_ region: String, _ year: Int) -> [Int] { PublicHolidays.holidays(region, year).sorted() }
+        XCTAssertEqual(list("US", 2026), [20260101, 20260119, 20260216, 20260525, 20260619, 20260703, 20260907, 20261012,
+                                          20261111, 20261126, 20261225])
+        XCTAssertEqual(list("GB", 2026), [20260101, 20260403, 20260406, 20260504, 20260525, 20260831, 20261225, 20261228])
+        XCTAssertEqual(list("GB", 2027).suffix(2), [20271227, 20271228])
+        XCTAssertEqual(list("DE", 2026), [20260101, 20260403, 20260406, 20260501, 20260514, 20260525, 20261003, 20261225, 20261226])
+        XCTAssertTrue(list("CA", 2026).contains(20260518), "Victoria Day is the Monday before May 25")
+        XCTAssertTrue(list("CA", 2026).contains(20260930))
+        XCTAssertTrue(PublicHolidays.isHoliday(year: 2021, month: 12, day: 31, region: "US"), "New Year's Day 2022 fell on Saturday")
+        XCTAssertFalse(PublicHolidays.isHoliday(year: 2026, month: 12, day: 25, region: "JP"))
+    }
+
+    func testMoreNamedHolidays() {
+        XCTAssertEqual(card("days until memorial day"), ["237 days", "Monday, May 31, 2027", "237 days"])
+        XCTAssertEqual(card("days until mother's day").first, "215 days")
+        XCTAssertEqual(card("days until good friday").first, "171 days")
+        XCTAssertEqual(card("days until boxing day").first, "81 days")
+        XCTAssertEqual(card("labor day 2027 + 0").first, "Monday, September 6, 2027")
+        XCTAssertEqual(card("fathers day 2027 + 0").first, "Sunday, June 20, 2027")
+        XCTAssertEqual(card("easter monday 2027 + 0").first, "Monday, March 29, 2027")
     }
 
     func testSummedDurations() {

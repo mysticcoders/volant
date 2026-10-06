@@ -171,3 +171,9 @@ Shift-Command-Return on a conversion card replaces the search with the same conv
 - `time in 4 hours in Tokyo`, `time in 90 minutes in New York`, `time in 1 day in LA`: the clock there after that much elapsed time, tagged `In 4 hours`.
 - `last friday` is the most recent Friday before today; `friday after next` is a week after next Friday. Both work alone, in date questions and in time queries, and past local moments read `7 days ago`.
 - Locales that group digits with a space (French uses a narrow no-break space) accept a typed space: `1 000 + 5`, `12 345,5 * 2`.
+
+## Public holidays — October 6, 2026
+
+Workdays now skip the public holidays of the Mac's region where `PublicHolidays` knows them: US federal holidays (Saturday holidays observed Friday, Sunday ones Monday), UK bank holidays for England and Wales (substitute weekdays), and the national holidays of Germany, France and Canada (federal, with substitutes). The card says which ("Skips US holidays") or "Weekends only" for other regions. Rules are computed per year, including Easter-based days; one-off proclaimed holidays and regional (state or province) holidays are not included. Tests compare 2026 and 2027 against the OPM, GOV.UK, German and Canadian published lists.
+
+More holidays work in date questions: Good Friday, Easter Monday, Boxing Day, MLK Day, Presidents' Day, Memorial Day, Juneteenth, Labor Day, Columbus Day, Veterans Day, Mother's Day and Father's Day (US dates).

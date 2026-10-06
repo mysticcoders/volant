@@ -33,6 +33,8 @@ public enum DateCalculator {
 
     enum Holiday: String {
         case christmas, christmasEve, newYear, newYearsEve, halloween, valentines, stPatricks, independence, thanksgiving, easter
+        case goodFriday, easterMonday, boxingDay, mlkDay, presidentsDay, memorialDay, juneteenth, laborDay, columbusDay, veteransDay
+        case mothersDay, fathersDay
 
         /// Month and day of the holiday in `year`.
         func date(in year: Int) -> (month: Int, day: Int) {
@@ -49,6 +51,20 @@ public enum DateCalculator {
                 let first = DateCalculator.weekday(year: year, month: 11, day: 1)
                 return (11, 1 + (5 - first + 7) % 7 + 21)
             case .easter: return DateCalculator.easter(year)
+            case .goodFriday: return DateCalculator.fromEaster(year, -2)
+            case .easterMonday: return DateCalculator.fromEaster(year, 1)
+            case .boxingDay: return (12, 26)
+            case .mlkDay: return (1, DateCalculator.nthWeekday(year, 1, 2, 3))
+            case .presidentsDay: return (2, DateCalculator.nthWeekday(year, 2, 2, 3))
+            case .memorialDay:
+                let fifth = DateCalculator.nthWeekday(year, 5, 2, 5)
+                return (5, fifth <= 31 ? fifth : fifth - 7)
+            case .juneteenth: return (6, 19)
+            case .laborDay: return (9, DateCalculator.nthWeekday(year, 9, 2, 1))
+            case .columbusDay: return (10, DateCalculator.nthWeekday(year, 10, 2, 2))
+            case .veteransDay: return (11, 11)
+            case .mothersDay: return (5, DateCalculator.nthWeekday(year, 5, 1, 2))
+            case .fathersDay: return (6, DateCalculator.nthWeekday(year, 6, 1, 3))
             }
         }
     }
@@ -60,7 +76,12 @@ public enum DateCalculator {
         "valentines": .valentines, "valentines day": .valentines, "valentine day": .valentines,
         "st patricks": .stPatricks, "st patricks day": .stPatricks, "saint patricks day": .stPatricks,
         "independence day": .independence, "4 of july": .independence, "fourth of july": .independence, "july 4": .independence,
-        "thanksgiving": .thanksgiving, "thanksgiving day": .thanksgiving, "easter": .easter, "easter sunday": .easter
+        "thanksgiving": .thanksgiving, "thanksgiving day": .thanksgiving, "easter": .easter, "easter sunday": .easter,
+        "good friday": .goodFriday, "easter monday": .easterMonday, "boxing day": .boxingDay,
+        "mlk day": .mlkDay, "martin luther king day": .mlkDay, "martin luther king jr day": .mlkDay,
+        "presidents day": .presidentsDay, "memorial day": .memorialDay, "juneteenth": .juneteenth,
+        "labor day": .laborDay, "labour day": .laborDay, "columbus day": .columbusDay,
+        "veterans day": .veteransDay, "mothers day": .mothersDay, "fathers day": .fathersDay
     ]
 
     private struct Context {
@@ -203,13 +224,13 @@ public enum DateCalculator {
         if unit == 0 {
             guard abs(days) <= 36_600 else { return nil }
             let (from, to) = days < 0 ? (end, start) : (start, end)
-            span = count(workdays(after: from, through: to, c.calendar), "workday")
+            span = count(workdays(after: from, through: to, c), "workday")
         } else {
             span = unit == 7 ? weeksText(abs(days)) : count(abs(days), "day")
         }
         let text = days < 0 ? span + " ago" : span
         let anchor = words[1] == "between" ? nil : (words[1] == "since" || words[1] == "from" ? start : end)
-        return CalculationAnswer(input: input, inputDetail: nil, result: text,
+        return CalculationAnswer(input: input, inputDetail: unit == 0 ? holidayNote(c) : nil, result: text,
                                  resultDetail: anchor.map { dateText($0, c) } ?? "\(dateText(start, c)) to \(dateText(end, c))", copyText: text)
     }
 
@@ -315,6 +336,8 @@ public enum DateCalculator {
 
     private static func answer(applying step: Step, sign: Int, to start: Date, input: String, inputDetail: String?, _ c: Context) -> CalculationAnswer? {
         guard let target = apply(step, sign: sign, to: start, c) else { return nil }
+        var inputDetail = inputDetail
+        if case .workdays = step, inputDetail == nil { inputDetail = holidayNote(c) }
         if case .seconds = step {
             let clock = TimeCalculator.clockText(target, zone: c.calendar.timeZone, locale: c.locale)
             let day = relative(c.calendar.startOfDay(for: target), c)
@@ -325,7 +348,7 @@ public enum DateCalculator {
         return CalculationAnswer(input: input, inputDetail: inputDetail, result: text, resultDetail: relative(target, c), copyText: text)
     }
 
-    static func apply(_ step: Step, sign: Int, to date: Date, _ calendar: Calendar) -> Date? {
+    static func apply(_ step: Step, sign: Int, to date: Date, _ calendar: Calendar, region: String? = nil) -> Date? {
         switch step {
         case .seconds(let value): return date.addingTimeInterval(Double(sign) * value)
         case .days(let value): return calendar.date(byAdding: .day, value: sign * value, to: date)
@@ -335,7 +358,7 @@ public enum DateCalculator {
             while remaining > 0 {
                 guard let next = calendar.date(byAdding: .day, value: sign, to: day) else { return nil }
                 day = next
-                if !calendar.isDateInWeekend(day) { remaining -= 1 }
+                if isWorkday(day, calendar, region: region) { remaining -= 1 }
             }
             return day
         case .months(let value): return calendar.date(byAdding: .month, value: sign * value, to: date)
@@ -344,7 +367,7 @@ public enum DateCalculator {
     }
 
     private static func apply(_ step: Step, sign: Int, to date: Date, _ c: Context) -> Date? {
-        apply(step, sign: sign, to: date, c.calendar)
+        apply(step, sign: sign, to: date, c.calendar, region: c.locale.region?.identifier)
     }
 
     private static func dateText(_ date: Date, _ c: Context) -> String {
@@ -363,14 +386,41 @@ public enum DateCalculator {
         }
     }
 
-    /// Monday-to-Friday days after `start`, up to and including `end`.
-    private static func workdays(after start: Date, through end: Date, _ calendar: Calendar) -> Int {
+    /// Workdays after `start`, up to and including `end`.
+    private static func workdays(after start: Date, through end: Date, _ c: Context) -> Int {
         var total = 0, day = start
-        while let next = calendar.date(byAdding: .day, value: 1, to: day), next <= end {
+        let region = c.locale.region?.identifier
+        while let next = c.calendar.date(byAdding: .day, value: 1, to: day), next <= end {
             day = next
-            if !calendar.isDateInWeekend(day) { total += 1 }
+            if isWorkday(day, c.calendar, region: region) { total += 1 }
         }
         return total
+    }
+
+    /// Monday to Friday, minus the region's public holidays where `PublicHolidays` knows them.
+    static func isWorkday(_ day: Date, _ calendar: Calendar, region: String?) -> Bool {
+        guard !calendar.isDateInWeekend(day) else { return false }
+        let parts = calendar.dateComponents([.year, .month, .day], from: day)
+        return !PublicHolidays.isHoliday(year: parts.year!, month: parts.month!, day: parts.day!, region: region)
+    }
+
+    /// Names which holidays a workday answer skipped, or that only weekends were.
+    private static func holidayNote(_ c: Context) -> String {
+        PublicHolidays.names[c.locale.region?.identifier ?? ""].map { "Skips \($0) holidays" } ?? "Weekends only"
+    }
+
+    /// The `n`th given weekday (Sunday is 1) of a month; past the month's end for a missing fifth.
+    static func nthWeekday(_ year: Int, _ month: Int, _ weekday: Int, _ n: Int) -> Int {
+        1 + (weekday - Self.weekday(year: year, month: month, day: 1) + 7) % 7 + 7 * (n - 1)
+    }
+
+    static func fromEaster(_ year: Int, _ days: Int) -> (month: Int, day: Int) {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        let sunday = easter(year)
+        let date = calendar.date(byAdding: .day, value: days, to: calendar.date(from: DateComponents(year: year, month: sunday.month, day: sunday.day))!)!
+        let parts = calendar.dateComponents([.month, .day], from: date)
+        return (parts.month!, parts.day!)
     }
 
     /// Weekday of a Gregorian date, Sunday being 1, by Zeller's congruence.
