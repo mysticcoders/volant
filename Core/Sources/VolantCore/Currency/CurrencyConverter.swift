@@ -27,8 +27,8 @@ public enum CurrencyConverter {
         }
     }
 
-    private static let symbols: [Character: String] = ["$": "USD", "€": "EUR", "£": "GBP", "¥": "JPY", "₹": "INR", "₩": "KRW", "₺": "TRY"]
-    private static let names: [String: String] = [
+    static let symbols: [Character: String] = ["$": "USD", "€": "EUR", "£": "GBP", "¥": "JPY", "₹": "INR", "₩": "KRW", "₺": "TRY"]
+    static let names: [String: String] = [
         "dollar": "USD", "dollars": "USD", "euro": "EUR", "euros": "EUR", "pound": "GBP", "pounds": "GBP", "quid": "GBP",
         "yen": "JPY", "franc": "CHF", "francs": "CHF", "yuan": "CNY", "rmb": "CNY", "renminbi": "CNY",
         "rupee": "INR", "rupees": "INR", "won": "KRW", "krona": "SEK", "kronor": "SEK", "zloty": "PLN", "lira": "TRY"
@@ -127,7 +127,7 @@ public enum CurrencyConverter {
 
     /// Locale currency format, with the formatter's non-breaking spaces made ordinary so a pasted
     /// answer behaves like typed text. Coins show up to eight decimals and their ticker.
-    private static func money(_ value: Double, _ code: String, locale: Locale) -> String {
+    static func money(_ value: Double, _ code: String, locale: Locale) -> String {
         let formatter = NumberFormatter()
         formatter.locale = locale
         if CryptoPrices.codes.contains(code) {

@@ -88,6 +88,9 @@ public struct CalculationAnswer: Hashable {
         if let money = CurrencyConverter.evaluate(query, now: now, zone: localZone, locale: locale) {
             answers.append(money)
         }
+        if let money = MoneyCalculator.evaluate(query, locale: locale) {
+            answers.append(money)
+        }
         if let conversion = UnitConverter.convert(query, locale: locale) {
             let result = UnitConverter.formatResult(conversion, locale: locale)
             answers.append(CalculationAnswer(input: UnitConverter.formatSource(conversion, locale: locale),
