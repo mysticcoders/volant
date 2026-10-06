@@ -238,12 +238,16 @@ private struct SettingsView: View {
             } footer: {
                 SettingsFooter("Imports show a preview before applying changes. Export a backup before moving to another Mac.")
             }
+            CryptoKeySection(onChange: onChange)
             Section {
                 LabeledContent("City time zones") {
                     Link("GeoNames", destination: URL(string: "https://www.geonames.org")!)
                 }
                 LabeledContent("Airport codes") {
                     Link("mwgg/Airports", destination: URL(string: "https://github.com/mwgg/Airports")!)
+                }
+                LabeledContent("Crypto prices") {
+                    Link("Data provided by CoinGecko", destination: URL(string: "https://www.coingecko.com")!)
                 }
             } header: {
                 Text("Acknowledgements")
