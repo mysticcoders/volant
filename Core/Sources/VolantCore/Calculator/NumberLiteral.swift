@@ -30,8 +30,10 @@ public enum NumberLiteral {
     }
 
     /// Scans a literal starting at `start` and returns its value and the index after it, or nil
-    /// when no valid number starts there. Units turn magnitudes off, since "100k" there is kelvin.
-    static func scan(_ chars: [Character], from start: Int, _ separators: Separators, magnitudes: Bool = true) -> (Double, Int)? {
+    /// when no valid number starts there. Units turn magnitudes off, since "100k" there is kelvin;
+    /// function arguments can turn grouping off, so "max(1,5)" reads the comma as a separator.
+    static func scan(_ chars: [Character], from start: Int, _ separators: Separators, magnitudes: Bool = true,
+                     grouping: Bool = true) -> (Double, Int)? {
         func digit(_ index: Int) -> Bool { index < chars.count && chars[index].isASCII && chars[index].isNumber }
         guard digit(start) || (start < chars.count && chars[start] == separators.decimal && digit(start + 1)) else { return nil }
         var index = start
@@ -45,7 +47,7 @@ public enum NumberLiteral {
                 if fraction != nil { fraction! += String(ch) } else { mantissa += String(ch); current += 1 }
             } else if ch == separators.decimal, fraction == nil, digit(index + 1) {
                 fraction = ""
-            } else if ch == separators.grouping, fraction == nil, digit(index + 1) {
+            } else if grouping, ch == separators.grouping, fraction == nil, digit(index + 1) {
                 groups.append(current)
                 current = 0
             } else {
