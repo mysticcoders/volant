@@ -71,7 +71,7 @@ for query in ["1pm EST in CET", "2026-12-31 3pm PST in CET", "time in Tokyo", "2
     host.layoutSubtreeIfNeeded()
     let image = host.bitmapImageRepForCachingDisplay(in: host.bounds)!
     host.cacheDisplay(in: host.bounds, to: image)
-    let name = query.hasPrefix("2026") ? "rollover" : query.hasPrefix("time") ? "clock" : query.hasPrefix("2 +") ? "arithmetic" : query.hasPrefix("5 km") ? "unit" : query.hasSuffix("tomorrow") ? "relative" : query.contains("tip") ? "percent" : query.hasPrefix("days") ? "count" : query.hasSuffix("timespan") ? "span" : query.hasPrefix("time diff") ? "diff" : query.hasPrefix("2024") ? "iso" : "conversion"
+    let name = query.hasPrefix("2026") ? "rollover" : query.hasPrefix("time diff") ? "diff" : query.hasPrefix("time") ? "clock" : query.hasPrefix("2 +") ? "arithmetic" : query.hasPrefix("5 km") ? "unit" : query.hasSuffix("tomorrow") ? "relative" : query.contains("tip") ? "percent" : query.hasPrefix("days") ? "count" : query.hasSuffix("timespan") ? "span" : query.hasPrefix("2024") ? "iso" : "conversion"
     try image.representation(using: .jpeg, properties: [.compressionFactor: 0.85])!.write(to:
         URL(fileURLWithPath: "/tmp/volant-launcher-time-\(name)-\(dark ? "dark" : "light").jpg"))
 }
