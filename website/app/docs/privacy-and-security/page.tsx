@@ -29,8 +29,8 @@ export default function PrivacyAndSecurity() {
       <h2>The main app has no network access</h2>
       <p>
         The main binary ships with <strong>no network entitlement</strong>, so
-        it cannot phone home even in principle. Two deliberate exceptions live
-        outside it:
+        it cannot phone home even in principle. Three deliberate exceptions
+        live outside it:
       </p>
       <ul>
         <li>
@@ -40,6 +40,15 @@ export default function PrivacyAndSecurity() {
         <li>
           <strong>Agent connections</strong> run through a separate local
           helper. See <a href="/docs/agents">Agents</a>.
+        </li>
+        <li>
+          <strong>Exchange rates</strong> come through a small rates helper
+          that can reach only two fixed addresses. It downloads the European
+          Central Bank&rsquo;s public daily rates the first time you type a
+          currency conversion, and never before. Crypto prices come from
+          CoinGecko only if you add your own key, which stays in your Keychain
+          and is the only thing sent. Nothing you type is included in either
+          request. See <a href="/docs/calculator">The calculator</a>.
         </li>
       </ul>
       <p>
