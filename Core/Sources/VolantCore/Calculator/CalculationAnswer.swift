@@ -40,7 +40,7 @@ public struct CalculationAnswer: Hashable {
     }
 
     /// Every answer the query has, in the order the launcher lists them: time conversion, dates
-    /// and durations, colors, arithmetic, then unit conversion. The input side keeps the owner's wording, trimmed.
+    /// and durations, colors and color adjustments, fractions and Roman numerals, arithmetic, then unit conversion. The input side keeps the owner's wording, trimmed.
     public static func answers(for query: String, now: Date = Date(), localZone: TimeZone = .current,
                                locale: Locale = .current) -> [CalculationAnswer] {
         let input = query.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
@@ -60,6 +60,12 @@ public struct CalculationAnswer: Hashable {
         }
         if let color = ColorCalculator.evaluate(query) {
             answers.append(color)
+        }
+        if let adjusted = ColorAdjustments.evaluate(query, locale: locale) {
+            answers.append(adjusted)
+        }
+        if let form = NumberForms.evaluate(query, locale: locale) {
+            answers.append(form)
         }
         if let value = Calculator.evaluate(query, locale: locale) {
             let text = Calculator.format(value, locale: locale)

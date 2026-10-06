@@ -237,7 +237,7 @@ public enum ColorCalculator {
         Color(red: min(max(c.red, 0), 1), green: min(max(c.green, 0), 1), blue: min(max(c.blue, 0), 1), alpha: c.alpha)
     }
 
-    private static func hslToRGB(_ hue: Double, _ s: Double, _ l: Double) -> (Double, Double, Double) {
+    static func hslToRGB(_ hue: Double, _ s: Double, _ l: Double) -> (Double, Double, Double) {
         let h = (hue.truncatingRemainder(dividingBy: 360) + 360).truncatingRemainder(dividingBy: 360)
         func f(_ n: Double) -> Double {
             let k = (n + h / 30).truncatingRemainder(dividingBy: 12)
@@ -246,10 +246,12 @@ public enum ColorCalculator {
         return (f(0), f(8), f(4))
     }
 
-    private static func rgbToHSL(_ c: Color) -> (Double, Double, Double) {
+    /// Hue, saturation and lightness; grays, including those a perceptual mix leaves a rounding
+    /// error away from neutral, get hue and saturation 0.
+    static func rgbToHSL(_ c: Color) -> (Double, Double, Double) {
         let maxValue = max(c.red, c.green, c.blue), minValue = min(c.red, c.green, c.blue)
         let l = (maxValue + minValue) / 2, d = maxValue - minValue
-        guard d > 0 else { return (0, 0, l) }
+        guard d > 1e-6 else { return (0, 0, l) }
         let s = d / (1 - abs(2 * l - 1))
         var h: Double
         switch maxValue {
@@ -261,14 +263,14 @@ public enum ColorCalculator {
         return (h >= 359.95 ? 0 : h, s, l)
     }
 
-    private static func toLinear(_ c: Color) -> [Double] {
+    static func toLinear(_ c: Color) -> [Double] {
         [c.red, c.green, c.blue].map { v in
             let sign: Double = v < 0 ? -1 : 1, x = abs(v)
             return sign * (x <= 0.04045 ? x / 12.92 : pow((x + 0.055) / 1.055, 2.4))
         }
     }
 
-    private static func fromLinear(_ v: [Double], alpha: Double = 1) -> Color {
+    static func fromLinear(_ v: [Double], alpha: Double = 1) -> Color {
         let e = v.map { value -> Double in
             let sign: Double = value < 0 ? -1 : 1, x = abs(value)
             return sign * (x <= 0.0031308 ? 12.92 * x : 1.055 * pow(x, 1 / 2.4) - 0.055)
@@ -323,7 +325,7 @@ public enum ColorCalculator {
         return zip([x, y, z], whiteD50).map { $0 * $1 }
     }
 
-    private static func linearToOklab(_ v: [Double]) -> (Double, Double, Double) {
+    static func linearToOklab(_ v: [Double]) -> (Double, Double, Double) {
         let lms = multiply([[0.4122214708, 0.5363325363, 0.0514459929],
                             [0.2119034982, 0.6806995451, 0.1073969566],
                             [0.0883024619, 0.2817188376, 0.6299787005]], v).map(cbrt)
@@ -333,7 +335,7 @@ public enum ColorCalculator {
         return (lab[0], lab[1], lab[2])
     }
 
-    private static func oklabToLinear(_ l: Double, _ a: Double, _ b: Double) -> [Double] {
+    static func oklabToLinear(_ l: Double, _ a: Double, _ b: Double) -> [Double] {
         let lms = multiply([[1, 0.3963377774, 0.2158037573],
                             [1, -0.1055613458, -0.0638541728],
                             [1, -0.0894841775, -1.2914855480]], [l, a, b]).map { $0 * $0 * $0 }

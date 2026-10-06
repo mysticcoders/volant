@@ -189,3 +189,20 @@ The rates helper's `fetchCrypto(key:)` requests a fixed coin list from `api.coin
 Crypto no longer needs a key. Without one, the helper calls CoinGecko's keyless public API (rate-limited per IP at roughly 10–30 calls a minute, far above Volant's ten-minute cadence). With the owner's free Demo key (Settings → Data & Configuration → Crypto prices, Keychain only, marked optional) the same request carries `x-cg-demo-api-key` for steadier keyed limits; a 10,000-calls-a-month Demo key stays well within its limit at about 4,300 calls a month of constant use. When CoinGecko answers 429 the helper replies `CryptoPrices.busyMessage` and the app waits thirty minutes instead of five.
 
 Adding, replacing or removing a key clears the failure wait so the next coin query uses the new setting; other settings changes leave any wait in place. Removing a key keeps cached prices in memory and on disk, since they are the same public market data either way and keyless fetching continues. Both tiers require attribution: the card tag and Settings → Acknowledgements credit CoinGecko with a link. `tools/check-rates-xpc.sh` fetches crypto keylessly, or with `VOLANT_COINGECKO_KEY` when set.
+
+## Fractions, Roman numerals and color adjustments — October 6, 2026
+
+`NumberForms` answers explicitly requested number forms:
+
+- Fractions: `0.25 as fraction` → 1/4, `1/3 + 1/6 as fraction` → 1/2, `2.75 as fraction` → 11/4 tagged `2 3/4`, and `as mixed number` swaps the two. The left side is any calculator expression. The answer is the closest fraction with a denominator up to 10,000, from the continued fraction and its best semiconvergent at the bound (the `limit_denominator` method), so `0.333333` gives 1/3 and `pi` 355/113. Answers more than a rounding error from the value are tagged "Approximate"; values of 10¹² or more give no answer.
+- Roman numerals: `2026 in roman` → MMXXVI (whole numbers 1 to 3999), and `XIV in decimal`, `roman XIV` or `roman numeral MMXXVI` the other way, with swap between them. Only standard subtractive forms are read: a numeral counts only if writing its value back gives the same letters, so `IIII`, `VX` and `IC` give no answer. A bare `XIV` stays a search.
+
+`ColorAdjustments` changes a color and answers in its own format (named colors in hex), or the format after `in`:
+
+- `#f00 lighten 10%`, `darken`, `saturate`, `desaturate`, also `lighten(#f00, 10%)`: absolute steps in HSL lightness or saturation, as Sass does, so results match designers' existing stylesheets (`#ff3333`). OKLCH would keep perceived hue steadier but would disagree with every Sass and Less value people compare against. The input tag states the step (`Lightness +10% (HSL)`).
+- `complement of #3a7bd5`, `#3a7bd5 complement`, `complement(red)`: HSL hue plus 180°.
+- `#3a7bd5 at 50% alpha`, `with 50% opacity`, `at 0.25 alpha`: replaces the alpha.
+- `mix(#f00, #00f)` and `color-mix(in srgb, #f00 25%, #00f)` follow CSS Color 5: OKLab by default, `srgb` and `srgb-linear` on request, premultiplied alpha, a missing percentage filled in from the other, and a total other than 100 scaled, with a total under 100 lowering alpha. Mixes answer in the first color's format.
+- `contrast #fff #3a7bd5` (also `contrast ratio of white and navy`, `contrast #777 on #fff`): the WCAG 2 ratio of the first color as text on the second, tagged Passes AAA (7), Passes AA · AAA for large text (4.5), AA for large text only (3) or Fails AA. A translucent background is composited over white and translucent text over the background. The ratio is floored to two decimals, so `#777` on white reads 4.47:1 and fails AA, where tools that round show 4.48.
+
+All of these need an operation word or function, so plain color names and words stay searches. The card's swatch shows the resulting color (the text color for contrast); there is no swap. `rgbToHSL` now treats channel spreads under 10⁻⁶ as gray, so OKLab mixes of grays do not show a stray hue.
