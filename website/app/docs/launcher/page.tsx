@@ -103,7 +103,7 @@ export default function Launcher() {
       <p>
         Arithmetic, percentages, unit and time zone conversions, dates,
         colors and currency answer as you type, as a card at the top of the
-        results: <code>15% tip on 42</code>, <code>5 km in mi</code>,{' '}
+        results: <code>18% tip on 65</code>, <code>5 km in mi</code>,{' '}
         <code>3pm Lisbon in Tokyo</code>, <code>days until christmas</code>.
         Return copies the answer. See <a href="/docs/calculator">The
         calculator</a> for everything it understands.
