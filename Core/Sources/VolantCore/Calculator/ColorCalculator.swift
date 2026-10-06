@@ -8,7 +8,8 @@ import Foundation
 /// Conversions follow CSS Color 4: sRGB with its transfer curve, lab/lch relative to D50 through
 /// the Bradford transform, and OKLab from linear sRGB. Colors outside sRGB keep their exact values
 /// in lab, lch, oklab and oklch, and show their nearest sRGB color elsewhere, tagged "Outside
-/// sRGB". Named colors and hex without `#` are left alone, since they read as words and numbers.
+/// sRGB". The 148 CSS named colors answer only with a target ("rebeccapurple in hex"), and hex
+/// needs its `#`, since bare names and digits read as ordinary words and numbers.
 public enum ColorCalculator {
     /// sRGB components, gamma-encoded and unclamped, so colors outside sRGB survive conversion.
     struct Color: Equatable {
@@ -33,14 +34,19 @@ public enum ColorCalculator {
             let name = String(query[formatRange])
             requested = Format(rawValue: ["rgba": "rgb", "hsla": "hsl"][name] ?? name)
         }
-        guard let (color, source) = parse(colorText) else { return nil }
+        let namedValue = requested == nil ? nil : NamedColors.values[colorText.replacingOccurrences(of: " ", with: "")]
+        let named = namedValue.map { value in
+            (Color(red: Double(value >> 16 & 0xff) / 255, green: Double(value >> 8 & 0xff) / 255, blue: Double(value & 0xff) / 255, alpha: 1), Format.hex)
+        }
+        guard let (color, source) = parse(colorText) ?? named else { return nil }
         let primary = requested ?? (source == .hex ? .rgb : .hex)
         let secondary: Format = primary == .hex ? (source == .rgb ? .hsl : .rgb) : (primary == .rgb ? .hsl : .hex)
         let result = format(color, as: primary)
         var detail = format(color, as: secondary)
         if !inGamut(color) && [.hex, .rgb, .hsl, .hwb].contains(primary) { detail = "Outside sRGB · " + detail }
         let shown = clamped(color)
-        return CalculationAnswer(input: input, inputDetail: nil, result: result, resultDetail: detail, copyText: result,
+        return CalculationAnswer(input: input, inputDetail: named == nil ? nil : format(color, as: .hex), result: result,
+                                 resultDetail: detail, copyText: result,
                                  swatch: .init(red: shown.red, green: shown.green, blue: shown.blue, alpha: shown.alpha))
     }
 

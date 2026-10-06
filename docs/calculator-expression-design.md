@@ -145,3 +145,7 @@ On any calculator card, Command-Return puts the answer (its Copy text) into the 
 Network: the app keeps no network entitlement. `VolantRatesHost` is a sandboxed XPC helper with only `network.client`; its one method takes no input and fetches the fixed ECB URL with an ephemeral session (no cookies or cache), refuses redirects, caps the response at 64 KB and replies only with data that parses as the feed. `CurrencyRatesStore` in the app fetches nothing until a query is shaped like a currency conversion, then refreshes at most every twelve hours while conversions are used, waits an hour after a failure, and caches the rates with their date in the support directory so conversions work offline. When rates arrive for the query still being typed, the launcher redraws while keeping the selected row. `tools/check-rates-xpc.sh` runs the real signed helper from a built app inside a sandboxed client and fetches the live feed once.
 
 The website's privacy page lists the app's network exceptions; the release that ships this must add exchange rates there.
+
+## Named colors — October 6, 2026
+
+The 148 CSS named colors convert when a target format is given: `red in hex`, `RebeccaPurple to rgb`, `light gray in hex` (spaces ignored). The input side is tagged with the color's hex. A bare name (`red`, `orange`) is left to search. The table in `NamedColors.swift` is generated from the color-name package (MIT), which mirrors the CSS Color 4 list.

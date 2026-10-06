@@ -68,6 +68,19 @@ final class ColorCalculatorTests: XCTestCase {
         XCTAssertTrue([swatch.red, swatch.green, swatch.blue].allSatisfy { (0...1).contains($0) })
     }
 
+    func testNamedColorsNeedATargetFormat() throws {
+        XCTAssertEqual(card("red in hex"), ["#ff0000", "rgb(255 0 0)", "#ff0000"])
+        XCTAssertEqual(ColorCalculator.evaluate("red in hex")?.inputDetail, "#ff0000")
+        XCTAssertEqual(convert("RebeccaPurple to rgb"), "rgb(102 51 153)")
+        XCTAssertEqual(convert("cornflowerblue as hsl"), "hsl(218.5 79.2% 66.1%)")
+        XCTAssertEqual(convert("light gray in hex"), "#d3d3d3")
+        XCTAssertNotNil(ColorCalculator.evaluate("tomato in oklch")?.swatch)
+        XCTAssertEqual(NamedColors.values.count, 148)
+        for query in ["red", "rebeccapurple", "orange", "notacolor in hex", "red in cmyk"] {
+            XCTAssertNil(ColorCalculator.evaluate(query), query)
+        }
+    }
+
     func testNeverAnswersOrdinaryText() {
         for query in ["ff6363", "#", "#ff", "#gg0000", "#ff63633", "red", "rgb", "rgb()", "rgb(1, 2)", "rgb(1 2 3 4 5)",
                       "hsl(red 100% 50%)", "rgb(1 2 3) in cmyk", "rgb(1 2 3 / 2)", "Safari", "#hashtag", "lab(1px 2 3)"] {
