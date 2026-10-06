@@ -26,9 +26,17 @@ public enum UnitConverter {
     }
 
     /// Numbers follow `locale` (see `NumberLiteral`), without magnitude suffixes, since "100k" here is kelvin.
+    /// The speed of light reads alone ("speed of light") or as "c" when the other side is a speed,
+    /// so "c in mph" converts while "c" beside a temperature stays Celsius. A bare number converts
+    /// to counts ("30 in dozens").
     public static func convert(_ text: String, locale: Locale = .current) -> Conversion? {
-        let lowered = text.lowercased().trimmingCharacters(in: .whitespaces)
-        guard let (value, from, to) = split(lowered, locale: locale), type(of: from.unit) == type(of: to.unit) else { return nil }
+        var lowered = text.lowercased().trimmingCharacters(in: .whitespaces)
+        if lightNames.contains(lowered.filter { !$0.isWhitespace }) { lowered += " in m/s" }
+        guard let (value, initialFrom, initialTo) = split(lowered, locale: locale) else { return nil }
+        var from = initialFrom, to = initialTo
+        if from.unit == UnitTemperature.celsius, to.unit is UnitSpeed { from = light }
+        if to.unit == UnitTemperature.celsius, from.unit is UnitSpeed { to = light }
+        guard let family = family(of: from.unit), family == self.family(of: to.unit) else { return nil }
         let result: Double
         if let fromFactor = factor(from.unit), let toFactor = factor(to.unit) {
             result = value * fromFactor / toFactor
@@ -38,13 +46,40 @@ public enum UnitConverter {
         return Conversion(value: value, fromSymbol: from.symbol, result: result, toSymbol: to.symbol, fromUnit: from.unit, toUnit: to.unit)
     }
 
+    private static let families: [Dimension.Type] = [
+        UnitLength.self, UnitMass.self, UnitTemperature.self, UnitVolume.self, UnitSpeed.self, UnitDuration.self,
+        UnitArea.self, UnitInformationStorage.self, UnitEnergy.self, UnitPower.self, UnitPressure.self, UnitCount.self
+    ]
+
+    /// The dimension a unit measures. Foundation's own units are instances of private subclasses,
+    /// so a unit made here and a built-in one of the same dimension differ in their exact class.
+    private static func family(of unit: Dimension) -> Int? {
+        families.firstIndex { unit.isKind(of: $0) }
+    }
+
+    /// Names for the units Foundation lacks, which `MeasurementFormatter` cannot spell out.
+    public static func name(of unit: Dimension) -> String? {
+        customNames.first(where: { $0.0 == unit })?.1
+    }
+
     public static func format(_ c: Conversion, locale: Locale = .current) -> String {
-        "\(Calculator.format(c.value, locale: locale)) \(c.fromSymbol) = \(formatResult(c, locale: locale))"
+        "\(formatSource(c, locale: locale)) = \(formatResult(c, locale: locale))"
+    }
+
+    /// The input side as the card shows it; a bare count has no symbol ("30").
+    public static func formatSource(_ c: Conversion, locale: Locale = .current) -> String {
+        c.fromSymbol.isEmpty ? Calculator.format(c.value, locale: locale) : "\(Calculator.format(c.value, locale: locale)) \(c.fromSymbol)"
     }
 
     /// The converted side alone, rounded to six decimal places, as Copy puts it on the clipboard.
     public static func formatResult(_ c: Conversion, locale: Locale = .current) -> String {
-        "\(Calculator.format((c.result * 1e6).rounded() / 1e6, locale: locale)) \(c.toSymbol)"
+        let number = Calculator.format((c.result * 1e6).rounded() / 1e6, locale: locale)
+        return c.toSymbol.isEmpty ? number : "\(number) \(c.toSymbol)"
+    }
+
+    /// The same conversion the other way, for Swap; a bare count swaps back as "each".
+    public static func swapQuery(_ c: Conversion, locale: Locale = .current) -> String {
+        "\(formatResult(c, locale: locale)) in \(c.fromSymbol.isEmpty ? "each" : c.fromSymbol)"
     }
 
     /// Exact legal definitions where Foundation's coefficients are rounded to about six digits,
@@ -57,7 +92,26 @@ public enum UnitConverter {
         (UnitVolume.tablespoons, 0.01478676478125), (UnitVolume.teaspoons, 0.00492892159375),
         (UnitSpeed.kilometersPerHour, 1 / 3.6), (UnitSpeed.knots, 1852.0 / 3600),
         (UnitPower.horsepower, 745.69987158227022),
-        (UnitPressure.poundsForcePerSquareInch, 6894.757293168361), (UnitPressure.millimetersOfMercury, 133.322387415)
+        (UnitPressure.poundsForcePerSquareInch, 6894.757293168361), (UnitPressure.millimetersOfMercury, 133.322387415),
+        (UnitLength.lightyears, 9_460_730_472_580_800), (UnitLength.astronomicalUnits, 149_597_870_700),
+        (UnitLength.parsecs, 149_597_870_700 * 648_000 / Double.pi)
+    ]
+
+    /// Units Foundation lacks, at their defined sizes: the standard atmosphere and the torr
+    /// (1/760 atm), the International Table BTU, Mach 1 as the speed of sound in the ISA sea-level
+    /// atmosphere at 15 °C (an assumption, since Mach depends on temperature), the speed of light,
+    /// and counts.
+    private static let atmosphere = UnitPressure(symbol: "atm", converter: UnitConverterLinear(coefficient: 101_325))
+    private static let torr = UnitPressure(symbol: "Torr", converter: UnitConverterLinear(coefficient: 101_325.0 / 760))
+    private static let btu = UnitEnergy(symbol: "BTU", converter: UnitConverterLinear(coefficient: 1055.05585262))
+    private static let mach = UnitSpeed(symbol: "Mach", converter: UnitConverterLinear(coefficient: 340.29))
+    private static let light = Spec(unit: UnitSpeed(symbol: "c", converter: UnitConverterLinear(coefficient: 299_792_458)), symbol: "c")
+    private static let lightNames: Set<String> = ["speedoflight", "lightspeed", "thespeedoflight"]
+
+    private static let customNames: [(Dimension, String)] = [
+        (atmosphere, "Standard atmospheres"), (torr, "Torr"), (btu, "British thermal units (IT)"),
+        (mach, "Mach (sea level, 15 °C)"), (light.unit, "Speed of light"),
+        (UnitCount.dozen, "Dozen"), (UnitCount.gross, "Gross"), (UnitPressure.newtonsPerMetersSquared, "Pascals")
     ]
 
     /// A linear unit's size in its dimension's base unit; nil for offset scales such as
@@ -79,13 +133,31 @@ public enum UnitConverter {
                 search = range.lowerBound < text.endIndex ? text.index(after: range.lowerBound) : text.endIndex
                 let lhs = Array(text[..<range.lowerBound].trimmingCharacters(in: .whitespaces))
                 guard let to = lookup(String(text[range.upperBound...])) else { continue }
+                if let constant = constant(String(lhs), to: to, locale: locale) { return (constant.0, constant.1, to) }
                 let negative = lhs.first == "-"
-                guard let (magnitude, end) = NumberLiteral.scan(lhs, from: negative ? 1 : 0, separators, magnitudes: false),
-                      let from = lookup(String(lhs[end...])) else { continue }
+                guard let (magnitude, end) = NumberLiteral.scan(lhs, from: negative ? 1 : 0, separators, magnitudes: false) else { continue }
+                let rest = String(lhs[end...])
+                if rest.allSatisfy(\.isWhitespace), to.unit is UnitCount { return (negative ? -magnitude : magnitude, each, to) }
+                guard let from = lookup(rest) else { continue }
                 return (negative ? -magnitude : magnitude, from, to)
             }
         }
         return nil
+    }
+
+    private static let each = Spec(unit: UnitCount.each, symbol: "")
+
+    /// A source written without a leading number: the speed of light ("c", "speed of light"),
+    /// counted once, and "mach 2", which puts the number after the unit as pilots say it.
+    private static func constant(_ lhs: String, to: Spec, locale: Locale) -> (Double, Spec)? {
+        let key = lhs.filter { !$0.isWhitespace }
+        if to.unit is UnitSpeed, key == "c" || lightNames.contains(key) { return (1, light) }
+        guard key.hasPrefix("mach") else { return nil }
+        let number = Array(key.dropFirst(4))
+        if number.isEmpty { return (1, Spec(unit: mach, symbol: "Mach")) }
+        guard let (value, end) = NumberLiteral.scan(number, from: 0, NumberLiteral.Separators(locale), magnitudes: false),
+              end == number.count else { return nil }
+        return (value, Spec(unit: mach, symbol: "Mach"))
     }
 
     /// Unit names ignore spacing and the degree sign, and read superscript squares, so the
@@ -162,6 +234,27 @@ public enum UnitConverter {
         add(["bar", "bars"], UnitPressure.bars, "bar")
         add(["psi"], UnitPressure.poundsForcePerSquareInch, "psi")
         add(["mmhg"], UnitPressure.millimetersOfMercury, "mmHg")
+        add(["hpa", "hectopascal", "hectopascals"], UnitPressure.hectopascals, "hPa")
+        add(["mbar", "millibar", "millibars"], UnitPressure.millibars, "mbar")
+        add(["atm", "atmosphere", "atmospheres"], atmosphere, "atm")
+        add(["torr"], torr, "Torr")
+        add(["btu", "btus"], btu, "BTU")
+        add(["mach"], mach, "Mach")
+        add(["ly", "lightyear", "lightyears", "light-year", "light-years"], UnitLength.lightyears, "ly")
+        add(["au", "astronomicalunit", "astronomicalunits"], UnitLength.astronomicalUnits, "au")
+        add(["pc", "parsec", "parsecs"], UnitLength.parsecs, "pc")
+        add(["each", "pcs", "pieces", "items"], UnitCount.each, "")
+        add(["dozen", "dozens", "doz"], UnitCount.dozen, "dozen")
+        add(["gross"], UnitCount.gross, "gross")
         return t
     }()
+}
+
+/// Counts of things, so "30 in dozens" converts; "each" is one item.
+final class UnitCount: Dimension, @unchecked Sendable {
+    static let each = UnitCount(symbol: "each", converter: UnitConverterLinear(coefficient: 1))
+    static let dozen = UnitCount(symbol: "dozen", converter: UnitConverterLinear(coefficient: 12))
+    static let gross = UnitCount(symbol: "gross", converter: UnitConverterLinear(coefficient: 144))
+
+    override class func baseUnit() -> UnitCount { each }
 }
