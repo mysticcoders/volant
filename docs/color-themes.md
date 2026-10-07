@@ -59,7 +59,7 @@ Imported palettes aren't otherwise checked for contrast; a theme's own backgroun
 Each palette has a background, a secondary background, text, secondary text, selection, accent, separator, and red, orange, yellow, green, blue and purple, stored as hex in `Core/Sources/VolantCore/Settings/ColorThemes.swift`. `Volant/Appearance/ThemeStore.swift` resolves them to SwiftUI and AppKit colors, and `ThemedRoot` supplies them to every hosted surface:
 
 - **Launcher**: the panel background (the opacity slider still applies), the selected row, calculator cards and swatch outlines, the actions popover, emoji selection, the wing and other accent marks, the snap guides, and the AI Chat insertion point. Text uses the palette's text and secondary text.
-- **Notes**: the window surface, the browse overlay and its selected row, and accents.
+- **Notes**: the window surface, the browse overlay and its selected row, accents, and the Markdown editor: prose, dimmed syntax (quotes and fence lines), inline-code and fence backgrounds, keyword, number and string tokens, the insertion point (the accent, as macOS draws it) and the text selection. The editor restyles when the theme changes, outside undo and never during input-method composition.
 - **Settings**: the accent tint and the light or dark appearance only. Settings keeps system backgrounds and semantic text, because palette text on system-drawn form backgrounds would mix two color systems.
 
 Under System and Volant, every surface keeps the macOS materials it had before.
@@ -71,6 +71,8 @@ Under System and Volant, every surface keeps the macOS materials it had before.
 - 4.5:1 for text on the background, the secondary background and the selection
 - 4.5:1 for secondary text on the background
 - 3:1 for secondary text on the selection, and for the accent on the background
+
+`EditorColorsTests` checks the Markdown editor's derived colors (`EditorColors`) in every palette and an imported theme. The code background is the first of the secondary background, a faint mix of text into the background, or growing steps away from the text that differs from both the page and the selection by at least 1.08:1 while text on it keeps 4.5:1; Solarized Dark needs a step darker than its base, because its secondary background is also its selection. Syntax and token colors (secondary text, purple, orange, green) are blended toward the text until they reach 4.5:1 on both the page and the code background, so a token keeps its hue where it already reads, as in Catppuccin Mocha.
 
 Values are each project's published palette, with these choices of role:
 
@@ -97,8 +99,8 @@ The license texts ship with Volant in `Volant/Resources/Licenses/ColorThemes-LIC
 
 ## Verification and limitations
 
-- **Render fixture:** `tools/themes/render.swift` renders the launcher rows, the actions popover, a calculator card and the notes window in every theme with fictional data. System and Volant are rendered in light and dark. It runs from `tools/render-vm.py` in the headless Tart guest.
+- **Render fixture:** `tools/themes/render.swift` renders the launcher rows, the actions popover, a calculator card and the notes editor (headings, a list, a link, inline code, a quote and a Swift fence) in every theme with fictional data. `NotesRenderTests` also renders the editor under Catppuccin Latte and Mocha, Solarized Light and Nord. System and Volant are rendered in light and dark. It runs from `tools/render-vm.py` in the headless Tart guest.
 - **Settings preview:** the preview also renders the Appearance section, with the theme grid scrolled to the bottom, and in three themes.
-- **Notes editor text:** the editor's text is still `labelColor` (black or white for the appearance), not the palette's text color. Recoloring the live Markdown text view is separate work.
+- **Notes Preview:** the read-only Preview mode takes the palette's text through `ThemedRoot`, but its quote bar and code block fills are still translucent system colors.
 - **Settings sidebar:** in the VM renders, the selected sidebar row is black with unreadable text in light appearance. This happens without color themes too.
 - **Installed app:** switching themes in the installed app and the iCloud round trip are separate evidence from the fixtures. The file panel and clipboard import paths aren't driven by a fixture; the Settings preview renders the picker after a programmatic import.

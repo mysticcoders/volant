@@ -1,4 +1,5 @@
 import XCTest
+import VolantCore
 @testable import Volant
 
 final class NotesStoreTests: XCTestCase {
@@ -128,6 +129,14 @@ final class NotesRenderTests: XCTestCase {
             store.lastError = "Could not move note to Trash. Your note has been kept."
             render(NotesView(model: model).environment(\.colorScheme, scheme), name: "\(mode)-error", size: NSSize(width: 380, height: 300), dark: dark)
             store.lastError = nil
+        }
+        model.newNote(text: "# Packing list\n\n## Before Friday\n\n- Pack the **blue** bag\n- Check the [route](https://example.com/route)\n- Bring `charger` and cards\n\n> Leave by 7:30.\n\n```swift\nlet bags = 2\nlet note = \"Window seat\"\n```\n")
+        model.editing = true
+        for id in ["catppuccin-latte", "catppuccin-mocha", "solarized-light", "nord"] {
+            let theme = ColorTheme.named(id)
+            let dark = theme.mode == .dark
+            render(NotesView(model: model).environment(\.volantTheme, ResolvedTheme(theme)).environment(\.colorScheme, dark ? .dark : .light),
+                   name: "theme-\(id)-editor", size: NSSize(width: 560, height: 620), dark: dark)
         }
     }
 
