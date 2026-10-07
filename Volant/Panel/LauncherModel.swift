@@ -793,7 +793,6 @@ final class LauncherModel: ObservableObject {
         let aliased = Set(immediate.flatMap(\.rows).map(\.id))
         let apps = index.search(q, limit: 6, usage: usage).map { ResultRow.app($0) }.filter { !aliased.contains($0.id) }
         if !apps.isEmpty { immediate.append(ResultSection(title: "Applications", rows: apps)) }
-        // Named actions come before settings panes that share their words, such as Lock Screen.
         let actions = SystemAction.search(q).map(ResultRow.systemAction)
         if !actions.isEmpty { immediate.append(ResultSection(title: "System", rows: actions)) }
         let panes = SystemSettingsDestination.search(q).map { ResultRow.systemSettings($0) }
@@ -1050,11 +1049,7 @@ final class LauncherModel: ObservableObject {
         }
         switch row {
         case .appleShortcut(let shortcut): shortcutRunQuery = query; appleShortcuts.run(shortcut); return
-        case .systemAction(let action):
-            // The app delegate hides the launcher first, so it is not on screen when the Mac
-            // locks or a confirmation dialog appears.
-            onNote(.systemAction(action))
-            return
+        case .systemAction(let action): onNote(.systemAction(action)); return
         case .core(let command):
             if command == .ai { presentAIChat() }
             else if command == .talk { toggleDictation() }

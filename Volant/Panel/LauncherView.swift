@@ -346,6 +346,12 @@ private struct CommandTile: View {
     }
 }
 
+private extension SystemAction {
+    /// Actions that end the session or power off read in red, so they stand apart from locking
+    /// and sleeping, which are harmless to choose by mistake.
+    var tint: Color { loginwindowEvent == nil ? .indigo : .red }
+}
+
 private extension CoreCommand {
     /// Keeps related commands in one color family so the list reads by kind at a glance.
     var tint: Color {
@@ -481,8 +487,7 @@ private struct RowView: View {
         switch row {
         case .appleShortcut: CommandTile(symbol: "square.stack.3d.up", tint: CoreCommand.shortcuts.tint)
         case .core(let command): CommandTile(symbol: command.symbol, tint: command.tint)
-        case .systemAction(let action):
-            CommandTile(symbol: action.symbol, tint: action.loginwindowEvent == nil ? Color(red: 0.25, green: 0.3, blue: 0.45) : Color(red: 0.75, green: 0.22, blue: 0.2))
+        case .systemAction(let action): CommandTile(symbol: action.symbol, tint: action.tint)
         case .caffeinate: CommandTile(symbol: "cup.and.saucer", tint: CoreCommand.caffeinate.tint)
         case .agentSession(let session):
             Image(systemName: session.agentStatus == "blocked" ? "exclamationmark.bubble" : "terminal").font(.system(size: 20))
