@@ -16,7 +16,7 @@ let clipboard = ClipboardStore(retention: 10, storageURL: root.appendingPathComp
 let usage = UsageStore(url: root.appendingPathComponent("usage.sqlite"))
 let notesDirectory = root.appendingPathComponent("Notes")
 try FileManager.default.createDirectory(at: notesDirectory, withIntermediateDirectories: true)
-try "# Trip checklist\n\n- Pack the **blue** bag\n- Confirm the 7:30 train\n\n```swift\nlet ready = true\n```\n"
+try "# Trip checklist\n\n## Before Friday\n\n- Pack the **blue** bag\n- Check the [route](https://example.com/route)\n- Bring `charger` and cards\n\n> Leave by 7:30.\n\n```swift\nlet bags = 2\nlet note = \"Window seat\"\n```\n"
     .write(to: notesDirectory.appendingPathComponent("Trip checklist.md"), atomically: true, encoding: .utf8)
 let notes = NotesStore(directory: notesDirectory)
 let model = LauncherModel(index: AppIndex(), clipboard: clipboard, notes: notes, config: Preferences(), usage: usage) { _ in }
@@ -32,7 +32,7 @@ window.contentView = host
 window.makeKeyAndOrderFront(nil)
 let notesModel = NotesModel(store: notes)
 let notesHost = NSHostingView(rootView: ThemedRoot { NotesView(model: notesModel) })
-let notesWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 360), styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
+let notesWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 480), styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
 notesWindow.contentView = notesHost
 notesWindow.orderFront(nil)
 
