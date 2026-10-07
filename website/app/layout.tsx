@@ -5,20 +5,29 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://usevolant.com/' },
   title: 'Volant — Your Mac. Your agents. One shortcut away.',
   description:
-    'A keyboard-first workspace for your Mac and coding agents. App launching, Herdr pane status, ACP conversations, Live Notes, encrypted clipboard history, and snippets. In development.',
+    'Keep work moving with a native Mac launcher for apps, answers, notes, and agents. Local notes, encrypted clipboard history, and AI context you choose.',
   icons: { icon: '/favicon.svg' },
   openGraph: {
     type: 'website',
     url: 'https://usevolant.com/',
     siteName: 'Volant',
     title: 'Volant — Your Mac. Your agents. One shortcut away.',
-    description: 'An open-source macOS launcher for apps, notes and coding agents.',
-    images: [{ url: '/images/social-card.png', width: 1280, height: 640, alt: 'Volant: Your Mac. Your agents. One shortcut away.' }],
+    description:
+      'Your apps, answers, notes, and agents. A native, open-source Mac launcher that keeps work moving.',
+    images: [
+      {
+        url: '/images/social-card.png',
+        width: 1280,
+        height: 640,
+        alt: 'Volant: Your Mac. Your agents. One shortcut away.',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Volant — Your Mac. Your agents. One shortcut away.',
-    description: 'An open-source macOS launcher for apps, notes and coding agents.',
+    description:
+      'Your apps, answers, notes, and agents. A native, open-source Mac launcher that keeps work moving.',
     images: ['/images/social-card.png'],
   },
 };

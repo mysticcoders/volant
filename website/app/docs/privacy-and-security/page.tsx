@@ -23,14 +23,16 @@ export default function PrivacyAndSecurity() {
       <h1>Privacy and security</h1>
       <p className="docs-lede">
         There is no Volant account and no telemetry. Your notes, clipboard
-        history, and configuration stay on your Mac.
+        history, and learned ranking stay on your Mac. You choose what to share
+        with AI. Selected settings can optionally sync through iCloud in the
+        next release.
       </p>
 
       <h2>The main app has no network access</h2>
       <p>
         The main binary ships with <strong>no network entitlement</strong>, so
-        it cannot phone home even in principle. Three deliberate exceptions
-        live outside it:
+        it does not make direct network requests. Networked features use
+        separate helpers or system services:
       </p>
       <ul>
         <li>
@@ -42,18 +44,34 @@ export default function PrivacyAndSecurity() {
           helper. See <a href="/docs/agents">Agents</a>.
         </li>
         <li>
-          <strong>Exchange rates</strong> come through a small rates helper
-          that can reach only three fixed addresses. It downloads the European
-          Central Bank&rsquo;s public daily rates the first time you type a
-          currency conversion, and never before. Currencies the European
-          Central Bank doesn&rsquo;t publish, such as the UAE dirham or the
-          Taiwan dollar, use ExchangeRate-API&rsquo;s public daily rates,
-          downloaded only the first time you convert one of them. Crypto
-          prices come from CoinGecko&rsquo;s public price list the first time
-          you convert a coin. An optional CoinGecko key stays in your Keychain
-          and is sent only to CoinGecko. Nothing you type is included in any
-          of these requests.
-          See <a href="/docs/calculator">The calculator</a>.
+          <strong>API and local-model chat</strong> use a separate sandboxed AI
+          helper. Your selected server receives submitted prompts, chosen
+          attachments, and completed turns. Keys stay in Keychain. Apple
+          Intelligence uses the on-device model without this helper. See{' '}
+          <a href="/docs/agents">AI connections</a>.
+        </li>
+        <li>
+          <strong>iCloud settings sync · coming next</strong> uses Apple’s
+          key-value service only when enabled. It shares selected global
+          shortcuts, snippets, quicklinks, aliases, appearance, and
+          clipboard-retention settings. Notes, clipboard history, API keys, AI
+          configuration, app-specific shortcuts, and extension approvals are
+          excluded. The 0.1.5 download lacks the required entitlement and
+          reports iCloud as unavailable. Delivery between two signed Macs
+          remains unverified.
+        </li>
+        <li>
+          <strong>Exchange rates · coming next</strong> come through a small
+          rates helper that can reach only three fixed addresses. It downloads
+          the European Central Bank&rsquo;s public daily rates the first time
+          you type a currency conversion, and never before. Currencies the
+          European Central Bank doesn&rsquo;t publish, such as the UAE dirham or
+          the Taiwan dollar, use ExchangeRate-API&rsquo;s public daily rates,
+          downloaded only the first time you convert one of them. Crypto prices
+          come from CoinGecko&rsquo;s public price list the first time you
+          convert a coin. An optional CoinGecko key stays in your Keychain and
+          is sent only to CoinGecko. Nothing you type is included in any of
+          these requests. See <a href="/docs/calculator">The calculator</a>.
         </li>
       </ul>
       <p>
@@ -73,7 +91,9 @@ export default function PrivacyAndSecurity() {
           <tbody>
             <tr>
               <td>Contacts</td>
-              <td>Only to search contacts with <code>@</code>. Asked on first use.</td>
+              <td>
+                Only to search contacts with <code>@</code>. Asked on first use.
+              </td>
             </tr>
             <tr>
               <td>Calendar</td>
@@ -84,8 +104,19 @@ export default function PrivacyAndSecurity() {
               <td>Only to list connected paired devices.</td>
             </tr>
             <tr>
+              <td>Microphone</td>
+              <td>
+                For on-device dictation with <code>talk</code>, on macOS 26 or
+                later. Audio stays on the Mac; the transcript is copied for you
+                to paste.
+              </td>
+            </tr>
+            <tr>
               <td>Location</td>
-              <td>macOS requires it to read Wi-Fi network <em>names</em>. Volant never requests coordinates and never starts location updates.</td>
+              <td>
+                macOS requires it to read Wi-Fi network <em>names</em>. Volant
+                never requests coordinates and never starts location updates.
+              </td>
             </tr>
           </tbody>
         </table>
@@ -140,9 +171,9 @@ export default function PrivacyAndSecurity() {
 
       <h2>Code you can check</h2>
       <p>
-        Volant is MIT licensed and its source is public. It has zero third-party
-        dependencies — AppKit, SwiftUI, Carbon, CryptoKit, SQLite3, and
-        Security.
+        Volant is MIT licensed and its source is public. Its native features use
+        Apple frameworks. Updates use Sparkle, and optional coding-agent
+        connections may require separately installed CLIs and ACP adapters.
       </p>
       <p>
         Release builds are Developer ID signed, hardened, notarized, and

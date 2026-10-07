@@ -21,8 +21,8 @@ export default function SystemControl() {
       <h1>System control</h1>
       <p className="docs-lede">
         Volume, audio routes, Bluetooth, and Wi-Fi, all through public APIs
-        inside the existing sandbox. No new entitlement, no helper, and no
-        Accessibility grant.
+        inside the app sandbox. Keep your Mac awake or open System Settings from
+        the keyboard. No Accessibility grant is needed.
       </p>
 
       <h2>Volume</h2>
@@ -40,15 +40,21 @@ export default function SystemControl() {
           </thead>
           <tbody>
             <tr>
-              <td><code>volume up</code> / <code>volume down</code></td>
+              <td>
+                <code>volume up</code> / <code>volume down</code>
+              </td>
               <td>Adjusts by five percentage points.</td>
             </tr>
             <tr>
-              <td><code>volume 40</code> or <code>volume 40%</code></td>
+              <td>
+                <code>volume 40</code> or <code>volume 40%</code>
+              </td>
               <td>Sets an exact level.</td>
             </tr>
             <tr>
-              <td><code>mute</code> / <code>unmute</code></td>
+              <td>
+                <code>mute</code> / <code>unmute</code>
+              </td>
               <td>Explicit actions, not a toggle.</td>
             </tr>
           </tbody>
@@ -79,10 +85,10 @@ export default function SystemControl() {
       <h2>Audio devices</h2>
       <p>
         <code>audio</code>, <code>output</code>, and <code>input</code> list
-        eligible audio routes, and you can filter by name — <code>output
-        airpods</code> or <code>audio input mac</code>. Your current input and
-        output are marked independently, and switching one direction never
-        changes the other.
+        eligible audio routes, and you can filter by name —{' '}
+        <code>output airpods</code> or <code>audio input mac</code>. Your
+        current input and output are marked independently, and switching one
+        direction never changes the other.
       </p>
       <p>
         Switching re-resolves the device&rsquo;s stable identifier before
@@ -119,6 +125,33 @@ export default function SystemControl() {
         Keychain.
       </p>
 
+      <h2>Keep awake</h2>
+      <p>
+        Type <code>caffeinate</code> to keep your Mac awake, optionally for a
+        duration. The launcher shows the active state and offers Stop. This does
+        not change your saved power settings.
+      </p>
+      <h2>System Settings</h2>
+      <p>
+        Search for a settings pane, such as Displays or Login Items, and press
+        Return to open it. These are pane links, not a search through every
+        individual macOS setting.
+      </p>
+      <h2>System commands · coming next</h2>
+      <div className="docs-note">
+        <p>
+          These commands were merged after 0.1.5 and are not in the current
+          download.
+        </p>
+      </div>
+      <p>
+        Search for <code>lock</code>, <code>sleep</code>, or{' '}
+        <code>screen saver</code> to lock the screen, sleep the Mac or displays,
+        or start the screen saver. Restart, Shut Down, and Log Out ask macOS to
+        show its own confirmation dialog. The launcher hides before acting and
+        reports failures. Lock Screen and Sleep Displays can have their own
+        global shortcuts.
+      </p>
       <h2>Permissions</h2>
       <p>
         Bluetooth uses its own sandbox entitlement and system consent. Reading
