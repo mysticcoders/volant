@@ -111,6 +111,24 @@ model.query = "12 * 4 + 2"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 guard case .calculation(let resumed, _) = model.selectedRow else { fatalError("Missing resumed calculation") }
 verify(model.heldCalculation == nil && resumed.copyText == "50", "Completed edit replaces the held answer in the same card")
+// Palette themes still color the selected card and the held card after rows moved to row state.
+let palette = ResolvedTheme(ColorTheme.named(dark ? "catppuccin-mocha" : "catppuccin-latte"))
+let paletteText = palette.textStyles
+let paletteHost = NSHostingView(rootView: LauncherView(model: model, agents: model.agents)
+    .environment(\.volantTheme, palette).tint(palette.accent).foregroundStyle(paletteText.0, paletteText.1)
+    .background(palette.windowBackground))
+window.contentView = paletteHost
+for (query, name) in [("12 * 4", "card"), ("12 * 4 +", "held")] {
+    model.query = query
+    RunLoop.main.run(until: Date().addingTimeInterval(0.15))
+    paletteHost.layoutSubtreeIfNeeded()
+    let themed = paletteHost.bitmapImageRepForCachingDisplay(in: paletteHost.bounds)!
+    paletteHost.cacheDisplay(in: paletteHost.bounds, to: themed)
+    try themed.representation(using: .jpeg, properties: [.compressionFactor: 0.85])!.write(to:
+        URL(fileURLWithPath: "/tmp/volant-launcher-time-palette-\(name)-\(dark ? "dark" : "light").jpg"))
+}
+verify(model.heldCalculation != nil, "Held answer renders under a palette theme")
+window.contentView = host
 model.query = "snip screen"
 window.orderOut(nil)
 print("PASS: launcher row identity, stale click, snippet identity, Screen Sharing eligibility, and native focus restoration")
