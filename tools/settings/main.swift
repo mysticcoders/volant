@@ -264,6 +264,28 @@ if CommandLine.arguments.contains("--render") {
             try! rep.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("theme-" + colorTheme + "-Appearance.png"))
             print("Rendered Appearance in \(colorTheme)")
         }
+        let imported = try! RaycastTheme.parse("raycast://theme?name=Harbor%20Night&appearance=dark&colors=%23101418,%230C1014,%23E8ECF0,%232A3440,%237A8490,%23F06060,%23F09050,%23E8C860,%2370C080,%236CA8F0,%23A890F0,%23E080C8")
+        let before = try! JSONDecoder().decode(Preferences.self, from: Data(contentsOf: configURL)).appearance
+        try! Preferences.saveCustomTheme(imported.customTheme, select: true, expected: before, at: configURL)
+        let withImport = try! JSONDecoder().decode(Preferences.self, from: Data(contentsOf: configURL))
+        controller.refresh(withImport, apps: apps)
+        ThemeStore.shared.apply(withImport.appearance)
+        controller.state.section = "Appearance"
+        RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+        let importedView = controller.window!.contentView!
+        func allScrollViews(_ view: NSView) -> [NSScrollView] {
+            (view as? NSScrollView).map { [$0] } ?? view.subviews.flatMap(allScrollViews)
+        }
+        for scroll in allScrollViews(importedView) {
+            guard let document = scroll.documentView else { continue }
+            document.scroll(NSPoint(x: 0, y: document.isFlipped ? document.bounds.height * 0.45 : document.bounds.height * 0.55))
+        }
+        RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+        importedView.layoutSubtreeIfNeeded()
+        let importedRep = importedView.bitmapImageRepForCachingDisplay(in: importedView.bounds)!
+        importedView.cacheDisplay(in: importedView.bounds, to: importedRep)
+        try! importedRep.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("theme-imported-Appearance.png"))
+        print("Rendered Appearance with an imported theme")
         app.terminate(nil)
     }
 }

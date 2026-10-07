@@ -1,4 +1,6 @@
+import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 import VolantCore
 
 /// Appearance, color theme, launcher size and launcher opacity. Sliders keep a local draft while dragging and write
@@ -30,17 +32,31 @@ struct AppearanceSettingsView: View {
             }
             Section {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: 14)], spacing: 14) {
-                    ForEach(ColorTheme.catalog) { theme in
+                    ForEach(appearance.availableColorThemes) { theme in
                         ColorThemeTile(theme: theme, selected: appearance.resolvedColorTheme.id == theme.id) {
                             save { $0.colorTheme = theme.id }
                         }
+                        .contextMenu {
+                            if theme.id.hasPrefix("custom-") {
+                                Button("Remove Theme") { remove(theme.id) }
+                            }
+                        }
+                        .accessibilityAction(named: "Remove Theme") { if theme.id.hasPrefix("custom-") { remove(theme.id) } }
                     }
                 }
                 .padding(.vertical, 4)
+                LabeledContent("Raycast themes") {
+                    HStack {
+                        Button("Import File…") { importFile() }
+                            .background(ControlAnchor("settings.import-raycast-theme-file"))
+                        Button("Paste Link or JSON") { importClipboard() }
+                            .background(ControlAnchor("settings.paste-raycast-theme"))
+                    }
+                }
             } header: {
                 Text("Color Theme")
             } footer: {
-                SettingsFooter("System uses macOS materials and your accent color from System Settings. Volant adds its coral accent. The others paint the launcher, notes and accents with their own palette in a fixed light or dark appearance.")
+                SettingsFooter("System uses macOS materials and your accent color from System Settings. Volant adds its coral accent. The others paint the launcher, notes and accents with their own palette in a fixed light or dark appearance. Import a theme JSON from themes.ray.so, or copy a Raycast theme link and paste it; Volant reads the colors locally and never downloads themes. Control-click an imported theme to remove it.")
             }
             Section {
                 Slider(value: $scale, in: Appearance.scaleRange, step: 0.05) {
@@ -88,6 +104,58 @@ struct AppearanceSettingsView: View {
             return "\(theme.name) is a \(mode.rawValue) theme, so Volant stays \(mode.rawValue) while it is selected. Choose System or Volant to use this setting."
         }
         return "System follows macOS, including automatic switching at sunset. Light and Dark keep Volant’s launcher, notes and Settings in that appearance."
+    }
+
+    /// Opens a Raycast theme JSON file the owner chooses and imports it.
+    private func importFile() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.json]
+        panel.allowsMultipleSelection = false
+        panel.message = "Choose a Raycast theme JSON file"
+        let completion: (NSApplication.ModalResponse) -> Void = { response in
+            guard response == .OK, let url = panel.url else { return }
+            do {
+                let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+                guard size <= RaycastTheme.maximumBytes else { throw RaycastTheme.ParseError.tooLarge }
+                importTheme(try RaycastTheme.parse(json: Data(contentsOf: url)))
+            } catch {
+                self.error = error.localizedDescription
+            }
+        }
+        if let window = NSApp.keyWindow { panel.beginSheetModal(for: window, completionHandler: completion) } else { completion(panel.runModal()) }
+    }
+
+    /// Imports a Raycast theme link or JSON from the clipboard.
+    private func importClipboard() {
+        guard let text = NSPasteboard.general.string(forType: .string), !text.isEmpty else {
+            error = "Copy a Raycast theme link or theme JSON first."
+            return
+        }
+        do {
+            importTheme(try RaycastTheme.parse(text))
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
+    /// Saves an imported theme and selects it.
+    private func importTheme(_ theme: RaycastTheme) {
+        do {
+            try Preferences.saveCustomTheme(theme.customTheme, select: true, expected: appearance, at: configURL)
+            onChange()
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
+    /// Removes an imported theme.
+    private func remove(_ id: String) {
+        do {
+            try Preferences.removeCustomTheme(id, expected: appearance, at: configURL)
+            onChange()
+        } catch {
+            self.error = error.localizedDescription
+        }
     }
 
     private func adopt() {
