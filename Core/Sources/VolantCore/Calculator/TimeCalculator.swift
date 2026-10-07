@@ -28,9 +28,21 @@ public enum TimeCalculator {
     private static let regions: [String: (zone: String, standard: String, daylight: String)] = {
         let eastern = ("America/New_York", "EST", "EDT"), mountain = ("America/Denver", "MST", "MDT")
         let pacific = ("America/Los_Angeles", "PST", "PDT"), central = ("Europe/Berlin", "CET", "CEST")
-        return ["est": eastern, "edt": eastern, "mst": mountain, "mdt": mountain, "pst": pacific, "pdt": pacific,
-                "cet": central, "cest": central, "bst": ("Europe/London", "GMT", "BST"), "jst": ("Asia/Tokyo", "JST", "JST")]
+        var table = ["est": eastern, "edt": eastern, "mst": mountain, "mdt": mountain, "pst": pacific, "pdt": pacific,
+                     "cet": central, "cest": central, "bst": ("Europe/London", "GMT", "BST"), "jst": ("Asia/Tokyo", "JST", "JST")]
+        for (abbreviation, choices) in ambiguous {
+            for choice in choices { table["\(abbreviation) \(choice.place.lowercased())"] = (choice.zone, choice.standard, choice.daylight) }
+        }
+        return table
     }()
+    /// Abbreviations several regions use, which are never guessed: a time question naming one
+    /// offers a card per region instead, written "IST (India)", which also reads as typed.
+    private static let ambiguous: [String: [(place: String, zone: String, standard: String, daylight: String)]] = [
+        "ist": [("India", "Asia/Kolkata", "IST (India)", "IST (India)"), ("Ireland", "Europe/Dublin", "GMT (Ireland)", "IST (Ireland)"),
+                ("Israel", "Asia/Jerusalem", "IST (Israel)", "IDT (Israel)")],
+        "cst": [("US", "America/Chicago", "CST (US)", "CDT (US)"), ("China", "Asia/Shanghai", "CST (China)", "CST (China)")],
+        "ast": [("Atlantic", "America/Halifax", "AST (Atlantic)", "ADT (Atlantic)"), ("Arabia", "Asia/Riyadh", "AST (Arabia)", "AST (Arabia)")]
+    ]
     /// Common names and nicknames, with the city each one labels: "sf" answers "in San Francisco"
     /// on Los Angeles time.
     private static let cities: [String: (zone: String, name: String)] = {
@@ -184,8 +196,9 @@ public enum TimeCalculator {
         return (value * size, String(text[placeRange]), "In \(amount) \(name)\(value == 1 ? "" : "s")")
     }
 
-    /// Qualified alternatives for a time question that failed only because a city name is
-    /// ambiguous: "time in springfield" offers Springfield, MO, MA and IL. Runs only for queries
+    /// Qualified alternatives for a time question that failed only because a zone abbreviation or
+    /// city name is ambiguous: "5pm pst in ist" offers India, Ireland and Israel, and "time in
+    /// springfield" offers Springfield, MO, MA and IL. Runs only for queries
     /// shaped like time questions, so ordinary searches never load the city table.
     public static func suggestions(_ text: String, now: Date = Date(), localZone: TimeZone = .current,
                                    locale: Locale = .current) -> [(query: String, result: Result)] {
@@ -195,6 +208,16 @@ public enum TimeCalculator {
             || lowered.range(of: #"^(\d{4}-\d{2}-\d{2}\s+)?(\d{1,2}(:\d{2})?\s*(am|pm)?|noon|midnight)\s+\S"#, options: .regularExpression) != nil
         guard shaped else { return [] }
         let words = text.split(whereSeparator: { $0.isWhitespace }).map(String.init)
+        for (index, word) in words.enumerated() {
+            guard let choices = ambiguous[word.lowercased()] else { continue }
+            let found = choices.compactMap { choice -> (query: String, result: Result)? in
+                var qualified = words
+                qualified[index] = "\(word.uppercased()) (\(choice.place))"
+                let query = qualified.joined(separator: " ")
+                return evaluate(query, now: now, localZone: localZone, locale: locale).map { (query, $0) }
+            }
+            if !found.isEmpty { return found }
+        }
         let skip: Set<String> = ["time", "now", "in", "to", "diff", "difference", "with", "from", "at", "am", "pm"]
         for length in stride(from: min(3, words.count), through: 1, by: -1) {
             for start in 0...(words.count - length) {
@@ -238,7 +261,7 @@ public enum TimeCalculator {
     private static func resolve(_ name: String, local: TimeZone) -> TimeZone? {
         if ["local", "here", "my time"].contains(name) { return local }
         if let hours = fixed[name] { return TimeZone(secondsFromGMT: hours * 3600) }
-        if let identifier = regions[name]?.zone ?? cities[name]?.zone ?? identifiers[name] ?? zoneCities[name] {
+        if let identifier = regions[regionKey(name)]?.zone ?? cities[name]?.zone ?? identifiers[name] ?? zoneCities[name] {
             return TimeZone(identifier: identifier)
         }
         if let match = CityDirectory.shared.lookup(name) { return match.zone }
@@ -246,10 +269,16 @@ public enum TimeCalculator {
         return nil // CST/IST and broad geographic names are intentionally ambiguous.
     }
 
+    /// A region name as the table keys it, so "ist (india)" and "ist india" read alike.
+    private static func regionKey(_ name: String) -> String {
+        name.replacingOccurrences(of: "(", with: "").replacingOccurrences(of: ")", with: "")
+            .split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
+    }
+
     private static func destinationLabel(_ name: String, zone: TimeZone, date: Date) -> String {
         if ["local", "here", "my time"].contains(name) { return "· your time" }
         if fixed[name] != nil { return name.uppercased() }
-        if let region = regions[name] { return zone.isDaylightSavingTime(for: date) ? region.daylight : region.standard }
+        if let region = regions[regionKey(name)] { return zone.isDaylightSavingTime(for: date) ? region.daylight : region.standard }
         if let city = cities[name] { return "in \(city.name)" }
         if identifiers[name] == nil, zoneCities[name] == nil {
             if let match = CityDirectory.shared.lookup(name) { return "in \(match.name)" }

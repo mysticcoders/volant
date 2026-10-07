@@ -160,4 +160,18 @@ final class UnitConverterTests: XCTestCase {
         XCTAssertEqual(try result("300 k in c"), 26.85, accuracy: 1e-9)
         XCTAssertNil(UnitConverter.convert("c in f", locale: Self.english))
     }
+
+    func testATemperatureAloneConvertsToTheOtherScale() throws {
+        XCTAssertEqual(try result("98.6 f"), 37, accuracy: 1e-9)
+        XCTAssertEqual(try result("37 c"), 98.6, accuracy: 1e-9)
+        XCTAssertEqual(try result("37°C"), 98.6, accuracy: 1e-9)
+        XCTAssertEqual(try result("-40 F"), -40, accuracy: 1e-9)
+        XCTAssertEqual(try result("20 degrees celsius"), 68, accuracy: 1e-9)
+        XCTAssertEqual(try result("5 c"), 41, accuracy: 1e-9)
+        XCTAssertEqual(UnitConverter.convert("98.6 f", locale: Self.english)?.toSymbol, "°C")
+        XCTAssertEqual(try result("c in mph"), 670_616_629.384395, accuracy: 1e-3)
+        for query in ["98.6", "98.6°", "5 k", "c", "f", "5 cf", "5 c 3"] {
+            XCTAssertNil(UnitConverter.convert(query, locale: Self.english), query)
+        }
+    }
 }

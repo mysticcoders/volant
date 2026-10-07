@@ -201,4 +201,22 @@ final class TimeCalculatorTests: XCTestCase {
         XCTAssertEqual(friday("time in 4 hours in Tokyo")?.text, "10:00 PM in Tokyo")
         XCTAssertNil(friday("time in 4 parsecs"))
     }
+
+    private func suggestions(_ query: String) -> [String] {
+        TimeCalculator.suggestions(query, now: now, localZone: paris, locale: Locale(identifier: "en_US")).map { "\($0.query) = \($0.result.headline)" }
+    }
+
+    func testAmbiguousAbbreviationsOfferEveryRegion() {
+        XCTAssertNil(answer("5pm pst in ist"))
+        XCTAssertEqual(suggestions("5pm pst in ist"), ["5pm pst in IST (India) = 6:30 AM IST (India)",
+                                                       "5pm pst in IST (Ireland) = 1:00 AM GMT (Ireland)",
+                                                       "5pm pst in IST (Israel) = 3:00 AM IST (Israel)"])
+        XCTAssertEqual(suggestions("9am cst in london"), ["9am CST (US) in london = 3:00 PM in London",
+                                                          "9am CST (China) in london = 1:00 AM in London"])
+        XCTAssertEqual(suggestions("time in ast").count, 2)
+        XCTAssertEqual(answer("10am ist (india) in utc")?.headline, "4:30 AM UTC")
+        XCTAssertEqual(answer("10am IST India in utc")?.headline, "4:30 AM UTC")
+        XCTAssertEqual(answer("5pm bst in pst")?.headline, "9:00 AM PST", "BST stays British Summer Time")
+        XCTAssertEqual(suggestions("5pm pst in tokyo"), [])
+    }
 }

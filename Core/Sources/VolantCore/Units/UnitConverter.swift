@@ -34,10 +34,12 @@ public enum UnitConverter {
     /// Numbers follow `locale` (see `NumberLiteral`), without magnitude suffixes, since "100k" here is kelvin.
     /// The speed of light reads alone ("speed of light") or as "c" when the other side is a speed,
     /// so "c in mph" converts while "c" beside a temperature stays Celsius. A bare number converts
-    /// to counts ("30 in dozens").
+    /// to counts ("30 in dozens"). A temperature with no target converts to the other common scale:
+    /// "98.6 f" gives °C and "37 c" gives °F.
     public static func convert(_ text: String, locale: Locale = .current) -> Conversion? {
         var lowered = normalized(text)
         if lightNames.contains(lowered.filter { !$0.isWhitespace }) { lowered += " in m/s" }
+        if let scale = bareTemperature(lowered) { lowered += scale == "c" ? " in f" : " in c" }
         guard let (value, initialFrom, initialTo) = split(lowered, locale: locale) else { return nil }
         var from = initialFrom, to = initialTo
         if from.unit == UnitTemperature.celsius, to.unit is UnitSpeed { from = light }
@@ -190,6 +192,17 @@ public enum UnitConverter {
     }
 
     private static let each = Spec(unit: UnitCount.each, symbol: "")
+    private static let temperatureAlone = try! NSRegularExpression(pattern:
+        #"^-?\d[\d.,]*\s*(?:°\s*|degrees?\s+)?(c|f|celsius|centigrade|fahrenheit)$"#)
+
+    /// "c" or "f" when the whole query is a number and a Celsius or Fahrenheit mark, such as
+    /// "98.6 f", "37°C" or "20 degrees celsius"; a number alone or with a bare degree sign stays
+    /// unconverted, since the scale is unknown.
+    private static func bareTemperature(_ text: String) -> String? {
+        guard text.utf8.count <= 32, let match = temperatureAlone.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+              let scale = Range(match.range(at: 1), in: text) else { return nil }
+        return text[scale].first == "f" ? "f" : "c"
+    }
 
     /// A source written without a leading number: the speed of light ("c", "speed of light"),
     /// counted once, and "mach 2", which puts the number after the unit as pilots say it.
@@ -229,8 +242,8 @@ public enum UnitConverter {
         add(["lb", "lbs", "pound", "pounds"], UnitMass.pounds, "lb")
         add(["oz", "ounce", "ounces"], UnitMass.ounces, "oz")
         add(["st", "stone", "stones"], UnitMass.stones, "st")
-        add(["c", "celsius", "centigrade"], UnitTemperature.celsius, "°C")
-        add(["f", "fahrenheit"], UnitTemperature.fahrenheit, "°F")
+        add(["c", "celsius", "centigrade", "degreesc", "degreec", "degreescelsius", "degreecelsius"], UnitTemperature.celsius, "°C")
+        add(["f", "fahrenheit", "degreesf", "degreef", "degreesfahrenheit", "degreefahrenheit"], UnitTemperature.fahrenheit, "°F")
         add(["k", "kelvin"], UnitTemperature.kelvin, "K")
         add(["l", "liter", "liters", "litre", "litres"], UnitVolume.liters, "L")
         add(["ml", "milliliter", "milliliters"], UnitVolume.milliliters, "mL")

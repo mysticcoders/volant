@@ -90,4 +90,24 @@ final class CurrencyConverterTests: XCTestCase {
         XCTAssertEqual(try card("50 usd in eur/hour"), [])
         XCTAssertTrue(CurrencyConverter.looksLikeConversion("8 dollars/hour in gbp", locale: english))
     }
+
+    func testFeedsNeededSeeThroughFramingAndMixedAmounts() {
+        CurrencyRates.current = nil
+        func needs(_ query: String) -> [Bool] {
+            let found = CurrencyConverter.feedsNeeded(query, locale: english)
+            return [found.rates, found.crypto, found.world]
+        }
+        XCTAssertEqual(needs("100 usd in eur"), [true, false, false])
+        XCTAssertEqual(needs("what is 100 usd in eur?"), [true, false, false])
+        XCTAssertEqual(needs("what's $20 + €15"), [true, false, false])
+        XCTAssertEqual(needs("10 usd + 5 eur in usd"), [true, false, false])
+        XCTAssertEqual(needs("0.01 btc + $5"), [true, true, false])
+        XCTAssertEqual(needs("calculate 1 btc in usd"), [true, true, false])
+        XCTAssertEqual(needs("what is 100 aed in usd?"), [true, false, true])
+        XCTAssertEqual(needs("100 aed + $20"), [true, false, true])
+        XCTAssertEqual(needs("100 aed + 50 aed in twd"), [true, false, true])
+        for query in ["$20 + $15", "100 aed + 50 aed", "18% tip on $65", "5 km in mi", "2 + 2", "Safari", "what is love"] {
+            XCTAssertEqual(needs(query), [false, false, false], query)
+        }
+    }
 }
