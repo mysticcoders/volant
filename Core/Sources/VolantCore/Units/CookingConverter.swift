@@ -223,7 +223,9 @@ public enum CookingConverter {
         let text = "\(number) \(target.label(rounded))"
         let friendly = target.milliliters != nil ? kitchenFraction(result, unit: target) : nil
         let plain = friendly == "\(number) \(target.label(rounded))"
-        let detail = plain ? (weighed ? "Approximate" : nil) : friendly.map { "About \($0)" } ?? (weighed ? "Approximate" : nil)
+        let approximate: String? = weighed ? "Approximate" : nil
+        var detail = approximate
+        if let friendly, !plain { detail = "About " + friendly }
         let swap = "\(number) \(target.label(rounded)) \(ingredient.primary) in \(source.plural)"
         return CalculationAnswer(input: input, inputDetail: "\(ingredient.name) · \(ingredient.reference)", result: text,
                                  resultDetail: detail, copyText: text, swapQuery: swap)
@@ -335,7 +337,9 @@ public enum CookingConverter {
     }
 
     /// The UK gas mark scale, as °F: ¼ is 225, ½ is 250, and each mark from 1 to 10 adds 25 to 250.
-    static let gasMarks: [(Double, Double)] = [(0.25, 225), (0.5, 250)] + (1...10).map { (Double($0), 250 + 25 * Double($0)) }
+    static let gasMarks: [(Double, Double)] = [
+        (0.25, 225), (0.5, 250), (1, 275), (2, 300), (3, 325), (4, 350), (5, 375), (6, 400), (7, 425), (8, 450), (9, 475), (10, 500)
+    ]
 
     private static let toTemperature = try! NSRegularExpression(pattern: #"^gas\s*mark\s*([0-9]+|1/2|1/4|½|¼)\s+(?:in|to|as)\s+°?\s*(f|c|fahrenheit|celsius)$"#)
     private static let toGasMark = try! NSRegularExpression(pattern: #"^(-?[0-9][0-9.,]*)\s*(?:°|degrees?\s*)?\s*(f|c|fahrenheit|celsius)\s+(?:in|to|as)\s+gas\s*marks?$"#)
