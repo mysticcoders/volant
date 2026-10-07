@@ -35,7 +35,7 @@ enum ResultRow: Identifiable, Hashable {
     case extensionResult(String)
     case note(Note)
     case newNote(String)
-    case calculation(CalculationAnswer)
+    case calculation(CalculationAnswer, slot: Int)
     case app(AppEntry)
     case file(FileEntry)
     case contact(ContactEntry)
@@ -56,7 +56,7 @@ enum ResultRow: Identifiable, Hashable {
         case .settings: return "command:settings"
         case .reloadConfig: return "command:reload"
         case .agents: return "command:agents"
-        case .calculation(let answer): return "calc:\(answer.input)=\(answer.copyText)"
+        case .calculation(_, let slot): return "calc:\(slot)"
         case .app(let a): return "app:\(a.id)"
         case .file(let f): return "file:\(f.id)"
         case .contact(let c): return "contact:\(c.id)"
@@ -161,6 +161,43 @@ struct ResultSection: Identifiable, Equatable {
     var id: String { title }
 }
 
+/// What a result row draws besides its own payload: the selected identity, the current row for
+/// each identity, contact thumbnails and cached icons. Rows observe this instead of the whole
+/// launcher model, so notices, footer feedback and focus requests do not redraw every row, while
+/// lazily created rows still observe selection directly.
+final class LauncherRowState: ObservableObject {
+    @Published fileprivate(set) var selectedID: String?
+    @Published fileprivate(set) var rowsByID: [String: ResultRow] = [:]
+    @Published fileprivate(set) var contactImages: [String: NSImage] = [:]
+    private let icons = NSCache<NSString, NSImage>()
+    private let clipImages = NSCache<NSNumber, NSImage>()
+
+    init() {
+        icons.countLimit = 256
+        clipImages.countLimit = 32
+    }
+
+    /// Finder's icon for a path, fetched once. A fresh NSImage on every redraw would make SwiftUI
+    /// treat each row as changed and refetch icons on every keystroke and arrow press.
+    func icon(forFile path: String) -> NSImage {
+        if let cached = icons.object(forKey: path as NSString) { return cached }
+        let image = NSWorkspace.shared.icon(forFile: path)
+        icons.setObject(image, forKey: path as NSString)
+        return image
+    }
+
+    /// A clipboard image decoded once per entry rather than on every redraw.
+    func image(for clip: ClipEntry) -> NSImage? {
+        if let cached = clipImages.object(forKey: NSNumber(value: clip.id)) { return cached }
+        guard let data = clip.imageData, let image = NSImage(data: data) else { return nil }
+        clipImages.setObject(image, forKey: NSNumber(value: clip.id))
+        return image
+    }
+
+    /// Drops cached icons after the app index changes, since an update can change an app's icon.
+    func clearIcons() { icons.removeAllObjects() }
+}
+
 /// Routes a query. Prefixes force one source: `/` files, `@` contacts, `cal` or `today` agenda, `clip` history.
 /// Otherwise results merge: math and units first, then apps, contacts, and files once the query is long enough.
 final class LauncherModel: ObservableObject {
@@ -190,10 +227,18 @@ final class LauncherModel: ObservableObject {
             flattenedRows = normalized.flatMap(\.rows)
             if let target = actionTarget, !flattenedRows.contains(where: { $0.id == target.id }) { actionTarget = nil }
             displayedSections = normalized
+            rowState.rowsByID = Dictionary(flattenedRows.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            publishSelection()
         }
     }
+    let rowState = LauncherRowState()
     @Published var searchFocusRequest = UUID()
-    @Published var selection: Int = 0 { didSet { if oldValue != selection { actionTarget = nil } } }
+    @Published var selection: Int = 0 { didSet { if oldValue != selection { actionTarget = nil; publishSelection() } } }
+
+    private func publishSelection() {
+        let id = selectedRow?.id
+        if rowState.selectedID != id { rowState.selectedID = id }
+    }
     @Published var actionTarget: ResultRow?
     var actionConfigURL: URL = Preferences.configURL
     @Published var actionFeedback: String?
@@ -225,7 +270,13 @@ final class LauncherModel: ObservableObject {
     let acp = ACPModel()
     @Published private(set) var showingACP = false
     @Published var promotedHarness: String?
-    var isPresented = false
+    var isPresented = false {
+        didSet {
+            guard isPresented != oldValue else { return }
+            prefixBranch = nil
+            if !isPresented { clipboard.endSearchSession() }
+        }
+    }
     private var agentSubscription: AnyCancellable?
     private var indexSubscription: AnyCancellable?
     var showingAgents: Bool {
@@ -307,15 +358,24 @@ final class LauncherModel: ObservableObject {
     private var indexStateSubscription: AnyCancellable?
     private let contacts = ContactSearch()
     let dictation = SpeechDictation()
-    /// Row images are built once per result set. Building an NSImage inside a row body rebuilds
-    /// it on every redraw, which is the cost issue #33 describes for application icons.
-    @Published private(set) var contactImages: [String: NSImage] = [:]
     private let agenda = CalendarAgenda()
     private var searchesAppIndex = false
     private var generation = 0
     private var immediate: [ResultSection] = []
     private var contactRows: [ResultRow] = []
     private var fileRows: [ResultRow] = []
+    /// The prefix source the last refresh routed to (`ext`, `notes`, `clip`), so a source reloads
+    /// from disk when it is entered rather than on every keystroke inside it.
+    private var prefixBranch: String?
+    /// The last query that produced a calculator answer, and that answer.
+    private var calculationAnchor: (query: String, answer: CalculationAnswer)?
+    private var holdExpiry: DispatchWorkItem?
+    /// While an expression is briefly incomplete (`5+` on the way to `5+3`), the last answer stays
+    /// in place, dimmed, for up to `calculationHoldDuration`, so the list below does not jump up by
+    /// a card's height and back on each keystroke. It is not a row: it cannot be selected or
+    /// activated, so Return never acts on an answer that no longer matches the query.
+    @Published private(set) var heldCalculation: CalculationAnswer?
+    var calculationHoldDuration: TimeInterval = 0.6
 
     init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), caffeinate: CaffeinateService = CaffeinateService(), files: FileSearch = FileSearch(), agents: AgentsModel = AgentsModel(), onNote: @escaping (LauncherAction) -> Void) {
         self.agents = agents
@@ -408,20 +468,32 @@ final class LauncherModel: ObservableObject {
 
     /// Redraws answers when exchange rates arrive for the query still being typed, keeping the
     /// selected row as same-query asynchronous updates do.
+    /// Only the merged results are rebuilt: contacts and files already found for this query stay,
+    /// and their searches are not restarted.
     func refreshForCurrencyRates() {
-        guard isPresented, !query.isEmpty else { return }
-        let selectedID = selectedRow?.id
-        refresh()
-        if let selectedID, let offset = rows.firstIndex(where: { $0.id == selectedID }) { selection = offset }
+        guard isPresented, searchesAppIndex else { return }
+        rebuildMergedResults()
     }
 
     func refreshForAppIndex() {
+        rowState.clearIcons()
         guard isPresented, query.isEmpty || searchesAppIndex else { return }
-        let selectedID = selectedRow?.id
-        if query.isEmpty { showSuggestions() }
-        else { refresh() }
-        if let selectedID, let offset = rows.firstIndex(where: { $0.id == selectedID }) { selection = offset }
-        else { selection = 0 }
+        if query.isEmpty {
+            let selectedID = selectedRow?.id
+            showSuggestions()
+            if let selectedID, let offset = rows.firstIndex(where: { $0.id == selectedID }) { selection = offset }
+            else { selection = 0 }
+        } else {
+            rebuildMergedResults()
+        }
+    }
+
+    /// Recomputes the synchronous sections for the current query and merges them with the
+    /// asynchronous ones already delivered, keeping the selected row by identity.
+    private func rebuildMergedResults() {
+        immediate = mergedSections(for: query.trimmingCharacters(in: .whitespaces))
+        if immediate.contains(where: { $0.title == "Calculator" }) { releaseHeldCalculation() }
+        compose()
     }
 
     private func refreshShortcutResults() {
@@ -522,7 +594,19 @@ final class LauncherModel: ObservableObject {
         else { selection = 0 }
     }
 
+    /// Contacts and files found for the previous query stay visible while their replacements are
+    /// fetched, narrowed to rows that still match, so the bottom of the list does not empty and
+    /// refill on every keystroke.
     private func refresh() {
+        let wasMerged = searchesAppIndex
+        let previousContacts = contactRows, previousFiles = fileRows
+        let previousBranch = prefixBranch
+        prefixBranch = nil
+        var keepsCalculation = false
+        defer {
+            if !keepsCalculation { calculationAnchor = nil; releaseHeldCalculation() }
+            if previousBranch == "clip" && prefixBranch != "clip" { clipboard.endSearchSession() }
+        }
         searchesAppIndex = false
         selection = 0
         generation += 1
@@ -546,7 +630,14 @@ final class LauncherModel: ObservableObject {
         if let term = DictionaryQuery.term(query) { dictionary.input = term; sections = []; return }
         if showingTranslation { sections = []; return }
         if CaffeinateCommand.matches(q) { refreshCaffeinateResults(); return }
-        if q.lowercased() == "emoji" { query = ":"; return }
+        if q.lowercased() == "emoji" {
+            sections = []
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.query.trimmingCharacters(in: .whitespaces).lowercased() == "emoji" else { return }
+                self.query = ":"
+            }
+            return
+        }
         if ["volant settings", "reload", "reload config", "reload configuration"].contains(q.lowercased()) {
             sections = [ResultSection(title: "Volant", rows: [q.lowercased().contains("reload") ? .reloadConfig : .settings])]
             return
@@ -559,7 +650,7 @@ final class LauncherModel: ObservableObject {
                 return
             }
         }
-        if q.lowercased() == "notes" { notes.reload(); sections = [ResultSection(title: "Notes", rows: notes.search("").map { .note($0) } + [.newNote("")])]; return }
+        if q.lowercased() == "notes" { enterNotes(from: previousBranch); sections = [ResultSection(title: "Notes", rows: notes.search("").map { .note($0) } + [.newNote("")])]; return }
         if connectivitySource != nil { refreshConnectivity(); return }
         if AudioRouteQuery(q) != nil { refreshAudioRoutes(); return }
         if VolumeCommand.matches(q) {
@@ -581,8 +672,7 @@ final class LauncherModel: ObservableObject {
             let term = String(q.dropFirst()).trimmingCharacters(in: .whitespaces)
             sections = []
             contacts.search(term, askIfNeeded: true) { [weak self] hits in
-                self?.cacheContactImages(hits)
-                self?.deliver(gen) { $0.contactRows = hits.map { .contact($0) } }
+                self?.deliver(gen) { $0.cacheContactImages(hits); $0.contactRows = hits.map { .contact($0) } }
             }
             return
         }
@@ -623,7 +713,8 @@ final class LauncherModel: ObservableObject {
             let name = parts.first ?? ""
             let input = parts.count > 1 ? parts[1] : ""
             extensions.configURL = actionConfigURL
-            extensions.reload()
+            if previousBranch == "ext" { extensions.loadIfNeeded() } else { extensions.reload() }
+            prefixBranch = "ext"
             let rows = extensions.search(name).map { ResultRow.extensionRun($0, input: input) }
             notice = rows.isEmpty ? "No matching extensions. Manage extensions in Settings → Extensions." : nil
             sections = rows.isEmpty ? [] : [ResultSection(title: "Extensions", rows: rows)]
@@ -631,21 +722,54 @@ final class LauncherModel: ObservableObject {
         }
         if q.lowercased() == "note" || q.lowercased().hasPrefix("note ") {
             let term = q.dropFirst(4).trimmingCharacters(in: .whitespaces)
-            notes.reload()
+            enterNotes(from: previousBranch)
             var rows = notes.search(term).map { ResultRow.note($0) }
             if !term.isEmpty { rows.append(.newNote(term)) }
             sections = rows.isEmpty ? [] : [ResultSection(title: term.isEmpty ? "Recent Notes" : "Notes", rows: rows)]
             return
         }
         if showingClipboard {
+            prefixBranch = "clip"
             refreshClipboardResults()
             return
         }
 
         searchesAppIndex = true
         onCalculationQuery(q)
-        let answers = CalculationAnswer.answers(for: q).map(ResultRow.calculation)
-        immediate = []
+        immediate = mergedSections(for: q)
+        keepsCalculation = holdCalculation(for: q)
+        let letters = q.filter(\.isLetter).count
+        let searchesContacts = searchesSecondarySources && letters >= 2 && q.count <= 40
+        let searchesFiles = searchesSecondarySources && q.count >= 3
+        if wasMerged {
+            let needle = q.lowercased()
+            if searchesContacts {
+                contactRows = previousContacts.filter { if case .contact(let c) = $0 { return Self.contact(c, matches: needle) }; return false }
+            }
+            if searchesFiles {
+                fileRows = previousFiles.filter { if case .file(let f) = $0 { return Self.file(f, matches: q) }; return false }
+            }
+        }
+        compose(preservingSelection: false)
+        if searchesSecondarySources && q.count >= 2 { appleShortcuts.refresh() }
+
+        if searchesContacts {
+            contacts.search(q, askIfNeeded: false) { [weak self] hits in
+                let needle = q.lowercased()
+                let tight = Array(hits.filter { Self.contact($0, matches: needle) }.prefix(3))
+                self?.deliver(gen) { $0.cacheContactImages(tight); $0.contactRows = tight.map { .contact($0) } }
+            }
+        }
+        if searchesFiles {
+            files.search(q) { [weak self] result in self?.receiveFiles(result, generation: gen, limit: 5) }
+        }
+    }
+
+    /// The default search's synchronous sections, in display order: alias, calculator, snippets,
+    /// quicklinks, extensions, applications, System Settings panes, Volant commands and shortcuts.
+    private func mergedSections(for q: String) -> [ResultSection] {
+        var immediate: [ResultSection] = []
+        let answers = CalculationAnswer.answers(for: q).enumerated().map { ResultRow.calculation($0.element, slot: $0.offset) }
         let builtins: [(String, ResultRow)] = [("Volant Settings", .settings), ("Reload Configuration", .reloadConfig)]
         let matchingCommands = CoreCommand.search(q).map(ResultRow.core) + builtins.filter { $0.0.localizedCaseInsensitiveContains(q) }.map { $0.1 }
         let words = q.split(separator: " ", maxSplits: 1).map(String.init)
@@ -670,21 +794,54 @@ final class LauncherModel: ObservableObject {
         if !matchingCommands.isEmpty { immediate.append(ResultSection(title: "Volant", rows: matchingCommands)) }
         let shortcuts = appleShortcuts.matches(q).prefix(6).map(ResultRow.appleShortcut)
         if !shortcuts.isEmpty { immediate.append(ResultSection(title: "Apple Shortcuts", rows: shortcuts)) }
-        compose(preservingSelection: false)
-        if searchesSecondarySources && q.count >= 2 { appleShortcuts.refresh() }
+        return immediate
+    }
 
-        let letters = q.filter(\.isLetter).count
-        if searchesSecondarySources && letters >= 2 && q.count <= 40 {
-            contacts.search(q, askIfNeeded: false) { [weak self] hits in
-                let needle = q.lowercased()
-                let tight = hits.filter { c in c.name.lowercased().split(separator: " ").contains { $0.hasPrefix(needle) } || c.name.lowercased().hasPrefix(needle) }
-                self?.cacheContactImages(Array(tight.prefix(3)))
-                self?.deliver(gen) { $0.contactRows = tight.prefix(3).map { .contact($0) } }
+    /// Records the answer when the query has one; otherwise keeps the last answer visible while the
+    /// query is still an edit of the one that produced it, for at most the hold duration. Returns
+    /// whether calculator state should survive this refresh.
+    private func holdCalculation(for q: String) -> Bool {
+        if let section = immediate.first(where: { $0.title == "Calculator" }), case .calculation(let answer, _)? = section.rows.first {
+            calculationAnchor = (q, answer)
+            releaseHeldCalculation()
+            return true
+        }
+        guard let anchor = calculationAnchor, q.hasPrefix(anchor.query) || anchor.query.hasPrefix(q) else { return false }
+        if heldCalculation == nil {
+            heldCalculation = anchor.answer
+            let expiry = DispatchWorkItem { [weak self] in
+                self?.calculationAnchor = nil
+                self?.releaseHeldCalculation()
             }
+            holdExpiry = expiry
+            DispatchQueue.main.asyncAfter(deadline: .now() + calculationHoldDuration, execute: expiry)
         }
-        if searchesSecondarySources && q.count >= 3 {
-            files.search(q) { [weak self] result in self?.receiveFiles(result, generation: gen, limit: 5) }
-        }
+        return true
+    }
+
+    private func releaseHeldCalculation() {
+        holdExpiry?.cancel()
+        holdExpiry = nil
+        if heldCalculation != nil { heldCalculation = nil }
+    }
+
+    /// Reads the notes folder when the notes source is entered, not on every keystroke inside it.
+    /// Edits made in Volant update the store directly, so typing never needs a fresh read.
+    private func enterNotes(from previousBranch: String?) {
+        if previousBranch != "notes" { notes.reload() }
+        prefixBranch = "notes"
+    }
+
+    /// A contact shown for a typed name: some word of the name, or the whole name, starts with it.
+    static func contact(_ contact: ContactEntry, matches needle: String) -> Bool {
+        let name = contact.name.lowercased()
+        return name.hasPrefix(needle) || name.split(separator: " ").contains { $0.hasPrefix(needle) }
+    }
+
+    /// A file kept from the previous query while its replacement search runs: its name still
+    /// contains the query, as Spotlight's case- and diacritic-insensitive name search requires.
+    static func file(_ file: FileEntry, matches term: String) -> Bool {
+        file.url.lastPathComponent.range(of: term, options: [.caseInsensitive, .diacriticInsensitive]) != nil
     }
 
     /// Dictation goes to the clipboard rather than into whatever app was focused. Typing into
@@ -727,12 +884,15 @@ final class LauncherModel: ObservableObject {
         }
     }
 
+    /// Row images are built once per result set. Building an NSImage inside a row body rebuilds it
+    /// on every redraw, which is the cost issue #33 describes for application icons. Called only
+    /// for the current generation, so a late reply for an old query cannot replace thumbnails.
     private func cacheContactImages(_ entries: [ContactEntry]) {
         var images: [String: NSImage] = [:]
         for entry in entries {
             if let data = entry.thumbnail, let image = NSImage(data: data) { images[entry.id] = image }
         }
-        contactImages = images
+        rowState.contactImages = images
     }
 
     private func deliver(_ gen: Int, _ apply: (LauncherModel) -> Void) {
@@ -922,7 +1082,7 @@ final class LauncherModel: ObservableObject {
         case .reloadConfig: dismiss(); onNote(.reloadConfig); return
         case .agentSession(let session): agents.focus(session); return
         case .agents: query = "agents"; return
-        case .calculation(let answer): copy(answer.copyText)
+        case .calculation(let answer, _): copy(answer.copyText)
         case .clip(let clip):
             if clip.kind == .image, let data = clip.imageData {
                 let pb = NSPasteboard.general; pb.clearContents(); pb.setData(data, forType: .png)
@@ -1034,7 +1194,7 @@ final class LauncherModel: ObservableObject {
 
     /// Shift-Command-Return on a conversion: run it the other way, with the answer as the input.
     func activateSwap() {
-        guard case .calculation(let answer)? = selectedRow, let swap = answer.swapQuery else { return }
+        guard case .calculation(let answer, _)? = selectedRow, let swap = answer.swapQuery else { return }
         query = swap
         searchFocusRequest = UUID()
     }
@@ -1044,7 +1204,7 @@ final class LauncherModel: ObservableObject {
     func activateSecondary() {
         guard let row = selectedRow else { return }
         switch row {
-        case .calculation(let answer):
+        case .calculation(let answer, _):
             query = answer.copyText
             searchFocusRequest = UUID()
             return

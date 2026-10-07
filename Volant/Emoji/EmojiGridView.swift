@@ -10,7 +10,7 @@ struct EmojiGridView: View {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: LauncherModel.emojiColumns), spacing: 6) {
                         ForEach(model.rows) { row in
                             if case .emoji(let emoji) = row {
-                                EmojiCell(emoji: emoji, rowID: row.id, model: model)
+                                EmojiCell(emoji: emoji, rowID: row.id, model: model, state: model.rowState)
                             }
                         }
                     }.padding(16)
@@ -36,9 +36,10 @@ struct EmojiGridView: View {
 private struct EmojiCell: View {
     let emoji: EmojiEntry
     let rowID: String
-    @ObservedObject var model: LauncherModel
+    let model: LauncherModel
+    @ObservedObject var state: LauncherRowState
     @Environment(\.volantTheme) private var theme
-    private var selected: Bool { model.selectedRow?.id == rowID }
+    private var selected: Bool { state.selectedID == rowID }
     var body: some View {
         Button { model.activate(rowID: rowID) } label: {
             Text(emoji.symbol).font(.system(size: 30))

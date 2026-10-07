@@ -63,7 +63,7 @@ CurrencyRates.current = CurrencyRates(date: "2026-10-05", perEuro: ["USD": 1.25,
 for query in ["1pm EST in CET", "2026-12-31 3pm PST in CET", "time in Tokyo", "2 + 2", "5 km in mi", "7:30pm tomorrow", "15% tip on 42", "days until 31 Mar", "145 mins to timespan", "time diff Tokyo", "2024-03-15T14:30:00Z", "#ff6363", "oklch(70% 0.15 250)", "100 usd in eur"] {
     model.query = query
     RunLoop.main.run(until: Date().addingTimeInterval(0.2))
-    guard case .calculation(let answer) = model.selectedRow else { fatalError("Missing timezone answer") }
+    guard case .calculation(let answer, _) = model.selectedRow else { fatalError("Missing timezone answer") }
     verify(!answer.copyText.contains("UTC") && !answer.copyText.contains("GMT+"), "Calculator answer uses a human-readable label")
     var copied = ""
     model.copyText = { copied = $0 }
@@ -84,17 +84,54 @@ RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 verify(model.query == "4", "Use Answer replaces the query with the answer")
 model.query += " * 3"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
-guard case .calculation(let continued) = model.selectedRow else { fatalError("Missing continued calculation") }
+guard case .calculation(let continued, _) = model.selectedRow else { fatalError("Missing continued calculation") }
 verify(continued.copyText == "12", "Calculation continues from the answer")
 model.query = "5 km in mi"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 model.activateSwap()
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 verify(model.query == "3.106856 mi in km", "Swap reverses the conversion")
-guard case .calculation(let swapped) = model.selectedRow else { fatalError("Missing swapped conversion") }
+guard case .calculation(let swapped, _) = model.selectedRow else { fatalError("Missing swapped conversion") }
 verify(swapped.copyText == "5 km", "Swapped conversion returns to the original amount")
 model.query = "1pm EST in"
 verify(!model.rows.contains { if case .calculation = $0 { return true }; return false }, "Incomplete time query has no answer")
+// A briefly incomplete edit keeps the card's space with the last answer dimmed; it is never a row.
+model.query = "12 * 4"
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+verify(model.selectedRow?.id == "calc:0", "Calculator card has a stable identity")
+model.query = "12 * 4 +"
+RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+verify(model.heldCalculation != nil && !model.rows.contains { $0.id.hasPrefix("calc:") }, "Held answer stays visible without becoming a row")
+host.layoutSubtreeIfNeeded()
+let heldImage = host.bitmapImageRepForCachingDisplay(in: host.bounds)!
+host.cacheDisplay(in: host.bounds, to: heldImage)
+try heldImage.representation(using: .jpeg, properties: [.compressionFactor: 0.85])!.write(to:
+    URL(fileURLWithPath: "/tmp/volant-launcher-time-held-\(dark ? "dark" : "light").jpg"))
+model.query = "12 * 4 + 2"
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+guard case .calculation(let resumed, _) = model.selectedRow else { fatalError("Missing resumed calculation") }
+verify(model.heldCalculation == nil && resumed.copyText == "50", "Completed edit replaces the held answer in the same card")
+// Palette themes still color the selected card and the held card after rows moved to row state.
+let palette = ResolvedTheme(ColorTheme.named(dark ? "catppuccin-mocha" : "catppuccin-latte"))
+let paletteText = palette.textStyles
+let paletteHost = NSHostingView(rootView: LauncherView(model: model, agents: model.agents)
+    .environment(\.volantTheme, palette).tint(palette.accent).foregroundStyle(paletteText.0, paletteText.1)
+    .background(palette.windowBackground))
+let paletteWindow = NSWindow(contentRect: NSRect(origin: .zero, size: LauncherPanel.size), styleMask: [.titled], backing: .buffered, defer: false)
+paletteWindow.isReleasedWhenClosed = false
+paletteWindow.appearance = app.appearance; paletteWindow.contentView = paletteHost; paletteWindow.orderFront(nil)
+for (query, name) in [("12 * 4", "card"), ("12 * 4 +", "held")] {
+    model.query = query
+    RunLoop.main.run(until: Date().addingTimeInterval(0.15))
+    paletteHost.layoutSubtreeIfNeeded()
+    let themed = paletteHost.bitmapImageRepForCachingDisplay(in: paletteHost.bounds)!
+    paletteHost.cacheDisplay(in: paletteHost.bounds, to: themed)
+    try themed.representation(using: .jpeg, properties: [.compressionFactor: 0.85])!.write(to:
+        URL(fileURLWithPath: "/tmp/volant-launcher-time-palette-\(name)-\(dark ? "dark" : "light").jpg"))
+}
+verify(model.heldCalculation != nil, "Held answer renders under a palette theme")
+paletteWindow.orderOut(nil)
+paletteWindow.contentView = nil
 model.query = "snip screen"
 window.orderOut(nil)
 print("PASS: launcher row identity, stale click, snippet identity, Screen Sharing eligibility, and native focus restoration")

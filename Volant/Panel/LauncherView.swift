@@ -94,9 +94,8 @@ struct LauncherView: View {
     var body: some View {
         content
         .onAppear { requestSearchFocus() }
-        .onChange(of: model.query) { _, _ in model.actionTarget = nil }
         .onChange(of: model.showingACP) { _, showing in if showing { focused = false } else { requestSearchFocus() } }
-        .onChange(of: model.showingEmoji) { _, _ in requestSearchFocus() }
+        .onChange(of: model.showingEmoji) { _, _ in if !focused { requestSearchFocus() } }
         .onChange(of: model.selectedRow?.id) { _, _ in model.actionTarget = nil }
         .onChange(of: model.actionTarget?.id) { old, new in if old != nil && new == nil { requestSearchFocus() } }
         .onChange(of: model.searchFocusRequest) { _, _ in requestSearchFocus() }
@@ -192,13 +191,13 @@ struct LauncherView: View {
                         .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
                         .padding(.top, 8)
                     }
+                    if let held = model.heldCalculation {
+                        sectionTitle("Calculator")
+                        CalculatorCard(rowID: nil, fallback: held, state: model.rowState)
+                            .id("calc-held")
+                    }
                     ForEach(model.sections) { section in
-                        Text(section.title)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 14)
-                            .padding(.top, 10)
-                            .padding(.bottom, 4)
+                        sectionTitle(section.title)
                         ForEach(section.rows) { row in
                             if case .agentSession(let session) = row {
                                 resultButton(row)
@@ -228,6 +227,15 @@ struct LauncherView: View {
         }
     }
 
+    private func sectionTitle(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 14)
+            .padding(.top, 10)
+            .padding(.bottom, 4)
+    }
+
     private func requestSearchFocus() {
         guard model.actionTarget == nil && !model.showingACP && !model.showingDictionary && !model.showingTranslation else { return }
         // A persistent hosting view does not appear again each time its panel is summoned.
@@ -240,10 +248,13 @@ struct LauncherView: View {
 
     private func resultButton(_ row: ResultRow) -> some View {
         Button { model.activate(rowID: row.id) } label: {
-            if case .calculation(let answer) = row {
-                CalculatorCard(answer: answer, rowID: row.id, model: model)
+            if case .calculation(let answer, _) = row {
+                CalculatorCard(rowID: row.id, fallback: answer, state: model.rowState)
+            } else if case .agentSession = row {
+                AgentRowView(initialRow: row, state: model.rowState, agents: agents)
+                    .contentShape(Rectangle())
             } else {
-                RowView(initialRow: row, model: model, agents: agents)
+                RowView(initialRow: row, state: model.rowState)
                     .contentShape(Rectangle())
             }
         }
@@ -282,7 +293,7 @@ struct LauncherView: View {
                         KeyCap("↩")
                     }
                 }
-                if case .calculation(let answer) = row, answer.swapQuery != nil {
+                if case .calculation(let answer, _) = row, answer.swapQuery != nil {
                     Divider().frame(height: 16)
                     HStack(spacing: 8) {
                         Text("Swap").font(.system(size: 13, weight: .medium)).foregroundStyle(.secondary)
@@ -356,15 +367,32 @@ private extension CoreCommand {
     }
 }
 
+/// Herdr pane rows observe the agents model directly, because change counts and unread state
+/// arrive after the pane list; other rows ignore its periodic updates.
+private struct AgentRowView: View {
+    let initialRow: ResultRow
+    @ObservedObject var state: LauncherRowState
+    @ObservedObject var agents: AgentsModel
+
+    var body: some View {
+        if case .agentSession(let session) = state.rowsByID[initialRow.id] ?? initialRow {
+            RowView(initialRow: initialRow, state: state, agentUnread: agents.isUnread(session),
+                    agentSummary: agents.repository(for: session)?.summary)
+        } else {
+            RowView(initialRow: initialRow, state: state)
+        }
+    }
+}
+
 private struct RowView: View {
     let initialRow: ResultRow
-    private var row: ResultRow { model.rows.first(where: { $0.id == initialRow.id }) ?? initialRow }
+    private var row: ResultRow { state.rowsByID[initialRow.id] ?? initialRow }
     // Lazy rows must observe selection themselves; parent closure updates can retain stale styling.
-    @ObservedObject var model: LauncherModel
-    // Change counts and unread state arrive after the pane list, so agent rows observe them directly.
-    @ObservedObject var agents: AgentsModel
+    @ObservedObject var state: LauncherRowState
+    var agentUnread = false
+    var agentSummary: String?
     @Environment(\.volantTheme) private var theme
-    private var selected: Bool { model.selectedRow?.id == row.id }
+    private var selected: Bool { state.selectedID == row.id }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -398,7 +426,7 @@ private struct RowView: View {
         case .audioRoute(let route): return route.name
         case .volume(let command, _): return command.title
         case .agents: return "Open Agents"
-        case .calculation(let answer): return answer.input + " = " + answer.result
+        case .calculation(let answer, _): return answer.input + " = " + answer.result
         case .systemSettings(let pane): return pane.title
         case .settings: return "Volant Settings"
         case .reloadConfig: return "Reload Configuration"
@@ -425,7 +453,7 @@ private struct RowView: View {
         case .settings: return "Preferences, app shortcuts and backups"
         case .reloadConfig: return "Apply changes from config.json"
         case .agentSession(let session):
-            return session.machineLabel + " · " + session.provider + " · " + (agents.repository(for: session)?.summary ?? session.paneID)
+            return session.machineLabel + " · " + session.provider + " · " + (agentSummary ?? session.paneID)
         case .herdrMachine(let machine, _, _): return machine.map { $0.target + " · " + $0.session } ?? "This Mac"
         case .connectivity(let item): return item.detail
         case .audioRoute(let route): return route.direction.rawValue.capitalized
@@ -456,7 +484,7 @@ private struct RowView: View {
             Image(systemName: session.agentStatus == "blocked" ? "exclamationmark.bubble" : "terminal").font(.system(size: 20))
                 .foregroundStyle(session.agentStatus == "blocked" ? Color.orange : Color.secondary)
                 .overlay(alignment: .topTrailing) {
-                    if agents.isUnread(session) {
+                    if agentUnread {
                         Circle().fill(.tint).frame(width: 8, height: 8).offset(x: 3, y: -2)
                             .accessibilityLabel("Changed since you last looked")
                     }
@@ -473,17 +501,17 @@ private struct RowView: View {
         case .calculation: Image(systemName: "equal.circle.fill").font(.system(size: 20)).foregroundStyle(.secondary)
         case .systemSettings, .settings: CommandTile(symbol: "gearshape", tint: .gray)
         case .reloadConfig: CommandTile(symbol: "arrow.clockwise", tint: .gray)
-        case .app(let a): Image(nsImage: NSWorkspace.shared.icon(forFile: a.url.path)).resizable()
-        case .file(let f): Image(nsImage: NSWorkspace.shared.icon(forFile: f.url.path)).resizable()
+        case .app(let a): Image(nsImage: state.icon(forFile: a.url.path)).resizable()
+        case .file(let f): Image(nsImage: state.icon(forFile: f.url.path)).resizable()
         case .contact(let c):
-            if let image = model.contactImages[c.id] {
+            if let image = state.contactImages[c.id] {
                 Image(nsImage: image).resizable().aspectRatio(contentMode: .fill).clipShape(Circle())
             } else {
                 Image(systemName: "person.crop.circle.fill").font(.system(size: 20)).foregroundStyle(.secondary)
             }
         case .event: Image(systemName: "calendar").font(.system(size: 20)).foregroundStyle(.secondary)
         case .clip(let c):
-            if c.kind == .image, let data = c.imageData, let img = NSImage(data: data) { Image(nsImage: img).resizable().aspectRatio(contentMode: .fit) }
+            if c.kind == .image, let img = state.image(for: c) { Image(nsImage: img).resizable().aspectRatio(contentMode: .fit) }
             else { Image(systemName: "doc.on.clipboard.fill").font(.system(size: 18)).foregroundStyle(.secondary) }
         case .note: Image(systemName: "note.text").font(.system(size: 20)).foregroundStyle(.secondary)
         case .newNote: Image(systemName: "plus.circle").font(.system(size: 20)).foregroundStyle(.secondary)
