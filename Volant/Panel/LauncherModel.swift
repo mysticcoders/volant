@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import ImageIO
 import OSLog
 import VolantCore
 
@@ -190,12 +191,29 @@ final class LauncherRowState: ObservableObject {
         return image
     }
 
-    /// A clipboard image decoded once per entry rather than on every redraw.
+    /// A clipboard image's row thumbnail, decoded once per entry rather than on every redraw. Rows
+    /// draw it at 24 points, so it is downsampled to `thumbnailPixels` and keeps no reference to
+    /// the decrypted image bytes; `NSImage(data:)` would hold both the bytes and a full-size decode.
     func image(for clip: ClipEntry) -> NSImage? {
         if let cached = clipImages.object(forKey: NSNumber(value: clip.id)) { return cached }
-        guard let data = clip.imageData, let image = NSImage(data: data) else { return nil }
+        guard let data = clip.imageData, let image = Self.thumbnail(data) else { return nil }
         clipImages.setObject(image, forKey: NSNumber(value: clip.id))
         return image
+    }
+
+    static let thumbnailPixels = 72
+
+    /// A thumbnail at most `thumbnailPixels` on its longer side, or nil if the data is not an image.
+    static func thumbnail(_ data: Data) -> NSImage? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary) else { return nil }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: thumbnailPixels
+        ]
+        guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+        return NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height))
     }
 
     /// Drops cached icons after the app index changes, since an update can change an app's icon.

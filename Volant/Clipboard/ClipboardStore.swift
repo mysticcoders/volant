@@ -189,12 +189,19 @@ final class ClipboardStore {
         "Image (\(ByteCountFormatter.string(fromByteCount: Int64(byteCount), countStyle: .file)))"
     }
 
+    /// Bytes AES-GCM's combined form adds to a payload: a 12-byte nonce and a 16-byte tag.
+    private static let sealOverhead = 28
+
+    /// Decrypts every retained text entry for search. Images are listed by size without being
+    /// read or decrypted: search matches them only by the word "image", and their bytes are
+    /// decrypted later, only for the rows shown.
     private func loadSearchEntries() -> [SearchEntry]? {
         queue.sync {
             guard let key, let db else { return nil }
             var out: [SearchEntry] = []
             var stmt: OpaquePointer?
-            guard sqlite3_prepare_v2(db, "SELECT id, blob, copied_at, kind FROM clips ORDER BY copied_at DESC LIMIT ?", -1, &stmt, nil) == SQLITE_OK else { fail(.database); return nil }
+            let sql = "SELECT id, CASE WHEN kind = \(ClipEntry.Kind.image.rawValue) THEN NULL ELSE blob END, copied_at, kind, length(blob) FROM clips ORDER BY copied_at DESC LIMIT ?"
+            guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { fail(.database); return nil }
             defer { sqlite3_finalize(stmt) }
             sqlite3_bind_int(stmt, 1, Int32(retention))
             var step = sqlite3_step(stmt)
@@ -202,15 +209,17 @@ final class ClipboardStore {
             while step == SQLITE_ROW {
                 defer { step = sqlite3_step(stmt) }
                 let id = sqlite3_column_int64(stmt, 0)
+                let when = Date(timeIntervalSince1970: sqlite3_column_double(stmt, 2))
+                if sqlite3_column_int(stmt, 3) == Int32(ClipEntry.Kind.image.rawValue) {
+                    let size = max(0, Int(sqlite3_column_int64(stmt, 4)) - Self.sealOverhead)
+                    out.append(SearchEntry(id: id, kind: .image, text: "", copiedAt: when, byteCount: size))
+                    continue
+                }
                 guard let ptr = sqlite3_column_blob(stmt, 1) else { fail(.unreadableEntries); complete = false; continue }
                 let data = Data(bytes: ptr, count: Int(sqlite3_column_bytes(stmt, 1)))
                 guard let box = try? AES.GCM.SealedBox(combined: data),
                       let plain = try? AES.GCM.open(box, using: key) else { fail(.unreadableEntries); complete = false; continue }
-                let kind = ClipEntry.Kind(rawValue: Int(sqlite3_column_int(stmt, 3))) ?? .text
-                let when = Date(timeIntervalSince1970: sqlite3_column_double(stmt, 2))
-                if kind == .image {
-                    out.append(SearchEntry(id: id, kind: .image, text: "", copiedAt: when, byteCount: plain.count))
-                } else if let text = String(data: plain, encoding: .utf8) {
+                if let text = String(data: plain, encoding: .utf8) {
                     out.append(SearchEntry(id: id, kind: .text, text: text, copiedAt: when, byteCount: plain.count))
                 }
             }
