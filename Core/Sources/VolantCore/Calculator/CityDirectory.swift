@@ -13,12 +13,30 @@ public final class CityDirectory {
         public let name: String
     }
 
+    /// One city, packed to 40 bytes because the table keeps about 34,000 of them: the two-letter
+    /// country code in two bytes, the population and zone index in fixed-width integers.
     struct Entry {
         let name: String
-        let country: String
         let admin1: String
-        let population: Int
-        let zone: Int
+        private let packedCountry: UInt16
+        private let storedPopulation: UInt32
+        private let storedZone: UInt16
+
+        init(name: String, country: Substring, admin1: String, population: Int, zone: Int) {
+            self.name = name
+            self.admin1 = admin1
+            let bytes = Array(country.utf8)
+            packedCountry = bytes.count == 2 ? UInt16(bytes[0]) << 8 | UInt16(bytes[1]) : 0
+            storedPopulation = UInt32(clamping: population)
+            storedZone = UInt16(clamping: zone)
+        }
+
+        var country: String {
+            guard packedCountry != 0 else { return "" }
+            return String(decoding: [UInt8(packedCountry >> 8), UInt8(packedCountry & 0xFF)], as: UTF8.self)
+        }
+        var population: Int { Int(storedPopulation) }
+        var zone: Int { Int(storedZone) }
     }
 
     /// Installed by the app with its bundled table; empty until then, as in tests and fixtures.
@@ -139,21 +157,37 @@ public final class CityDirectory {
         return offsets
     }
 
+    /// Parses the table in one pass over the text, a line at a time, with capacity reserved up
+    /// front, so loading does not leave a line array or regrown buffers behind in the process.
     private func loadIfNeeded() {
         guard !loaded else { return }
         loaded = true
         guard let text = load() else { return }
-        var lines = text.split(separator: "\n", omittingEmptySubsequences: true)
-        guard !lines.isEmpty else { return }
-        zones = lines.removeFirst().split(separator: "\t").map { TimeZone(identifier: String($0)) }
-        for line in lines {
+        var rest = Substring(text)
+        guard let header = Self.nextLine(&rest), !header.isEmpty else { return }
+        zones = header.split(separator: "\t").map { TimeZone(identifier: String($0)) }
+        let estimate = text.utf8.count / 28
+        entries.reserveCapacity(estimate)
+        index.reserveCapacity(estimate * 5 / 4)
+        while let line = Self.nextLine(&rest) {
             let fields = line.split(separator: "\t", omittingEmptySubsequences: false)
             guard fields.count == 6, let population = Int(fields[4]), let zone = Int(fields[5]), zones.indices.contains(zone) else { continue }
             let position = Int32(entries.count)
-            entries.append(Entry(name: String(fields[0]), country: String(fields[2]), admin1: String(fields[3]), population: population, zone: zone))
+            entries.append(Entry(name: String(fields[0]), country: fields[2], admin1: String(fields[3]), population: population, zone: zone))
             add(Self.tableKey(fields[0]), entry: position)
             if !fields[1].isEmpty { add(Self.tableKey(fields[1]), entry: position) }
         }
+    }
+
+    /// The next non-empty line of `rest`, which is advanced past it.
+    private static func nextLine(_ rest: inout Substring) -> Substring? {
+        while !rest.isEmpty {
+            let end = rest.firstIndex(of: "\n") ?? rest.endIndex
+            let line = rest[..<end]
+            rest = end < rest.endIndex ? rest[rest.index(after: end)...] : rest[rest.endIndex...]
+            if !line.isEmpty { return line }
+        }
+        return nil
     }
 
     /// Table names are single-spaced and mostly ASCII, so only the rest pay for accent folding.

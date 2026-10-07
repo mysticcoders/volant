@@ -205,7 +205,8 @@ public enum TimeCalculator {
         guard text.utf8.count <= 256, evaluate(text, now: now, localZone: localZone, locale: locale) == nil else { return [] }
         let lowered = text.lowercased().split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
         let shaped = ["time in ", "now in ", "time diff ", "diff ", "time difference ", "difference "].contains(where: lowered.hasPrefix)
-            || lowered.range(of: #"^(\d{4}-\d{2}-\d{2}\s+)?(\d{1,2}(:\d{2})?\s*(am|pm)?|noon|midnight)\s+\S"#, options: .regularExpression) != nil
+            || lowered.range(of: #"^(\d{4}-\d{2}-\d{2}\s+)?(\d{1,2}:\d{2}\s*(am|pm)?|\d{1,2}\s*(am|pm)|noon|midnight)\s+\p{L}"#,
+                             options: .regularExpression) != nil
         guard shaped else { return [] }
         let words = text.split(whereSeparator: { $0.isWhitespace }).map(String.init)
         for (index, word) in words.enumerated() {
@@ -222,7 +223,7 @@ public enum TimeCalculator {
         for length in stride(from: min(3, words.count), through: 1, by: -1) {
             for start in 0...(words.count - length) {
                 let span = words[start..<(start + length)]
-                guard !span.contains(where: { skip.contains($0.lowercased()) || $0.contains(where: \.isNumber) }) else { continue }
+                guard !span.contains(where: { skip.contains($0.lowercased()) }), placeShaped(span.joined(separator: " ")) else { continue }
                 let alternatives = CityDirectory.shared.alternatives(span.joined(separator: " "))
                 guard !alternatives.isEmpty else { continue }
                 let found = alternatives.compactMap { alternative -> (query: String, result: Result)? in
@@ -264,9 +265,19 @@ public enum TimeCalculator {
         if let identifier = regions[regionKey(name)]?.zone ?? cities[name]?.zone ?? identifiers[name] ?? zoneCities[name] {
             return TimeZone(identifier: identifier)
         }
+        guard placeShaped(name) else { return nil }
         if let match = CityDirectory.shared.lookup(name) { return match.zone }
         if let airport = AirportDirectory.shared.lookup(name) { return airport.zone }
         return nil // CST/IST and broad geographic names are intentionally ambiguous.
+    }
+
+    /// Whether text could name a place in the city or airport tables: letters with the spaces and
+    /// punctuation place names use ("St. Louis", "Winston-Salem", "Springfield, MO"), and no
+    /// digits or operators. Anything else never loads those tables, so "10:30 + 2:45" or "5 km"
+    /// cost nothing.
+    static func placeShaped(_ name: String) -> Bool {
+        name.contains(where: \.isLetter)
+            && name.allSatisfy { $0.isLetter || $0.isWhitespace || ".,'’-()".contains($0) || $0.unicodeScalars.allSatisfy { $0.properties.isDiacritic } }
     }
 
     /// A region name as the table keys it, so "ist (india)" and "ist india" read alike.
@@ -280,7 +291,7 @@ public enum TimeCalculator {
         if fixed[name] != nil { return name.uppercased() }
         if let region = regions[regionKey(name)] { return zone.isDaylightSavingTime(for: date) ? region.daylight : region.standard }
         if let city = cities[name] { return "in \(city.name)" }
-        if identifiers[name] == nil, zoneCities[name] == nil {
+        if identifiers[name] == nil, zoneCities[name] == nil, placeShaped(name) {
             if let match = CityDirectory.shared.lookup(name) { return "in \(match.name)" }
             if let airport = AirportDirectory.shared.lookup(name) { return "in \(airport.city) (\(airport.code))" }
         }

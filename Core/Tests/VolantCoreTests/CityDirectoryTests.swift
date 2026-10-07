@@ -144,4 +144,38 @@ final class CityDirectoryTests: XCTestCase {
         XCTAssertEqual(cities.lookup("Austin")?.zone.identifier, "America/Chicago")
         XCTAssertEqual(cities.lookup("Bangalore")?.zone.identifier ?? cities.lookup("Bengaluru")?.zone.identifier, "Asia/Kolkata")
     }
+
+    /// The tables cost several megabytes once loaded, so arithmetic, units, colors, dates, clock
+    /// spans and plain searches must never load them; only a time question naming a place the
+    /// built-in names don't cover may.
+    func testOnlyPlaceQuestionsLoadTheTables() {
+        let savedCities = CityDirectory.shared, savedAirports = AirportDirectory.shared
+        defer { CityDirectory.shared = savedCities; AirportDirectory.shared = savedAirports }
+        var loads: [String] = []
+        var current = ""
+        let installFresh = {
+            CityDirectory.shared = CityDirectory(load: { loads.append("city: \(current)"); return self.fixture })
+            AirportDirectory.shared = AirportDirectory(load: { loads.append("airport: \(current)"); return nil })
+        }
+        installFresh()
+        let now = Date(timeIntervalSince1970: 1_790_000_000)
+        let zone = TimeZone(identifier: "America/Los_Angeles")!
+        let locale = Locale(identifier: "en_US")
+        for query in ["2 + 2", "safari", "visual studio code", "10:30 + 2:45", "5 km", "5 km in mi", "12 apples", "18% tip on $65",
+                      "2h 20min + 55min", "#3a7bd5", "rebeccapurple in hex", "workdays until christmas", "1 cup flour in grams",
+                      "9am to 5:30pm", "3pm - 9am", "45 min * 4", "7:30pm tomorrow", "days until next friday", "0x1F + 0b1010",
+                      "time in tokyo", "noon in Denver", "1pm EST in CET", "3pm lisbon in tokyo", "time", "time in 90 minutes",
+                      "3:45pm + 5", "what's 7 * 6?", "3 * (4 + 5"] {
+            current = query
+            _ = CalculationAnswer.answers(for: query, now: now, localZone: zone, locale: locale)
+        }
+        XCTAssertEqual(loads, [])
+        for query in ["3pm springfield in tokyo", "time diff Kraków"] {
+            installFresh()
+            loads = []
+            current = query
+            _ = CalculationAnswer.answers(for: query, now: now, localZone: zone, locale: locale)
+            XCTAssertEqual(loads.first, "city: \(query)", query)
+        }
+    }
 }
