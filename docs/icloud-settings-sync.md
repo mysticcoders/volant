@@ -27,18 +27,19 @@ Everything else stays on the Mac: `appHotKeys` and `favoriteApps` (they name ins
 
 A pass runs at launch when enabled, after every configuration reload (all in-app edits reload), and on `didChangeExternallyNotification`. Edits made to config.json outside the app sync after Reload Configuration. Applied changes reload the configuration once; the follow-up pass finds nothing to do.
 
-## Entitlement and signing (not yet done)
+## Entitlement and signing
 
-This branch does not add the iCloud entitlement. The App ID `com.mysticcoders.volant` has no iCloud capability and release signing uses a Developer ID certificate without a provisioning profile, so adding `com.apple.developer.ubiquity-kvstore-identifier` now would break signed builds. Without it `synchronize()` returns false and Settings shows iCloud as unavailable; nothing is written.
+The App ID `com.mysticcoders.volant` has iCloud key-value storage enabled, and the Volant target carries `com.apple.developer.ubiquity-kvstore-identifier: $(TeamIdentifierPrefix)$(CFBundleIdentifier)` in `project.yml` and `Volant/Volant.entitlements`.
 
-To enable:
+- **Release:** `Scripts/release.sh` signs manually with the "Volant Developer ID" provisioning profile (`VOLANT_PROVISIONING_PROFILE`, mapped to `PROVISIONING_PROFILE_SPECIFIER`; `provisioningProfiles` in `Scripts/ExportOptions.plist`). The release checks assert the entitlement is `REMBT6JY4N.com.mysticcoders.volant` and that `Contents/embedded.provisionprofile` exists.
+- **Local builds:** `Scripts/build.sh` and `Scripts/install.sh` pass `-allowProvisioningUpdates`, so Xcode uses the team development profile, which also carries the key-value entitlement.
+- **Tests and CI:** they build with `CODE_SIGNING_ALLOWED=NO`, so the entitlement is not exercised there and `synchronize()` reports iCloud as unavailable, as before.
 
-1. Enable iCloud (key-value storage) on the App ID in the developer portal.
-2. Create a Developer ID provisioning profile for `com.mysticcoders.volant` and embed it (manual signing: `PROVISIONING_PROFILE_SPECIFIER` in `Scripts/release.sh`, `provisioningProfiles` in `Scripts/ExportOptions.plist`).
-3. Add `com.apple.developer.ubiquity-kvstore-identifier: $(TeamIdentifierPrefix)$(CFBundleIdentifier)` to the Volant entitlements in `project.yml`, and extend the release entitlement assertions.
+Without the entitlement (for example an unsigned build), `synchronize()` returns false and Settings shows iCloud as unavailable; nothing is written.
 
 ## Evidence
 
 - `swift test --package-path Core`: `SettingsSyncTests` covers merge rules, unknown-field preservation, invalid cloud values, malformed config, budget and copies.
 - Hosted `ICloudSettingsSyncTests` drive the service against an in-memory store and temporary files: first enable, local edit send, unavailable iCloud, malformed config, switch-off and account change.
-- Not verified: real iCloud delivery between two Macs, quota and account-change notifications from the system, and the signed installed app. These need the entitlement above and two Macs on the same Apple Account.
+- The installed app built with `Scripts/install.sh` carries the key-value entitlement and an embedded provisioning profile (`codesign -d --entitlements -`).
+- Not verified: real iCloud delivery between two Macs, quota and account-change notifications from the system, and a notarized release build. Delivery needs two Macs signed in to the same Apple Account.
