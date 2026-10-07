@@ -3,14 +3,22 @@ import VolantCore
 
 /// A calculator answer drawn as two halves, the query and its result, each with a detail tag,
 /// separated by an arrow; color answers show a swatch beside the query. Selection lightens the card rather than tinting it; semantic
-/// colors follow light and dark appearances, and a palette theme supplies its own layers.
+/// colors follow light and dark appearances, and a palette theme supplies its own layers. A card
+/// keeps its row identity while the query is edited, so it reads its current answer from the row
+/// state rather than from the value it was created with. Without a row identity it is the dimmed
+/// placeholder held while an expression is briefly incomplete.
 struct CalculatorCard: View {
-    let answer: CalculationAnswer
-    let rowID: String
+    let rowID: String?
+    let fallback: CalculationAnswer
     /// Lazy rows observe selection themselves; parent closure updates can retain stale styling.
-    @ObservedObject var model: LauncherModel
+    @ObservedObject var state: LauncherRowState
     @Environment(\.volantTheme) private var theme
-    private var selected: Bool { model.selectedRow?.id == rowID }
+    private var answer: CalculationAnswer {
+        if let rowID, case .calculation(let current, _)? = state.rowsByID[rowID] { return current }
+        return fallback
+    }
+    private var selected: Bool { rowID != nil && state.selectedID == rowID }
+    private var held: Bool { rowID == nil }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -22,8 +30,9 @@ struct CalculatorCard: View {
         .background(theme.card(selected: selected),
                     in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .contentShape(Rectangle())
+        .opacity(held ? 0.45 : 1)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(answer.input + " equals " + answer.result)
+        .accessibilityLabel(held ? "Calculating" : answer.input + " equals " + answer.result)
         .accessibilityValue([answer.inputDetail, answer.resultDetail].compactMap { $0 }.joined(separator: ", "))
         .accessibilityAddTraits(selected ? .isSelected : [])
     }

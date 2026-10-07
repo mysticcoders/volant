@@ -51,6 +51,17 @@ final class ClipboardStore {
     private let loadKey: (Bool) throws -> SymmetricKey
     var retention: Int { didSet { queue.async { self.trim() } } }
     private let queue = DispatchQueue(label: "com.mysticcoders.volant.clipboard")
+    /// One decrypted entry kept for an open search. Images keep only their size; their bytes are
+    /// decrypted again for the few that match.
+    private struct SearchEntry {
+        let id: Int64
+        let kind: ClipEntry.Kind
+        let text: String
+        let copiedAt: Date
+        let byteCount: Int
+    }
+    private let searchLock = NSLock()
+    private var searchEntries: [SearchEntry]?
 
     init(retention: Int, storageURL: URL? = nil, encryptionKey: SymmetricKey? = nil,
          keyLoader: ((Bool) throws -> SymmetricKey)? = nil) {
@@ -88,6 +99,7 @@ final class ClipboardStore {
         if state != .retrying { setState(.unavailable(error)) }
     }
     private func recover() {
+        invalidateSearch()
         sqlite3_close(db); db = nil; key = nil; failure = nil
         do {
             guard sqlite3_open(storageURL.path, &db) == SQLITE_OK,
@@ -138,6 +150,7 @@ final class ClipboardStore {
             sqlite3_bind_int(stmt, 4, Int32(kind.rawValue))
             guard sqlite3_step(stmt) == SQLITE_DONE else { self.fail(.database); return }
             self.trim()
+            self.invalidateSearch()
         }
     }
 
@@ -147,15 +160,93 @@ final class ClipboardStore {
         return HMAC<SHA256>.authenticationCode(for: payload, using: dedupeKey).map { String(format: "%02x", $0) }.joined()
     }
 
+    /// Searches decrypt the whole retained history once, then filter that copy on each keystroke
+    /// instead of decrypting every entry again; any write discards the copy. Recent items with no
+    /// search term read only the requested rows.
     func recent(limit: Int = 50, matching query: String = "") -> [ClipEntry] {
         guard state != .retrying else { return [] }
-        return queue.sync {
+        guard !query.isEmpty else { return recentRows(limit: limit) }
+        guard let entries = searchLock.withLock({ searchEntries }) ?? loadSearchEntries() else { return [] }
+        let wantsImages = "image".contains(query.lowercased())
+        let matches = Array(entries.lazy.filter { entry in
+            entry.kind == .image ? wantsImages : entry.text.localizedCaseInsensitiveContains(query)
+        }.prefix(limit))
+        let imageIDs = matches.filter { $0.kind == .image }.map(\.id)
+        let images = imageIDs.isEmpty ? [:] : imageData(for: Array(imageIDs))
+        return matches.compactMap { entry in
+            guard entry.kind == .image else { return ClipEntry(id: entry.id, kind: .text, text: entry.text, copiedAt: entry.copiedAt, imageData: nil) }
+            guard let data = images[entry.id] else { return nil }
+            return ClipEntry(id: entry.id, kind: .image, text: Self.imageTitle(entry.byteCount), copiedAt: entry.copiedAt, imageData: data)
+        }
+    }
+
+    /// Releases the decrypted search copy when the launcher leaves clipboard search or hides.
+    func endSearchSession() { invalidateSearch() }
+
+    private func invalidateSearch() { searchLock.withLock { searchEntries = nil } }
+
+    private static func imageTitle(_ byteCount: Int) -> String {
+        "Image (\(ByteCountFormatter.string(fromByteCount: Int64(byteCount), countStyle: .file)))"
+    }
+
+    private func loadSearchEntries() -> [SearchEntry]? {
+        queue.sync {
+            guard let key, let db else { return nil }
+            var out: [SearchEntry] = []
+            var stmt: OpaquePointer?
+            guard sqlite3_prepare_v2(db, "SELECT id, blob, copied_at, kind FROM clips ORDER BY copied_at DESC LIMIT ?", -1, &stmt, nil) == SQLITE_OK else { fail(.database); return nil }
+            defer { sqlite3_finalize(stmt) }
+            sqlite3_bind_int(stmt, 1, Int32(retention))
+            var step = sqlite3_step(stmt)
+            var complete = true
+            while step == SQLITE_ROW {
+                defer { step = sqlite3_step(stmt) }
+                let id = sqlite3_column_int64(stmt, 0)
+                guard let ptr = sqlite3_column_blob(stmt, 1) else { fail(.unreadableEntries); complete = false; continue }
+                let data = Data(bytes: ptr, count: Int(sqlite3_column_bytes(stmt, 1)))
+                guard let box = try? AES.GCM.SealedBox(combined: data),
+                      let plain = try? AES.GCM.open(box, using: key) else { fail(.unreadableEntries); complete = false; continue }
+                let kind = ClipEntry.Kind(rawValue: Int(sqlite3_column_int(stmt, 3))) ?? .text
+                let when = Date(timeIntervalSince1970: sqlite3_column_double(stmt, 2))
+                if kind == .image {
+                    out.append(SearchEntry(id: id, kind: .image, text: "", copiedAt: when, byteCount: plain.count))
+                } else if let text = String(data: plain, encoding: .utf8) {
+                    out.append(SearchEntry(id: id, kind: .text, text: text, copiedAt: when, byteCount: plain.count))
+                }
+            }
+            if step != SQLITE_DONE { fail(.database); return out }
+            if complete { searchLock.withLock { searchEntries = out } }
+            return out
+        }
+    }
+
+    private func imageData(for ids: [Int64]) -> [Int64: Data] {
+        queue.sync {
+            guard let key, let db else { return [:] }
+            var out: [Int64: Data] = [:]
+            var stmt: OpaquePointer?
+            guard sqlite3_prepare_v2(db, "SELECT blob FROM clips WHERE id = ?", -1, &stmt, nil) == SQLITE_OK else { fail(.database); return [:] }
+            defer { sqlite3_finalize(stmt) }
+            for id in ids {
+                sqlite3_reset(stmt)
+                sqlite3_bind_int64(stmt, 1, id)
+                guard sqlite3_step(stmt) == SQLITE_ROW, let ptr = sqlite3_column_blob(stmt, 0) else { continue }
+                let data = Data(bytes: ptr, count: Int(sqlite3_column_bytes(stmt, 0)))
+                guard let box = try? AES.GCM.SealedBox(combined: data), let plain = try? AES.GCM.open(box, using: key) else { fail(.unreadableEntries); continue }
+                out[id] = plain
+            }
+            return out
+        }
+    }
+
+    private func recentRows(limit: Int) -> [ClipEntry] {
+        queue.sync {
             guard let key, let db else { return [] }
             var out: [ClipEntry] = []
             var stmt: OpaquePointer?
             guard sqlite3_prepare_v2(db, "SELECT id, blob, copied_at, kind FROM clips ORDER BY copied_at DESC LIMIT ?", -1, &stmt, nil) == SQLITE_OK else { fail(.database); return [] }
             defer { sqlite3_finalize(stmt) }
-            sqlite3_bind_int(stmt, 1, Int32(query.isEmpty ? limit : retention))
+            sqlite3_bind_int(stmt, 1, Int32(limit))
             var step = sqlite3_step(stmt)
             while step == SQLITE_ROW {
                 defer { step = sqlite3_step(stmt) }
@@ -167,10 +258,8 @@ final class ClipboardStore {
                 let kind = ClipEntry.Kind(rawValue: Int(sqlite3_column_int(stmt, 3))) ?? .text
                 let when = Date(timeIntervalSince1970: sqlite3_column_double(stmt, 2))
                 if kind == .image {
-                    if query.isEmpty || "image".contains(query.lowercased()) {
-                        out.append(ClipEntry(id: id, kind: .image, text: "Image (\(ByteCountFormatter.string(fromByteCount: Int64(plain.count), countStyle: .file)))", copiedAt: when, imageData: plain))
-                    }
-                } else if let text = String(data: plain, encoding: .utf8), query.isEmpty || text.localizedCaseInsensitiveContains(query) {
+                    out.append(ClipEntry(id: id, kind: .image, text: Self.imageTitle(plain.count), copiedAt: when, imageData: plain))
+                } else if let text = String(data: plain, encoding: .utf8) {
                     out.append(ClipEntry(id: id, kind: .text, text: text, copiedAt: when, imageData: nil))
                 }
                 if out.count >= limit { break }
@@ -188,6 +277,7 @@ final class ClipboardStore {
             sqlite3_bind_int64(stmt, 1, id)
             if sqlite3_step(stmt) != SQLITE_DONE { self.fail(.database) }
             sqlite3_finalize(stmt)
+            self.invalidateSearch()
         }
     }
 
@@ -195,10 +285,12 @@ final class ClipboardStore {
         queue.async {
             guard self.failure == nil else { return }
             if !self.execute("DELETE FROM clips") || !self.execute("VACUUM") { self.fail(.database) }
+            self.invalidateSearch()
         }
     }
 
     private func trim() {
+        invalidateSearch()
         guard failure == nil else { return }
         if !execute("DELETE FROM clips WHERE id NOT IN (SELECT id FROM clips ORDER BY copied_at DESC LIMIT \(max(10, retention)))") { fail(.database) }
     }

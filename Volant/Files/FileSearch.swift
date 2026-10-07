@@ -8,7 +8,8 @@ struct FileEntry: Identifiable, Hashable {
 }
 
 /// Debounced Spotlight file search within the user's home. Sandbox-safe: opening a hit hands the URL to the system.
-final class FileSearch: NSObject {
+/// Not final so launcher tests can deliver fictional results without Spotlight.
+class FileSearch: NSObject {
     enum Failure: Error { case unavailable }
     typealias SearchResult = Result<[FileEntry], Failure>
     private let startQuery: (NSMetadataQuery) -> Bool

@@ -55,6 +55,8 @@ final class AppIndex: NSObject {
 
     deinit { query.stop(); NotificationCenter.default.removeObserver(self) }
 
+    /// Spotlight sends updates for unrelated metadata changes; the list is republished only when
+    /// it differs, because each publish re-runs the open launcher query.
     @objc private func gathered() {
         query.disableUpdates()
         defer { query.enableUpdates() }
@@ -71,7 +73,8 @@ final class AppIndex: NSObject {
             let lastUsed = item.value(forAttribute: NSMetadataItemLastUsedDateKey) as? Date
             result.append(AppEntry(id: path, name: clean, url: URL(fileURLWithPath: path), lastUsed: lastUsed))
         }
-        apps = result.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        let sorted = result.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        if sorted != apps { apps = sorted }
     }
 
     /// User-facing apps in CoreServices outside its Applications folder. The rest of CoreServices is
