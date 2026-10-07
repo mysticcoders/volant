@@ -246,6 +246,9 @@ private struct SettingsView: View {
                 LabeledContent("Airport codes") {
                     Link("mwgg/Airports", destination: URL(string: "https://github.com/mwgg/Airports")!)
                 }
+                LabeledContent("Exchange rates") {
+                    Link("Rates By Exchange Rate API", destination: WorldRates.attribution)
+                }
                 LabeledContent("Crypto prices") {
                     Link("Data provided by CoinGecko", destination: URL(string: "https://www.coingecko.com")!)
                 }

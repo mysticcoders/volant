@@ -1,10 +1,13 @@
 import Foundation
 
-/// The rates-only XPC helper's interface: it fetches the ECB daily reference feed, and CoinGecko
-/// prices for a fixed coin list, replying with validated data or an error message. Its only input
-/// is the owner's optional CoinGecko key, so no query ever leaves Volant.
+/// The rates-only XPC helper's interface: it fetches the ECB daily reference feed, ExchangeRate-API's
+/// daily rates for the currencies ECB lacks, and CoinGecko prices for a fixed coin list, replying
+/// with validated data or an error message. Its only input is the owner's optional CoinGecko key,
+/// so no query ever leaves Volant.
 @objc public protocol VolantRatesHostProtocol {
     func fetchRates(reply: @escaping (Data?, String?) -> Void)
+    /// ExchangeRate-API's euro-based open access rates, from the fixed URL in `WorldRates`.
+    func fetchWorldRates(reply: @escaping (Data?, String?) -> Void)
     /// CoinGecko euro prices for the fixed coin list in `CryptoPrices`, keyless unless the owner saved a key.
     func fetchCrypto(key: String?, reply: @escaping (Data?, String?) -> Void)
 }
@@ -15,6 +18,13 @@ public struct CurrencyRates: Codable, Equatable {
     public static let feed = URL(string: "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml")!
     /// The feed is about 1.5 KB; anything far larger is not the feed.
     public static let maximumBytes = 65_536
+
+    /// The currencies the ECB publishes, for deciding before its rates are loaded whether a
+    /// conversion also needs another source.
+    public static let referenceCodes: Set<String> = [
+        "USD", "JPY", "CZK", "DKK", "GBP", "HUF", "PLN", "RON", "SEK", "CHF", "ISK", "NOK", "TRY", "AUD", "BRL",
+        "CAD", "CNY", "HKD", "IDR", "ILS", "INR", "KRW", "MXN", "MYR", "NZD", "PHP", "SGD", "THB", "ZAR"
+    ]
 
     /// The ECB business day the rates are for, as yyyy-MM-dd.
     public let date: String

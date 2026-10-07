@@ -14,40 +14,75 @@ import Foundation
 ///
 /// With `CryptoPrices` from CoinGecko, major coins convert too ("0.5 btc in usd",
 /// "100 eur in eth"), through their euro price; those cards tag CoinGecko and the fetch time.
+///
+/// Currencies the ECB does not publish ("100 aed in usd", "5000 twd to vnd") use `WorldRates`
+/// from ExchangeRate-API. Both sides of one conversion always come from the same source: ECB
+/// when it covers every fiat currency named, otherwise ExchangeRate-API for all of them, so a
+/// cross rate never mixes two providers' euro rates. Those cards tag ExchangeRate-API's date.
 public enum CurrencyConverter {
-    /// Units of a currency or coin per euro, from crypto prices first and ECB rates otherwise.
+    private enum Basis { case ecb, world }
+
+    /// Units of a currency or coin per euro, from crypto prices first, then from whichever fiat
+    /// source covers every fiat currency in the conversion.
     private struct Book {
         let rates: CurrencyRates?
+        let world: WorldRates?
         let crypto: CryptoPrices?
 
-        func perEuro(_ code: String) -> Double? {
+        /// Whether any source knows the code, for reading a word as a currency.
+        func knows(_ code: String) -> Bool {
+            code == "EUR" || crypto?.euros[code] != nil || rates?.rate(code) != nil || world?.rate(code) != nil
+        }
+
+        /// ECB when it has every fiat code, ExchangeRate-API when it does, else nothing. A
+        /// conversion between coins (and the euro) needs neither.
+        func basis(_ codes: [String]) -> Basis? {
+            let fiat = codes.filter { crypto?.euros[$0] == nil && $0 != "EUR" }
+            if fiat.allSatisfy({ rates?.rate($0) != nil }) { return .ecb }
+            if let world, fiat.allSatisfy({ world.rate($0) != nil }) { return .world }
+            return nil
+        }
+
+        func perEuro(_ code: String, _ basis: Basis) -> Double? {
             if let price = crypto?.euros[code] { return 1 / price }
             if code == "EUR" { return 1 }
-            return rates?.rate(code)
+            return basis == .ecb ? rates?.rate(code) : world?.rate(code)
         }
     }
 
-    static let symbols: [Character: String] = ["$": "USD", "€": "EUR", "£": "GBP", "¥": "JPY", "₹": "INR", "₩": "KRW", "₺": "TRY"]
+    static let symbols: [Character: String] = [
+        "$": "USD", "€": "EUR", "£": "GBP", "¥": "JPY", "₹": "INR", "₩": "KRW", "₺": "TRY",
+        "₦": "NGN", "₴": "UAH", "₫": "VND", "₪": "ILS", "₱": "PHP", "₸": "KZT", "₾": "GEL", "₽": "RUB", "₵": "GHS"
+    ]
+    /// Names that mean one currency. Shared names such as dirham, riyal, dinar, peso and shilling
+    /// are left out, so those need their ISO code.
     static let names: [String: String] = [
         "dollar": "USD", "dollars": "USD", "euro": "EUR", "euros": "EUR", "pound": "GBP", "pounds": "GBP", "quid": "GBP",
         "yen": "JPY", "franc": "CHF", "francs": "CHF", "yuan": "CNY", "rmb": "CNY", "renminbi": "CNY",
-        "rupee": "INR", "rupees": "INR", "won": "KRW", "krona": "SEK", "kronor": "SEK", "zloty": "PLN", "lira": "TRY"
+        "rupee": "INR", "rupees": "INR", "won": "KRW", "krona": "SEK", "kronor": "SEK", "zloty": "PLN", "lira": "TRY",
+        "baht": "THB", "rand": "ZAR", "shekel": "ILS", "shekels": "ILS", "forint": "HUF", "ringgit": "MYR", "rupiah": "IDR",
+        "naira": "NGN", "hryvnia": "UAH", "hryvnias": "UAH", "dong": "VND", "taka": "BDT", "cedi": "GHS", "cedis": "GHS",
+        "lari": "GEL", "tenge": "KZT", "ruble": "RUB", "rubles": "RUB", "rouble": "RUB", "roubles": "RUB"
     ]
     private static let pattern = try! NSRegularExpression(pattern: #"^(.+?)\s+(?:in|to|as)\s+(.+)$"#)
     private static let ratePattern = try! NSRegularExpression(pattern:
         #"^(.+?)\s*(?:/|\s+per\s+|\s+an?\s+)(hours?|hrs?|h|minutes?|mins?|days?|weeks?|wks?|months?|mo|years?|yrs?)$"#)
     private static let timeUnits: [String: String] = ["h": "hour", "hr": "hour", "min": "minute", "wk": "week", "mo": "month", "yr": "year"]
 
-    public static func evaluate(_ text: String, rates: CurrencyRates? = CurrencyRates.current, crypto: CryptoPrices? = CryptoPrices.current,
-                                now: Date = Date(), zone: TimeZone = .current, locale: Locale = .current) -> CalculationAnswer? {
-        let book = Book(rates: rates, crypto: crypto)
-        guard rates != nil || crypto != nil, let (amount, from, to, per) = parse(text, locale: locale, known: book),
-              let fromRate = book.perEuro(from), let toRate = book.perEuro(to) else { return nil }
+    public static func evaluate(_ text: String, rates: CurrencyRates? = CurrencyRates.current, world: WorldRates? = WorldRates.current,
+                                crypto: CryptoPrices? = CryptoPrices.current, now: Date = Date(), zone: TimeZone = .current,
+                                locale: Locale = .current) -> CalculationAnswer? {
+        let book = Book(rates: rates, world: world, crypto: crypto)
+        guard rates != nil || world != nil || crypto != nil, let (amount, from, to, per) = parse(text, locale: locale, known: book),
+              let basis = book.basis([from, to]), let fromRate = book.perEuro(from, basis),
+              let toRate = book.perEuro(to, basis) else { return nil }
         let value = amount / fromRate * toRate
         let coins = CryptoPrices.codes
         let tag: String
         if coins.contains(from) || coins.contains(to), let crypto {
             tag = cryptoTag(crypto.fetchedAt, now: now, zone: zone, locale: locale)
+        } else if basis == .world, let world {
+            tag = worldTag(world.updated, now: now, zone: zone, locale: locale)
         } else if let rates {
             tag = dateTag(rates.date, now: now, locale: locale)
         } else {
@@ -72,6 +107,14 @@ public enum CurrencyConverter {
     /// first use and never otherwise.
     public static func looksLikeConversion(_ text: String, locale: Locale = .current) -> Bool {
         parse(text, locale: locale, known: nil) != nil
+    }
+
+    /// Whether a conversion names a fiat currency the ECB does not publish, so the app fetches
+    /// ExchangeRate-API's rates only for those. Before ECB rates are loaded, its usual list decides.
+    public static func needsWorldRates(_ text: String, locale: Locale = .current) -> Bool {
+        guard let (_, from, to, _) = parse(text, locale: locale, known: nil) else { return false }
+        let ecb = CurrencyRates.current.map { Set($0.perEuro.keys) } ?? CurrencyRates.referenceCodes
+        return [from, to].contains { $0 != "EUR" && !CryptoPrices.codes.contains($0) && !ecb.contains($0) }
     }
 
     private static func parse(_ text: String, locale: Locale, known: Book?) -> (Double, String, String, String?)? {
@@ -119,7 +162,7 @@ public enum CurrencyConverter {
         if let name = names[word.lowercased()] ?? CryptoPrices.names[word.lowercased()] { return name }
         let code = word.uppercased()
         guard (3...4).contains(code.count), code.allSatisfy({ $0.isASCII && $0.isLetter }) else { return nil }
-        if let known { return known.perEuro(code) == nil ? nil : code }
+        if let known { return known.knows(code) ? code : nil }
         return isoCodes.contains(code) || CryptoPrices.codes.contains(code) ? code : nil
     }
 
@@ -161,6 +204,17 @@ public enum CurrencyConverter {
         let old = now.timeIntervalSince(fetched) > 3600
         let time = formatter.string(from: fetched).replacingOccurrences(of: "\u{202F}", with: " ").replacingOccurrences(of: "\u{00A0}", with: " ")
         return (old ? "Old CoinGecko prices · " : "CoinGecko · ") + time
+    }
+
+    /// "Rates By Exchange Rate API · Oct 6", the provider's required attribution, with "Old" once
+    /// the daily rates are more than three days behind.
+    private static func worldTag(_ updated: Date, now: Date, zone: TimeZone, locale: Locale) -> String {
+        let display = DateFormatter()
+        display.locale = locale
+        display.timeZone = zone
+        display.setLocalizedDateFormatFromTemplate("MMMd")
+        let old = now.timeIntervalSince(updated) > 3 * 86_400
+        return (old ? "Old rates by Exchange Rate API · " : "Rates By Exchange Rate API · ") + display.string(from: updated)
     }
 
     /// "ECB rates · Oct 5", with "Old" when more than a week behind.
