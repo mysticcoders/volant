@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 xcodegen generate --quiet
-xcodebuild -project Volant.xcodeproj -scheme Volant -configuration Release -derivedDataPath build-release build 2>&1 | grep -E "error:|BUILD (SUCCEEDED|FAILED)" | sort -u
+xcodebuild -project Volant.xcodeproj -scheme Volant -configuration Release -derivedDataPath build-release -allowProvisioningUpdates build 2>&1 | grep -E "error:|BUILD (SUCCEEDED|FAILED)" | sort -u
 SRC="$ROOT/build-release/Build/Products/Release/Volant.app"
 DEST="/Applications/Volant.app"
 osascript -e 'if application id "com.mysticcoders.vey" is running then tell application id "com.mysticcoders.vey" to quit'

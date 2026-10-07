@@ -46,6 +46,7 @@ targets:
         com.apple.security.automation.apple-events: true
         com.apple.security.temporary-exception.apple-events:
           - com.apple.loginwindow
+        com.apple.developer.ubiquity-kvstore-identifier: $(TeamIdentifierPrefix)$(CFBundleIdentifier)
         com.apple.security.temporary-exception.mach-lookup.global-name:
           - com.apple.airportd
           - $(PRODUCT_BUNDLE_IDENTIFIER)-spks
@@ -88,6 +89,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant
+        PROVISIONING_PROFILE_SPECIFIER: $(VOLANT_PROVISIONING_PROFILE)
         PRODUCT_NAME: Volant
         PRODUCT_MODULE_NAME: Volant
         GENERATE_INFOPLIST_FILE: NO
