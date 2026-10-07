@@ -865,13 +865,14 @@ verify(corePanel.model.rows.isEmpty && corePanel.model.notice != nil)
 try renderCore("invalid")
 /// Describes the emoji grid's keyboard state for failure messages.
 func emojiGridState() -> String {
-    "selection=\(corePanel.model.selection), rows=\(corePanel.model.rows.count), query=\(corePanel.model.query), key=\(corePanel.isKeyWindow), responder=\(String(describing: corePanel.firstResponder))"
+    "selection=\(corePanel.model.selection), rows=\(corePanel.model.rows.count), query=\(corePanel.model.query), key=\(corePanel.isKeyWindow), responder=\(String(describing: corePanel.firstResponder)), delegate=\(String(describing: (corePanel.firstResponder as? NSTextView)?.delegate)), placeholder=\(String(describing: ((corePanel.firstResponder as? NSTextView)?.delegate as? NSTextField)?.placeholderString))"
 }
-/// Whether the search field's native editor holds keyboard focus, so arrow keys reach the grid handlers.
+/// Whether the launcher's search field editor holds keyboard focus, so arrow keys reach the grid
+/// handlers. The picker renames the field's placeholder, so the field is found as the editor's owner.
 func coreSearchEditorFocused() -> Bool {
     guard corePanel.isKeyWindow, let editor = corePanel.firstResponder as? NSTextView,
-          let field = coreSearchField(in: corePanel.contentView!) else { return false }
-    return editor.delegate === field
+          let field = editor.delegate as? NSTextField else { return false }
+    return field.placeholderString == "Search emoji…" && field.isDescendant(of: corePanel.contentView!)
 }
 corePanel.model.query = ":"
 verify(waitUntil(stable: 0.15) { corePanel.model.searchText.isEmpty && corePanel.model.rows.count == fixtureEmoji.count && coreSearchEditorFocused() },
