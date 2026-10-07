@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import VolantCore
 
 final class LiveEditorState: ObservableObject {
     struct Context: Equatable {
@@ -102,6 +103,7 @@ struct LiveMarkdownEditor: NSViewRepresentable {
         view.setAccessibilityLabel(live ? "Live Markdown editor" : "Markdown source editor")
         view.string = text
         view.delegate = context.coordinator
+        context.coordinator.adopt(context.environment.volantTheme, in: view, restyle: false)
         view.restyle = { [weak coordinator = context.coordinator, weak view] in
             if let view { coordinator?.style(view) }
         }
@@ -121,6 +123,7 @@ struct LiveMarkdownEditor: NSViewRepresentable {
         coordinator.parent = self
         guard let view = scroll.documentView as? MarkdownTextView else { return }
         state.textView = view
+        coordinator.adopt(context.environment.volantTheme, in: view, restyle: true)
         // Marked text belongs to the input method until composition is committed.
         guard !view.hasMarkedText() else { return }
         if view.string != text {
@@ -135,7 +138,31 @@ struct LiveMarkdownEditor: NSViewRepresentable {
     final class Coordinator: NSObject, NSTextViewDelegate {
         var parent: LiveMarkdownEditor
         private var styling = false
+        private(set) var theme: ResolvedTheme?
+        private(set) var colors = EditorPalette.system
+        private var systemCaret: NSColor?
+        private var systemSelection: [NSAttributedString.Key: Any]?
         init(parent: LiveMarkdownEditor) { self.parent = parent }
+
+        /// Takes on a color theme: palette themes set the caret, selection and text colors, and a
+        /// theme without a palette restores what the text view drew before any theme was applied.
+        /// Restyling only changes attributes, outside undo, and waits while text is being composed.
+        func adopt(_ theme: ResolvedTheme, in view: MarkdownTextView, restyle: Bool) {
+            guard theme != self.theme else { return }
+            if systemCaret == nil {
+                systemCaret = view.insertionPointColor
+                systemSelection = view.selectedTextAttributes
+            }
+            self.theme = theme
+            colors = EditorPalette(theme)
+            view.insertionPointColor = colors.caret ?? systemCaret ?? .textColor
+            if let selection = colors.selection {
+                view.selectedTextAttributes = [.backgroundColor: selection, .foregroundColor: colors.text]
+            } else if let systemSelection {
+                view.selectedTextAttributes = systemSelection
+            }
+            if restyle { style(view) }
+        }
 
         func textDidChange(_ notification: Notification) {
             guard let view = notification.object as? MarkdownTextView else { return }
@@ -155,7 +182,7 @@ struct LiveMarkdownEditor: NSViewRepresentable {
             styling = true
             let selection = view.selectedRanges
             view.undoManager?.disableUndoRegistration()
-            let styled = LiveMarkdown.styled(view.string, live: parent.live)
+            let styled = LiveMarkdown.styled(view.string, live: parent.live, colors: colors)
             storage.beginEditing()
             styled.enumerateAttributes(in: NSRange(location: 0, length: styled.length)) { attributes, range, _ in
                 storage.setAttributes(attributes, range: range)
@@ -170,7 +197,7 @@ struct LiveMarkdownEditor: NSViewRepresentable {
 
         private func updateTypingAttributes(_ view: NSTextView) {
             guard !view.hasMarkedText() else { return }
-            var attributes = LiveMarkdown.bodyAttributes
+            var attributes = LiveMarkdown.bodyAttributes(colors)
             if !parent.live || LiveMarkdown.activeFence(in: view.string, selection: view.selectedRange()) != nil {
                 attributes[.font] = LiveMarkdown.codeFont
             }
