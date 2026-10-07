@@ -18,7 +18,7 @@ struct ACPPromptView: NSViewRepresentable {
         editor.drawsBackground = false
         editor.font = .systemFont(ofSize: 14)
         editor.textColor = .labelColor
-        editor.insertionPointColor = .controlAccentColor
+        editor.insertionPointColor = ThemeStore.shared.theme.resolvedNSAccent
         editor.textContainerInset = NSSize(width: 9, height: 9)
         editor.minSize = NSSize(width: 0, height: 64)
         editor.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)

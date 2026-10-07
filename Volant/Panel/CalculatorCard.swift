@@ -2,13 +2,14 @@ import SwiftUI
 import VolantCore
 
 /// A calculator answer drawn as two halves, the query and its result, each with a detail tag,
-/// separated by an arrow; color answers show a swatch beside the query. Selection lightens the card rather than tinting it, and only semantic
-/// colors are used so it follows light and dark appearances.
+/// separated by an arrow; color answers show a swatch beside the query. Selection lightens the card rather than tinting it; semantic
+/// colors follow light and dark appearances, and a palette theme supplies its own layers.
 struct CalculatorCard: View {
     let answer: CalculationAnswer
     let rowID: String
     /// Lazy rows observe selection themselves; parent closure updates can retain stale styling.
     @ObservedObject var model: LauncherModel
+    @Environment(\.volantTheme) private var theme
     private var selected: Bool { model.selectedRow?.id == rowID }
 
     var body: some View {
@@ -18,7 +19,7 @@ struct CalculatorCard: View {
             side(answer.result, detail: answer.resultDetail)
         }
         .frame(height: 118)
-        .background(Color.primary.opacity(selected ? 0.10 : 0.05),
+        .background(theme.card(selected: selected),
                     in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
@@ -36,7 +37,7 @@ struct CalculatorCard: View {
                 if let swatch {
                     RoundedRectangle(cornerRadius: 7, style: .continuous)
                         .fill(Color(.sRGB, red: swatch.red, green: swatch.green, blue: swatch.blue, opacity: swatch.alpha))
-                        .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).strokeBorder(Color.primary.opacity(0.25), lineWidth: 1))
+                        .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).strokeBorder(theme.separator(0.25), lineWidth: 1))
                         .frame(width: 30, height: 30)
                 }
                 Text(dimmedColons(text))
@@ -61,11 +62,11 @@ struct CalculatorCard: View {
 
     private var divider: some View {
         VStack(spacing: 8) {
-            Rectangle().fill(Color.primary.opacity(0.12)).frame(width: 1)
+            Rectangle().fill(theme.separator(0.12)).frame(width: 1)
             Image(systemName: "arrow.right")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(.secondary)
-            Rectangle().fill(Color.primary.opacity(0.12)).frame(width: 1)
+            Rectangle().fill(theme.separator(0.12)).frame(width: 1)
         }
         .frame(width: 32)
     }

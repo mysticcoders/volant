@@ -32,10 +32,12 @@ final class SettingsWindowController: NSWindowController {
         window.isReleasedWhenClosed = false
         window.setFrameAutosaveName("VolantSettings")
         super.init(window: window)
-        let hosting = NSHostingView(rootView: SettingsView(state: state, acp: acp, configURL: configURL, onChange: onChange, openAI: openAI,
-                                                                  chooseAIProject: { [weak self] completion in self?.chooseAIProject(completion) },
-                                                                  importRaycast: { [weak self] in self?.showRaycastImport() })
-            .frame(minWidth: 680, idealWidth: 760, maxWidth: .infinity, minHeight: 500, idealHeight: 540, maxHeight: .infinity))
+        let hosting = NSHostingView(rootView: ThemedRoot(paletteText: false) {
+            SettingsView(state: state, acp: acp, configURL: configURL, onChange: onChange, openAI: openAI,
+                         chooseAIProject: { [weak self] completion in self?.chooseAIProject(completion) },
+                         importRaycast: { [weak self] in self?.showRaycastImport() })
+                .frame(minWidth: 680, idealWidth: 760, maxWidth: .infinity, minHeight: 500, idealHeight: 540, maxHeight: .infinity)
+        })
         hosting.sizingOptions = []
         let content = NSView(frame: NSRect(x: 0, y: 0, width: 760, height: 540))
         hosting.translatesAutoresizingMaskIntoConstraints = false
@@ -252,10 +254,14 @@ private struct SettingsView: View {
                 LabeledContent("Crypto prices") {
                     Link("Data provided by CoinGecko", destination: URL(string: "https://www.coingecko.com")!)
                 }
+                LabeledContent("Color themes") {
+                    Text("Catppuccin, Nord, Dracula, Gruvbox, Solarized, Tokyo Night, Rosé Pine, One Dark")
+                        .multilineTextAlignment(.trailing)
+                }
             } header: {
                 Text("Acknowledgements")
             } footer: {
-                SettingsFooter("City names for calculator time conversions come from GeoNames, licensed under Creative Commons Attribution 4.0. Airport codes come from mwgg/Airports, licensed under MIT; its license is included with Volant.")
+                SettingsFooter("City names for calculator time conversions come from GeoNames, licensed under Creative Commons Attribution 4.0. Airport codes come from mwgg/Airports, licensed under MIT; its license is included with Volant. Color theme palettes come from their projects under MIT licenses, also included.")
             }
         }
         .formStyle(.grouped)

@@ -18,7 +18,7 @@ struct HarnessStatusStrip: View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 Image(systemName: "waveform.path")
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(.tint)
                 Button("Herdr") {
                     onOpen()
                 }.buttonStyle(.plain).fontWeight(.medium)
@@ -68,7 +68,7 @@ struct HarnessStatusStrip: View {
             .font(.system(size: 12))
             .padding(.horizontal, 20)
             .padding(.vertical, 10)
-            .background(Color.accentColor.opacity(0.06))
+            .background(.tint.opacity(0.06))
             if showDetails && connected {
                 ScrollView {
                     VStack(spacing: 6) {
@@ -92,10 +92,10 @@ struct HarnessStatusStrip: View {
 
 private struct HarnessPaneSummary: View {
     let session: AgentSession
-    private var statusColor: Color {
-        if session.agentStatus == "blocked" { return .orange }
-        if session.agentStatus == "working" { return .accentColor }
-        return .secondary
+    private var statusColor: AnyShapeStyle {
+        if session.agentStatus == "blocked" { return AnyShapeStyle(Color.orange) }
+        if session.agentStatus == "working" { return AnyShapeStyle(.tint) }
+        return AnyShapeStyle(.secondary)
     }
     private var providerLabel: String { session.machineLabel + " · " + session.provider + " · " + session.paneID }
     private var helpText: String { [session.machineLabel, session.project, session.provider, session.paneID, session.status].joined(separator: " · ") }

@@ -5,6 +5,7 @@ struct LauncherView: View {
     @ObservedObject var model: LauncherModel
     @ObservedObject var agents: AgentsModel
     @FocusState private var focused: Bool
+    @Environment(\.volantTheme) private var theme
 
     private var content: some View {
         VStack(spacing: 0) {
@@ -70,9 +71,9 @@ struct LauncherView: View {
         .sheet(item: $model.pendingExtension) { request in
             ExtensionPermissionView(request: request, enable: model.enablePendingExtension, cancel: { model.pendingExtension = nil })
         }
-        .background(.regularMaterial.opacity(LauncherPanel.opacity))
+        .background(theme.surface(opacity: LauncherPanel.opacity))
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.primary.opacity(0.08)))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(theme.separator(0.08)))
         .overlay(alignment: .top) {
             Capsule().fill(Color.secondary.opacity(0.3)).frame(width: 28, height: 3)
                 .padding(.top, 4).frame(maxWidth: .infinity).frame(height: 12)
@@ -130,7 +131,7 @@ struct LauncherView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 24, height: 24)
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(.tint)
                 .accessibilityHidden(true)
                 .overlay(LauncherDragHandle())
                 .help("Drag to align Volant. Hold Option to move freely.")
@@ -258,7 +259,7 @@ struct LauncherView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 16, height: 16)
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(.tint)
                 .accessibilityHidden(true)
             if let feedback = model.actionFeedback {
                 Text(feedback).font(.system(size: 12)).foregroundStyle(.secondary)
@@ -362,6 +363,7 @@ private struct RowView: View {
     @ObservedObject var model: LauncherModel
     // Change counts and unread state arrive after the pane list, so agent rows observe them directly.
     @ObservedObject var agents: AgentsModel
+    @Environment(\.volantTheme) private var theme
     private var selected: Bool { model.selectedRow?.id == row.id }
 
     var body: some View {
@@ -374,7 +376,7 @@ private struct RowView: View {
             Spacer(minLength: 12)
             if row.isCoreCommand {
                 Image("VolantWing").renderingMode(.template).resizable().scaledToFit()
-                    .frame(width: 14, height: 14).foregroundStyle(Color.accentColor)
+                    .frame(width: 14, height: 14).foregroundStyle(.tint)
                     .help("Built into Volant").accessibilityLabel("Volant built-in command")
             }
             Text(row.kind).font(.system(size: 14)).foregroundStyle(.secondary)
@@ -382,7 +384,7 @@ private struct RowView: View {
         .padding(.horizontal, 12)
         .frame(height: 40)
         .accessibilityAddTraits(selected ? .isSelected : [])
-        .background(selected ? Color.accentColor.opacity(0.14) : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(selected ? theme.selection : AnyShapeStyle(Color.clear), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
     private var title: String {
@@ -455,7 +457,7 @@ private struct RowView: View {
                 .foregroundStyle(session.agentStatus == "blocked" ? Color.orange : Color.secondary)
                 .overlay(alignment: .topTrailing) {
                     if agents.isUnread(session) {
-                        Circle().fill(Color.accentColor).frame(width: 8, height: 8).offset(x: 3, y: -2)
+                        Circle().fill(.tint).frame(width: 8, height: 8).offset(x: 3, y: -2)
                             .accessibilityLabel("Changed since you last looked")
                     }
                 }
@@ -505,7 +507,7 @@ struct DictationStatusView: View {
             HStack(spacing: 6) {
                 Image(systemName: dictation.phase == .listening ? "mic.fill" : "waveform")
                     .font(.system(size: 12))
-                    .foregroundStyle(dictation.phase == .listening ? Color.accentColor : Color.secondary)
+                    .foregroundStyle(dictation.phase == .listening ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
                     .accessibilityLabel(dictation.phase == .listening ? "Listening" : "Transcribing")
                 if !dictation.transcript.isEmpty {
                     Text(dictation.transcript).font(.system(size: 12)).foregroundStyle(.secondary)

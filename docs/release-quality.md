@@ -2,7 +2,7 @@
 
 ## Decisions — 2026-09-14
 
-- Use the existing coral wing brand for the launcher wing, selected result, and Herdr strip. AccentColor has separate light/dark values; native materials and semantic text remain intact.
+- The launcher wing, selected result and Herdr strip follow the color theme's accent. The default System theme uses the macOS accent color; the Volant theme keeps the coral wing brand with separate light/dark values, and marketing renders still use the AccentColor asset. See [color themes](color-themes.md).
 - Herdr’s chevron persists the expanded overview in app preferences. It shows project, provider, pane ID, and textual status, with attention first. The overview is bounded and scrollable. Default stays compact; disclosure does not focus or send input to an agent.
 - Marketing must use captures of the real SwiftUI launcher with fictional data. `tools/render-marketing.sh` uses the exported app’s Assets.car and the same source views. A hand-built HTML approximation had drifted from the product; native captures prevent that mismatch.
 - Sparkle 2.10.0 is pinned. Use its Installer and Downloader XPC services; the main app still has no outgoing-network entitlement. Export the archive using Developer ID so all Sparkle helpers are re-signed. See [Sparkle sandbox integration](https://sparkle-project.org/documentation/sandboxing/).

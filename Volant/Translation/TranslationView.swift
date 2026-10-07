@@ -71,7 +71,7 @@ struct TranslationView: View {
             Divider()
             HStack(spacing: 12) {
                 Image("VolantWing").renderingMode(.template).resizable().scaledToFit()
-                    .frame(width: 16, height: 16).foregroundStyle(Color.accentColor)
+                    .frame(width: 16, height: 16).foregroundStyle(.tint)
                     .overlay(LauncherDragHandle()).help("Drag to position Volant")
                 CaffeinateStatusView(service: caffeinate)
                 Text("Translate").font(.system(size: 13, weight: .medium))

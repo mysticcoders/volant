@@ -37,12 +37,13 @@ private struct EmojiCell: View {
     let emoji: EmojiEntry
     let rowID: String
     @ObservedObject var model: LauncherModel
+    @Environment(\.volantTheme) private var theme
     private var selected: Bool { model.selectedRow?.id == rowID }
     var body: some View {
         Button { model.activate(rowID: rowID) } label: {
             Text(emoji.symbol).font(.system(size: 30))
                 .frame(maxWidth: .infinity).frame(height: 52)
-                .background(selected ? Color.accentColor.opacity(0.14) : Color.clear,
+                .background(selected ? theme.selection : AnyShapeStyle(Color.clear),
                             in: RoundedRectangle(cornerRadius: 8))
                 .contentShape(Rectangle())
         }

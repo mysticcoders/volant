@@ -39,8 +39,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         isReleasedWhenClosed = false
         hidesOnDeactivate = false
         model.dismiss = { [weak self] in self?.orderOut(nil) }
-        contentView = NSHostingView(rootView: LauncherView(model: model, agents: model.agents)
-            .background(Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 14)))
+        contentView = NSHostingView(rootView: ThemedRoot { ThemedLauncher(model: model) })
     }
 
     override var canBecomeKey: Bool { true }
@@ -323,4 +322,15 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
 
 private extension NSSize {
     var area: CGFloat { max(0, width) * max(0, height) }
+}
+
+/// The launcher on the theme's window background, so light, dark and palette surfaces render reliably.
+struct ThemedLauncher: View {
+    @ObservedObject var model: LauncherModel
+    @Environment(\.volantTheme) private var theme
+
+    var body: some View {
+        LauncherView(model: model, agents: model.agents)
+            .background(theme.windowBackground, in: RoundedRectangle(cornerRadius: 14))
+    }
 }

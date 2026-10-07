@@ -8,7 +8,7 @@ An opt-in, per-Mac switch (Settings → Data & Configuration → iCloud, stored 
 
 - `summonHotKey`, `notesHotKey`, `emojiHotKey`, `talkHotKey`
 - `snippets`, `quicklinks`, `aliases`
-- `appearance`, `clipboardRetention`
+- `appearance` (including `colorTheme`), `clipboardRetention`
 
 Everything else stays on the Mac: `appHotKeys` and `favoriteApps` (they name installed bundles), `showInDock`, `showOnLaunch`, `statusBar`, AI configuration, extension approvals, the sync switch itself, and any unknown top-level key. Notes, clipboard history, Keychain items and `UserDefaults` state (note pins, launcher position) are out of scope.
 

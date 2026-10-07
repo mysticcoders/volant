@@ -79,7 +79,7 @@ struct ChatContextPicker: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 8).padding(.vertical, 5)
-        .background(selected ? Color.accentColor.opacity(0.16) : .clear, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .background(selected ? AnyShapeStyle(.tint.opacity(0.16)) : AnyShapeStyle(Color.clear), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(selected ? .isSelected : [])
@@ -102,7 +102,7 @@ struct ChatAttachmentChip: View {
                 .accessibilityLabel("Remove " + attachment.title)
         }
         .padding(.horizontal, 8).padding(.vertical, 4)
-        .background(Color.accentColor.opacity(0.12), in: Capsule())
+        .background(.tint.opacity(0.12), in: Capsule())
         .help(attachment.detail)
     }
 }

@@ -69,6 +69,7 @@ struct LauncherActionsView: View {
     @State private var query = ""
     @State private var selected: LauncherItemAction = .open
     @FocusState private var focused: Bool
+    @Environment(\.volantTheme) private var theme
 
     private func title(_ action: LauncherItemAction) -> String {
         if action == .open { return target.primaryAction }
@@ -108,7 +109,7 @@ struct LauncherActionsView: View {
                                     if action == .reveal { KeyCap("⌘"); KeyCap("↩") }
                                 }.font(.system(size: 13)).padding(.horizontal, 10).padding(.vertical, 9)
                                     .contentShape(Rectangle())
-                                    .background(selected == action ? Color.primary.opacity(0.10) : .clear, in: RoundedRectangle(cornerRadius: 7))
+                                    .background(selected == action ? theme.selection : AnyShapeStyle(Color.clear), in: RoundedRectangle(cornerRadius: 7))
                             }.buttonStyle(.plain).focusable(false).id(action)
                                 .accessibilityIdentifier("launcher-action-" + action.rawValue)
                         }
@@ -123,8 +124,8 @@ struct LauncherActionsView: View {
                 .accessibilityIdentifier("launcher-action-search")
         }
         .frame(width: 330)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Color.primary.opacity(0.15)))
+        .background(theme.raisedSurface, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(theme.separator(0.15)))
         .shadow(color: .black.opacity(0.2), radius: 14, y: 4)
         .onAppear { focused = true }
         .onKeyPress(.downArrow) { move(1); return .handled }

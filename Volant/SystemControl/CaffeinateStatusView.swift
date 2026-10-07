@@ -8,9 +8,9 @@ struct CaffeinateStatusView: View {
         if service.isActive {
             Button { showingError = !service.stop() } label: {
                 Image(systemName: "cup.and.saucer.fill")
-                    .font(.system(size: 15)).foregroundStyle(Color.accentColor)
+                    .font(.system(size: 15)).foregroundStyle(.tint)
                     .frame(width: 28, height: 24)
-                    .background(hovering ? Color.accentColor.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 5))
+                    .background(hovering ? AnyShapeStyle(.tint.opacity(0.12)) : AnyShapeStyle(Color.clear), in: RoundedRectangle(cornerRadius: 5))
             }
             .buttonStyle(.plain)
             .onHover { hovering = $0 }
