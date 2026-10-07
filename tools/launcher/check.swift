@@ -978,7 +978,7 @@ print("PASS: dictionary routing, native text editing, Return, mode exit and Esca
 /// points. On a miss it prints what it saw so a layout change is diagnosable from one run. An
 /// identified control is scrolled into view first, as a person would, because taller macOS 27 form
 /// rows can leave later controls such as color theme tiles below the fold of a fixed window.
-func controlFrame(_ name: String, in window: NSWindow) -> NSRect? {
+func controlFrame(_ name: String, in window: NSWindow, reportMissing: Bool = true) -> NSRect? {
     var seen: [String] = []
     func views(_ view: NSView) -> [NSView] { [view] + view.subviews.flatMap(views) }
     for view in views(window.contentView!) where !view.isHiddenOrHasHiddenAncestor {
@@ -995,7 +995,7 @@ func controlFrame(_ name: String, in window: NSWindow) -> NSRect? {
             if button.title == name { return button.convert(button.bounds, to: nil) }
         }
     }
-    print("Controls seen while looking for \(name): \(seen)")
+    if reportMissing { print("Controls seen while looking for \(name): \(seen)") }
     return nil
 }
 
@@ -1037,6 +1037,7 @@ func clickSettings(_ point: NSPoint) {
     RunLoop.main.run(until: Date().addingTimeInterval(0.15))
 }
 func clickSettings(_ name: String) {
+    waitUntil { controlFrame(name, in: settingsWindow, reportMissing: false) != nil }
     guard let frame = controlFrame(name, in: settingsWindow) else { verify(false, "Settings shows \(name)"); return }
     clickSettings(NSPoint(x: frame.midX, y: frame.midY))
 }
@@ -1084,13 +1085,13 @@ settingsController.showWindow(nil)
 settingsController.state.section = "Appearance"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 clickSettings("settings.theme-dark")
-verify(settingsController.state.config.appearance.theme == .dark, "Dark theme tile saves the theme")
+verify(waitUntil { settingsController.state.config.appearance.theme == .dark }, "Dark theme tile saves the theme")
 clickSettings("settings.theme-system")
-verify(settingsController.state.config.appearance.theme == .system, "System theme tile restores following macOS")
+verify(waitUntil { settingsController.state.config.appearance.theme == .system }, "System theme tile restores following macOS")
 clickSettings("settings.color-theme-nord")
-verify(settingsController.state.config.appearance.colorTheme == "nord", "Nord color theme tile saves the color theme")
+verify(waitUntil { settingsController.state.config.appearance.colorTheme == "nord" }, "Nord color theme tile saves the color theme")
 clickSettings("settings.color-theme-system")
-verify(settingsController.state.config.appearance.colorTheme == "system", "System color theme tile restores the default")
+verify(waitUntil { settingsController.state.config.appearance.colorTheme == "system" }, "System color theme tile restores the default")
 settingsController.showWindow(nil)
 settingsController.state.section = "AI"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
