@@ -28,7 +28,7 @@ public struct Preferences: Codable {
     public var favoriteApps: [String] = []
     public var aliases: [String: String] = [:]
     public var appearance: Appearance = Appearance()
-    public var help: String = "Edit and choose Reload Configuration in Settings. Hotkeys: cmd|ctrl|option|shift|meh|hyper + key. App hotkeys use the bundle identifier. Snippets: {date} {isodate} {time} {datetime} {clipboard} {uuid}. Quicklinks: {query}. Aliases map a word to an app name or query. Appearance: theme system|light|dark, colorTheme system|volant|catppuccin-mocha|nord|… (named themes set their own light or dark), scale 0.8–1.4, opacity 0.5–1.0."
+    public var help: String = "Edit and choose Reload Configuration in Settings. Hotkeys: cmd|ctrl|option|shift|meh|hyper + key. App hotkeys use the bundle identifier. Snippets: {date} {isodate} {time} {datetime} {clipboard} {uuid}. Quicklinks: {query}. Aliases map a word to an app name or query. Appearance: theme system|light|dark, colorTheme system|volant|catppuccin-mocha|nord|…|custom-<name> (named themes set their own light or dark; customThemes holds imported Raycast themes), scale 0.8–1.4, opacity 0.5–1.0."
 
     public enum CodingKeys: String, CodingKey {
         case favoriteApps, summonHotKey, notesHotKey, emojiHotKey, talkHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, syncSettingsWithICloud, statusBar, snippets, quicklinks, aliases, appearance
@@ -106,6 +106,57 @@ public struct Preferences: Codable {
         let updated = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
         _ = try JSONDecoder().decode(Preferences.self, from: updated)
         try updated.write(to: url, options: .atomic)
+    }
+
+    /// Adds an imported theme, or replaces the one with the same identifier while keeping fields
+    /// this version does not know, and optionally selects it. Rejects stale snapshots and more than
+    /// `CustomColorTheme.maximumCount` themes.
+    public static func saveCustomTheme(_ theme: CustomColorTheme, select: Bool, expected: Appearance, at url: URL = configURL) throws {
+        try patchAppearance(expected: expected, at: url) { block in
+            var entries = block["customThemes"] as? [Any] ?? []
+            let encoded = try JSONSerialization.jsonObject(with: JSONEncoder().encode(theme)) as? [String: Any] ?? [:]
+            if let index = entries.firstIndex(where: { ($0 as? [String: Any])?["id"] as? String == theme.id }) {
+                var merged = entries[index] as? [String: Any] ?? [:]
+                merged.merge(encoded) { _, new in new }
+                if theme.author == nil { merged["author"] = nil }
+                entries[index] = merged
+            } else {
+                guard entries.count < CustomColorTheme.maximumCount else { throw CustomThemeLimit() }
+                entries.append(encoded)
+            }
+            block["customThemes"] = entries
+            if select { block["colorTheme"] = theme.id }
+        }
+    }
+
+    /// Removes an imported theme; when it was selected, Volant returns to the System theme.
+    public static func removeCustomTheme(_ id: String, expected: Appearance, at url: URL = configURL) throws {
+        try patchAppearance(expected: expected, at: url) { block in
+            let entries = block["customThemes"] as? [Any] ?? []
+            block["customThemes"] = entries.filter { ($0 as? [String: Any])?["id"] as? String != id }
+            if block["colorTheme"] as? String == id { block["colorTheme"] = ColorTheme.systemID }
+        }
+    }
+
+    /// Applies a change to the raw appearance block of the latest document after checking it still
+    /// matches the snapshot the edit started from, and refuses to write a result that fails to load.
+    private static func patchAppearance(expected: Appearance, at url: URL, _ change: (inout [String: Any]) throws -> Void) throws {
+        let data = try Data(contentsOf: url)
+        guard var object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        let current = try JSONDecoder().decode(Preferences.self, from: data).appearance
+        guard current == expected else { throw AppearanceConflict() }
+        var block = object["appearance"] as? [String: Any] ?? [:]
+        try change(&block)
+        object["appearance"] = block
+        let updated = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
+        _ = try JSONDecoder().decode(Preferences.self, from: updated)
+        try updated.write(to: url, options: .atomic)
+    }
+
+    public struct CustomThemeLimit: LocalizedError {
+        public var errorDescription: String? { "Volant keeps up to \(CustomColorTheme.maximumCount) imported themes. Remove one before importing another." }
     }
 
     public struct AppearanceConflict: LocalizedError {
@@ -192,14 +243,18 @@ public struct Appearance: Codable, Equatable {
     public var theme: Theme = .system
     /// The color theme's identifier; a theme with its own mode overrides `theme` for light and dark.
     public var colorTheme: String = ColorTheme.systemID
+    /// Imported themes, offered after the built-in ones; entries that fail to decode are skipped.
+    public var customThemes: [CustomColorTheme] = []
     /// 1.0 is the default 750×480 panel; 0.8 to 1.4 are sensible.
     public var scale: Double = 1.0
     /// 1.0 is the system material; lower values let the desktop show through more.
     public var opacity: Double = 1.0
 
-    public init(theme: Theme = .system, colorTheme: String = ColorTheme.systemID, scale: Double = 1.0, opacity: Double = 1.0) {
+    public init(theme: Theme = .system, colorTheme: String = ColorTheme.systemID, customThemes: [CustomColorTheme] = [],
+                scale: Double = 1.0, opacity: Double = 1.0) {
         self.theme = theme
         self.colorTheme = colorTheme
+        self.customThemes = customThemes
         self.scale = scale
         self.opacity = opacity
     }
@@ -210,6 +265,8 @@ public struct Appearance: Codable, Equatable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         theme = (try? c.decodeIfPresent(Theme.self, forKey: .theme)) ?? .system
         colorTheme = (try? c.decodeIfPresent(String.self, forKey: .colorTheme)) ?? ColorTheme.systemID
+        let entries = (try? c.decodeIfPresent([LossyCustomTheme].self, forKey: .customThemes)) ?? []
+        customThemes = entries.compactMap(\.theme)
         scale = try c.decodeIfPresent(Double.self, forKey: .scale) ?? 1.0
         opacity = try c.decodeIfPresent(Double.self, forKey: .opacity) ?? 1.0
     }
@@ -217,8 +274,22 @@ public struct Appearance: Codable, Equatable {
     public var clampedScale: Double { min(Self.scaleRange.upperBound, max(Self.scaleRange.lowerBound, scale)) }
     public var clampedOpacity: Double { min(Self.opacityRange.upperBound, max(Self.opacityRange.lowerBound, opacity)) }
 
-    /// The chosen color theme; an unknown identifier resolves to System.
-    public var resolvedColorTheme: ColorTheme { ColorTheme.named(colorTheme) }
+    /// The chosen color theme, built-in or imported; an unknown identifier resolves to System.
+    public var resolvedColorTheme: ColorTheme {
+        customThemes.first { $0.id == colorTheme }?.colorTheme ?? ColorTheme.named(colorTheme)
+    }
+
+    /// Built-in themes followed by imported ones, in picker order.
+    public var availableColorThemes: [ColorTheme] { ColorTheme.catalog + customThemes.map(\.colorTheme) }
+
+    /// Decodes one imported theme without failing the list when an entry is malformed.
+    private struct LossyCustomTheme: Decodable {
+        let theme: CustomColorTheme?
+        init(from decoder: Decoder) throws {
+            let decoded = try? CustomColorTheme(from: decoder)
+            theme = decoded?.isValid == true ? decoded : nil
+        }
+    }
 
     /// Light, dark or nil to follow macOS: a theme with its own mode wins over the appearance setting.
     public var effectiveMode: ColorTheme.Mode? {

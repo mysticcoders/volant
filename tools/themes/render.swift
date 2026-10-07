@@ -68,5 +68,17 @@ for theme in ColorTheme.catalog {
         print("Rendered \(name)")
     }
 }
-print("PASS: rendered \(ColorTheme.catalog.count) color themes")
+let imported = try RaycastTheme.parse("raycast://theme?name=Harbor%20Night&appearance=dark&colors=%23101418,%230C1014,%23E8ECF0,%232A3440,%237A8490,%23F06060,%23F09050,%23E8C860,%2370C080,%236CA8F0,%23A890F0,%23E080C8")
+MainActor.assumeIsolated {
+    ThemeStore.shared.apply(Appearance(colorTheme: imported.customTheme.id, customThemes: [imported.customTheme]))
+}
+window.appearance = NSApp.appearance
+model.query = "snip s"
+model.selection = 1
+RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+try capture(host, "imported-dark-rows")
+model.query = "#3a7bd5 in oklch"
+RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+try capture(host, "imported-dark-card")
+print("PASS: rendered \(ColorTheme.catalog.count) color themes and an imported Raycast theme")
 exit(0)
