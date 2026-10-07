@@ -113,16 +113,23 @@ public struct RaycastTheme: Equatable {
     public var palette: ColorPalette {
         let c = colors
         let background = c["background"]!, text = c["text"]!
-        let secondary = [0.4, 0.3, 0.2, 0.1].lazy.map { ColorPalette.blend(text, background, $0) }
+        let secondary = [0.4, 0.3, 0.2, 0.1].lazy.map { Self.blend(text, background, $0) }
             .first { (ColorPalette.contrast($0, background) ?? 0) >= 4.5 } ?? text
-        let selection = [1.0, 0.7, 0.5, 0.35, 0.25, 0.15].lazy.map { ColorPalette.blend(background, c["selection"]!, $0) }
-            .first { (ColorPalette.contrast(text, $0) ?? 0) >= 4.5 } ?? ColorPalette.blend(background, c["selection"]!, 0.1)
+        let selection = [1.0, 0.7, 0.5, 0.35, 0.25, 0.15].lazy.map { Self.blend(background, c["selection"]!, $0) }
+            .first { (ColorPalette.contrast(text, $0) ?? 0) >= 4.5 } ?? Self.blend(background, c["selection"]!, 0.1)
         let accent = ["blue", "purple", "magenta", "green", "orange", "red", "yellow"].lazy.compactMap { c[$0] }
             .first { (ColorPalette.contrast($0, background) ?? 0) >= 3 } ?? text
         return ColorPalette(background: background, secondaryBackground: c["backgroundSecondary"]!, text: text,
                             secondaryText: secondary, selection: selection, accent: accent,
-                            separator: ColorPalette.blend(background, text, 0.15), red: c["red"]!, orange: c["orange"]!,
+                            separator: Self.blend(background, text, 0.15), red: c["red"]!, orange: c["orange"]!,
                             yellow: c["yellow"]!, green: c["green"]!, blue: c["blue"]!, purple: c["purple"]!)
+    }
+
+    /// The color a fraction `amount` of the way from `from` to `to`, in sRGB.
+    static func blend(_ from: String, _ to: String, _ amount: Double) -> String {
+        guard let a = ColorPalette.components(from), let b = ColorPalette.components(to) else { return from }
+        func channel(_ x: Double, _ y: Double) -> Int { Int(((x + (y - x) * amount) * 255).rounded()) }
+        return String(format: "#%02x%02x%02x", channel(a.red, b.red), channel(a.green, b.green), channel(a.blue, b.blue))
     }
 
     /// The theme as stored in config.json, identified by its name.

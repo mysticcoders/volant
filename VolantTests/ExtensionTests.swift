@@ -125,4 +125,24 @@ final class ExtensionTests: XCTestCase {
         let object = try JSONSerialization.jsonObject(with: Data(contentsOf: config)) as! [String: Any]
         XCTAssertNotNil(object["future"])
     }
+    func testFoldersLoadWithOrWithoutATrailingSlash() async throws {
+        let (root, config, _) = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let unslashed = URL(fileURLWithPath: root.path, isDirectory: false)
+        let slashed = URL(fileURLWithPath: root.path, isDirectory: true)
+        XCTAssertFalse(unslashed.absoluteString.hasSuffix("/"))
+        XCTAssertTrue(slashed.absoluteString.hasSuffix("/"))
+        XCTAssertTrue(ExtensionManager.sameLocation(unslashed, slashed))
+        for folder in [unslashed, slashed] {
+            let manager = ExtensionManager(configURL: config, roots: [folder]); manager.reload()
+            XCTAssertEqual(manager.extensions.map(\.id), ["fixture.hello"], "\(folder.absoluteString): \(manager.loadErrors)")
+        }
+        let elsewhere = root.deletingLastPathComponent().appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: elsewhere, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: elsewhere) }
+        try FileManager.default.moveItem(at: root.appendingPathComponent("manifest.json"), to: elsewhere.appendingPathComponent("manifest.json"))
+        try FileManager.default.createSymbolicLink(at: root.appendingPathComponent("manifest.json"), withDestinationURL: elsewhere.appendingPathComponent("manifest.json"))
+        let escaped = ExtensionManager(configURL: config, roots: [unslashed]); escaped.reload()
+        XCTAssertTrue(escaped.extensions.isEmpty, "A manifest symlinked out of its folder is still refused")
+    }
 }

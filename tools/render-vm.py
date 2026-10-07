@@ -43,7 +43,9 @@ for pair in {" ".join(f"{name}:{path}" for name, path in FIXTURES)}; do
     xcrun actool Volant/Resources/Assets.xcassets --compile "$bundle/Resources" --platform macosx --minimum-deployment-target 15.0 \\
         --target-device mac --optimization space --output-partial-info-plist "{output}/work/$name/assets.plist" >/dev/null
     cp Volant/Resources/emoji.json "$bundle/Resources/"
-    ditto Volant/Resources/HelloWorld "$bundle/Resources/HelloWorld"
+    # tools/check-launcher.sh runs the launcher fixture as a bare executable with no bundled extension,
+    # and its ranking checks expect that; a bundled Hello World would rank above Applications for "h".
+    [[ "$name" == VolantLauncherFixture ]] || ditto Volant/Resources/HelloWorld "$bundle/Resources/HelloWorld"
     printf '%s' '<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>CFBundleExecutable</key><string>'"$name"'</string><key>CFBundleIdentifier</key><string>com.mysticcoders.volant.render.'"$name"'</string><key>CFBundlePackageType</key><string>APPL</string></dict></plist>' > "$bundle/Info.plist"
     cp "$main" "{output}/work/$name/main.swift"
     swiftc -target "$(uname -m)-apple-macosx15.0" "${{VOLANT_CORE_FLAGS[@]}}" "${{sources[@]}}" "{output}/work/$name/main.swift" -o "$bundle/MacOS/$name"
@@ -60,10 +62,16 @@ runs = [
     ("VolantSettingsPreview", "both", "--render"),
     ("VolantThemeFixture", "all", "\"$work\""),
 ]
+# Fixtures start through LaunchServices, as an app would. A process started directly from the SSH
+# session cannot become the active app in the guest, so a newly shown launcher panel never becomes
+# key and the fixture's focus checks fail only here. `open` cannot report the exit status, so a run
+# fails when its log has a fixture failure or a Swift trap.
 steps = "\n".join(
-    f'work=$(mktemp -d /tmp/volant-render.XXXXXX)\n'
-    f'set +e; "$root/bundles/{name}.app/Contents/MacOS/{name}" {arguments} > "$output/{name}-{label}.log" 2>&1; '
-    f'echo "{name} {label}: exit $?" >> "$output/summary.txt"; set -e'
+    f'work=$(mktemp -d /tmp/volant-render.XXXXXX); log="$output/{name}-{label}.log"\n'
+    f'set +e; open -n -W --stdout "$log.out" --stderr "$log.err" "$root/bundles/{name}.app" --args {arguments}; status=$?\n'
+    f'cat "$log.out" "$log.err" > "$log" 2>/dev/null; rm -f "$log.out" "$log.err"\n'
+    f'grep -qE "^FAIL|Fatal error|Precondition failed" "$log" && status=1\n'
+    f'echo "{name} {label}: exit $status" >> "$output/summary.txt"; set -e'
     for name, label, arguments in runs
 )
 guest_script = f'''#!/bin/bash
@@ -75,12 +83,6 @@ sw_vers > "$output/guest-version.txt"
 : > "$output/summary.txt"
 {steps}
 mkdir -p "$output/images"
-# A window-server capture of live Settings, because offscreen caching cannot draw glass backdrops.
-"$root/bundles/VolantSettingsPreview.app/Contents/MacOS/VolantSettingsPreview" > "$output/live-settings.log" 2>&1 &
-preview=$!
-sleep 4
-screencapture -x "$output/images/live-settings-light.png" >> "$output/live-settings.log" 2>&1 || echo "screencapture failed: $?" >> "$output/live-settings.log"
-kill "$preview" 2>/dev/null || true
 for image in /tmp/volant-*.png /tmp/volant-*.jpg /tmp/volant-settings-renders/*.png; do
     [[ ! -f "$image" ]] || cp "$image" "$output/images/"
 done

@@ -35,9 +35,8 @@ Verified on 2026-09-15: `Scripts/test.sh --ui only` passed in `volant-ui-xcode` 
 `ghcr.io/cirruslabs/macos-golden-gate-vanilla:27.0` (macOS 27, no Xcode). The host compiles the
 launcher, Actions and Settings fixtures against its own SDK, bundled with the compiled asset
 catalog. The SDK is what decides whether AppKit and SwiftUI draw Liquid Glass. The guest only
-runs the finished bundles. It is render evidence, not a test gate: the fixtures' app-ranking checks
-assume the Xcode image's installed apps and stop early on the vanilla guest, and whatever they
-rendered before stopping is still collected.
+runs the finished bundles. It is render evidence, not a test gate: whatever a fixture rendered
+before a failed check is still collected.
 
 Cirrus's vanilla images have no Tart guest agent. Setup is one-time: generate
 `~/.ssh/volant-render-vm`, install it for `admin` (password `admin`) with `ssh-copy-id`, and confirm
@@ -45,7 +44,40 @@ Cirrus's vanilla images have no Tart guest agent. Setup is one-time: generate
 session with `launchctl asuser`.
 
 Offscreen captures (`cacheDisplay`) cannot draw Liquid Glass backdrop layers: a glass sidebar
-selection comes out as a solid black capsule. Layout, type metrics and glass-styled controls such
-as sliders and switches do render. The guest denies `screencapture` (Screen Recording is not
-granted and SIP stays on), so glass selection and material appearance still need a look on a real
-macOS 26 or 27 display.
+selection comes out as a solid black capsule with its icon missing. Layout, type metrics and
+glass-styled controls such as sliders and switches do render. The guest denies `screencapture`
+(Screen Recording is not granted and SIP stays on).
+
+## Settings renders from the window server — October 7, 2026
+
+The black Settings sidebar row reported on the render VM was that offscreen artifact, not an app
+bug. A window-server capture of the same window in the same guest draws the selected row as a
+readable light gray capsule in light appearance and a dark gray one in dark, with its icon and
+label. An app may capture its own windows without Screen Recording, so the Settings fixture's
+`--render` mode now orders its window in and captures it with `CGWindowListCreateImage`, looked up at
+runtime because it is marked unavailable from macOS 15. Each capture asserts that the selected row
+is neither black nor indistinguishable from the rows around it. When the capture is unavailable
+the fixture falls back to `cacheDisplay` and says so.
+
+`--render` orders the window in without activating it, so these captures show the inactive-window
+selection. The accent-colored selection of a key window still needs a look on a real display.
+
+The launcher and Actions fixtures used to stop early on the render VM while CI passed. Four causes,
+all fixed, and every render VM run now exits 0:
+
+- `render-vm.py` started fixtures directly from the SSH session, and such a process never becomes
+  the active app in the guest. The first launcher panel still became key, but a later panel did
+  not, and the launcher correctly dismissed it rather than leave an unresponsive panel. Fixtures now
+  start through LaunchServices with `open -n -W`, as an app would. `open` cannot report an exit
+  status, so a run fails when its log contains a fixture `FAIL` or a Swift trap.
+- On macOS 27 the Appearance form lays out taller, which left later color theme tiles such as Nord
+  below the 500-point fold, where a synthesized click hits nothing. The fixture now scrolls a control
+  into view before clicking it, as a person would.
+- The launcher fixture is now bundled without Hello World, matching `tools/check-launcher.sh`, which
+  runs it as a bare executable. A bundled Hello World matches "h" and its Extensions section ranks
+  above Applications, so "Home ranks first for each query prefix" failed only in the VM.
+- The Actions fixture copies Hello World into a folder whose URL has no trailing slash. On macOS 27
+  that URL can stay unslashed after resolving symlinks, so `ExtensionManager`'s check that a manifest
+  sits inside its folder compared unequal URLs and refused the copy. The check now compares resolved
+  paths, which keeps refusing a manifest symlinked out of its folder. Folders listed from disk end
+  in a slash, so installed extensions were not affected.

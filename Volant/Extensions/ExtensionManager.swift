@@ -36,7 +36,12 @@ final class ExtensionManager {
     }
     static func isBundled(_ directory: URL) -> Bool {
         guard let bundled = Bundle.main.url(forResource: "HelloWorld", withExtension: nil) else { return false }
-        return directory.resolvingSymlinksInPath() == bundled.resolvingSymlinksInPath()
+        return sameLocation(directory, bundled)
+    }
+    /// Compares resolved file paths rather than URLs, so a directory URL with or without a trailing
+    /// slash still matches. On macOS 27 an unslashed directory URL can stay unslashed after resolving.
+    static func sameLocation(_ first: URL, _ second: URL) -> Bool {
+        first.resolvingSymlinksInPath().path == second.resolvingSymlinksInPath().path
     }
     var communityAllowed: Bool { ExtensionApproval.communityAllowed(at: configURL) }
     func isBlocked(_ ext: InstalledExtension) -> Bool { ext.isCommunity && !communityAllowed }
@@ -93,7 +98,7 @@ final class ExtensionManager {
     }
     private func readManifest(_ dir: URL) throws -> ExtensionManifest {
         let url = dir.appendingPathComponent("manifest.json")
-        guard url.resolvingSymlinksInPath().deletingLastPathComponent() == dir.resolvingSymlinksInPath(),
+        guard Self.sameLocation(url.resolvingSymlinksInPath().deletingLastPathComponent(), dir),
               (try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0) <= 32_768 else { throw ExtensionValidationError.invalidManifest }
         let manifest = try JSONDecoder().decode(ExtensionManifest.self, from: Data(contentsOf: url))
         try manifest.validate()
@@ -102,7 +107,7 @@ final class ExtensionManager {
     private func verifiedModule(_ ext: InstalledExtension) throws -> Data {
         guard try readManifest(ext.directory) == ext.manifest else { throw ExtensionError.changed }
         let url = ext.directory.appendingPathComponent(ext.manifest.module)
-        guard url.resolvingSymlinksInPath().deletingLastPathComponent() == ext.directory.resolvingSymlinksInPath(),
+        guard Self.sameLocation(url.resolvingSymlinksInPath().deletingLastPathComponent(), ext.directory),
               (try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0) <= 2_097_152 else { throw ExtensionError.missingModule }
         let module = try Data(contentsOf: url)
         guard Integrity.sha256(module) == ext.manifest.sha256?.lowercased() else { throw ExtensionError.hashMismatch }

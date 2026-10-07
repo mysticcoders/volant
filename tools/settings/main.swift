@@ -214,6 +214,46 @@ if CommandLine.arguments.contains("--render") {
     DispatchQueue.main.async {
         let output = URL(fileURLWithPath: "/tmp/volant-settings-renders")
         try! FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
+        // Offscreen caching draws the glass sidebar selection as a black capsule, so renders come from the
+        // window server. An app may capture its own windows without Screen Recording; the symbol is looked up
+        // at runtime because it is marked unavailable from macOS 15.
+        typealias WindowImage = @convention(c) (CGRect, UInt32, UInt32, UInt32) -> Unmanaged<CGImage>?
+        let windowImage = dlsym(dlopen(nil, RTLD_NOW), "CGWindowListCreateImage").map { unsafeBitCast($0, to: WindowImage.self) }
+        controller.window!.orderFrontRegardless()
+        func selectionViews(_ view: NSView) -> [NSVisualEffectView] {
+            let own = (view as? NSVisualEffectView).flatMap { $0.material == .selection && !$0.isHidden ? [$0] : nil } ?? []
+            return own + view.subviews.flatMap(selectionViews)
+        }
+        func verifySidebarSelection(_ rep: NSBitmapImageRep, window: NSWindow, name: String) {
+            let selections = selectionViews(window.contentView!)
+            precondition(selections.count == 1, "\(name): expected one sidebar selection, found \(selections.count)")
+            let frame = selections[0].convert(selections[0].bounds, to: nil)
+            let scale = CGFloat(rep.pixelsWide) / window.frame.width
+            func brightness(x: CGFloat, y: CGFloat) -> CGFloat {
+                let color = rep.colorAt(x: Int(x * scale), y: Int((window.frame.height - y) * scale))!.usingColorSpace(.deviceRGB)!
+                return (color.redComponent + color.greenComponent + color.blueComponent) / 3
+            }
+            let selected = brightness(x: frame.maxX - 8, y: frame.midY)
+            let unselected = brightness(x: frame.maxX - 8, y: frame.midY - frame.height)
+            let dark = window.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            precondition(selected > (dark ? 0.12 : 0.6), "\(name): sidebar selection draws black (\(selected))")
+            precondition(abs(selected - unselected) > 0.02, "\(name): sidebar selection does not stand out (\(selected) vs \(unselected))")
+        }
+        func capture(_ name: String) {
+            let window = controller.window!
+            let view = window.contentView!
+            view.layoutSubtreeIfNeeded()
+            if let windowImage, let image = windowImage(.null, 1 << 3, UInt32(window.windowNumber), 1 | 8)?.takeRetainedValue() {
+                let rep = NSBitmapImageRep(cgImage: image)
+                try! rep.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent(name + ".png"))
+                verifySidebarSelection(rep, window: window, name: name)
+            } else {
+                let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
+                view.cacheDisplay(in: view.bounds, to: rep)
+                try! rep.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent(name + ".png"))
+                print("No window-server capture for \(name); its sidebar selection is an offscreen artifact")
+            }
+        }
         for theme in ["light", "dark"] {
             app.appearance = NSAppearance(named: theme == "dark" ? .darkAqua : .aqua)
             for section in ["General", "Appearance", "Status Bar", "AI", "Extensions", "App Shortcuts", "Data & Configuration"] {
@@ -234,9 +274,7 @@ if CommandLine.arguments.contains("--render") {
                         precondition(recorder.subviews.contains { !$0.isHidden && ($0 as? NSButton)?.toolTip == "Remove shortcut" })
                     }
                 }
-                let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
-                view.cacheDisplay(in: view.bounds, to: rep)
-                try! rep.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent(theme + "-" + section + ".png"))
+                capture(theme + "-" + section)
                 print("Rendered \(theme) \(section): \(view.bounds.size)")
                 if section == "Data & Configuration" || section == "Appearance" {
                     func scrollViews(_ view: NSView) -> [NSScrollView] {
@@ -247,9 +285,7 @@ if CommandLine.arguments.contains("--render") {
                         document.scroll(NSPoint(x: 0, y: document.isFlipped ? document.bounds.height : 0))
                     }
                     RunLoop.main.run(until: Date().addingTimeInterval(0.15))
-                    let bottom = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
-                    view.cacheDisplay(in: view.bounds, to: bottom)
-                    try! bottom.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent(theme + "-" + section + "-bottom.png"))
+                    capture(theme + "-" + section + "-bottom")
                 }
             }
         }
@@ -257,11 +293,7 @@ if CommandLine.arguments.contains("--render") {
             ThemeStore.shared.apply(Appearance(theme: mode, colorTheme: colorTheme))
             controller.state.section = "Appearance"
             RunLoop.main.run(until: Date().addingTimeInterval(0.2))
-            let view = controller.window!.contentView!
-            view.layoutSubtreeIfNeeded()
-            let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
-            view.cacheDisplay(in: view.bounds, to: rep)
-            try! rep.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("theme-" + colorTheme + "-Appearance.png"))
+            capture("theme-" + colorTheme + "-Appearance")
             print("Rendered Appearance in \(colorTheme)")
         }
         let imported = try! RaycastTheme.parse("raycast://theme?name=Harbor%20Night&appearance=dark&colors=%23101418,%230C1014,%23E8ECF0,%232A3440,%237A8490,%23F06060,%23F09050,%23E8C860,%2370C080,%236CA8F0,%23A890F0,%23E080C8")
@@ -281,10 +313,7 @@ if CommandLine.arguments.contains("--render") {
             document.scroll(NSPoint(x: 0, y: document.isFlipped ? document.bounds.height * 0.45 : document.bounds.height * 0.55))
         }
         RunLoop.main.run(until: Date().addingTimeInterval(0.2))
-        importedView.layoutSubtreeIfNeeded()
-        let importedRep = importedView.bitmapImageRepForCachingDisplay(in: importedView.bounds)!
-        importedView.cacheDisplay(in: importedView.bounds, to: importedRep)
-        try! importedRep.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("theme-imported-Appearance.png"))
+        capture("theme-imported-Appearance")
         print("Rendered Appearance with an imported theme")
         app.terminate(nil)
     }
