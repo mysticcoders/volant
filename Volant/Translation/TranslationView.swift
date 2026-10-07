@@ -34,7 +34,7 @@ struct TranslationView: View {
                 Divider()
                 ScrollView {
                     Text(model.output.isEmpty ? "Translation" : model.output)
-                        .foregroundStyle(model.output.isEmpty ? .secondary : .primary)
+                        .foregroundStyle(model.output.isEmpty || model.outputIsStale ? .secondary : .primary)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(16)
@@ -84,7 +84,7 @@ struct TranslationView: View {
                 }
                 Button("Copy Translation ⌘↩") { model.copy(using: copy) }
                     .keyboardShortcut(.return, modifiers: .command)
-                    .disabled(model.output.isEmpty || model.busy)
+                    .disabled(model.output.isEmpty || model.busy || model.outputIsStale)
             }.controlSize(.small).padding(.horizontal, 16).padding(.vertical, 10)
         }
         .task { editing = true; await model.loadCatalog() }

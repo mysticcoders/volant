@@ -57,3 +57,23 @@ back to Sleep Displays, which locks under default settings.
 Sleep on real hardware, which needs an agreed moment on the owner's Mac. Log out, shut down and
 the non-dialog events were not sent; they use the same `loginwindow` route as the restart
 dialog. Whether a signed installed Volant behaves identically to these probe bundles.
+
+## Implemented — September 30, 2026
+
+The launcher's **System** section offers Lock Screen, Sleep, Sleep Displays, Start Screen
+Saver, Restart…, Shut Down… and Log Out…. It comes before System Settings panes, so "lock" finds
+the action before the Lock Screen pane. Matching is from the start of a name or keyword only,
+from three characters, so "displays" still finds the Displays pane. Restart, Shut Down and Log
+Out send loginwindow's *show dialog* events, so macOS asks before acting.
+
+The launcher hides first and the action runs 0.2 s later, so the panel is not on screen when the
+Mac locks or a dialog appears; a failure reopens the launcher with the reason. Lock Screen and
+Sleep Displays have optional global shortcuts in Settings → General, which share the duplicate
+checks with the other shortcuts. Lock Screen looks up `SACLockScreenImmediate` at run time and,
+if it is missing, sleeps the displays and says so. Sleep tries `pmset sleepnow`, then IOKit's
+`IOPMSleepSystem`, which the console user may call.
+
+Entitlements added: `com.apple.security.automation.apple-events` and a
+`temporary-exception.apple-events` for `com.apple.loginwindow` only; Finder and System Events are
+not included, because Empty Trash and appearance switching are not implemented. Sleep on real
+hardware remains to be confirmed on the owner's Mac.

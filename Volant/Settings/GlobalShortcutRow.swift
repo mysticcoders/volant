@@ -8,7 +8,8 @@ enum GlobalShortcutStore {
     /// shortcuts cannot drift apart.
     static func bindings(_ config: Preferences) -> [String: String] {
         ["summonHotKey": config.summonHotKey, "notesHotKey": config.notesHotKey,
-         "emojiHotKey": config.emojiHotKey, "talkHotKey": config.talkHotKey]
+         "emojiHotKey": config.emojiHotKey, "talkHotKey": config.talkHotKey,
+         "lockScreenHotKey": config.lockScreenHotKey, "sleepDisplaysHotKey": config.sleepDisplaysHotKey]
     }
 
     static func save(key: String, value: String, expectedValue: String, at url: URL,

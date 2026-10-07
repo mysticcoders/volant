@@ -13,10 +13,12 @@ enum LauncherAction {
     case open(String)
     case create(String)
     case confetti
+    case systemAction(SystemAction)
 }
 
 enum ResultRow: Identifiable, Hashable {
     case core(CoreCommand)
+    case systemAction(SystemAction)
     case appleShortcut(AppleShortcut)
     case caffeinate(CaffeinateCommand)
     case systemSettings(SystemSettingsDestination)
@@ -46,6 +48,7 @@ enum ResultRow: Identifiable, Hashable {
         switch self {
         case .appleShortcut(let shortcut): return "apple-shortcut:" + shortcut.id
         case .core(let command): return "core:" + command.rawValue
+        case .systemAction(let action): return "system-action:" + action.rawValue
         case .caffeinate(let command): return "caffeinate:" + command.id
         case .agentSession(let session): return "agent:" + session.id
         case .herdrMachine(let machine, _, _): return "herdr-machine:" + (machine?.id ?? "local")
@@ -76,7 +79,7 @@ enum ResultRow: Identifiable, Hashable {
     var kind: String {
         switch self {
         case .appleShortcut: return "Apple Shortcut"
-        case .core, .caffeinate: return "Command"
+        case .core, .caffeinate, .systemAction: return "Command"
         case .agentSession(let session): return session.status
         case .herdrMachine(_, let enabled, _): return enabled ? "Enabled" : "Disabled"
         case .connectivity: return "Connectivity"
@@ -102,7 +105,7 @@ enum ResultRow: Identifiable, Hashable {
 
     var isCoreCommand: Bool {
         switch self {
-        case .core, .caffeinate, .settings, .reloadConfig, .agents, .volume, .audioRoute, .connectivity, .systemSettings: return true
+        case .core, .caffeinate, .settings, .reloadConfig, .agents, .volume, .audioRoute, .connectivity, .systemSettings, .systemAction: return true
         default: return false
         }
     }
@@ -112,6 +115,7 @@ enum ResultRow: Identifiable, Hashable {
         switch self {
         case .appleShortcut: return "Run Shortcut"
         case .core: return "Open Command"
+        case .systemAction(let action): return action.title.replacingOccurrences(of: "…", with: "")
         case .caffeinate(let command): return command.stop ? "Stop" : "Start"
         case .agentSession: return "Focus in Herdr"
         case .herdrMachine(let machine, let enabled, let busy):
@@ -789,6 +793,8 @@ final class LauncherModel: ObservableObject {
         let aliased = Set(immediate.flatMap(\.rows).map(\.id))
         let apps = index.search(q, limit: 6, usage: usage).map { ResultRow.app($0) }.filter { !aliased.contains($0.id) }
         if !apps.isEmpty { immediate.append(ResultSection(title: "Applications", rows: apps)) }
+        let actions = SystemAction.search(q).map(ResultRow.systemAction)
+        if !actions.isEmpty { immediate.append(ResultSection(title: "System", rows: actions)) }
         let panes = SystemSettingsDestination.search(q).map { ResultRow.systemSettings($0) }
         if !panes.isEmpty { immediate.append(ResultSection(title: "System Settings", rows: panes)) }
         if !matchingCommands.isEmpty { immediate.append(ResultSection(title: "Volant", rows: matchingCommands)) }
@@ -907,9 +913,22 @@ final class LauncherModel: ObservableObject {
         var out = immediate
         if !contactRows.isEmpty { out.append(ResultSection(title: "Contacts", rows: contactRows)) }
         if !fileRows.isEmpty { out.append(ResultSection(title: "Files", rows: fileRows)) }
-        sections = out
+        sections = Self.promoting(usage.choice(forQuery: query.trimmingCharacters(in: .whitespaces)), in: out)
         if let selectedID, let i = rows.firstIndex(where: { $0.id == selectedID }) { selection = i }
         else { selection = 0 }
+    }
+
+    /// What was chosen last time for exactly this query comes first: its row leads its section
+    /// and that section leads the results. Apps already did this inside their own section; this
+    /// extends it to commands, system actions, settings panes and everything else that records use.
+    static func promoting(_ id: String?, in sections: [ResultSection]) -> [ResultSection] {
+        guard let id, let index = sections.firstIndex(where: { $0.rows.contains { $0.id == id } }) else { return sections }
+        let rows = sections[index].rows
+        let promoted = rows.filter { $0.id == id } + rows.filter { $0.id != id }
+        var result = sections
+        result.remove(at: index)
+        result.insert(ResultSection(title: sections[index].title, rows: promoted), at: 0)
+        return result
     }
 
     private var connectivitySource: String? {
@@ -1030,6 +1049,7 @@ final class LauncherModel: ObservableObject {
         }
         switch row {
         case .appleShortcut(let shortcut): shortcutRunQuery = query; appleShortcuts.run(shortcut); return
+        case .systemAction(let action): onNote(.systemAction(action)); return
         case .core(let command):
             if command == .ai { presentAIChat() }
             else if command == .talk { toggleDictation() }
