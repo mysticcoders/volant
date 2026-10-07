@@ -1,6 +1,12 @@
 import Foundation
 
 /// Offline unit conversion on Foundation's Measurement types. Parses "5 km in mi", "72f to c", "3.5 gb as mb".
+///
+/// Beyond Foundation's units: days, weeks and years (a year is the average Gregorian year of
+/// 365.2425 days), data rates ("100 Mbps in MB/s"), fuel economy ("30 mpg in l/100km", US gallons
+/// unless "mpg imp"), and running pace ("8 min/mile in kph"). Fuel economy and pace are reciprocal
+/// to their counterparts, so they convert through `Reciprocal` rather than a factor. Feet and inches
+/// may be written with primes: "6' in cm", "5'10\" in cm".
 public enum UnitConverter {
     public struct Conversion: Equatable {
         public let value: Double
@@ -20,7 +26,7 @@ public enum UnitConverter {
         }
     }
 
-    private struct Spec {
+    struct Spec {
         let unit: Dimension
         let symbol: String
     }
@@ -30,25 +36,22 @@ public enum UnitConverter {
     /// so "c in mph" converts while "c" beside a temperature stays Celsius. A bare number converts
     /// to counts ("30 in dozens").
     public static func convert(_ text: String, locale: Locale = .current) -> Conversion? {
-        var lowered = text.lowercased().trimmingCharacters(in: .whitespaces)
+        var lowered = normalized(text)
         if lightNames.contains(lowered.filter { !$0.isWhitespace }) { lowered += " in m/s" }
         guard let (value, initialFrom, initialTo) = split(lowered, locale: locale) else { return nil }
         var from = initialFrom, to = initialTo
         if from.unit == UnitTemperature.celsius, to.unit is UnitSpeed { from = light }
         if to.unit == UnitTemperature.celsius, from.unit is UnitSpeed { to = light }
-        guard let family = family(of: from.unit), family == self.family(of: to.unit) else { return nil }
-        let result: Double
-        if let fromFactor = factor(from.unit), let toFactor = factor(to.unit) {
-            result = value * fromFactor / toFactor
-        } else {
-            result = Measurement(value: value, unit: from.unit).converted(to: to.unit).value
-        }
+        guard sameDimension(from.unit, to.unit) else { return nil }
+        let result = convert(value, from: from.unit, to: to.unit)
+        guard result.isFinite else { return nil }
         return Conversion(value: value, fromSymbol: from.symbol, result: result, toSymbol: to.symbol, fromUnit: from.unit, toUnit: to.unit)
     }
 
     private static let families: [Dimension.Type] = [
         UnitLength.self, UnitMass.self, UnitTemperature.self, UnitVolume.self, UnitSpeed.self, UnitDuration.self,
-        UnitArea.self, UnitInformationStorage.self, UnitEnergy.self, UnitPower.self, UnitPressure.self, UnitCount.self
+        UnitArea.self, UnitInformationStorage.self, UnitEnergy.self, UnitPower.self, UnitPressure.self, UnitCount.self,
+        UnitDataRate.self, UnitFuelEfficiency.self
     ]
 
     /// The dimension a unit measures. Foundation's own units are instances of private subclasses,
@@ -57,10 +60,50 @@ public enum UnitConverter {
         families.firstIndex { unit.isKind(of: $0) }
     }
 
+    /// Whether two units measure the same thing.
+    static func sameDimension(_ a: Dimension, _ b: Dimension) -> Bool {
+        guard let family = family(of: a) else { return false }
+        return family == self.family(of: b)
+    }
+
     /// Names for the units Foundation lacks, which `MeasurementFormatter` cannot spell out.
     public static func name(of unit: Dimension) -> String? {
-        customNames.first(where: { $0.0 == unit })?.1
+        customNames.first(where: { $0.0 == unit })?.1 ?? Extra.names[ObjectIdentifier(unit)]
     }
+
+    /// A value in one unit expressed in another of the same dimension, through the base unit. Linear
+    /// sides use the exact factors; offset and reciprocal sides use their own converters.
+    static func convert(_ value: Double, from: Dimension, to: Dimension) -> Double {
+        let base = factor(from).map { value * $0 } ?? from.converter.baseUnitValue(fromValue: value)
+        return factor(to).map { base / $0 } ?? to.converter.value(fromBaseUnitValue: base)
+    }
+
+    /// Lowercases the query after the steps that need its case or punctuation: data rates, where
+    /// "Mb/s" and "Mbps" are bits and "MB/s" bytes (all-lowercase "mb/s" stays bytes, like "mb"),
+    /// become "mbit/s" or "mbyte/s"; primes become feet and inches, so "5'10\"" reads "5 ft 10 in".
+    static func normalized(_ text: String) -> String {
+        var value = text.trimmingCharacters(in: .whitespaces)
+        let range = NSRange(value.startIndex..., in: value)
+        for match in rate.matches(in: value, range: range).reversed() {
+            guard let whole = Range(match.range, in: value), let prefixRange = Range(match.range(at: 1), in: value),
+                  let letterRange = Range(match.range(at: 2), in: value), let tailRange = Range(match.range(at: 3), in: value) else { continue }
+            let prefix = String(value[prefixRange]), letter = value[letterRange], tail = value[tailRange].lowercased()
+            let bits: Bool
+            switch tail {
+            case "it/s", "its/s", "itps": bits = true
+            case "yte/s", "ytes/s": bits = false
+            case "ps": bits = letter == "b"
+            default: bits = letter == "b" && prefix.contains(where: \.isUppercase)
+            }
+            value.replaceSubrange(whole, with: prefix.lowercased() + (bits ? "bit/s" : "byte/s"))
+        }
+        value = value.replacingOccurrences(of: #"(\d)\s*['’′]\s*(\d+(?:\.\d+)?)\s*(?:["”″]|'')"#, with: "$1 ft $2 in", options: .regularExpression)
+        value = value.replacingOccurrences(of: #"(\d)\s*(?:["”″]|'')"#, with: "$1 in", options: .regularExpression)
+        value = value.replacingOccurrences(of: #"(\d)\s*['’′](?!\w)"#, with: "$1 ft", options: .regularExpression)
+        return value.lowercased()
+    }
+
+    private static let rate = try! NSRegularExpression(pattern: #"(?<![A-Za-z])([kKmMgGtT]?i?)([bB])(it/s|its/s|itps|yte/s|ytes/s|ps|/s)(?![A-Za-z])"#)
 
     public static func format(_ c: Conversion, locale: Locale = .current) -> String {
         "\(formatSource(c, locale: locale)) = \(formatResult(c, locale: locale))"
@@ -117,7 +160,7 @@ public enum UnitConverter {
 
     /// A linear unit's size in its dimension's base unit; nil for offset scales such as
     /// temperature, which convert through Foundation.
-    private static func factor(_ unit: Dimension) -> Double? {
+    static func factor(_ unit: Dimension) -> Double? {
         if let exact = exactFactors.first(where: { $0.0 == unit })?.1 { return exact }
         guard let linear = unit.converter as? UnitConverterLinear, linear.constant == 0 else { return nil }
         return linear.coefficient
@@ -163,7 +206,7 @@ public enum UnitConverter {
 
     /// Unit names ignore spacing and the degree sign, and read superscript squares, so the
     /// converter's own symbols ("ft²", "°F") work as input: "sq ft", "fl oz", "square feet".
-    private static func lookup(_ raw: String) -> Spec? {
+    static func lookup(_ raw: String) -> Spec? {
         let key = raw.replacingOccurrences(of: "°", with: "").replacingOccurrences(of: "²", with: "2").filter { !$0.isWhitespace }
         return key.isEmpty ? nil : table[key]
     }
@@ -206,6 +249,9 @@ public enum UnitConverter {
         add(["s", "sec", "secs", "second", "seconds"], UnitDuration.seconds, "s")
         add(["min", "mins", "minute", "minutes"], UnitDuration.minutes, "min")
         add(["h", "hr", "hrs", "hour", "hours"], UnitDuration.hours, "h")
+        add(["d", "day", "days"], Extra.days, "d")
+        add(["wk", "wks", "week", "weeks"], Extra.weeks, "wk")
+        add(["yr", "yrs", "year", "years"], Extra.years, "yr")
         add(["m2", "sqm", "squaremeter", "squaremeters", "squaremetre", "squaremetres"], UnitArea.squareMeters, "m²")
         add(["km2", "sqkm"], UnitArea.squareKilometers, "km²")
         add(["ft2", "sqft", "squarefoot", "squarefeet"], UnitArea.squareFeet, "ft²")
@@ -248,8 +294,89 @@ public enum UnitConverter {
         add(["each", "pcs", "pieces", "items"], UnitCount.each, "")
         add(["dozen", "dozens", "doz"], UnitCount.dozen, "dozen")
         add(["gross"], UnitCount.gross, "gross")
+        add(["bit/s"], Extra.bitsPerSecond, "bps")
+        add(["kbit/s"], Extra.kilobitsPerSecond, "kbps")
+        add(["mbit/s"], Extra.megabitsPerSecond, "Mbps")
+        add(["gbit/s"], Extra.gigabitsPerSecond, "Gbps")
+        add(["tbit/s"], Extra.terabitsPerSecond, "Tbps")
+        add(["byte/s"], Extra.bytesPerSecond, "B/s")
+        add(["kbyte/s"], Extra.kilobytesPerSecond, "kB/s")
+        add(["mbyte/s"], Extra.megabytesPerSecond, "MB/s")
+        add(["gbyte/s"], Extra.gigabytesPerSecond, "GB/s")
+        add(["tbyte/s"], Extra.terabytesPerSecond, "TB/s")
+        add(["kibyte/s"], Extra.kibibytesPerSecond, "KiB/s")
+        add(["mibyte/s"], Extra.mebibytesPerSecond, "MiB/s")
+        add(["gibyte/s"], Extra.gibibytesPerSecond, "GiB/s")
+        add(["mpg", "mpgus", "mpg(us)", "milespergallon"], Extra.milesPerGallon, "mpg")
+        add(["mpgimp", "mpguk", "mpg(imp)", "mpg(uk)", "imperialmpg"], Extra.milesPerImperialGallon, "mpg (imp)")
+        add(["l/100km", "liters/100km", "litres/100km", "lper100km"], UnitFuelEfficiency.litersPer100Kilometers, "L/100 km")
+        add(["km/l", "kmpl", "kpl"], Extra.kilometersPerLiter, "km/L")
+        add(["min/mi", "min/mile", "minpermile", "minutespermile", "minutepermile"], Extra.minutesPerMile, "min/mi")
+        add(["min/km", "minperkm", "minutesperkm", "minuteperkm", "minperkilometer", "minutesperkilometer"],
+            Extra.minutesPerKilometer, "min/km")
         return t
     }()
+
+    /// Units beyond Foundation's: calendar durations, data rates, and the reciprocal fuel
+    /// economy and pace units.
+    enum Extra {
+        static let days = UnitDuration(symbol: "d", converter: UnitConverterLinear(coefficient: 86_400))
+        static let weeks = UnitDuration(symbol: "wk", converter: UnitConverterLinear(coefficient: 604_800))
+        static let years = UnitDuration(symbol: "yr", converter: UnitConverterLinear(coefficient: 31_556_952))
+        static let bitsPerSecond = UnitDataRate(symbol: "bps", converter: UnitConverterLinear(coefficient: 1))
+        static let kilobitsPerSecond = UnitDataRate(symbol: "kbps", converter: UnitConverterLinear(coefficient: 1e3))
+        static let megabitsPerSecond = UnitDataRate(symbol: "Mbps", converter: UnitConverterLinear(coefficient: 1e6))
+        static let gigabitsPerSecond = UnitDataRate(symbol: "Gbps", converter: UnitConverterLinear(coefficient: 1e9))
+        static let terabitsPerSecond = UnitDataRate(symbol: "Tbps", converter: UnitConverterLinear(coefficient: 1e12))
+        static let bytesPerSecond = UnitDataRate(symbol: "B/s", converter: UnitConverterLinear(coefficient: 8))
+        static let kilobytesPerSecond = UnitDataRate(symbol: "kB/s", converter: UnitConverterLinear(coefficient: 8e3))
+        static let megabytesPerSecond = UnitDataRate(symbol: "MB/s", converter: UnitConverterLinear(coefficient: 8e6))
+        static let gigabytesPerSecond = UnitDataRate(symbol: "GB/s", converter: UnitConverterLinear(coefficient: 8e9))
+        static let terabytesPerSecond = UnitDataRate(symbol: "TB/s", converter: UnitConverterLinear(coefficient: 8e12))
+        static let kibibytesPerSecond = UnitDataRate(symbol: "KiB/s", converter: UnitConverterLinear(coefficient: 8 * 1024))
+        static let mebibytesPerSecond = UnitDataRate(symbol: "MiB/s", converter: UnitConverterLinear(coefficient: 8 * 1_048_576))
+        static let gibibytesPerSecond = UnitDataRate(symbol: "GiB/s", converter: UnitConverterLinear(coefficient: 8 * 1_073_741_824))
+        static let milesPerGallon = UnitFuelEfficiency(symbol: "mpg", converter: Reciprocal(100 * 3.785411784 / 1.609344))
+        static let milesPerImperialGallon = UnitFuelEfficiency(symbol: "mpg (imp)", converter: Reciprocal(100 * 4.54609 / 1.609344))
+        static let kilometersPerLiter = UnitFuelEfficiency(symbol: "km/L", converter: Reciprocal(100))
+        static let minutesPerMile = UnitSpeed(symbol: "min/mi", converter: Reciprocal(1609.344 / 60))
+        static let minutesPerKilometer = UnitSpeed(symbol: "min/km", converter: Reciprocal(1000.0 / 60))
+
+        static let names: [ObjectIdentifier: String] = [
+            ObjectIdentifier(days): "Days", ObjectIdentifier(weeks): "Weeks", ObjectIdentifier(years): "Years of 365.2425 days",
+            ObjectIdentifier(bitsPerSecond): "Bits per second", ObjectIdentifier(kilobitsPerSecond): "Kilobits per second",
+            ObjectIdentifier(megabitsPerSecond): "Megabits per second", ObjectIdentifier(gigabitsPerSecond): "Gigabits per second",
+            ObjectIdentifier(terabitsPerSecond): "Terabits per second", ObjectIdentifier(bytesPerSecond): "Bytes per second",
+            ObjectIdentifier(kilobytesPerSecond): "Kilobytes per second", ObjectIdentifier(megabytesPerSecond): "Megabytes per second",
+            ObjectIdentifier(gigabytesPerSecond): "Gigabytes per second", ObjectIdentifier(terabytesPerSecond): "Terabytes per second",
+            ObjectIdentifier(kibibytesPerSecond): "Kibibytes per second", ObjectIdentifier(mebibytesPerSecond): "Mebibytes per second",
+            ObjectIdentifier(gibibytesPerSecond): "Gibibytes per second", ObjectIdentifier(milesPerGallon): "Miles per US gallon",
+            ObjectIdentifier(milesPerImperialGallon): "Miles per imperial gallon", ObjectIdentifier(kilometersPerLiter): "Kilometers per liter",
+            ObjectIdentifier(minutesPerMile): "Minutes per mile", ObjectIdentifier(minutesPerKilometer): "Minutes per kilometer"
+        ]
+    }
+
+    /// A unit whose base value is a constant divided by its own, as miles per gallon is to liters
+    /// per 100 km and pace is to speed. Zero maps to infinity, which callers reject.
+    final class Reciprocal: Foundation.UnitConverter {
+        let constant: Double
+
+        init(_ constant: Double) {
+            self.constant = constant
+            super.init()
+        }
+
+        override func baseUnitValue(fromValue value: Double) -> Double { constant / value }
+
+        override func value(fromBaseUnitValue baseUnitValue: Double) -> Double { constant / baseUnitValue }
+    }
+}
+
+/// Data transfer rates, in bits per second at base.
+public final class UnitDataRate: Dimension, @unchecked Sendable {
+    public override class func baseUnit() -> Self {
+        UnitConverter.Extra.bitsPerSecond as! Self
+    }
 }
 
 /// Counts of things, so "30 in dozens" converts; "each" is one item.

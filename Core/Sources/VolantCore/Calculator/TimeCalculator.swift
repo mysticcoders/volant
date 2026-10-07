@@ -4,7 +4,8 @@ import Foundation
 /// name that region's clock as people use them, so "4pm CET" in July means Central European wall
 /// time; they, cities and IANA identifiers follow the system timezone database. One day word
 /// (today, tonight, tomorrow, yesterday or a weekday) may appear anywhere, counted from the owner's
-/// local day; with a day word, a time needs no zone, as in "7:30pm tomorrow". "time diff Paris"
+/// local day; with a day word, a time needs no zone, as in "7:30pm tomorrow". "noon" and "midnight"
+/// read as 12pm and 12am, so "noon in tokyo" and "midnight PST in London" work. "time diff Paris"
 /// reports how far a place's clock is from the owner's. Names the built-in
 /// lists do not know fall back to `CityDirectory`, then IATA codes in `AirportDirectory`.
 public enum TimeCalculator {
@@ -68,7 +69,7 @@ public enum TimeCalculator {
         var localCalendar = Calendar(identifier: .gregorian)
         localCalendar.timeZone = localZone
         let baseline = localCalendar.dateComponents([.year, .month, .day], from: now)
-        var words = text.lowercased().split(whereSeparator: { $0.isWhitespace }).map(String.init)
+        var words = text.lowercased().split(whereSeparator: { $0.isWhitespace }).map { ["noon": "12pm", "midnight": "12am"][$0] ?? String($0) }
         for index in words.indices.reversed() where index + 2 < words.count
             && weekdays[words[index]] != nil && words[index + 1] == "after" && words[index + 2] == "next" {
             words.removeSubrange((index + 1)...(index + 2))
@@ -191,7 +192,7 @@ public enum TimeCalculator {
         guard text.utf8.count <= 256, evaluate(text, now: now, localZone: localZone, locale: locale) == nil else { return [] }
         let lowered = text.lowercased().split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
         let shaped = ["time in ", "now in ", "time diff ", "diff ", "time difference ", "difference "].contains(where: lowered.hasPrefix)
-            || lowered.range(of: #"^(\d{4}-\d{2}-\d{2}\s+)?\d{1,2}(:\d{2})?\s*(am|pm)?\s+\S"#, options: .regularExpression) != nil
+            || lowered.range(of: #"^(\d{4}-\d{2}-\d{2}\s+)?(\d{1,2}(:\d{2})?\s*(am|pm)?|noon|midnight)\s+\S"#, options: .regularExpression) != nil
         guard shaped else { return [] }
         let words = text.split(whereSeparator: { $0.isWhitespace }).map(String.init)
         let skip: Set<String> = ["time", "now", "in", "to", "diff", "difference", "with", "from", "at", "am", "pm"]
