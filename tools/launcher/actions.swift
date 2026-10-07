@@ -51,6 +51,57 @@ try Data("{}".utf8).write(to: panel.model.actionConfigURL)
 var copied: [String] = []
 panel.model.copyText = { copied.append($0) }
 func settle() { RunLoop.main.run(until: Date().addingTimeInterval(0.2)) }
+
+/// Runs the main run loop until the condition has held without interruption for `stable` seconds,
+/// or until `timeout` passes. Loaded CI runners and guests can miss a fixed sleep, so focus and
+/// state are polled; the stability window covers SwiftUI focus work queued for a later turn.
+@discardableResult
+func waitUntil(timeout: TimeInterval = 3, stable: TimeInterval = 0, _ condition: () -> Bool) -> Bool {
+    let deadline = Date().addingTimeInterval(timeout)
+    var heldSince: Date?
+    while Date() < deadline {
+        if condition() {
+            let start = heldSince ?? Date()
+            heldSince = start
+            if Date().timeIntervalSince(start) >= stable { return true }
+        } else {
+            heldSince = nil
+        }
+        RunLoop.main.run(until: Date().addingTimeInterval(0.02))
+    }
+    return condition()
+}
+
+let launcherSearchPlaceholder = "Search for apps, files, contacts, or calculate…"
+
+/// The text field whose native editor holds keyboard focus in the key launcher panel, if any.
+func focusedField() -> NSTextField? {
+    guard panel.isKeyWindow, let editor = panel.firstResponder as? NSTextView else { return nil }
+    return editor.delegate as? NSTextField
+}
+
+/// Whether the AI Chat prompt editor holds keyboard focus in the key launcher panel.
+func chatPromptFocused() -> Bool {
+    panel.isKeyWindow && panel.firstResponder is ACPPromptView.PromptTextView
+}
+
+/// Describes keyboard focus and launcher state for failure messages.
+func focusState() -> String {
+    "key=\(panel.isKeyWindow), visible=\(panel.isVisible), responder=\(String(describing: panel.firstResponder)), field=\(String(describing: focusedField()?.placeholderString)), chat=\(panel.model.showingACP), query=\(panel.model.query)"
+}
+
+/// Summons the launcher and waits until its search editor holds focus, so the next key reaches it.
+func summon() {
+    panel.toggle()
+    verify(waitUntil(stable: 0.15) { focusedField()?.placeholderString == launcherSearchPlaceholder },
+           "Summoned launcher focuses search: \(focusState())")
+}
+
+/// Waits until AI Chat is showing with its prompt focused, after Tab or a resume.
+func awaitChatPrompt(_ message: String) {
+    verify(waitUntil(stable: 0.1) { panel.model.showingACP && chatPromptFocused() }, "\(message): \(focusState())")
+}
+
 func key(_ text: String, _ code: UInt16, _ modifiers: NSEvent.ModifierFlags = []) {
     let event = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: modifiers, timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: panel.windowNumber, context: nil, characters: text, charactersIgnoringModifiers: text, isARepeat: false, keyCode: code)!
     // NSApplication dispatches command equivalents before the window's keyDown path.
@@ -65,16 +116,19 @@ func render(_ name: String, view supplied: NSView? = nil) throws {
     try bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "/tmp/volant-actions-\(name)-\(dark ? "dark" : "light")-\(preferences.appearance.scale).png"))
 }
 app.activate(ignoringOtherApps: true)
-panel.toggle(); settle()
+summon()
 key("k", 40, .command)
-verify(panel.model.actionTarget != nil, "Command K opens actions")
+verify(waitUntil { panel.model.actionTarget != nil }, "Command K opens actions")
 verify(panel.firstResponder is NSTextView, "Action search receives editing focus")
 try render("menu")
 // Rendering may end editing; explicitly restore the action field through its native control.
 func fields(_ view: NSView) -> [NSTextField] { (view as? NSTextField).map { [$0] } ?? view.subviews.flatMap(fields) }
 func focusActionSearch() {
-    let field = fields(panel.contentView!).first { $0.placeholderString == "Search for actions…" }!
-    panel.makeFirstResponder(field)
+    var field: NSTextField?
+    verify(waitUntil { field = fields(panel.contentView!).first { $0.placeholderString == "Search for actions…" }; return field != nil },
+           "Action search field appears: \(focusState())")
+    panel.makeFirstResponder(field!)
+    verify(waitUntil(stable: 0.1) { focusedField() === field }, "Action search field takes focus: \(focusState())")
 }
 focusActionSearch()
 for _ in 0..<8 { key(String(UnicodeScalar(NSDownArrowFunctionKey)!), 125) }
@@ -123,16 +177,16 @@ panel.orderOut(nil)
 print("PASS: native action search, keyboard navigation, empty state, Escape, copying, and Favorites")
 
 // Entering AI Chat invokes setup routing, never a real provider in the fixture.
-panel.toggle(); settle(); key("\t", 48)
-verify(settingsRequests == 1 && !panel.isVisible, "Unconfigured AI Chat routes to Settings")
+summon(); key("\t", 48)
+verify(waitUntil { settingsRequests == 1 && !panel.isVisible }, "Unconfigured AI Chat routes to Settings")
 chatConfig = AIConfiguration(); chatConfig?.provider = "claude"
-panel.toggle(); settle()
+summon()
 (panel.firstResponder as? NSTextView)?.insertText("A fictional question", replacementRange: NSRange(location: NSNotFound, length: 0)); settle()
 key("\t", 48)
-verify(panel.model.acp.draft == "A fictional question" && !panel.model.acp.submitting, "Tab carries search text to an unsent chat draft")
+verify(waitUntil { panel.model.acp.draft == "A fictional question" } && !panel.model.acp.submitting, "Tab carries search text to an unsent chat draft")
 panel.model.acp.draft = ""; settle()
 verify(panel.model.acp.state.phase == "ready" && panel.model.acp.project.isEmpty, "Configured AI Chat automatically connects without a project")
-verify(panel.firstResponder is NSTextView, "Chat prompt receives focus")
+awaitChatPrompt("Chat prompt receives focus")
 (panel.firstResponder as? NSTextView)?.insertText("A fictional question", replacementRange: NSRange(location: NSNotFound, length: 0)); settle()
 if panel.model.acp.draft != "A fictional question" || panel.model.query != "ai" {
     try render("chat-focus-failure")
@@ -192,7 +246,7 @@ panel.model.acp.draft = "A fictional follow-up"; settle()
 print("PASS: @ opens the context picker at a word start, Return attaches a snapshot and removes the @, without sending")
 let savedMessages = panel.model.acp.state.messages
 let savedDraft = panel.model.acp.draft
-panel.orderOut(nil); settle(); panel.toggle(); settle()
+panel.orderOut(nil); settle(); summon()
 verify(!panel.model.showingACP && panel.model.query.isEmpty, "Summoning a hidden chat opens the default launcher")
 verify(panel.model.acp.state.messages == savedMessages && panel.model.acp.draft == savedDraft && panel.model.acp.active, "Summoning preserves the active conversation and draft")
 try render("chat-home")
@@ -201,21 +255,23 @@ settle()
 try render("chat-status-pinned")
 panel.model.config.statusBar.sources = []
 settle()
-let search = fields(panel.contentView!).first { $0.placeholderString == "Search for apps, files, contacts, or calculate…" }!
+let search = fields(panel.contentView!).first { $0.placeholderString == launcherSearchPlaceholder }!
 panel.makeFirstResponder(search)
+verify(waitUntil(stable: 0.1) { focusedField() === search }, "Launcher search takes focus before typing: \(focusState())")
 (panel.firstResponder as? NSTextView)?.insertText("Do not replace my draft", replacementRange: NSRange(location: NSNotFound, length: 0)); settle()
 key("\t", 48)
-verify(panel.model.showingACP && panel.model.acp.draft == savedDraft, "Tab resumes chat without overwriting its draft")
+awaitChatPrompt("Tab resumes chat")
+verify(panel.model.acp.draft == savedDraft, "Tab resumes chat without overwriting its draft")
 // A busy chat stays visible on blur, but a subsequent summon returns to search.
 panel.model.acp.state.phase = "working"
 let backgroundWindow = NSWindow(contentRect: NSRect(x: 20, y: 20, width: 180, height: 100), styleMask: [.titled], backing: .buffered, defer: false)
 backgroundWindow.makeKeyAndOrderFront(nil); settle()
 verify(panel.isVisible && !panel.isKeyWindow && panel.model.showingACP, "Working chat remains visible on real focus loss")
-panel.toggle(); settle()
+summon()
 verify(!panel.model.showingACP && panel.model.query.isEmpty && panel.model.acp.state.phase == "working", "Summoning a visible inactive chat returns home without stopping the turn")
 verify(panel.model.acp.state.messages == savedMessages && panel.model.acp.draft == savedDraft, "Focus loss and summon preserve conversation state")
 key("\t", 48)
-verify(panel.model.showingACP, "Tab resumes the working conversation")
+awaitChatPrompt("Tab resumes the working conversation")
 backgroundWindow.orderOut(nil)
 panel.model.acp.state.phase = "ready"
 (panel.firstResponder as? NSTextView)?.insertText("!", replacementRange: NSRange(location: NSNotFound, length: 0)); settle()

@@ -8,6 +8,26 @@ setbuf(stdout, nil)
 func verify(_ condition: @autoclosure () -> Bool, _ message: String = "Assertion", line: Int = #line) {
     if !condition() { fputs("FAIL at line \(line): \(message)\n", stderr); exit(1) }
 }
+
+/// Runs the main run loop until the condition has held without interruption for `stable` seconds,
+/// or until `timeout` passes. Loaded CI runners and guests can miss a fixed sleep, so readiness is
+/// polled; the stability window covers SwiftUI work queued for a later run-loop turn.
+@discardableResult
+func waitUntil(timeout: TimeInterval = 3, stable: TimeInterval = 0, _ condition: () -> Bool) -> Bool {
+    let deadline = Date().addingTimeInterval(timeout)
+    var heldSince: Date?
+    while Date() < deadline {
+        if condition() {
+            let start = heldSince ?? Date()
+            heldSince = start
+            if Date().timeIntervalSince(start) >= stable { return true }
+        } else {
+            heldSince = nil
+        }
+        RunLoop.main.run(until: Date().addingTimeInterval(0.02))
+    }
+    return condition()
+}
 let positionDefaults = UserDefaults(suiteName: "volant.launcher.test." + UUID().uuidString)!
 let app = NSApplication.shared
 let root = URL(fileURLWithPath: CommandLine.arguments[1])
@@ -803,15 +823,13 @@ sendCoreKey("\r", code: 36)
 sendCoreKey("\r", code: 36)
 verify(shortcutRuns == [recipe.id], "Return runs the selected shortcut exactly once: runs=\(shortcutRuns), key=\(corePanel.isKeyWindow), visible=\(corePanel.isVisible), query=\(corePanel.model.query), row=\(String(describing: corePanel.model.selectedRow?.id)), responder=\(String(describing: corePanel.firstResponder))")
 finishShortcut?("Fictional run failure")
-RunLoop.main.run(until: Date().addingTimeInterval(0.1))
-verify(corePanel.model.actionFeedback == "Fictional run failure")
+verify(waitUntil { corePanel.model.actionFeedback == "Fictional run failure" }, "Shortcut run failure reaches the status bar")
 try renderCore("shortcuts-error")
 corePanel.model.selection = 1
 corePanel.model.appleShortcuts.loadOverride = { $0(nil, "Fictional refresh failure") }
 corePanel.model.appleShortcuts.refresh(force: true)
-RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+verify(waitUntil { corePanel.model.actionFeedback == "Fictional refresh failure" }, "Refresh failure remains visible alongside cached rows")
 verify(corePanel.model.selectedRow?.id == "apple-shortcut:" + volumeShortcut.id, "Failed refresh preserves selection and cached results")
-verify(corePanel.model.actionFeedback == "Fictional refresh failure", "Refresh failure remains visible alongside cached rows")
 try renderCore("shortcuts-stale")
 corePanel.model.query = "shortcuts missing"
 try renderCore("shortcuts-empty")
@@ -845,17 +863,28 @@ verify(!awake.isActive && power.released == 1, "Return stops a Caffeinate sessio
 corePanel.model.query = "caffeinate nonsense"
 verify(corePanel.model.rows.isEmpty && corePanel.model.notice != nil)
 try renderCore("invalid")
+/// Describes the emoji grid's keyboard state for failure messages.
+func emojiGridState() -> String {
+    "selection=\(corePanel.model.selection), rows=\(corePanel.model.rows.count), query=\(corePanel.model.query), key=\(corePanel.isKeyWindow), responder=\(String(describing: corePanel.firstResponder)), delegate=\(String(describing: (corePanel.firstResponder as? NSTextView)?.delegate)), placeholder=\(String(describing: ((corePanel.firstResponder as? NSTextView)?.delegate as? NSTextField)?.placeholderString))"
+}
+/// Whether the launcher's search field editor holds keyboard focus, so arrow keys reach the grid
+/// handlers. The picker renames the field's placeholder, so the field is found as the editor's owner.
+func coreSearchEditorFocused() -> Bool {
+    guard corePanel.isKeyWindow, let editor = corePanel.firstResponder as? NSTextView,
+          let field = editor.delegate as? NSTextField else { return false }
+    return field.placeholderString == "Search emoji…" && field.isDescendant(of: corePanel.contentView!)
+}
 corePanel.model.query = ":"
-RunLoop.main.run(until: Date().addingTimeInterval(0.3))
-verify(corePanel.model.searchText.isEmpty, "Picker hides command prefix")
-sendCoreKey("\u{F701}", code: 125)
-verify(corePanel.model.selection == 10, "Down moves one emoji grid row")
-sendCoreKey("\u{F703}", code: 124)
-verify(corePanel.model.selection == 11, "Right moves one emoji grid cell")
-sendCoreKey("\u{F702}", code: 123)
-verify(corePanel.model.selection == 10, "Left moves one emoji grid cell")
-sendCoreKey("\u{F700}", code: 126)
-verify(corePanel.model.selection == 0, "Up moves one emoji grid row")
+verify(waitUntil(stable: 0.15) { corePanel.model.searchText.isEmpty && corePanel.model.rows.count == fixtureEmoji.count && coreSearchEditorFocused() },
+       "Picker hides command prefix with the search editor focused: \(emojiGridState())")
+let emojiArrows: [(String, UInt16, Int, String)] = [("\u{F701}", 125, 10, "Down moves one emoji grid row"),
+                                                    ("\u{F703}", 124, 11, "Right moves one emoji grid cell"),
+                                                    ("\u{F702}", 123, 10, "Left moves one emoji grid cell"),
+                                                    ("\u{F700}", 126, 0, "Up moves one emoji grid row")]
+for (characters, code, expected, name) in emojiArrows {
+    sendCoreKey(characters, code: code)
+    verify(waitUntil { corePanel.model.selection == expected }, "\(name): \(emojiGridState())")
+}
 try renderCore("emoji")
 sendCoreKey("\r", code: 36)
 verify(copiedEmoji == [fixtureEmoji[0].symbol] && !corePanel.isVisible, "Return copies selected emoji and dismisses")
@@ -891,8 +920,7 @@ translator.text = "Hello\nHow are you?"
 translator.target = "es"
 verify(corePanel.keepsVisibleOnBlur, "Translation draft survives focus loss")
 Task { @MainActor in translator.start() }
-RunLoop.main.run(until: Date().addingTimeInterval(0.4))
-verify(translator.output == "Hola\n¿Cómo estás?", "Translation session view delivers fixture result")
+verify(waitUntil { translator.output == "Hola\n¿Cómo estás?" }, "Translation session view delivers fixture result")
 try renderCore("translation-result")
 var translationCopies: [String] = []
 translator.copy { translationCopies.append($0) }
@@ -950,7 +978,7 @@ print("PASS: dictionary routing, native text editing, Return, mode exit and Esca
 /// points. On a miss it prints what it saw so a layout change is diagnosable from one run. An
 /// identified control is scrolled into view first, as a person would, because taller macOS 27 form
 /// rows can leave later controls such as color theme tiles below the fold of a fixed window.
-func controlFrame(_ name: String, in window: NSWindow) -> NSRect? {
+func controlFrame(_ name: String, in window: NSWindow, reportMissing: Bool = true) -> NSRect? {
     var seen: [String] = []
     func views(_ view: NSView) -> [NSView] { [view] + view.subviews.flatMap(views) }
     for view in views(window.contentView!) where !view.isHiddenOrHasHiddenAncestor {
@@ -967,7 +995,7 @@ func controlFrame(_ name: String, in window: NSWindow) -> NSRect? {
             if button.title == name { return button.convert(button.bounds, to: nil) }
         }
     }
-    print("Controls seen while looking for \(name): \(seen)")
+    if reportMissing { print("Controls seen while looking for \(name): \(seen)") }
     return nil
 }
 
@@ -1009,6 +1037,7 @@ func clickSettings(_ point: NSPoint) {
     RunLoop.main.run(until: Date().addingTimeInterval(0.15))
 }
 func clickSettings(_ name: String) {
+    waitUntil { controlFrame(name, in: settingsWindow, reportMissing: false) != nil }
     guard let frame = controlFrame(name, in: settingsWindow) else { verify(false, "Settings shows \(name)"); return }
     clickSettings(NSPoint(x: frame.midX, y: frame.midY))
 }
@@ -1056,13 +1085,13 @@ settingsController.showWindow(nil)
 settingsController.state.section = "Appearance"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 clickSettings("settings.theme-dark")
-verify(settingsController.state.config.appearance.theme == .dark, "Dark theme tile saves the theme")
+verify(waitUntil { settingsController.state.config.appearance.theme == .dark }, "Dark theme tile saves the theme")
 clickSettings("settings.theme-system")
-verify(settingsController.state.config.appearance.theme == .system, "System theme tile restores following macOS")
+verify(waitUntil { settingsController.state.config.appearance.theme == .system }, "System theme tile restores following macOS")
 clickSettings("settings.color-theme-nord")
-verify(settingsController.state.config.appearance.colorTheme == "nord", "Nord color theme tile saves the color theme")
+verify(waitUntil { settingsController.state.config.appearance.colorTheme == "nord" }, "Nord color theme tile saves the color theme")
 clickSettings("settings.color-theme-system")
-verify(settingsController.state.config.appearance.colorTheme == "system", "System color theme tile restores the default")
+verify(waitUntil { settingsController.state.config.appearance.colorTheme == "system" }, "System color theme tile restores the default")
 settingsController.showWindow(nil)
 settingsController.state.section = "AI"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
