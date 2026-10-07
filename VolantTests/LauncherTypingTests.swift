@@ -162,6 +162,42 @@ final class LauncherTypingTests: XCTestCase {
         XCTAssertEqual(store.recent(limit: 12, matching: "ALPHA").map(\.text), ["fictional alpha"])
     }
 
+    /// Search lists images by size without decrypting them up front; a matched image row still
+    /// carries its exact bytes and the size its title reports.
+    func testClipboardSearchListsImagesWithoutChangingThem() throws {
+        let store = ClipboardStore(retention: 10, storageURL: root.appendingPathComponent("images.sqlite"), encryptionKey: SymmetricKey(size: .bits256))
+        let png = try XCTUnwrap(Self.fictionalPNG(width: 300, height: 200))
+        store.recordImage(png)
+        store.record("fictional caption")
+        _ = store.recent(limit: 1)
+        XCTAssertEqual(store.recent(limit: 12, matching: "caption").map(\.text), ["fictional caption"])
+        let image = try XCTUnwrap(store.recent(limit: 12, matching: "image").first)
+        XCTAssertEqual(image.kind, .image)
+        XCTAssertEqual(image.imageData, png)
+        XCTAssertEqual(image.text, "Image (\(ByteCountFormatter.string(fromByteCount: Int64(png.count), countStyle: .file)))")
+    }
+
+    /// Row thumbnails are downsampled to the row's size instead of keeping a full-size decode.
+    func testClipboardThumbnailsAreSmall() throws {
+        let png = try XCTUnwrap(Self.fictionalPNG(width: 1600, height: 900))
+        let thumbnail = try XCTUnwrap(LauncherRowState.thumbnail(png))
+        let pixels = try XCTUnwrap(thumbnail.cgImage(forProposedRect: nil, context: nil, hints: nil))
+        XCTAssertLessThanOrEqual(max(pixels.width, pixels.height), LauncherRowState.thumbnailPixels)
+        XCTAssertEqual(Double(pixels.width) / Double(pixels.height), 16.0 / 9.0, accuracy: 0.1)
+        XCTAssertNil(LauncherRowState.thumbnail(Data("not an image".utf8)))
+    }
+
+    private static func fictionalPNG(width: Int, height: Int) -> Data? {
+        guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: width, pixelsHigh: height, bitsPerSample: 8, samplesPerPixel: 4,
+                                         hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0) else { return nil }
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+        NSColor.systemTeal.setFill()
+        NSRect(x: 0, y: 0, width: width, height: height).fill()
+        NSGraphicsContext.restoreGraphicsState()
+        return rep.representation(using: .png, properties: [:])
+    }
+
     func testRetainedRowsMatchTheirSourcesQueries() {
         let contact = ContactEntry(id: "fixture", name: "Fictional Person", organization: "", fields: [])
         XCTAssertTrue(LauncherModel.contact(contact, matches: "pers"))

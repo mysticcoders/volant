@@ -35,6 +35,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let currencyRates = CurrencyRatesStore()
     private let updater = AppUpdater()
     private var statusItem: NSStatusItem?
+    private var memoryCheck: MemoryCheck?
     private var config = Preferences.load()
     private let index = AppIndex()
     private var indexObserver: AnyCancellable?
@@ -171,6 +172,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     self.panel.setQuery(CommandLine.arguments[i + 1])
                 }
             }
+        }
+        if CommandLine.arguments.contains("--memory-check") {
+            let check = MemoryCheck(steps: .init(
+                showLauncher: { [weak self] in if self?.panel.isVisible == false { self?.panel.toggle() } },
+                setQuery: { [weak self] in self?.panel.setQuery($0) },
+                hideLauncher: { [weak self] in if self?.panel.isVisible == true { self?.panel.toggle() } },
+                showSettings: { [weak self] in self?.showSettings() },
+                closeSettings: { [weak self] in self?.settingsPanel.window?.close() }))
+            memoryCheck = check
+            check.run()
         }
     }
 
