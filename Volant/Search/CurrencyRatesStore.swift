@@ -1,10 +1,12 @@
 import Foundation
 import VolantCore
 
-/// ECB exchange rates and CoinGecko crypto prices for the calculator. Nothing is fetched until the
-/// owner types something shaped like a currency conversion; after that, ECB rates refresh at most
-/// every twelve hours while conversions are used, and a failed fetch waits an hour before trying
-/// again. Crypto prices are fetched only for conversions that name a coin, at most every ten
+/// ECB exchange rates, ExchangeRate-API rates for the currencies ECB lacks, and CoinGecko crypto
+/// prices for the calculator. Nothing is fetched until the owner types something shaped like a
+/// currency conversion; after that, ECB rates refresh at most every twelve hours while conversions
+/// are used, and a failed fetch waits an hour before trying again. ExchangeRate-API rates follow
+/// the same schedule but are fetched only for conversions naming a currency ECB does not publish;
+/// the hourly retry outlasts that provider's twenty-minute limit after a 429. Crypto prices are fetched only for conversions that name a coin, at most every ten
 /// minutes, five after a failure and thirty after CoinGecko answers 429. They come from the keyless
 /// public API, or with the owner's saved Demo key when there is one. Both are cached in the support
 /// directory so conversions keep working offline. Fetching goes through the rates-only XPC helper,
@@ -12,6 +14,11 @@ import VolantCore
 final class CurrencyRatesStore {
     private struct Cache: Codable {
         let rates: CurrencyRates
+        let fetchedAt: Date
+    }
+
+    private struct WorldCache: Codable {
+        let rates: WorldRates
         let fetchedAt: Date
     }
 
@@ -24,29 +31,38 @@ final class CurrencyRatesStore {
 
     private let cacheURL: URL
     private let cryptoCacheURL: URL
+    private let worldCacheURL: URL
     private let now: () -> Date
     private let fetch: (@escaping (Data?) -> Void) -> Void
+    private let fetchWorld: (@escaping (Data?, String?) -> Void) -> Void
     private let fetchCrypto: (String?, @escaping (Data?, String?) -> Void) -> Void
     private let cryptoKey: () -> String?
     private var fetchedAt: Date?
     private var lastAttempt: Date?
+    private var worldFetchedAt: Date?
+    private var lastWorldAttempt: Date?
     private var lastCryptoAttempt: Date?
     private var cryptoWait = CurrencyRatesStore.cryptoRetryInterval
     private var attemptedKey: String?
     private(set) var fetching = false
     private(set) var fetchingCrypto = false
+    private(set) var fetchingWorld = false
     /// Called on the main queue when new rates arrive, so the launcher can redraw its answer.
     var onUpdate: () -> Void = {}
 
     init(cacheURL: URL = Preferences.supportDirectory.appendingPathComponent("currency-rates.json"),
          cryptoCacheURL: URL = Preferences.supportDirectory.appendingPathComponent("crypto-prices.json"),
+         worldCacheURL: URL = Preferences.supportDirectory.appendingPathComponent("world-rates.json"),
          now: @escaping () -> Date = Date.init, fetch: ((@escaping (Data?) -> Void) -> Void)? = nil,
+         fetchWorld: ((@escaping (Data?, String?) -> Void) -> Void)? = nil,
          fetchCrypto: ((String?, @escaping (Data?, String?) -> Void) -> Void)? = nil,
          cryptoKey: @escaping () -> String? = { (try? AICredentials.keychain.read(CurrencyRatesStore.keyAccount)) ?? nil }) {
         self.cacheURL = cacheURL
         self.cryptoCacheURL = cryptoCacheURL
+        self.worldCacheURL = worldCacheURL
         self.now = now
         self.fetch = fetch ?? Self.fetchThroughHelper
+        self.fetchWorld = fetchWorld ?? Self.fetchWorldThroughHelper
         self.fetchCrypto = fetchCrypto ?? Self.fetchCryptoThroughHelper
         self.cryptoKey = cryptoKey
     }
@@ -60,6 +76,10 @@ final class CurrencyRatesStore {
         if let data = try? Data(contentsOf: cryptoCacheURL), let prices = try? JSONDecoder().decode(CryptoPrices.self, from: data) {
             CryptoPrices.current = prices
         }
+        if let data = try? Data(contentsOf: worldCacheURL), let cache = try? JSONDecoder().decode(WorldCache.self, from: data) {
+            WorldRates.current = cache.rates
+            worldFetchedAt = cache.fetchedAt
+        }
     }
 
     /// Lets the next coin query fetch right away when the saved key differs from the one last tried.
@@ -72,11 +92,36 @@ final class CurrencyRatesStore {
     }
 
     /// The launcher's hook for every calculator query; only currency conversions can start a fetch,
-    /// and only those naming a coin can fetch crypto prices.
+    /// only those naming a coin can fetch crypto prices, and only those naming a currency ECB lacks
+    /// can fetch ExchangeRate-API rates.
     func noteQuery(_ query: String) {
         guard CurrencyConverter.looksLikeConversion(query) else { return }
         refreshIfNeeded()
         if CurrencyConverter.involvesCrypto(query) { refreshCryptoIfNeeded() }
+        if CurrencyConverter.needsWorldRates(query) { refreshWorldIfNeeded() }
+    }
+
+    func refreshWorldIfNeeded() {
+        let time = now()
+        guard !fetchingWorld else { return }
+        if let worldFetchedAt, time.timeIntervalSince(worldFetchedAt) < Self.refreshInterval { return }
+        if let lastWorldAttempt, time.timeIntervalSince(lastWorldAttempt) < Self.retryInterval { return }
+        fetchingWorld = true
+        lastWorldAttempt = time
+        fetchWorld { [weak self] data, _ in
+            DispatchQueue.main.async { self?.finishWorld(data) }
+        }
+    }
+
+    /// Installs and caches fetched rates; a failure keeps any installed rates until the next try.
+    private func finishWorld(_ data: Data?) {
+        fetchingWorld = false
+        guard let data, let rates = WorldRates.parse(data) else { return }
+        let cache = WorldCache(rates: rates, fetchedAt: now())
+        worldFetchedAt = cache.fetchedAt
+        WorldRates.current = rates
+        try? JSONEncoder().encode(cache).write(to: worldCacheURL, options: .atomic)
+        onUpdate()
     }
 
     func refreshCryptoIfNeeded() {
@@ -129,6 +174,10 @@ final class CurrencyRatesStore {
 
     private static func fetchThroughHelper(_ completion: @escaping (Data?) -> Void) {
         throughHelper({ data, _ in completion(data) }) { proxy, reply in proxy.fetchRates(reply: reply) }
+    }
+
+    private static func fetchWorldThroughHelper(_ completion: @escaping (Data?, String?) -> Void) {
+        throughHelper(completion) { proxy, reply in proxy.fetchWorldRates(reply: reply) }
     }
 
     private static func fetchCryptoThroughHelper(_ key: String?, _ completion: @escaping (Data?, String?) -> Void) {

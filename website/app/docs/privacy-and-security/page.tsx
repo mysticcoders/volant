@@ -43,12 +43,16 @@ export default function PrivacyAndSecurity() {
         </li>
         <li>
           <strong>Exchange rates</strong> come through a small rates helper
-          that can reach only two fixed addresses. It downloads the European
+          that can reach only three fixed addresses. It downloads the European
           Central Bank&rsquo;s public daily rates the first time you type a
-          currency conversion, and never before. Crypto prices come from
-          CoinGecko&rsquo;s public price list the first time you convert a
-          coin. An optional CoinGecko key stays in your Keychain and is sent
-          only to CoinGecko. Nothing you type is included in either request.
+          currency conversion, and never before. Currencies the European
+          Central Bank doesn&rsquo;t publish, such as the UAE dirham or the
+          Taiwan dollar, use ExchangeRate-API&rsquo;s public daily rates,
+          downloaded only the first time you convert one of them. Crypto
+          prices come from CoinGecko&rsquo;s public price list the first time
+          you convert a coin. An optional CoinGecko key stays in your Keychain
+          and is sent only to CoinGecko. Nothing you type is included in any
+          of these requests.
           See <a href="/docs/calculator">The calculator</a>.
         </li>
       </ul>
