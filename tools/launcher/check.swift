@@ -117,7 +117,9 @@ let paletteText = palette.textStyles
 let paletteHost = NSHostingView(rootView: LauncherView(model: model, agents: model.agents)
     .environment(\.volantTheme, palette).tint(palette.accent).foregroundStyle(paletteText.0, paletteText.1)
     .background(palette.windowBackground))
-window.contentView = paletteHost
+let paletteWindow = NSWindow(contentRect: NSRect(origin: .zero, size: LauncherPanel.size), styleMask: [.titled], backing: .buffered, defer: false)
+paletteWindow.isReleasedWhenClosed = false
+paletteWindow.appearance = app.appearance; paletteWindow.contentView = paletteHost; paletteWindow.orderFront(nil)
 for (query, name) in [("12 * 4", "card"), ("12 * 4 +", "held")] {
     model.query = query
     RunLoop.main.run(until: Date().addingTimeInterval(0.15))
@@ -128,7 +130,8 @@ for (query, name) in [("12 * 4", "card"), ("12 * 4 +", "held")] {
         URL(fileURLWithPath: "/tmp/volant-launcher-time-palette-\(name)-\(dark ? "dark" : "light").jpg"))
 }
 verify(model.heldCalculation != nil, "Held answer renders under a palette theme")
-window.contentView = host
+paletteWindow.orderOut(nil)
+paletteWindow.contentView = nil
 model.query = "snip screen"
 window.orderOut(nil)
 print("PASS: launcher row identity, stale click, snippet identity, Screen Sharing eligibility, and native focus restoration")
