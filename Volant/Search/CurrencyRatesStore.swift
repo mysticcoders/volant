@@ -91,14 +91,16 @@ final class CurrencyRatesStore {
         cryptoWait = Self.cryptoRetryInterval
     }
 
-    /// The launcher's hook for every calculator query; only currency conversions can start a fetch,
-    /// only those naming a coin can fetch crypto prices, and only those naming a currency ECB lacks
-    /// can fetch ExchangeRate-API rates.
+    /// The launcher's hook for every calculator query; only currency conversions and mixed-currency
+    /// arithmetic can start a fetch, only those naming a coin can fetch crypto prices, and only those
+    /// naming a currency ECB lacks can fetch ExchangeRate-API rates. Framing such as "what is …?" does
+    /// not hide a conversion.
     func noteQuery(_ query: String) {
-        guard CurrencyConverter.looksLikeConversion(query) else { return }
+        let needs = CurrencyConverter.feedsNeeded(query)
+        guard needs.rates else { return }
         refreshIfNeeded()
-        if CurrencyConverter.involvesCrypto(query) { refreshCryptoIfNeeded() }
-        if CurrencyConverter.needsWorldRates(query) { refreshWorldIfNeeded() }
+        if needs.crypto { refreshCryptoIfNeeded() }
+        if needs.world { refreshWorldIfNeeded() }
     }
 
     func refreshWorldIfNeeded() {

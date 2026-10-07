@@ -122,6 +122,25 @@ final class CurrencyRatesStoreTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: cryptoCacheURL.path))
     }
 
+    func testFramedAndMixedQueriesFetchOnFirstUse() {
+        let rates = store()
+        rates.noteQuery("18% tip on $65"); settle()
+        XCTAssertEqual(requests, 0, "Arithmetic in one currency needs no rates")
+        rates.noteQuery("what is 100 usd in eur?"); settle()
+        XCTAssertEqual(requests, 1)
+        XCTAssertTrue(cryptoRequests.isEmpty)
+        clock = clock.addingTimeInterval(13 * 3600)
+        rates.noteQuery("10 usd + 5 eur in usd"); settle()
+        XCTAssertEqual(requests, 2)
+        rates.noteQuery("what's 0.01 btc + $100"); settle()
+        XCTAssertEqual(cryptoRequests, [nil])
+        XCTAssertEqual(worldRequests, 0, "ECB currencies never fetch ExchangeRate-API")
+        rates.noteQuery("100 aed + 50 aed"); settle()
+        XCTAssertEqual(worldRequests, 0, "Arithmetic in one currency needs no rates")
+        rates.noteQuery("what is 100 aed + $20?"); settle()
+        XCTAssertEqual(worldRequests, 1)
+    }
+
     func testCryptoSendsASavedKey() {
         key = "CG-fixturekey123"
         let rates = store()

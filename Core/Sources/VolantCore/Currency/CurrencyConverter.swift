@@ -20,11 +20,11 @@ import Foundation
 /// when it covers every fiat currency named, otherwise ExchangeRate-API for all of them, so a
 /// cross rate never mixes two providers' euro rates. Those cards tag ExchangeRate-API's date.
 public enum CurrencyConverter {
-    private enum Basis { case ecb, world }
+    enum Basis { case ecb, world }
 
     /// Units of a currency or coin per euro, from crypto prices first, then from whichever fiat
     /// source covers every fiat currency in the conversion.
-    private struct Book {
+    struct Book {
         let rates: CurrencyRates?
         let world: WorldRates?
         let crypto: CryptoPrices?
@@ -97,6 +97,23 @@ public enum CurrencyConverter {
                                  resultDetail: tag, copyText: result, swapQuery: swap)
     }
 
+    /// Which feeds a query would need, so the app fetches ECB rates only for currency
+    /// conversions and mixed-currency arithmetic, crypto prices only when one of those names a
+    /// coin, and ExchangeRate-API rates only when one names a currency ECB lacks. The framing the
+    /// calculator forgives ("what is …?") is dropped first.
+    public static func feedsNeeded(_ text: String, locale: Locale = .current) -> (rates: Bool, crypto: Bool, world: Bool) {
+        let query = CalculationAnswer.forgiving(text)
+        let codes: [String]
+        if let (_, from, to, _) = parse(query, locale: locale, known: nil) {
+            codes = [from, to]
+        } else if let found = MoneyCalculator.convertedCodes(query) {
+            codes = Array(found)
+        } else {
+            return (false, false, false)
+        }
+        return (true, codes.contains(where: CryptoPrices.codes.contains), outsideECB(codes))
+    }
+
     /// Whether a conversion names a coin, so the app fetches crypto prices only for those.
     public static func involvesCrypto(_ text: String, locale: Locale = .current) -> Bool {
         guard let (_, from, to, _) = parse(text, locale: locale, known: nil) else { return false }
@@ -113,8 +130,14 @@ public enum CurrencyConverter {
     /// ExchangeRate-API's rates only for those. Before ECB rates are loaded, its usual list decides.
     public static func needsWorldRates(_ text: String, locale: Locale = .current) -> Bool {
         guard let (_, from, to, _) = parse(text, locale: locale, known: nil) else { return false }
+        return outsideECB([from, to])
+    }
+
+    /// Whether any of the codes is fiat the ECB does not publish; before ECB rates are loaded, its
+    /// usual list decides.
+    private static func outsideECB(_ codes: [String]) -> Bool {
         let ecb = CurrencyRates.current.map { Set($0.perEuro.keys) } ?? CurrencyRates.referenceCodes
-        return [from, to].contains { $0 != "EUR" && !CryptoPrices.codes.contains($0) && !ecb.contains($0) }
+        return codes.contains { $0 != "EUR" && !CryptoPrices.codes.contains($0) && !ecb.contains($0) }
     }
 
     private static func parse(_ text: String, locale: Locale, known: Book?) -> (Double, String, String, String?)? {
@@ -156,7 +179,7 @@ public enum CurrencyConverter {
 
     /// An ISO code, coin ticker, symbol or name. Without rates, any ISO code or supported coin
     /// counts, since the feeds' lists are not known yet.
-    private static func currency(_ text: String, known: Book?) -> String? {
+    static func currency(_ text: String, known: Book?) -> String? {
         let word = text.trimmingCharacters(in: .whitespaces)
         if word.count == 1, let symbol = word.first.flatMap({ symbols[$0] }) { return symbol }
         if let name = names[word.lowercased()] ?? CryptoPrices.names[word.lowercased()] { return name }
@@ -184,7 +207,7 @@ public enum CurrencyConverter {
         return text.replacingOccurrences(of: "\u{00A0}", with: " ").replacingOccurrences(of: "\u{202F}", with: " ")
     }
 
-    private static func rate(_ value: Double, locale: Locale) -> String {
+    static func rate(_ value: Double, locale: Locale) -> String {
         let formatter = NumberFormatter()
         formatter.locale = locale
         formatter.numberStyle = .decimal
@@ -194,7 +217,7 @@ public enum CurrencyConverter {
     }
 
     /// "CoinGecko · 2:15 PM", with the date once it is not today and "Old" after an hour.
-    private static func cryptoTag(_ fetched: Date, now: Date, zone: TimeZone, locale: Locale) -> String {
+    static func cryptoTag(_ fetched: Date, now: Date, zone: TimeZone, locale: Locale) -> String {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = zone
         let formatter = DateFormatter()
@@ -208,7 +231,7 @@ public enum CurrencyConverter {
 
     /// "Rates By Exchange Rate API · Oct 6", the provider's required attribution, with "Old" once
     /// the daily rates are more than three days behind.
-    private static func worldTag(_ updated: Date, now: Date, zone: TimeZone, locale: Locale) -> String {
+    static func worldTag(_ updated: Date, now: Date, zone: TimeZone, locale: Locale) -> String {
         let display = DateFormatter()
         display.locale = locale
         display.timeZone = zone
@@ -218,7 +241,7 @@ public enum CurrencyConverter {
     }
 
     /// "ECB rates · Oct 5", with "Old" when more than a week behind.
-    private static func dateTag(_ date: String, now: Date, locale: Locale) -> String {
+    static func dateTag(_ date: String, now: Date, locale: Locale) -> String {
         let parser = DateFormatter()
         parser.locale = Locale(identifier: "en_US_POSIX")
         parser.timeZone = TimeZone(identifier: "Europe/Berlin")

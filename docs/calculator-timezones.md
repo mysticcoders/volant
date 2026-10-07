@@ -13,7 +13,7 @@ The launcher now recognizes whole-query timezone expressions locally, without a 
 
 Results use a readable AM/PM clock, Midnight/Noon for exact boundaries, the requested abbreviation or city, and “your time” for the local destination. Same-day implicit conversions omit the date; day rollover adds tomorrow/yesterday relative to the user's local calendar day. Explicit-date queries retain a localized calendar date. Current-time queries compare destination day with the injected local day. Return copies the same readable answer through the existing Calculation row. Date omitted means today's date in the source zone. `local`, `here` and `my time` select the Mac's timezone. UTC and GMT are fixed offsets. Regional abbreviations (EST/EDT, PST/PDT, MST/MDT, CET/CEST, BST, JST) select their region's clock, like cities and IANA identifiers, and the label names the abbreviation in effect on that date: in summer `1pm EST in CET` is `7:00 PM CEST`.
 
-Queries are limited to 256 UTF-8 bytes, consumed entirely, and evaluated only for explicit time forms. Ambiguous CST/IST, broad country names, invalid dates, incomplete syntax, DST gaps and repeated wall times produce no answer. This first slice does not yet present a disambiguation/error row. Supported city aliases are deliberately small and maintained independently; IANA identifiers provide broader coverage.
+Queries are limited to 256 UTF-8 bytes, consumed entirely, and evaluated only for explicit time forms. Ambiguous CST/IST/AST alone (see Ambiguous abbreviations below), broad country names, invalid dates, incomplete syntax, DST gaps and repeated wall times produce no answer. This first slice does not yet present a disambiguation/error row. Supported city aliases are deliberately small and maintained independently; IANA identifiers provide broader coverage.
 
 ## Quality decision
 
@@ -33,7 +33,7 @@ Evidence: exact output tests cover ordinary conversions, local destination, Midn
 
 Symptom: in October, with the Mac on CEST, `4pm in CET` answered `17:00 your time`.
 Cause: abbreviations were literal fixed offsets, so CET was always UTC+1 even while Central Europe observed summer time. People use CET, EST and PST to mean the region's current clock.
-Prevention: regional abbreviations resolve to a representative region zone; the label reports the standard or daylight abbreviation actually in effect, so a strict reading stays visible. This supersedes the fixed-offset rule proposed in `calculator-expression-design.md`. MST follows Denver, not Arizona; CST and IST remain rejected as ambiguous.
+Prevention: regional abbreviations resolve to a representative region zone; the label reports the standard or daylight abbreviation actually in effect, so a strict reading stays visible. This supersedes the fixed-offset rule proposed in `calculator-expression-design.md`. MST follows Denver, not Arizona; CST and IST remain ambiguous and offer a card per region.
 Evidence: core tests cover the reported query, summer and winter labels, either spelling of a pair, and UTC against a regional zone.
 
 ## Calculator card
@@ -57,6 +57,10 @@ Cost: nothing until a query names a city the built-in lists do not know. The fir
 ## Ambiguous cities
 
 When a time question fails only because a city name is ambiguous in time, the launcher offers up to three cards, one per likely city, largest first: `time in springfield` shows Springfield, MO, MA and IL; `time in valencia` shows Venezuela, Spain and California. Each card's input is the qualified query, so Return copies that answer and Command-Return continues from it. US cities are qualified by state and others by country name, which never clashes with a state code; every alternative is checked to resolve on its own. Qualified answers name their qualifier (`in Portland, ME`). Only time-shaped queries look for alternatives, so ordinary searches never load the city table.
+
+## Ambiguous abbreviations
+
+IST, CST and AST are still never resolved alone. A time question naming one offers a card per region instead, the same way: `5pm pst in ist` shows IST (India), IST (Ireland) and IST (Israel); CST shows US and China; AST shows Atlantic and Arabia. The qualified forms (`IST (India)`, `IST India`) are regions of their own and label the abbreviation in effect, so Ireland reads `GMT (Ireland)` in winter and Israel `IDT (Israel)` in summer.
 
 ## Airport codes
 
