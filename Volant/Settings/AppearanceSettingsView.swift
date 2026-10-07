@@ -1,7 +1,7 @@
 import SwiftUI
 import VolantCore
 
-/// Theme, launcher size and launcher opacity. Sliders keep a local draft while dragging and write
+/// Appearance, color theme, launcher size and launcher opacity. Sliders keep a local draft while dragging and write
 /// once on release, so a drag does not reload configuration and re-register hotkeys on every step.
 struct AppearanceSettingsView: View {
     let appearance: Appearance
@@ -24,9 +24,23 @@ struct AppearanceSettingsView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 4)
             } header: {
-                Text("Theme")
+                Text("Appearance")
             } footer: {
-                SettingsFooter("System follows macOS, including automatic switching at sunset. Light and Dark keep Volant’s launcher, notes and Settings in that appearance.")
+                SettingsFooter(appearanceFooter)
+            }
+            Section {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: 14)], spacing: 14) {
+                    ForEach(ColorTheme.catalog) { theme in
+                        ColorThemeTile(theme: theme, selected: appearance.resolvedColorTheme.id == theme.id) {
+                            save { $0.colorTheme = theme.id }
+                        }
+                    }
+                }
+                .padding(.vertical, 4)
+            } header: {
+                Text("Color Theme")
+            } footer: {
+                SettingsFooter("System uses macOS materials and your accent color from System Settings. Volant adds its coral accent. The others paint the launcher, notes and accents with their own palette in a fixed light or dark appearance.")
             }
             Section {
                 Slider(value: $scale, in: Appearance.scaleRange, step: 0.05) {
@@ -68,6 +82,14 @@ struct AppearanceSettingsView: View {
         } message: { Text(error ?? "") }
     }
 
+    private var appearanceFooter: String {
+        let theme = appearance.resolvedColorTheme
+        if let mode = theme.mode {
+            return "\(theme.name) is a \(mode.rawValue) theme, so Volant stays \(mode.rawValue) while it is selected. Choose System or Volant to use this setting."
+        }
+        return "System follows macOS, including automatic switching at sunset. Light and Dark keep Volant’s launcher, notes and Settings in that appearance."
+    }
+
     private func adopt() {
         scale = appearance.clampedScale
         opacity = appearance.clampedOpacity
@@ -101,7 +123,7 @@ private struct ThemeTile: View {
                     .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
                     .overlay {
                         RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .strokeBorder(selected ? Color.accentColor : Color.primary.opacity(0.15), lineWidth: selected ? 3 : 1)
+                            .strokeBorder(selected ? AnyShapeStyle(.tint) : AnyShapeStyle(Color.primary.opacity(0.15)), lineWidth: selected ? 3 : 1)
                     }
                 Text(theme.title).font(.callout).foregroundStyle(selected ? .primary : .secondary)
             }
@@ -145,11 +167,90 @@ private struct WindowSketch: View {
             (dark ? Color(white: 0.16) : Color(white: 0.93))
             VStack(alignment: .leading, spacing: 5) {
                 RoundedRectangle(cornerRadius: 3).fill(dark ? Color(white: 0.3) : .white).frame(height: 10)
-                RoundedRectangle(cornerRadius: 2).fill(Color.accentColor).frame(width: 34, height: 6)
+                RoundedRectangle(cornerRadius: 2).fill(.tint).frame(width: 34, height: 6)
                 RoundedRectangle(cornerRadius: 2).fill(dark ? Color(white: 0.34) : Color(white: 0.8)).frame(width: 48, height: 6)
                 RoundedRectangle(cornerRadius: 2).fill(dark ? Color(white: 0.34) : Color(white: 0.8)).frame(width: 40, height: 6)
             }
             .padding(8)
         }
     }
+}
+
+/// A miniature launcher in a theme's own colors: palette themes draw their background, text,
+/// selected row and accent; System and Volant draw a light and dark split with their accent.
+private struct ColorThemeTile: View {
+    let theme: ColorTheme
+    let selected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 6) {
+                preview
+                    .frame(height: 58)
+                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            .strokeBorder(selected ? AnyShapeStyle(.tint) : AnyShapeStyle(Color.primary.opacity(0.15)), lineWidth: selected ? 3 : 1)
+                    }
+                Text(theme.name).font(.callout).lineLimit(1).minimumScaleFactor(0.8)
+                    .foregroundStyle(selected ? .primary : .secondary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(theme.name + " color theme")
+        .accessibilityAddTraits(selected ? .isSelected : [])
+        .background(ControlAnchor("settings.color-theme-" + theme.id))
+    }
+
+    @ViewBuilder private var preview: some View {
+        if let palette = theme.palette {
+            PaletteSketch(palette: palette)
+        } else {
+            let accent = theme.accent
+            ZStack {
+                WindowSketch(dark: false).tint(accent.flatMap { Color(hex: $0.light) } ?? Color(nsColor: .controlAccentColor))
+                WindowSketch(dark: true).tint(accent.flatMap { Color(hex: $0.dark) } ?? Color(nsColor: .controlAccentColor)).mask {
+                    GeometryReader { geometry in
+                        Path { path in
+                            path.move(to: CGPoint(x: geometry.size.width, y: 0))
+                            path.addLine(to: CGPoint(x: geometry.size.width, y: geometry.size.height))
+                            path.addLine(to: CGPoint(x: 0, y: geometry.size.height))
+                            path.closeSubpath()
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// A theme's palette as a sketch: search bar, a selected row with an accent mark, and two rows of text.
+private struct PaletteSketch: View {
+    let palette: ColorPalette
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            color(palette.background)
+            VStack(alignment: .leading, spacing: 5) {
+                RoundedRectangle(cornerRadius: 3).fill(color(palette.secondaryBackground)).frame(height: 10)
+                HStack(spacing: 4) {
+                    RoundedRectangle(cornerRadius: 2).fill(color(palette.accent)).frame(width: 8, height: 6)
+                    RoundedRectangle(cornerRadius: 2).fill(color(palette.text)).frame(width: 30, height: 6)
+                }
+                .padding(3)
+                .background(color(palette.selection), in: RoundedRectangle(cornerRadius: 3))
+                RoundedRectangle(cornerRadius: 2).fill(color(palette.secondaryText)).frame(width: 48, height: 6)
+                HStack(spacing: 3) {
+                    ForEach(Array([palette.red, palette.yellow, palette.green, palette.blue, palette.purple].enumerated()), id: \.offset) { _, hex in
+                        Circle().fill(color(hex)).frame(width: 6, height: 6)
+                    }
+                }
+            }
+            .padding(8)
+        }
+    }
+
+    private func color(_ hex: String) -> Color { Color(hex: hex) ?? .clear }
 }

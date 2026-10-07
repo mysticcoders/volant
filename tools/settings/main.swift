@@ -238,7 +238,7 @@ if CommandLine.arguments.contains("--render") {
                 view.cacheDisplay(in: view.bounds, to: rep)
                 try! rep.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent(theme + "-" + section + ".png"))
                 print("Rendered \(theme) \(section): \(view.bounds.size)")
-                if section == "Data & Configuration" {
+                if section == "Data & Configuration" || section == "Appearance" {
                     func scrollViews(_ view: NSView) -> [NSScrollView] {
                         (view as? NSScrollView).map { [$0] } ?? view.subviews.flatMap(scrollViews)
                     }
@@ -252,6 +252,17 @@ if CommandLine.arguments.contains("--render") {
                     try! bottom.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent(theme + "-" + section + "-bottom.png"))
                 }
             }
+        }
+        for (colorTheme, mode) in [("volant", Appearance.Theme.light), ("catppuccin-mocha", .dark), ("rose-pine-dawn", .light)] {
+            ThemeStore.shared.apply(Appearance(theme: mode, colorTheme: colorTheme))
+            controller.state.section = "Appearance"
+            RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+            let view = controller.window!.contentView!
+            view.layoutSubtreeIfNeeded()
+            let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
+            view.cacheDisplay(in: view.bounds, to: rep)
+            try! rep.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent("theme-" + colorTheme + "-Appearance.png"))
+            print("Rendered Appearance in \(colorTheme)")
         }
         app.terminate(nil)
     }

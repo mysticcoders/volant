@@ -11,7 +11,7 @@ xcrun actool Volant/Resources/Assets.xcassets --compile "$bundle/Resources" --pl
 cp Volant/Resources/emoji.json "$bundle/Resources/"
 ditto Volant/Resources/HelloWorld "$bundle/Resources/HelloWorld"
 cat > "$bundle/Info.plist" <<'PLIST'
-<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>CFBundleExecutable</key><string>VolantActionsFixture</string><key>CFBundleName</key><string>Volant Actions Fixture</string><key>CFBundleIdentifier</key><string>com.mysticcoders.volant.actionsfixture</string><key>NSAccentColorName</key><string>AccentColor</string><key>CFBundlePackageType</key><string>APPL</string></dict></plist>
+<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>CFBundleExecutable</key><string>VolantActionsFixture</string><key>CFBundleName</key><string>Volant Actions Fixture</string><key>CFBundleIdentifier</key><string>com.mysticcoders.volant.actionsfixture</string><key>CFBundlePackageType</key><string>APPL</string></dict></plist>
 PLIST
 cp tools/launcher/actions.swift "$fixture_dir/main.swift"
 sources=()

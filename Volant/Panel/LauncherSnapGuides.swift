@@ -108,7 +108,7 @@ final class SnapGuideView: NSView {
         path.stroke()
         path.lineWidth = 1.5
         path.setLineDash([5, 4], count: 2, phase: 0)
-        (NSColor(named: "AccentColor") ?? NSColor.controlAccentColor).setStroke()
+        ThemeStore.shared.theme.resolvedNSAccent.setStroke()
         path.stroke()
     }
 }

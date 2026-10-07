@@ -304,13 +304,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     @objc private func togglePanel() { panel.toggle(source: .menu) }
 
-    /// A nil appearance follows macOS, including its automatic light and dark switching.
+    /// Applies the color theme and its light or dark appearance; a nil appearance follows macOS,
+    /// including its automatic switching.
     private func applyTheme() {
-        switch config.appearance.theme {
-        case .system: NSApp.appearance = nil
-        case .light: NSApp.appearance = NSAppearance(named: .aqua)
-        case .dark: NSApp.appearance = NSAppearance(named: .darkAqua)
-        }
+        let appearance = config.appearance
+        MainActor.assumeIsolated { ThemeStore.shared.apply(appearance) }
     }
 
     @objc private func reloadConfig() {

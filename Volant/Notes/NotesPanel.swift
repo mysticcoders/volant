@@ -22,7 +22,7 @@ final class NotesPanel: NSPanel {
         hidesOnDeactivate = false
         minSize = NSSize(width: 380, height: 300)
         setFrameAutosaveName("VeyNotes")
-        contentView = NSHostingView(rootView: NotesView(model: model).ignoresSafeArea(.container, edges: .top))
+        contentView = NSHostingView(rootView: ThemedRoot { NotesView(model: model).ignoresSafeArea(.container, edges: .top) })
     }
 
     override var canBecomeKey: Bool { true }
@@ -163,6 +163,7 @@ struct NotesView: View {
     @ObservedObject var model: NotesModel
     @ObservedObject var store: NotesStore
     @StateObject private var liveState: LiveEditorState
+    @Environment(\.volantTheme) private var theme
 
     init(model: NotesModel, liveState: LiveEditorState = LiveEditorState()) {
         self.model = model
@@ -200,7 +201,7 @@ struct NotesView: View {
             document
             footer
         }
-        .background(.regularMaterial)
+        .background(theme.surface(opacity: 1))
         .overlay {
             if model.overlay != nil {
                 GeometryReader { geometry in
@@ -368,6 +369,7 @@ struct NotesPicker: View {
     @ObservedObject var store: NotesStore
     @State private var selection = 0
     @FocusState private var searchFocused: Bool
+    @Environment(\.volantTheme) private var theme
 
     private struct Entry: Identifiable {
         let id: String
@@ -439,7 +441,8 @@ struct NotesPicker: View {
                                     Text(entry.shortcut).font(.caption).foregroundStyle(.secondary)
                                 }
                                 .padding(.horizontal, 12).padding(.vertical, 10).frame(maxWidth: .infinity, alignment: .leading)
-                                .background(selection == index ? Color.primary.opacity(0.08) : .clear, in: RoundedRectangle(cornerRadius: NotesStyle.radius))
+                                .background(selection == index ? (theme.hasPalette ? theme.selection : AnyShapeStyle(Color.primary.opacity(0.08))) : AnyShapeStyle(Color.clear),
+                                            in: RoundedRectangle(cornerRadius: NotesStyle.radius))
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain).id(index)
@@ -456,7 +459,7 @@ struct NotesPicker: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.regularMaterial)
+        .background(theme.raisedSurface)
         .onAppear { searchFocused = true }
         .onChange(of: model.filter) { _, _ in selection = 0 }
         .onChange(of: model.overlay) { _, _ in selection = 0; searchFocused = true }

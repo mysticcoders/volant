@@ -28,7 +28,7 @@ public struct Preferences: Codable {
     public var favoriteApps: [String] = []
     public var aliases: [String: String] = [:]
     public var appearance: Appearance = Appearance()
-    public var help: String = "Edit and choose Reload Configuration in Settings. Hotkeys: cmd|ctrl|option|shift|meh|hyper + key. App hotkeys use the bundle identifier. Snippets: {date} {isodate} {time} {datetime} {clipboard} {uuid}. Quicklinks: {query}. Aliases map a word to an app name or query. Appearance: theme system|light|dark, scale 0.8–1.4, opacity 0.5–1.0."
+    public var help: String = "Edit and choose Reload Configuration in Settings. Hotkeys: cmd|ctrl|option|shift|meh|hyper + key. App hotkeys use the bundle identifier. Snippets: {date} {isodate} {time} {datetime} {clipboard} {uuid}. Quicklinks: {query}. Aliases map a word to an app name or query. Appearance: theme system|light|dark, colorTheme system|volant|catppuccin-mocha|nord|… (named themes set their own light or dark), scale 0.8–1.4, opacity 0.5–1.0."
 
     public enum CodingKeys: String, CodingKey {
         case favoriteApps, summonHotKey, notesHotKey, emojiHotKey, talkHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, syncSettingsWithICloud, statusBar, snippets, quicklinks, aliases, appearance
@@ -99,6 +99,7 @@ public struct Preferences: Codable {
         guard current == expected else { throw AppearanceConflict() }
         var block = object["appearance"] as? [String: Any] ?? [:]
         block["theme"] = appearance.theme.rawValue
+        block["colorTheme"] = appearance.colorTheme
         block["scale"] = (appearance.clampedScale * 100).rounded() / 100
         block["opacity"] = (appearance.clampedOpacity * 100).rounded() / 100
         object["appearance"] = block
@@ -189,13 +190,16 @@ public struct Appearance: Codable, Equatable {
     public static let opacityRange = 0.5...1.0
 
     public var theme: Theme = .system
+    /// The color theme's identifier; a theme with its own mode overrides `theme` for light and dark.
+    public var colorTheme: String = ColorTheme.systemID
     /// 1.0 is the default 750×480 panel; 0.8 to 1.4 are sensible.
     public var scale: Double = 1.0
     /// 1.0 is the system material; lower values let the desktop show through more.
     public var opacity: Double = 1.0
 
-    public init(theme: Theme = .system, scale: Double = 1.0, opacity: Double = 1.0) {
+    public init(theme: Theme = .system, colorTheme: String = ColorTheme.systemID, scale: Double = 1.0, opacity: Double = 1.0) {
         self.theme = theme
+        self.colorTheme = colorTheme
         self.scale = scale
         self.opacity = opacity
     }
@@ -205,12 +209,26 @@ public struct Appearance: Codable, Equatable {
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         theme = (try? c.decodeIfPresent(Theme.self, forKey: .theme)) ?? .system
+        colorTheme = (try? c.decodeIfPresent(String.self, forKey: .colorTheme)) ?? ColorTheme.systemID
         scale = try c.decodeIfPresent(Double.self, forKey: .scale) ?? 1.0
         opacity = try c.decodeIfPresent(Double.self, forKey: .opacity) ?? 1.0
     }
 
     public var clampedScale: Double { min(Self.scaleRange.upperBound, max(Self.scaleRange.lowerBound, scale)) }
     public var clampedOpacity: Double { min(Self.opacityRange.upperBound, max(Self.opacityRange.lowerBound, opacity)) }
+
+    /// The chosen color theme; an unknown identifier resolves to System.
+    public var resolvedColorTheme: ColorTheme { ColorTheme.named(colorTheme) }
+
+    /// Light, dark or nil to follow macOS: a theme with its own mode wins over the appearance setting.
+    public var effectiveMode: ColorTheme.Mode? {
+        if let mode = resolvedColorTheme.mode { return mode }
+        switch theme {
+        case .system: return nil
+        case .light: return .light
+        case .dark: return .dark
+        }
+    }
 }
 
 public struct AppHotKey: Codable {

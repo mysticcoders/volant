@@ -29,6 +29,7 @@ FIXTURES = [
     ("VolantLauncherFixture", "tools/launcher/check.swift"),
     ("VolantActionsFixture", "tools/launcher/actions.swift"),
     ("VolantSettingsPreview", "tools/settings/main.swift"),
+    ("VolantThemeFixture", "tools/themes/render.swift"),
 ]
 build = f'''
 set -euo pipefail
@@ -43,7 +44,7 @@ for pair in {" ".join(f"{name}:{path}" for name, path in FIXTURES)}; do
         --target-device mac --optimization space --output-partial-info-plist "{output}/work/$name/assets.plist" >/dev/null
     cp Volant/Resources/emoji.json "$bundle/Resources/"
     ditto Volant/Resources/HelloWorld "$bundle/Resources/HelloWorld"
-    printf '%s' '<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>CFBundleExecutable</key><string>'"$name"'</string><key>CFBundleIdentifier</key><string>com.mysticcoders.volant.render.'"$name"'</string><key>NSAccentColorName</key><string>AccentColor</string><key>CFBundlePackageType</key><string>APPL</string></dict></plist>' > "$bundle/Info.plist"
+    printf '%s' '<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>CFBundleExecutable</key><string>'"$name"'</string><key>CFBundleIdentifier</key><string>com.mysticcoders.volant.render.'"$name"'</string><key>CFBundlePackageType</key><string>APPL</string></dict></plist>' > "$bundle/Info.plist"
     cp "$main" "{output}/work/$name/main.swift"
     swiftc -target "$(uname -m)-apple-macosx15.0" "${{VOLANT_CORE_FLAGS[@]}}" "${{sources[@]}}" "{output}/work/$name/main.swift" -o "$bundle/MacOS/$name"
 done
@@ -57,6 +58,7 @@ runs = [
     ("VolantLauncherFixture", "light", "\"$work\""), ("VolantLauncherFixture", "dark", "\"$work\" dark"),
     ("VolantActionsFixture", "light", "\"$work\""), ("VolantActionsFixture", "dark", "\"$work\" dark"),
     ("VolantSettingsPreview", "both", "--render"),
+    ("VolantThemeFixture", "all", "\"$work\""),
 ]
 steps = "\n".join(
     f'work=$(mktemp -d /tmp/volant-render.XXXXXX)\n'
