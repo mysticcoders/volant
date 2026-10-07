@@ -15,3 +15,13 @@ Next gaps:
 - Implement reviewed note/snippet context handoff.
 - Replace the illustrative hero with a representative native launcher capture when the release UI settles.
 - Resolve existing shared-component lint failures separately.
+
+## October 7, 2026 — show the broader product
+
+Symptom: the homepage reduced the calculator to a utility, omitted API/local/on-device chat and explicit attachments, and described implemented note context as future work. Download-facing docs also mixed newer calculator work with the public 0.1.5 artifact.
+
+Cause: homepage positioning and release status did not advance with feature documentation.
+
+Decision: retain the hero/brand and lead the feature stories with answers, actionable agent attention, AI choices and explicit context, Mac controls, and local notes/toolkit. Label the expanded calculator, themes, new system actions, and iCloud settings sync Coming next. Keep provider/remote/device verification limits in linked docs. The claim-to-release matrix and backlog are in [marketing claims](marketing-claims.md).
+
+Prevention: review the claims matrix against the distributed release commit whenever changing the download or feature copy. A native capture proves what the view renders, not that a live integration or public download includes it. Existing PR gate and scope checks are automated; website visual inspection and release-claim review remain manual.

@@ -58,7 +58,7 @@ export const docGroups: DocGroup[] = [
         slug: 'system-control',
         title: 'System control',
         summary:
-          'Volume, audio routes, Bluetooth, and Wi-Fi without leaving the keyboard.',
+          'Audio, connectivity, keep-awake, Settings, and upcoming system commands.',
       },
       {
         slug: 'shortcuts',
@@ -75,7 +75,7 @@ export const docGroups: DocGroup[] = [
         slug: 'agents',
         title: 'Agents',
         summary:
-          'Herdr pane discovery and native ACP conversations with your coding agents.',
+          'Herdr questions, coding agents, API and local models, and context you choose.',
       },
       {
         slug: 'importing-from-raycast',

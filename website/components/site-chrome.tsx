@@ -24,9 +24,10 @@ export function SiteHeader() {
         <Brand />
       </a>
       <nav aria-label="Main navigation">
+        <a href="/#answers">Answers</a>
         <a href="/#agents">Agents</a>
         <a href="/#launcher">Launcher</a>
-        <a href="/#features">Notes &amp; more</a>
+        <a href="/#notes">Notes</a>
         <a href="/docs">Docs</a>
       </nav>
       <div className="nav-actions">
@@ -54,10 +55,26 @@ export function SiteFooter() {
       </span>
       <div className="social-links">
         <a href={repositoryURL} aria-label="Volant on GitHub">
-          <Image unoptimized src="/icons/github.svg" alt="" width={20} height={20} className="social-icon" /> GitHub
+          <Image
+            unoptimized
+            src="/icons/github.svg"
+            alt=""
+            width={20}
+            height={20}
+            className="social-icon"
+          />{' '}
+          GitHub
         </a>
         <a href={socialURL} aria-label="Mystic Coders on X (Twitter)">
-          <Image unoptimized src="/icons/x.svg" alt="" width={18} height={18} className="social-icon" /> @mysticcoders
+          <Image
+            unoptimized
+            src="/icons/x.svg"
+            alt=""
+            width={18}
+            height={18}
+            className="social-icon"
+          />{' '}
+          @mysticcoders
         </a>
         <a href={`${repositoryURL}/blob/main/LICENSE`}>MIT license</a>
       </div>

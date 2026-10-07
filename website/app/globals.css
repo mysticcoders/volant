@@ -1027,3 +1027,35 @@ h1 { font-size: clamp(44px, 4.65vw, 66px); letter-spacing: -3px; }
   .nav-actions { gap: 14px; }
   .nav-github { display: none; }
 }
+
+/* Product stories reuse the site's graphite/coral semantic palette. */
+.answers-section { padding-block: 85px; }
+.release-badge { color: var(--primary); border: 1px solid var(--border); border-radius: 999px; padding: 5px 9px; letter-spacing: .3px; white-space: nowrap; }
+.answer-showcase, .ai-showcase { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 48px; align-items: start; }
+.product-capture { margin: 0 0 28px; min-width: 0; }
+.product-capture img { display: block; width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--border); }
+.product-capture a { display: block; }
+.product-capture figcaption { margin-top: 14px; color: var(--muted-foreground); font-size: 12px; line-height: 1.6; }
+.answer-examples { border-top: 1px solid var(--border); }
+.answer-example { padding: 18px 0; border-bottom: 1px solid var(--border); }
+.answer-example span { display: block; font-size: 12px; color: var(--muted-foreground); margin-bottom: 8px; }
+.answer-example code { display: block; color: var(--foreground); font-size: 14px; overflow-wrap: anywhere; }
+.answer-example strong { display: block; color: var(--primary); font-size: 16px; font-weight: 500; margin-top: 9px; overflow-wrap: anywhere; }
+.section-footnote { color: var(--muted-foreground); font-size: 13px; line-height: 1.8; margin: 28px 0 0; }
+.section-footnote a, .feature-link { color: var(--primary); }
+.section-footnote a svg, .feature-link svg { display: inline; vertical-align: middle; }
+.feature-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; margin-top: 18px; }
+.ai-showcase .notes-details article > svg { color: var(--primary); flex-shrink: 0; width: 20px; }
+.ai-showcase .text-link { color: var(--primary); margin-top: 24px; }
+.next-release { border-top: 1px solid var(--border); padding-block: 75px; }
+.next-release .feature-grid { margin-top: 36px; }
+.get .download-scope { font-size: 13px; margin: 20px auto 0; max-width: 500px; }
+.download-scope a { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 700px) {
+  .answers-section, .next-release { padding-block: 60px; }
+  .answer-showcase, .ai-showcase { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .answers-section .eyebrow { flex-wrap: wrap; }
+  .nav { flex-wrap: wrap; height: auto; min-height: 100px; gap: 12px; padding-block: 20px; }
+  .nav nav { flex-wrap: wrap; gap: 14px; }
+  .nav-actions { display: none; }
+}
