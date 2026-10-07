@@ -41,7 +41,7 @@ public struct CalculationAnswer: Hashable {
 
     /// Every answer the query has, in the order the launcher lists them: time conversion, dates
     /// and durations, colors and color adjustments, fractions and Roman numerals, number bases, ratios, arithmetic,
-    /// then unit conversion. The input side keeps the owner's wording, trimmed.
+    /// then kitchen and unit conversion. The input side keeps the owner's wording, trimmed.
     public static func answers(for query: String, now: Date = Date(), localZone: TimeZone = .current,
                                locale: Locale = .current) -> [CalculationAnswer] {
         let query = forgiving(query)
@@ -91,6 +91,7 @@ public struct CalculationAnswer: Hashable {
         if let money = MoneyCalculator.evaluate(query, locale: locale) {
             answers.append(money)
         }
+        answers.append(contentsOf: CookingConverter.evaluateAll(query, locale: locale))
         if let conversion = UnitConverter.convert(query, locale: locale) {
             let result = UnitConverter.formatResult(conversion, locale: locale)
             answers.append(CalculationAnswer(input: UnitConverter.formatSource(conversion, locale: locale),

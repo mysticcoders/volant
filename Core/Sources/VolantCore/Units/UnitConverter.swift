@@ -99,18 +99,19 @@ public enum UnitConverter {
 
     /// Units Foundation lacks, at their defined sizes: the standard atmosphere and the torr
     /// (1/760 atm), the International Table BTU, Mach 1 as the speed of sound in the ISA sea-level
-    /// atmosphere at 15 °C (an assumption, since Mach depends on temperature), the speed of light,
-    /// and counts.
+    /// atmosphere at 15 °C (an assumption, since Mach depends on temperature), the 250 mL metric
+    /// cup, the speed of light, and counts.
     private static let atmosphere = UnitPressure(symbol: "atm", converter: UnitConverterLinear(coefficient: 101_325))
     private static let torr = UnitPressure(symbol: "Torr", converter: UnitConverterLinear(coefficient: 101_325.0 / 760))
     private static let btu = UnitEnergy(symbol: "BTU", converter: UnitConverterLinear(coefficient: 1055.05585262))
+    private static let metricCup = UnitVolume(symbol: "metric cup", converter: UnitConverterLinear(coefficient: 0.25))
     private static let mach = UnitSpeed(symbol: "Mach", converter: UnitConverterLinear(coefficient: 340.29))
     private static let light = Spec(unit: UnitSpeed(symbol: "c", converter: UnitConverterLinear(coefficient: 299_792_458)), symbol: "c")
     private static let lightNames: Set<String> = ["speedoflight", "lightspeed", "thespeedoflight"]
 
     private static let customNames: [(Dimension, String)] = [
         (atmosphere, "Standard atmospheres"), (torr, "Torr"), (btu, "British thermal units (IT)"),
-        (mach, "Mach (sea level, 15 °C)"), (light.unit, "Speed of light"),
+        (mach, "Mach (sea level, 15 °C)"), (metricCup, "Metric cups"), (light.unit, "Speed of light"),
         (UnitCount.dozen, "Dozen"), (UnitCount.gross, "Gross"), (UnitPressure.newtonsPerMetersSquared, "Pascals")
     ]
 
@@ -194,6 +195,7 @@ public enum UnitConverter {
         add(["qt", "quart", "quarts"], UnitVolume.quarts, "qt")
         add(["pt", "pint", "pints"], UnitVolume.pints, "pt")
         add(["cup", "cups"], UnitVolume.cups, "cup")
+        add(["metriccup", "metriccups"], metricCup, "metric cup")
         add(["floz", "fluidounce", "fluidounces"], UnitVolume.fluidOunces, "fl oz")
         add(["tbsp", "tablespoon", "tablespoons"], UnitVolume.tablespoons, "tbsp")
         add(["tsp", "teaspoon", "teaspoons"], UnitVolume.teaspoons, "tsp")
