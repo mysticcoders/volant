@@ -57,13 +57,6 @@ public struct ColorPalette: Codable, Equatable {
         return (max(a, b) + 0.05) / (min(a, b) + 0.05)
     }
 
-    /// The color a fraction `amount` of the way from `from` to `to`, in sRGB.
-    public static func blend(_ from: String, _ to: String, _ amount: Double) -> String {
-        guard let a = components(from), let b = components(to) else { return from }
-        func channel(_ x: Double, _ y: Double) -> Int { Int(((x + (y - x) * amount) * 255).rounded()) }
-        return String(format: "#%02x%02x%02x", channel(a.red, b.red), channel(a.green, b.green), channel(a.blue, b.blue))
-    }
-
     /// WCAG 2 relative luminance of a `#rrggbb` color.
     private static func luminance(_ hex: String) -> Double? {
         guard let (r, g, b) = components(hex) else { return nil }

@@ -284,6 +284,7 @@ try JSONEncoder().encode(communityManifest).write(to: communityManifestURL)
 communityManager.reload()
 panel.model.query = "Fixture"; settle()
 verify(panel.model.rows.contains { if case .app = $0 { return true }; return false }, "An extension name cannot hide a matching application")
+verify(communityManager.loadErrors.isEmpty, "Copied community extension loads: \(communityManager.loadErrors)")
 verify(panel.model.rows.contains { if case .extensionRun = $0 { return true }; return false }, "Extension and app name collisions remain selectable")
 communityManifest.name = "Community Greeting"
 try JSONEncoder().encode(communityManifest).write(to: communityManifestURL)

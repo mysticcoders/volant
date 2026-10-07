@@ -922,14 +922,20 @@ print("PASS: dictionary routing, native text editing, Return, mode exit and Esca
 
 /// Finds a control's frame in window coordinates by the identifier of the `ControlAnchor` behind
 /// it, or by an AppKit button title, so Settings clicks follow the layout instead of hard-coded
-/// points. On a miss it prints what it saw so a layout change is diagnosable from one run.
+/// points. On a miss it prints what it saw so a layout change is diagnosable from one run. An
+/// identified control is scrolled into view first, as a person would, because taller macOS 27 form
+/// rows can leave later controls such as color theme tiles below the fold of a fixed window.
 func controlFrame(_ name: String, in window: NSWindow) -> NSRect? {
     var seen: [String] = []
     func views(_ view: NSView) -> [NSView] { [view] + view.subviews.flatMap(views) }
     for view in views(window.contentView!) where !view.isHiddenOrHasHiddenAncestor {
         if let identifier = view.identifier?.rawValue, identifier.hasPrefix("settings.") || identifier.hasPrefix("chat.") {
             seen.append(identifier)
-            if identifier == name { return view.convert(view.bounds, to: nil) }
+            if identifier == name {
+                view.scrollToVisible(view.bounds)
+                RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+                return view.convert(view.bounds, to: nil)
+            }
         }
         if let button = view as? NSButton, !button.title.isEmpty {
             seen.append(button.title)
