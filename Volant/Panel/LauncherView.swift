@@ -192,16 +192,12 @@ struct LauncherView: View {
                         .padding(.top, 8)
                     }
                     if let held = model.heldCalculation {
+                        sectionTitle("Calculator")
                         CalculatorCard(rowID: nil, fallback: held, state: model.rowState)
                             .id("calc-held")
                     }
                     ForEach(model.sections) { section in
-                        Text(section.title)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 14)
-                            .padding(.top, 10)
-                            .padding(.bottom, 4)
+                        sectionTitle(section.title)
                         ForEach(section.rows) { row in
                             if case .agentSession(let session) = row {
                                 resultButton(row)
@@ -229,6 +225,15 @@ struct LauncherView: View {
                 if let row = model.selectedRow { proxy.scrollTo(row.id, anchor: .center) }
             }
         }
+    }
+
+    private func sectionTitle(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 14)
+            .padding(.top, 10)
+            .padding(.bottom, 4)
     }
 
     private func requestSearchFocus() {
