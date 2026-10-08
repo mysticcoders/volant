@@ -629,9 +629,11 @@ do {
                                                       credentials: fakeCredentials, discovery: AIModelDiscovery(), agentDetection: detection)
         .background(Color(nsColor: .windowBackgroundColor)))
     let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 760), styleMask: [.titled], backing: .buffered, defer: false)
-    window.contentView = view; window.makeKeyAndOrderFront(nil); settle()
+    window.contentView = view; window.makeKeyAndOrderFront(nil)
+    verify(waitUntil { detection.agents.map(\.provider) == ["claude", "qwen", "codex", "gemini"] },
+           "Detected agents list ready providers first, saw \(detection.agents.map(\.provider))")
+    settle()
     try render("ai-acp-detected", view: view)
-    verify(detection.agents.map(\.provider) == ["claude", "qwen", "codex", "gemini"], "Detected agents list ready providers first")
     guard let use = controlFrame("settings.use-agent-qwen", in: window) else { verify(false, "A ready agent offers Use"); exit(1) }
     func event(_ type: NSEvent.EventType) -> NSEvent {
         NSEvent.mouseEvent(with: type, location: NSPoint(x: use.midX, y: use.midY), modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
