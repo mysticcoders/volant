@@ -31,7 +31,10 @@ struct ACPConversationView: View {
                 Spacer(minLength: 4)
                 Button("Settings", action: settings)
                 if model.active { Button("End", action: model.disconnect) }
-                else { Button("Connect", action: model.start).disabled(!model.configured) }
+                else {
+                    if model.canResume { Button("Resume", action: model.resume).help("Continue your last conversation with this provider and folder") }
+                    Button(model.canResume ? "New" : "Connect", action: model.start).disabled(!model.configured)
+                }
             }.padding(.horizontal, 16).padding(.vertical, 8)
             Divider()
             ScrollViewReader { proxy in

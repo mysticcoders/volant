@@ -101,3 +101,64 @@ limited.queue.sync {
     require(lastLimited()?["method"] as? String == "session/new" && limited.state.phase == "ready", "refused prompts send nothing")
 }
 print("Passed: attachments follow embeddedContext, keep the transcript short, and are re-checked before sending.")
+
+/// Resume loads the recorded session by ID, replays its history, and never falls back to a new one.
+func resumeSession(_ capabilities: [String: Any]) -> (ACPConnection, () -> [[String: Any]]) {
+    let connection = ACPConnection()
+    var log: [[String: Any]] = []
+    connection.testSend = { log.append($0) }
+    connection.queue.sync {
+        connection.beginHandshake(project: "/tmp/fictional-project", resume: "fictional-resumed")
+        connection.receive(frame(["jsonrpc": "2.0", "id": 1, "result": ["protocolVersion": 1, "agentCapabilities": capabilities]]))
+    }
+    return (connection, { log })
+}
+let chunk: (String, String) -> [String: Any] = { kind, text in ["jsonrpc": "2.0", "method": "session/update", "params": ["sessionId": "fictional-resumed", "update": ["sessionUpdate": kind, "content": ["type": "text", "text": text]]]] }
+let (resumed, resumedLog) = resumeSession(["loadSession": true])
+try resumed.queue.sync {
+    let load = resumedLog().last
+    require(load?["method"] as? String == "session/load", "resume sends session/load, not session/new")
+    let params = load?["params"] as? [String: Any]
+    require(params?["sessionId"] as? String == "fictional-resumed" && params?["cwd"] as? String == "/tmp/fictional-project", "load names the recorded session and folder")
+    require(!resumedLog().contains { $0["method"] as? String == "session/new" }, "no new session during a resume")
+    require(resumed.state.phase == "starting" && resumed.state.status == "Restoring conversation…", "restoring until the load answers")
+    resumed.receive(frame(chunk("user_message_chunk", "Earlier ")) + frame(chunk("user_message_chunk", "question")))
+    resumed.receive(frame(chunk("agent_message_chunk", "Earlier answer")))
+    resumed.receive(frame(["jsonrpc": "2.0", "id": 77, "method": "session/request_permission", "params": ["sessionId": "fictional-resumed", "toolCall": ["toolCallId": "old"], "options": [["optionId": "once", "name": "Allow once", "kind": "allow_once"]]]]))
+    let replayRefused = resumedLog().contains { ($0["id"] as? Int == 77) && (($0["result"] as? [String: Any])?["outcome"] as? [String: Any])?["outcome"] as? String == "cancelled" }
+    require(replayRefused && resumed.state.permissions.isEmpty, "no approval is offered while history replays")
+    require(resumed.state.messages.map(\.role) == ["You", "Agent"], "replayed history keeps both sides")
+    require(resumed.state.messages.map(\.text) == ["Earlier question", "Earlier answer"], "replayed chunks coalesce per turn")
+    resumed.receive(frame(["jsonrpc": "2.0", "id": 2, "result": [:]]))
+    require(resumed.state.phase == "ready" && resumed.state.sessionID == "fictional-resumed", "ready on the resumed session")
+    try resumed.prompt("Follow-up")
+    resumed.receive(frame(chunk("user_message_chunk", "echo must not duplicate")))
+    require(resumed.state.messages.filter { $0.role == "You" }.map(\.text) == ["Earlier question", "Follow-up"], "live turns ignore user echoes")
+    require((resumedLog().last?["params"] as? [String: Any])?["sessionId"] as? String == "fictional-resumed", "prompts go to the resumed session")
+}
+let (unsupported, unsupportedLog) = resumeSession(["promptCapabilities": ["embeddedContext": true]])
+unsupported.queue.sync {
+    require(unsupported.state.phase == "failed", "an agent without loadSession cannot be resumed")
+    require(!unsupportedLog().contains { ["session/new", "session/load"].contains($0["method"] as? String ?? "") }, "and gets neither a load nor a silent new session")
+    require(unsupported.state.status.contains("can’t resume"), "the reason is stated")
+}
+let (missing, _) = resumeSession(["loadSession": true])
+missing.queue.sync {
+    missing.receive(frame(["jsonrpc": "2.0", "id": 2, "error": ["code": -32002, "message": "Session not found."]]))
+    require(missing.state.phase == "failed" && missing.state.sessionID == nil, "a failed load ends the connection")
+    require(missing.state.status.hasPrefix("Couldn’t resume this conversation: Session not found."), "load errors name the resume")
+}
+let fresh = ACPConnection()
+var freshLog: [[String: Any]] = []
+fresh.testSend = { freshLog.append($0) }
+fresh.queue.sync {
+    fresh.beginHandshake(project: "/tmp/fictional-project")
+    fresh.receive(frame(["jsonrpc": "2.0", "id": 1, "result": ["protocolVersion": 1, "agentCapabilities": ["loadSession": true]]]))
+    fresh.receive(frame(["jsonrpc": "2.0", "id": 2, "result": ["sessionId": "fresh-session"]]))
+    fresh.receive(frame(["jsonrpc": "2.0", "method": "session/update", "params": ["sessionId": "fresh-session", "update": ["sessionUpdate": "user_message_chunk", "content": ["type": "text", "text": "not a replay"]]]]))
+    require(fresh.state.messages.isEmpty, "user chunks outside a resume are ignored")
+}
+let refused = ACPConnection()
+do { try refused.start(provider: "claude", project: "", resume: "bad id"); fatalError("invalid resume ID accepted") } catch {}
+require(refused.state.phase == "disconnected", "an invalid resume ID starts nothing")
+print("Passed: resume loads by recorded ID, replays both sides, refuses approvals during replay, and never falls back to a new session.")

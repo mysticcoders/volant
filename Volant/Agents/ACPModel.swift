@@ -12,6 +12,16 @@ final class ACPModel: ObservableObject {
     @Published var state = ACPState()
     @Published var error: String?
     @Published var submitting = false
+    /// The last ACP conversation, kept on this Mac only so it can be resumed by its own ID.
+    @Published private(set) var resumable: ACPResumeRecord?
+    private let resumeStore: UserDefaults
+    static let resumeKey = "acp.lastConversation"
+
+    init(resumeStore: UserDefaults = .standard) {
+        self.resumeStore = resumeStore
+        if let data = resumeStore.data(forKey: Self.resumeKey),
+           let record = try? JSONDecoder().decode(ACPResumeRecord.self, from: data), record.isValid { resumable = record }
+    }
     private var configuration = AIConfiguration()
     var credentials = AICredentials.keychain
     /// Apple's model runs in this process, so it uses neither helper.
@@ -50,20 +60,32 @@ final class ACPModel: ObservableObject {
     private var reading = false
     private var revision = 0
     var active: Bool { !["failed", "disconnected"].contains(state.phase) }
+    /// Resume is offered only for the provider and project currently chosen, so it can never
+    /// reopen a conversation in a folder the owner has since moved away from.
+    var canResume: Bool {
+        !active && !usesAPI && !usesApple && resumable?.matches(provider: provider, project: project) == true
+    }
     var canSend: Bool { state.phase == "ready" && !submitting && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
-    func start() {
+    func start() { connect(resume: nil) }
+
+    func resume() {
+        guard canResume, let record = resumable else { return }
+        connect(resume: record.sessionID)
+    }
+
+    private func connect(resume session: String?) {
         disconnect()
         if usesApple { startApple(); return }
         if usesAPI { startAPI(); return }
         let current = generation
-        state = ACPState(); state.phase = "starting"; state.status = "Connecting…"; error = nil
+        state = ACPState(); state.phase = "starting"; state.status = session == nil ? "Connecting…" : "Restoring conversation…"; error = nil
         let connection = NSXPCConnection(serviceName: "com.mysticcoders.volant.AgentHost")
         connection.remoteObjectInterface = NSXPCInterface(with: VolantAgentHostProtocol.self)
         connection.invalidationHandler = { [weak self] in DispatchQueue.main.async { self?.failed("Agent helper disconnected. Start a new conversation to reconnect.", current: current) } }
         connection.interruptionHandler = connection.invalidationHandler
         self.connection = connection; connection.resume()
-        proxy()?.acpStart(provider: provider, project: project) { [weak self] error in
+        let started: (String?) -> Void = { [weak self] error in
             DispatchQueue.main.async {
                 guard let self, self.generation == current else { return }
                 if let error { self.failed(error, current: current); return }
@@ -71,6 +93,19 @@ final class ACPModel: ObservableObject {
                 self.timer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in self?.read() }
             }
         }
+        if let session { proxy()?.acpResume(provider: provider, project: project, session: session, reply: started) }
+        else { proxy()?.acpStart(provider: provider, project: project, reply: started) }
+    }
+    /// Records a conversation once the helper reports it ready. A failed resume keeps the record,
+    /// since the cause may be an expired provider login with the conversation still intact;
+    /// starting a new conversation replaces it.
+    private func remember(_ snapshot: ACPState) {
+        guard !usesAPI, !usesApple, snapshot.phase == "ready", let session = snapshot.sessionID else { return }
+        let record = ACPResumeRecord(provider: provider, project: project, sessionID: session)
+        guard record.isValid, resumable?.sessionID != session || resumable?.matches(provider: provider, project: project) != true,
+              let data = try? JSONEncoder().encode(record) else { return }
+        resumeStore.set(data, forKey: Self.resumeKey)
+        resumable = record
     }
     /// Adds a snapshot unless it is already attached; refuses one that would break the limits
     /// for this connection, leaving the draft and existing attachments unchanged.
@@ -165,6 +200,7 @@ final class ACPModel: ObservableObject {
                 self.failed(error ?? "Invalid conversation state from helper.", current: current); return
             }
             if snapshot != self.state { self.state = snapshot }
+            self.remember(snapshot)
             if snapshot.phase == "failed" || (self.usesAPI && snapshot.phase == "ready") { self.timer?.invalidate(); self.timer = nil }
         } }
         if usesAPI { apiProxy()?.read(reply: reply) }

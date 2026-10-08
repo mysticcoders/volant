@@ -70,7 +70,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if CommandLine.arguments.contains("--acp-check") {
-            let model = ACPModel()
+            // The smoke check keeps its resume record in its own suite, apart from the owner's.
+            let model = ACPModel(resumeStore: UserDefaults(suiteName: "volant.acp-check")!)
             model.project = "/tmp/volant-acp-fixture"
             if let index = CommandLine.arguments.firstIndex(of: "--acp-provider"), CommandLine.arguments.indices.contains(index + 1) {
                 model.provider = CommandLine.arguments[index + 1]

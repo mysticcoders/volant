@@ -4,6 +4,10 @@ import Foundation
     func listAppleShortcuts(reply: @escaping (Data?, String?) -> Void)
     func runAppleShortcut(id: String, reply: @escaping (String?) -> Void)
     func acpStart(provider: String, project: String, reply: @escaping (String?) -> Void)
+    /// Starts the provider and loads a conversation it created earlier, by its recorded native
+    /// session ID. The reply reports only a refused ID or a failed launch; when the agent cannot
+    /// load the conversation, it ends as failed in `acpRead` and no new conversation starts.
+    func acpResume(provider: String, project: String, session: String, reply: @escaping (String?) -> Void)
     func acpRead(reply: @escaping (Data?, String?) -> Void)
     func acpPrompt(text: String, reply: @escaping (String?) -> Void)
     /// A prompt with owner-chosen attachments, a JSON array of `ChatAttachment`.
