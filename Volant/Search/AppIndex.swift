@@ -40,12 +40,20 @@ final class AppIndex: NSObject {
         return roots
     }()
 
+    /// Folders the Spotlight query searches: the application folders plus CoreServices for Finder.
+    /// A whole-computer scope also waits on every mounted volume, and one slow mount (a network
+    /// share, Xcode's device file system) kept gathering from ever finishing, leaving no apps at all.
+    static var searchScopes: [String] {
+        (applicationRoots + ["/System/Library/CoreServices/"]).filter { FileManager.default.fileExists(atPath: $0) }
+    }
+
     func start() {
         guard !started else { return }
         query.predicate = NSPredicate(format: "kMDItemContentType == 'com.apple.application-bundle'")
-        query.searchScopes = [NSMetadataQueryLocalComputerScope]
+        query.searchScopes = Self.searchScopes
         if !observing {
             NotificationCenter.default.addObserver(self, selector: #selector(gathered), name: .NSMetadataQueryDidFinishGathering, object: query)
+            NotificationCenter.default.addObserver(self, selector: #selector(gathered), name: .NSMetadataQueryGatheringProgress, object: query)
             NotificationCenter.default.addObserver(self, selector: #selector(gathered), name: .NSMetadataQueryDidUpdate, object: query)
             observing = true
         }
@@ -56,7 +64,8 @@ final class AppIndex: NSObject {
     deinit { query.stop(); NotificationCenter.default.removeObserver(self) }
 
     /// Spotlight sends updates for unrelated metadata changes; the list is republished only when
-    /// it differs, because each publish re-runs the open launcher query.
+    /// it differs, because each publish re-runs the open launcher query. Results are also read while
+    /// gathering is in progress, so a query that is slow to finish still fills the list as it goes.
     @objc private func gathered() {
         query.disableUpdates()
         defer { query.enableUpdates() }

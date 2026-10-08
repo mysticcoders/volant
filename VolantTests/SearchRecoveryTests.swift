@@ -20,6 +20,20 @@ final class SearchRecoveryTests: XCTestCase {
         XCTAssertEqual(attempts, 2)
     }
 
+    /// A whole-computer scope waits on every mounted volume; one slow mount left the app list empty.
+    @MainActor
+    func testAppIndexSearchesOnlyApplicationFolders() {
+        var started: NSMetadataQuery?
+        let index = AppIndex(startQuery: { started = $0; return true })
+        index.start()
+        let scopes = started?.searchScopes as? [String] ?? []
+        XCTAssertTrue(scopes.contains("/Applications/"))
+        XCTAssertTrue(scopes.contains("/System/Applications/"))
+        XCTAssertTrue(scopes.contains("/System/Library/CoreServices/"))
+        XCTAssertFalse(scopes.contains(NSMetadataQueryLocalComputerScope))
+        XCTAssertTrue(AppIndex.isUserFacingApp("/System/Library/CoreServices/Finder.app"))
+    }
+
     @MainActor
     func testFileRefusalCompletesOnceReleasesCallbackAndCanRetry() async {
         var attempts = 0
