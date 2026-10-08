@@ -87,36 +87,42 @@ final class AgentsModel: ObservableObject {
         catalogRequest = request
         updateInventoryMessage()
         let reply: (Data?, String?) -> Void = { [weak self] data, error in
+            let decoded = error == nil ? data.flatMap { try? HerdrMachine.decode($0) } : nil
             DispatchQueue.main.async {
                 guard let self, self.connected, current == self.generation, self.catalogRequest == request else { return }
                 self.catalogRequest = nil
-                if let data, let profiles = try? HerdrMachine.decode(data), error == nil {
+                var machines = self.machines, sessions = self.sessions
+                var newlyEnabled: [HerdrMachine] = []
+                if let profiles = decoded {
                     let active = profiles.filter(\.enabled)
                     let validRoutes = Set(active.map(\.routeIdentity))
                     let previousRoutes = Set(self.profiles.filter(\.enabled).map(\.routeIdentity))
                     let validIDs = Set(profiles.map { "remote:" + $0.id })
                     for old in self.profiles where !validRoutes.contains(old.routeIdentity) {
                         self.inventoryRequests.removeValue(forKey: "remote:" + old.id)
-                        self.machines.removeAll { $0.id == "remote:" + old.id }
+                        machines.removeAll { $0.id == "remote:" + old.id }
                     }
-                    self.sessions.removeAll { $0.machine.map { !validRoutes.contains($0.routeIdentity) } ?? false }
-                    self.machines.removeAll { $0.id == "catalog" || ($0.id != "local" && !validIDs.contains($0.id)) }
-                    self.profiles = profiles
+                    sessions.removeAll { $0.machine.map { !validRoutes.contains($0.routeIdentity) } ?? false }
+                    machines.removeAll { $0.id == "catalog" || ($0.id != "local" && !validIDs.contains($0.id)) }
+                    self.update(\.profiles, profiles)
                     for machine in profiles {
                         if machine.enabled {
-                            if !previousRoutes.contains(machine.routeIdentity) { self.loadInventory(on: machine) }
+                            if !previousRoutes.contains(machine.routeIdentity) { newlyEnabled.append(machine) }
                         }
-                        else { self.setMachine(.init(id: "remote:" + machine.id, label: machine.label, state: "disabled", detail: "Disabled in Herdr")) }
+                        else { Self.place(.init(id: "remote:" + machine.id, label: machine.label, state: "disabled", detail: "Disabled in Herdr"), in: &machines) }
                     }
                 } else {
                     // An unreadable catalog cannot authorize stale remote panes.
-                    self.profiles = []
+                    self.update(\.profiles, [])
                     self.inventoryRequests = self.inventoryRequests.filter { $0.key == "local" }
-                    self.sessions.removeAll { $0.machine != nil }
-                    self.machines.removeAll { $0.id != "local" }
-                    self.setMachine(.init(id: "catalog", label: "Saved machines", state: "unavailable",
-                        detail: error ?? "Couldn’t read saved machines."))
+                    sessions.removeAll { $0.machine != nil }
+                    machines.removeAll { $0.id != "local" }
+                    Self.place(.init(id: "catalog", label: "Saved machines", state: "unavailable",
+                        detail: error ?? "Couldn’t read saved machines."), in: &machines)
                 }
+                self.update(\.machines, machines)
+                self.update(\.sessions, sessions)
+                for machine in newlyEnabled { self.loadInventory(on: machine) }
                 self.refreshAttention()
                 self.updateInventoryMessage()
             }
@@ -169,17 +175,18 @@ final class AgentsModel: ObservableObject {
         }
         updateInventoryMessage()
         let reply: (Data?, String?) -> Void = { [weak self] data, error in
+            let decoded = error == nil ? data.flatMap { try? JSONDecoder().decode([AgentSession].self, from: $0) } : nil
             DispatchQueue.main.async {
                 guard let self, self.connected, current == self.generation, self.inventoryRequests[id] == request else { return }
                 self.inventoryRequests.removeValue(forKey: id)
-                self.sessions.removeAll { ($0.machine.map { "remote:" + $0.id } ?? "local") == id }
-                let values = data.flatMap { try? JSONDecoder().decode([AgentSession].self, from: $0) }
-                if let values, error == nil, values.allSatisfy({ $0.machine?.routeIdentity == machine?.routeIdentity }) {
-                    self.sessions = AgentSession.sorted(self.sessions + values)
+                let others = self.sessions.filter { ($0.machine.map { "remote:" + $0.id } ?? "local") != id }
+                if let values = decoded, values.allSatisfy({ $0.machine?.routeIdentity == machine?.routeIdentity }) {
+                    self.update(\.sessions, AgentSession.sorted(others + values))
                     self.noteSeen(values)
                     if machine == nil { self.refreshRepositories() }
                     self.setMachine(.init(id: id, label: machine?.label ?? "Local", state: "connected", detail: "\(values.count) panes"))
                 } else {
+                    self.update(\.sessions, others)
                     self.setMachine(.init(id: id, label: machine?.label ?? "Local", state: "unavailable", detail: error ?? "Couldn’t read panes."))
                 }
                 self.refreshAttention()
@@ -197,10 +204,12 @@ final class AgentsModel: ObservableObject {
 
     /// A pane seen for the first time starts read, and one Herdr reports as focused is read.
     private func noteSeen(_ values: [AgentSession]) {
+        var updated = seen
         for session in values {
             let key = seenKey(session), sequence = session.stateChangeSequence ?? 0
-            if seen[key] == nil || session.focused == true { seen[key] = sequence }
+            if updated[key] == nil || session.focused == true { updated[key] = sequence }
         }
+        update(\.seen, updated)
     }
 
     func isUnread(_ session: AgentSession) -> Bool {
@@ -228,7 +237,7 @@ final class AgentsModel: ObservableObject {
             guard let cwd = session.cwd else { continue }
             marks[cwd] = max(marks[cwd] ?? 0, session.stateChangeSequence ?? 0)
         }
-        repositories = repositories.filter { marks[$0.key] != nil }
+        update(\.repositories, repositories.filter { marks[$0.key] != nil })
         let now = Date()
         let due = Array(marks.keys.filter {
             repositoryMarks[$0] != marks[$0] || now.timeIntervalSince(repositoryCheckedAt[$0] ?? .distantPast) > 30
@@ -237,16 +246,18 @@ final class AgentsModel: ObservableObject {
         let request = UUID(), current = generation
         repositoryRequest = request
         let reply: (Data?, String?) -> Void = { [weak self] data, error in
+            let states = error == nil ? data.flatMap { try? JSONDecoder().decode([String: RepositoryState].self, from: $0) } : nil
             DispatchQueue.main.async {
                 guard let self, self.connected, current == self.generation, self.repositoryRequest == request else { return }
                 self.repositoryRequest = nil
-                let states = error == nil ? data.flatMap { try? JSONDecoder().decode([String: RepositoryState].self, from: $0) } : nil
+                var updated = self.repositories
                 for cwd in due {
                     self.repositoryCheckedAt[cwd] = Date()
                     guard let states else { continue }
                     self.repositoryMarks[cwd] = marks[cwd]
-                    self.repositories[cwd] = states[cwd]
+                    updated[cwd] = states[cwd]
                 }
+                self.update(\.repositories, updated)
             }
         }
         if let repositoryReader { repositoryReader(due, reply) }
@@ -254,6 +265,13 @@ final class AgentsModel: ObservableObject {
     }
 
     private func setMachine(_ value: HerdrMachineStatus) {
+        var updated = machines
+        Self.place(value, in: &updated)
+        update(\.machines, updated)
+    }
+
+    /// Replaces a machine's status in a list kept with Local first, then by label.
+    private static func place(_ value: HerdrMachineStatus, in machines: inout [HerdrMachineStatus]) {
         machines.removeAll { $0.id == value.id }
         machines.append(value)
         machines.sort {
@@ -262,11 +280,18 @@ final class AgentsModel: ObservableObject {
         }
     }
 
+    /// Assigns only real changes. Herdr refreshes every five seconds and most refreshes change
+    /// nothing; each announced change re-renders every view that observes this model.
+    private func update<Value: Equatable>(_ keyPath: ReferenceWritableKeyPath<AgentsModel, Value>, _ value: Value) {
+        if self[keyPath: keyPath] != value { self[keyPath: keyPath] = value }
+    }
+
     private func updateInventoryMessage() {
-        busy = catalogRequest != nil || !inventoryRequests.isEmpty
-        if machines.contains(where: \.unavailable) { message = "Some machines are unavailable. Showing connected machines only." }
-        else if busy { message = "Loading Herdr machines… Available panes are ready to use." }
-        else { message = sessions.isEmpty ? "No agents are running on connected machines." : "Herdr machines · refreshes automatically" }
+        let loading = catalogRequest != nil || !inventoryRequests.isEmpty
+        update(\.busy, loading)
+        if machines.contains(where: \.unavailable) { update(\.message, "Some machines are unavailable. Showing connected machines only.") }
+        else if loading { update(\.message, "Loading Herdr machines… Available panes are ready to use.") }
+        else { update(\.message, sessions.isEmpty ? "No agents are running on connected machines." : "Herdr machines · refreshes automatically") }
     }
     func isAttentionTarget(_ session: AgentSession) -> Bool {
         attentionTarget?.id == session.id && attentionTarget?.sessionIdentity == session.sessionIdentity
@@ -284,19 +309,23 @@ final class AgentsModel: ObservableObject {
     func refreshAttention() {
         guard !attentionAnswering, let target = attentionTarget else { return }
         guard connected, HerdrAttention.matches(target, in: sessions) else {
-            attentionRequest = UUID(); attention = nil; attentionError = nil; attentionLoading = false
-            attentionQuestion = nil; attentionToken = nil
+            attentionRequest = UUID(); attentionToken = nil
+            if attention != nil { attention = nil }
+            if attentionError != nil { attentionError = nil }
+            if attentionLoading { attentionLoading = false }
+            if attentionQuestion != nil { attentionQuestion = nil }
             return
         }
         guard !attentionLoading, !attentionAnswering else { return }
         let request = UUID(); attentionRequest = request
         attentionLoading = true
         let completion: (Data?, String?) -> Void = { [weak self] data, error in
+            let snapshot = data.flatMap { try? JSONDecoder().decode(HerdrResponseController.Snapshot.self, from: $0) }
+            let preview = snapshot.flatMap { try? HerdrAttention.preview(Data($0.text.utf8)) }
             DispatchQueue.main.async {
                 guard let self, self.attentionRequest == request, self.connected,
                       HerdrAttention.matches(target, in: self.sessions) else { return }
                 self.attentionLoading = false
-                let snapshot = data.flatMap { try? JSONDecoder().decode(HerdrResponseController.Snapshot.self, from: $0) }
                 // A post-send read can race the provider leaving its question screen. Preserve
                 // the delivery result (including uncertainty) until a fresh screen or list arrives.
                 if snapshot == nil, self.attentionResponse != nil {
@@ -307,7 +336,7 @@ final class AgentsModel: ObservableObject {
                     self.attentionResponse = nil
                     self.actionMessage = nil
                 }
-                self.attention = snapshot.flatMap { try? HerdrAttention.preview(Data($0.text.utf8)) }
+                self.attention = preview
                 self.attentionQuestion = snapshot?.question
                 self.attentionToken = snapshot?.token
                 self.attentionError = error ?? (self.attention == nil ? "Couldn’t read this question. Open it in Herdr." : nil)

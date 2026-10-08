@@ -444,16 +444,20 @@ var previewReply: ((Data?, String?) -> Void)?
 panel.model.agents.attentionReader = { _, reply in previewReply = reply }
 panel.model.agents.sessions = [waitingClaude, waitingCodex]
 panel.toggle()
+// The footer shows the waiting count; the question itself lives in the herdr view.
+verify(panel.model.promotedHarness == "all", "Herdr status is enabled for the footer")
+panel.model.showPromotedAgents()
+verify(panel.model.query == "herdr" && panel.model.showingAgents, "Footer status opens the herdr view")
 // SwiftUI starts the preview in .task after presentation. A fixed 200 ms delay
 // can expire on a loaded CI runner before that task starts; wait for its effect.
 let previewDeadline = Date().addingTimeInterval(3)
 while (!panel.model.agents.attentionLoading || previewReply == nil) && Date() < previewDeadline {
     RunLoop.main.run(until: Date().addingTimeInterval(0.02))
 }
-verify(panel.model.agents.attentionLoading && previewReply != nil, "Pinned waiting agent starts a passive preview read")
+verify(panel.model.agents.attentionLoading && previewReply != nil, "Waiting agent in the herdr view starts a passive preview read")
 try render("attention-loading")
 previewReply?(try JSONEncoder().encode(HerdrResponseController.Snapshot(text: "Allow running npm test in /fictional/orbit?\n\n1. Yes, once\n2. Yes, for this session\n3. No", token: nil, question: nil)), nil); settle()
-verify(panel.model.agents.attention?.text.contains("npm test") == true, "Waiting question appears below the pinned status")
+verify(panel.model.agents.attention?.text.contains("npm test") == true, "Waiting question appears at the top of the herdr view")
 try render("attention")
 panel.model.agents.sessions = [waitingCodex]; settle()
 verify(panel.model.agents.attention == nil && panel.model.agents.attentionLoading, "Changing waiting agent clears the previous question")
@@ -478,7 +482,7 @@ panel.model.agents.attentionResponder = { token, choice, reply in
     answered.append(choice); answerReply = reply
 }
 // Native click on Answer with keyboard; card geometry is fixed above the scrollable results.
-point = NSPoint(x: 90, y: panel.contentView!.bounds.height - 272)
+point = NSPoint(x: 90, y: panel.contentView!.bounds.height - 234)
 clickPoint()
 key("2", 19, [.command, .option])
 verify(answered == [2], "Focused question shortcut sends the selected answer")
@@ -524,7 +528,7 @@ if let scroll = nativeScrollViews(panel.contentView!).first, let document = scro
     scroll.reflectScrolledClipView(scroll.contentView); settle()
 }
 try render("attention-claude-scope")
-point = NSPoint(x: 90, y: panel.contentView!.bounds.height - 324)
+point = NSPoint(x: 90, y: panel.contentView!.bounds.height - 286)
 clickPoint()
 key("3", 20, [.command, .option])
 verify(answered == [2, 3], "Claude No shortcut delivers only the selected denial")
@@ -543,9 +547,14 @@ try render("machines-filtered")
 panel.model.query = "agents"; settle()
 verify(panel.model.rows.count == 2, "Local and remote panes with identical IDs remain separate rows")
 try render("machines-overview")
-UserDefaults.standard.set(true, forKey: "showHerdrDetails"); settle()
-try render("machines-details")
-UserDefaults.standard.set(false, forKey: "showHerdrDetails"); settle()
+// The footer status replaces the old strip: it counts waiting panes and names an unavailable machine.
+panel.model.agents.sessions = [waitingClaude, waitingCodex]
+panel.model.query = ""; settle()
+verify(HerdrStatusSummary(sessions: panel.model.agents.sessions, connected: true, busy: false, machines: panel.model.agents.machines).text == "Herdr: 2 waiting", "Footer counts both waiting panes")
+try render("herdr-footer-waiting")
+panel.model.agents.sessions = [localTwin]; settle()
+verify(HerdrStatusSummary(sessions: panel.model.agents.sessions, connected: true, busy: false, machines: panel.model.agents.machines).text == "Herdr: Lab unavailable", "Footer names the unavailable machine when nothing waits")
+try render("herdr-footer-unavailable")
 panel.orderOut(nil)
 print("PASS: passive Herdr question previews, target changes, loading, error, and resolved states")
 

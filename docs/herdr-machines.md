@@ -2,7 +2,7 @@
 
 Volant discovers Local plus enabled saved Herdr machines with `herdr machine list --json`. It does not add hosts, change SSH trust, install or restart remote servers, or forward arbitrary SSH destinations from the UI. A saved profile chooses one remote session, not every session on that host. Remote forwarding requires Herdr 0.9.1 or later on both machines and a compatible running server.
 
-The status bar aggregates connected panes. Expanded details and Open Agents show machine connection states; pane rows, search, and waiting cards identify the machine. Disabled profiles remain disabled. Unavailable machines contribute no stale panes, working counts, questions or answer buttons. The warning explains that SSH access and remote Herdr compatibility need checking. Local and remote discovery failures are independent, and polling recovers when the destination becomes available. Polling runs off the UI thread. Local discovery and saved-machine catalog reads have dedicated queues; remote discovery uses at most four workers. Local panes publish immediately when their request completes, even before catalog discovery finishes. Each enabled remote starts with a Loading state and publishes independently. The five-second poll refreshes Local and completed machines without waiting for an outstanding remote request. Each destination has at most one outstanding request per connection/profile revision. Focus and answers use a separate serialized queue so discovery cannot block their execution.
+The launcher footer's Herdr status counts waiting panes across connected machines and names an unavailable machine when nothing is waiting. The `herdr` view shows machine connection states; pane rows, search, and waiting cards identify the machine. Disabled profiles remain disabled. Unavailable machines contribute no stale panes, working counts, questions or answer buttons. The warning explains that SSH access and remote Herdr compatibility need checking. Local and remote discovery failures are independent, and polling recovers when the destination becomes available. Polling runs off the UI thread. Local discovery and saved-machine catalog reads have dedicated queues; remote discovery uses at most four workers. Local panes publish immediately when their request completes, even before catalog discovery finishes. Each enabled remote starts with a Loading state and publishes independently. The five-second poll refreshes Local and completed machines without waiting for an outstanding remote request. Each destination has at most one outstanding request per connection/profile revision. Focus and answers use a separate serialized queue so discovery cannot block their execution.
 
 A remote agent's stable identity includes saved profile ID, SSH target, remote session, terminal and pane. Every read, validation, focus and keystroke uses the same `--machine <profile-id>` route. Before each forwarded operation, the helper rereads the catalog and rejects removed, disabled or retargeted profiles. The provider response token retains its original destination and cannot be repurposed for an identical pane ID on Local. Profile labels can change without retargeting input. The remote CLI never falls back to Local, and uncertain delivery is never automatically resent.
 
@@ -42,3 +42,26 @@ Next: verify the signed app against a compatible remote machine using a fictiona
 The former combined inventory reply waited for every remote process before publishing Local. Independent XPC requests now isolate local/catalog/remote scheduling. Callback generations and per-destination request IDs reject replies after disconnect, removal, disabling, or retargeting. A failed machine loses only its own actionable panes; catalog failure clears remote destinations but preserves Local. Tests hold catalog/remote replies explicitly to prove local results and later local refreshes do not wait; native light/dark fixtures cover connected Local alongside a loading remote. Installed signed-XPC behavior remains separate from injected transport tests.
 
 During verification, the unrelated Apple Shortcuts fixture exhausted its fixed 200 ms result wait in the dark-mode Tart pass. It now waits at most three seconds for the expected stable row IDs and still fails if they never arrive. This changes test synchronization only, not product timing.
+
+## Footer status and refresh cost — October 8, 2026
+
+The Herdr status moved from a strip under the search field to one footer item beside Caffeinate, built by `HerdrStatusSummary` in Core:
+
+| Situation | Footer reads |
+| --- | --- |
+| Panes blocked waiting for input or approval | "Herdr: 3 waiting" (orange) |
+| Nothing waiting, one machine unavailable | "Herdr: Studio unavailable" (orange, warning icon) |
+| Nothing waiting, several unavailable | "Herdr: 2 machines unavailable" |
+| Still loading, no panes yet | "Herdr: loading…" |
+| Nothing waiting | "Herdr: none waiting" |
+| Not connected | "Herdr: not connected" |
+
+**What counts as waiting:** only panes Herdr reports blocked. Finished or idle panes need no answer; the `herdr` list still marks them as new. The waiting count wins the space over an unavailable machine, whose name stays in the tooltip.
+
+**Why "none waiting" is shown:** the owner turned the status on deliberately. A missing label would be ambiguous between disconnected, loading and nothing waiting.
+
+**Click and menu:**
+- **Click:** opens `herdr` (or `herdr <agent>` for a filtered setting), which lists waiting panes first and shows the waiting question above them.
+- **Context menu:** hides the status or chooses which agents it counts. This replaces the old strip's menu and expanded pane details.
+
+**Refresh cost:** the launcher view no longer observes the agents model. Only the footer item, the `herdr` header and pane rows do, so Herdr's five-second refresh no longer redraws the results list. `AgentsModel` also assigns only real changes and decodes replies off the main thread. In `HerdrPublishTests`, ten refresh ticks with a slow remote machine announced 197 changes before and 14 after, and the launcher model announced none.

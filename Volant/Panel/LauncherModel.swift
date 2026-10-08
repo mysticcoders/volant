@@ -329,8 +329,11 @@ final class LauncherModel: ObservableObject {
     func resumeAgentsIfNeeded() {
         if promotedHarness != nil && !agents.connected { agents.connect() }
     }
+    /// The footer's Herdr status opens the `herdr` list, which puts waiting panes first, narrowed
+    /// to the agent chosen in Settings when there is one.
     func showPromotedAgents() {
-        query = "agents" + (promotedHarness == "all" ? "" : " " + (promotedHarness ?? ""))
+        guard let filter = promotedHarness else { query = "herdr"; return }
+        query = filter == "all" ? "herdr" : "herdr " + filter
     }
     private func refreshMachineResults() {
         let selectedID = selectedRow?.id

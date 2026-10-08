@@ -272,7 +272,7 @@ let homeUsage = UsageStore(url: root.appendingPathComponent("home-\(dark ? "dark
 let homePanel = LauncherPanel(index: homeIndex, clipboard: clipboard, notes: notes, config: Preferences(), usage: homeUsage, positionStore: positionDefaults, onNote: { _ in })
 homePanel.model.searchesSecondarySources = false
 homePanel.toggle()
-homePanel.model.promotedHarness = "all" // Render the strip without connecting to any real harness.
+homePanel.model.promotedHarness = "all" // Render the footer status without connecting to any real harness.
 RunLoop.main.run(until: Date().addingTimeInterval(0.3))
 verify(homePanel.model.selectedRow?.id == "app:" + assistant.id, "Fixture begins with Home Assistant as the recent suggestion")
 func sendHomeKey(_ characters: String, code: UInt16) {
@@ -291,7 +291,8 @@ func verifyHomeHighlight(firstSelected: Bool) {
         let color = bitmap.colorAt(x: bitmap.pixelsWide / 2, y: Int(y * scale))!.usingColorSpace(.deviceRGB)!
         return (color.redComponent + color.greenComponent + color.blueComponent) / 3
     }
-    let difference = brightness(148) - brightness(190)
+    // Rows start right below the search field; Herdr status lives in the footer, not above the results.
+    let difference = brightness(109) - brightness(151)
     let expectedSign: CGFloat = (firstSelected == dark) ? 1 : -1
     verify(difference * expectedSign > 0.025, "Rendered highlight agrees with selection in both appearances")
 }
@@ -313,11 +314,11 @@ if let content = homePanel.contentView, let bitmap = content.bitmapImageRepForCa
     try bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.75])!.write(to: URL(fileURLWithPath: "/tmp/volant-home-\(dark ? "dark" : "light").jpg"))
 }
 for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
-    homePanel.sendEvent(NSEvent.mouseEvent(with: type, location: NSPoint(x: 180, y: LauncherPanel.size.height - 148), modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: homePanel.windowNumber, context: nil, eventNumber: 2, clickCount: 1, pressure: type == .leftMouseDown ? 1 : 0)!)
+    homePanel.sendEvent(NSEvent.mouseEvent(with: type, location: NSPoint(x: 180, y: LauncherPanel.size.height - 109), modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: homePanel.windowNumber, context: nil, eventNumber: 2, clickCount: 1, pressure: type == .leftMouseDown ? 1 : 0)!)
     RunLoop.main.run(until: Date().addingTimeInterval(0.1))
 }
 verify(homeLaunches == [home.id], "Clicking Home activates Home: launches=\(homeLaunches), key=\(homePanel.isKeyWindow), visible=\(homePanel.isVisible), responder=\(String(describing: homePanel.firstResponder))")
-print("PASS: h/ho/hom initial selection, up/down navigation, and Home mouse activation with pinned harness")
+print("PASS: h/ho/hom initial selection, up/down navigation, and Home mouse activation with Herdr footer status")
 
 
 // Volume uses fictional hardware; native Return exercises routing without changing host audio.

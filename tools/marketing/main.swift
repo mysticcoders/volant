@@ -24,7 +24,6 @@ model.sections = [ResultSection(title: "Applications", rows: [
     .app(AppEntry(id: "settings", name: "System Settings", url: URL(fileURLWithPath: "/System/Applications/System Settings.app"), lastUsed: nil))
 ])]
 let defaults = UserDefaults(suiteName: "volant.marketing.fixture")!
-defaults.set(true, forKey: "showHerdrDetails")
 for dark in [false, true] {
     app.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
     let host = NSHostingView(rootView: LauncherView(model: model, agents: model.agents)

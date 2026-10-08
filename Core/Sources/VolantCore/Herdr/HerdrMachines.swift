@@ -25,7 +25,7 @@ public struct HerdrMachine: Codable, Hashable, Identifiable {
     }
 }
 
-public struct HerdrMachineStatus: Codable, Identifiable {
+public struct HerdrMachineStatus: Codable, Identifiable, Equatable {
     public let id: String
     public let label: String
     public let state: String
