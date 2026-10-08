@@ -56,11 +56,11 @@ const questions = [
   ],
   [
     'Where does my data live?',
-    'Notes are plain Markdown files on your Mac. Clipboard history is encrypted locally with a Keychain key. You choose what to attach to AI prompts; cloud providers receive the messages you send. Updates, optional AI connections, and exchange rates use separate helpers. Opt-in iCloud settings sync is coming in the next release and excludes notes, clipboard history, and keys.',
+    'Notes are plain Markdown files on your Mac. Clipboard history is encrypted locally with a Keychain key. You choose what to attach to AI prompts; cloud providers receive the messages you send. Updates, optional AI connections, and exchange rates use separate helpers. Opt-in iCloud settings sync carries selected settings between your Macs and excludes notes, clipboard history, and keys.',
   ],
   [
     'Are all the features here in the download?',
-    'The download is Volant 0.1.5. Sections labeled Coming next preview work merged since that release: the expanded calculator, color themes and theme import, new system commands, and iCloud settings sync. They are not included in the current download.',
+    'Yes. Everything on this page is in Volant 0.2.0, including the expanded calculator, color themes and theme import, the system commands, and iCloud settings sync.',
   ],
   [
     'Does it work with Shortcuts?',
@@ -159,7 +159,7 @@ export default function Home() {
             <div>
               <p className="eyebrow">
                 01 / ANSWERS AS YOU TYPE{' '}
-                <span className="release-badge">Coming next</span>
+                <span className="release-badge">New in 0.2.0</span>
               </p>
               <h2 id="answers-title">
                 Ask it.
@@ -568,7 +568,7 @@ export default function Home() {
           aria-labelledby="next-title"
         >
           <p className="eyebrow">
-            COMING NEXT · MERGED, NOT YET IN THE DOWNLOAD
+            NEW IN 0.2.0
           </p>
           <h2 id="next-title">More ways to make it yours.</h2>
           <div className="feature-grid">
@@ -593,12 +593,12 @@ export default function Home() {
               <p>
                 Opt-in iCloud sync for selected shortcuts, snippets, quicklinks,
                 aliases, and appearance. Notes, clipboard history, and keys stay
-                out. Delivery between two Macs still needs verification.
+                out.
               </p>
             </article>
           </div>
           <p className="section-footnote">
-            The expanded calculator above is also coming next. Download{' '}
+            The expanded calculator above is new in 0.2.0 too. Download{' '}
             {appVersion} today, or{' '}
             <a href={`${repositoryURL}/pulls?q=is%3Apr+is%3Amerged`}>
               follow development on GitHub <ArrowUpRight size={14} />
@@ -687,8 +687,8 @@ export default function Home() {
             Version {appVersion} · macOS 15+ · Apple silicon &amp; Intel
           </span>
           <p className="download-scope">
-            The expanded calculator, color themes, new system commands, and
-            iCloud settings sync are <a href="#next">coming next</a>.
+            <a href="#next">New in 0.2.0</a>: the expanded calculator, color
+            themes, system commands, and iCloud settings sync.
           </p>
         </section>
       </main>

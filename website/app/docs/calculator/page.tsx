@@ -49,15 +49,6 @@ export default function Calculator() {
         coin prices.
       </p>
 
-      <div className="docs-note">
-        <p>
-          <strong>Coming next.</strong> This page describes the current development
-          build. Download 0.1.5 includes arithmetic, unit conversion, and time-zone
-          cards; the expanded percentages, dates, cooking, colors, currency,
-          crypto, and answer-reuse features below were merged afterward and are
-          not in that download.
-        </p>
-      </div>
       <h2>Using an answer</h2>
       <ul>
         <li><strong>Return</strong> copies the answer.</li>

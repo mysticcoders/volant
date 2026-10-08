@@ -106,3 +106,35 @@ Publish in two stages as before: DMG, checksums and website first, verify public
 Public DMG delivery verified after Cloudflare deployment `41b96146-f281-4a01-b448-eba3e428dc68` (run by the owner): the homepage offers 0.1.5 and `/docs/launcher` serves the time-conversion section. The downloaded DMG (HTTP 200, 8,359,368 bytes) matched the SHA-256 above, passed stapler validation and Gatekeeper (Notarized Developer ID), and `getvolant.com` still redirects. The public feed remained on 0.1.4 until the follow-up activates the exact signed build-7 appcast.
 
 Final publication: signed build-7 feed activated in Cloudflare deployment `aba0225d-8607-4ab2-aac9-4998ff522012` (run by the owner). The public feed (HTTP 200, `max-age=0, must-revalidate`) matched the generated file byte-for-byte, reports version 0.1.5 build 7, and passed Sparkle `sign_update --verify`. The homepage, `/docs`, and the 0.1.5 and 0.1.4 DMGs returned 200. Release PRs #112 and #113 passed required workflow checks before merging. As before, an installed 0.1.4 → 0.1.5 upgrade, the Intel hardware smoke test and working iCloud sync (no entitlement in this build) remain unverified.
+
+## 0.2.0 build 8 — October 7, 2026
+
+Release includes everything merged since 0.1.5:
+
+- **Calculator:** the expanded calculator, #137–#149.
+- **Currencies:** about 160 fiat currencies through ExchangeRate-API behind ECB, #146.
+- **Crypto:** keyless CoinGecko prices, #138.
+- **Themes:** color themes, Raycast theme import and a themed Notes editor, #147, #148, #150.
+- **System commands:** lock, sleep, screen saver, restart, shut down and log out, #102.
+- **Launcher:** steadier launcher typing, #144.
+- **Memory:** reductions, #155, #156.
+- **iCloud:** settings sync enabled by the key-value entitlement and Developer ID profile signing, #153.
+
+The owner chose 0.2.0 for the iCloud sync.
+
+**Profile fix.** The first Developer ID run failed before building: the "Volant Developer ID" profile created on October 1 listed only the March 2024 Developer ID Application certificate (`1CA0…D900`), while this Mac signs with the April 22, 2026 certificate (`2AFC…A6D2`), which also signed every published DMG. The owner regenerated the profile with the April 22 certificate (UUID `282891c4-d009-44b6-a929-e10b1f637ea5`). The team holds three Developer ID Application certificates, all expiring February 1, 2027; the March 2024 and April 11, 2026 ones are unused. Create a new certificate and add it to the profile before then.
+
+**Build.** Built from `main` at `d9b6dbc` (#157, version-only). Output: `dist-release.DNIqft/`.
+
+- **Notarization:** used App Store Connect API key `SCV5964PL2`. Apple accepted app submission `e3ab46a4-2c31-42ab-a45c-3bbb317c6f00` and DMG submission `cd5daa84-4ca6-4514-9bd1-21ebdb7b11b5`. Both were stapled and passed Gatekeeper as Notarized Developer ID.
+- **Mounted DMG:** contains `Volant.app` (0.2.0, build 8, `x86_64 arm64`, valid deep strict signature, stapled, sandboxed, iCloud key-value and loginwindow Apple Events entitlements, embedded provisioning profile, no network-client entitlement) and the Applications symlink.
+- **DMG SHA-256:** `a2fb27d792b8c309e72ec597faa449f01c9710c97b3c3dc75eae607abc74c03e`.
+- **Appcast:** the signed appcast references build 8 and the DMG length (12,261,884 bytes).
+
+An earlier local test build of the same code, still labeled 0.1.5 build 7 (`dist-release.2gNQDA/`, DMG submission `b296668c-8808-4af4-be60-c5588d004a11`), was used only to try iCloud sync on a second Mac and must never be published.
+
+**Publishing.** Publish in two stages as before: DMG, checksums and website first, verify public delivery, then activate the signed build-8 feed.
+
+**Verified by the owner.** iCloud settings sync between two Macs on the same Apple Account, theme switching, and the system actions in the installed app.
+
+**Unverified.** An installed 0.1.5 → 0.2.0 upgrade, Intel hardware, and iCloud quota and account-change notifications remain unverified.

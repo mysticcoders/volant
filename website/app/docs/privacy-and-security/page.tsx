@@ -51,17 +51,16 @@ export default function PrivacyAndSecurity() {
           <a href="/docs/agents">AI connections</a>.
         </li>
         <li>
-          <strong>iCloud settings sync · coming next</strong> uses Apple’s
+          <strong>iCloud settings sync</strong> uses Apple’s
           key-value service only when enabled. It shares selected global
           shortcuts, snippets, quicklinks, aliases, appearance, and
           clipboard-retention settings. Notes, clipboard history, API keys, AI
           configuration, app-specific shortcuts, and extension approvals are
-          excluded. The 0.1.5 download lacks the required entitlement and
-          reports iCloud as unavailable. Delivery between two signed Macs
-          remains unverified.
+          excluded. It is off until you turn it on in Settings → Data &amp;
+          Configuration.
         </li>
         <li>
-          <strong>Exchange rates · coming next</strong> come through a small
+          <strong>Exchange rates</strong> come through a small
           rates helper that can reach only three fixed addresses. It downloads
           the European Central Bank&rsquo;s public daily rates the first time
           you type a currency conversion, and never before. Currencies the
