@@ -183,3 +183,10 @@ Public DMG delivery verified after Cloudflare Worker deployment `00f07ab2-5ced-4
 - **Download:** HTTP 200, 12,262,988 bytes. It matched the SHA-256 above, passed stapler validation and passed Gatekeeper as Notarized Developer ID.
 - **Pages:** `/docs`, `/docs/agents` and the 0.2.0 DMG returned 200.
 - **Feed:** the public feed stayed on 0.2.0 build 8 until the signed build-9 appcast (passes `sign_update --verify`, 12,262,988 bytes) is activated.
+
+Final publication: the signed build-9 feed was activated in Cloudflare Worker deployment `6484610c-0027-4926-8a2f-2a51e7c6cc54` (run by the owner from #165).
+
+- **Feed:** the public feed (HTTP 200, `max-age=0, must-revalidate`) matched both the committed file and the release output byte-for-byte. It reports version 0.2.1 build 9 and passed Sparkle `sign_update --verify`.
+- **Pages and downloads:** the homepage, `/docs`, and the 0.2.1 and 0.2.0 DMGs returned 200.
+- **Release PRs:** #162 through #165 passed required workflow checks before merging.
+- **Still unverified:** installed 0.2.0 → 0.2.1 Sparkle upgrades, and Intel hardware.
