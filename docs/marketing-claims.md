@@ -1,17 +1,17 @@
-# Marketing claims — October 7, 2026
+# Marketing claims — October 7, 2026 (0.2.0)
 
 ## Promise and release boundary
 
 Keep work moving without leaving your flow: apps, answers, notes, and agents within reach. Keep the established “Your Mac. Your agents. One shortcut away.” headline and graphite/coral site system.
 
-The public artifact remains Volant 0.1.5, build 7, from `bedbf0e`. Homepage previews and calculator documentation must not imply that later merged work is in this download. Advance claims only after verifying the actual distributed artifact; merging this website PR does not distribute a new app or publish the website.
+The public artifact is Volant 0.2.0, build 8, from `d9b6dbc` (October 7, 2026). The rows below that were Coming next for 0.1.5 shipped in this build, verified against the notarized DMG: version, both architectures, stapled signature, iCloud key-value and loginwindow entitlements, and the embedded Developer ID profile. Advance claims only after verifying the actual distributed artifact; merging a website PR does not distribute a new app or publish the website.
 
-| Story | In 0.1.5 | Evidence and limits | Website treatment |
+| Story | In 0.2.0 | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
 | Apps, learned ranking, aliases, shortcuts, files, contacts, calendar | Yes | Existing native fixtures; hardware shortcut delivery is separate | Everyday launcher story |
 | Markdown notes, encrypted clipboard, snippets, Raycast data import | Yes | Persistence and native fixture coverage; supported import types only | Useful things within reach |
 | Basic arithmetic, units, timezone cards, city lookup | Yes | Core and native coverage | Existing download remains useful |
-| Expanded percentages, dates, cooking, colors, fiat/crypto, answer reuse | No | Calculator work after release commit; rates helper and live delivery have separate evidence | Coming next, including docs notice |
+| Expanded percentages, dates, cooking, colors, fiat/crypto, answer reuse | Yes | #137–#149; signed rates helper fetched ECB, ExchangeRate-API and keyless CoinGecko; keyed CoinGecko path unverified | Answers as you type; New in 0.2.0 |
 | Local Herdr status, supported Claude/Codex responses | Yes | Local installed response evidence and isolated routing checks | Actionable agent workflows; supported questions only |
 | Saved remote Herdr machines | Yes | Fictional routing tests; compatible remote signed-app focus/answer smoke remains pending | Requirements and verification qualification in Agents docs |
 | OpenCode, Claude Code, Codex ACP conversations | Yes | Existing verified provider paths; Claude/Codex require adapters | Separate new conversations from terminal panes |
@@ -20,9 +20,9 @@ The public artifact remains Volant 0.1.5, build 7, from `bedbf0e`. Homepage prev
 | Apple Intelligence | Yes, eligible macOS 26+ | Signed sandboxed streamed probe; installed UI remains unverified | OS and eligibility requirement, docs limitation |
 | Explicit note/clipboard-text attachments | Yes | #100; native picker and transport fixtures; live provider attachment prompt unverified | User-selected context, not automatic sharing; no snippets/files/images claim |
 | Audio, connectivity, keep-awake, Settings panes | Yes | Native and functional fixtures; hardware and OS destination coverage is scoped | Everyday Mac controls |
-| Color themes, Raycast theme import, themed Notes | No | #147, #148, #150 after 0.1.5 | Coming next |
-| Lock, sleep, screen saver, restart/shutdown/logout | No | #102; native fixtures and sandbox probes | Coming next; OS confirmation for disruptive actions |
-| Opt-in iCloud settings sync | Unavailable in download | #153 adds entitlement/profile; two-Mac delivery and notarized release unverified | Coming next; selected settings only, no notes/history/keys |
+| Color themes, Raycast theme import, themed Notes | Yes | #147, #148, #150; owner checked theme switching in the installed app | New in 0.2.0 |
+| Lock, sleep, screen saver, restart/shutdown/logout | Yes | #102; native fixtures, sandbox probes, owner checked in the installed app | New in 0.2.0; OS confirmation for disruptive actions |
+| Opt-in iCloud settings sync | Yes | #153 entitlement and Developer ID profile, present in the notarized 0.2.0 DMG; owner verified settings syncing between two Macs on October 7, 2026; quota and account-change notifications unverified | New in 0.2.0; selected settings only, no notes/history/keys |
 
 ## Privacy language
 
@@ -34,7 +34,7 @@ Existing hero and Notes assets are native fixtures. Added calculator, waiting-qu
 
 ## Next concrete gaps
 
-1. Publish this website revision through the separately authorized Cloudflare workflow.
-2. Package and verify the next app release before removing Coming next labels; check the download, appcast, and calculator/docs notices together.
-3. Complete compatible remote Herdr, real-provider attachment, two-Mac iCloud, and installed Apple/model checks under their own authorized test scope.
+1. Publish the 0.2.0 website revision, verify public DMG delivery, then activate the signed build-8 appcast.
+2. Complete an installed 0.1.5 → 0.2.0 Sparkle upgrade with fictional notes/config.
+3. Complete compatible remote Herdr, real-provider attachment, and installed Apple/model checks under their own authorized test scope.
 4. Refresh the original hero/Notes imagery in a future cohesive capture pass; do not reconstruct native UI in HTML.

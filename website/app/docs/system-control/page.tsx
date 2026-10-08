@@ -137,13 +137,7 @@ export default function SystemControl() {
         Return to open it. These are pane links, not a search through every
         individual macOS setting.
       </p>
-      <h2>System commands · coming next</h2>
-      <div className="docs-note">
-        <p>
-          These commands were merged after 0.1.5 and are not in the current
-          download.
-        </p>
-      </div>
+      <h2>System commands</h2>
       <p>
         Search for <code>lock</code>, <code>sleep</code>, or{' '}
         <code>screen saver</code> to lock the screen, sleep the Mac or displays,
