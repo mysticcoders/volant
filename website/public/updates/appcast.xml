@@ -4,15 +4,15 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <channel>
         <title>Volant</title>
         <item>
-            <title>0.2.0</title>
-            <pubDate>Wed, 07 Oct 2026 18:05:59 -0700</pubDate>
-            <sparkle:version>8</sparkle:version>
-            <sparkle:shortVersionString>0.2.0</sparkle:shortVersionString>
+            <title>0.2.1</title>
+            <pubDate>Wed, 07 Oct 2026 21:27:04 -0700</pubDate>
+            <sparkle:version>9</sparkle:version>
+            <sparkle:shortVersionString>0.2.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-            <enclosure url="https://usevolant.com/updates/Volant-0.2.0.dmg" length="12261884" type="application/octet-stream" sparkle:edSignature="fhLhuXQ7Vx+47muuSfPazOcguRKwFusb3Nf8nVO+RQ+PGqhaMRppsTivY0hKpDirVzi51IyuKNtj3dPiJv4NBQ=="></enclosure>
+            <enclosure url="https://usevolant.com/updates/Volant-0.2.1.dmg" length="12262988" type="application/octet-stream" sparkle:edSignature="21KoTrh5vu0gIOX7PBVPLsuwQVZqtQI04Xm9MIMN7nai4GMFocCjO8bHYLYQ554lnoELwEGurpvkOVTX/MxhAQ=="></enclosure>
         </item>
     </channel>
 </rss><!-- sparkle-signatures:
-edSignature: RugqLe4wQfL2nLijW8Gkg6QyYT6FzYiNrzzfPKHyb6AkCw1LZKht0VYvD+I66qU8Q2dinH8gEu2cnn1H3NQZDQ==
+edSignature: uAZBD8nZSjsaZQbIlf+PWq5LkLdwHjI20v0csRo3imw96f2ZiA9YxinsZZq0EF3S5hB3LnkBO81aBbMVyKKuBw==
 length: 1006
 -->
