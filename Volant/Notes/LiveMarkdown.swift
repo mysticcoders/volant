@@ -1,4 +1,5 @@
 import AppKit
+import VolantCore
 
 /// UTF-16 source ranges match NSTextView exactly, including emoji and CRLF input.
 struct CodeFence: Equatable {
@@ -114,16 +115,18 @@ enum LiveMarkdown {
 
     static let bodyFont = NSFont.systemFont(ofSize: 15)
     static let codeFont = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
-    static var bodyAttributes: [NSAttributedString.Key: Any] {
+
+    /// Prose attributes in the given colors, also used as typing attributes.
+    static func bodyAttributes(_ colors: EditorPalette = .system) -> [NSAttributedString.Key: Any] {
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineSpacing = 4
-        return [.font: bodyFont, .foregroundColor: NSColor.labelColor, .paragraphStyle: paragraph]
+        return [.font: bodyFont, .foregroundColor: colors.text, .paragraphStyle: paragraph]
     }
 
     /// Presentation attributes only: styling never rewrites source or changes source offsets.
-    static func styled(_ text: String, live: Bool) -> NSAttributedString {
+    static func styled(_ text: String, live: Bool, colors: EditorPalette = .system) -> NSAttributedString {
         let source = text as NSString
-        let output = NSMutableAttributedString(string: text, attributes: bodyAttributes)
+        let output = NSMutableAttributedString(string: text, attributes: bodyAttributes(colors))
         let all = NSRange(location: 0, length: source.length)
         guard live else {
             output.addAttribute(.font, value: codeFont, range: all)
@@ -141,20 +144,20 @@ enum LiveMarkdown {
         style("^#{3,6} .+$", attributes: [.font: NSFont.systemFont(ofSize: 17, weight: .semibold)])
         style("\\*\\*[^*\\n]+\\*\\*", attributes: [.font: NSFont.boldSystemFont(ofSize: 15)])
         style("(?<!\\*)\\*[^*\\n]+\\*(?!\\*)", attributes: [.font: NSFontManager.shared.convert(bodyFont, toHaveTrait: .italicFontMask)])
-        style("`[^`\\n]+`", attributes: [.font: codeFont, .backgroundColor: NSColor.quaternaryLabelColor.withAlphaComponent(0.12)])
-        style("^>.*$", attributes: [.foregroundColor: NSColor.secondaryLabelColor])
+        style("`[^`\\n]+`", attributes: [.font: codeFont, .backgroundColor: colors.code])
+        style("^>.*$", attributes: [.foregroundColor: colors.syntax])
         for block in blocks {
-            output.addAttributes([.font: codeFont, .backgroundColor: NSColor.quaternaryLabelColor.withAlphaComponent(0.12)], range: block.extent)
-            let fenceAttributes: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .medium), .foregroundColor: NSColor.secondaryLabelColor]
+            output.addAttributes([.font: codeFont, .backgroundColor: colors.code], range: block.extent)
+            let fenceAttributes: [NSAttributedString.Key: Any] = [.font: NSFont.monospacedSystemFont(ofSize: 11, weight: .medium), .foregroundColor: colors.syntax]
             output.addAttributes(fenceAttributes, range: block.opening)
             if let closing = block.closing { output.addAttributes(fenceAttributes, range: closing) }
             let language = language(for: block, in: text)
             guard language != .text else { continue }
             // Lightweight token coloring, deliberately not a compiler or a language server.
             let patterns: [(String, NSColor)] = [
-                (#"\b(?:let|var|func|struct|class|import|return|if|else|for|while|const|function|def|from|async|await|true|false|null|nil|SELECT|FROM|WHERE|interface|type)\b"#, .systemPurple),
-                (#"\b\d+(?:\.\d+)?\b"#, .systemBrown),
-                (#""(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'"#, NSColor.systemGreen.blended(withFraction: 0.3, of: .labelColor) ?? .labelColor)
+                (#"\b(?:let|var|func|struct|class|import|return|if|else|for|while|const|function|def|from|async|await|true|false|null|nil|SELECT|FROM|WHERE|interface|type)\b"#, colors.keyword),
+                (#"\b\d+(?:\.\d+)?\b"#, colors.number),
+                (#""(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'"#, colors.string)
             ]
             for (pattern, color) in patterns {
                 guard let regex = try? NSRegularExpression(pattern: pattern) else { continue }
@@ -164,5 +167,50 @@ enum LiveMarkdown {
             }
         }
         return output
+    }
+}
+
+/// The colors the Markdown editor draws with. System keeps macOS semantic colors and leaves the
+/// caret and selection to the text view; a palette theme supplies every color from its
+/// `EditorColors`, so prose, syntax, code and the selection all belong to the theme.
+struct EditorPalette {
+    let text: NSColor
+    let syntax: NSColor
+    let code: NSColor
+    let keyword: NSColor
+    let number: NSColor
+    let string: NSColor
+    let caret: NSColor?
+    let selection: NSColor?
+
+    /// Semantic colors, rebuilt on each use because the blended string color resolves against the
+    /// appearance in effect when styling runs.
+    static var system: EditorPalette {
+        EditorPalette(text: .labelColor, syntax: .secondaryLabelColor, code: NSColor.quaternaryLabelColor.withAlphaComponent(0.12),
+                      keyword: .systemPurple, number: .systemBrown,
+                      string: NSColor.systemGreen.blended(withFraction: 0.3, of: .labelColor) ?? .labelColor, caret: nil, selection: nil)
+    }
+
+    /// The editor colors for a theme: System for a theme without a palette.
+    init(_ theme: ResolvedTheme) {
+        guard let palette = theme.palette else { self = .system; return }
+        let colors = EditorColors(palette: palette)
+        func color(_ hex: String, _ fallback: NSColor) -> NSColor { NSColor(hex: hex) ?? fallback }
+        self.init(text: color(colors.text, .labelColor), syntax: color(colors.syntax, .secondaryLabelColor),
+                  code: color(colors.code, Self.system.code), keyword: color(colors.keyword, .systemPurple),
+                  number: color(colors.number, .systemBrown), string: color(colors.string, Self.system.string),
+                  caret: NSColor(hex: colors.caret), selection: NSColor(hex: colors.selection))
+    }
+
+    private init(text: NSColor, syntax: NSColor, code: NSColor, keyword: NSColor, number: NSColor, string: NSColor,
+                 caret: NSColor?, selection: NSColor?) {
+        self.text = text
+        self.syntax = syntax
+        self.code = code
+        self.keyword = keyword
+        self.number = number
+        self.string = string
+        self.caret = caret
+        self.selection = selection
     }
 }
