@@ -34,7 +34,6 @@ Existing hero and Notes assets are native fixtures. Added calculator, waiting-qu
 
 ## Next concrete gaps
 
-1. Publish the 0.2.0 website revision, verify public DMG delivery, then activate the signed build-8 appcast.
-2. Complete an installed 0.1.5 → 0.2.0 Sparkle upgrade with fictional notes/config.
-3. Complete compatible remote Herdr, real-provider attachment, and installed Apple/model checks under their own authorized test scope.
-4. Refresh the original hero/Notes imagery in a future cohesive capture pass; do not reconstruct native UI in HTML.
+1. Done October 7, 2026: published the 0.2.0 website, verified DMG delivery, activated the signed build-8 appcast, and the owner completed 0.1.5 → 0.2.0 Sparkle upgrades on two Macs.
+2. Complete compatible remote Herdr, real-provider attachment, and installed Apple/model checks under their own authorized test scope.
+3. Refresh the original hero/Notes imagery in a future cohesive capture pass; do not reconstruct native UI in HTML.
