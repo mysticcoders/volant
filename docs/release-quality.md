@@ -146,3 +146,10 @@ Public DMG delivery verified after Cloudflare Worker deployment `c71b8169-4bb7-4
 - **Pages:** `/docs`, `/docs/calculator`, `/docs/system-control` and `/docs/privacy-and-security` returned 200.
 - **Redirect:** `getvolant.com` still redirects to usevolant.com.
 - **Feed:** the public feed (`max-age=0, must-revalidate`) remained on 0.1.5 build 7 until the follow-up activates the exact signed build-8 appcast. That appcast passes `sign_update --verify` and references `Volant-0.2.0.dmg`, 12,261,884 bytes.
+
+Final publication: the signed build-8 feed was activated in Cloudflare Worker deployment `8250b031-a1ab-4eff-8700-b096bcbe2047` (run by the owner from #159).
+
+- **Feed:** the public feed (HTTP 200, `max-age=0, must-revalidate`) matched both the committed file and the release output byte-for-byte. It reports version 0.2.0 build 8 and passed Sparkle `sign_update --verify`.
+- **Pages and downloads:** the homepage, `/docs`, and the 0.2.0 and 0.1.5 DMGs returned 200.
+- **Release PRs:** #157, #158 and #159 passed required workflow checks before merging.
+- **Still unverified:** an installed 0.1.5 → 0.2.0 upgrade and Intel hardware.
