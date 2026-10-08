@@ -8,9 +8,18 @@ Favorites are stored as app paths in `favoriteApps` in configuration. The home s
 
 A menu captures stable result identity and revalidates before execution. Selection/query changes, removed results, and hiding the panel dismiss it. Bundle metadata is read only when Copy Bundle Identifier is activated; constructing the menu adds no startup discovery or background process.
 
+## Volant menu
+
+Clicking the Volant mark at the bottom left of the footer opens the launcher's own menu, anchored there inside the panel and styled like Actions. Its header names the running version ("Volant v0.2.1", read from the bundle), so it's always clear which build is installed. Items: Send Feedback (a new GitHub issue with only the app version, build and macOS version prefilled), Manual (usevolant.com/docs), Changelog (GitHub Releases), Check for Updates… (Sparkle, as in the menu bar), About Volant, Settings (⌘,) and Quit Volant (⌘Q). "Search for actions…" filters them. Arrows, Return and Escape work as in Actions; Escape closes the menu before the launcher, typing a new query closes it, and only one of Actions and the Volant menu is open at a time. Links open in the browser through NSWorkspace; the main app still has no network access.
+
+## Scroll fade
+
+Result rows, section titles and calculator cards that are partly scrolled past the top or bottom of the list draw translucent and reach full opacity once about 90% of the row is visible (`edgeFade`, a vertical `scrollTransition`). Keyboard selection scrolls the selected row to the center, so it is never left faded. The fade is off when Reduce Motion or Reduce Transparency is on.
+
 ## Verification
 
 - `LauncherActionsTests` checks favorite persistence, unknown-field preservation, stale writes, ranking persistence, and stale action targets with isolated fictional stores.
+- `LauncherAppMenuTests` checks the Volant menu's order, filtering, version header, feedback URL contents, link and command routing, and that it never shows with item Actions. The Actions fixture clicks the Volant mark, reads the version header (a fictional 0.0.0 fixture bundle), filters, activates with Return and checks the Escape order.
 - `tools/check-launcher-actions.sh` compiles the production asset catalog using release optimization, then runs a separate native branded fixture in light/dark appearances. It is dispatched through headless Tart locally and the UI job in CI. This avoids changing activation behavior in the existing bare launcher fixture.
 - Rendered screens, fixture keyboard evidence, and signed installed Finder integration are separate evidence. See the PR for results.
 

@@ -6,6 +6,7 @@ import VolantCore
 /// Renders the launcher, a calculator card, the actions popover and the notes window in every color
 /// theme with fictional data, for visual inspection. Palette themes render in their own appearance;
 /// System and Volant render light and dark. Images go to /tmp/volant-theme-<id>-<mode>-<surface>.png.
+/// System and Catppuccin Mocha also render a scrolled list (edge fade) and the open Volant menu.
 setbuf(stdout, nil)
 let app = NSApplication.shared
 let root = URL(fileURLWithPath: CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : NSTemporaryDirectory())
@@ -24,6 +25,8 @@ var config = Preferences()
 config.snippets = [Snippet(name: "Standup notes", keyword: "", body: "Fictional"), Snippet(name: "Status update", keyword: "", body: "Fictional"),
                    Snippet(name: "Support reply", keyword: "", body: "Fictional")]
 model.config = config
+var longList = config
+longList.snippets = (1...24).map { Snippet(name: "Fictional snippet \($0)", keyword: "", body: "Fictional") }
 
 let host = NSHostingView(rootView: ThemedRoot { ThemedLauncher(model: model) })
 let window = NSWindow(contentRect: NSRect(origin: .zero, size: LauncherPanel.size), styleMask: [.borderless], backing: .buffered, defer: false)
@@ -65,6 +68,18 @@ for theme in ColorTheme.catalog {
         notesModel.selectIfNeeded()
         RunLoop.main.run(until: Date().addingTimeInterval(0.3))
         try capture(notesHost, name + "-notes")
+        if [ColorTheme.systemID, "catppuccin-mocha"].contains(theme.id) {
+            model.config = longList
+            model.query = "snip"
+            model.selection = model.rows.count / 2
+            RunLoop.main.run(until: Date().addingTimeInterval(0.4))
+            try capture(host, name + "-scrolled")
+            model.showingAppMenu = true
+            RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+            try capture(host, name + "-app-menu")
+            model.showingAppMenu = false
+            model.config = config
+        }
         print("Rendered \(name)")
     }
 }

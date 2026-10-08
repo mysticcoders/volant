@@ -6,6 +6,12 @@ struct LauncherView: View {
     @ObservedObject var agents: AgentsModel
     @FocusState private var focused: Bool
     @Environment(\.volantTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    /// Whether item actions or the Volant menu are open; either one owns arrow keys and Return.
+    private var popoverOpen: Bool { model.actionTarget != nil || model.showingAppMenu }
+    private var fadesEdges: Bool { !reduceMotion && !reduceTransparency }
 
     private var content: some View {
         VStack(spacing: 0) {
@@ -89,6 +95,16 @@ struct LauncherView: View {
                 }
             }
         }
+        .overlay(alignment: .bottomLeading) {
+            if model.showingAppMenu {
+                ZStack(alignment: .bottomLeading) {
+                    Button { closeAppMenu() } label: { Color.clear.contentShape(Rectangle()) }
+                        .buttonStyle(.plain).accessibilityLabel("Close Volant menu")
+                    LauncherAppMenuView(model: model, close: closeAppMenu)
+                        .padding(.leading, 12).padding(.bottom, 48)
+                }
+            }
+        }
     }
 
     var body: some View {
@@ -98,12 +114,14 @@ struct LauncherView: View {
         .onChange(of: model.showingEmoji) { _, _ in if !focused { requestSearchFocus() } }
         .onChange(of: model.selectedRow?.id) { _, _ in model.actionTarget = nil }
         .onChange(of: model.actionTarget?.id) { old, new in if old != nil && new == nil { requestSearchFocus() } }
+        .onChange(of: model.showingAppMenu) { old, new in if old && !new { requestSearchFocus() } }
         .onChange(of: model.searchFocusRequest) { _, _ in requestSearchFocus() }
-        .onKeyPress(.downArrow) { guard model.actionTarget == nil && !model.showingDictionary && !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(LauncherModel.emojiColumns) } else { model.moveSelection(1) }; return .handled }
-        .onKeyPress(.upArrow) { guard model.actionTarget == nil && !model.showingDictionary && !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(-LauncherModel.emojiColumns) } else { model.moveSelection(-1) }; return .handled }
+        .onKeyPress(.downArrow) { guard !popoverOpen && !model.showingDictionary && !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(LauncherModel.emojiColumns) } else { model.moveSelection(1) }; return .handled }
+        .onKeyPress(.upArrow) { guard !popoverOpen && !model.showingDictionary && !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(-LauncherModel.emojiColumns) } else { model.moveSelection(-1) }; return .handled }
         .onKeyPress(.leftArrow) { guard model.showingEmoji else { return .ignored }; model.moveEmojiSelection(-1); return .handled }
         .onKeyPress(.rightArrow) { guard model.showingEmoji else { return .ignored }; model.moveEmojiSelection(1); return .handled }
         .onKeyPress(.escape) {
+            if model.showingAppMenu { closeAppMenu(); return .handled }
             if model.actionTarget != nil { closeActions(); return .handled }
             if model.dictation.isListening { model.cancelDictation(); return .handled }
             if model.wifiJoin != nil { guard !model.connectivityBusy else { return .handled }; model.wifiJoin = nil; model.searchFocusRequest = UUID() }
@@ -111,7 +129,7 @@ struct LauncherView: View {
             return .handled
         }
         .onKeyPress(.return, phases: .down) { press in
-            guard model.actionTarget == nil && !model.showingDictionary && !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }
+            guard !popoverOpen && !model.showingDictionary && !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }
             if press.modifiers.contains(.command) && press.modifiers.contains(.shift) { model.activateSwap() }
             else if press.modifiers.contains(.command) { model.activateSecondary() } else { model.activateSelection() }
             return .handled
@@ -120,6 +138,11 @@ struct LauncherView: View {
 
     private func closeActions() {
         model.actionTarget = nil
+        requestSearchFocus()
+    }
+
+    private func closeAppMenu() {
+        model.showingAppMenu = false
         requestSearchFocus()
     }
 
@@ -194,6 +217,7 @@ struct LauncherView: View {
                     if let held = model.heldCalculation {
                         sectionTitle("Calculator")
                         CalculatorCard(rowID: nil, fallback: held, state: model.rowState)
+                            .edgeFade(fadesEdges)
                             .id("calc-held")
                     }
                     ForEach(model.sections) { section in
@@ -234,14 +258,15 @@ struct LauncherView: View {
             .padding(.horizontal, 14)
             .padding(.top, 10)
             .padding(.bottom, 4)
+            .edgeFade(fadesEdges)
     }
 
     private func requestSearchFocus() {
-        guard model.actionTarget == nil && !model.showingACP && !model.showingDictionary && !model.showingTranslation else { return }
+        guard !popoverOpen && !model.showingACP && !model.showingDictionary && !model.showingTranslation else { return }
         // A persistent hosting view does not appear again each time its panel is summoned.
         focused = false
         DispatchQueue.main.async {
-            guard model.actionTarget == nil && !model.showingACP && !model.showingDictionary && !model.showingTranslation else { return }
+            guard !popoverOpen && !model.showingACP && !model.showingDictionary && !model.showingTranslation else { return }
             focused = true
         }
     }
@@ -260,18 +285,26 @@ struct LauncherView: View {
         }
         .buttonStyle(.plain)
         .focusable(false)
+        .edgeFade(fadesEdges)
         .id(row.id)
     }
 
     private var footer: some View {
         HStack(spacing: 18) {
-            Image("VolantWing")
-                .renderingMode(.template)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 16, height: 16)
-                .foregroundStyle(.tint)
-                .accessibilityHidden(true)
+            Button { model.toggleAppMenu() } label: {
+                Image("VolantWing")
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 16, height: 16)
+                    .foregroundStyle(.tint)
+                    .padding(4)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).focusable(false).padding(-4)
+            .help(LauncherMenuItem.versionTitle())
+            .accessibilityLabel("Volant menu")
+            .accessibilityIdentifier("launcher-app-menu-button")
             if let feedback = model.actionFeedback {
                 Text(feedback).font(.system(size: 12)).foregroundStyle(.secondary)
                     .lineLimit(1).truncationMode(.tail).help(feedback)
@@ -552,6 +585,17 @@ struct DictationStatusView: View {
                         .accessibilityLabel("Heard so far: " + dictation.transcript)
                 }
             }
+        }
+    }
+}
+
+extension View {
+    /// Rows partly scrolled past the top or bottom edge of the results draw translucent and reach
+    /// full opacity once they are almost entirely in view, so the list blends under the search
+    /// field and footer instead of clipping hard. Off when Reduce Motion or Reduce Transparency is on.
+    func edgeFade(_ enabled: Bool) -> some View {
+        scrollTransition(.interactive.threshold(.visible(0.9)), axis: .vertical) { content, phase in
+            content.opacity(enabled ? 1 - 0.65 * min(1, abs(phase.value)) : 1)
         }
     }
 }

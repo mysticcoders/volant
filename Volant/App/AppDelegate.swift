@@ -60,6 +60,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .create(let text): self?.notesPanel.openNew(text: text)
         case .confetti: ConfettiWindow.celebrate()
         case .systemAction(let action): self?.performSystemAction(action)
+        case .checkForUpdates: self?.checkForUpdates()
+        case .about:
+            NSApp.activate(ignoringOtherApps: true)
+            NSApp.orderFrontStandardAboutPanel(nil)
+        case .quit: NSApp.terminate(nil)
         }
     }
 

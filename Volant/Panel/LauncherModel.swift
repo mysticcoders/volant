@@ -15,6 +15,7 @@ enum LauncherAction {
     case create(String)
     case confetti
     case systemAction(SystemAction)
+    case checkForUpdates, about, quit
 }
 
 enum ResultRow: Identifiable, Hashable {
@@ -223,7 +224,7 @@ final class LauncherRowState: ObservableObject {
 /// Routes a query. Prefixes force one source: `/` files, `@` contacts, `cal` or `today` agenda, `clip` history.
 /// Otherwise results merge: math and units first, then apps, contacts, and files once the query is long enough.
 final class LauncherModel: ObservableObject {
-    @Published var query: String = "" { didSet { if oldValue != query { showingACP = false; actionTarget = nil; refresh() } } }
+    @Published var query: String = "" { didSet { if oldValue != query { showingACP = false; actionTarget = nil; showingAppMenu = false; refresh() } } }
     private var flattenedRows: [ResultRow] = []
     @Published private var displayedSections: [ResultSection] = []
     var sections: [ResultSection] {
@@ -262,6 +263,10 @@ final class LauncherModel: ObservableObject {
         if rowState.selectedID != id { rowState.selectedID = id }
     }
     @Published var actionTarget: ResultRow?
+    /// The launcher's own menu, opened from the Volant mark in the footer.
+    @Published var showingAppMenu = false
+    /// Opens a link in the default browser; fixtures and tests record it instead.
+    var openURL: (URL) -> Void = { NSWorkspace.shared.open($0) }
     var actionConfigURL: URL = Preferences.configURL
     @Published var actionFeedback: String?
     let dictionary = DictionaryModel()
@@ -474,6 +479,7 @@ final class LauncherModel: ObservableObject {
         pendingExtension = nil
         showingACP = false
         actionTarget = nil
+        showingAppMenu = false
         wifiJoin = nil
         actionFeedback = nil
         files.cancel()
@@ -1187,7 +1193,29 @@ final class LauncherModel: ObservableObject {
 
     func toggleActions() {
         guard let selectedRow, selectedRow.supportsActions else { return }
+        showingAppMenu = false
         actionTarget = actionTarget == nil ? selectedRow : nil
+    }
+
+    /// Opens or closes the Volant menu; it replaces any open item actions so only one popover shows.
+    func toggleAppMenu() {
+        actionTarget = nil
+        showingAppMenu.toggle()
+    }
+
+    /// Runs a Volant menu item. Links open in the browser and app commands go to the app delegate;
+    /// both hide the launcher first, as every other command that leaves it does.
+    func performMenuItem(_ item: LauncherMenuItem) {
+        showingAppMenu = false
+        switch item {
+        case .feedback: dismiss(); openURL(LauncherMenuItem.feedbackURL())
+        case .manual: dismiss(); openURL(LauncherMenuItem.manualURL)
+        case .changelog: dismiss(); openURL(LauncherMenuItem.changelogURL)
+        case .updates: dismiss(); onNote(.checkForUpdates)
+        case .about: dismiss(); onNote(.about)
+        case .settings: openSettings()
+        case .quit: onNote(.quit)
+        }
     }
 
     func performAction(_ action: LauncherItemAction, target snapshot: ResultRow) {

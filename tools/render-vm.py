@@ -46,7 +46,7 @@ for pair in {" ".join(f"{name}:{path}" for name, path in FIXTURES)}; do
     # tools/check-launcher.sh runs the launcher fixture as a bare executable with no bundled extension,
     # and its ranking checks expect that; a bundled Hello World would rank above Applications for "h".
     [[ "$name" == VolantLauncherFixture ]] || ditto Volant/Resources/HelloWorld "$bundle/Resources/HelloWorld"
-    printf '%s' '<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>CFBundleExecutable</key><string>'"$name"'</string><key>CFBundleIdentifier</key><string>com.mysticcoders.volant.render.'"$name"'</string><key>CFBundlePackageType</key><string>APPL</string></dict></plist>' > "$bundle/Info.plist"
+    printf '%s' '<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>CFBundleExecutable</key><string>'"$name"'</string><key>CFBundleIdentifier</key><string>com.mysticcoders.volant.render.'"$name"'</string><key>CFBundlePackageType</key><string>APPL</string><key>CFBundleShortVersionString</key><string>0.0.0</string></dict></plist>' > "$bundle/Info.plist"
     cp "$main" "{output}/work/$name/main.swift"
     swiftc -target "$(uname -m)-apple-macosx15.0" "${{VOLANT_CORE_FLAGS[@]}}" "${{sources[@]}}" "{output}/work/$name/main.swift" -o "$bundle/MacOS/$name"
 done
