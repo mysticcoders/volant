@@ -8,9 +8,22 @@ Favorites are stored as app paths in `favoriteApps` in configuration. The home s
 
 A menu captures stable result identity and revalidates before execution. Selection/query changes, removed results, and hiding the panel dismiss it. Bundle metadata is read only when Copy Bundle Identifier is activated; constructing the menu adds no startup discovery or background process.
 
+## Volant menu
+
+Clicking the Volant mark at the bottom left of the footer opens the launcher's own menu, anchored there inside the panel and styled like Actions. Its header names the running version ("Volant v0.2.1", read from the bundle), so it's always clear which build is installed. Items: Send Feedback (a new GitHub issue with only the app version, build and macOS version prefilled), Manual (usevolant.com/docs), Changelog (GitHub Releases), Check for Updates… (Sparkle, as in the menu bar), About Volant, Settings (⌘,) and Quit Volant (⌘Q). "Search for actions…" filters them. Arrows, Return and Escape work as in Actions; Escape closes the menu before the launcher, typing a new query closes it, and only one of Actions and the Volant menu is open at a time. Links open in the browser through NSWorkspace; the main app still has no network access.
+
+## Scroll fade and footer
+
+The results list runs the full height of the panel, and the footer is a translucent bar over it, so rows read as soft shapes and colors as they pass beneath it, as in Raycast. The bar is a within-window `NSVisualEffectView` blur at 60% opacity under a 20% theme tint, or the solid surface when Reduce Transparency is on. A SwiftUI material here, or the same blur at full strength, reduced rows beneath to a tint you could not see. A bottom content margin equal to the measured footer height lets the last row scroll fully into view above the bar, and the scroll indicator stops above it. The footer's controls sit on the bar, so they stay legible and take clicks over moving content.
+
+The list fades at edges with more results beyond them (`EdgeFadeMask`, driven by `onScrollGeometryChange`): a 36-point band under the search field down to 25% opacity, and a 20-point band ending at the footer's top edge down to 70%. Rows beneath the footer stay fully drawn and the bar does the softening. At the start and end of the list nothing lies beyond, so the first and last rows are never dimmed. The fade is off when Reduce Motion or Reduce Transparency is on.
+
+`tools/themes/render.swift` measures the bar in a window-server capture. It compares the luminance spread inside the footer (between the Volant mark and the action label) with rows beneath against an empty list, and checks the label contrast against the averaged footer background. It fails below a 2x spread or 4.5:1 contrast. October 8, 2026 on macOS 27: light 5.5 vs 0.4 stddev, 17.5:1; dark 9.2 vs 0.2, 10.5:1; Catppuccin Mocha 9.0 vs 0.0, 8.3:1.
+
 ## Verification
 
 - `LauncherActionsTests` checks favorite persistence, unknown-field preservation, stale writes, ranking persistence, and stale action targets with isolated fictional stores.
+- `LauncherAppMenuTests` checks the Volant menu's order, filtering, version header, feedback URL contents, link and command routing, and that it never shows with item Actions. The Actions fixture clicks the Volant mark, reads the version header (a fictional 0.0.0 fixture bundle), filters, activates with Return and checks the Escape order.
 - `tools/check-launcher-actions.sh` compiles the production asset catalog using release optimization, then runs a separate native branded fixture in light/dark appearances. It is dispatched through headless Tart locally and the UI job in CI. This avoids changing activation behavior in the existing bare launcher fixture.
 - Rendered screens, fixture keyboard evidence, and signed installed Finder integration are separate evidence. See the PR for results.
 

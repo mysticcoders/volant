@@ -6,6 +6,16 @@ struct LauncherView: View {
     @ObservedObject var agents: AgentsModel
     @FocusState private var focused: Bool
     @Environment(\.volantTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    /// Whether item actions or the Volant menu are open; either one owns arrow keys and Return.
+    private var popoverOpen: Bool { model.actionTarget != nil || model.showingAppMenu }
+    private var fadesEdges: Bool { !reduceMotion && !reduceTransparency }
+    /// Whether more results lie above or below the visible part of the list.
+    @State private var hiddenEdges = ScrollEdges()
+    /// The footer's height, so the list can scroll beneath it and still bring its last row fully into view.
+    @State private var footerHeight: CGFloat = 40
 
     private var content: some View {
         VStack(spacing: 0) {
@@ -44,8 +54,10 @@ struct LauncherView: View {
             }
             if let network = model.wifiJoin {
                 WiFiJoinView(model: model, network: network).id(network.id)
+                Divider().opacity(0.6)
             } else if model.showingEmoji {
                 EmojiGridView(model: model)
+                footerBar
             } else {
                 if model.showingAgents {
                     HerdrMachineStatusView(machines: agents.machines)
@@ -61,10 +73,12 @@ struct LauncherView: View {
                         Button("New ACP conversation") { model.presentAIChat() }
                     }.font(.system(size: 12)).padding(.horizontal, 20).padding(.vertical, 6)
                 }
-                results
+                ZStack(alignment: .bottom) {
+                    results
+                    footerBar
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { footerHeight = $0 }
+                }
             }
-            Divider().opacity(0.6)
-            if !model.showingACP && model.wifiJoin == nil { footer }
             }
         }
         .frame(width: LauncherPanel.size.width, height: LauncherPanel.size.height)
@@ -89,6 +103,16 @@ struct LauncherView: View {
                 }
             }
         }
+        .overlay(alignment: .bottomLeading) {
+            if model.showingAppMenu {
+                ZStack(alignment: .bottomLeading) {
+                    Button { closeAppMenu() } label: { Color.clear.contentShape(Rectangle()) }
+                        .buttonStyle(.plain).accessibilityLabel("Close Volant menu")
+                    LauncherAppMenuView(model: model, close: closeAppMenu)
+                        .padding(.leading, 12).padding(.bottom, 48)
+                }
+            }
+        }
     }
 
     var body: some View {
@@ -98,12 +122,14 @@ struct LauncherView: View {
         .onChange(of: model.showingEmoji) { _, _ in if !focused { requestSearchFocus() } }
         .onChange(of: model.selectedRow?.id) { _, _ in model.actionTarget = nil }
         .onChange(of: model.actionTarget?.id) { old, new in if old != nil && new == nil { requestSearchFocus() } }
+        .onChange(of: model.showingAppMenu) { old, new in if old && !new { requestSearchFocus() } }
         .onChange(of: model.searchFocusRequest) { _, _ in requestSearchFocus() }
-        .onKeyPress(.downArrow) { guard model.actionTarget == nil && !model.showingDictionary && !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(LauncherModel.emojiColumns) } else { model.moveSelection(1) }; return .handled }
-        .onKeyPress(.upArrow) { guard model.actionTarget == nil && !model.showingDictionary && !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(-LauncherModel.emojiColumns) } else { model.moveSelection(-1) }; return .handled }
+        .onKeyPress(.downArrow) { guard !popoverOpen && !model.showingDictionary && !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(LauncherModel.emojiColumns) } else { model.moveSelection(1) }; return .handled }
+        .onKeyPress(.upArrow) { guard !popoverOpen && !model.showingDictionary && !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(-LauncherModel.emojiColumns) } else { model.moveSelection(-1) }; return .handled }
         .onKeyPress(.leftArrow) { guard model.showingEmoji else { return .ignored }; model.moveEmojiSelection(-1); return .handled }
         .onKeyPress(.rightArrow) { guard model.showingEmoji else { return .ignored }; model.moveEmojiSelection(1); return .handled }
         .onKeyPress(.escape) {
+            if model.showingAppMenu { closeAppMenu(); return .handled }
             if model.actionTarget != nil { closeActions(); return .handled }
             if model.dictation.isListening { model.cancelDictation(); return .handled }
             if model.wifiJoin != nil { guard !model.connectivityBusy else { return .handled }; model.wifiJoin = nil; model.searchFocusRequest = UUID() }
@@ -111,7 +137,7 @@ struct LauncherView: View {
             return .handled
         }
         .onKeyPress(.return, phases: .down) { press in
-            guard model.actionTarget == nil && !model.showingDictionary && !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }
+            guard !popoverOpen && !model.showingDictionary && !model.showingTranslation && !model.showingACP && model.wifiJoin == nil else { return .ignored }
             if press.modifiers.contains(.command) && press.modifiers.contains(.shift) { model.activateSwap() }
             else if press.modifiers.contains(.command) { model.activateSecondary() } else { model.activateSelection() }
             return .handled
@@ -120,6 +146,11 @@ struct LauncherView: View {
 
     private func closeActions() {
         model.actionTarget = nil
+        requestSearchFocus()
+    }
+
+    private func closeAppMenu() {
+        model.showingAppMenu = false
         requestSearchFocus()
     }
 
@@ -221,6 +252,10 @@ struct LauncherView: View {
                 .padding(.horizontal, 8)
                 .padding(.bottom, 8)
             }
+            .contentMargins(.bottom, footerHeight, for: .scrollContent)
+            .contentMargins(.bottom, footerHeight, for: .scrollIndicators)
+            .onScrollGeometryChange(for: ScrollEdges.self, of: ScrollEdges.init) { _, edges in hiddenEdges = edges }
+            .mask(EdgeFadeMask(top: fadesEdges && hiddenEdges.above, bottom: fadesEdges && hiddenEdges.below, footerHeight: footerHeight))
             .onChange(of: model.selection) { _, _ in
                 if let row = model.selectedRow { proxy.scrollTo(row.id, anchor: .center) }
             }
@@ -237,11 +272,11 @@ struct LauncherView: View {
     }
 
     private func requestSearchFocus() {
-        guard model.actionTarget == nil && !model.showingACP && !model.showingDictionary && !model.showingTranslation else { return }
+        guard !popoverOpen && !model.showingACP && !model.showingDictionary && !model.showingTranslation else { return }
         // A persistent hosting view does not appear again each time its panel is summoned.
         focused = false
         DispatchQueue.main.async {
-            guard model.actionTarget == nil && !model.showingACP && !model.showingDictionary && !model.showingTranslation else { return }
+            guard !popoverOpen && !model.showingACP && !model.showingDictionary && !model.showingTranslation else { return }
             focused = true
         }
     }
@@ -263,15 +298,44 @@ struct LauncherView: View {
         .id(row.id)
     }
 
+    /// The footer as a translucent bar over the results, so rows read as soft shapes and colors as
+    /// they pass beneath it. A within-window blur at 60% lets some of the rows through unblurred
+    /// (at full strength the blur reduced them to an imperceptible tint), under a 20% theme tint;
+    /// the theme render measures both the show-through and the label contrast. Reduce Transparency
+    /// uses the solid surface.
+    private var footerBar: some View {
+        VStack(spacing: 0) {
+            Divider().opacity(0.6)
+            footer
+        }
+        .background {
+            if reduceTransparency {
+                Rectangle().fill(theme.surface(opacity: 1))
+            } else {
+                ZStack {
+                    WithinWindowBlur().opacity(0.6)
+                    Rectangle().fill(theme.surface(opacity: 0.2))
+                }
+            }
+        }
+    }
+
     private var footer: some View {
         HStack(spacing: 18) {
-            Image("VolantWing")
-                .renderingMode(.template)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 16, height: 16)
-                .foregroundStyle(.tint)
-                .accessibilityHidden(true)
+            Button { model.toggleAppMenu() } label: {
+                Image("VolantWing")
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 16, height: 16)
+                    .foregroundStyle(.tint)
+                    .padding(4)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).focusable(false).padding(-4)
+            .help(LauncherMenuItem.versionTitle())
+            .accessibilityLabel("Volant menu")
+            .accessibilityIdentifier("launcher-app-menu-button")
             if let feedback = model.actionFeedback {
                 Text(feedback).font(.system(size: 12)).foregroundStyle(.secondary)
                     .lineLimit(1).truncationMode(.tail).help(feedback)
@@ -553,5 +617,59 @@ struct DictationStatusView: View {
                 }
             }
         }
+    }
+}
+
+/// Which ends of a scroll view have content beyond the visible area.
+struct ScrollEdges: Equatable {
+    var above = false
+    var below = false
+
+    init() {}
+
+    init(_ geometry: ScrollGeometry) {
+        let insets = geometry.contentInsets
+        above = geometry.contentOffset.y > -insets.top + 1
+        below = geometry.contentOffset.y + geometry.containerSize.height < geometry.contentSize.height + insets.bottom - 1
+    }
+}
+
+/// Fades the results list over a short band at an edge only while more results lie beyond it, so
+/// rows blend under the search field and footer as they scroll, and the first and last rows are
+/// never dimmed once the list reaches its end.
+struct EdgeFadeMask: View {
+    let top: Bool
+    let bottom: Bool
+    /// Rows beneath the footer stay fully drawn so they show through its blur; the bottom band
+    /// eases only the strip just above the footer's top edge.
+    var footerHeight: CGFloat = 0
+    private let topBand: CGFloat = 36
+    private let bottomBand: CGFloat = 20
+
+    var body: some View {
+        VStack(spacing: 0) {
+            LinearGradient(colors: [.black.opacity(top ? 0.25 : 1), .black], startPoint: .top, endPoint: .bottom).frame(height: topBand)
+            Color.black
+            LinearGradient(colors: [.black, .black.opacity(bottom ? 0.7 : 1)], startPoint: .top, endPoint: .bottom).frame(height: bottomBand)
+            Color.black.frame(height: footerHeight)
+        }
+    }
+}
+
+/// A blur of the window's own content behind it, unlike a SwiftUI material inside this panel,
+/// which picked up only the panel background and hid the rows passing under the footer.
+struct WithinWindowBlur: NSViewRepresentable {
+    var material: NSVisualEffectView.Material = .menu
+
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = material
+        view.blendingMode = .withinWindow
+        view.state = .active
+        return view
+    }
+
+    func updateNSView(_ view: NSVisualEffectView, context: Context) {
+        view.material = material
     }
 }

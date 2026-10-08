@@ -176,6 +176,37 @@ verify(copied == ["Fixture", "Fixture"] && launched == 0, "Native mouse click ex
 panel.orderOut(nil)
 print("PASS: native action search, keyboard navigation, empty state, Escape, copying, and Favorites")
 
+var menuOpened: [URL] = []
+panel.model.openURL = { menuOpened.append($0) }
+summon()
+// The Volant mark sits at the left of the footer, 10 points above the panel's bottom edge.
+point = NSPoint(x: 24, y: 19)
+clickPoint()
+verify(waitUntil { panel.model.showingAppMenu }, "Clicking the Volant mark opens the Volant menu: \(focusState())")
+verify(panel.model.actionTarget == nil && panel.isVisible, "Volant menu opens inside the panel without item actions")
+verify(LauncherMenuItem.versionTitle() == "Volant v0.0.0", "Version header reads the fixture bundle version, saw \(LauncherMenuItem.versionTitle())")
+focusActionSearch()
+try render("app-menu")
+focusActionSearch()
+(panel.firstResponder as? NSTextView)?.insertText("no such item", replacementRange: NSRange(location: NSNotFound, length: 0)); settle()
+key("\r", 36)
+verify(menuOpened.isEmpty && panel.model.showingAppMenu, "Return on an empty Volant menu filter does nothing")
+focusActionSearch()
+(panel.firstResponder as? NSTextView)?.selectAll(nil)
+(panel.firstResponder as? NSTextView)?.insertText("manual", replacementRange: NSRange(location: NSNotFound, length: 0)); settle()
+verify(panel.model.query.isEmpty, "Volant menu search does not alter launcher query")
+focusActionSearch(); key("\r", 36)
+verify(waitUntil { menuOpened == [LauncherMenuItem.manualURL] } && !panel.model.showingAppMenu, "Return opens the filtered Manual link")
+summon()
+clickPoint()
+verify(waitUntil { panel.model.showingAppMenu }, "Volant menu opens again")
+focusActionSearch(); key("\u{1b}", 53)
+verify(waitUntil { !panel.model.showingAppMenu } && panel.isVisible, "Escape closes the Volant menu before the launcher")
+verify(waitUntil(stable: 0.1) { focusedField()?.placeholderString == launcherSearchPlaceholder }, "Launcher search regains focus after the menu closes: \(focusState())")
+key("\u{1b}", 53)
+verify(waitUntil { !panel.isVisible }, "A second Escape hides the launcher")
+print("PASS: Volant menu click, version header, filtering, Return, and Escape order")
+
 // Entering AI Chat invokes setup routing, never a real provider in the fixture.
 summon(); key("\t", 48)
 verify(waitUntil { settingsRequests == 1 && !panel.isVisible }, "Unconfigured AI Chat routes to Settings")
@@ -598,9 +629,11 @@ do {
                                                       credentials: fakeCredentials, discovery: AIModelDiscovery(), agentDetection: detection)
         .background(Color(nsColor: .windowBackgroundColor)))
     let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 760), styleMask: [.titled], backing: .buffered, defer: false)
-    window.contentView = view; window.makeKeyAndOrderFront(nil); settle()
+    window.contentView = view; window.makeKeyAndOrderFront(nil)
+    verify(waitUntil { detection.agents.map(\.provider) == ["claude", "qwen", "codex", "gemini"] },
+           "Detected agents list ready providers first, saw \(detection.agents.map(\.provider))")
+    settle()
     try render("ai-acp-detected", view: view)
-    verify(detection.agents.map(\.provider) == ["claude", "qwen", "codex", "gemini"], "Detected agents list ready providers first")
     guard let use = controlFrame("settings.use-agent-qwen", in: window) else { verify(false, "A ready agent offers Use"); exit(1) }
     func event(_ type: NSEvent.EventType) -> NSEvent {
         NSEvent.mouseEvent(with: type, location: NSPoint(x: use.midX, y: use.midY), modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
