@@ -176,3 +176,10 @@ A development build with the fix, installed on the owner's Mac, was used before 
 - **DMG SHA-256:** `eb064c2689bc643d4059ef61903539893f3b3d082201b593e1e3535e580e8f89` (12,262,988 bytes).
 
 **Publishing.** In two stages: DMG, checksums and website first, then the signed build-9 feed.
+
+Public DMG delivery verified after Cloudflare Worker deployment `00f07ab2-5ced-46b3-a85d-b34d9dc3f69c` (run by the owner from #164):
+
+- **Homepage:** offers `Volant-0.2.1.dmg`.
+- **Download:** HTTP 200, 12,262,988 bytes. It matched the SHA-256 above, passed stapler validation and passed Gatekeeper as Notarized Developer ID.
+- **Pages:** `/docs`, `/docs/agents` and the 0.2.0 DMG returned 200.
+- **Feed:** the public feed stayed on 0.2.0 build 8 until the signed build-9 appcast (passes `sign_update --verify`, 12,262,988 bytes) is activated.
