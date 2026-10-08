@@ -14,6 +14,8 @@ struct LauncherView: View {
     private var fadesEdges: Bool { !reduceMotion && !reduceTransparency }
     /// Whether more results lie above or below the visible part of the list.
     @State private var hiddenEdges = ScrollEdges()
+    /// The footer's height, so the list can scroll beneath it and still bring its last row fully into view.
+    @State private var footerHeight: CGFloat = 40
 
     private var content: some View {
         VStack(spacing: 0) {
@@ -52,8 +54,10 @@ struct LauncherView: View {
             }
             if let network = model.wifiJoin {
                 WiFiJoinView(model: model, network: network).id(network.id)
+                Divider().opacity(0.6)
             } else if model.showingEmoji {
                 EmojiGridView(model: model)
+                footerBar
             } else {
                 if model.showingAgents {
                     HerdrMachineStatusView(machines: agents.machines)
@@ -69,10 +73,12 @@ struct LauncherView: View {
                         Button("New ACP conversation") { model.presentAIChat() }
                     }.font(.system(size: 12)).padding(.horizontal, 20).padding(.vertical, 6)
                 }
-                results
+                ZStack(alignment: .bottom) {
+                    results
+                    footerBar
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { footerHeight = $0 }
+                }
             }
-            Divider().opacity(0.6)
-            if !model.showingACP && model.wifiJoin == nil { footer }
             }
         }
         .frame(width: LauncherPanel.size.width, height: LauncherPanel.size.height)
@@ -246,8 +252,10 @@ struct LauncherView: View {
                 .padding(.horizontal, 8)
                 .padding(.bottom, 8)
             }
+            .contentMargins(.bottom, footerHeight, for: .scrollContent)
+            .contentMargins(.bottom, footerHeight, for: .scrollIndicators)
             .onScrollGeometryChange(for: ScrollEdges.self, of: ScrollEdges.init) { _, edges in hiddenEdges = edges }
-            .mask(EdgeFadeMask(top: fadesEdges && hiddenEdges.above, bottom: fadesEdges && hiddenEdges.below))
+            .mask(EdgeFadeMask(top: fadesEdges && hiddenEdges.above, bottom: fadesEdges && hiddenEdges.below, bottomBand: footerHeight + 28))
             .onChange(of: model.selection) { _, _ in
                 if let row = model.selectedRow { proxy.scrollTo(row.id, anchor: .center) }
             }
@@ -288,6 +296,25 @@ struct LauncherView: View {
         .buttonStyle(.plain)
         .focusable(false)
         .id(row.id)
+    }
+
+    /// The footer as a translucent bar over the results, so rows scroll softly underneath it. It
+    /// takes the theme's surface over a blur, and a solid surface when Reduce Transparency is on.
+    private var footerBar: some View {
+        VStack(spacing: 0) {
+            Divider().opacity(0.6)
+            footer
+        }
+        .background {
+            if reduceTransparency {
+                Rectangle().fill(theme.surface(opacity: 1))
+            } else {
+                ZStack {
+                    Rectangle().fill(.ultraThinMaterial)
+                    Rectangle().fill(theme.surface(opacity: 0.4))
+                }
+            }
+        }
     }
 
     private var footer: some View {
@@ -598,8 +625,9 @@ struct ScrollEdges: Equatable {
     init() {}
 
     init(_ geometry: ScrollGeometry) {
-        above = geometry.contentOffset.y > 1
-        below = geometry.contentOffset.y + geometry.containerSize.height < geometry.contentSize.height - 1
+        let insets = geometry.contentInsets
+        above = geometry.contentOffset.y > -insets.top + 1
+        below = geometry.contentOffset.y + geometry.containerSize.height < geometry.contentSize.height + insets.bottom - 1
     }
 }
 
@@ -609,13 +637,15 @@ struct ScrollEdges: Equatable {
 struct EdgeFadeMask: View {
     let top: Bool
     let bottom: Bool
-    private let band: CGFloat = 36
+    /// The bottom band runs from just above the footer down beneath it, so rows fade into the bar.
+    var bottomBand: CGFloat = 36
+    private let topBand: CGFloat = 36
 
     var body: some View {
         VStack(spacing: 0) {
-            LinearGradient(colors: [.black.opacity(top ? 0.25 : 1), .black], startPoint: .top, endPoint: .bottom).frame(height: band)
+            LinearGradient(colors: [.black.opacity(top ? 0.25 : 1), .black], startPoint: .top, endPoint: .bottom).frame(height: topBand)
             Color.black
-            LinearGradient(colors: [.black, .black.opacity(bottom ? 0.25 : 1)], startPoint: .top, endPoint: .bottom).frame(height: band)
+            LinearGradient(colors: [.black, .black.opacity(bottom ? 0.35 : 1)], startPoint: .top, endPoint: .bottom).frame(height: bottomBand)
         }
     }
 }

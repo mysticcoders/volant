@@ -12,9 +12,11 @@ A menu captures stable result identity and revalidates before execution. Selecti
 
 Clicking the Volant mark at the bottom left of the footer opens the launcher's own menu, anchored there inside the panel and styled like Actions. Its header names the running version ("Volant v0.2.1", read from the bundle), so it's always clear which build is installed. Items: Send Feedback (a new GitHub issue with only the app version, build and macOS version prefilled), Manual (usevolant.com/docs), Changelog (GitHub Releases), Check for Updates… (Sparkle, as in the menu bar), About Volant, Settings (⌘,) and Quit Volant (⌘Q). "Search for actions…" filters them. Arrows, Return and Escape work as in Actions; Escape closes the menu before the launcher, typing a new query closes it, and only one of Actions and the Volant menu is open at a time. Links open in the browser through NSWorkspace; the main app still has no network access.
 
-## Scroll fade
+## Scroll fade and footer
 
-The results list fades over a 36-point band at the top and bottom while more results lie beyond that edge (`EdgeFadeMask`, driven by `onScrollGeometryChange`), down to 25% opacity at the very edge, so rows blend under the search field and footer as they scroll and reach full opacity as they move into view. At the start and end of the list there is nothing beyond, so the first and last rows are never dimmed, and keyboard selection scrolls the selected row to the center. The fade is off when Reduce Motion or Reduce Transparency is on. A per-row `scrollTransition` was tried first; it only touched rows almost fully out of view and was not visible in practice.
+The results list runs the full height of the panel, and the footer is a translucent bar over it: an ultra-thin material under the theme's surface at 40%, or the solid surface when Reduce Transparency is on. Rows scroll softly beneath it, as in Raycast. A bottom content margin equal to the measured footer height lets the last row scroll fully into view above the bar, and the scroll indicator stops above it. The footer's controls sit on the bar, so they stay legible and take clicks over moving content.
+
+The list also fades at edges with more results beyond them (`EdgeFadeMask`, driven by `onScrollGeometryChange`): a 36-point band under the search field down to 25% opacity, and a band that starts 28 points above the footer and runs underneath it down to 35%. At the start and end of the list nothing lies beyond, so the first and last rows are never dimmed, and keyboard selection scrolls the selected row to the center. The fade is off when Reduce Motion or Reduce Transparency is on. A per-row `scrollTransition` was tried first; it only touched rows almost fully out of view and was not visible in practice.
 
 ## Verification
 
