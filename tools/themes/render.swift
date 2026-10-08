@@ -25,8 +25,6 @@ var config = Preferences()
 config.snippets = [Snippet(name: "Standup notes", keyword: "", body: "Fictional"), Snippet(name: "Status update", keyword: "", body: "Fictional"),
                    Snippet(name: "Support reply", keyword: "", body: "Fictional")]
 model.config = config
-var longList = config
-longList.snippets = (1...24).map { Snippet(name: "Fictional snippet \($0)", keyword: "", body: "Fictional") }
 
 let host = NSHostingView(rootView: ThemedRoot { ThemedLauncher(model: model) })
 let window = NSWindow(contentRect: NSRect(origin: .zero, size: LauncherPanel.size), styleMask: [.borderless], backing: .buffered, defer: false)
@@ -37,6 +35,28 @@ let notesHost = NSHostingView(rootView: ThemedRoot { NotesView(model: notesModel
 let notesWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 360), styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
 notesWindow.contentView = notesHost
 notesWindow.orderFront(nil)
+
+/// Native scroll views under a view, so a render can scroll to a position that cuts rows in half.
+func scrollViews(_ view: NSView) -> [NSScrollView] {
+    (view as? NSScrollView).map { [$0] } ?? view.subviews.flatMap(scrollViews)
+}
+
+typealias WindowImage = @convention(c) (CGRect, UInt32, UInt32, UInt32) -> Unmanaged<CGImage>?
+let windowImage = dlsym(dlopen(nil, RTLD_NOW), "CGWindowListCreateImage").map { unsafeBitCast($0, to: WindowImage.self) }
+
+/// Captures a window through the window server, which composites effects an offscreen
+/// `cacheDisplay` render leaves out, such as scroll transitions. Falls back to `capture` and says so.
+func captureWindow(_ window: NSWindow, _ name: String) throws {
+    window.orderFrontRegardless()
+    RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+    if let windowImage, let image = windowImage(.null, 1 << 3, UInt32(window.windowNumber), 1 | 8)?.takeRetainedValue() {
+        try NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])!
+            .write(to: URL(fileURLWithPath: "/tmp/volant-theme-\(name).png"))
+    } else {
+        print("Window-server capture unavailable for \(name); using an offscreen render")
+        try capture(window.contentView!, name)
+    }
+}
 
 /// Writes a view's current drawing to a PNG.
 func capture(_ view: NSView, _ name: String) throws {
@@ -69,16 +89,19 @@ for theme in ColorTheme.catalog {
         RunLoop.main.run(until: Date().addingTimeInterval(0.3))
         try capture(notesHost, name + "-notes")
         if [ColorTheme.systemID, "catppuccin-mocha"].contains(theme.id) {
-            model.config = longList
-            model.query = "snip"
-            model.selection = model.rows.count / 2
+            model.query = ""
+            model.selection = 0
+            RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+            if let scroll = scrollViews(host).max(by: { $0.frame.height < $1.frame.height }) {
+                scroll.contentView.scroll(to: NSPoint(x: 0, y: 120))
+                scroll.reflectScrolledClipView(scroll.contentView)
+            }
             RunLoop.main.run(until: Date().addingTimeInterval(0.4))
-            try capture(host, name + "-scrolled")
+            try captureWindow(window, name + "-scrolled")
             model.showingAppMenu = true
             RunLoop.main.run(until: Date().addingTimeInterval(0.3))
             try capture(host, name + "-app-menu")
             model.showingAppMenu = false
-            model.config = config
         }
         print("Rendered \(name)")
     }

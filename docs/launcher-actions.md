@@ -14,7 +14,7 @@ Clicking the Volant mark at the bottom left of the footer opens the launcher's o
 
 ## Scroll fade
 
-Result rows, section titles and calculator cards that are partly scrolled past the top or bottom of the list draw translucent and reach full opacity once about 90% of the row is visible (`edgeFade`, a vertical `scrollTransition`). Keyboard selection scrolls the selected row to the center, so it is never left faded. The fade is off when Reduce Motion or Reduce Transparency is on.
+The results list fades over a 36-point band at the top and bottom while more results lie beyond that edge (`EdgeFadeMask`, driven by `onScrollGeometryChange`), down to 25% opacity at the very edge, so rows blend under the search field and footer as they scroll and reach full opacity as they move into view. At the start and end of the list there is nothing beyond, so the first and last rows are never dimmed, and keyboard selection scrolls the selected row to the center. The fade is off when Reduce Motion or Reduce Transparency is on. A per-row `scrollTransition` was tried first; it only touched rows almost fully out of view and was not visible in practice.
 
 ## Verification
 

@@ -12,6 +12,8 @@ struct LauncherView: View {
     /// Whether item actions or the Volant menu are open; either one owns arrow keys and Return.
     private var popoverOpen: Bool { model.actionTarget != nil || model.showingAppMenu }
     private var fadesEdges: Bool { !reduceMotion && !reduceTransparency }
+    /// Whether more results lie above or below the visible part of the list.
+    @State private var hiddenEdges = ScrollEdges()
 
     private var content: some View {
         VStack(spacing: 0) {
@@ -217,7 +219,6 @@ struct LauncherView: View {
                     if let held = model.heldCalculation {
                         sectionTitle("Calculator")
                         CalculatorCard(rowID: nil, fallback: held, state: model.rowState)
-                            .edgeFade(fadesEdges)
                             .id("calc-held")
                     }
                     ForEach(model.sections) { section in
@@ -245,6 +246,8 @@ struct LauncherView: View {
                 .padding(.horizontal, 8)
                 .padding(.bottom, 8)
             }
+            .onScrollGeometryChange(for: ScrollEdges.self, of: ScrollEdges.init) { _, edges in hiddenEdges = edges }
+            .mask(EdgeFadeMask(top: fadesEdges && hiddenEdges.above, bottom: fadesEdges && hiddenEdges.below))
             .onChange(of: model.selection) { _, _ in
                 if let row = model.selectedRow { proxy.scrollTo(row.id, anchor: .center) }
             }
@@ -258,7 +261,6 @@ struct LauncherView: View {
             .padding(.horizontal, 14)
             .padding(.top, 10)
             .padding(.bottom, 4)
-            .edgeFade(fadesEdges)
     }
 
     private func requestSearchFocus() {
@@ -285,7 +287,6 @@ struct LauncherView: View {
         }
         .buttonStyle(.plain)
         .focusable(false)
-        .edgeFade(fadesEdges)
         .id(row.id)
     }
 
@@ -589,13 +590,32 @@ struct DictationStatusView: View {
     }
 }
 
-extension View {
-    /// Rows partly scrolled past the top or bottom edge of the results draw translucent and reach
-    /// full opacity once they are almost entirely in view, so the list blends under the search
-    /// field and footer instead of clipping hard. Off when Reduce Motion or Reduce Transparency is on.
-    func edgeFade(_ enabled: Bool) -> some View {
-        scrollTransition(.interactive.threshold(.visible(0.9)), axis: .vertical) { content, phase in
-            content.opacity(enabled ? 1 - 0.65 * min(1, abs(phase.value)) : 1)
+/// Which ends of a scroll view have content beyond the visible area.
+struct ScrollEdges: Equatable {
+    var above = false
+    var below = false
+
+    init() {}
+
+    init(_ geometry: ScrollGeometry) {
+        above = geometry.contentOffset.y > 1
+        below = geometry.contentOffset.y + geometry.containerSize.height < geometry.contentSize.height - 1
+    }
+}
+
+/// Fades the results list over a short band at an edge only while more results lie beyond it, so
+/// rows blend under the search field and footer as they scroll, and the first and last rows are
+/// never dimmed once the list reaches its end.
+struct EdgeFadeMask: View {
+    let top: Bool
+    let bottom: Bool
+    private let band: CGFloat = 36
+
+    var body: some View {
+        VStack(spacing: 0) {
+            LinearGradient(colors: [.black.opacity(top ? 0.25 : 1), .black], startPoint: .top, endPoint: .bottom).frame(height: band)
+            Color.black
+            LinearGradient(colors: [.black, .black.opacity(bottom ? 0.25 : 1)], startPoint: .top, endPoint: .bottom).frame(height: band)
         }
     }
 }
