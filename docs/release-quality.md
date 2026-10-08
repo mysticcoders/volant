@@ -29,7 +29,7 @@
 
 - Notarization completed for build 2; see the release evidence below.
 - Installed signed-app live smoke test: OS appearance switching, Herdr disclosure click/persistence, Settings/menus, updater prompt, larger text and minimum launcher scale. Render fixtures do not establish these.
-- Complete a two-version Sparkle installation test. The signed live feed is published; installation from a previous build remains unverified.
+- Two-version Sparkle installation verified on October 7, 2026: the owner updated two Macs from 0.1.5 to 0.2.0 through Sparkle. See the 0.2.0 entry.
 - Intel hardware verification remains outstanding. Inspect archive architecture before making hardware support claims.
 
 ## Automation
@@ -137,7 +137,7 @@ An earlier local test build of the same code, still labeled 0.1.5 build 7 (`dist
 
 **Verified by the owner.** iCloud settings sync between two Macs on the same Apple Account, theme switching, and the system actions in the installed app.
 
-**Unverified.** An installed 0.1.5 → 0.2.0 upgrade, Intel hardware, and iCloud quota and account-change notifications remain unverified.
+**Unverified.** Intel hardware, and iCloud quota and account-change notifications.
 
 Public DMG delivery verified after Cloudflare Worker deployment `c71b8169-4bb7-4cac-9bdd-48a4616605bb` (run by the owner from #158):
 
@@ -152,4 +152,6 @@ Final publication: the signed build-8 feed was activated in Cloudflare Worker de
 - **Feed:** the public feed (HTTP 200, `max-age=0, must-revalidate`) matched both the committed file and the release output byte-for-byte. It reports version 0.2.0 build 8 and passed Sparkle `sign_update --verify`.
 - **Pages and downloads:** the homepage, `/docs`, and the 0.2.0 and 0.1.5 DMGs returned 200.
 - **Release PRs:** #157, #158 and #159 passed required workflow checks before merging.
-- **Still unverified:** an installed 0.1.5 → 0.2.0 upgrade and Intel hardware.
+- **Still unverified:** Intel hardware.
+
+Installed upgrade verified by the owner after activation: two Macs running 0.1.5 updated to 0.2.0 through Sparkle, relaunched, and worked normally. This is the first completed two-version Sparkle upgrade for Volant.
