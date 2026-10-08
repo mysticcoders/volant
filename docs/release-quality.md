@@ -155,3 +155,24 @@ Final publication: the signed build-8 feed was activated in Cloudflare Worker de
 - **Still unverified:** Intel hardware.
 
 Installed upgrade verified by the owner after activation: two Macs running 0.1.5 updated to 0.2.0 through Sparkle, relaunched, and worked normally. This is the first completed two-version Sparkle upgrade for Volant.
+
+## 0.2.1 build 9 — October 8, 2026
+
+**The fix.** 0.2.1 fixes a 0.2.0 regression that left the app list empty on some Macs (#162). The app index searched the whole computer, so Spotlight waited on every mounted volume. On the owner's Mac (an SMB share from another Mac, Xcode's CoreDevice DeviceFS and simulator images), gathering never finished. The launcher and Settings showed no applications and no error, while the same build worked on another Mac. The query now searches only the application folders and reads results during gathering.
+
+**Probes on the affected Mac.** Exact predicate and filter, run as a sandboxed ad-hoc app bundle:
+
+| Scope | Result |
+| --- | --- |
+| Whole computer | Never finished within 40 s |
+| Application folders | About 1 s, 198 apps |
+
+A development build with the fix, installed on the owner's Mac, was used before release.
+
+**Build.** Built from `main` at `20adedf` (#163, version-only). Output: `dist-release.dyZ8UO/`.
+
+- **Notarization:** used App Store Connect API key `SCV5964PL2`. Apple accepted app submission `a4bf4d92-72f0-4284-85dc-01e7273a8165` and DMG submission `89b518ed-b1ea-413d-bb9d-ac57303987af`. Both were stapled and passed Gatekeeper as Notarized Developer ID.
+- **Mounted DMG:** `Volant.app` 0.2.1, build 9, `x86_64 arm64`, valid deep strict signature, stapled, sandboxed, iCloud key-value and loginwindow entitlements, embedded provisioning profile.
+- **DMG SHA-256:** `eb064c2689bc643d4059ef61903539893f3b3d082201b593e1e3535e580e8f89` (12,262,988 bytes).
+
+**Publishing.** In two stages: DMG, checksums and website first, then the signed build-9 feed.

@@ -22,7 +22,7 @@ export default function Agents() {
       <p className="docs-lede">
         Find the session that needs you, respond to a supported question, or
         start AI Chat with the connection you choose. These features are in the
-        0.2.0 download; verification limits are listed below.
+        current download; verification limits are listed below.
       </p>
 
       <h2>Herdr panes</h2>
