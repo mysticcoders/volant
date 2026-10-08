@@ -138,3 +138,11 @@ An earlier local test build of the same code, still labeled 0.1.5 build 7 (`dist
 **Verified by the owner.** iCloud settings sync between two Macs on the same Apple Account, theme switching, and the system actions in the installed app.
 
 **Unverified.** An installed 0.1.5 → 0.2.0 upgrade, Intel hardware, and iCloud quota and account-change notifications remain unverified.
+
+Public DMG delivery verified after Cloudflare Worker deployment `c71b8169-4bb7-4cac-9bdd-48a4616605bb` (run by the owner from #158):
+
+- **Homepage:** offers `Volant-0.2.0.dmg` and the New in 0.2.0 sections.
+- **Download:** HTTP 200, 12,261,884 bytes. It matched the SHA-256 above, passed stapler validation and passed Gatekeeper as Notarized Developer ID.
+- **Pages:** `/docs`, `/docs/calculator`, `/docs/system-control` and `/docs/privacy-and-security` returned 200.
+- **Redirect:** `getvolant.com` still redirects to usevolant.com.
+- **Feed:** the public feed (`max-age=0, must-revalidate`) remained on 0.1.5 build 7 until the follow-up activates the exact signed build-8 appcast. That appcast passes `sign_update --verify` and references `Volant-0.2.0.dmg`, 12,261,884 bytes.
