@@ -25,7 +25,7 @@
 
 - AI Chat connects only after command activation, never while typing a matching search prefix. General chat supplies an internal ACP working directory; a selected folder is optional and is not a sandbox. Preserve active sessions and drafts when reopening or visiting Settings.
 
-- ACP turns must own their native session IDs, invalidate stale snapshots, reject concurrent prompts, and cancel pending permission requests explicitly. Do not advertise client filesystem/terminal capabilities without implementing them. Run `./tools/check-acp.sh` after transport changes; its fake-agent checks do not replace a signed installed-provider smoke test.
+- ACP turns must own their native session IDs, invalidate stale snapshots, reject concurrent prompts, and cancel pending permission requests explicitly. Do not advertise client filesystem/terminal capabilities without implementing them. Resume only by a recorded native session ID through `session/load`, and only when the agent advertised `loadSession`; a failed or unsupported resume ends the connection and never starts a new session in its place. Run `./tools/check-acp.sh` after transport changes; its fake-agent checks do not replace a signed installed-provider smoke test.
 
 - The agent XPC helper must join the caller’s security session for provider Keychain logins. A successful ACP handshake does not prove authentication: verify a minimal prompt through the signed installed app. Never copy provider OAuth tokens or weaken Keychain ACLs to bypass a session configuration bug.
 

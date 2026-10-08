@@ -138,3 +138,54 @@ value would be agents without their own configuration. Gemini CLI and Qwen Code 
 own settings files, which have not been checked here. Revisit only if an agent is found that
 ignores its own configuration under ACP, or if Volant itself should be offered to agents as an MCP
 server, which is a separate design with sandbox implications.
+
+## Resuming an ACP conversation
+
+An ACP chat could not be continued once End, quitting Volant or a helper crash ended it:
+Volant only ever sent `session/new` and kept no session ID, and its transcript lives only in
+memory and stays on screen until the next Start. The pinned adapters keep their own conversation history and advertise
+`loadSession` (`claude-agent-acp` 0.76.0 and `codex-acp` 1.11.0 both implement
+`session/load`, which replays the history as `session/update` notifications), so Volant
+restores a conversation by sending `session/load` with its recorded native session ID.
+
+**Record.** When the helper reports a conversation ready, the app stores
+`ACPResumeRecord` (provider, the project exactly as chosen, the native session ID, a
+timestamp) in its own defaults under `acp.lastConversation`. Only the latest conversation is
+kept; starting a new one replaces it. The `--acp-check` smoke run keeps its record in a
+separate defaults suite, so it never replaces the owner's. The record is not in
+`config.json`, so it is neither backed up nor part of iCloud settings sync, and it holds no
+transcript text.
+
+**Resume.** The chat header shows Resume beside New when the record's provider and project
+equal the current choice, so a conversation is never reopened in another folder. Resume
+starts the provider exactly as Connect does, then, after `initialize`:
+
+- sends `session/load` with the recorded ID, the resolved working folder and no MCP
+  servers, only if the agent advertised `loadSession`;
+- otherwise ends with "This agent can't resume conversations" and sends nothing else.
+  It never falls back to `session/new`, because the owner asked for a specific
+  conversation;
+- shows the replayed history, including the owner's own turns (`user_message_chunk`),
+  which are accepted only while a resume is loading. During a live turn the transcript
+  already holds the prompt Volant sent, so an echo is ignored;
+- cancels any permission request that arrives during the replay, as for every phase other
+  than an active turn;
+- treats a load error as the end of the connection, with the agent's message
+  ("Couldn't resume this conversation: ..."). The record is kept, since the cause may be an
+  expired provider login with the conversation still intact, and New replaces it.
+
+Because the stored ID came from the agent, it is checked again before it is sent back: 1 to
+256 printable ASCII characters, with no spaces, slashes or control characters. The helper
+repeats the check before launching anything, and the replay counts against the same limits as
+a live conversation: 1,000,000 bytes of displayed text and 2,000,000 bytes of tool detail.
+
+Not included: `session/list` (choosing among earlier conversations), `session/resume`
+without replay, and resuming Herdr panes, which belong to Herdr.
+
+Evidence: `ACPResumeRecordTests` in Core; `tools/check-acp.sh` for load-by-ID, replay of both
+sides, approvals refused during replay, the user-echo guard, the missing-capability and
+load-error failures, and refusal of an invalid ID before launch. `ACPResumeModelTests` covers
+the offer rules against an isolated defaults suite and has not yet been run through the hosted
+test target. Not verified: the signed installed app
+resuming a real Claude Code, Codex or OpenCode conversation, and the Resume and New buttons in
+native light and dark renders.

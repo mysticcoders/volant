@@ -62,6 +62,51 @@ public struct ACPState: Codable, Equatable {
 }
 
 
+/// The last ACP conversation Volant started, kept so it can be resumed by its own ID.
+/// Resuming by "the latest conversation in this folder" could reopen one the owner started in
+/// the provider's own CLI or another client, so only the recorded native session ID is ever
+/// sent back to the agent.
+public struct ACPResumeRecord: Codable, Equatable {
+    public var provider: String
+    /// The project exactly as the owner chose it; empty for general chat.
+    public var project: String
+    public var sessionID: String
+    public var savedAt: Date
+
+    public init(provider: String, project: String, sessionID: String, savedAt: Date = Date()) {
+        self.provider = provider
+        self.project = project
+        self.sessionID = sessionID
+        self.savedAt = savedAt
+    }
+
+    public func matches(provider: String, project: String) -> Bool {
+        self.provider == provider && self.project == project
+    }
+
+    /// Session IDs come from the agent, so a stored one is checked again before it is sent back:
+    /// 1 to 256 printable ASCII characters, with no spaces, slashes or control characters.
+    public static func isValidSessionID(_ value: String) -> Bool {
+        guard !value.isEmpty, value.utf8.count <= 256 else { return false }
+        return value.unicodeScalars.allSatisfy { scalar in
+            scalar.isASCII && scalar.value > 0x20 && scalar.value < 0x7F && scalar != "/" && scalar != "\\"
+        }
+    }
+
+    public var isValid: Bool {
+        ACPProvider(rawValue: provider) != nil && Self.isValidSessionID(sessionID)
+    }
+}
+
+public enum ACPCapabilities {
+    /// Whether the agent advertised `loadSession` at initialization. Without it `session/load`
+    /// must not be sent.
+    public static func supportsLoadSession(_ capabilities: String) -> Bool {
+        guard let object = try? JSONSerialization.jsonObject(with: Data(capabilities.utf8)) as? [String: Any] else { return false }
+        return object["loadSession"] as? Bool ?? false
+    }
+}
+
 public enum ACPProvider: String, CaseIterable, Identifiable {
     case opencode, cursor, claude, codex, gemini, qwen
     public var id: String { rawValue }
