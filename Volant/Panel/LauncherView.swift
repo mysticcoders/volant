@@ -255,7 +255,7 @@ struct LauncherView: View {
             .contentMargins(.bottom, footerHeight, for: .scrollContent)
             .contentMargins(.bottom, footerHeight, for: .scrollIndicators)
             .onScrollGeometryChange(for: ScrollEdges.self, of: ScrollEdges.init) { _, edges in hiddenEdges = edges }
-            .mask(EdgeFadeMask(top: fadesEdges && hiddenEdges.above, bottom: fadesEdges && hiddenEdges.below, bottomBand: footerHeight + 28))
+            .mask(EdgeFadeMask(top: fadesEdges && hiddenEdges.above, bottom: fadesEdges && hiddenEdges.below, footerHeight: footerHeight))
             .onChange(of: model.selection) { _, _ in
                 if let row = model.selectedRow { proxy.scrollTo(row.id, anchor: .center) }
             }
@@ -298,8 +298,11 @@ struct LauncherView: View {
         .id(row.id)
     }
 
-    /// The footer as a translucent bar over the results, so rows scroll softly underneath it. It
-    /// takes the theme's surface over a blur, and a solid surface when Reduce Transparency is on.
+    /// The footer as a translucent bar over the results, so rows read as soft shapes and colors as
+    /// they pass beneath it. A within-window blur at 60% lets some of the rows through unblurred
+    /// (at full strength the blur reduced them to an imperceptible tint), under a 20% theme tint;
+    /// the theme render measures both the show-through and the label contrast. Reduce Transparency
+    /// uses the solid surface.
     private var footerBar: some View {
         VStack(spacing: 0) {
             Divider().opacity(0.6)
@@ -310,8 +313,8 @@ struct LauncherView: View {
                 Rectangle().fill(theme.surface(opacity: 1))
             } else {
                 ZStack {
-                    Rectangle().fill(.ultraThinMaterial)
-                    Rectangle().fill(theme.surface(opacity: 0.4))
+                    WithinWindowBlur().opacity(0.6)
+                    Rectangle().fill(theme.surface(opacity: 0.2))
                 }
             }
         }
@@ -637,15 +640,36 @@ struct ScrollEdges: Equatable {
 struct EdgeFadeMask: View {
     let top: Bool
     let bottom: Bool
-    /// The bottom band runs from just above the footer down beneath it, so rows fade into the bar.
-    var bottomBand: CGFloat = 36
+    /// Rows beneath the footer stay fully drawn so they show through its blur; the bottom band
+    /// eases only the strip just above the footer's top edge.
+    var footerHeight: CGFloat = 0
     private let topBand: CGFloat = 36
+    private let bottomBand: CGFloat = 20
 
     var body: some View {
         VStack(spacing: 0) {
             LinearGradient(colors: [.black.opacity(top ? 0.25 : 1), .black], startPoint: .top, endPoint: .bottom).frame(height: topBand)
             Color.black
-            LinearGradient(colors: [.black, .black.opacity(bottom ? 0.35 : 1)], startPoint: .top, endPoint: .bottom).frame(height: bottomBand)
+            LinearGradient(colors: [.black, .black.opacity(bottom ? 0.7 : 1)], startPoint: .top, endPoint: .bottom).frame(height: bottomBand)
+            Color.black.frame(height: footerHeight)
         }
+    }
+}
+
+/// A blur of the window's own content behind it, unlike a SwiftUI material inside this panel,
+/// which picked up only the panel background and hid the rows passing under the footer.
+struct WithinWindowBlur: NSViewRepresentable {
+    var material: NSVisualEffectView.Material = .menu
+
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = material
+        view.blendingMode = .withinWindow
+        view.state = .active
+        return view
+    }
+
+    func updateNSView(_ view: NSVisualEffectView, context: Context) {
+        view.material = material
     }
 }
