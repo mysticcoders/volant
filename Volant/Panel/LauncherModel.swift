@@ -175,22 +175,18 @@ final class LauncherRowState: ObservableObject {
     @Published fileprivate(set) var selectedID: String?
     @Published fileprivate(set) var rowsByID: [String: ResultRow] = [:]
     @Published fileprivate(set) var contactImages: [String: NSImage] = [:]
-    private let icons = NSCache<NSString, NSImage>()
+    private let icons: IconCache
     private let clipImages = NSCache<NSNumber, NSImage>()
 
-    init() {
-        icons.countLimit = 256
+    /// Uses the icon cache shared with Settings unless a test supplies its own.
+    init(icons: IconCache = .shared) {
+        self.icons = icons
         clipImages.countLimit = 32
     }
 
     /// Finder's icon for a path, fetched once. A fresh NSImage on every redraw would make SwiftUI
     /// treat each row as changed and refetch icons on every keystroke and arrow press.
-    func icon(forFile path: String) -> NSImage {
-        if let cached = icons.object(forKey: path as NSString) { return cached }
-        let image = NSWorkspace.shared.icon(forFile: path)
-        icons.setObject(image, forKey: path as NSString)
-        return image
-    }
+    func icon(forFile path: String) -> NSImage { icons.icon(forFile: path) }
 
     /// A clipboard image's row thumbnail, decoded once per entry rather than on every redraw. Rows
     /// draw it at 24 points, so it is downsampled to `thumbnailPixels` and keeps no reference to
@@ -218,7 +214,8 @@ final class LauncherRowState: ObservableObject {
     }
 
     /// Drops cached icons after the app index changes, since an update can change an app's icon.
-    func clearIcons() { icons.removeAllObjects() }
+    /// The cache is shared, so Settings rows refetch their icons too.
+    func clearIcons() { icons.clear() }
 }
 
 /// Routes a query. Prefixes force one source: `/` files, `@` contacts, `cal` or `today` agenda, `clip` history.
