@@ -25,7 +25,7 @@ struct ACPConversationView: View {
                 Text("AI Chat").fontWeight(.medium)
                 Text(model.providerTitle).foregroundStyle(.secondary).lineLimit(1).help(model.providerTitle)
                 if !model.project.isEmpty {
-                    Label(URL(fileURLWithPath: model.project).lastPathComponent, systemImage: "folder")
+                    Label((model.project as NSString).lastPathComponent, systemImage: "folder")
                         .foregroundStyle(.secondary).lineLimit(1).help(model.project)
                 }
                 Spacer(minLength: 4)
