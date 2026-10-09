@@ -49,7 +49,7 @@ final class AppleFoundationModelTests: XCTestCase {
     // MARK: Chat model wiring
 
     func testAppleUsesNeitherHelperPath() {
-        let model = ACPModel()
+        let model = ACPModel.isolated()
         var config = AIConfiguration()
         config.connection = .apple
         model.configure(config)
@@ -60,7 +60,7 @@ final class AppleFoundationModelTests: XCTestCase {
 
     func testTheHTTPKindsStillUseTheNetworkHelper() {
         for kind in [AIConnectionKind.byok, .local] {
-            let model = ACPModel()
+            let model = ACPModel.isolated()
             var config = AIConfiguration()
             config.connection = kind
             model.configure(config)
@@ -70,7 +70,7 @@ final class AppleFoundationModelTests: XCTestCase {
     }
 
     func testACPStillUsesTheAgentHelper() {
-        let model = ACPModel()
+        let model = ACPModel.isolated()
         var config = AIConfiguration()
         config.connection = .acp
         config.provider = ACPProvider.allCases.first?.rawValue ?? ""
@@ -80,7 +80,7 @@ final class AppleFoundationModelTests: XCTestCase {
     }
 
     func testConfiguredTracksRuntimeAvailabilityRatherThanSettings() {
-        let model = ACPModel()
+        let model = ACPModel.isolated()
         var config = AIConfiguration()
         config.connection = .apple
         model.configure(config)
@@ -90,7 +90,7 @@ final class AppleFoundationModelTests: XCTestCase {
 
     func testStartingWithoutAvailabilityFailsWithTheReason() {
         guard !AppleFoundationModel.availability.isReady else { return }
-        let model = ACPModel()
+        let model = ACPModel.isolated()
         var config = AIConfiguration()
         config.connection = .apple
         model.configure(config)

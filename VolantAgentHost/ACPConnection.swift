@@ -23,6 +23,9 @@ final class ACPConnection {
     private var textBytes = 0
     private var toolDetails: [String: [String: Any]] = [:]
     private var detailBytes = 0
+    private var replayTrimmed = false
+    static let replayTextLimit = 400_000
+    static let replayEventLimit = 800
     // Fixture injection is only available to Swift tests, never over XPC.
     var testSend: (([String: Any]) -> Void)?
 
@@ -72,7 +75,7 @@ final class ACPConnection {
     }
     func beginHandshake(project: String, resume: String? = nil) {
         self.project = project
-        resumeID = resume
+        resumeID = resume; replayTrimmed = false; state.resumeRejected = nil
         state.phase = "starting"
         request("initialize", ["protocolVersion": 1, "clientCapabilities": ["fs": ["readTextFile": false, "writeTextFile": false], "terminal": false], "clientInfo": ["name": "volant", "title": "Volant", "version": "0.1.0"]])
     }
@@ -198,7 +201,10 @@ final class ACPConnection {
         if let error = object["error"] as? [String: Any] {
             let message = error["message"] as? String ?? "Agent request failed."
             if method == "session/prompt" { cancelPermissions(); state.phase = "ready"; state.status = message }
-            else if method == "session/load" { stop("Couldn’t resume this conversation: " + message + " Start a new conversation.", failed: true) }
+            else if method == "session/load" {
+                stop("Couldn’t resume this conversation: " + message + " Start a new conversation.", failed: true)
+                state.resumeRejected = true
+            }
             else { stop(message + " Check the provider’s terminal login and retry.", failed: true) }
             return
         }
@@ -211,7 +217,8 @@ final class ACPConnection {
             if let resumeID {
                 // Never fall back to a new session: the owner asked for this one.
                 guard ACPCapabilities.supportsLoadSession(state.capabilities) else {
-                    stop("This agent can’t resume conversations. Start a new conversation.", failed: true); return
+                    stop("This agent can’t resume conversations. Start a new conversation.", failed: true)
+                    state.resumeRejected = true; return
                 }
                 // The ID is set first so the replayed history routes to this conversation.
                 state.sessionID = resumeID; state.status = "Restoring conversation…"
@@ -221,7 +228,7 @@ final class ACPConnection {
             }
         case "session/load":
             resumeID = nil
-            state.phase = "ready"; state.status = "Ready"
+            state.phase = "ready"; state.status = replayTrimmed ? "Ready. Earlier history isn’t shown." : "Ready"
         case "session/new":
             guard let session = result["sessionId"] as? String, !session.isEmpty else { stop("Agent returned no conversation ID.", failed: true); return }
             state.sessionID = session; state.phase = "ready"; state.status = "Ready"
@@ -245,7 +252,7 @@ final class ACPConnection {
             if state.messages.last?.role == role { state.messages[state.messages.count - 1].text += text }
             else { state.messages.append(ACPMessage(role: role, text: text)) }
         } else if kind == "tool_call" || kind == "tool_call_update" {
-            if let toolID = update["toolCallId"] as? String {
+            if !replaying, let toolID = update["toolCallId"] as? String {
                 let size = (try? JSONSerialization.data(withJSONObject: update).count) ?? 0
                 detailBytes += size
                 guard detailBytes < 2_000_000 else { stop("Conversation reached its tool-detail limit.", failed: true); return }
@@ -266,6 +273,16 @@ final class ACPConnection {
                 state.messages.append(ACPMessage(id: key, role: "Tool · " + status, text: update["title"] as? String ?? "Agent tool"))
             }
             if state.messages.count > 2_000 { stop("Conversation reached its event limit.", failed: true) }
+        }
+        if replaying { trimReplay() }
+    }
+    /// Keeps replayed history within its share of the conversation limits by dropping the oldest
+    /// entries, so a long conversation can still resume and leave room for new turns. Replayed tool
+    /// details are never stored: no approval is offered for them.
+    private func trimReplay() {
+        while state.messages.count > 1, textBytes > Self.replayTextLimit || state.messages.count > Self.replayEventLimit {
+            textBytes = max(0, textBytes - state.messages.removeFirst().text.utf8.count)
+            replayTrimmed = true
         }
     }
     private func failure(_ message: String) -> NSError { NSError(domain: "VolantACP", code: 1, userInfo: [NSLocalizedDescriptionKey: message]) }

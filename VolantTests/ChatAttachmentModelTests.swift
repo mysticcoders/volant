@@ -9,7 +9,7 @@ final class ChatAttachmentModelTests: XCTestCase {
     }
 
     func testAttachIsIdempotentAndDetachRemovesOnlyThatItem() {
-        let model = ACPModel()
+        let model = ACPModel.isolated()
         model.draft = "Keep this draft"
         XCTAssertTrue(model.attach(item("a")))
         XCTAssertTrue(model.attach(item("a")), "attaching the same item again is not an error")
@@ -22,7 +22,7 @@ final class ChatAttachmentModelTests: XCTestCase {
     }
 
     func testARefusedAttachmentExplainsWhyAndKeepsTheRest() {
-        let model = ACPModel()
+        let model = ACPModel.isolated()
         XCTAssertTrue(model.attach(item("a", size: 30_000)))
         XCTAssertFalse(model.attach(item("b", size: 30_000)), "together they exceed the total")
         XCTAssertEqual(model.attachments.map(\.id), ["a"])

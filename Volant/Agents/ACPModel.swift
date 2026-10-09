@@ -42,7 +42,8 @@ final class ACPModel: ObservableObject {
         configuration = value
         provider = value.provider; project = value.connection == .acp ? value.project : ""
     }
-    /// Reopening an active chat must never replace its session or draft.
+    /// Reopening an active chat must never replace its session or draft. A conversation that can be
+    /// resumed is offered instead of connecting, so opening the chat never replaces its record.
     @discardableResult func openChat(configuration: AIConfiguration?, connect: () -> Void) -> Bool {
         if active { return true }
         guard let configuration, configuration.isConfigured else { return false }
@@ -51,7 +52,7 @@ final class ACPModel: ObservableObject {
             catch { self.error = "Couldn’t read your API key. Open AI Settings to check it."; return false }
         }
         configure(configuration)
-        connect()
+        if !canResume { connect() }
         return true
     }
     private var connection: NSXPCConnection?
@@ -96,11 +97,16 @@ final class ACPModel: ObservableObject {
         if let session { proxy()?.acpResume(provider: provider, project: project, session: session, reply: started) }
         else { proxy()?.acpStart(provider: provider, project: project, reply: started) }
     }
-    /// Records a conversation once the helper reports it ready. A failed resume keeps the record,
-    /// since the cause may be an expired provider login with the conversation still intact;
-    /// starting a new conversation replaces it.
-    private func remember(_ snapshot: ACPState) {
-        guard !usesAPI, !usesApple, snapshot.phase == "ready", let session = snapshot.sessionID else { return }
+    /// Records a conversation once it is ready and holds an owner turn, so a session opened and left
+    /// unused never replaces the record. A launch failure keeps the record, since the cause may be an
+    /// expired provider login with the conversation still intact; an agent that refuses to load it
+    /// clears it.
+    func remember(_ snapshot: ACPState) {
+        if snapshot.resumeRejected == true {
+            resumeStore.removeObject(forKey: Self.resumeKey); resumable = nil; return
+        }
+        guard !usesAPI, !usesApple, snapshot.phase == "ready", let session = snapshot.sessionID,
+              snapshot.messages.contains(where: { $0.role == "You" }) else { return }
         let record = ACPResumeRecord(provider: provider, project: project, sessionID: session)
         guard record.isValid, resumable?.sessionID != session || resumable?.matches(provider: provider, project: project) != true,
               let data = try? JSONEncoder().encode(record) else { return }
