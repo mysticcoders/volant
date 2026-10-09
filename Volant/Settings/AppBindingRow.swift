@@ -15,7 +15,7 @@ struct AppBindingRow: View {
     @FocusState private var editingAlias: Bool
     private var bundleID: String? { Bundle(url: app.url)?.bundleIdentifier }
     private var storedAliases: [String: String] { config.aliases.filter { $0.value == app.url.path || $0.value == app.name } }
-    private var hotKey: String { config.appHotKeys.first { $0.bundleIdentifier == bundleID }?.hotKey ?? "" }
+    private var hotKey: String { bundleID.map { AppHotKey.binding(in: config.appHotKeys, bundleIdentifier: $0, path: app.url.path) } ?? "" }
 
     init(app: AppEntry, config: Preferences, configURL: URL, onChange: @escaping () -> Void) {
         self.app = app; self.config = config; self.configURL = configURL; self.onChange = onChange
@@ -44,7 +44,7 @@ struct AppBindingRow: View {
                 }.frame(width: 90)
                 ShortcutControl(title: app.name, value: hotKey) { replacement in
                     guard let bundleID else { throw BindingFailure(message: "This app has no bundle identifier.") }
-                    _ = try AppBindingStore.updateHotKey(bundleID: bundleID, value: replacement, expectedValue: hotKey,
+                    _ = try AppBindingStore.updateHotKey(bundleID: bundleID, path: app.url.path, value: replacement, expectedValue: hotKey,
                         at: configURL, available: { HotKeyCenter.shared.isAvailable($0) })
                     onChange()
                 }.frame(width: 160).disabled(bundleID == nil)

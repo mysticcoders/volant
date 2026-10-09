@@ -307,13 +307,29 @@ public struct Appearance: Codable, Equatable {
     }
 }
 
-public struct AppHotKey: Codable {
+/// A per-app shortcut. `path` names the exact application copy; entries saved before it existed omit it
+/// and still resolve by bundle identifier until they are edited.
+public struct AppHotKey: Codable, Equatable {
     public var bundleIdentifier: String
     public var hotKey: String
+    public var path: String?
 
-    public init(bundleIdentifier: String, hotKey: String) {
+    public init(bundleIdentifier: String, hotKey: String, path: String? = nil) {
         self.bundleIdentifier = bundleIdentifier
         self.hotKey = hotKey
+        self.path = path
+    }
+
+    /// The entry that belongs to one application copy: an exact path match first, otherwise a legacy
+    /// entry without a path for the same bundle identifier. An entry saved for another copy never matches.
+    public static func bindingIndex(in entries: [AppHotKey], bundleIdentifier: String, path: String) -> Int? {
+        if let exact = entries.firstIndex(where: { $0.path == path }) { return exact }
+        return entries.firstIndex { $0.path == nil && $0.bundleIdentifier == bundleIdentifier }
+    }
+
+    /// The shortcut configured for one application copy, or an empty string.
+    public static func binding(in entries: [AppHotKey], bundleIdentifier: String, path: String) -> String {
+        bindingIndex(in: entries, bundleIdentifier: bundleIdentifier, path: path).map { entries[$0].hotKey } ?? ""
     }
 }
 
