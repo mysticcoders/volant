@@ -37,13 +37,14 @@ export default function Agents() {
         background watching your agents.
       </p>
 
-      <h3>Pinning a harness</h3>
+      <h3>Herdr in the footer</h3>
       <p>
-        Use the pin menu, a pane&rsquo;s context menu, or Settings &rsaquo;
-        Pinned harness to promote All Herdr agents, OpenCode, Cursor, Claude
-        Code, or Codex to a summary strip below the search field. The summary
-        stays put while you search for other things, and opens its filtered pane
-        list when you select it.
+        Turn on Herdr in Settings and the launcher footer shows how many panes
+        are waiting on you, such as <strong>Herdr: 3 waiting</strong>. It says
+        when machines are loading or one is unavailable. Click it, or type{' '}
+        <code>herdr</code>, to see the panes with waiting ones first and answer
+        supported questions. Its context menu hides it or limits it to one
+        agent: OpenCode, Cursor, Claude Code, or Codex.
       </p>
 
       <div className="docs-note">

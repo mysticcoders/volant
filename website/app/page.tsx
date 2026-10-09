@@ -60,7 +60,7 @@ const questions = [
   ],
   [
     'Are all the features here in the download?',
-    'Yes. Everything on this page is in the current download, Volant 0.2.1, including the expanded calculator, color themes and theme import, the system commands, and iCloud settings sync.',
+    'Yes. Everything on this page is in the current download, Volant 0.2.2, including the expanded calculator, color themes and theme import, the system commands, and iCloud settings sync.',
   ],
   [
     'Does it work with Shortcuts?',
@@ -253,8 +253,8 @@ export default function Home() {
               <div>
                 <h3>Find the right session.</h3>
                 <p>
-                  Search Herdr panes by project, provider, or status. Pin an
-                  overview while you use the launcher, and answer supported
+                  Search Herdr panes by project, provider, or status. The launcher
+                  footer shows how many are waiting on you, and you can answer supported
                   Claude Code and Codex questions and approvals. Saved remote
                   machines need compatible Herdr installations.
                 </p>
