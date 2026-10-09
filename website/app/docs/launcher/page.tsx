@@ -135,6 +135,11 @@ export default function Launcher() {
         Command-Return runs the secondary action instead — revealing a file in
         Finder, or copying a contact&rsquo;s phone number.
       </p>
+      <p>
+        Click the Volant mark at the bottom left to see which version you are
+        running and to send feedback, open this manual, read the changelog,
+        check for updates, or open Settings.
+      </p>
 
       <h2>Moving the window</h2>
       <p>

@@ -190,3 +190,20 @@ Final publication: the signed build-9 feed was activated in Cloudflare Worker de
 - **Pages and downloads:** the homepage, `/docs`, and the 0.2.1 and 0.2.0 DMGs returned 200.
 - **Release PRs:** #162 through #165 passed required workflow checks before merging.
 - **Still unverified:** installed 0.2.0 → 0.2.1 Sparkle upgrades, and Intel hardware.
+
+## 0.2.2 build 10 — October 9, 2026
+
+**What's in it.**
+
+- **Volant menu:** the version header, feedback, manual, changelog, Check for Updates, About, Settings and Quit (#167). Approved by the owner on an installed build.
+- **Footer and fades:** list edge fades, and results scrolling under a translucent footer (#167), with a measured show-through guard.
+- **Herdr footer status:** "Herdr: N waiting" replaces the strip under the search field (#168). Owner-approved after testing with a remote machine. The fix for scroll stutter while a remote loads is in the same PR: Herdr change announcements went from 197 to 14 over 10 refresh ticks, and the launcher view no longer observes the agents model.
+- **Notes editor theme colors:** re-landed (#169). #152's squash merge had reverted #150, so 0.2.0 and 0.2.1 shipped without them.
+
+**Build.** Built from `main` at `e45903c` (#170, version-only). Output: `dist-release.nqK5Xo/`.
+
+- **Notarization:** used App Store Connect API key `SCV5964PL2`. Apple accepted app submission `2780c849-cd20-4e02-bead-a662d68523dc` and DMG submission `8613d058-b6b2-49db-b748-cd53dd820ab2`. Both were stapled and passed Gatekeeper as Notarized Developer ID.
+- **Mounted DMG:** `Volant.app` 0.2.2, build 10, `x86_64 arm64`, valid deep strict signature, stapled, sandboxed, iCloud key-value and loginwindow entitlements, embedded provisioning profile.
+- **DMG SHA-256:** `1794d625444d1fb77bbed54d4e079fa633fa1365525f7ce7b762c691b0cbb228` (12,450,153 bytes).
+
+**Publishing.** In two stages: DMG, checksums and website first, then the signed build-10 feed.

@@ -4,7 +4,7 @@
 
 Keep work moving without leaving your flow: apps, answers, notes, and agents within reach. Keep the established “Your Mac. Your agents. One shortcut away.” headline and graphite/coral site system.
 
-The public artifact is Volant 0.2.1, build 9, from `20adedf` (October 8, 2026), a fix release over 0.2.0 build 8 (`d9b6dbc`). The rows below that were Coming next for 0.1.5 shipped in 0.2.0, verified against the notarized DMG: version, both architectures, stapled signature, iCloud key-value and loginwindow entitlements, and the embedded Developer ID profile. Advance claims only after verifying the actual distributed artifact; merging a website PR does not distribute a new app or publish the website.
+The public artifact is Volant 0.2.2, build 10, from `e45903c` (October 9, 2026). It adds the Volant menu, list edge fades under a translucent footer, the Herdr footer status, and the re-landed Notes editor theme colors over 0.2.1 build 9 (`20adedf`). The rows below that were Coming next for 0.1.5 shipped in 0.2.0, verified against the notarized DMG: version, both architectures, stapled signature, iCloud key-value and loginwindow entitlements, and the embedded Developer ID profile. Advance claims only after verifying the actual distributed artifact; merging a website PR does not distribute a new app or publish the website.
 
 | Story | In 0.2.0 | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
