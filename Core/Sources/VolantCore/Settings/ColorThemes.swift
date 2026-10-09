@@ -64,6 +64,17 @@ public struct ColorPalette: Codable, Equatable {
         return String(format: "#%02x%02x%02x", channel(a.red, b.red), channel(a.green, b.green), channel(a.blue, b.blue))
     }
 
+    /// A status hue kept recognizable but readable: `color` moved toward `text` only as far as it
+    /// takes to reach `minimum` contrast against `background`, so an orange stays orange in dark
+    /// themes and darkens just enough on a light background.
+    public static func readable(_ color: String, on background: String, toward text: String, minimum: Double = 4.5) -> String {
+        for step in 0...20 {
+            let candidate = blend(color, text, Double(step) / 20)
+            if (contrast(candidate, background) ?? 0) >= minimum { return candidate }
+        }
+        return text
+    }
+
     /// WCAG 2 relative luminance of a `#rrggbb` color.
     private static func luminance(_ hex: String) -> Double? {
         guard let (r, g, b) = components(hex) else { return nil }

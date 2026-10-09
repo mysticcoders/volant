@@ -6,7 +6,8 @@ import VolantCore
 /// Renders the launcher, a calculator card, the actions popover and the notes window in every color
 /// theme with fictional data, for visual inspection. Palette themes render in their own appearance;
 /// System and Volant render light and dark. Images go to /tmp/volant-theme-<id>-<mode>-<surface>.png.
-/// System and Catppuccin Mocha also render a scrolled list (edge fade) and the open Volant menu.
+/// System and Catppuccin Mocha also render a scrolled list (edge fade), the open Volant menu, and
+/// the footer's Herdr status while agents wait, while loading, and with a machine unavailable.
 setbuf(stdout, nil)
 let app = NSApplication.shared
 let root = URL(fileURLWithPath: CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : NSTemporaryDirectory())
@@ -114,6 +115,34 @@ func capture(_ view: NSView, _ name: String) throws {
     try bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "/tmp/volant-theme-\(name).png"))
 }
 
+/// Renders the footer's Herdr status in its waiting, loading and unavailable states with fictional
+/// panes and machines, through the window server so the translucent footer composites as on screen.
+func renderHerdrFooter(_ name: String) throws {
+    let agents = model.agents
+    func pane(_ status: String, _ id: String, _ project: String) -> AgentSession {
+        AgentSession(agent: "claude", agentStatus: status, paneID: "w1:p" + id, terminalID: "fixture-" + id, cwd: "/fictional/" + project)
+    }
+    let local = HerdrMachineStatus(id: "local", label: "Local", state: "connected", detail: "4 panes")
+    agents.connected = true
+    model.promotedHarness = "all"
+    model.query = ""
+    let states: [(String, [AgentSession], Bool, [HerdrMachineStatus], String)] = [
+        ("waiting", [pane("blocked", "1", "orbit"), pane("blocked", "2", "comet"), pane("blocked", "3", "atlas"), pane("working", "4", "nova")], false, [local], "Herdr: 3 waiting"),
+        ("loading", [], true, [HerdrMachineStatus(id: "local", label: "Local", state: "loading", detail: "Loading panes…")], "Herdr: loading…"),
+        ("unavailable", [pane("working", "4", "nova")], false, [local, HerdrMachineStatus(id: "remote:studio", label: "Studio", state: "unavailable", detail: "Connection timed out")], "Herdr: Studio unavailable")
+    ]
+    for (state, sessions, busy, machines, expected) in states {
+        agents.sessions = sessions; agents.busy = busy; agents.machines = machines
+        RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+        let text = HerdrStatusSummary(sessions: sessions, connected: true, busy: busy, machines: machines).text
+        precondition(text == expected, "\(name) Herdr \(state): footer reads \(text), expected \(expected)")
+        try captureWindow(window, name + "-herdr-" + state)
+    }
+    agents.sessions = []; agents.machines = []; agents.busy = false; agents.connected = false
+    model.promotedHarness = nil
+    RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+}
+
 for theme in ColorTheme.catalog {
     for mode in theme.mode.map({ [$0] }) ?? [ColorTheme.Mode.light, .dark] {
         let setting: Appearance.Theme = mode == .dark ? .dark : .light
@@ -173,6 +202,7 @@ for theme in ColorTheme.catalog {
             RunLoop.main.run(until: Date().addingTimeInterval(0.3))
             try capture(host, name + "-app-menu")
             model.showingAppMenu = false
+            try renderHerdrFooter(name)
         }
         print("Rendered \(name)")
     }

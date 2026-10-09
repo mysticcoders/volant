@@ -3,7 +3,10 @@ import VolantCore
 
 struct LauncherView: View {
     @ObservedObject var model: LauncherModel
-    @ObservedObject var agents: AgentsModel
+    /// Not observed here: Herdr refreshes every five seconds, and observing it would redraw the
+    /// whole launcher, results list included. The footer status, the `herdr` header and pane rows
+    /// observe it themselves.
+    let agents: AgentsModel
     @FocusState private var focused: Bool
     @Environment(\.volantTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -30,11 +33,6 @@ struct LauncherView: View {
             } else {
             searchField
             Divider().opacity(0.6)
-            if model.promotedHarness != nil {
-                agentStatusStrip
-                HerdrAttentionView(model: agents, sessions: model.promotedSessions)
-                Divider().opacity(0.6)
-            }
             if model.config.statusBar.sources.contains("ai-chat") {
                 ACPActivityStrip(model: model.acp) { model.presentAIChat() }
             }
@@ -47,11 +45,6 @@ struct LauncherView: View {
                     Button("Open Shortcuts") { model.appleShortcuts.openApp() }
                 }.font(.system(size: 12)).padding(.horizontal, 20).padding(.vertical, 6)
             }
-            if model.showingAgents, let message = agents.actionMessage {
-                Text(message).font(.system(size: 12)).foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20).padding(.vertical, 8)
-            }
             if let network = model.wifiJoin {
                 WiFiJoinView(model: model, network: network).id(network.id)
                 Divider().opacity(0.6)
@@ -60,18 +53,7 @@ struct LauncherView: View {
                 footerBar
             } else {
                 if model.showingAgents {
-                    HerdrMachineStatusView(machines: agents.machines)
-                        .padding(.horizontal, 20)
-                    HStack {
-                        Text("Herdr panes").foregroundStyle(.secondary)
-                        Spacer()
-                        if model.promotedHarness == nil {
-                            Button(agents.connected ? "Disconnect" : "Connect") {
-                                if agents.connected { agents.disconnect() } else { agents.connect() }
-                            }
-                        }
-                        Button("New ACP conversation") { model.presentAIChat() }
-                    }.font(.system(size: 12)).padding(.horizontal, 20).padding(.vertical, 6)
+                    HerdrQueryHeader(agents: agents) { model.presentAIChat() }
                 }
                 ZStack(alignment: .bottom) {
                     results
@@ -181,17 +163,6 @@ struct LauncherView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
-    }
-
-    private var agentStatusStrip: some View {
-        HarnessStatusStrip(title: model.promotedTitle,
-                           sessions: model.promotedHarness == nil ? agents.sessions : model.promotedSessions,
-                           connected: agents.connected, busy: agents.busy,
-                           pinned: model.promotedHarness != nil,
-                           onOpen: { model.showPromotedAgents() },
-                           onConnect: { if agents.connected { agents.disconnect() } else { agents.connect() } },
-                           onPromote: { model.promoteHarness($0) }, machines: agents.machines,
-                           unread: (model.promotedHarness == nil ? agents.sessions : model.promotedSessions).filter(agents.isUnread).count)
     }
 
     private var results: some View {
@@ -343,6 +314,10 @@ struct LauncherView: View {
             }
             DictationStatusView(dictation: model.dictation)
             CaffeinateStatusView(service: model.caffeinate)
+            if let filter = model.promotedHarness {
+                HerdrFooterStatus(agents: agents, filter: filter, onOpen: { model.showPromotedAgents() },
+                                  onConfigure: { model.promoteHarness($0) })
+            }
             Spacer(minLength: 8)
             if let row = model.selectedRow {
                 HStack(spacing: 8) {

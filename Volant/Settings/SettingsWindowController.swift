@@ -151,7 +151,6 @@ private struct SettingsView: View {
         .onAppear { loginStatus = SMAppService.mainApp.status }
     }
 
-    @AppStorage("showHerdrDetails") private var showHerdrDetails = false
     private var statusBar: some View {
         Form {
             Section {
@@ -163,12 +162,10 @@ private struct SettingsView: View {
                 })) {
                     ForEach(Preferences.harnessOptions, id: \.id) { Text($0.title).tag($0.id) }
                 }.disabled(!state.config.statusBar.sources.contains("herdr"))
-                Toggle("Show pane details", isOn: $showHerdrDetails)
-                    .disabled(!state.config.statusBar.sources.contains("herdr"))
             } header: {
                 Text("Herdr")
             } footer: {
-                SettingsFooter("Includes Local and enabled machines saved in Herdr. Manage remote connections in Herdr.")
+                SettingsFooter("Shows “Herdr: 3 waiting” in the launcher footer when agents need you. Click it, or type herdr, to see the panes with waiting ones first and answer supported questions. Includes Local and enabled machines saved in Herdr. Manage remote connections in Herdr.")
             }
             Section {
                 Toggle("AI Chat activity", isOn: Binding(get: { state.config.statusBar.sources.contains("ai-chat") }, set: { value in
@@ -177,7 +174,7 @@ private struct SettingsView: View {
             } header: {
                 Text("AI Chat")
             } footer: {
-                SettingsFooter("Links to your active conversation, its provider, and whether it needs you. Hidden when no conversation is active. Sources appear below the launcher’s search field; turn all of them off to hide the status area.")
+                SettingsFooter("Links to your active conversation, its provider, and whether it needs you. Hidden when no conversation is active. AI Chat activity appears below the launcher’s search field; Herdr appears in the footer.")
             }
         }
         .formStyle(.grouped)

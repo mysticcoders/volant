@@ -34,7 +34,7 @@ Delivery: the final Release artifact was installed at `/Applications/Volant.app`
 Symptom: typing ho/hom showed Home first but highlighted Home Assistant; Up appeared ineffective.
 Cause: composing a fresh query preserved the previous suggestion identity. Separately, lazy row styling could remain stale after the model selection changed.
 Fix: fresh queries reset to their own first result; same-query asynchronous deliveries still preserve identity. Each row observes the launcher model directly for selection styling and accessibility selection.
-Prevention/evidence: isolated actual-panel tests cover h/ho/hom, Down/Up, and clicking Home with the pinned harness strip. Pixel assertions compare the two rendered row backgrounds after every transition in light and dark, independently of model assertions. These run in the existing focused test entry point. Installed real-data keyboard/mouse verification remains a separate smoke check.
+Prevention/evidence: isolated actual-panel tests cover h/ho/hom, Down/Up, and clicking Home with the Herdr footer status turned on. Pixel assertions compare the two rendered row backgrounds after every transition in light and dark, independently of model assertions. These run in the existing focused test entry point. Installed real-data keyboard/mouse verification remains a separate smoke check.
 
 ## Active conversations and window placement — September 14, 2026
 

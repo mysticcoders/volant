@@ -1,6 +1,6 @@
 # Herdr attention and provider answers
 
-A pinned Herdr status shows one waiting agent below the status strip, with previous/next controls. Unsupported prompts retain a bounded, literal terminal preview and Open in Herdr. Hidden launchers release the preview; question text is never persisted or logged.
+With Herdr status turned on, the launcher footer shows "Herdr: 3 waiting". Clicking it, or typing `herdr`, opens the Herdr panes with waiting ones first, and the top of that view shows one waiting agent's question with previous/next controls. Unsupported prompts retain a bounded, literal terminal preview and Open in Herdr. Hidden launchers release the preview; question text is never persisted or logged.
 
 Verified Codex and Claude single-choice questions show the question and the provider's actual option labels/descriptions. Click an option to answer. Answer with keyboard explicitly focuses the card; ⌥⌘ plus its option number answers only while that area has focus. Return in launcher search is not an approval shortcut. Notes and None of the above require Open in Herdr. Claude Create file and Bash approval screens also expose their exact choices and request context; see [Claude evidence and limits](herdr-claude.md). Unrecognized screens and other providers retain pane handoff. This is not a generic Yes/Always/No mapping.
 
