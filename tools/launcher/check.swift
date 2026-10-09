@@ -581,6 +581,35 @@ verify(NSScreen.screens.contains { $0.visibleFrame.contains(sticky.frame) }, "Of
 sticky.orderOut(nil)
 print("PASS: actual ACP focus loss/refocus, explicit dismissal, draft preservation, ordinary blur, saved placement, and offscreen recovery")
 
+// Notes shortcuts with unavailable controls are absorbed instead of falling through to the alert.
+/// Builds a key-down event addressed to `window`.
+func notesKey(_ characters: String, _ flags: NSEvent.ModifierFlags, keyCode: UInt16, in window: NSWindow) -> NSEvent {
+    NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: flags, timestamp: ProcessInfo.processInfo.systemUptime,
+                     windowNumber: window.windowNumber, context: nil, characters: characters,
+                     charactersIgnoringModifiers: characters, isARepeat: false, keyCode: keyCode)!
+}
+let shortcutNotes = NotesStore(directory: root.appendingPathComponent("ShortcutNotes"))
+let keyNotes = NotesPanel(store: shortcutNotes)
+let keyNote = shortcutNotes.create(initialText: "Fictional shortcut note")
+keyNotes.open(noteID: keyNote.id)
+verify(waitUntil(stable: 0.1) { keyNotes.isKeyWindow }, "Notes takes key focus")
+let previewKey = notesKey("e", .command, keyCode: 14, in: keyNotes)
+let deleteKey = notesKey("\u{7F}", .command, keyCode: 51, in: keyNotes)
+keyNotes.model.show(.actions)
+RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+verify(keyNotes.performKeyEquivalent(with: previewKey), "Unavailable Command-E is absorbed under an overlay")
+verify(keyNotes.model.editing && keyNotes.model.overlay == .actions, "Absorbed Command-E changes nothing")
+verify(!keyNotes.performKeyEquivalent(with: deleteKey), "Command-Delete stays available to text editing")
+verify(!keyNotes.performKeyEquivalent(with: notesKey("j", .command, keyCode: 38, in: keyNotes)), "Unrelated combinations are not claimed")
+verify(shortcutNotes.notes.contains { $0.id == keyNote.id }, "Command-Delete under an overlay never trashes the note")
+keyNotes.model.overlay = nil
+RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+verify(keyNotes.performKeyEquivalent(with: previewKey) && waitUntil { !keyNotes.model.editing }, "Available Command-E still toggles preview")
+keyNotes.model.editing = true
+keyNotes.close()
+verify(!keyNotes.isVisible, "Notes closes after the shortcut checks")
+print("PASS: notes shortcuts absorb unavailable combinations and keep available ones")
+
 // App binding writes preserve nested unknown fields and reject conflicts/stale editors.
 let bindingURL = root.appendingPathComponent("binding-config.json")
 let bindingBytes = Data(#"{"future":{"keep":true},"aliases":{"other":"/Other.app","old":"/Test.app"},"appHotKeys":[{"bundleIdentifier":"test.app","hotKey":"ctrl+option+t","future":42}]}"#.utf8)

@@ -4,7 +4,7 @@ import SwiftUI
 /// Floating notes window: one note with browsing and actions on demand. Stays up until closed.
 final class NotesPanel: NSPanel {
     let store: NotesStore
-    private let model: NotesModel
+    let model: NotesModel
     /// The launcher, when it shares the floating level; notes is ordered above it whenever fronted.
     weak var floatingPeer: NSWindow?
 
@@ -57,6 +57,22 @@ final class NotesPanel: NSPanel {
         makeKeyAndOrderFront(nil)
     }
 
+    /// Absorbs a notes shortcut whose control is unavailable, such as with an overlay open or no
+    /// note selected, instead of letting it fall through to the system alert. Available shortcuts
+    /// keep their SwiftUI handling, and Command-Delete is left for text editing.
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if super.performKeyEquivalent(with: event) { return true }
+        guard let shortcut = NotesShortcut.matching(event), !model.isAvailable(shortcut) else { return false }
+        return !shortcut.hasTextEditingMeaning
+    }
+
+    /// Silences a notes shortcut that reached the end of the responder chain unhandled; other keys
+    /// keep the default path.
+    override func keyDown(with event: NSEvent) {
+        if NotesShortcut.matching(event) != nil { return }
+        super.keyDown(with: event)
+    }
+
     override func cancelOperation(_ sender: Any?) {
         if model.overlay != nil { model.overlay = nil; return }
         close()
@@ -66,6 +82,56 @@ final class NotesPanel: NSPanel {
         store.flush()
         guard store.dirtyText.isEmpty else { return }
         orderOut(nil)
+    }
+}
+
+/// Notes keyboard commands. One definition drives the SwiftUI shortcuts and the panel's handling
+/// of combinations whose controls are currently unavailable.
+enum NotesShortcut: CaseIterable {
+    case actions, browse, newNote, togglePreview, copyMarkdown, duplicate, pin, trash
+
+    private static let deleteKeyCode: UInt16 = 51
+
+    var character: Character {
+        switch self {
+        case .actions: "k"
+        case .browse, .pin: "p"
+        case .newNote: "n"
+        case .togglePreview: "e"
+        case .copyMarkdown: "c"
+        case .duplicate: "d"
+        case .trash: "\u{7F}"
+        }
+    }
+
+    var flags: NSEvent.ModifierFlags {
+        switch self {
+        case .copyMarkdown, .pin: [.command, .shift]
+        default: .command
+        }
+    }
+
+    var keyboardShortcut: KeyboardShortcut {
+        let key = self == .trash ? KeyEquivalent.delete : KeyEquivalent(character)
+        return KeyboardShortcut(key, modifiers: flags.contains(.shift) ? [.command, .shift] : .command)
+    }
+
+    /// Commands that act on the selected note and are unavailable without one or under an overlay.
+    var actsOnSelectedNote: Bool { ![.actions, .browse, .newNote].contains(self) }
+
+    /// Command-Delete deletes to the line start in text views, so it is never claimed before them.
+    var hasTextEditingMeaning: Bool { self == .trash }
+
+    /// Returns the shortcut for a key-down event with exactly its modifiers, or nil for other keys.
+    static func matching(_ event: NSEvent) -> NotesShortcut? {
+        guard event.type == .keyDown else { return nil }
+        let modifiers = event.modifierFlags.intersection([.command, .shift, .option, .control])
+        let isDelete = event.keyCode == deleteKeyCode
+        let key = event.charactersIgnoringModifiers?.lowercased()
+        return allCases.first { shortcut in
+            guard shortcut.flags == modifiers else { return false }
+            return shortcut == .trash ? isDelete : !isDelete && key == String(shortcut.character)
+        }
     }
 }
 
@@ -100,6 +166,14 @@ final class NotesModel: ObservableObject {
         }
     }
     var selected: Note? { store.notes.first { $0.id == selectedID } }
+
+    /// Whether note commands such as preview, copy, duplicate, pin and trash can act now.
+    var noteCommandsAvailable: Bool { selected != nil && selected?.readError == nil && overlay == nil }
+
+    /// Whether a shortcut's control is enabled in the current state.
+    func isAvailable(_ shortcut: NotesShortcut) -> Bool {
+        !shortcut.actsOnSelectedNote || noteCommandsAvailable
+    }
 
     func selectIfNeeded() {
         if selected == nil { selectedID = store.notes.first?.id }
@@ -249,11 +323,11 @@ struct NotesView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             HStack(spacing: 2) {
                 control("Actions", symbol: "command", help: "Actions (⌘K)") { model.show(.actions) }
-                    .keyboardShortcut("k", modifiers: .command)
+                    .keyboardShortcut(NotesShortcut.actions.keyboardShortcut)
                 control("Browse notes", symbol: "square.on.square", help: "Browse notes (⌘P)") { model.show(.browse) }
-                    .keyboardShortcut("p", modifiers: .command)
+                    .keyboardShortcut(NotesShortcut.browse.keyboardShortcut)
                 control("New note", symbol: "plus", help: "New note (⌘N)") { model.newNote() }
-                    .keyboardShortcut("n", modifiers: .command)
+                    .keyboardShortcut(NotesShortcut.newNote.keyboardShortcut)
             }
             .padding(4)
             .background(Color.primary.opacity(0.045), in: Capsule())
@@ -361,13 +435,13 @@ struct NotesView: View {
 
     private var shortcuts: some View {
         Group {
-            Button("Toggle Preview") { model.editing.toggle() }.keyboardShortcut("e", modifiers: .command)
-            Button("Copy Markdown") { model.copyMarkdown() }.keyboardShortcut("c", modifiers: [.command, .shift])
-            Button("Duplicate Note") { if let note = model.selected { model.newNote(text: note.text) } }.keyboardShortcut("d", modifiers: .command)
-            Button("Pin Note") { model.togglePin() }.keyboardShortcut("p", modifiers: [.command, .shift])
-            Button("Trash Note") { model.deleteSelected() }.keyboardShortcut(.delete, modifiers: .command)
+            Button("Toggle Preview") { model.editing.toggle() }.keyboardShortcut(NotesShortcut.togglePreview.keyboardShortcut)
+            Button("Copy Markdown") { model.copyMarkdown() }.keyboardShortcut(NotesShortcut.copyMarkdown.keyboardShortcut)
+            Button("Duplicate Note") { if let note = model.selected { model.newNote(text: note.text) } }.keyboardShortcut(NotesShortcut.duplicate.keyboardShortcut)
+            Button("Pin Note") { model.togglePin() }.keyboardShortcut(NotesShortcut.pin.keyboardShortcut)
+            Button("Trash Note") { model.deleteSelected() }.keyboardShortcut(NotesShortcut.trash.keyboardShortcut)
         }
-        .disabled(model.selected == nil || model.selected?.readError != nil || model.overlay != nil)
+        .disabled(!model.noteCommandsAvailable)
         .hidden().accessibilityHidden(true)
     }
 }
