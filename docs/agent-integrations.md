@@ -148,21 +148,25 @@ memory and stays on screen until the next Start. The pinned adapters keep their 
 `session/load`, which replays the history as `session/update` notifications), so Volant
 restores a conversation by sending `session/load` with its recorded native session ID.
 
-**Record.** When the helper reports a conversation ready, the app stores
+**Record.** Once a conversation is ready and holds at least one owner turn, the app stores
 `ACPResumeRecord` (provider, the project exactly as chosen, the native session ID, a
 timestamp) in its own defaults under `acp.lastConversation`. Only the latest conversation is
-kept; starting a new one replaces it. The `--acp-check` smoke run keeps its record in a
+kept; a new conversation replaces it only after its first prompt, so a session opened and left
+unused never discards the record. The `--acp-check` smoke run keeps its record in a
 separate defaults suite, so it never replaces the owner's. The record is not in
 `config.json`, so it is neither backed up nor part of iCloud settings sync, and it holds no
 transcript text.
 
 **Resume.** The chat header shows Resume beside New when the record's provider and project
-equal the current choice, so a conversation is never reopened in another folder. Resume
+equal the current choice, so a conversation is never reopened in another folder. Opening AI
+Chat, from the launcher or from Settings, connects automatically only when no such record
+exists; otherwise it waits for Resume or New. Resume
 starts the provider exactly as Connect does, then, after `initialize`:
 
 - sends `session/load` with the recorded ID, the resolved working folder and no MCP
   servers, only if the agent advertised `loadSession`;
-- otherwise ends with "This agent can't resume conversations" and sends nothing else.
+- otherwise ends with "This agent can't resume conversations", sends nothing else and clears
+  the record.
   It never falls back to `session/new`, because the owner asked for a specific
   conversation;
 - shows the replayed history, including the owner's own turns (`user_message_chunk`),
@@ -171,21 +175,27 @@ starts the provider exactly as Connect does, then, after `initialize`:
 - cancels any permission request that arrives during the replay, as for every phase other
   than an active turn;
 - treats a load error as the end of the connection, with the agent's message
-  ("Couldn't resume this conversation: ..."). The record is kept, since the cause may be an
-  expired provider login with the conversation still intact, and New replaces it.
+  ("Couldn't resume this conversation: ..."), and clears the record. A launch failure or
+  startup timeout keeps it, since the cause may be an expired provider login with the
+  conversation still intact. Error codes cannot identify a missing conversation:
+  `claude-agent-acp` 0.76.0 loads an unreadable transcript as empty history instead of
+  failing.
 
 Because the stored ID came from the agent, it is checked again before it is sent back: 1 to
 256 printable ASCII characters, with no spaces, slashes or control characters. The helper
-repeats the check before launching anything, and the replay counts against the same limits as
-a live conversation: 1,000,000 bytes of displayed text and 2,000,000 bytes of tool detail.
+repeats the check before launching anything. A replay keeps only its newest 400,000 bytes of
+displayed text and 800 entries, dropping the oldest and reporting "Earlier history isn't shown",
+so a long conversation resumes with room left under the live limits (1,000,000 bytes and 2,000
+entries). Replayed tool details are not stored, since no approval is offered for them.
 
 Not included: `session/list` (choosing among earlier conversations), `session/resume`
 without replay, and resuming Herdr panes, which belong to Herdr.
 
 Evidence: `ACPResumeRecordTests` in Core; `tools/check-acp.sh` for load-by-ID, replay of both
-sides, approvals refused during replay, the user-echo guard, the missing-capability and
-load-error failures, and refusal of an invalid ID before launch. `ACPResumeModelTests` covers
-the offer rules against an isolated defaults suite and has not yet been run through the hosted
-test target. Not verified: the signed installed app
+sides, approvals refused during replay, the user-echo guard, replay trimming, the
+missing-capability and load-error failures with their record clearing, and refusal of an
+invalid ID before launch. `ACPResumeModelTests` covers the offer rules, opening the chat without
+replacing the record, saving only after an owner turn, and clearing a rejected record, against
+an isolated defaults suite; other ACP model tests use the same isolated suite. Not verified: the signed installed app
 resuming a real Claude Code, Codex or OpenCode conversation, and the Resume and New buttons in
 native light and dark renders.

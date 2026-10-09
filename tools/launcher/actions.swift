@@ -670,6 +670,22 @@ try render("ai-local-chat", view: apiChat)
 apiChatWindow.orderOut(nil)
 apiModel.state.phase = "disconnected"
 print("PASS: BYOK/local Settings and chat fixtures use no real servers or credentials")
+let resumeSuite = "volant.actions.fixture.acp-resume"
+UserDefaults().removePersistentDomain(forName: resumeSuite)
+let resumeStore = UserDefaults(suiteName: resumeSuite)!
+resumeStore.set(try JSONEncoder().encode(ACPResumeRecord(provider: "claude", project: "", sessionID: "fictional-session")), forKey: ACPModel.resumeKey)
+let resumeModel = ACPModel(resumeStore: resumeStore)
+var resumeConfig = AIConfiguration(); resumeConfig.provider = "claude"
+var resumeConnects = 0
+verify(resumeModel.openChat(configuration: resumeConfig) { resumeConnects += 1 } && resumeConnects == 0 && resumeModel.canResume, "Opening chat offers Resume without connecting")
+let resumeChat = NSHostingView(rootView: ACPConversationView(model: resumeModel)
+    .background(Color(nsColor: .windowBackgroundColor)))
+let resumeChatWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 740, height: 450), styleMask: [.titled], backing: .buffered, defer: false)
+resumeChatWindow.contentView = resumeChat; resumeChatWindow.makeKeyAndOrderFront(nil); settle()
+try render("ai-acp-resume", view: resumeChat)
+resumeChatWindow.orderOut(nil)
+UserDefaults().removePersistentDomain(forName: resumeSuite)
+print("PASS: a recorded ACP conversation offers Resume and New without connecting")
 
 // Clipboard failures never access the owner's Keychain or pasteboard.
 clipboard.record("Fictional clipboard recovery fixture")

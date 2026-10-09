@@ -48,6 +48,8 @@ public struct ACPState: Codable, Equatable {
     public var messages: [ACPMessage] = []
     public var permissions: [ACPPermission] = []
     public var capabilities = ""
+    /// Set when the agent refused to load a recorded conversation, so the app stops offering it.
+    public var resumeRejected: Bool?
     public var busy: Bool { ["starting", "working", "cancelling"].contains(phase) }
 
     public init(phase: String = "disconnected", status: String = "Connect to your AI provider to start chatting.", sessionID: String? = nil, agentName: String = "", messages: [ACPMessage] = [], permissions: [ACPPermission] = [], capabilities: String = "") {

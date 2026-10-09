@@ -162,3 +162,25 @@ let refused = ACPConnection()
 do { try refused.start(provider: "claude", project: "", resume: "bad id"); fatalError("invalid resume ID accepted") } catch {}
 require(refused.state.phase == "disconnected", "an invalid resume ID starts nothing")
 print("Passed: resume loads by recorded ID, replays both sides, refuses approvals during replay, and never falls back to a new session.")
+
+let (long, _) = resumeSession(["loadSession": true])
+long.queue.sync {
+    let turn = String(repeating: "fictional history ", count: 1_000)
+    for index in 0..<200 {
+        long.receive(frame(chunk("user_message_chunk", "Question \(index)")) + frame(chunk("agent_message_chunk", turn)))
+        long.receive(frame(["jsonrpc": "2.0", "method": "session/update", "params": ["sessionId": "fictional-resumed", "update": ["sessionUpdate": "tool_call", "toolCallId": "old-\(index)", "title": "Fictional tool", "rawInput": ["text": turn]]]]))
+    }
+    require(long.state.phase == "starting", "a long history keeps replaying instead of hitting the live limits")
+    require(long.state.messages.last?.role.hasPrefix("Tool") == true && long.state.messages.count <= ACPConnection.replayEventLimit, "replay keeps the newest entries")
+    require(!long.state.messages.contains { $0.text == "Question 0" }, "the oldest replayed turns are dropped")
+    long.receive(frame(["jsonrpc": "2.0", "id": 2, "result": [:]]))
+    require(long.state.phase == "ready" && long.state.status == "Ready. Earlier history isn’t shown.", "a trimmed replay says so")
+    require(long.state.messages.reduce(0) { $0 + $1.text.utf8.count } <= ACPConnection.replayTextLimit, "room remains for new turns")
+}
+let (rejectedLoad, _) = resumeSession(["loadSession": true])
+rejectedLoad.queue.sync {
+    rejectedLoad.receive(frame(["jsonrpc": "2.0", "id": 2, "error": ["code": -32603, "message": "Fictional load failure."]]))
+    require(rejectedLoad.state.resumeRejected == true, "a refused load tells the app to stop offering it")
+}
+require(unsupported.state.resumeRejected == true, "an agent without loadSession stops offering resume")
+print("Passed: long replays keep their newest history, and refused loads clear the resume offer.")

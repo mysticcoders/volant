@@ -12,7 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if !self.panel.isVisible { self.panel.toggle() }
         self.panel.model.presentAIChat()
         self.panel.makeKeyAndOrderFront(nil)
-        if !self.panel.model.acp.active { self.panel.model.acp.start() }
+        if !self.panel.model.acp.active, !self.panel.model.acp.canResume { self.panel.model.acp.start() }
     }, onChange: { [weak self] in self?.reloadConfig(); self?.notesStore.reload() })
     private func showAISettings() {
         panel.orderOut(nil)

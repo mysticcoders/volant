@@ -26,7 +26,7 @@ final class AIConfigurationTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: url), Data("broken".utf8))
     }
     func testChatConnectsWithoutProjectAndPreservesActiveConversation() {
-        let model = ACPModel()
+        let model = ACPModel.isolated()
         var connects = 0
         XCTAssertFalse(model.openChat(configuration: nil) { connects += 1 })
         XCTAssertFalse(model.openChat(configuration: AIConfiguration()) { connects += 1 })
@@ -51,7 +51,7 @@ final class AIConfigurationTests: XCTestCase {
     }
 
     func testConfiguringACPDoesNotReplaceActiveConversation() {
-        let model = ACPModel()
+        let model = ACPModel.isolated()
         var config = AIConfiguration(); config.provider = "codex"; config.project = "/tmp/project"
         model.configure(config)
         XCTAssertEqual(model.provider, "codex")
