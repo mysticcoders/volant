@@ -54,16 +54,9 @@ actor NativeDictionaryLookup {
 }
 
 enum DictionaryApplication {
-    @MainActor static func open(_ term: String) async throws {
-        guard let url = DictionaryQuery.url(for: term),
-              let app = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Dictionary") else {
-            throw CocoaError(.fileNoSuchFile)
-        }
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            NSWorkspace.shared.open([url], withApplicationAt: app, configuration: NSWorkspace.OpenConfiguration()) { _, error in
-                if let error { continuation.resume(throwing: error) }
-                else { continuation.resume() }
-            }
-        }
+    /// Opens the term in the user's `dict` handler, falling back to Apple's Dictionary only when none is registered.
+    @MainActor static func open(_ term: String, workspace: HandlerWorkspace = NSWorkspace.shared) async throws {
+        guard let url = DictionaryQuery.url(for: term) else { throw CocoaError(.fileNoSuchFile) }
+        try await DefaultHandler.open(url, fallback: DefaultHandler.dictionaryBundleIdentifier, workspace: workspace)
     }
 }
