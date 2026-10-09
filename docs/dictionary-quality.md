@@ -6,7 +6,7 @@ Dictionary Services reads the Mac’s active dictionaries. Results are plain tex
 
 Lookups debounce for 200 ms and run serially on a separate actor. Cancellation skips queued calls; an already-running synchronous Apple call can finish, but its generation cannot overwrite a new query or cleared view. Input is limited to 256 characters. Leaving the command or dismissing the launcher clears transient input and results. Searches are not persisted or logged; copying is explicit.
 
-The returned CFString is owned and released with `takeRetainedValue`. Ranges use UTF-16, reject overflow and partial surrogate pairs, and preserve explicit phrase input. Dictionary opening targets `com.apple.Dictionary` with an escaped `dict` URL; the scheme is declared by the installed Apple app. No private dictionary enumeration or HTML API is used.
+The returned CFString is owned and released with `takeRetainedValue`. Ranges use UTF-16, reject overflow and partial surrogate pairs, and preserve explicit phrase input. Dictionary opening sends an escaped `dict` URL to the handler Launch Services reports for it, falling back to `com.apple.Dictionary` only when no handler is registered (see `Volant/Handoff/DefaultHandler.swift`); the scheme is declared by the installed Apple app. No private dictionary enumeration or HTML API is used.
 
 ## Evidence and remaining checks
 
