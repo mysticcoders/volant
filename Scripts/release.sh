@@ -23,7 +23,7 @@ assert len(base64.b64decode(os.environ['VOLANT_UPDATE_PUBLIC_KEY'], validate=Tru
 PY
 [[ "$FEED" == https://* ]] || { echo 'Update feed must use HTTPS'; exit 1; }
 VERSION="$(sed -n 's/.*MARKETING_VERSION: "\(.*\)"/\1/p' project.yml | head -1)"
-OUT="$(mktemp -d "$ROOT/dist-release.XXXXXX")"
+OUT="${VOLANT_RELEASE_OUT:-$(mktemp -d "$ROOT/dist-release.XXXXXX")}"
 echo "Release output: $OUT"
 xcodegen generate --quiet
 xcodebuild -project Volant.xcodeproj -scheme Volant -configuration Release \
