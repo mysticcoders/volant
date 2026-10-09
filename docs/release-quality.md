@@ -207,3 +207,10 @@ Final publication: the signed build-9 feed was activated in Cloudflare Worker de
 - **DMG SHA-256:** `1794d625444d1fb77bbed54d4e079fa633fa1365525f7ce7b762c691b0cbb228` (12,450,153 bytes).
 
 **Publishing.** In two stages: DMG, checksums and website first, then the signed build-10 feed.
+
+Public DMG delivery verified after Cloudflare Worker deployment `2ea13735-f621-48e5-b76d-3bad30886f79` (run by the owner from #171):
+
+- **Homepage:** offers `Volant-0.2.2.dmg`.
+- **Download:** HTTP 200, 12,450,153 bytes. It matched the SHA-256 above, passed stapler validation and passed Gatekeeper as Notarized Developer ID.
+- **Docs:** `/docs/agents` shows "Herdr in the footer".
+- **Feed:** stayed on 0.2.1 build 9 until the signed build-10 appcast (passes `sign_update --verify`, 12,450,153 bytes) is activated.
