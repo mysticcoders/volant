@@ -64,4 +64,17 @@ final class PreferencesTests: XCTestCase {
         XCTAssertThrowsError(try Preferences.updateBoolean("showInDock", value: true, at: url))
         XCTAssertEqual(try Data(contentsOf: url), data)
     }
+
+    func testAppHotKeyBindingPrefersExactCopyAndKeepsLegacyEntriesReadable() throws {
+        let json = #"{"appHotKeys":[{"bundleIdentifier":"fixture.app","hotKey":"ctrl+option+l"},{"bundleIdentifier":"fixture.app","hotKey":"ctrl+option+b","path":"/Applications/Beta/Fixture.app"}]}"#
+        let entries = try JSONDecoder().decode(Preferences.self, from: Data(json.utf8)).appHotKeys
+        XCTAssertNil(entries[0].path, "entries saved before paths existed still decode")
+        XCTAssertEqual(AppHotKey.binding(in: entries, bundleIdentifier: "fixture.app", path: "/Applications/Beta/Fixture.app"), "ctrl+option+b")
+        XCTAssertEqual(AppHotKey.binding(in: entries, bundleIdentifier: "fixture.app", path: "/Applications/Fixture.app"), "ctrl+option+l")
+        let pathOnly = [AppHotKey(bundleIdentifier: "fixture.app", hotKey: "ctrl+option+b", path: "/Applications/Beta/Fixture.app")]
+        XCTAssertEqual(AppHotKey.binding(in: pathOnly, bundleIdentifier: "fixture.app", path: "/Applications/Fixture.app"), "",
+                       "a shortcut saved for one copy never belongs to another copy")
+        let encoded = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(AppHotKey(bundleIdentifier: "fixture.app", hotKey: "ctrl+k"))) as? [String: Any])
+        XCTAssertNil(encoded["path"], "a legacy entry is not given an empty path")
+    }
 }
