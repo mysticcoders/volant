@@ -49,7 +49,9 @@ public struct AgentSession: Codable, Identifiable, Hashable {
     public var focused: Bool? = nil
     public var sessionIdentity: String { agent + ":" + (agentSession?.value ?? terminalID) }
     public var id: String { (machine.map { "remote:" + $0.routeIdentity + ":" } ?? "local:") + terminalID + ":" + paneID }
-    public var project: String { cwd.map { URL(fileURLWithPath: $0).lastPathComponent } ?? "Unknown project" }
+    /// The folder name, taken from the path string alone. `URL(fileURLWithPath:)` checks the file
+    /// system, and on the main thread a sandboxed lookup of every pane's folder stalled typing.
+    public var project: String { cwd.map { ($0 as NSString).lastPathComponent } ?? "Unknown project" }
     public var provider: String {
         switch agent {
         case "claude": return "Claude Code"
@@ -86,12 +88,16 @@ public struct AgentSession: Codable, Identifiable, Hashable {
             var value = value; value.machine = machine; return value
         })
     }
+    /// Orders panes by attention priority, project name, then identity, computing each pane's keys
+    /// once rather than on every comparison during each Herdr refresh.
     public static func sorted(_ agents: [AgentSession]) -> [AgentSession] {
-        agents.sorted {
-            if $0.priority != $1.priority { return $0.priority < $1.priority }
-            if $0.project != $1.project { return $0.project.localizedStandardCompare($1.project) == .orderedAscending }
-            return $0.id < $1.id
-        }
+        agents.map { (agent: $0, priority: $0.priority, project: $0.project, id: $0.id) }
+            .sorted {
+                if $0.priority != $1.priority { return $0.priority < $1.priority }
+                if $0.project != $1.project { return $0.project.localizedStandardCompare($1.project) == .orderedAscending }
+                return $0.id < $1.id
+            }
+            .map(\.agent)
     }
 
     public init(agent: String, agentStatus: String, paneID: String, terminalID: String, cwd: String? = nil, terminalTitle: String? = nil, agentSession: SessionReference? = nil, machine: HerdrMachine? = nil, stateChangeSequence: UInt64? = nil) {

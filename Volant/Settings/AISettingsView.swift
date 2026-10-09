@@ -127,7 +127,7 @@ struct AISettingsView: View {
                 ForEach(ACPProvider.allCases) { Text($0.title).tag($0.rawValue) }
             }.disabled(!loaded).onChange(of: config.provider) { _, _ in persist() }
             LabeledContent("Working folder") {
-                Text(config.project.isEmpty ? "General chat" : URL(fileURLWithPath: config.project).lastPathComponent)
+                Text(config.project.isEmpty ? "General chat" : (config.project as NSString).lastPathComponent)
                     .lineLimit(1).help(config.project).foregroundStyle(.secondary)
                 if !config.project.isEmpty { Button("Clear") { config.project = ""; persist() }.help("Use General Chat") }
                 Button("Choose Folder…") { chooseProject { url in if let url { config.project = url.path; persist() } } }.disabled(!loaded)
