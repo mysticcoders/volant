@@ -42,6 +42,7 @@
 
 - After bundle-ID changes, install a fresh app bundle rather than overwriting its directory. Verify connectivity from `/Applications`, not only DerivedData: macOS can retain the old bundle identity and redact Wi-Fi names despite a successful Location grant. See `docs/system-control.md`.
 
+- Ship releases with `Scripts/ship.sh <version>` from a `release/<version>` branch holding the release notes and copy. It opens one release PR and never merges it; the owner's merge is the publication approval, after which the script deploys, verifies and publishes. Do not merge a release PR yourself or deploy the website outside this script. See `docs/release-quality.md`.
 - Website product screenshots must come from the actual native views with fictional data and the release asset catalog; never rebuild the launcher in HTML as a screenshot. Sparkle releases must archive AND export to sign nested helpers, notarize/staple the app and DMG, and sign the update feed. Increase the build number for every distributed update. See `docs/release-quality.md`.
 - Active ACP sessions and unfinished prompts must survive launcher focus loss. Explicit dismissal remains available. Verify drag movement in a real native preview; `isMovableByWindowBackground` alone does not prove a hosted view can be dragged. Keep remembered positions reachable after display changes.
 

@@ -10,12 +10,17 @@
 
 ## Release procedure
 
-1. Increase `CURRENT_PROJECT_VERSION` for every distributed update, and set `MARKETING_VERSION`. Never reuse a build number for different release bytes.
-2. Configure notarization locally: `xcrun notarytool store-credentials volant --apple-id <your-Apple-ID> --team-id REMBT6JY4N`. Enter the app-specific password interactively, never in a checked-in file or chat. An existing App Store Connect API key can also be used through notarytool.
-3. Run `VOLANT_NOTARY_PROFILE=volant ./Scripts/release.sh`. The default profile is `volant`; override it as needed. Alternatively set `VOLANT_NOTARY_KEY` (path to the existing .p8), `VOLANT_NOTARY_KEY_ID`, and `VOLANT_NOTARY_ISSUER`. Credentials are checked before building. The Sparkle key must be accessible in Keychain.
-4. Script archives and exports, validates entitlements/signatures, notarizes and staples the app, creates and signs a drag-to-Applications DMG, notarizes and staples the DMG, then generates its signed Sparkle appcast and SHA256SUMS. Unique output directories preserve older artifacts. A failure stops the release; unsigned/unnotarized output is never declared validated.
-5. After public release authorization, host the complete `updates` directory at `https://usevolant.com/updates/`. Keep the feed URL stable. Publish the DMG before the appcast. Preserve old hosted DMGs until no published feed references them; update the website’s download CTA only after verifying public delivery.
-6. Validate an installed previous build updating to a newer build through Sparkle, including decline/cancel, relaunch, and preserved notes/config. A signed appcast alone does not establish a working update installation.
+A release needs one owner action: merging its release pull request.
+
+1. **Notes and copy.** On a `release/<version>` branch from current `main`, write `docs/releases/<version>.md` (the GitHub release body the app's Changelog item opens). Commit any website copy, feature badges, documentation notices and `docs/marketing-claims.md` changes the release makes true. Push the branch.
+2. **Ship.** Run `Scripts/ship.sh <version>`. It sets `MARKETING_VERSION` and the next `CURRENT_PROJECT_VERSION` (never reused), runs `Scripts/release.sh` to archive, export, notarize and staple the app and DMG and sign the appcast, inspects the mounted DMG, and opens one pull request with the DMG, `SHA256SUMS`, the signed appcast and this document's build record. It never merges.
+3. **Owner merges.** Merging the release pull request after its checks pass approves publication. The waiting script then works only from the merged commit: it deploys the download while serving the previous feed, verifies the public DMG's SHA-256, staple and Gatekeeper result, deploys the merged feed and compares it byte for byte, checks the pages and both DMGs, publishes the GitHub release with the DMG, and posts the results on the pull request. If the script was interrupted, `Scripts/ship.sh <version> --publish` resumes from the merged pull request.
+
+Every step stops on failure and states what is and is not published; the new feed is never served before its download is verified. Each script run uses its own `dist-release.ship-*` folder and a temporary worktree, leaving the main checkout untouched.
+
+**One-time setup.** Store the App Store Connect API key used for earlier releases as the `volant` notarization profile: `xcrun notarytool store-credentials volant --key ~/.appstoreconnect/private_keys/AuthKey_SCV5964PL2.p8 --key-id SCV5964PL2 --issuer <issuer-ID>`. `Scripts/release.sh` also still accepts `VOLANT_NOTARY_KEY`, `VOLANT_NOTARY_KEY_ID` and `VOLANT_NOTARY_ISSUER`. Allow Keychain access for the Developer ID key and the Sparkle key (account `volant`) when first prompted so later runs are unattended. `gh` and `wrangler` must be signed in.
+
+Not automated: an installed previous build updating through Sparkle (decline/cancel, relaunch, preserved notes and config) and Intel hardware checks. A signed appcast alone does not establish a working update installation.
 
 ## Evidence
 
