@@ -214,3 +214,10 @@ Public DMG delivery verified after Cloudflare Worker deployment `2ea13735-f621-4
 - **Download:** HTTP 200, 12,450,153 bytes. It matched the SHA-256 above, passed stapler validation and passed Gatekeeper as Notarized Developer ID.
 - **Docs:** `/docs/agents` shows "Herdr in the footer".
 - **Feed:** stayed on 0.2.1 build 9 until the signed build-10 appcast (passes `sign_update --verify`, 12,450,153 bytes) is activated.
+
+Final publication: the signed build-10 feed was activated in Cloudflare Worker deployment `3de4348f-8f1e-42d6-9efd-50831b1bf24a` (run by the owner from #172).
+
+- **Feed:** the public feed (HTTP 200, `max-age=0, must-revalidate`) matched both the committed file and the release output byte-for-byte. It reports version 0.2.2 build 10 and passed Sparkle `sign_update --verify`.
+- **Pages and downloads:** the homepage, `/docs`, and the 0.2.2 and 0.2.1 DMGs returned 200.
+- **Release PRs:** #167 through #172 passed required workflow checks before merging.
+- **Still unverified:** installed 0.2.1 → 0.2.2 Sparkle upgrades, and Intel hardware.
