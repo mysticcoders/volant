@@ -509,6 +509,29 @@ for phase in ["starting", "working", "cancelling", "ready"] {
     sticky.toggle()
     verify(sticky.isVisible && sticky.isKeyWindow && !sticky.model.showingACP && sticky.model.query.isEmpty, "Summon returns a visible inactive conversation to search")
 }
+/// Returns whether `upper` is in front of `lower` among this process's on-screen windows.
+func isOrdered(_ upper: NSWindow, above lower: NSWindow) -> Bool {
+    let order = (NSWindow.windowNumbers(options: []) ?? []).map(\.intValue)
+    guard let top = order.firstIndex(of: upper.windowNumber), let bottom = order.firstIndex(of: lower.windowNumber) else { return false }
+    return top < bottom
+}
+let orderedNotes = NotesPanel(store: notes)
+orderedNotes.floatingPeer = sticky
+sticky.floatingPeer = orderedNotes
+sticky.model.presentAIChat()
+sticky.model.acp.state.phase = "working"
+orderedNotes.toggle()
+verify(waitUntil(stable: 0.1) { orderedNotes.isKeyWindow && sticky.isVisible }, "Notes takes key focus while the ACP conversation stays visible")
+verify(isOrdered(orderedNotes, above: sticky), "Notes opened during an ACP conversation is in front of the launcher")
+verify(sticky.model.showingACP && sticky.model.acp.state.sessionID == "fictional-session", "Opening notes preserves the ACP conversation")
+orderedNotes.cancelOperation(nil)
+verify(!orderedNotes.isVisible && sticky.isVisible && sticky.model.showingACP, "Escape in notes closes only notes")
+orderedNotes.toggle()
+verify(waitUntil(stable: 0.1) { orderedNotes.isKeyWindow } && isOrdered(orderedNotes, above: sticky), "Reopened notes returns in front of the conversation")
+sticky.toggle()
+verify(waitUntil(stable: 0.1) { sticky.isKeyWindow } && orderedNotes.isVisible && isOrdered(sticky, above: orderedNotes), "Summoning the launcher orders it in front of visible notes")
+orderedNotes.close()
+verify(!orderedNotes.isVisible && sticky.isVisible, "Closing notes leaves the launcher visible")
 sticky.cancelOperation(nil)
 verify(!sticky.isVisible && sticky.model.acp.state.sessionID == "fictional-session", "Explicit dismissal keeps the ACP session")
 RunLoop.main.run(until: Date().addingTimeInterval(0.25))

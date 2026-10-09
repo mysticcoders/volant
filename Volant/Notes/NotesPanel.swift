@@ -5,6 +5,8 @@ import SwiftUI
 final class NotesPanel: NSPanel {
     let store: NotesStore
     private let model: NotesModel
+    /// The launcher, when it shares the floating level; notes is ordered above it whenever fronted.
+    weak var floatingPeer: NSWindow?
 
     init(store: NotesStore) {
         self.store = store
@@ -27,6 +29,12 @@ final class NotesPanel: NSPanel {
 
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
+
+    /// Fronts notes and explicitly orders it above a launcher kept visible, such as an active ACP conversation.
+    override func makeKeyAndOrderFront(_ sender: Any?) {
+        super.makeKeyAndOrderFront(sender)
+        orderAboveFloatingPeer(floatingPeer)
+    }
 
     func toggle() {
         if isVisible && isKeyWindow { close(); return }
