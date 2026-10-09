@@ -51,10 +51,29 @@ final class UnitArithmeticTests: XCTestCase {
         XCTAssertEqual(card("10km-(2km+500m)").first, "7.5 km")
         XCTAssertEqual(card("((1 m + 50 cm) * 2) / 3").first, "1 m")
         XCTAssertEqual(card("(10 km + 2 km) / 3 km"), ["4", nil])
+        XCTAssertEqual(card("(10 km / 1 h) / (5 km / 1 h)"), ["2", nil])
         XCTAssertEqual(card("(5 ft 10 in) * 2 in cm").first, "355.6 cm")
         XCTAssertEqual(card("-(1 kg - 1500 g)").first, "0.5 kg")
         XCTAssertEqual(card("(2 + 3) * 1 km").first, "5 km")
         XCTAssertEqual(card("(2,5 km + 500 m) * 2", locale: Locale(identifier: "de_DE")).first, "6 km")
+    }
+
+    func testGroupedQuantitiesOverATimeGiveRates() {
+        XCTAssertEqual(card("(1 mi + 1 km) / 8 min"), ["12.160284 mph", "Miles per hour"])
+        XCTAssertEqual(card("(1 km + 1 mi) / 8 min").first, "19.57008 km/h")
+        XCTAssertEqual(card("(10 km + 2 km) / 1 h").first, "12 km/h")
+        XCTAssertEqual(card("(10 km + 2 km) / 1 h in mph"), ["7.456454 mph", "Miles per hour"])
+        XCTAssertEqual(card("(10 km + 2 km) / 1 h in min/km").first, "5 min/km")
+        XCTAssertEqual(card("(10 km + 2 km) / (30 min + 30 min)").first, "12 km/h")
+        XCTAssertEqual(card("(10 km + 2 km) / 1 h * 2").first, "24 km/h")
+        XCTAssertEqual(card("(1 GB + 500 MB) / 10 s").first, "1200 Mbps")
+        XCTAssertEqual(card("(1 GB + 500 MB) / 10 s in MB/s").first, "150 MB/s")
+        XCTAssertEqual(card("1 mi + 1 km / 8 min"), [])
+        XCTAssertEqual(card("(10 km + 2 km) / 1 h in kg"), [])
+        XCTAssertEqual(card("(10 kg + 2 kg) / 1 h"), [])
+        XCTAssertEqual(card("(10 km + 2 km) / (1 h - 60 min)"), [])
+        XCTAssertEqual(card("(10 km + 2 km) / 1 h + 1 km"), [])
+        XCTAssertEqual(card("(10 km + 2 km) / 1 h / 1 h"), [])
     }
 
     func testParenthesesKeepDimensionChecks() {

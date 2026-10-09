@@ -77,27 +77,10 @@ public enum UnitArithmetic {
                 let text = Calculator.format((ratio * 1e6).rounded() / 1e6, locale: locale)
                 return CalculationAnswer(input: input, inputDetail: nil, result: text, resultDetail: nil, copyText: text)
             }
-            guard overUnit.unit is UnitDuration else { return nil }
-            let seconds = UnitConverter.convert(over, from: overUnit.unit, to: UnitDuration.seconds)
-            let base: Double
-            let fallback: Spec
-            switch unit.unit {
-            case is UnitLength:
-                base = UnitConverter.convert(total, from: unit.unit, to: UnitLength.meters) / seconds
-                let imperial = ["mi", "ft", "yd", "in"].contains(unit.symbol)
-                fallback = Spec(unit: imperial ? UnitSpeed.milesPerHour : UnitSpeed.kilometersPerHour, symbol: imperial ? "mph" : "km/h")
-                result = target ?? fallback
-                guard result.unit is UnitSpeed else { return nil }
-                value = UnitConverter.convert(base, from: UnitSpeed.metersPerSecond, to: result.unit)
-            case is UnitInformationStorage:
-                base = UnitConverter.convert(total, from: unit.unit, to: UnitInformationStorage.bits) / seconds
-                fallback = Spec(unit: UnitConverter.Extra.megabitsPerSecond, symbol: "Mbps")
-                result = target ?? fallback
-                guard result.unit is UnitDataRate else { return nil }
-                value = UnitConverter.convert(base, from: UnitConverter.Extra.bitsPerSecond, to: result.unit)
-            default:
-                return nil
-            }
+            guard let rate = perTime(total, unit, over, overUnit) else { return nil }
+            result = target ?? rate.fallback
+            guard UnitConverter.sameDimension(result.unit, rate.unit) else { return nil }
+            value = UnitConverter.convert(rate.value, from: rate.unit, to: result.unit)
         default:
             guard !(unit.unit is UnitDuration) else { return nil }
             var scaled = total
@@ -152,6 +135,28 @@ public enum UnitArithmetic {
         guard let (spec, extra) = longest else { return nil }
         index += 1 + extra
         return Term(value: value, spec: spec)
+    }
+
+    /// A length or amount of data over a time, as a speed in m/s or a data rate in bits per second,
+    /// with the unit it answers in when no target is given: mph after imperial lengths, km/h after
+    /// other lengths, and Mbps for data. Anything else over a time, or a zero time, has no rate.
+    private static func perTime(_ total: Double, _ unit: Spec, _ over: Double, _ overUnit: Spec)
+        -> (value: Double, unit: Dimension, fallback: Spec)? {
+        guard overUnit.unit is UnitDuration else { return nil }
+        let seconds = UnitConverter.convert(over, from: overUnit.unit, to: UnitDuration.seconds)
+        guard seconds != 0 else { return nil }
+        switch unit.unit {
+        case is UnitLength:
+            let imperial = ["mi", "ft", "yd", "in"].contains(unit.symbol)
+            let fallback = Spec(unit: imperial ? UnitSpeed.milesPerHour : UnitSpeed.kilometersPerHour, symbol: imperial ? "mph" : "km/h")
+            return (UnitConverter.convert(total, from: unit.unit, to: UnitLength.meters) / seconds, UnitSpeed.metersPerSecond, fallback)
+        case is UnitInformationStorage:
+            let fallback = Spec(unit: UnitConverter.Extra.megabitsPerSecond, symbol: "Mbps")
+            return (UnitConverter.convert(total, from: unit.unit, to: UnitInformationStorage.bits) / seconds,
+                    UnitConverter.Extra.bitsPerSecond, fallback)
+        default:
+            return nil
+        }
     }
 
     /// The total of like, linear quantities in the first one's unit.
@@ -305,7 +310,8 @@ public enum UnitArithmetic {
             return Amount(value: a.value * b.value, spec: a.spec ?? b.spec)
         }
 
-        /// A quantity or number over a non-zero number, or a ratio of like quantities.
+        /// A quantity or number over a non-zero number, a ratio of like quantities, or a speed or data
+        /// rate from a quantity over a time, held in the unit it answers in without a target.
         static func divide(_ a: Amount, _ b: Amount) -> Amount? {
             switch (a.spec, b.spec) {
             case (_, nil):
@@ -315,6 +321,9 @@ public enum UnitArithmetic {
                 let over = UnitConverter.convert(b.value, from: second.unit, to: first.unit)
                 guard over != 0 else { return nil }
                 return Amount(value: a.value / over, spec: nil)
+            case let (first?, second?):
+                guard let rate = UnitArithmetic.perTime(a.value, first, b.value, second) else { return nil }
+                return Amount(value: UnitConverter.convert(rate.value, from: rate.unit, to: rate.fallback.unit), spec: rate.fallback)
             default:
                 return nil
             }
