@@ -80,7 +80,7 @@ try rep.representation(using: .jpeg, properties: [.compressionFactor: 0.75])!.wr
 // Calculator answers render as cards and copy the complete single-line answer.
 model.searchesSecondarySources = false
 CurrencyRates.current = CurrencyRates(date: "2026-10-05", perEuro: ["USD": 1.25, "GBP": 0.8, "JPY": 160, "CHF": 0.95, "SEK": 11.5])
-for query in ["1pm EST in CET", "2026-12-31 3pm PST in CET", "time in Tokyo", "2 + 2", "5 km in mi", "7:30pm tomorrow", "15% tip on 42", "days until 31 Mar", "145 mins to timespan", "time diff Tokyo", "2024-03-15T14:30:00Z", "#ff6363", "oklch(70% 0.15 250)", "100 usd in eur"] {
+for query in ["1pm EST in CET", "2026-12-31 3pm PST in CET", "time in Tokyo", "2 + 2", "5 km in mi", "7:30pm tomorrow", "15% tip on 42", "days until 31 Mar", "145 mins to timespan", "time diff Tokyo", "2024-03-15T14:30:00Z", "#ff6363", "oklch(70% 0.15 250)", "100 usd in eur", "2026-03-08 2:30am New York in Paris", "2026-11-01 1:30am New York in Paris"] {
     model.query = query
     RunLoop.main.run(until: Date().addingTimeInterval(0.2))
     guard case .calculation(let answer, _) = model.selectedRow else { fatalError("Missing timezone answer") }
@@ -92,7 +92,10 @@ for query in ["1pm EST in CET", "2026-12-31 3pm PST in CET", "time in Tokyo", "2
     host.layoutSubtreeIfNeeded()
     let image = host.bitmapImageRepForCachingDisplay(in: host.bounds)!
     host.cacheDisplay(in: host.bounds, to: image)
-    let name = query.hasPrefix("2026") ? "rollover" : query.hasPrefix("time diff") ? "diff" : query.hasPrefix("time") ? "clock" : query.hasPrefix("2 +") ? "arithmetic" : query.hasPrefix("5 km") ? "unit" : query.hasSuffix("tomorrow") ? "relative" : query.contains("tip") ? "percent" : query.hasPrefix("days") ? "count" : query.hasSuffix("timespan") ? "span" : query.hasPrefix("2024") ? "iso" : query.hasPrefix("100 usd") ? "currency" : query.hasPrefix("#") ? "hex" : query.hasPrefix("oklch") ? "oklch" : "conversion"
+    let cards = model.rows.compactMap { row -> CalculationAnswer? in if case .calculation(let card, _) = row { return card }; return nil }
+    if query.contains("2:30am") { verify(cards.first?.inputDetail == "2:30 AM is skipped · clocks jump to 3:00 AM", "Skipped wall time explains the nearest valid time") }
+    if query.contains("1:30am") { verify(cards.prefix(2).map(\.input) == ["2026-11-01 1:30am (EDT) New York in Paris", "2026-11-01 1:30am (EST) New York in Paris"], "Repeated wall time offers both readings") }
+    let name = query.contains("2:30am") ? "skipped" : query.contains("1:30am") ? "repeated" : query.hasPrefix("2026") ? "rollover" : query.hasPrefix("time diff") ? "diff" : query.hasPrefix("time") ? "clock" : query.hasPrefix("2 +") ? "arithmetic" : query.hasPrefix("5 km") ? "unit" : query.hasSuffix("tomorrow") ? "relative" : query.contains("tip") ? "percent" : query.hasPrefix("days") ? "count" : query.hasSuffix("timespan") ? "span" : query.hasPrefix("2024") ? "iso" : query.hasPrefix("100 usd") ? "currency" : query.hasPrefix("#") ? "hex" : query.hasPrefix("oklch") ? "oklch" : "conversion"
     try image.representation(using: .jpeg, properties: [.compressionFactor: 0.85])!.write(to:
         URL(fileURLWithPath: "/tmp/volant-launcher-time-\(name)-\(dark ? "dark" : "light").jpg"))
 }
@@ -115,6 +118,9 @@ guard case .calculation(let swapped, _) = model.selectedRow else { fatalError("M
 verify(swapped.copyText == "5 km", "Swapped conversion returns to the original amount")
 model.query = "1pm EST in"
 verify(!model.rows.contains { if case .calculation = $0 { return true }; return false }, "Incomplete time query has no answer")
+model.query = "2026-11-01 1:30am New York in"
+RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+verify(!model.rows.contains { if case .calculation = $0 { return true }; return false }, "Incomplete repeated-time query has no explanation")
 // A briefly incomplete edit keeps the card's space with the last answer dimmed; it is never a row.
 model.query = "12 * 4"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
