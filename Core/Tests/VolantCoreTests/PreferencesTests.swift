@@ -16,6 +16,20 @@ final class PreferencesTests: XCTestCase {
         XCTAssertNotNil(object["future"])
     }
 
+    /// Caffeinate keeps the display awake unless the owner turns it off; older configs get the default.
+    func testCaffeinateDisplaySettingDefaultsOnAndPatchesNarrowly() throws {
+        XCTAssertTrue(try JSONDecoder().decode(Preferences.self, from: Data("{}".utf8)).caffeinateKeepsDisplayAwake)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: url) }
+        try Data(#"{"showInDock":false,"future":{"keep":1}}"#.utf8).write(to: url)
+        try Preferences.updateBoolean("caffeinateKeepsDisplayAwake", value: false, at: url)
+        let data = try Data(contentsOf: url)
+        let config = try JSONDecoder().decode(Preferences.self, from: data)
+        XCTAssertFalse(config.caffeinateKeepsDisplayAwake)
+        XCTAssertFalse(config.showInDock)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertNotNil(object["future"])
+    }
     func testPinnedHarnessRoundTripPreservesOtherSettings() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: url) }

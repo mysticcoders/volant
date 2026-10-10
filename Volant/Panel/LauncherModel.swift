@@ -1049,10 +1049,10 @@ final class LauncherModel: ObservableObject {
 
     private func refreshCaffeinateResults() {
         let selectedID = selectedRow?.id
-        var commands = CaffeinateCommand.parse(query)
+        var commands = CaffeinateCommand.parse(query, keepsDisplayAwake: config.caffeinateKeepsDisplayAwake)
         if caffeinate.isActive { commands = [.off] }
         sections = [ResultSection(title: "Caffeinate", rows: commands.map(ResultRow.caffeinate))]
-        notice = commands.isEmpty ? "Try caffeinate 30m, caffeinate 1h display, or caffeinate off (up to 24 hours)." : nil
+        notice = commands.isEmpty ? "Try caffeinate 30m, caffeinate 1h system, or caffeinate off (up to 24 hours)." : nil
         if let selectedID, let index = rows.firstIndex(where: { $0.id == selectedID }) { selection = index }
         else { selection = 0 }
     }

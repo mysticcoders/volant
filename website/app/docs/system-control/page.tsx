@@ -128,10 +128,12 @@ export default function SystemControl() {
       <h2>Keep awake</h2>
       <p>
         Type <code>caffeinate</code> to keep your Mac and its display awake,
-        optionally for a duration, such as <code>caffeinate 30m</code>. Add{' '}
-        <code>system</code> to keep only the Mac awake and let the display
-        sleep. The launcher shows the active state and offers Stop. This does
-        not change your saved power settings.
+        optionally for a duration, such as <code>caffeinate 30m</code>. The
+        display stays on and unlocked unless you turn off{' '}
+        <strong>Keep display on and unlocked</strong> in Settings → General.
+        Add <code>system</code> or <code>display</code> to choose for one
+        session. The launcher shows the active state and offers Stop. This
+        does not change your saved power settings.
       </p>
       <h2>System Settings</h2>
       <p>

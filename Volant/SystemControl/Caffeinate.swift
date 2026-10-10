@@ -14,19 +14,19 @@ struct CaffeinateCommand: Hashable {
     static func matches(_ query: String) -> Bool {
         query.lowercased().split(whereSeparator: \.isWhitespace).first == "caffeinate"
     }
-    /// Keeping the display awake is the default, as people expect from a caffeinate command: a dark
-    /// display that locks reads as sleep. A trailing `system` or `mac` keeps only the Mac awake and lets
-    /// the display sleep; a trailing `display` is still accepted for the default.
-    static func parse(_ query: String) -> [Self] {
+    /// Without a modifier, sessions follow the owner's setting, which keeps the display on and unlocked
+    /// by default because a dark display that locks reads as sleep. A trailing `display` or `system`
+    /// (`mac`) chooses the mode for one session. The bare list offers the default mode first.
+    static func parse(_ query: String, keepsDisplayAwake: Bool = true) -> [Self] {
         var words = query.lowercased().split(whereSeparator: \.isWhitespace).map(String.init)
         guard words.first == "caffeinate" else { return [] }
         words.removeFirst()
         if words == ["off"] || words == ["stop"] { return [.off] }
         let modifier = words.last.flatMap { ["display", "system", "mac"].contains($0) ? $0 : nil }
         if modifier != nil { words.removeLast() }
-        let display = modifier != "system" && modifier != "mac"
+        let display = modifier == nil ? keepsDisplayAwake : modifier == "display"
         if words.isEmpty {
-            let modes = modifier == nil ? [true, false] : [display]
+            let modes = modifier == nil ? [keepsDisplayAwake, !keepsDisplayAwake] : [display]
             return modes.flatMap { mode in
                 [15, 30, 60].map { Self(minutes: $0, display: mode, stop: false) } + [Self(minutes: nil, display: mode, stop: false)]
             }
