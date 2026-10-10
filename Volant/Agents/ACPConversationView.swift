@@ -9,8 +9,18 @@ struct ACPConversationView: View {
     var focusRequest: UUID = UUID()
     /// Notes and clipboard text offered by the @ picker; none when the host provides no source.
     var contextCandidates: ((String) -> [ChatAttachment])?
+    /// The launcher's other conversations, for New and the conversation buttons; nil where this view
+    /// shows one model on its own.
+    var conversations: ACPConversations?
+    var newConversation: () -> Void = {}
+    var select: (ACPModel) -> Void = { _ in }
+    /// Send to Several; nil where this view shows one model on its own.
+    var fanOut: ACPFanOutHost?
     @State private var follow = true
     @State private var picking = false
+    @State private var choosingTargets = false
+    /// The AI settings Send to Several read when its picker opened; nil if they could not be read.
+    @State private var fanOutSettings: AIConfiguration?
     @State private var mentionLocation: Int?
     @State private var editorFocus = UUID()
     var body: some View {
@@ -24,18 +34,17 @@ struct ACPConversationView: View {
                 if let caffeinate { CaffeinateStatusView(service: caffeinate) }
                 Text("AI Chat").fontWeight(.medium)
                 Text(model.providerTitle).foregroundStyle(.secondary).lineLimit(1).help(model.providerTitle)
-                if !model.project.isEmpty {
-                    Label((model.project as NSString).lastPathComponent, systemImage: "folder")
-                        .foregroundStyle(.secondary).lineLimit(1).help(model.project)
-                }
+                if let account = model.account { ACPAccountLabel(label: account.label).help(account.directory) }
+                folderLabel
                 Spacer(minLength: 4)
                 Button("Settings", action: settings)
-                if model.active { Button("End", action: model.disconnect) }
-                else {
-                    if model.canResume { Button("Resume", action: model.resume).help("Continue your last conversation with this provider and folder") }
-                    Button(model.canResume ? "New" : "Connect", action: model.start).disabled(!model.configured)
+                if model.active {
+                    if let conversations { ACPNewConversationButton(conversations: conversations, action: newConversation) }
+                    Button("End", action: model.disconnect)
                 }
+                else { endedActions }
             }.padding(.horizontal, 16).padding(.vertical, 8)
+            if let conversations { ACPConversationTabs(conversations: conversations, select: select) }
             Divider()
             ScrollViewReader { proxy in
             ScrollView {
@@ -65,7 +74,7 @@ struct ACPConversationView: View {
                         }.padding(12).frame(maxWidth: .infinity, alignment: .leading)
                             .background(Color.orange.opacity(0.10), in: RoundedRectangle(cornerRadius: 8)).id(permission.id)
                     }
-                    if let error = model.error { Text(error).foregroundStyle(.red).textSelection(.enabled) }
+                    failure
                     Color.clear.frame(height: 1).id("conversation-bottom")
                 }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -85,7 +94,7 @@ struct ACPConversationView: View {
             Divider()
             HStack(spacing: 8) {
                 if model.state.busy && model.state.permissions.isEmpty { ProgressView().controlSize(.small) }
-                Text(model.state.status).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                Text(model.statusLine).font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 Spacer()
                 Toggle("Follow", isOn: $follow).toggleStyle(.checkbox).font(.caption)
                 if ["working", "cancelling"].contains(model.state.phase) {
@@ -95,6 +104,12 @@ struct ACPConversationView: View {
             if picking, let contextCandidates {
                 ChatContextPicker(candidates: contextCandidates, choose: attach, close: closePicker)
                     .padding(.horizontal, 16).padding(.bottom, 8)
+            } else if choosingTargets, let fanOut {
+                ACPFanOutPicker(settings: fanOutSettings, send: { fanOut.send(model, $0, $1, $2, $3) }, close: closeFanOut)
+                    .padding(.horizontal, 16).padding(.bottom, 8)
+                    // However the picker goes, by its buttons, the @ picker or leaving AI Chat, a send
+                    // still checking its folder goes with it.
+                    .onDisappear(perform: fanOut.cancel)
             }
             if !model.attachments.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -109,7 +124,7 @@ struct ACPConversationView: View {
             }
             HStack(alignment: .bottom, spacing: 10) {
                 ACPPromptView(text: $model.draft, focusRequest: editorFocus, send: model.send,
-                              mention: { location in if contextCandidates != nil { mentionLocation = location; picking = true } })
+                              mention: { location in if contextCandidates != nil { mentionLocation = location; picking = true; choosingTargets = false } })
                     .frame(height: 64)
                     .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 7))
                     .overlay(alignment: .topLeading) {
@@ -119,17 +134,71 @@ struct ACPConversationView: View {
                         }
                     }
                 if contextCandidates != nil {
-                    Button { mentionLocation = nil; picking.toggle() } label: { Image(systemName: "at") }
+                    Button { mentionLocation = nil; picking.toggle(); choosingTargets = false } label: { Image(systemName: "at") }
                         .help("Attach a note or clipboard item (type @)")
                         .accessibilityLabel("Attach a note or clipboard item")
                         .background(ControlAnchor("chat.attach"))
                 }
                 Button("Send", action: model.send).disabled(!model.canSend)
                     .help("Return to send; Shift-Return for a new line")
+                if fanOut != nil { sendToSeveralButton }
             }.padding(.horizontal, 16).padding(.bottom, 12)
         }
         .onAppear { editorFocus = focusRequest }
         .onChange(of: focusRequest) { _, value in editorFocus = value }
+    }
+
+    /// The error, then the notice that a Send to Several task may have run, which no later error
+    /// replaces.
+    @ViewBuilder private var failure: some View {
+        if let error = model.error { Text(error).foregroundStyle(.red).textSelection(.enabled) }
+        if model.taskMayHaveRun { Text(ACPModel.mayHaveRun).foregroundStyle(.red) }
+    }
+
+    /// A conversation in its own workspace shows that workspace's branch and change counts, or its
+    /// folder name until they are read.
+    @ViewBuilder private var folderLabel: some View {
+        if let workspace = model.workspace {
+            Label(model.workspaceState?.summary ?? (workspace as NSString).lastPathComponent, systemImage: "arrow.triangle.branch")
+                .foregroundStyle(.secondary).lineLimit(1).help(workspace)
+        } else if !model.project.isEmpty {
+            Label((model.project as NSString).lastPathComponent, systemImage: "folder")
+                .foregroundStyle(.secondary).lineLimit(1).help(model.project)
+        }
+    }
+
+    @ViewBuilder private var endedActions: some View {
+        if model.workspace != nil {
+            Button("Remove Workspace", action: model.removeWorkspace).disabled(!model.canRemoveWorkspace)
+                .help("Delete this conversation’s workspace folder if it has no changes; its branch and commits stay")
+        }
+        if model.canResume { Button("Resume", action: model.resume).help("Continue your last conversation with this provider, folder and account") }
+        // A Send to Several conversation keeps its result, so New starts another conversation beside it.
+        if model.fanOutTarget, let conversations {
+            ACPNewConversationButton(conversations: conversations, action: newConversation)
+        } else {
+            Button(model.canResume ? "New" : "Connect", action: model.start).disabled(!model.configured || model.removingWorkspace)
+        }
+    }
+
+    /// Opens the Send to Several picker with the AI settings as they are now. Enabled for a prompt
+    /// with an ACP connection, whether or not this conversation is connected.
+    private var sendToSeveralButton: some View {
+        Button("Send to Several…") {
+            if choosingTargets { closeFanOut(); return }
+            closePicker()
+            fanOutSettings = fanOut?.settings()
+            choosingTargets = true
+        }
+        .disabled(model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || model.usesAPI || model.usesApple)
+        .help("Start a conversation with each agent you choose and send each this prompt once")
+        .background(ControlAnchor("chat.send-several"))
+    }
+
+    private func closeFanOut() {
+        fanOut?.cancel()
+        choosingTargets = false
+        editorFocus = UUID()
     }
 
     /// Choosing removes the @ that opened the picker, if it is still where it was typed.
@@ -158,23 +227,194 @@ struct ACPConversationView: View {
 }
 
 
-struct ACPActivityStrip: View {
-    @ObservedObject var model: ACPModel
-    var open: () -> Void
+/// Starts another conversation while this one keeps running. It observes the list, so it enables
+/// again as soon as a conversation in the background ends.
+private struct ACPNewConversationButton: View {
+    @ObservedObject var conversations: ACPConversations
+    let action: () -> Void
     var body: some View {
-        if model.active {
-            Button(action: open) {
-                HStack {
-                    Image(systemName: model.state.permissions.isEmpty ? "bubble.left.and.bubble.right" : "hand.raised")
-                    Text("AI Chat").fontWeight(.medium)
-                    Text(model.providerTitle).foregroundStyle(.secondary).lineLimit(1).help(model.providerTitle)
-                    Text(model.state.status).foregroundStyle(.secondary).lineLimit(1)
-                    Spacer()
-                    Text("Open conversation").foregroundStyle(.secondary)
-                }.font(.system(size: 12)).padding(.horizontal, 20).padding(.vertical, 8)
-            }.buttonStyle(.plain)
+        Button("New", action: action)
+            .disabled(!conversations.canStartAnother)
+            .help("Start another conversation; this one keeps running")
+    }
+}
+
+/// One button per conversation the owner can switch to, once there is more than one, and the Send
+/// to Several conversations still waiting for a slot.
+private struct ACPConversationTabs: View {
+    @ObservedObject var conversations: ACPConversations
+    let select: (ACPModel) -> Void
+    var body: some View {
+        if conversations.shown.count > 1 || !conversations.waiting.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(conversations.shown) { conversation in
+                        ACPConversationTab(model: conversation, selected: conversation === conversations.current) { select(conversation) }
+                    }
+                    if !conversations.waiting.isEmpty {
+                        Text("\(conversations.waiting.count) waiting").font(.system(size: 12)).foregroundStyle(.secondary)
+                            .help("Send to Several conversations that start as others end")
+                        Button("Cancel", action: conversations.cancelWaiting).font(.system(size: 12))
+                            .help("Drop the conversations that have not started; the others keep running")
+                            .accessibilityLabel("Cancel waiting conversations")
+                    }
+                }
+            }
+            .padding(.horizontal, 16).padding(.bottom, 8)
+        }
+    }
+}
+
+/// Marks a conversation whose turn ended while AI Chat did not show it, or a Send to Several or
+/// workspace conversation that stopped running then.
+private struct ACPUnreadDot: View {
+    var body: some View {
+        Circle().fill(.tint).frame(width: 6, height: 6).accessibilityHidden(true)
+    }
+}
+
+/// The account a conversation runs under. Nothing is shown for the provider's default login.
+private struct ACPAccountLabel: View {
+    let label: String
+    var body: some View {
+        Label(label, systemImage: "person.crop.circle").foregroundStyle(.secondary).lineLimit(1)
+            .accessibilityLabel("Account " + label)
+    }
+}
+
+/// Shown on a conversation whose last message reads as a provider's usage limit.
+private struct ACPLimitedLabel: View {
+    var body: some View {
+        Text("Limited").foregroundStyle(.orange).accessibilityHidden(true)
+    }
+}
+
+/// Observes only its own conversation, so a reply streaming in one button redraws that button.
+private struct ACPConversationTab: View {
+    @ObservedObject var model: ACPModel
+    let selected: Bool
+    let select: () -> Void
+    @Environment(\.volantTheme) private var theme
+    private var folder: String? { model.project.isEmpty ? nil : (model.project as NSString).lastPathComponent }
+    /// The workspace's branch, once read, for a conversation in its own workspace.
+    private var branch: String? { model.workspace == nil ? nil : model.workspaceState?.branch }
+    private var waiting: Bool { !model.state.permissions.isEmpty }
+    /// Provider, account, folder, branch, first question, marks and status, so VoiceOver tells the
+    /// buttons apart without the visual marks.
+    private var spokenLabel: String {
+        var parts = [model.providerTitle]
+        if let account = model.account { parts.append("account " + account.label) }
+        if let folder { parts.append(folder) }
+        if let branch { parts.append(branch) }
+        if let topic = model.topic { parts.append(topic) }
+        if model.unread { parts.append("Unread") }
+        if model.limited { parts.append("Limited") }
+        if model.taskMayHaveRun { parts.append("May have run") }
+        parts.append(waiting ? "Needs your permission" : model.state.status)
+        return parts.joined(separator: ", ")
+    }
+    var body: some View {
+        Button(action: select) {
+            HStack(spacing: 4) {
+                if model.unread { ACPUnreadDot() }
+                if waiting { Image(systemName: "hand.raised") }
+                else if model.state.busy { ProgressView().controlSize(.mini) }
+                Text(model.providerTitle).lineLimit(1)
+                if let account = model.account { ACPAccountLabel(label: account.label) }
+                if let folder { Text(folder).foregroundStyle(.secondary).lineLimit(1) }
+                if let branch { Text(branch).foregroundStyle(.secondary).lineLimit(1) }
+                if let topic = model.topic { Text(topic).foregroundStyle(.secondary).lineLimit(1) }
+                if model.limited { ACPLimitedLabel() }
+            }
+            .font(.system(size: 12))
+            .padding(.horizontal, 8).padding(.vertical, 4)
+            .background(selected ? theme.selection : theme.card(selected: false), in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .help(model.project.isEmpty ? model.providerTitle : model.project)
+        .accessibilityLabel(spokenLabel)
+        .accessibilityAddTraits(selected ? [.isSelected] : [])
+    }
+}
+
+/// The launcher's row for running conversations. With one running and none waiting it is the row
+/// Volant always showed; otherwise it stays one row, with a button per running or unread
+/// conversation and the number of Send to Several conversations waiting.
+struct ACPActivityStrip: View {
+    @ObservedObject var conversations: ACPConversations
+    /// Shows a conversation in AI Chat.
+    var open: (ACPModel) -> Void
+    var body: some View {
+        let listed = conversations.listed, waiting = conversations.waiting.count
+        if let only = listed.first, listed.count == 1, only.active, waiting == 0 {
+            ACPActivityRow(model: only) { open(only) }
+            Divider()
+        } else if !listed.isEmpty || waiting > 0 {
+            HStack {
+                Image(systemName: "bubble.left.and.bubble.right")
+                Text("AI Chat").fontWeight(.medium)
+                ForEach(listed) { conversation in
+                    ACPConversationBadge(model: conversation) { open(conversation) }
+                }
+                if waiting > 0 { Text("\(waiting) waiting").foregroundStyle(.secondary).lineLimit(1) }
+                Spacer()
+                // When the row runs short of width, the badges truncate before this button.
+                Button("Open conversation") { open(conversations.nextToOpen) }
+                    .buttonStyle(.plain).foregroundStyle(.secondary).layoutPriority(1)
+                    .help("Open a running conversation, the one waiting for your permission first")
+            }.font(.system(size: 12)).padding(.horizontal, 20).padding(.vertical, 8)
             Divider()
         }
+    }
+}
+
+private struct ACPActivityRow: View {
+    @ObservedObject var model: ACPModel
+    let open: () -> Void
+    var body: some View {
+        Button(action: open) {
+            HStack {
+                Image(systemName: model.state.permissions.isEmpty ? "bubble.left.and.bubble.right" : "hand.raised")
+                Text("AI Chat").fontWeight(.medium)
+                if model.unread { ACPUnreadDot() }
+                Text(model.providerTitle).foregroundStyle(.secondary).lineLimit(1).help(model.providerTitle)
+                if let account = model.account { ACPAccountLabel(label: account.label) }
+                if model.limited { ACPLimitedLabel() }
+                Text(model.state.status).foregroundStyle(.secondary).lineLimit(1)
+                Spacer()
+                Text("Open conversation").foregroundStyle(.secondary)
+            }.font(.system(size: 12)).padding(.horizontal, 20).padding(.vertical, 8)
+        }.buttonStyle(.plain)
+    }
+}
+
+private struct ACPConversationBadge: View {
+    @ObservedObject var model: ACPModel
+    let open: () -> Void
+    @Environment(\.volantTheme) private var theme
+    private var waiting: Bool { !model.state.permissions.isEmpty }
+    private var spokenLabel: String {
+        let account: String? = model.account.map { "account " + $0.label }
+        let parts: [String?] = [model.providerTitle, account, model.topic, model.unread ? "Unread" : nil, model.limited ? "Limited" : nil,
+                                model.taskMayHaveRun ? "May have run" : nil, waiting ? "Needs your permission" : model.state.status]
+        return parts.compactMap { $0 }.joined(separator: ", ")
+    }
+    var body: some View {
+        Button(action: open) {
+            HStack(spacing: 3) {
+                if model.unread { ACPUnreadDot() }
+                if waiting { Image(systemName: "hand.raised") }
+                Text(model.providerTitle).lineLimit(1)
+                if let account = model.account { ACPAccountLabel(label: account.label) }
+                if let topic = model.topic { Text(topic).foregroundStyle(.secondary).lineLimit(1) }
+                if model.limited { ACPLimitedLabel() }
+            }
+            .padding(.horizontal, 6).padding(.vertical, 2)
+            .background(theme.card(selected: false), in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .help(model.statusLine)
+        .accessibilityLabel(spokenLabel)
     }
 }
 

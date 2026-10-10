@@ -74,16 +74,27 @@ public struct ACPResumeRecord: Codable, Equatable {
     public var project: String
     public var sessionID: String
     public var savedAt: Date
+    /// The isolated workspace the conversation ran in; nil when it ran in the project itself. An
+    /// agent may keep its sessions by working folder, as Claude Code does, so a resume uses it.
+    public var workspace: String?
+    /// The account folder the conversation ran under; nil or "" for the provider's default login.
+    /// A record saved before accounts existed reads as the default login.
+    public var profile: String?
 
-    public init(provider: String, project: String, sessionID: String, savedAt: Date = Date()) {
+    public init(provider: String, project: String, sessionID: String, savedAt: Date = Date(), workspace: String? = nil, profile: String? = nil) {
         self.provider = provider
         self.project = project
         self.sessionID = sessionID
         self.savedAt = savedAt
+        self.workspace = workspace
+        self.profile = profile
     }
 
-    public func matches(provider: String, project: String) -> Bool {
-        self.provider == provider && self.project == project
+    /// Whether a new conversation with this provider, folder and account may continue this one.
+    /// `profile` is the account folder, or "" for the default login: a session another login
+    /// started is not offered.
+    public func matches(provider: String, project: String, profile: String) -> Bool {
+        self.provider == provider && self.project == project && (self.profile ?? "") == profile
     }
 
     /// Session IDs come from the agent, so a stored one is checked again before it is sent back:
@@ -95,8 +106,12 @@ public struct ACPResumeRecord: Codable, Equatable {
         }
     }
 
+    /// A recorded workspace is sent back to the helper as a working folder, and a recorded account
+    /// folder as a launch variable, so each must be an absolute path without NUL.
     public var isValid: Bool {
         ACPProvider(rawValue: provider) != nil && Self.isValidSessionID(sessionID)
+            && workspace.map { $0.hasPrefix("/") && !$0.contains("\0") } ?? true
+            && profile.map { $0.isEmpty || ($0.hasPrefix("/") && !$0.contains("\0")) } ?? true
     }
 }
 

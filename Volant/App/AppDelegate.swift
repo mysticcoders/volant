@@ -5,14 +5,19 @@ import VolantCore
 
 /// Owns the long-lived services: menu bar item, hotkeys, app index, clipboard monitor, and the panel.
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private lazy var settingsPanel: SettingsWindowController = SettingsWindowController(acp: panel.model.acp, openAI: { [weak self] configuration in
+    private lazy var settingsPanel: SettingsWindowController = SettingsWindowController(conversations: panel.model.conversations, openAI: { [weak self] configuration in
         guard let self else { return }
         self.settingsPanel.window?.orderOut(nil)
+        // A Send to Several conversation keeps its result, so another conversation starts beside it.
+        // At the live limit it is shown as it is, so the limit message never replaces its own.
+        if self.panel.model.acp.fanOutTarget, !self.panel.model.acp.active, self.panel.model.conversations.canStartAnother {
+            self.panel.model.conversations.newConversation(configuration: configuration)
+        }
         self.panel.model.acp.configure(configuration)
         if !self.panel.isVisible { self.panel.toggle() }
         self.panel.model.presentAIChat()
         self.panel.makeKeyAndOrderFront(nil)
-        if !self.panel.model.acp.active, !self.panel.model.acp.canResume { self.panel.model.acp.start() }
+        if !self.panel.model.acp.active, !self.panel.model.acp.canResume, !self.panel.model.acp.fanOutTarget { self.panel.model.acp.start() }
     }, onChange: { [weak self] in self?.reloadConfig(); self?.notesStore.reload() })
     private func showAISettings() {
         panel.orderOut(nil)
@@ -367,7 +372,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settingsPanel.refresh(config, apps: index.apps)
         registerHotKeys()
         panel.apply(config: config)
-        if let ai = try? AIConfiguration.load() { panel.model.acp.configure(ai) }
+        if let ai = try? AIConfiguration.load() { panel.model.conversations.apply(ai) }
         clipboardStore.retention = config.clipboardRetention
         settingsSync.update(enabled: config.syncSettingsWithICloud)
         currencyRates.keyChanged()

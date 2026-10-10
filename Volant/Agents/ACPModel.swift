@@ -6,6 +6,19 @@ import VolantCore
 final class ACPModel: ObservableObject {
     @Published var provider = "opencode"
     @Published var project = ""
+    /// The account this conversation runs under, or ran under once it has ended; nil for the
+    /// provider's default login. Each start sets it, so a transcript and its Limited stop keep the
+    /// account that produced them when the choice changes later. Before the first start it shows the
+    /// account that start will use. Settings that show an ended conversation under another provider
+    /// or connection show the account chosen for that one, and back under the provider and connection
+    /// it ran under it shows the account it ran under, so the provider shown and the account beside
+    /// it belong together.
+    @Published private(set) var account: ACPAccountProfile?
+    /// The account the next start uses: the choice for this conversation's provider in the settings
+    /// last applied.
+    private var nextAccount: ACPAccountProfile?
+    /// The provider, connection and account of the last start; nil before the first.
+    private var ranUnder: (provider: String, connection: AIConnectionKind, account: ACPAccountProfile?)?
     @Published var draft = ""
     /// Owner-chosen context for the next prompt. Kept in memory with the draft, cleared once sent.
     @Published private(set) var attachments: [ChatAttachment] = []
@@ -17,14 +30,34 @@ final class ACPModel: ObservableObject {
     @Published var error: String?
     @Published var submitting = false
     /// The last ACP conversation, kept on this Mac only so it can be resumed by its own ID.
-    @Published private(set) var resumable: ACPResumeRecord?
+    @Published private(set) var resumable: ACPResumeRecord? {
+        didSet { resumeWorkspaceGone = Self.workspaceMissing(resumable?.workspace) }
+    }
     private let resumeStore: UserDefaults
     static let resumeKey = "acp.lastConversation"
+    /// Whether the next new conversation runs in its own git worktree of `project`.
+    @Published var isolate = false
+    /// The git worktree this conversation runs in, kept after it ends so it can be removed. Set by
+    /// `connect` and removal; fixtures set it directly.
+    @Published var workspace: String?
+    /// The workspace's branch and change counts, read when the conversation becomes ready and after
+    /// each turn.
+    @Published var workspaceState: RepositoryState?
+    @Published private(set) var removingWorkspace = false
+    /// Read when the record or the conversation changes rather than on every redraw, since each
+    /// read the sandbox refuses is also logged.
+    private var resumeWorkspaceGone = false
 
     init(resumeStore: UserDefaults = .standard) {
         self.resumeStore = resumeStore
-        if let data = resumeStore.data(forKey: Self.resumeKey),
-           let record = try? JSONDecoder().decode(ACPResumeRecord.self, from: data), record.isValid { resumable = record }
+        resumable = Self.record(in: resumeStore)
+        resumeWorkspaceGone = Self.workspaceMissing(resumable?.workspace)
+    }
+    /// The stored record, read again each time: another conversation may have replaced it.
+    private static func record(in store: UserDefaults) -> ACPResumeRecord? {
+        guard let data = store.data(forKey: resumeKey),
+              let record = try? JSONDecoder().decode(ACPResumeRecord.self, from: data), record.isValid else { return nil }
+        return record
     }
     private var configuration = AIConfiguration()
     var credentials = AICredentials.keychain
@@ -41,22 +74,49 @@ final class ACPModel: ObservableObject {
         return usesAPI ? configuration.isConfigured : ACPProvider(rawValue: provider) != nil
     }
 
+    /// Ignored while the conversation runs, and for a Send to Several conversation, which keeps the
+    /// agent and folder that produced its transcript.
     func configure(_ value: AIConfiguration) {
-        guard !active else { return }
+        guard !active, !fanOutTarget else { return }
         configuration = value
         provider = value.provider; project = value.connection == .acp ? value.project : ""
+        nextAccount = value.connection == .acp ? value.account(for: value.provider) : nil
+        showAccount()
+        isolate = value.connection == .acp && !value.project.isEmpty && value.isolate
+    }
+    /// Points the next start at the account now chosen for this conversation's provider, whether it
+    /// runs or has ended, so after a changed choice or a removed account no later start or Resume
+    /// uses the earlier account. A running conversation keeps its launch and the account it shows,
+    /// and its provider and folder stay. Ignored for a Send to Several conversation, which keeps its
+    /// account as it keeps its agent and folder.
+    func followAccountChoice(_ value: AIConfiguration) {
+        guard !fanOutTarget, configuration.connection == .acp else { return }
+        nextAccount = value.account(for: provider)
+        if !active { showAccount() }
+    }
+    /// Shows the account of the last start while the conversation shows that start's provider and
+    /// connection, else the account its next start uses.
+    private func showAccount() {
+        if let ranUnder, ranUnder.provider == provider, ranUnder.connection == configuration.connection { account = ranUnder.account }
+        else { account = nextAccount }
     }
     /// Reopening an active chat must never replace its session or draft. A conversation that can be
-    /// resumed is offered instead of connecting, so opening the chat never replaces its record.
+    /// resumed is offered instead of connecting, so opening the chat never replaces its record, and
+    /// one that kept a workspace is shown as it is, so Remove Workspace stays within reach. So is a
+    /// Send to Several conversation, so its result is never replaced by a new conversation.
     @discardableResult func openChat(configuration: AIConfiguration?, connect: () -> Void) -> Bool {
-        if active { return true }
-        guard let configuration, configuration.isConfigured else { return false }
-        if configuration.connection == .byok {
-            do { guard let key = try credentials.read(configuration.http.credentialID), !key.isEmpty else { return false } }
-            catch { self.error = "Couldn’t read your API key. Open AI Settings to check it."; return false }
-        }
+        if active || fanOutTarget { return true }
+        guard let configuration, configuration.isConfigured, keyReady(for: configuration) else { return false }
         configure(configuration)
-        if !canResume { connect() }
+        if !canResume, workspace == nil { connect() }
+        return true
+    }
+    /// False for a BYOK connection without a stored key, so the caller opens AI Settings instead of
+    /// starting a conversation that fails; a key that can't be read is reported in `error`.
+    func keyReady(for configuration: AIConfiguration) -> Bool {
+        guard configuration.connection == .byok else { return true }
+        do { guard let key = try credentials.read(configuration.http.credentialID), !key.isEmpty else { return false } }
+        catch { self.error = "Couldn’t read your API key. Open AI Settings to check it."; return false }
         return true
     }
     private var connection: NSXPCConnection?
@@ -64,27 +124,171 @@ final class ACPModel: ObservableObject {
     private var generation = UUID()
     private var reading = false
     private var revision = 0
+    /// Set on every conversation except the one AI Chat shows. While an agent streams, each poll
+    /// decodes the whole transcript on the main thread, and six conversations polling every 0.25 s
+    /// would decode up to 24 transcripts a second, so a conversation in the background polls once a
+    /// second.
+    var background = false {
+        didSet { if background != oldValue, timer != nil { schedulePolling() } }
+    }
+    /// Seconds between snapshot reads.
+    var pollInterval: TimeInterval { background ? 1 : 0.25 }
+    /// The recorded session ID this conversation asked the agent to load. Several conversations
+    /// share one record, so a refused load clears it only while it still names this session.
+    var resumedSession: String?
+    /// Native session IDs that the launcher's other live conversations hold. Resume never loads one
+    /// of them, so one session never runs in two agent processes.
+    var sessionsElsewhere: () -> [String] = { [] }
+    /// Called with a session ID that can no longer resume: the agent refused to load it, or its
+    /// workspace was removed. Every conversation read the record when it was made, so the launcher
+    /// tells the others to stop offering that session too.
+    var resumeRefused: (String) -> Void = { _ in }
+    func forgetResume(of session: String) {
+        if resumable?.sessionID == session { resumable = nil }
+    }
+    /// The start of the owner's first message, which tells apart conversations started with the same
+    /// provider and folder; nil before the first turn.
+    var topic: String? {
+        guard let text = state.messages.first(where: { $0.role == "You" })?.text.trimmingCharacters(in: .whitespacesAndNewlines),
+              let line = text.split(whereSeparator: \.isNewline).first else { return nil }
+        return line.count > 24 ? String(line.prefix(23)) + "…" : String(line)
+    }
     var active: Bool { !["failed", "disconnected"].contains(state.phase) }
-    /// Resume is offered only for the provider and project currently chosen, so it can never
-    /// reopen a conversation in a folder the owner has since moved away from.
+    /// Resume is offered only for the provider, project and account currently chosen, so it can never
+    /// reopen a conversation in a folder the owner has since moved away from or under another login,
+    /// and not once its workspace is known to be gone or while it is being removed.
     var canResume: Bool {
-        !active && !usesAPI && !usesApple && resumable?.matches(provider: provider, project: project) == true
+        guard !active, !usesAPI, !usesApple, let record = resumable, record.matches(provider: provider, project: project, profile: profile),
+              !resumeWorkspaceGone, !removingWorkspace else { return false }
+        return !sessionsElsewhere().contains(record.sessionID)
+    }
+    /// Whether a recorded workspace is known to be gone. The sandboxed app may be refused even a look
+    /// at the helper's folder; that answer (EPERM) is unknown rather than missing, so Resume stays
+    /// offered and the helper reports a missing folder if there is one.
+    static func workspaceMissing(_ path: String?) -> Bool {
+        guard let path else { return false }
+        var info = stat()
+        if stat(path, &info) == 0 { return info.st_mode & S_IFMT != S_IFDIR }
+        return errno == ENOENT || errno == ENOTDIR
+    }
+    /// The account folder the next start sends to the helper, or "" for the default login.
+    var profile: String { nextAccount?.directory ?? "" }
+    /// What `connect` asks the helper for. A resume runs in the folder and under the account the
+    /// conversation ran in, since an agent may keep its sessions by working folder, as Claude Code
+    /// does, and keeps them with the login that started them.
+    enum HelperStart: Equatable {
+        case start(project: String, profile: String)
+        case isolated(project: String, profile: String)
+        case resume(folder: String, profile: String, session: String)
+    }
+    func helperStart(resume record: ACPResumeRecord?) -> HelperStart {
+        if let record { return .resume(folder: record.workspace ?? project, profile: record.profile ?? "", session: record.sessionID) }
+        return isolate ? .isolated(project: project, profile: profile) : .start(project: project, profile: profile)
     }
     var canSend: Bool { state.phase == "ready" && !submitting && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
-    func start() { connect(resume: nil) }
+    /// A prompt that a Send to Several conversation sends once, with copies of the attachments.
+    struct PendingPrompt: Equatable {
+        let text: String
+        let attachments: [ChatAttachment]
+    }
+    /// Set on a conversation that Send to Several started.
+    private(set) var fanOutTarget = false
+    /// A headless conversation is not shown when it starts, and ends its session once its first turn
+    /// is over, keeping its transcript in memory.
+    private(set) var headless = false
+    /// The prompt to send when this conversation is first ready. It is cleared before the helper is
+    /// asked, so no later snapshot, retry, reconnect or resume can send it again.
+    private(set) var pendingPrompt: PendingPrompt?
+    /// True from the moment the prompt goes to the helper until its turn is over. A failure in that
+    /// time may have come after the agent acted on it.
+    private(set) var promptInFlight = false
+    static let mayHaveRun = "This task may have run. It was not sent again."
+    /// Set when the conversation failed after its prompt went out; the view shows `mayHaveRun` after
+    /// the error. Kept apart from `error`, which attaching a note or removing the workspace replaces.
+    @Published private(set) var taskMayHaveRun = false
+    /// A turn ended while AI Chat did not show the conversation, or a Send to Several or workspace
+    /// conversation stopped running then. Cleared when it is shown.
+    @Published var unread = false
+    /// Whether AI Chat shows this conversation now: it is current, the launcher is open and AI Chat
+    /// is on screen. Set by the launcher's list.
+    var onScreen = false {
+        didSet { if onScreen, unread { unread = false } }
+    }
+    /// The last turn stopped, or the conversation failed, with a message that reads as a provider's
+    /// usage limit; the status keeps the provider's message.
+    var limited: Bool { !state.busy && ACPStopReason.isUsageLimit(state.status) }
+    /// The status as shown. A usage limit belongs to one login, so a Limited stop under an account
+    /// names the label of the account it ran under before the provider's message, also while the
+    /// settings show another provider's account.
+    var statusLine: String {
+        guard limited, let label = (ranUnder.map { $0.account } ?? account)?.label else { return state.status }
+        return label + ": " + state.status
+    }
+    /// How often the launcher has put this conversation back in its queue after the helper refused
+    /// it at its limit.
+    var limitRetries = 0
+    /// Where Send to Several queued this conversation, so one the helper refused goes back in its
+    /// place.
+    var queuePosition = 0
+    /// Called once a running conversation has ended or failed, with its status and error in place.
+    var ended: () -> Void = {}
+    /// Replaced in tests, so a pending prompt is sent without a helper connection.
+    var promptSender: ((String, [ChatAttachment], @escaping (String?) -> Void) -> Void)?
+    /// Replaced in tests: receives what the helper would be asked for, and no connection opens.
+    var connector: ((HelperStart) -> Void)?
+    /// Replaced in tests: answers each read in place of the helper, given the revision the read
+    /// asks after, so reads run without a connection.
+    var reader: ((Int, @escaping (Data?, Int, String?) -> Void) -> Void)?
 
-    func resume() {
-        guard canResume, let record = resumable else { return }
-        connect(resume: record.sessionID)
+    /// Makes this a Send to Several conversation that sends `prompt` once it is first ready. It
+    /// offers Resume only for a session it records itself, so it never loads another conversation's
+    /// session over its own transcript and workspace.
+    func assign(_ prompt: PendingPrompt, headless: Bool) {
+        fanOutTarget = true
+        self.headless = headless
+        pendingPrompt = prompt
+        resumable = nil
+    }
+    /// Drops a prompt that was never sent, so no later start of this conversation sends it.
+    func dropPendingPrompt() { pendingPrompt = nil }
+    /// Clears the draft and attachments Send to Several copied, unless the owner has changed them since.
+    func clearComposer(sent text: String, attachments sent: [ChatAttachment]) {
+        if draft == text { draft = "" }
+        if attachments == sent { attachments = [] }
     }
 
-    private func connect(resume session: String?) {
+    /// Does nothing while this conversation's workspace is being removed, since the removal reports
+    /// its result here.
+    func start() {
+        guard !removingWorkspace else { return }
+        resumedSession = nil
+        connect(resume: nil)
+    }
+
+    /// A resume loads an earlier conversation, so it never sends a Send to Several prompt.
+    func resume() {
+        guard canResume, let record = resumable else { return }
+        pendingPrompt = nil
+        resumedSession = record.sessionID
+        connect(resume: record)
+    }
+
+    private func connect(resume record: ACPResumeRecord?) {
         disconnect()
+        // A resume asks for the record's account folder, which `canResume` matched to this one.
+        account = nextAccount; ranUnder = (provider, configuration.connection, account)
+        workspace = record?.workspace; workspaceState = nil
         if usesApple { startApple(); return }
         if usesAPI { startAPI(); return }
-        let current = generation
-        state = ACPState(); state.phase = "starting"; state.status = session == nil ? "Connecting…" : "Restoring conversation…"; error = nil
+        let current = generation, request = helperStart(resume: record)
+        state = ACPState(); state.phase = "starting"; error = nil; taskMayHaveRun = false
+        switch request {
+        case .start: state.status = "Connecting…"
+        case .isolated: state.status = "Creating workspace…"
+        case .resume: state.status = "Restoring conversation…"
+        }
+        if let connector { connector(request); return }
         let connection = NSXPCConnection(serviceName: "com.mysticcoders.volant.AgentHost")
         connection.remoteObjectInterface = NSXPCInterface(with: VolantAgentHostProtocol.self)
         connection.invalidationHandler = { [weak self] in DispatchQueue.main.async { self?.failed("Agent helper disconnected. Start a new conversation to reconnect.", current: current) } }
@@ -95,24 +299,38 @@ final class ACPModel: ObservableObject {
                 guard let self, self.generation == current else { return }
                 if let error { self.failed(error, current: current); return }
                 self.read()
-                self.timer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in self?.read() }
+                self.schedulePolling()
             }
         }
-        if let session { proxy()?.acpResume(provider: provider, project: project, session: session, reply: started) }
-        else { proxy()?.acpStart(provider: provider, project: project, reply: started) }
+        switch request {
+        case .start(let folder, let profile): proxy()?.acpStart(provider: provider, project: folder, profile: profile, reply: started)
+        case .resume(let folder, let profile, let session):
+            proxy()?.acpResume(provider: provider, project: folder, profile: profile, session: session, reply: started)
+        case .isolated(let folder, let profile):
+            // A workspace made before a failed start is kept, so it is recorded either way.
+            proxy()?.acpStartIsolated(provider: provider, project: folder, profile: profile) { [weak self] path, error in
+                DispatchQueue.main.async { if let self, self.generation == current, let path { self.workspace = path } }
+                started(error)
+            }
+        }
     }
     /// Records a conversation once it is ready and holds an owner turn, so a session opened and left
     /// unused never replaces the record. A launch failure keeps the record, since the cause may be an
     /// expired provider login with the conversation still intact; an agent that refuses to load it
-    /// clears it.
+    /// clears it, unless another conversation has recorded its own since, and no conversation offers
+    /// that session again.
     func remember(_ snapshot: ACPState) {
         if snapshot.resumeRejected == true {
-            resumeStore.removeObject(forKey: Self.resumeKey); resumable = nil; return
+            if let rejected = resumedSession {
+                if Self.record(in: resumeStore)?.sessionID == rejected { resumeStore.removeObject(forKey: Self.resumeKey) }
+                resumeRefused(rejected)
+            }
+            resumable = nil; return
         }
         guard !usesAPI, !usesApple, snapshot.phase == "ready", let session = snapshot.sessionID,
               snapshot.messages.contains(where: { $0.role == "You" }) else { return }
-        let record = ACPResumeRecord(provider: provider, project: project, sessionID: session)
-        guard record.isValid, resumable?.sessionID != session || resumable?.matches(provider: provider, project: project) != true,
+        let record = ACPResumeRecord(provider: provider, project: project, sessionID: session, workspace: workspace, profile: account?.directory)
+        guard record.isValid, resumable?.sessionID != session || resumable?.matches(provider: provider, project: project, profile: record.profile ?? "") != true,
               let data = try? JSONEncoder().encode(record) else { return }
         resumeStore.set(data, forKey: Self.resumeKey)
         resumable = record
@@ -185,11 +403,17 @@ final class ACPModel: ObservableObject {
         } }
     }
     func disconnect() {
+        let old = state.phase
+        teardown()
+        phaseChanged(from: old)
+    }
+    private func teardown() {
         generation = UUID(); timer?.invalidate(); timer = nil; reading = false; submitting = false
         apple?.cancel(); apple = nil
         // Invalidation stops the provider even if it is waiting on a permission request.
         connection?.invalidate(); connection = nil
         state.phase = "disconnected"; state.status = "Conversation ended."; state.permissions = []; state.sessionID = nil
+        resumeWorkspaceGone = Self.workspaceMissing(resumable?.workspace)
     }
     deinit { timer?.invalidate(); connection?.invalidate() }
     private func proxy() -> VolantAgentHostProtocol? {
@@ -198,24 +422,40 @@ final class ACPModel: ObservableObject {
             DispatchQueue.main.async { self?.failed(error.localizedDescription, current: current) }
         } as? VolantAgentHostProtocol
     }
-    private func read() {
-        guard !reading, connection != nil else { return }
+    /// Asks the helper for its state after the revision this conversation holds, as each poll does.
+    /// Internal so tests can read where the poll timer would.
+    func read() {
+        guard !reading, connection != nil || reader != nil else { return }
         reading = true
         let current = generation, currentRevision = revision, known = usesAPI ? -1 : helperRevision
         let reply: (Data?, Int, String?) -> Void = { [weak self] data, snapshotRevision, error in DispatchQueue.main.async {
             guard let self, self.generation == current else { return }
             self.reading = false
             guard self.revision == currentRevision else { self.read(); return }
-            switch self.receive(data, revision: snapshotRevision, after: known) {
-            case .unchanged: return
-            case .stale: self.read(); return
-            case .invalid: self.failed(error ?? "Invalid conversation state from helper.", current: current); return
-            case .applied: break
-            }
-            if self.state.phase == "failed" || (self.usesAPI && self.state.phase == "ready") { self.timer?.invalidate(); self.timer = nil }
+            self.handleRead(data, revision: snapshotRevision, after: known, error: error)
         } }
-        if usesAPI { apiProxy()?.read { reply($0, -1, $1) } }
+        if let reader { reader(known, reply) }
+        else if usesAPI { apiProxy()?.read { reply($0, -1, $1) } }
         else { proxy()?.acpRead(after: known, reply: reply) }
+    }
+    /// What `read` does with each reply: applies it through `receive(_:revision:after:)`, reads
+    /// again after a stale reply, fails on an invalid one, and once a snapshot is applied runs the
+    /// rules that follow a change of phase. Internal so tests can drive a conversation with the
+    /// replies a helper would send.
+    @discardableResult func handleRead(_ data: Data?, revision snapshotRevision: Int, after known: Int, error: String? = nil) -> SnapshotResult {
+        let before = state.phase
+        let result = receive(data, revision: snapshotRevision, after: known)
+        switch result {
+        case .unchanged: break
+        case .stale: read()
+        case .invalid: failed(error ?? "Invalid conversation state from helper.", current: generation)
+        case .applied:
+            if Self.turnEnded(from: before, to: state.phase) { refreshWorkspace() }
+            if state.phase == "failed" { closeConnection() }
+            else if usesAPI && state.phase == "ready" { timer?.invalidate(); timer = nil }
+            phaseChanged(from: before)
+        }
+        return result
     }
     enum SnapshotResult { case applied, unchanged, stale, invalid }
     /// Applies one helper reply to a read that asked for changes after `known`. A reply without
@@ -229,6 +469,147 @@ final class ACPModel: ObservableObject {
         helperRevision = revision
         remember(snapshot)
         return .applied
+    }
+    /// The rules that follow a change of phase, run once the status and error of the change are in
+    /// place: the unread mark, the pending prompt's one send, the end of its turn, and the notice that
+    /// a running conversation ended.
+    private func phaseChanged(from old: String) {
+        let phase = state.phase
+        guard phase != old else { return }
+        let turnOver = ["working", "cancelling"].contains(old) && !["working", "cancelling"].contains(phase)
+        let stopped = !["failed", "disconnected"].contains(old) && !active
+        // Opening a plain conversation that stopped connects it again, which replaces what it showed,
+        // so only one that opens as it is, a Send to Several conversation or one with a workspace,
+        // is marked when it stops.
+        if !onScreen, turnOver || (stopped && (fanOutTarget || workspace != nil)) { unread = true }
+        var endsHeadless = false
+        if promptInFlight, turnOver || !active {
+            promptInFlight = false
+            // The status holds the failure, whether the helper reported it or the connection did.
+            if phase == "failed" { error = state.status; taskMayHaveRun = true }
+            else { endsHeadless = headless && phase == "ready" }
+        }
+        if phase == "ready", pendingPrompt != nil { sendPending() }
+        if stopped { ended() }
+        if endsHeadless { endHeadless(status: state.status == "Ready" ? "Finished after its first turn." : state.status) }
+    }
+    /// Sends the pending prompt the first time the conversation is ready, through the same helper
+    /// calls as Send. Each connection shapes the attachments for its own agent.
+    private func sendPending() {
+        guard let prompt = pendingPrompt else { return }
+        pendingPrompt = nil
+        promptInFlight = true
+        let current = generation
+        revision += 1
+        submitting = true
+        let reply: (String?) -> Void = { [weak self] error in
+            DispatchQueue.main.async {
+                guard let self, self.generation == current else { return }
+                self.submitting = false
+                if let error { self.promptRefused(error) } else { self.state.phase = "working" }
+                self.read()
+            }
+        }
+        if let promptSender { promptSender(prompt.text, prompt.attachments, reply); return }
+        guard !prompt.attachments.isEmpty, let data = try? JSONEncoder().encode(prompt.attachments) else {
+            proxy()?.acpPrompt(text: prompt.text, reply: reply); return
+        }
+        proxy()?.acpPromptWithContext(text: prompt.text, attachments: data, reply: reply)
+    }
+    /// The helper refused the prompt before the agent received it, so the task did not run.
+    private func promptRefused(_ message: String) {
+        promptInFlight = false
+        error = message
+        if headless { endHeadless(status: message) }
+    }
+    /// Ends a headless conversation once its first turn is over, keeping its transcript and showing
+    /// `status`, which holds the provider's message when the turn did not end normally.
+    private func endHeadless(status: String) {
+        let current = generation
+        stopSession { [weak self] in
+            guard let self, self.generation == current else { return }
+            let old = self.state.phase
+            self.teardown()
+            self.state.status = status
+            self.phaseChanged(from: old)
+        }
+    }
+    /// Stops the agent through the helper before the connection closes, so the helper has returned
+    /// this conversation's slot by the time the launcher starts a waiting conversation in its place.
+    /// `finish` may be called more than once and checks the generation itself; after 5 s it runs
+    /// whether or not the helper replied.
+    private func stopSession(then finish: @escaping () -> Void) {
+        guard let proxy = connection?.remoteObjectProxyWithErrorHandler({ _ in DispatchQueue.main.async(execute: finish) }) as? VolantAgentHostProtocol else {
+            finish(); return
+        }
+        proxy.acpStop { DispatchQueue.main.async(execute: finish) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: finish)
+    }
+    /// True when the conversation becomes ready or a turn ends.
+    static func turnEnded(from old: String, to new: String) -> Bool {
+        new == "ready" && ["starting", "working", "cancelling"].contains(old)
+    }
+    /// Reads the workspace's branch and change counts through this conversation's own connection.
+    private func refreshWorkspace() {
+        guard let workspace, let paths = try? JSONEncoder().encode([workspace]) else { return }
+        let current = generation
+        proxy()?.repositoryStates(paths: paths) { [weak self] data, _ in
+            let states = data.flatMap { try? JSONDecoder().decode([String: RepositoryState].self, from: $0) }
+            DispatchQueue.main.async {
+                guard let self, self.generation == current, self.workspace == workspace, let states else { return }
+                self.workspaceState = states[workspace]
+            }
+        }
+    }
+    /// Workspaces that the launcher's other live conversations run in. Another conversation can resume
+    /// a session in this conversation's workspace, so removal waits until none runs there.
+    var workspacesElsewhere: () -> [String] = { [] }
+    var canRemoveWorkspace: Bool {
+        guard !active, let workspace, !removingWorkspace else { return false }
+        return !workspacesElsewhere().contains(workspace)
+    }
+    /// Replaced in tests, so they never open a helper connection.
+    var worktreeRemover: (String, @escaping (String?, String?) -> Void) -> Void = ACPModel.removeWorktree
+    /// Removes the ended conversation's workspace. The helper refuses one with any change, and its
+    /// branch stays either way. The reply holds the model even if the conversation list drops it, so
+    /// the record is still cleared.
+    func removeWorkspace() {
+        guard canRemoveWorkspace, let path = workspace else { return }
+        removingWorkspace = true; error = nil; state.status = "Removing workspace…"
+        worktreeRemover(path) { branch, error in
+            DispatchQueue.main.async { self.workspaceRemoved(path, branch: branch, error: error) }
+        }
+    }
+    /// The helper replies with the kept branch, with an error, or with neither when no folder was left
+    /// at the path. Once the workspace is gone, a conversation that ran in it can no longer resume, so
+    /// its record is cleared here and in every other conversation.
+    func workspaceRemoved(_ path: String, branch: String?, error: String?) {
+        removingWorkspace = false
+        let shown = workspace == path && !active
+        if let error {
+            if shown { self.error = error; state.status = "Workspace kept." }
+            return
+        }
+        var sessions = Set<String>()
+        if let stored = Self.record(in: resumeStore), stored.workspace == path {
+            resumeStore.removeObject(forKey: Self.resumeKey); sessions.insert(stored.sessionID)
+        }
+        if let record = resumable, record.workspace == path { resumable = nil; sessions.insert(record.sessionID) }
+        sessions.forEach(resumeRefused)
+        guard shown else { return }
+        workspace = nil; workspaceState = nil
+        state.status = branch.map { "Removed the workspace. Its branch \($0) keeps its commits." } ?? "The workspace’s folder was already gone."
+    }
+    /// The conversation's own connection closed when it ended, so removal opens one of its own.
+    private static func removeWorktree(_ path: String, reply: @escaping (String?, String?) -> Void) {
+        let connection = NSXPCConnection(serviceName: "com.mysticcoders.volant.AgentHost")
+        connection.remoteObjectInterface = NSXPCInterface(with: VolantAgentHostProtocol.self)
+        connection.resume()
+        let failed = "Agent helper disconnected. Try again."
+        guard let proxy = connection.remoteObjectProxyWithErrorHandler({ _ in connection.invalidate(); reply(nil, failed) }) as? VolantAgentHostProtocol else {
+            connection.invalidate(); reply(nil, failed); return
+        }
+        proxy.removeWorktree(path: path) { branch, error in connection.invalidate(); reply(branch, error) }
     }
     private func startAPI() {
         let current = generation
@@ -284,16 +665,20 @@ final class ACPModel: ObservableObject {
             self.state.messages[index] = ACPMessage(id: self.state.messages[index].id, role: "Assistant", text: snapshot)
         }, finished: { [weak self] failure in
             guard let self, self.generation == current else { return }
+            let old = self.state.phase
             self.submitting = false
             self.state.phase = "ready"
             self.state.status = failure ?? "Ready."
             if let failure { self.error = failure }
+            self.phaseChanged(from: old)
         })
     }
 
-    private func startAPIPolling() {
+    private func startAPIPolling() { schedulePolling() }
+    /// Replaces the snapshot timer with one at this conversation's interval.
+    private func schedulePolling() {
         timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in self?.read() }
+        timer = Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { [weak self] _ in self?.read() }
     }
     private func apiProxy() -> VolantAIHostProtocol? {
         let current = generation
@@ -301,8 +686,19 @@ final class ACPModel: ObservableObject {
             self?.failed("AI helper disconnected. Connect again to start a new conversation.", current: current)
         } } as? VolantAIHostProtocol
     }
-    private func failed(_ message: String, current: UUID) {
-        guard generation == current else { return }
-        disconnect(); state.phase = "failed"; error = message; state.status = message
+    /// A failure the helper reports is the conversation's last snapshot. Closing the connection lets
+    /// the helper drop its side, while the transcript, status and error stay.
+    private func closeConnection() {
+        generation = UUID(); timer?.invalidate(); timer = nil; reading = false; submitting = false
+        connection?.invalidate(); connection = nil
     }
+    /// A conversation that already failed keeps its message and status.
+    private func failed(_ message: String, current: UUID) {
+        guard generation == current, state.phase != "failed" else { return }
+        let old = state.phase
+        teardown(); state.phase = "failed"; error = message; state.status = message
+        phaseChanged(from: old)
+    }
+    /// Fails the conversation as the helper would. Internal so tests can drive a failure.
+    func fail(_ message: String) { failed(message, current: generation) }
 }
