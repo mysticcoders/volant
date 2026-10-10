@@ -8,21 +8,25 @@ struct CaffeinateCommand: Hashable {
     let stop: Bool
     static let off = Self(minutes: nil, display: false, stop: true)
     var id: String { stop ? "off" : "\(minutes.map(String.init) ?? "unlimited"):\(display)" }
-    var title: String { stop ? "Stop Caffeinate" : "Caffeinate" + (display ? " & Keep Display Awake" : "") }
+    var title: String { stop ? "Stop Caffeinate" : "Caffeinate" + (display ? "" : " · Display May Sleep") }
     var detail: String { stop ? "Allow normal idle sleep" : minutes.map { "\($0) minutes" } ?? "Until stopped" }
 
     static func matches(_ query: String) -> Bool {
         query.lowercased().split(whereSeparator: \.isWhitespace).first == "caffeinate"
     }
+    /// Keeping the display awake is the default, as people expect from a caffeinate command: a dark
+    /// display that locks reads as sleep. A trailing `system` or `mac` keeps only the Mac awake and lets
+    /// the display sleep; a trailing `display` is still accepted for the default.
     static func parse(_ query: String) -> [Self] {
         var words = query.lowercased().split(whereSeparator: \.isWhitespace).map(String.init)
         guard words.first == "caffeinate" else { return [] }
         words.removeFirst()
         if words == ["off"] || words == ["stop"] { return [.off] }
-        let display = words.last == "display"
-        if display { words.removeLast() }
+        let modifier = words.last.flatMap { ["display", "system", "mac"].contains($0) ? $0 : nil }
+        if modifier != nil { words.removeLast() }
+        let display = modifier != "system" && modifier != "mac"
         if words.isEmpty {
-            let modes = display ? [true] : [false, true]
+            let modes = modifier == nil ? [true, false] : [display]
             return modes.flatMap { mode in
                 [15, 30, 60].map { Self(minutes: $0, display: mode, stop: false) } + [Self(minutes: nil, display: mode, stop: false)]
             }
