@@ -18,7 +18,7 @@ struct Note: Identifiable, Hashable {
     var modified: Date
     var readError: String?
     var stamp: NoteStamp?
-    private var heading = "Untitled"
+    private var heading = ""
     private var snippet = ""
 
     init(id: String, url: URL, text: String?, modified: Date, readError: String? = nil, stamp: NoteStamp? = nil) {
@@ -30,7 +30,7 @@ struct Note: Identifiable, Hashable {
         if let text { load(text) }
     }
 
-    var title: String { readError != nil ? url.lastPathComponent : heading }
+    var title: String { readError != nil ? url.lastPathComponent : heading.isEmpty ? "Untitled" : heading }
 
     var preview: String { readError ?? snippet }
 
@@ -45,8 +45,14 @@ struct Note: Identifiable, Hashable {
         text = nil
     }
 
-    /// Title from the first non-empty line without heading markers, preview from the second.
-    /// Scans only as far as those two lines; the preview is capped because rows show one line.
+    /// Whether the stored title or preview contains the term. Both are cut from lines of the text, so this is a
+    /// provisional full-text match shown at once; the background scan confirms it.
+    func summaryContains(_ term: String) -> Bool {
+        readError == nil && (heading.localizedCaseInsensitiveContains(term) || snippet.localizedCaseInsensitiveContains(term))
+    }
+
+    /// Title from the first non-empty line without heading markers (empty when there is none), preview from the
+    /// second. Scans only as far as those two lines; the preview is capped because rows show one line.
     static func summary(of text: String) -> (heading: String, snippet: String) {
         var lines: [String] = []
         var rest = text[...]
@@ -57,18 +63,29 @@ struct Note: Identifiable, Hashable {
             rest = end == rest.endIndex ? rest[end...] : rest[rest.index(after: end)...]
         }
         let cleaned = (lines.first ?? "").drop(while: { $0 == "#" }).trimmingCharacters(in: .whitespaces)
-        let heading = cleaned.isEmpty ? "Untitled" : String(cleaned.prefix(80))
-        return (heading, lines.count > 1 ? String(lines[1].prefix(previewLimit)) : "")
+        return (String(cleaned.prefix(80)), lines.count > 1 ? String(lines[1].prefix(previewLimit)) : "")
     }
+}
+
+/// Cancellation handle for one background notes search; a cancelled search never delivers results.
+final class NotesSearchTask {
+    private let lock = NSLock()
+    private var cancelled = false
+
+    func cancel() { lock.withLock { cancelled = true } }
+
+    var isCancelled: Bool { lock.withLock { cancelled } }
 }
 
 /// Plain Markdown files in a folder, one per note. Writes go through one serial queue; reload never
 /// discards an edit that has not reached disk yet. Only the open note and dirty notes keep their full
-/// text in memory; reload reuses notes whose modification date and size are unchanged, and search
-/// reads other files one at a time without retaining them.
+/// text in memory; reload reuses notes whose modification date and size are unchanged. Search answers
+/// at once from what is resident and reads other files on a background queue, one at a time.
 final class NotesStore: ObservableObject {
     static let unreadableMessage = "This note couldn’t be read as UTF-8 Markdown. Check the file’s access and encoding, then retry."
-    @Published private(set) var notes: [Note] = []
+    @Published private(set) var notes: [Note] = [] { didSet { generation += 1 } }
+    /// Changes whenever the list changes, so a background search started on an older list is redone.
+    private(set) var generation = 0
     @Published var lastError: String? = nil
     @Published private(set) var saveErrors: [String: String] = [:]
     @Published private(set) var loadError: String?
@@ -82,11 +99,16 @@ final class NotesStore: ObservableObject {
     private var pendingSave: [String: DispatchWorkItem] = [:]
     @Published private(set) var dirtyText: [String: String] = [:]
     private(set) var openID: String?
-    private var scannedTerm = ""
-    private var scanned: [String: (stamp: NoteStamp, matched: Bool)] = [:]
+    private let searchQueue = DispatchQueue(label: "com.mysticcoders.volant.notes.search", qos: .userInitiated)
+    private let searchReader: (URL) -> String?
+    private var scanned: [String: [String: (stamp: NoteStamp, matched: Bool)]] = [:]
+    private var scannedTerms: [String] = []
+    private static let rememberedTerms = 4
     private static let stampKeys: Set<URLResourceKey> = [.contentModificationDateKey, .fileSizeKey]
 
-    init(directory: URL? = nil) {
+    /// `searchReader` reads files for background search only; tests inject a slow or gated reader.
+    init(directory: URL? = nil, searchReader: @escaping (URL) -> String? = { try? String(contentsOf: $0, encoding: .utf8) }) {
+        self.searchReader = searchReader
         self.directory = directory ?? Preferences.supportDirectory.appendingPathComponent("Notes", isDirectory: true)
         try? FileManager.default.createDirectory(at: self.directory, withIntermediateDirectories: true)
         reload()
@@ -166,7 +188,7 @@ final class NotesStore: ObservableObject {
     /// Full Markdown for a note: resident text when loaded, otherwise read from disk without retaining it.
     func text(of id: String) -> String? {
         guard let note = notes.first(where: { $0.id == id }), note.readError == nil else { return nil }
-        return dirtyText[id] ?? note.text ?? (try? String(contentsOf: note.url, encoding: .utf8))
+        return dirtyText[id] ?? note.text ?? searchReader(note.url)
     }
 
     /// Filenames are unique by construction: a date prefix for humans, a UUID suffix for safety.
@@ -250,32 +272,86 @@ final class NotesStore: ObservableObject {
         }
     }
 
-    /// Notes whose full text contains the term, in list order, stopping at the limit. Unreadable notes match by filename.
+    /// Notes matching the term, in list order, up to the limit, without reading any file. Resident text, unreadable
+    /// filenames and remembered scan results are exact; other notes match provisionally by title or preview until
+    /// `searchFiles` reads them.
     func search(_ term: String, limit: Int = 8) -> [Note] {
         let t = term.trimmingCharacters(in: .whitespaces)
         guard !t.isEmpty else { return Array(notes.prefix(limit)) }
-        if t != scannedTerm {
-            scannedTerm = t
-            scanned = [:]
-        }
         var found: [Note] = []
         for note in notes {
             guard found.count < limit else { break }
-            if matches(note, t) { found.append(note) }
+            if knownMatch(note, t) ?? note.summaryContains(t) { found.append(note) }
         }
         return found
     }
 
-    /// Matches resident text in memory. Other notes are read one file at a time and released; the result is remembered
-    /// for the current term while the note's stamp is unchanged, so repeated renders of one query do not reread files.
-    private func matches(_ note: Note, _ term: String) -> Bool {
+    /// Completes `search` by reading the files whose match is unknown on a background queue, in list order, until
+    /// `limit` matches are certain. Delivers the final list on the main queue only if the returned task was not
+    /// cancelled; if the list changed meanwhile, the search is redone against the new list. Returns nil, and delivers
+    /// nothing, when no file needs reading, since `search` is already final.
+    @discardableResult
+    func searchFiles(_ term: String, limit: Int = 8, completion: @escaping ([Note]) -> Void) -> NotesSearchTask? {
+        let t = term.trimmingCharacters(in: .whitespaces)
+        guard !t.isEmpty, notes.contains(where: { knownMatch($0, t) == nil }) else { return nil }
+        let task = NotesSearchTask()
+        scan(t, limit: limit, task: task, completion: completion)
+        return task
+    }
+
+    /// Reads the undecided files for one search off the main queue and delivers the exact list if still wanted.
+    private func scan(_ t: String, limit: Int, task: NotesSearchTask, completion: @escaping ([Note]) -> Void) {
+        let plan = notes.map { note -> (id: String, url: URL, stamp: NoteStamp?, known: Bool?) in
+            (note.id, note.url, note.stamp, knownMatch(note, t))
+        }
+        guard plan.contains(where: { $0.known == nil }) else { completion(search(t, limit: limit)); return }
+        let generation = generation, read = searchReader
+        searchQueue.async { [weak self] in
+            var results: [String: (stamp: NoteStamp?, matched: Bool)] = [:]
+            var matches = 0
+            for entry in plan {
+                if matches >= limit || task.isCancelled { break }
+                if let known = entry.known {
+                    if known { matches += 1 }
+                    continue
+                }
+                let matched = autoreleasepool { read(entry.url)?.localizedCaseInsensitiveContains(t) ?? false }
+                results[entry.id] = (entry.stamp, matched)
+                if matched { matches += 1 }
+            }
+            DispatchQueue.main.async {
+                guard let self, !task.isCancelled else { return }
+                guard self.generation == generation else {
+                    self.scan(t, limit: limit, task: task, completion: completion)
+                    return
+                }
+                self.remember(results, for: t)
+                var found: [Note] = []
+                for note in self.notes {
+                    guard found.count < limit else { break }
+                    if self.knownMatch(note, t) ?? results[note.id]?.matched ?? false { found.append(note) }
+                }
+                completion(found)
+            }
+        }
+    }
+
+    /// An exact match decided without reading a file, or nil when the file must be read.
+    private func knownMatch(_ note: Note, _ term: String) -> Bool? {
         if note.readError != nil { return note.id.localizedCaseInsensitiveContains(term) }
         if let text = note.text { return text.localizedCaseInsensitiveContains(term) }
-        if let stamp = note.stamp, let cached = scanned[note.id], cached.stamp == stamp { return cached.matched }
-        let matched = autoreleasepool {
-            (try? String(contentsOf: note.url, encoding: .utf8))?.localizedCaseInsensitiveContains(term) ?? false
+        if let stamp = note.stamp, let cached = scanned[term]?[note.id], cached.stamp == stamp { return cached.matched }
+        return nil
+    }
+
+    /// Keeps scan results per file for the few most recent terms while each file's stamp is unchanged, so repeated
+    /// renders of one query do not reread the notebook. Only booleans are kept, never text.
+    private func remember(_ results: [String: (stamp: NoteStamp?, matched: Bool)], for term: String) {
+        scannedTerms.removeAll { $0 == term }
+        scannedTerms.append(term)
+        while scannedTerms.count > Self.rememberedTerms { scanned[scannedTerms.removeFirst()] = nil }
+        for (id, result) in results {
+            if let stamp = result.stamp { scanned[term, default: [:]][id] = (stamp, result.matched) }
         }
-        if let stamp = note.stamp { scanned[note.id] = (stamp, matched) }
-        return matched
     }
 }

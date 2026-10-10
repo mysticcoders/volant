@@ -47,6 +47,13 @@ func phase(_ name: String, units: Int = 0, _ body: () throws -> Void) rethrows {
     let elapsed = (ProcessInfo.processInfo.systemUptime - start) * 1000
     print("\(scenario),\(name),\(current.0),\(current.1),\(max(peak, current.0)),\(heap.size_in_use),\(String(format: "%.3f", elapsed)),\(units)")
 }
+/// Complete notes search: the immediate matches, then the background file scan, waited for on the main run loop.
+func searchAll(_ store: NotesStore, _ term: String) -> [Note] {
+    var result: [Note]?
+    guard store.searchFiles(term, limit: Int.max, completion: { result = $0 }) != nil else { return store.search(term, limit: Int.max) }
+    while result == nil { _ = RunLoop.main.run(mode: .default, before: Date().addingTimeInterval(0.01)) }
+    return result!
+}
 func settle(_ name: String) { phase(name) { Thread.sleep(forTimeInterval: 0.3) } }
 func clipboard(_ name: String = "clips") -> ClipboardStore {
     ClipboardStore(retention: 100, storageURL: root.appendingPathComponent(name + ".sqlite"), encryptionKey: SymmetricKey(size: .bits256))
@@ -138,8 +145,12 @@ case "notes", "notes-small":
     for batch in 1...3 {
         phase("reload_\(batch)", units: count) { store!.reload(); precondition(store!.search("profiling").count == 8) }
     }
+    let typed = "absent fixture phrase"
+    phase("main_thread_keystrokes_10", units: 10) {
+        for length in 12...21 { autoreleasepool { precondition(store!.search(String(typed.prefix(length))).isEmpty) } }
+    }
     phase("search_absent_3", units: count) {
-        for _ in 0..<3 { autoreleasepool { precondition(store!.search("absent fixture phrase", limit: Int.max).isEmpty) } }
+        for _ in 0..<3 { autoreleasepool { precondition(searchAll(store!, "absent fixture phrase").isEmpty) } }
     }
     store = nil; settle("released")
 case "acp":

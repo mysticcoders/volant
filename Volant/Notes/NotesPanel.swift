@@ -146,8 +146,17 @@ final class NotesModel: ObservableObject {
     }
     @Published var editing = true
     @Published var liveMode = true
-    @Published var filter = ""
+    @Published var filter = "" { didSet { if filter != oldValue { searchFiles() } } }
     @Published var toast: String?
+    @Published private var fileMatches: FileMatches?
+    private var fileSearch: NotesSearchTask?
+
+    /// Full-text matches for one filter, valid while the store's list is unchanged.
+    private struct FileMatches {
+        let filter: String
+        let generation: Int
+        let notes: [Note]
+    }
     @Published var overlay: Overlay?
     @Published private(set) var pinned: Set<String>
     private var preferenceKey: String { "notes." + store.directory.path }
@@ -161,8 +170,13 @@ final class NotesModel: ObservableObject {
         store.open(selectedID)
     }
 
+    /// Browse results: matches available at once, replaced by the background full-text matches for the same
+    /// filter when they arrive. Pinned notes lead, then the most recently modified.
     var filtered: [Note] {
-        store.search(filter, limit: Int.max).sorted {
+        let found: [Note]
+        if let matches = fileMatches, matches.filter == filter, matches.generation == store.generation { found = matches.notes }
+        else { found = store.search(filter, limit: Int.max) }
+        return found.sorted {
             let left = pinned.contains($0.id), right = pinned.contains($1.id)
             if left != right { return left }
             if $0.modified != $1.modified { return $0.modified > $1.modified }
@@ -177,6 +191,18 @@ final class NotesModel: ObservableObject {
     /// Whether a shortcut's control is enabled in the current state.
     func isAvailable(_ shortcut: NotesShortcut) -> Bool {
         !shortcut.actsOnSelectedNote || noteCommandsAvailable
+    }
+
+    /// Cancels the previous filter's file scan and starts one for the current filter; results for a filter that
+    /// has since changed are dropped.
+    private func searchFiles() {
+        fileSearch?.cancel()
+        fileMatches = nil
+        let filter = filter
+        fileSearch = store.searchFiles(filter, limit: Int.max) { [weak self] notes in
+            guard let self, self.filter == filter else { return }
+            self.fileMatches = FileMatches(filter: filter, generation: self.store.generation, notes: notes)
+        }
     }
 
     func selectIfNeeded() {
@@ -458,6 +484,7 @@ struct NotesPicker: View {
     @ObservedObject var model: NotesModel
     @ObservedObject var store: NotesStore
     @State private var selection = 0
+    @State private var shownFilter = ""
     @FocusState private var searchFocused: Bool
     @Environment(\.volantTheme) private var theme
 
@@ -552,9 +579,18 @@ struct NotesPicker: View {
         .background(theme.raisedSurface)
         .onAppear { searchFocused = true }
         .onChange(of: model.filter) { _, _ in selection = 0 }
+        .onChange(of: entries.map(\.id)) { old, new in keepSelection(old, new) }
         .onChange(of: model.overlay) { _, _ in selection = 0; searchFocused = true }
         .onKeyPress(.downArrow) { selection = min(selection + 1, max(0, entries.count - 1)); return .handled }
         .onKeyPress(.upArrow) { selection = max(0, selection - 1); return .handled }
+    }
+
+    /// Keeps the highlighted entry by identity when full-text matches arrive for the same filter; a new filter
+    /// starts again at the first entry.
+    private func keepSelection(_ old: [String], _ new: [String]) {
+        guard model.filter == shownFilter else { shownFilter = model.filter; return }
+        if old.indices.contains(selection), let index = new.firstIndex(of: old[selection]) { selection = index }
+        else { selection = min(selection, max(0, new.count - 1)) }
     }
 
     private func activate(_ index: Int? = nil) {

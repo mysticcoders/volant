@@ -11,8 +11,8 @@ final class NotesStoreTests: XCTestCase {
         store.update(note.id, text: "# Groceries\nmilk\neggs")
         store.flush()
         XCTAssertEqual(try String(contentsOf: note.url, encoding: .utf8), "# Groceries\nmilk\neggs")
-        XCTAssertEqual(store.search("eggs").count, 1)
-        XCTAssertEqual(store.search("bread").count, 0)
+        XCTAssertEqual(fullSearch(store, "eggs").count, 1)
+        XCTAssertEqual(fullSearch(store, "bread").count, 0)
         store.delete(note.id)
         XCTAssertTrue(store.notes.isEmpty)
         try? FileManager.default.removeItem(at: dir)
@@ -94,6 +94,79 @@ final class NotesStoreTests: XCTestCase {
         return dir
     }
 
+    /// The full-text definition search had before lazy loading: every note's current text, in list order.
+    private func reference(_ store: NotesStore, _ term: String) -> [String] {
+        let t = term.trimmingCharacters(in: .whitespaces)
+        return store.notes.filter { note in
+            if note.readError != nil { return note.id.localizedCaseInsensitiveContains(t) }
+            let text = store.dirtyText[note.id] ?? (try? String(contentsOf: note.url, encoding: .utf8)) ?? ""
+            return text.localizedCaseInsensitiveContains(t)
+        }.map(\.id)
+    }
+
+    /// Runs the complete search: the immediate matches, then the background file scan when one is needed.
+    private func fullSearch(_ store: NotesStore, _ term: String, limit: Int = 8) -> [String] {
+        var result = store.search(term, limit: limit).map(\.id)
+        let done = expectation(description: "Search \(term)")
+        if store.searchFiles(term, limit: limit, completion: { result = $0.map(\.id); done.fulfill() }) == nil { done.fulfill() }
+        wait(for: [done], timeout: 5)
+        return result
+    }
+
+    /// Writes fictional notes with a body-only phrase in every third note and a known order.
+    private func bodyFixture(count: Int) throws -> URL {
+        var files: [String: String] = [:]
+        for index in 0..<count {
+            files["n\(index).md"] = "# Note \(index)\nfirst line\n" + (index % 3 == 0 ? "hidden phrase \(index)\n" : "nothing here\n")
+        }
+        let dir = try fixture(files)
+        for index in 0..<count { try touch(dir.appendingPathComponent("n\(index).md"), Double(10_000 - index)) }
+        return dir
+    }
+
+    func testImmediateSearchNeverReadsFilesAndTheScanRunsOffTheMainThread() throws {
+        let dir = try bodyFixture(count: 12)
+        let reads = NSLock()
+        var readThreads: [Bool] = []
+        let store = NotesStore(directory: dir, searchReader: { url in
+            reads.withLock { readThreads.append(Thread.isMainThread) }
+            Thread.sleep(forTimeInterval: 0.05)
+            return try? String(contentsOf: url, encoding: .utf8)
+        })
+        let started = Date()
+        XCTAssertEqual(store.search("hidden phrase", limit: Int.max).map(\.id), [])
+        XCTAssertEqual(store.search("note 1", limit: Int.max).map(\.id), ["n1.md", "n10.md", "n11.md"], "Titles match at once")
+        XCTAssertLessThan(Date().timeIntervalSince(started), 0.3, "The immediate search does not wait for a reader")
+        XCTAssertTrue(reads.withLock { readThreads.isEmpty })
+        XCTAssertEqual(fullSearch(store, "hidden phrase", limit: Int.max), reference(store, "hidden phrase"))
+        XCTAssertEqual(fullSearch(store, "hidden phrase"), ["n0.md", "n3.md", "n6.md", "n9.md"])
+        XCTAssertFalse(reads.withLock { readThreads.contains(true) }, "Files are read only on the background queue")
+    }
+
+    func testCancelledOrStaleScansDeliverNothingAndListChangesRedoTheScan() throws {
+        let dir = try bodyFixture(count: 6)
+        let gate = DispatchSemaphore(value: 0)
+        let store = NotesStore(directory: dir, searchReader: { url in
+            gate.wait()
+            gate.signal()
+            return try? String(contentsOf: url, encoding: .utf8)
+        })
+        let stale = expectation(description: "Cancelled scan")
+        stale.isInverted = true
+        let first = try XCTUnwrap(store.searchFiles("hidden phrase", limit: Int.max) { _ in stale.fulfill() })
+        first.cancel()
+        var latest: [String] = []
+        let answered = expectation(description: "Current scan")
+        XCTAssertNotNil(store.searchFiles("nothing here", limit: Int.max) { latest = $0.map(\.id); answered.fulfill() })
+        try "# Arrived later\nfirst line\nnothing here".write(to: dir.appendingPathComponent("z.md"), atomically: true, encoding: .utf8)
+        try touch(dir.appendingPathComponent("z.md"), 20_000)
+        store.reload()
+        gate.signal()
+        wait(for: [answered, stale], timeout: 2)
+        XCTAssertEqual(latest, reference(store, "nothing here"))
+        XCTAssertEqual(latest.first, "z.md", "A scan planned on the old list is redone for the new one")
+    }
+
     /// Sets a file's modification date so ordering and change detection are deterministic.
     private func touch(_ url: URL, _ seconds: TimeInterval) throws {
         try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: seconds)], ofItemAtPath: url.path)
@@ -111,7 +184,8 @@ final class NotesStoreTests: XCTestCase {
         XCTAssertEqual(store.notes.map(\.title), ["Trip plan", "Recipes", "Untitled"])
         XCTAssertEqual(store.notes.map(\.preview), ["Pack the blue bag", "Lemon cake", ""])
         XCTAssertTrue(store.notes.allSatisfy { $0.text == nil })
-        XCTAssertEqual(store.search("FERRY").map(\.id), ["a.md"])
+        XCTAssertEqual(store.search("FERRY").map(\.id), [], "Body text is not read on the calling thread")
+        XCTAssertEqual(fullSearch(store, "FERRY"), ["a.md"])
         XCTAssertTrue(store.notes.allSatisfy { $0.text == nil })
         XCTAssertEqual(store.text(of: "b.md"), "\n\n  ## Recipes  \n\n  Lemon cake  \nflour")
 
@@ -161,15 +235,10 @@ final class NotesStoreTests: XCTestCase {
         model.select("n5.md")
         store.update("n7.md", text: "# Note 7\nnow mentions résumé")
         for term in ["résumé", "RESUME", "marker 3", "note", "filler", "broken", "absent", " plain "] {
-            let t = term.trimmingCharacters(in: .whitespaces)
-            let expected = store.notes.filter { note in
-                if note.readError != nil { return note.id.localizedCaseInsensitiveContains(t) }
-                let text = store.dirtyText[note.id] ?? (try? String(contentsOf: note.url, encoding: .utf8)) ?? ""
-                return text.localizedCaseInsensitiveContains(t)
-            }.map(\.id)
-            XCTAssertEqual(store.search(term, limit: Int.max).map(\.id), expected, term)
-            XCTAssertEqual(store.search(term).map(\.id), Array(expected.prefix(8)), term)
-            XCTAssertEqual(store.search(term, limit: Int.max).map(\.id), expected, "Cached \(term)")
+            let expected = reference(store, term)
+            XCTAssertEqual(fullSearch(store, term, limit: Int.max), expected, term)
+            XCTAssertEqual(fullSearch(store, term), Array(expected.prefix(8)), term)
+            XCTAssertEqual(store.search(term, limit: Int.max).map(\.id), expected, "Remembered \(term)")
         }
         XCTAssertEqual(Set(store.notes.filter { $0.text != nil }.map(\.id)), ["n5.md", "n7.md"])
         store.flush()
@@ -204,9 +273,12 @@ final class NotesStoreTests: XCTestCase {
         for text in samples {
             let lines = text.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
             let cleaned = (lines.first ?? "").drop(while: { $0 == "#" }).trimmingCharacters(in: .whitespaces)
-            let summary = Note.summary(of: text)
-            XCTAssertEqual(summary.heading, cleaned.isEmpty ? "Untitled" : String(cleaned.prefix(80)), text)
-            XCTAssertEqual(summary.snippet, lines.dropFirst().first.map { String($0.prefix(Note.previewLimit)) } ?? "", text)
+            var note = Note(id: "sample.md", url: URL(fileURLWithPath: "/fixture/sample.md"), text: text, modified: .distantPast)
+            XCTAssertEqual(note.title, cleaned.isEmpty ? "Untitled" : String(cleaned.prefix(80)), text)
+            XCTAssertEqual(note.preview, lines.dropFirst().first.map { String($0.prefix(Note.previewLimit)) } ?? "", text)
+            note.unload()
+            XCTAssertEqual(note.title, cleaned.isEmpty ? "Untitled" : String(cleaned.prefix(80)), "Kept after unloading \(text)")
+            XCTAssertEqual(note.summaryContains("Untitled"), false, "The placeholder title is not note text")
         }
     }
 }
