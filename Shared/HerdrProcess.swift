@@ -6,6 +6,17 @@ import VolantCore
 enum HerdrProcess {
     static func run(executable: URL, arguments: [String], home: String, timeout: TimeInterval = 8,
                     directory: String? = nil, environment: [String: String]? = nil) throws -> Data {
+        let result = try runStatus(executable: executable, arguments: arguments, home: home, timeout: timeout,
+                                   directory: directory, environment: environment)
+        guard result.status == 0 else { throw unavailable }
+        return result.output
+    }
+
+    /// The same bounded run, returning a non-zero exit status instead of throwing, for commands such
+    /// as `git config --get-regexp` that exit 1 to mean "nothing matched". Throws on a timeout or
+    /// on output past the limit.
+    static func runStatus(executable: URL, arguments: [String], home: String, timeout: TimeInterval = 8,
+                          directory: String? = nil, environment: [String: String]? = nil) throws -> (status: Int32, output: Data) {
         let task = Process(), output = Pipe(), capture = HerdrOutput()
         task.executableURL = executable
         task.arguments = arguments
@@ -25,22 +36,26 @@ enum HerdrProcess {
             try? output.fileHandleForReading.close()
         }
         try task.run()
+        // The child's process group is signaled too, so what the child started, such as the checkout
+        // that `git worktree add` runs, stops with it. Process makes the child a group leader on Linux;
+        // where it does not, no group has that ID and the call does nothing.
         let deadline = DispatchWorkItem {
-            if task.isRunning { capture.fail(); task.terminate() }
+            if task.isRunning { capture.fail(); kill(-task.processIdentifier, SIGTERM); task.terminate() }
         }
         let killDeadline = DispatchWorkItem {
-            if task.isRunning { capture.fail(); kill(task.processIdentifier, SIGKILL) }
+            if task.isRunning { capture.fail(); kill(-task.processIdentifier, SIGKILL); kill(task.processIdentifier, SIGKILL) }
         }
         DispatchQueue.global().asyncAfter(deadline: .now() + timeout, execute: deadline)
         DispatchQueue.global().asyncAfter(deadline: .now() + timeout + 1, execute: killDeadline)
         defer { deadline.cancel(); killDeadline.cancel() }
         task.waitUntilExit()
-        guard capture.finished.wait(timeout: .now() + 1) == .success,
-              task.terminationStatus == 0, let data = capture.result() else {
-            throw NSError(domain: "VolantHerdrProcess", code: 1,
-                          userInfo: [NSLocalizedDescriptionKey: "Herdr is unavailable or the connection timed out."])
-        }
-        return data
+        guard capture.finished.wait(timeout: .now() + 1) == .success, let data = capture.result() else { throw unavailable }
+        return (task.terminationStatus, data)
+    }
+
+    private static var unavailable: NSError {
+        NSError(domain: "VolantHerdrProcess", code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "Herdr is unavailable or the connection timed out."])
     }
 }
 
