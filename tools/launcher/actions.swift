@@ -688,6 +688,33 @@ try render("ai-acp-resume", view: resumeChat)
 resumeChatWindow.orderOut(nil)
 UserDefaults().removePersistentDomain(forName: resumeSuite)
 print("PASS: a recorded ACP conversation offers Resume and New without connecting")
+// An ended conversation in its own workspace. The workspace is a temporary folder, so Resume's
+// check finds it; no helper connection opens.
+let workspaceSuite = "volant.actions.fixture.acp-workspace"
+UserDefaults().removePersistentDomain(forName: workspaceSuite)
+let workspaceStore = UserDefaults(suiteName: workspaceSuite)!
+let workspaceFolder = FileManager.default.temporaryDirectory.appendingPathComponent("volant-fixture-orbit-web-3f9c2a1b")
+try FileManager.default.createDirectory(at: workspaceFolder, withIntermediateDirectories: true)
+workspaceStore.set(try JSONEncoder().encode(ACPResumeRecord(provider: "claude", project: "/fictional/orbit-web", sessionID: "fictional-session",
+                                                            workspace: workspaceFolder.path)), forKey: ACPModel.resumeKey)
+let workspaceModel = ACPModel(resumeStore: workspaceStore)
+var workspaceConfig = AIConfiguration(); workspaceConfig.provider = "claude"; workspaceConfig.project = "/fictional/orbit-web"; workspaceConfig.isolate = true
+workspaceModel.configure(workspaceConfig)
+workspaceModel.workspace = workspaceFolder.path
+workspaceModel.workspaceState = RepositoryState(branch: "volant/3f9c2a1b", ahead: 2)
+workspaceModel.state.status = "Conversation ended."
+workspaceModel.state.messages = [ACPMessage(role: "You", text: "Add a fictional changelog entry."),
+                                 ACPMessage(role: "Agent", text: "Committed the entry on **volant/3f9c2a1b**.")]
+verify(workspaceModel.isolate && workspaceModel.canRemoveWorkspace && workspaceModel.canResume, "An ended isolated conversation offers Remove Workspace and Resume")
+let workspaceChat = NSHostingView(rootView: ACPConversationView(model: workspaceModel)
+    .background(Color(nsColor: .windowBackgroundColor)))
+let workspaceChatWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 740, height: 450), styleMask: [.titled], backing: .buffered, defer: false)
+workspaceChatWindow.contentView = workspaceChat; workspaceChatWindow.makeKeyAndOrderFront(nil); settle()
+try render("ai-acp-workspace", view: workspaceChat)
+workspaceChatWindow.orderOut(nil)
+try? FileManager.default.removeItem(at: workspaceFolder)
+UserDefaults().removePersistentDomain(forName: workspaceSuite)
+print("PASS: an ended isolated conversation shows its branch and offers Remove Workspace without a helper connection")
 // Several conversations in one list. Starting one only marks it ready, so no helper connection opens.
 let severalSuite = "volant.actions.fixture.acp-several"
 UserDefaults().removePersistentDomain(forName: severalSuite)

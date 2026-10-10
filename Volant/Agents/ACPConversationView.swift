@@ -29,20 +29,14 @@ struct ACPConversationView: View {
                 if let caffeinate { CaffeinateStatusView(service: caffeinate) }
                 Text("AI Chat").fontWeight(.medium)
                 Text(model.providerTitle).foregroundStyle(.secondary).lineLimit(1).help(model.providerTitle)
-                if !model.project.isEmpty {
-                    Label((model.project as NSString).lastPathComponent, systemImage: "folder")
-                        .foregroundStyle(.secondary).lineLimit(1).help(model.project)
-                }
+                folderLabel
                 Spacer(minLength: 4)
                 Button("Settings", action: settings)
                 if model.active {
                     if let conversations { ACPNewConversationButton(conversations: conversations, action: newConversation) }
                     Button("End", action: model.disconnect)
                 }
-                else {
-                    if model.canResume { Button("Resume", action: model.resume).help("Continue your last conversation with this provider and folder") }
-                    Button(model.canResume ? "New" : "Connect", action: model.start).disabled(!model.configured)
-                }
+                else { endedActions }
             }.padding(.horizontal, 16).padding(.vertical, 8)
             if let conversations { ACPConversationTabs(conversations: conversations, select: select) }
             Divider()
@@ -141,6 +135,27 @@ struct ACPConversationView: View {
         .onChange(of: focusRequest) { _, value in editorFocus = value }
     }
 
+    /// A conversation in its own workspace shows that workspace's branch and change counts, or its
+    /// folder name until they are read.
+    @ViewBuilder private var folderLabel: some View {
+        if let workspace = model.workspace {
+            Label(model.workspaceState?.summary ?? (workspace as NSString).lastPathComponent, systemImage: "arrow.triangle.branch")
+                .foregroundStyle(.secondary).lineLimit(1).help(workspace)
+        } else if !model.project.isEmpty {
+            Label((model.project as NSString).lastPathComponent, systemImage: "folder")
+                .foregroundStyle(.secondary).lineLimit(1).help(model.project)
+        }
+    }
+
+    @ViewBuilder private var endedActions: some View {
+        if model.workspace != nil {
+            Button("Remove Workspace", action: model.removeWorkspace).disabled(!model.canRemoveWorkspace)
+                .help("Delete this conversation’s workspace folder if it has no changes; its branch and commits stay")
+        }
+        if model.canResume { Button("Resume", action: model.resume).help("Continue your last conversation with this provider and folder") }
+        Button(model.canResume ? "New" : "Connect", action: model.start).disabled(!model.configured || model.removingWorkspace)
+    }
+
     /// Choosing removes the @ that opened the picker, if it is still where it was typed.
     private func attach(_ attachment: ChatAttachment) {
         if model.attach(attachment), let location = mentionLocation {
@@ -204,12 +219,15 @@ private struct ACPConversationTab: View {
     let select: () -> Void
     @Environment(\.volantTheme) private var theme
     private var folder: String? { model.project.isEmpty ? nil : (model.project as NSString).lastPathComponent }
+    /// The workspace's branch, once read, for a conversation in its own workspace.
+    private var branch: String? { model.workspace == nil ? nil : model.workspaceState?.branch }
     private var waiting: Bool { !model.state.permissions.isEmpty }
-    /// Provider, folder, first question and status, so VoiceOver tells the buttons apart without the
-    /// visual marks.
+    /// Provider, folder, branch, first question and status, so VoiceOver tells the buttons apart
+    /// without the visual marks.
     private var spokenLabel: String {
         var parts = [model.providerTitle]
         if let folder { parts.append(folder) }
+        if let branch { parts.append(branch) }
         if let topic = model.topic { parts.append(topic) }
         parts.append(waiting ? "Needs your permission" : model.state.status)
         return parts.joined(separator: ", ")
@@ -221,6 +239,7 @@ private struct ACPConversationTab: View {
                 else if model.state.busy { ProgressView().controlSize(.mini) }
                 Text(model.providerTitle).lineLimit(1)
                 if let folder { Text(folder).foregroundStyle(.secondary).lineLimit(1) }
+                if let branch { Text(branch).foregroundStyle(.secondary).lineLimit(1) }
                 if let topic = model.topic { Text(topic).foregroundStyle(.secondary).lineLimit(1) }
             }
             .font(.system(size: 12))

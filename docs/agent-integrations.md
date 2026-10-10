@@ -208,6 +208,7 @@ Every process Volant spawns receives an explicit, complete environment built by 
 - Herdr CLI: `~/.local/bin`, Homebrew and system folders without `sbin`, plus `SSH_AUTH_SOCK` when the helper has one, for saved remote machines.
 - Apple tools (`/usr/bin/shortcuts` in the agent helper, `/usr/bin/pmset` in the app): system folders only.
 - git status for change counts keeps its own `LC_ALL=C` environment (`RepositoryStatusCommand.environment`).
+- git calls that create or remove an isolated workspace: the same `LC_ALL=C` environment plus `GIT_CONFIG_NOSYSTEM=1` and, except for removal's read of the owner's `core.excludesFile`, `GIT_CONFIG_GLOBAL=/dev/null` (see Isolated workspaces).
 
 The fixed locale is intentional. Volant reads ACP JSON-RPC, Herdr JSON and the Shortcuts identifier listing as machine-readable output, so the child needs a UTF-8 codeset that is guaranteed to exist: without `LANG`, many tools fall back to the ASCII C locale and mangle non-ASCII project names, prompts and shortcut names. `Locale.current` is not used because its identifiers (for example `en_DE` or `zh-Hans_CN`) do not map one to one onto installed POSIX locales; an unknown value makes tools print `setlocale` warnings and still fall back to C, and the same input would behave differently on different Macs. An agent's reply language is set by the prompt and the provider, not chiefly by `LANG`; the locale mainly affects formatting inside tool output. git uses `C` instead because its porcelain parsing must be byte-stable and its messages are never shown.
 
@@ -287,3 +288,109 @@ passed, those 12 tests and the ACP check included; the UI job, which renders
 the 5 above included. Volant's PR checks build Core but do not run its package tests. Not verified:
 several live conversations with real providers in the signed installed app, and the conversation
 buttons, the launcher row and the AI Settings count inspected in light and dark renders.
+
+## Isolated workspaces — October 10, 2026
+
+An ACP agent edits the working folder chosen in Settings in place, so two conversations on one
+folder, or an agent and the owner's uncommitted work, change the same checkout.
+
+**Setting.** Once a working folder is chosen, Settings → AI (ACP) shows "Isolated workspace" under
+it. `AIConfiguration.isolate` is off by default and ignored without a folder or for a connection
+other than ACP. With it on, each new conversation runs in its own git worktree of that folder; a
+resumed conversation runs where its record says it ran. A folder inside a repository gets a
+worktree of the whole repository, and the agent starts at its top level, not in the matching
+subfolder.
+
+**Creating.** `acpStartIsolated` takes the conversation's slot and finds the provider's executable
+before anything touches the disk, so a start refused at the limit, or for an agent that is not
+installed, makes no worktree. The helper creates or removes one workspace at a time across its
+connections, because two `worktree add --track` runs on one repository race for the lock on its
+configuration file. `ACPWorktree.create`:
+
+- runs `git config --includes --name-only --get-regexp '^(filter|hook|includeif)\.'` before any
+  other git call and refuses any match. With the system and global configuration off, this reads
+  the repository's own and per-worktree configuration and every file they include, and lists an
+  `includeIf` key whatever its condition. A filter runs on checkout, and its clean command runs when
+  status compares a file whose timestamp changed, so the check comes before the first status.
+  `hook.<name>.command` (git 2.54 and later) runs regardless of `core.hooksPath`, and a conditional
+  include such as `onbranch:volant/**` can add either in the new worktree only;
+- requires `RepositoryStatusCommand` to parse in the folder, which refuses a folder outside a
+  repository and a bare repository;
+- refuses anything already at `~/Library/Application Support/Volant/Worktrees/<name>-<id>`, a
+  dangling symbolic link included, and an existing `volant/<id>` branch. `<name>` is the folder's
+  last path component reduced to `[A-Za-z0-9._-]` and 64 characters, and `<id>` is 8 lowercase
+  hexadecimal characters;
+- runs `git worktree add --quiet --track -b volant/<id> <path> refs/heads/<branch>`, so the
+  workspace reports ahead and behind against the folder's current branch. From a detached HEAD it
+  starts at `HEAD` with no upstream.
+
+When `worktree add` fails, or its result can't be read, Volant checks what git left. A worktree at
+the path on `volant/<id>` is used. A branch with no folder beside it is deleted with `git branch
+-d`, which refuses a branch with commits of its own, and whatever remains is named in the error. If
+the agent fails to start after the worktree exists, the worktree stays, the error names its path,
+and the ended conversation offers Remove Workspace. Ending a conversation while git runs leaves a
+workspace the app never hears about.
+
+**Git settings.** Every git call that creates or removes a workspace starts with
+`-c core.fsmonitor=false -c core.hooksPath=/dev/null` and runs with the git status environment plus
+`GIT_CONFIG_NOSYSTEM=1` and `GIT_CONFIG_GLOBAL=/dev/null`, so no hook, fsmonitor or globally configured filter runs. Git LFS
+installs its filter in the global configuration, so LFS-tracked files stay pointer files in a new
+workspace. The one global read is `git config --global --includes --path --get core.excludesFile` before
+removal, passed on as `-c core.excludesFile=<path>`, so a file the owner ignores everywhere, such
+as `.DS_Store`, does not block removal. Each call stops after 120 seconds or 2 MB of output, and
+the deadline signals the git process and its process group. `GIT_CONFIG_GLOBAL` needs git 2.32 or
+later; with an older git, an owner with a global filter has every isolated start refused. Volant
+does not check the git version.
+
+**Header.** The chat header shows the workspace's `RepositoryState.summary`, such as
+`volant/3f9c2a1b · 1 changed · 2 ahead`, read with the existing `repositoryStates` call when the
+conversation becomes ready and after each turn. That read is the existing status command, which
+uses the owner's configuration as it does for agent panes. Each conversation button adds its
+branch.
+
+**Removal.** Ending a conversation keeps its workspace. The ended conversation shows Remove
+Workspace, which opens a separate helper connection, since the conversation's own connection
+closed. While removal runs, Resume is hidden and New or Connect is disabled. `ACPWorktree.remove`
+requires a path inside the Worktrees folder once symbolic links and `..` are resolved, the same
+settings check as creation, a status with no staged, unstaged or untracked change, and a branch,
+since commits on a detached HEAD would belong to no branch afterward. It runs
+`git worktree remove <path>` from the repository's git folder (`git rev-parse --git-common-dir`),
+never with `--force`, so git also refuses a locked workspace or one with an initialized submodule.
+Ignored files, build output included, are deleted with it. The branch keeps its commits, and a
+resume record that names the workspace is cleared. An edit to a file marked assume-unchanged or
+skip-worktree does not show in status, so neither Volant's check nor git's counts it. A folder
+that is already gone counts as removed. Volant keeps no list of workspaces: once the conversation
+is no longer shown, or New or Connect starts over in it, its workspace stays until it is resumed or
+removed with `git worktree remove`.
+
+**Resume.** `ACPResumeRecord` gains `workspace`, and `isValid` rejects one that is not an absolute
+path or contains NUL. An agent may keep its sessions by working folder, as Claude Code does, so
+Resume sends the recorded workspace as the folder. The app hides Resume when `stat` reports the
+folder missing (ENOENT, ENOTDIR or not a folder) and keeps it on any other error, because the App
+Sandbox may refuse the app a look at the helper's folder. The helper then reports "Could not open
+the folder this conversation ran in. Start a new conversation." and starts no new session.
+
+**Limits.** A workspace confines nothing. The agent keeps the owner's credentials and Keychain
+logins and can read and write any path the owner can, the original checkout included. Hooks and
+global settings are off only for Volant's own calls that create or remove a workspace; git
+commands the agent runs use the repository's hooks and the owner's configuration. A worktree
+shares the repository's objects and branches.
+
+Evidence: `ACPWorktreeTests` (15 tests, 14 of which run real git against fictional repositories)
+cover the creation and removal rules above, including a repository hook; a filter set directly,
+through an include and through `includeIf`; `hook.<name>.command`; global filters in
+`~/.gitconfig` and `~/.config/git/config`; 12 creations on one repository, four at a time; and
+failed adds. No test covers the bare-repository refusal or git's own refusal of a locked workspace
+or one with a submodule. `ACPWorktreeCommandTests` (4 tests) use a fake runner to check each call's
+arguments and environment, that invalid input runs no git, and how IDs and folder names are formed.
+Altered copies without each safeguard fail them on Linux with git 2.43 and 2.54.0.
+`tools/acp/check.swift` covers the isolated start's slot and agent lookup, a workspace kept after a
+failed start and a resume whose folder is gone, and `ACPWorkspaceModelTests` (11 tests) covers the
+app model. On GitHub's macos-15 runner with git 2.55.0, `swift test --package-path Core` passed,
+these 19 tests included; `Scripts/test.sh --ci --ui never` passed, the 11 model tests and the ACP
+check included; and the UI job, which renders `ai-acp-workspace`, passed. Not verified: creating, resuming and
+removing a workspace with a real provider in the signed installed app; whether the sandboxed app
+can `stat` the helper's folder; whether `Process` on macOS makes the child a process-group leader;
+the git versions in the Command Line Tools and Xcode; that the header's status read runs when a
+live conversation becomes ready and after each turn (the tests check only `ACPModel.turnEnded`);
+and the header, buttons, Settings toggle and footer inspected in light and dark renders.

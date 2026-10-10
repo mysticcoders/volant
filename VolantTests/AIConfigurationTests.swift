@@ -25,6 +25,18 @@ final class AIConfigurationTests: XCTestCase {
         XCTAssertThrowsError(try original.save(at: url))
         XCTAssertEqual(try Data(contentsOf: url), Data("broken".utf8))
     }
+    func testIsolatedWorkspaceIsSavedAndAnOlderFileReadsAsOff() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: url) }
+        try Data(#"{"ai":{"provider":"claude","project":"/tmp/fictional-project"}}"#.utf8).write(to: url)
+        let original = try AIConfiguration.load(at: url)
+        XCTAssertFalse(original.isolate)
+        var changed = original; changed.isolate = true
+        try changed.save(at: url, expected: original)
+        XCTAssertTrue(try AIConfiguration.load(at: url).isolate)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        XCTAssertEqual((object["ai"] as? [String: Any])?["isolate"] as? Bool, true)
+    }
     func testChatConnectsWithoutProjectAndPreservesActiveConversation() {
         let model = ACPModel.isolated()
         var connects = 0

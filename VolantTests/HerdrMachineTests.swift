@@ -106,5 +106,24 @@ final class HerdrMachineTests: XCTestCase {
         }
         wait(for: [done], timeout: 10)
     }
+    /// `git config --get-regexp` exits 1 to mean "nothing matched", so the worktree runner reads the
+    /// status instead of treating every non-zero exit as a failure.
+    func testRunStatusReturnsANonZeroExitAndStillThrowsOnTimeout() {
+        let done = expectation(description: "background helper process")
+        DispatchQueue.global().async {
+            defer { done.fulfill() }
+            do {
+                let home = FileManager.default.temporaryDirectory.path
+                let failed = try HerdrProcess.runStatus(executable: URL(fileURLWithPath: "/usr/bin/false"), arguments: [], home: home)
+                XCTAssertEqual(failed.status, 1)
+                let printed = try HerdrProcess.runStatus(executable: URL(fileURLWithPath: "/usr/bin/printf"), arguments: ["fictional"], home: home)
+                XCTAssertEqual(printed.status, 0)
+                XCTAssertEqual(String(data: printed.output, encoding: .utf8), "fictional")
+                XCTAssertThrowsError(try HerdrProcess.run(executable: URL(fileURLWithPath: "/usr/bin/false"), arguments: [], home: home))
+                XCTAssertThrowsError(try HerdrProcess.runStatus(executable: URL(fileURLWithPath: "/bin/sleep"), arguments: ["30"], home: home, timeout: 0.1))
+            } catch { XCTFail("Helper process failed: \(error)") }
+        }
+        wait(for: [done], timeout: 10)
+    }
 
 }

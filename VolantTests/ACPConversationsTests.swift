@@ -67,6 +67,16 @@ final class ACPConversationsTests: XCTestCase {
         XCTAssertEqual(starts, 2)
     }
 
+    func testAnUnusedConversationThatKeptAWorkspaceIsNotReused() {
+        let list = conversations()
+        let first = list.current
+        first.workspace = "/tmp/fictional-workspace"
+        first.state.phase = "failed"
+        XCTAssertTrue(list.newConversation(configuration: claude))
+        XCTAssertFalse(list.current === first)
+        XCTAssertEqual(first.workspace, "/tmp/fictional-workspace")
+    }
+
     func testTheConversationPastTheLimitIsRefused() {
         let list = conversations()
         for _ in 0..<ACPConversationLimit.live { XCTAssertTrue(list.newConversation(configuration: claude)) }

@@ -74,12 +74,16 @@ public struct ACPResumeRecord: Codable, Equatable {
     public var project: String
     public var sessionID: String
     public var savedAt: Date
+    /// The isolated workspace the conversation ran in; nil when it ran in the project itself. An
+    /// agent may keep its sessions by working folder, as Claude Code does, so a resume uses it.
+    public var workspace: String?
 
-    public init(provider: String, project: String, sessionID: String, savedAt: Date = Date()) {
+    public init(provider: String, project: String, sessionID: String, savedAt: Date = Date(), workspace: String? = nil) {
         self.provider = provider
         self.project = project
         self.sessionID = sessionID
         self.savedAt = savedAt
+        self.workspace = workspace
     }
 
     public func matches(provider: String, project: String) -> Bool {
@@ -95,8 +99,11 @@ public struct ACPResumeRecord: Codable, Equatable {
         }
     }
 
+    /// A recorded workspace is sent back to the helper as a working folder, so it must be an
+    /// absolute path without NUL.
     public var isValid: Bool {
         ACPProvider(rawValue: provider) != nil && Self.isValidSessionID(sessionID)
+            && workspace.map { $0.hasPrefix("/") && !$0.contains("\0") } ?? true
     }
 }
 

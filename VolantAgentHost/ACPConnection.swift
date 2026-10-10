@@ -34,6 +34,9 @@ final class ACPConnection {
     private var holdsSlot = false
     // Fixture injection is only available to Swift tests, never over XPC.
     var testSend: (([String: Any]) -> Void)?
+    /// Where agents are looked up. Swift checks substitute fictional install locations; nothing
+    /// over XPC can change it.
+    var resolver = ACPAgentResolver.system
 
     init(slots: ACPConversationSlots = .shared) {
         self.slots = slots
@@ -49,12 +52,16 @@ final class ACPConnection {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         guard let selected = ACPProvider(rawValue: provider) else { throw failure("Unknown ACP provider.") }
         let launch: ACPLaunch
-        do { launch = try ACPAgentResolver.system.launch(selected) }
+        do { launch = try resolver.launch(selected) }
         catch { throw failure(error.localizedDescription) }
         let executable = launch.executable, arguments = launch.arguments, providerEnvironment = launch.environment
         let chatDirectory = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/Volant/Chat", isDirectory: true)
         do { self.project = try ACPWorkingDirectory.resolve(project: project, generalChat: chatDirectory) }
-        catch { throw failure("Could not open the working folder. Choose another folder or use General Chat in AI Settings.") }
+        catch {
+            // A resume runs where the conversation ran, which for an isolated one is its workspace.
+            throw failure(resume == nil ? "Could not open the working folder. Choose another folder or use General Chat in AI Settings."
+                                        : "Could not open the folder this conversation ran in. Start a new conversation.")
+        }
         state.phase = "starting"; state.status = "Connecting to " + provider + "…"
         let process = Process(), stdin = Pipe(), stdout = Pipe()
         process.executableURL = URL(fileURLWithPath: executable)
@@ -90,6 +97,25 @@ final class ACPConnection {
     /// no data, so an unchanged conversation is neither encoded nor sent again.
     func snapshot(after known: Int) throws -> (Data?, Int) {
         known == revision ? (nil, revision) : (try JSONEncoder().encode(state), revision)
+    }
+    /// Starts a new conversation in a workspace made for it by `makeWorkspace`, which receives the
+    /// project and returns the workspace's path. The slot and the provider are checked first, so a
+    /// start refused at the limit, or for an agent that is not installed, makes no workspace. Once
+    /// the workspace exists it belongs to the owner: a failed start leaves it and names it in the
+    /// error. Returns the workspace when one was made, and the error when the start failed.
+    func startIsolated(provider: String, project: String, makeWorkspace: (String) throws -> String) -> (workspace: String?, error: String?) {
+        guard task == nil, state.phase == "disconnected" else { return (nil, "End this conversation before starting another.") }
+        do { try takeSlot() } catch { return (nil, error.localizedDescription) }
+        // `start` keeps the slot once its agent launches; every other exit returns it.
+        defer { if task == nil { releaseSlot() } }
+        guard let selected = ACPProvider(rawValue: provider) else { return (nil, "Unknown ACP provider.") }
+        do { _ = try resolver.launch(selected) } catch { return (nil, error.localizedDescription) }
+        let workspace: String
+        do { workspace = try makeWorkspace(project) } catch { return (nil, error.localizedDescription) }
+        do { try start(provider: provider, project: workspace) } catch {
+            return (workspace, error.localizedDescription + " Its workspace stays at " + workspace + ".")
+        }
+        return (workspace, nil)
     }
     /// Takes one of the helper's conversation slots before anything is resolved or launched. Internal
     /// so `tools/acp/check.swift` can hold a slot without an installed agent; never exposed over XPC.

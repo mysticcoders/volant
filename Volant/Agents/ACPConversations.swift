@@ -51,16 +51,17 @@ final class ACPConversations: ObservableObject {
     }
 
     /// Starts a conversation with `configuration` and shows it, leaving the others running. An unused
-    /// current conversation is started in place. Returns false and starts nothing when the
-    /// configuration is missing or incomplete, or when the live limit is reached; the limit is
-    /// reported in the current conversation.
+    /// current conversation without a workspace is started in place. Returns false and starts
+    /// nothing when the configuration is missing or incomplete, or when the live limit is reached;
+    /// the limit is reported in the current conversation.
     @discardableResult func newConversation(configuration: AIConfiguration?) -> Bool {
         guard let configuration, configuration.isConfigured else { return false }
         guard canStartAnother else {
             current.error = "Volant runs up to \(ACPConversationLimit.live) conversations at once. End one to start another."
             return false
         }
-        if !current.active, current.state.messages.isEmpty {
+        // One that kept a workspace is not started in place: while its removal runs, start does nothing.
+        if !current.active, current.state.messages.isEmpty, current.workspace == nil {
             current.configure(configuration)
             start(current)
             return true

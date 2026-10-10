@@ -147,11 +147,19 @@ struct AISettingsView: View {
                 Button("Choose Folder…") { chooseProject { url in if let url { config.project = url.path; persist() } } }.disabled(!loaded)
                     .background(ControlAnchor("settings.choose-folder"))
             }
+            if !config.project.isEmpty {
+                Toggle("Isolated workspace", isOn: $config.isolate).disabled(!loaded).onChange(of: config.isolate) { _, _ in persist() }
+            }
         } header: {
             Text("ACP")
         } footer: {
-            SettingsFooter("Uses your agent’s existing CLI login; sign in with that provider first. A working folder is optional and is not a sandbox: your agent’s permissions still control tool access.")
+            SettingsFooter(acpFooter)
         }
+    }
+    private var acpFooter: String {
+        let login = "Uses your agent’s existing CLI login; sign in with that provider first. A working folder is optional and is not a sandbox: your agent’s permissions still control tool access."
+        guard !config.project.isEmpty else { return login }
+        return login + " With Isolated workspace on, each new conversation runs in its own Git worktree, on a new branch such as volant/3f9c2a1b, in Volant’s Application Support folder. Git hooks and filters don’t run while Volant creates or removes it, so Git LFS files stay pointer files, and a repository whose own Git settings define a filter, a hook or a conditional include is refused. A workspace confines nothing: your agent keeps your logins and can reach any path."
     }
     private var httpBinding: Binding<AIHTTPConfiguration> {
         Binding(get: { config.http }, set: { if config.connection == .local { config.localAPI = $0 } else { config.api = $0 } })
