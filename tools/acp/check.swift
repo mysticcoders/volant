@@ -229,3 +229,81 @@ try polled.queue.sync {
     try advances("stopping advances the revision")
 }
 print("Passed: revisions skip unchanged snapshots and advance on every change, including in-place text.")
+
+// The helper counts conversations across connections and refuses one past the limit before it
+// resolves or launches anything.
+let full = ACPConversationSlots(limit: 0)
+let refusedAtLimit = ACPConnection(slots: full)
+do {
+    try refusedAtLimit.queue.sync { try refusedAtLimit.start(provider: "qwen", project: "/tmp/fictional-missing-project") }
+    fatalError("a start past the conversation limit was accepted")
+} catch {
+    let message = error.localizedDescription
+    require(message.contains("up to 0 conversations"), "the refusal names the limit, saw: " + message)
+    require(!message.contains("not found") && !message.contains("folder"), "the refusal comes before the provider or folder is resolved")
+}
+require(refusedAtLimit.state.phase == "disconnected" && full.inUse == 0, "a refused start takes no slot and starts nothing")
+let one = ACPConversationSlots(limit: 1)
+let unknownProvider = ACPConnection(slots: one)
+do { try unknownProvider.queue.sync { try unknownProvider.start(provider: "fictional-provider", project: "") }; fatalError("an unknown provider was accepted") } catch {}
+require(one.inUse == 0, "a start that fails after taking a slot returns it")
+let holder = ACPConnection(slots: one)
+try holder.queue.sync { try holder.takeSlot() }
+require(one.inUse == 1, "a running conversation holds a slot")
+let second = ACPConnection(slots: one)
+do { try second.queue.sync { try second.start(provider: "qwen", project: "") }; fatalError("a second conversation past a limit of one was accepted") } catch {
+    require(error.localizedDescription.contains("up to 1 conversations"), "the second start is refused at the limit")
+}
+holder.queue.sync { holder.stop() }
+require(one.inUse == 0, "stopping returns the slot")
+holder.queue.sync { holder.stop("Agent process exited.", failed: true) }
+require(one.inUse == 0, "a second stop returns nothing more")
+print("Passed: the helper refuses a conversation past its limit before launching anything, and every stop or failed start returns its slot.")
+
+// An isolated start takes its slot and checks the agent before it makes a workspace, and keeps a
+// workspace it made when the agent then fails to start. The fictional install location holds no
+// executable, so nothing is launched.
+let fictionalAgents = ACPAgentResolver(home: "/fictional-home", isExecutable: { $0 == "/fictional-home/.local/bin/qwen" },
+                                       exists: { _ in false }, contents: { _ in [] })
+var workspacesMade: [String] = []
+let noWorkspaceSlot = ACPConnection(slots: ACPConversationSlots(limit: 0))
+noWorkspaceSlot.resolver = fictionalAgents
+let atLimit = noWorkspaceSlot.queue.sync {
+    noWorkspaceSlot.startIsolated(provider: "qwen", project: "/tmp/fictional-project") { workspacesMade.append($0); return "/tmp/fictional-workspace" }
+}
+require(atLimit.workspace == nil && atLimit.error?.contains("up to 0 conversations") == true, "an isolated start is refused at the limit")
+require(workspacesMade.isEmpty, "a start refused at the limit makes no workspace")
+let isolatedSlots = ACPConversationSlots(limit: 1)
+let isolated = ACPConnection(slots: isolatedSlots)
+isolated.resolver = fictionalAgents
+for provider in ["fictional-provider", "gemini"] {
+    let refused = isolated.queue.sync {
+        isolated.startIsolated(provider: provider, project: "/tmp/fictional-project") { workspacesMade.append($0); return "/tmp/fictional-workspace" }
+    }
+    require(refused.workspace == nil && refused.error != nil && workspacesMade.isEmpty, "an unknown or missing agent makes no workspace: " + provider)
+    require(isolatedSlots.inUse == 0, "and returns its slot: " + provider)
+}
+let gitFailed = isolated.queue.sync {
+    isolated.startIsolated(provider: "qwen", project: "/tmp/fictional-project") { project -> String in
+        workspacesMade.append(project)
+        throw NSError(domain: "VolantCheck", code: 1, userInfo: [NSLocalizedDescriptionKey: "Fictional git failure."])
+    }
+}
+require(workspacesMade == ["/tmp/fictional-project"], "the workspace is made from the project once the agent is found")
+require(gitFailed.workspace == nil && gitFailed.error == "Fictional git failure." && isolatedSlots.inUse == 0, "a workspace that can't be made returns the slot")
+let keptWorkspace = "/tmp/fictional-missing-workspace-" + UUID().uuidString
+let startFailed = isolated.queue.sync { isolated.startIsolated(provider: "qwen", project: "/tmp/fictional-project") { _ in keptWorkspace } }
+require(startFailed.workspace == keptWorkspace, "a workspace made before a failed start is reported")
+require(startFailed.error?.hasSuffix("Its workspace stays at " + keptWorkspace + ".") == true, "and named in the error")
+require(isolatedSlots.inUse == 0 && isolated.state.phase == "disconnected", "a failed start returns its slot and starts nothing")
+let goneFolder = ACPConnection(slots: isolatedSlots)
+goneFolder.resolver = fictionalAgents
+do {
+    try goneFolder.queue.sync { try goneFolder.start(provider: "qwen", project: keptWorkspace, resume: "fictional-session") }
+    fatalError("a resume in a missing folder was accepted")
+} catch {
+    require(error.localizedDescription == "Could not open the folder this conversation ran in. Start a new conversation.",
+            "a resume whose folder is gone says so, saw: " + error.localizedDescription)
+}
+require(isolatedSlots.inUse == 0 && goneFolder.state.phase == "disconnected", "and starts nothing")
+print("Passed: an isolated start takes its slot and finds its agent before making a workspace, names a workspace it keeps after a failed start, and a resume whose folder is gone says so.")

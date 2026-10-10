@@ -208,7 +208,277 @@ Every process Volant spawns receives an explicit, complete environment built by 
 - Herdr CLI: `~/.local/bin`, Homebrew and system folders without `sbin`, plus `SSH_AUTH_SOCK` when the helper has one, for saved remote machines.
 - Apple tools (`/usr/bin/shortcuts` in the agent helper, `/usr/bin/pmset` in the app): system folders only.
 - git status for change counts keeps its own `LC_ALL=C` environment (`RepositoryStatusCommand.environment`).
+- git calls that create or remove an isolated workspace: the same `LC_ALL=C` environment plus `GIT_CONFIG_NOSYSTEM=1` and, except for removal's read of the owner's `core.excludesFile`, `GIT_CONFIG_GLOBAL=/dev/null` (see Isolated workspaces).
 
 The fixed locale is intentional. Volant reads ACP JSON-RPC, Herdr JSON and the Shortcuts identifier listing as machine-readable output, so the child needs a UTF-8 codeset that is guaranteed to exist: without `LANG`, many tools fall back to the ASCII C locale and mangle non-ASCII project names, prompts and shortcut names. `Locale.current` is not used because its identifiers (for example `en_DE` or `zh-Hans_CN`) do not map one to one onto installed POSIX locales; an unknown value makes tools print `setlocale` warnings and still fall back to C, and the same input would behave differently on different Macs. An agent's reply language is set by the prompt and the provider, not chiefly by `LANG`; the locale mainly affects formatting inside tool output. git uses `C` instead because its porcelain parsing must be byte-stable and its messages are never shown.
 
 The accepted cost: text an agent's tools format through the locale, such as dates or decimal separators in a command's output, appears in US English style regardless of the owner's region. Deriving a validated per-user locale for provider processes remains possible later; it would apply only to ACP providers and must fall back to `en_US.UTF-8` when the derived name is not installed. Tests cover the builders with fictional values only; they do not run Shortcuts, pmset or providers.
+
+## Several conversations — October 9, 2026
+
+Volant ran one ACP conversation at a time. Starting another meant ending the running one, so a
+second question cost the first agent its place. The helper already builds one `AgentHost`, and so
+one `ACPConnection`, for each XPC connection, and each `ACPModel` opens its own connection, so
+several models are several independent conversations with no protocol change.
+
+**List.** `ACPConversations` holds the launcher's conversations in the order they started; one is
+current and shown in AI Chat. While a conversation runs, the header shows New beside End. New
+starts a conversation with the provider and folder saved in Settings and shows it, and the one
+that was shown keeps running in its own helper connection. With incomplete settings, or a BYOK
+connection without a stored key, it opens AI Settings instead, as opening AI Chat does. A current
+conversation that is not running and holds no transcript, such as one that failed to launch, is
+started in place. With more than one conversation to show, a row of buttons under the header lists
+them with the provider, the folder's last path component, the first line of the owner's first
+message cut to 24 characters, a raised hand while one waits for a permission and a small spinner
+while it works; selecting one shows it. New always uses the saved provider and folder, so that first
+line is what tells two such conversations apart once each has a turn. A conversation that ends while
+another is shown leaves the row at once; its in-memory transcript is discarded the next time a
+conversation is selected or New beside End opens another. The shown conversation keeps its
+transcript after End until the next Start, as before.
+
+**Limit.** Up to 6 conversations run at once (`ACPConversationLimit.live`). The app disables New
+at the limit and refuses a seventh conversation with "Volant runs up to 6 conversations at once.
+End one to start another." The helper counts the same limit in one `ACPConversationSlots` shared
+by every connection in its process; the service runs one process for the app.
+`ACPConnection.start` takes a slot before it resolves the provider or launches anything, and
+returns it if the start ends before an agent runs; `stop` returns it on process exit, every
+failure, `acpStop` and XPC invalidation. Conversations through an HTTP API or Apple's model count
+toward the app's limit and take no helper slot. The two counts can briefly disagree: the app counts
+a conversation as ended when End runs, and the helper frees its slot when that connection's
+invalidation reaches it, which nothing orders against a start on another connection. A start that
+reaches the helper first, with six conversations counted there, is refused with the limit message.
+The length of that window has not been measured.
+
+**Polling.** A poll of an unchanged conversation gets no data, since the helper skips unchanged
+snapshots, but while an agent streams each poll decodes the whole transcript on the main thread. The
+shown conversation still polls every 0.25 s, and the others poll once a second
+(`ACPModel.pollInterval`). Six streaming conversations at 0.25 s would decode up to 24 transcripts
+a second; with one shown and five behind it, the most is 9.
+
+**Launcher and Settings.** With one live conversation, the AI Chat row in search looks as it did.
+With several it stays one row: AI Chat, then a badge per live conversation with its provider, the
+same first line of its first message and a raised hand while it waits for a permission. A badge
+opens its conversation. Open conversation opens the first one waiting for a permission, else the
+shown one while it runs, else the first running one. It never opens an ended conversation, because
+opening AI Chat on one can start a new conversation in its place. Settings → AI reads
+"N conversations running" when more than one runs; its button opens the shown conversation, or
+connects it once it has ended, as before.
+
+**Resume.** Every conversation shares the one record under `acp.lastConversation`. A conversation
+writes it once, when it is ready and holds its first owner turn, so the record names the
+conversation that wrote it last. A refused `session/load` clears the record only while it still
+names the session that conversation asked to load, so a record another conversation wrote since
+survives. Each conversation reads the record when it is made, so a refusal also tells every other
+conversation to stop offering that session, including one made while the load ran. Resume is not
+offered for a session another live conversation holds or is loading, so Volant never runs one
+session in two agent processes, and the shown conversation's header updates when a conversation
+behind it starts or ends.
+
+Evidence: `ACPConversationSlotsTests` in Core (5 tests, including 200 concurrent acquire and
+release pairs that never exceed the limit). A new `tools/acp/check.swift` case refuses a start at
+the limit before the provider or folder is resolved, and returns the slot after a failed start and
+on stop; altered copies of the helper without the release in `stop`, or taking the slot after the
+folder is resolved, fail it. `ACPConversationsTests` (12 tests) covers New, reuse of an unused
+conversation, the limit, dropping ended conversations, the poll intervals, which changes reach
+observers, the launcher's choice of conversation, the shared resume record, the first-message
+label and the BYOK key check. On GitHub's macos-15 runner, `Scripts/test.sh --ci --ui never`
+passed, those 12 tests and the ACP check included; the UI job, which renders
+`ai-acp-several`, `ai-acp-several-strip` and `ai-acp-several-settings` through
+`tools/check-launcher-actions.sh`, passed; and `swift test --package-path Core` passed,
+the 5 above included. Volant's PR checks build Core but do not run its package tests. Not verified:
+several live conversations with real providers in the signed installed app, and the conversation
+buttons, the launcher row and the AI Settings count inspected in light and dark renders.
+
+## Isolated workspaces — October 10, 2026
+
+An ACP agent edits the working folder chosen in Settings in place, so two conversations on one
+folder, or an agent and the owner's uncommitted work, change the same checkout.
+
+**Setting.** Once a working folder is chosen, Settings → AI (ACP) shows "Isolated workspace" under
+it. `AIConfiguration.isolate` is off by default and ignored without a folder or for a connection
+other than ACP. With it on, each new conversation runs in its own git worktree of that folder; a
+resumed conversation runs where its record says it ran. A folder inside a repository gets a
+worktree of the whole repository, and the agent starts at its top level, not in the matching
+subfolder.
+
+**Creating.** `acpStartIsolated` takes the conversation's slot and finds the provider's executable
+before anything touches the disk, so a start refused at the limit, or for an agent that is not
+installed, makes no worktree. The helper creates or removes one workspace at a time across its
+connections, because two `worktree add --track` runs on one repository race for the lock on its
+configuration file. `ACPWorktree.create`:
+
+- runs `git config --includes --name-only --get-regexp '^(filter|hook|includeif)\.'` before any
+  other git call and refuses any match. With the system and global configuration off, this reads
+  the repository's own and per-worktree configuration and every file they include, and lists an
+  `includeIf` key whatever its condition. A filter runs on checkout, and its clean command runs when
+  status compares a file whose timestamp changed, so the check comes before the first status.
+  `hook.<name>.command` (git 2.54 and later) runs regardless of `core.hooksPath`, and a conditional
+  include such as `onbranch:volant/**` can add either in the new worktree only;
+- requires `RepositoryStatusCommand` to parse in the folder, which refuses a folder outside a
+  repository and a bare repository;
+- refuses anything already at `~/Library/Application Support/Volant/Worktrees/<name>-<id>`, a
+  dangling symbolic link included, and an existing `volant/<id>` branch. `<name>` is the folder's
+  last path component reduced to `[A-Za-z0-9._-]` and 64 characters, and `<id>` is 8 lowercase
+  hexadecimal characters;
+- runs `git worktree add --quiet --track -b volant/<id> <path> refs/heads/<branch>`, so the
+  workspace reports ahead and behind against the folder's current branch. From a detached HEAD it
+  starts at `HEAD` with no upstream.
+
+When `worktree add` fails, or its result can't be read, Volant checks what git left. A worktree at
+the path on `volant/<id>` is used. A branch with no folder beside it is deleted with `git branch
+-d`, which refuses a branch with commits of its own, and whatever remains is named in the error. If
+the agent fails to start after the worktree exists, the worktree stays, the error names its path,
+and the ended conversation offers Remove Workspace. Ending a conversation while git runs leaves a
+workspace the app never hears about.
+
+**Git settings.** Every git call that creates or removes a workspace starts with
+`-c core.fsmonitor=false -c core.hooksPath=/dev/null` and runs with the git status environment plus
+`GIT_CONFIG_NOSYSTEM=1` and `GIT_CONFIG_GLOBAL=/dev/null`, so no hook, fsmonitor or globally configured filter runs. Git LFS
+installs its filter in the global configuration, so LFS-tracked files stay pointer files in a new
+workspace. The one global read is `git config --global --includes --path --get core.excludesFile` before
+removal, passed on as `-c core.excludesFile=<path>`, so a file the owner ignores everywhere, such
+as `.DS_Store`, does not block removal. Each call stops after 120 seconds or 2 MB of output, and
+the deadline signals the git process and its process group. `GIT_CONFIG_GLOBAL` needs git 2.32 or
+later; with an older git, an owner with a global filter has every isolated start refused. Volant
+does not check the git version.
+
+**Header.** The chat header shows the workspace's `RepositoryState.summary`, such as
+`volant/3f9c2a1b · 1 changed · 2 ahead`, read with the existing `repositoryStates` call when the
+conversation becomes ready and after each turn. That read is the existing status command, which
+uses the owner's configuration as it does for agent panes. Each conversation button adds its
+branch.
+
+**Removal.** Ending a conversation keeps its workspace. The ended conversation shows Remove
+Workspace, which opens a separate helper connection, since the conversation's own connection
+closed. While removal runs, Resume is hidden and New or Connect is disabled. `ACPWorktree.remove`
+requires a path inside the Worktrees folder once symbolic links and `..` are resolved, the same
+settings check as creation, a status with no staged, unstaged or untracked change, and a branch,
+since commits on a detached HEAD would belong to no branch afterward. It runs
+`git worktree remove <path>` from the repository's git folder (`git rev-parse --git-common-dir`),
+never with `--force`, so git also refuses a locked workspace or one with an initialized submodule.
+Ignored files, build output included, are deleted with it. The branch keeps its commits, and a
+resume record that names the workspace is cleared. An edit to a file marked assume-unchanged or
+skip-worktree does not show in status, so neither Volant's check nor git's counts it. A folder
+that is already gone counts as removed. Volant keeps no list of workspaces: once the conversation
+is no longer shown, or New or Connect starts over in it, its workspace stays until it is resumed or
+removed with `git worktree remove`.
+
+**Resume.** `ACPResumeRecord` gains `workspace`, and `isValid` rejects one that is not an absolute
+path or contains NUL. An agent may keep its sessions by working folder, as Claude Code does, so
+Resume sends the recorded workspace as the folder. The app hides Resume when `stat` reports the
+folder missing (ENOENT, ENOTDIR or not a folder) and keeps it on any other error, because the App
+Sandbox may refuse the app a look at the helper's folder. The helper then reports "Could not open
+the folder this conversation ran in. Start a new conversation." and starts no new session.
+
+**Limits.** A workspace confines nothing. The agent keeps the owner's credentials and Keychain
+logins and can read and write any path the owner can, the original checkout included. Hooks and
+global settings are off only for Volant's own calls that create or remove a workspace; git
+commands the agent runs use the repository's hooks and the owner's configuration. A worktree
+shares the repository's objects and branches.
+
+Evidence: `ACPWorktreeTests` (15 tests, 14 of which run real git against fictional repositories)
+cover the creation and removal rules above, including a repository hook; a filter set directly,
+through an include and through `includeIf`; `hook.<name>.command`; global filters in
+`~/.gitconfig` and `~/.config/git/config`; 12 creations on one repository, four at a time; and
+failed adds. No test covers the bare-repository refusal or git's own refusal of a locked workspace
+or one with a submodule. `ACPWorktreeCommandTests` (4 tests) use a fake runner to check each call's
+arguments and environment, that invalid input runs no git, and how IDs and folder names are formed.
+Altered copies without each safeguard fail them on Linux with git 2.43 and 2.54.0.
+`tools/acp/check.swift` covers the isolated start's slot and agent lookup, a workspace kept after a
+failed start and a resume whose folder is gone, and `ACPWorkspaceModelTests` (11 tests) covers the
+app model. On GitHub's macos-15 runner with git 2.55.0, `swift test --package-path Core` passed,
+these 19 tests included; `Scripts/test.sh --ci --ui never` passed, the 11 model tests and the ACP
+check included; and the UI job, which renders `ai-acp-workspace`, passed. Not verified: creating, resuming and
+removing a workspace with a real provider in the signed installed app; whether the sandboxed app
+can `stat` the helper's folder; whether `Process` on macOS makes the child a process-group leader;
+the git versions in the Command Line Tools and Xcode; that the header's status read runs when a
+live conversation becomes ready and after each turn (the tests check only `ACPModel.turnEnded`);
+and the header, buttons, Settings toggle and footer inspected in light and dark renders.
+
+## Send to Several and headless tasks — October 10, 2026
+
+Asking several agents the same question meant starting each conversation, pasting the prompt into
+each and watching each one. Send to Several starts them from one draft.
+
+**Picker.** Send to Several… sits beside Send and is enabled for a draft with text on an ACP
+connection. It opens a picker above the composer, in place of the @ picker, with a stepper per ACP
+provider, a Headless checkbox, a count such as "3 of 4", Cancel and Send. It starts at most
+`AIConfiguration.fanOut` conversations, read from `ai.fanOut` in config.json when the picker opens,
+4 by default and clamped to 2 through 6; Settings has no control for it.
+
+**Plan.** `ACPFanOut.targets` in Core returns one configuration per conversation in provider order,
+or refuses before anything starts: a connection other than ACP, a blank prompt, more than 64,000
+UTF-8 bytes, a negative count, no conversation, or more than the setting allows. With a working
+folder every target runs in its own worktree whatever the Isolated workspace setting says, because
+agents editing one checkout change the same files. First the helper's `checkWorktree` runs
+`ACPWorktree.check` on the folder over a separate connection, with creation's environment and
+two-minute limit: creation's settings read and status, in that order, then reads of `HEAD` and
+`refs/heads/volant`. A folder that creation would refuse, or where it would fail because the
+repository has no commit or has a branch named `volant`, starts nothing, and the picker shows the
+reason. Closing the picker or leaving AI Chat during the check cancels the send: nothing starts and
+the draft stays. One send checks at a time. Once the targets start, the composer's draft and
+attachments are cleared unless the owner changed them.
+
+**Sent once.** Each target is a new conversation holding `pendingPrompt`. When first ready it sends
+the prompt and copies of the attachments through Send's helper calls, shaped for its agent's
+`embeddedContext`. The prompt is cleared before the helper is asked, so no later snapshot, reconnect
+or resume sends it again. A target that stops before its prompt goes out drops the prompt, except
+the limit retry below. One that fails after the prompt went out, whether or not the helper replied,
+shows "This task may have run. It was not sent again." after its failure message. A later failure
+changes neither, and an attached note or a refused workspace removal, which clear or replace the
+message, leave the notice. A prompt the helper refuses never reached the agent and shows the
+helper's message alone. A target keeps its provider, folder and workspace: AI Settings and opening
+AI Chat leave it as it is, it resumes only a session it recorded itself, and New or AI Settings'
+button, disabled while 6 run, starts another conversation beside it.
+
+**Headless.** The shown conversation stays shown, and when the first turn ends, with any stop reason
+or a provider error the helper reports as a ready status, the app calls `acpStop`, waits up to 5 s
+for its reply, closes the connection and keeps the transcript in memory; the status reads "Finished
+after its first turn." after a normal end, else the helper's status, such as `Stopped: max_tokens`.
+Without Headless the first target to start is shown, and all keep running.
+
+**Queue.** Targets past the live limit of 6 wait in `ACPConversations.waiting` and start in order as
+conversations stop running. The conversation buttons and the launcher row show the number waiting,
+and Cancel beside the buttons drops only those. A headless end calls `acpStop`, which the helper
+answers after freeing the slot, and starts the next target on that reply, after 5 s without one, or
+on a connection error. End frees the slot when invalidation reaches the helper, or, for a
+conversation ended while the helper makes its workspace, once that workspace is made. A target
+refused with the limit message before its prompt goes out, after either kind of end, returns to its
+place in the queue with its prompt and is tried again after 1 s up to 3 times, then every 30 s until
+it starts or Cancel drops it, with one wait running at a time.
+
+**Unread and Limited.** A conversation whose turn ends while it is not current or AI Chat is not
+open in the launcher gets a dot on its button and launcher badge, and VoiceOver reads "Unread";
+showing it clears the dot. A Send to Several or workspace conversation that stops running then gets
+one too; a plain one does not, since opening it may connect it again. An ended conversation with a
+dot stays listed until it has been shown and left, and Open conversation falls back to the first
+such one when none runs. A target that ran in a workspace keeps its button after that until Remove
+Workspace succeeds, since one send can leave six workspaces, and Remove Workspace waits while
+another live conversation runs in that workspace. "Limited", in orange, marks a conversation that is
+not starting, working or canceling and whose status contains one of
+`ACPStopReason.usageLimitPhrases` ("usage limit", "rate limit", "limit reached", "quota exceeded",
+"out of credits"), ignoring case and reading hyphens as spaces. ACP has no stop reason for a usage
+limit, so a provider that words its limit differently shows as failed or stopped. Volant's own limit
+message does not match.
+
+**Approvals.** Each target's permission requests appear in its own conversation, unapproved until
+the owner chooses; a raised hand on its button and badge shows which wait. No App Intent starts Send
+to Several: starting agents with the owner's provider logins while no one is at the launcher needs
+its own security review.
+
+Evidence: `ACPSendToSeveralTests` drive each target through `ACPModel.handleRead`, the path every
+poll's reply takes, with helper snapshots encoded under rising revisions, an injected start and
+prompt sender, and an injected folder check. They cover the queue, the single send, headless ends,
+unread marks and Limited, the helper-limit retry, the folder check, and results that stay bound.
+One case answers the model's own reads through an injected reader: a stale reply reads the helper's
+full state again, and a read the helper could not answer fails the target. A `LauncherActionsTests`
+case covers reopening the launcher with an unread conversation. In Core, `ACPFanOutTests` cover the
+planner and `ACPStopReasonTests` the usage-limit phrases. The shared limit message adds one case to
+`ACPConversationSlotsTests`, and `ACPWorktree.check` adds one to `ACPWorktreeTests`, which runs real
+git, and one to `ACPWorktreeCommandTests`; Volant's own PR checks do not run Core's package tests,
+so these need `swift test --package-path Core`. The ACP check runs
+the helper's refusal at its limit, and `tools/launcher/actions.swift` renders
+`ai-acp-fan-out-picker`, `ai-acp-fan-out-waiting`, `ai-acp-fan-out-waiting-strip`,
+`ai-acp-fan-out-results` and `ai-acp-fan-out-results-strip`. Not verified: Send to Several with
+real providers in the signed installed app, `checkWorktree` over a real helper connection (the
+tests inject the checker), and the renders inspected in light and dark.

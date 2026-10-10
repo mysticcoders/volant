@@ -291,11 +291,19 @@ final class LauncherModel: ObservableObject {
     private var shortcutRunQuery: String?
     var showingAppleShortcuts: Bool { AppleShortcut.queryTerm(query) != nil }
     let agents: AgentsModel
-    let acp = ACPModel()
-    @Published private(set) var showingACP = false
+    let conversations = ACPConversations()
+    /// The conversation AI Chat shows; everything that acts on "the" conversation acts on this one.
+    var acp: ACPModel { conversations.current }
+    private var conversationSubscription: AnyCancellable?
+    @Published private(set) var showingACP = false {
+        didSet { conversations.chatShown = showingACP && isPresented }
+    }
     @Published var promotedHarness: String?
     var isPresented = false {
         didSet {
+            // Only showing AI Chat raises this: the panel reopens with `showingACP` still set and
+            // resets it after, which must not count as showing the conversation.
+            if !isPresented { conversations.chatShown = false }
             guard isPresented != oldValue else { return }
             prefixBranch = nil
             if !isPresented { clipboard.endSearchSession() }
@@ -445,6 +453,11 @@ final class LauncherModel: ObservableObject {
         }
         agentSubscription = agents.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.refreshAgentResults() }
+        }
+        // Switching conversations redraws the launcher. Changes inside a conversation reach only the
+        // views that observe it, so a streamed reply never redraws the whole launcher.
+        conversationSubscription = conversations.$current.dropFirst().sink { [weak self] _ in
+            self?.objectWillChange.send()
         }
     }
 
@@ -1205,6 +1218,22 @@ final class LauncherModel: ObservableObject {
         showingACP = true
         sections = []
         searchFocusRequest = UUID()
+    }
+    /// Starts another conversation and shows it; the one that was shown keeps running. Settings that
+    /// can't connect open AI Settings, as opening AI Chat does.
+    func newConversation() {
+        guard let configuration = try? AIConfiguration.load(), configuration.isConfigured, acp.keyReady(for: configuration) else {
+            openAISettings(); return
+        }
+        if conversations.newConversation(configuration: configuration) { presentAIChat() }
+    }
+    func selectConversation(_ model: ACPModel) {
+        conversations.select(model)
+        presentAIChat()
+    }
+    /// Send to Several reads the AI settings when its picker opens, as New does.
+    var fanOutHost: ACPFanOutHost {
+        ACPFanOutHost(settings: { try? AIConfiguration.load() }, send: conversations.sendToSeveral, cancel: conversations.cancelSend)
     }
     func openAIChat() { onNote(.ai) }
     func openSettings() { dismiss(); onNote(.settings) }

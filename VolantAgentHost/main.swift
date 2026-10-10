@@ -23,6 +23,28 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
     func acpResume(provider: String, project: String, session: String, reply: @escaping (String?) -> Void) {
         acp.queue.async { do { try self.acp.start(provider: provider, project: project, resume: session); reply(nil) } catch { reply(error.localizedDescription) } }
     }
+    /// The worktree is made on the conversation's queue, after its slot is taken and before its agent
+    /// starts, so the conversation's state stays serialized while git runs.
+    func acpStartIsolated(provider: String, project: String, reply: @escaping (String?, String?) -> Void) {
+        acp.queue.async {
+            let started = self.acp.startIsolated(provider: provider, project: project) { source in
+                try RepositoryInspector.worktrees().create(project: source, id: ACPWorktree.newID())
+            }
+            reply(started.workspace, started.error)
+        }
+    }
+    func removeWorktree(path: String, reply: @escaping (String?, String?) -> Void) {
+        inspectionQueue.async {
+            do { reply(try RepositoryInspector.worktrees().remove(path: path), nil) }
+            catch { reply(nil, error.localizedDescription) }
+        }
+    }
+    func checkWorktree(project: String, reply: @escaping (String?) -> Void) {
+        inspectionQueue.async {
+            do { try RepositoryInspector.worktrees().check(project: project); reply(nil) }
+            catch { reply(error.localizedDescription) }
+        }
+    }
     func acpRead(after revision: Int, reply: @escaping (Data?, Int, String?) -> Void) {
         acp.queue.async {
             do { let (data, current) = try self.acp.snapshot(after: revision); reply(data, current, nil) }

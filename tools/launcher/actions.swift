@@ -312,7 +312,7 @@ clickPoint()
 verify(!panel.model.showingACP && panel.model.acp.active && !panel.model.acp.draft.isEmpty, "Back returns to search without ending chat or discarding its draft")
 try render("chat-back")
 panel.orderOut(nil)
-let settings = SettingsWindowController(configURL: panel.model.actionConfigURL, acp: panel.model.acp) {}
+let settings = SettingsWindowController(configURL: panel.model.actionConfigURL, conversations: panel.model.conversations) {}
 try chatConfig!.save(at: panel.model.actionConfigURL)
 settings.state.section = "AI"
 settings.window!.setContentSize(NSSize(width: 680, height: 500))
@@ -591,8 +591,9 @@ func renderAPISettings(_ kind: AIConnectionKind, provider: AIAPIProvider = .open
         if candidate.endpoint.contains("11434") && !offline { completion(["fictional-local-model", "fictional-second-model"], nil) }
         else { completion(nil, "Server unavailable. Start it or enter a custom URL.") }
     }
-    let model = ACPModel()
-    let view = NSHostingView(rootView: AISettingsView(model: model, configURL: aiFixtureURL, onChange: {}, openConversation: { _ in }, chooseProject: { _ in }, credentials: fakeCredentials, discovery: discovery)
+    let conversations = ACPConversations()
+    let model = conversations.current
+    let view = NSHostingView(rootView: AISettingsView(conversations: conversations, configURL: aiFixtureURL, onChange: {}, openConversation: { _ in }, chooseProject: { _ in }, credentials: fakeCredentials, discovery: discovery)
         .background(Color(nsColor: .windowBackgroundColor)))
     let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 660), styleMask: [.titled], backing: .buffered, defer: false)
     window.contentView = view; window.makeKeyAndOrderFront(nil); settle()
@@ -633,8 +634,9 @@ do {
             ACPAgentAvailability(provider: "gemini", state: .notInstalled, detail: "Gemini CLI was not found. Install it and sign in, then retry.", path: nil)
         ]), nil)
     }
-    let model = ACPModel()
-    let view = NSHostingView(rootView: AISettingsView(model: model, configURL: aiFixtureURL, onChange: {}, openConversation: { _ in }, chooseProject: { _ in },
+    let conversations = ACPConversations()
+    let model = conversations.current
+    let view = NSHostingView(rootView: AISettingsView(conversations: conversations, configURL: aiFixtureURL, onChange: {}, openConversation: { _ in }, chooseProject: { _ in },
                                                       credentials: fakeCredentials, discovery: AIModelDiscovery(), agentDetection: detection)
         .background(Color(nsColor: .windowBackgroundColor)))
     let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 760), styleMask: [.titled], backing: .buffered, defer: false)
@@ -686,6 +688,194 @@ try render("ai-acp-resume", view: resumeChat)
 resumeChatWindow.orderOut(nil)
 UserDefaults().removePersistentDomain(forName: resumeSuite)
 print("PASS: a recorded ACP conversation offers Resume and New without connecting")
+// An ended conversation in its own workspace. The workspace is a temporary folder, so Resume's
+// check finds it; no helper connection opens.
+let workspaceSuite = "volant.actions.fixture.acp-workspace"
+UserDefaults().removePersistentDomain(forName: workspaceSuite)
+let workspaceStore = UserDefaults(suiteName: workspaceSuite)!
+let workspaceFolder = FileManager.default.temporaryDirectory.appendingPathComponent("volant-fixture-orbit-web-3f9c2a1b")
+try FileManager.default.createDirectory(at: workspaceFolder, withIntermediateDirectories: true)
+workspaceStore.set(try JSONEncoder().encode(ACPResumeRecord(provider: "claude", project: "/fictional/orbit-web", sessionID: "fictional-session",
+                                                            workspace: workspaceFolder.path)), forKey: ACPModel.resumeKey)
+let workspaceModel = ACPModel(resumeStore: workspaceStore)
+var workspaceConfig = AIConfiguration(); workspaceConfig.provider = "claude"; workspaceConfig.project = "/fictional/orbit-web"; workspaceConfig.isolate = true
+workspaceModel.configure(workspaceConfig)
+workspaceModel.workspace = workspaceFolder.path
+workspaceModel.workspaceState = RepositoryState(branch: "volant/3f9c2a1b", ahead: 2)
+workspaceModel.state.status = "Conversation ended."
+workspaceModel.state.messages = [ACPMessage(role: "You", text: "Add a fictional changelog entry."),
+                                 ACPMessage(role: "Agent", text: "Committed the entry on **volant/3f9c2a1b**.")]
+verify(workspaceModel.isolate && workspaceModel.canRemoveWorkspace && workspaceModel.canResume, "An ended isolated conversation offers Remove Workspace and Resume")
+let workspaceChat = NSHostingView(rootView: ACPConversationView(model: workspaceModel)
+    .background(Color(nsColor: .windowBackgroundColor)))
+let workspaceChatWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 740, height: 450), styleMask: [.titled], backing: .buffered, defer: false)
+workspaceChatWindow.contentView = workspaceChat; workspaceChatWindow.makeKeyAndOrderFront(nil); settle()
+try render("ai-acp-workspace", view: workspaceChat)
+workspaceChatWindow.orderOut(nil)
+try? FileManager.default.removeItem(at: workspaceFolder)
+UserDefaults().removePersistentDomain(forName: workspaceSuite)
+print("PASS: an ended isolated conversation shows its branch and offers Remove Workspace without a helper connection")
+// Several conversations in one list. Starting one only marks it ready, so no helper connection opens.
+let severalSuite = "volant.actions.fixture.acp-several"
+UserDefaults().removePersistentDomain(forName: severalSuite)
+let several = ACPConversations(make: { ACPModel(resumeStore: UserDefaults(suiteName: severalSuite)!) },
+                               start: { model in model.state.phase = "ready"; model.state.status = "Ready" })
+var severalConfig = AIConfiguration(); severalConfig.provider = "claude"; severalConfig.project = "/fictional/orbit-web"
+verify(several.newConversation(configuration: severalConfig), "An unused conversation starts in place")
+let severalAwaiting = several.current
+severalAwaiting.state.phase = "working"; severalAwaiting.state.status = "Needs your permission"
+severalAwaiting.state.permissions = [ACPPermission(id: "fictional-permission", title: "Read fictional notes", detail: "{}",
+                                                   options: [ACPPermission.Option(optionId: "once", name: "Allow once", kind: "allow_once")])]
+severalConfig.provider = "codex"
+verify(several.newConversation(configuration: severalConfig) && several.live.count == 2 && severalAwaiting.active, "New keeps the first conversation running")
+several.current.state.messages = [ACPMessage(role: "You", text: "Summarize the fictional release notes."),
+                                  ACPMessage(role: "Agent", text: "The fictional release adds **two** settings.")]
+verify(several.nextToOpen === severalAwaiting && severalAwaiting.background && !several.current.background,
+       "The launcher opens the conversation awaiting permission first, and only the shown one polls at the foreground interval")
+let severalChat = NSHostingView(rootView: ACPConversationView(model: several.current, conversations: several)
+    .background(Color(nsColor: .windowBackgroundColor)))
+let severalChatWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 740, height: 450), styleMask: [.titled], backing: .buffered, defer: false)
+severalChatWindow.contentView = severalChat; severalChatWindow.makeKeyAndOrderFront(nil); settle()
+try render("ai-acp-several", view: severalChat)
+severalChatWindow.orderOut(nil)
+let severalStrip = NSHostingView(rootView: VStack(spacing: 0) {
+    ACPActivityStrip(conversations: several) { _ in }
+    Spacer(minLength: 0)
+}.background(Color(nsColor: .windowBackgroundColor)))
+let severalStripWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 740, height: 60), styleMask: [.titled], backing: .buffered, defer: false)
+severalStripWindow.contentView = severalStrip; severalStripWindow.makeKeyAndOrderFront(nil); settle()
+try render("ai-acp-several-strip", view: severalStrip)
+severalStripWindow.orderOut(nil)
+// AI Settings counts the running conversations. Detection reads a fictional result, never the helper.
+try severalConfig.save(at: aiFixtureURL)
+let severalDetection = ACPAgentDetection()
+severalDetection.reader = { reply in
+    reply(try? JSONEncoder().encode([ACPAgentAvailability(provider: "codex", state: .ready, detail: "Found at /opt/homebrew/bin/codex", path: "/opt/homebrew/bin/codex")]), nil)
+}
+let severalSettings = NSHostingView(rootView: AISettingsView(conversations: several, configURL: aiFixtureURL, onChange: {}, openConversation: { _ in }, chooseProject: { _ in },
+                                                             credentials: fakeCredentials, discovery: AIModelDiscovery(), agentDetection: severalDetection)
+    .background(Color(nsColor: .windowBackgroundColor)))
+let severalSettingsWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 760), styleMask: [.titled], backing: .buffered, defer: false)
+severalSettingsWindow.contentView = severalSettings; severalSettingsWindow.makeKeyAndOrderFront(nil); settle()
+verify(several.live.count == 2 && several.current.active, "AI Settings is drawn with two running conversations")
+try render("ai-acp-several-settings", view: severalSettings)
+severalSettingsWindow.orderOut(nil)
+for model in several.all { model.state.phase = "disconnected" }
+UserDefaults().removePersistentDomain(forName: severalSuite)
+print("PASS: several ACP conversations render their buttons and one launcher row without a helper connection")
+// Send to Several. Each conversation is driven with the snapshots a helper would send and each
+// prompt goes to a stand-in sender, so no helper connection opens and no agent runs.
+let fanOutSuite = "volant.actions.fixture.acp-fan-out"
+UserDefaults().removePersistentDomain(forName: fanOutSuite)
+var fanOutRevision = 0
+/// Hands `model` a snapshot through the path a poll's reply takes, encoded with a new revision.
+func fanOutSnapshot(_ state: ACPState, to model: ACPModel) {
+    fanOutRevision += 1
+    model.handleRead(try! JSONEncoder().encode(state), revision: fanOutRevision, after: model.helperRevision)
+}
+func fanOutConversations() -> ACPConversations {
+    ACPConversations(make: {
+        let model = ACPModel(resumeStore: UserDefaults(suiteName: fanOutSuite)!)
+        model.promptSender = { _, _, reply in reply(nil) }
+        return model
+    }, start: { model in fanOutSnapshot(ACPState(phase: "starting", status: "Connecting…"), to: model) })
+}
+func clickControl(_ name: String, in window: NSWindow) -> Bool {
+    guard let frame = controlFrame(name, in: window) else { return false }
+    func event(_ type: NSEvent.EventType) -> NSEvent {
+        NSEvent.mouseEvent(with: type, location: NSPoint(x: frame.midX, y: frame.midY), modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+                           windowNumber: window.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: type == .leftMouseDown ? 1 : 0)!
+    }
+    app.postEvent(event(.leftMouseUp), atStart: true)
+    window.sendEvent(event(.leftMouseDown))
+    if let release = app.nextEvent(matching: .leftMouseUp, until: .distantPast, inMode: .default, dequeue: true) { window.sendEvent(release) }
+    settle()
+    return true
+}
+/// A conversation that is ready, shown with the owner's first question.
+func fanOutSource(in list: ACPConversations, _ config: AIConfiguration) -> ACPModel {
+    let source = list.current
+    source.configure(config)
+    fanOutSnapshot(ACPState(phase: "ready", status: "Ready", sessionID: "fictional-source",
+                            messages: [ACPMessage(role: "You", text: "Summarize the fictional release notes."),
+                                       ACPMessage(role: "Agent", text: "The fictional release adds **two** settings.")]), to: source)
+    return source
+}
+var fanOutConfig = AIConfiguration(); fanOutConfig.provider = "claude"; fanOutConfig.fanOut = 6
+let fanOutTask = "List the open risks in the fictional release notes."
+// The picker opens over the composer; its Send is not pressed here.
+let fanOutPick = fanOutConversations()
+let fanOutPickSource = fanOutSource(in: fanOutPick, fanOutConfig)
+fanOutPickSource.draft = fanOutTask
+var fanOutSends = 0
+let fanOutPickChat = NSHostingView(rootView: ACPConversationView(model: fanOutPickSource, conversations: fanOutPick,
+                                                                 fanOut: ACPFanOutHost(settings: { fanOutConfig }, send: { _, _, _, _, done in fanOutSends += 1; done(nil) }, cancel: {}))
+    .background(Color(nsColor: .windowBackgroundColor)))
+let fanOutPickWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 740, height: 520), styleMask: [.titled], backing: .buffered, defer: false)
+fanOutPickWindow.contentView = fanOutPickChat; fanOutPickWindow.makeKeyAndOrderFront(nil); settle()
+verify(clickControl("chat.send-several", in: fanOutPickWindow), "The composer offers Send to Several")
+verify(controlFrame("chat.fan-out", in: fanOutPickWindow) != nil && fanOutSends == 0, "Send to Several opens its picker over the composer and sends nothing")
+try render("ai-acp-fan-out-picker", view: fanOutPickChat)
+fanOutPickWindow.orderOut(nil)
+// At the live limit: two conversations already run, four targets start and two wait.
+let fanOutQueue = fanOutConversations()
+let fanOutQueueSource = fanOutSource(in: fanOutQueue, fanOutConfig)
+var fanOutCodex = fanOutConfig; fanOutCodex.provider = "codex"
+verify(fanOutQueue.newConversation(configuration: fanOutCodex), "A second conversation starts")
+fanOutQueue.select(fanOutQueueSource)
+let fanOutQueued = fanOutQueue.fanOut(prompt: fanOutTask, attachments: [],
+                                      targets: try ACPFanOut.targets(prompt: fanOutTask, counts: [.gemini: 2, .qwen: 2, .opencode: 2], configuration: fanOutConfig),
+                                      headless: true)
+verify(fanOutQueued.count == 6 && fanOutQueue.live.count == ACPConversationLimit.live && fanOutQueue.waiting.count == 2 && fanOutQueue.current === fanOutQueueSource,
+       "Targets past the live limit wait, and a headless send keeps the shown conversation")
+let fanOutQueueChat = NSHostingView(rootView: ACPConversationView(model: fanOutQueueSource, conversations: fanOutQueue)
+    .background(Color(nsColor: .windowBackgroundColor)))
+let fanOutQueueWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 740, height: 450), styleMask: [.titled], backing: .buffered, defer: false)
+fanOutQueueWindow.contentView = fanOutQueueChat; fanOutQueueWindow.makeKeyAndOrderFront(nil); settle()
+try render("ai-acp-fan-out-waiting", view: fanOutQueueChat)
+fanOutQueueWindow.orderOut(nil)
+let fanOutQueueStrip = NSHostingView(rootView: VStack(spacing: 0) {
+    ACPActivityStrip(conversations: fanOutQueue) { _ in }
+    Spacer(minLength: 0)
+}.background(Color(nsColor: .windowBackgroundColor)))
+let fanOutQueueStripWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 740, height: 60), styleMask: [.titled], backing: .buffered, defer: false)
+fanOutQueueStripWindow.contentView = fanOutQueueStrip; fanOutQueueStripWindow.makeKeyAndOrderFront(nil); settle()
+try render("ai-acp-fan-out-waiting-strip", view: fanOutQueueStrip)
+fanOutQueueStripWindow.orderOut(nil)
+// Results: one headless task finished, one stopped at a provider's usage limit, one still working.
+let fanOutDone = fanOutConversations()
+let fanOutDoneSource = fanOutSource(in: fanOutDone, fanOutConfig)
+let fanOutResults = fanOutDone.fanOut(prompt: fanOutTask, attachments: [],
+                                      targets: try ACPFanOut.targets(prompt: fanOutTask, counts: [.codex: 1, .gemini: 1, .qwen: 1], configuration: fanOutConfig),
+                                      headless: true)
+for model in fanOutResults { fanOutSnapshot(ACPState(phase: "ready", status: "Ready", sessionID: "fictional-" + model.provider), to: model) }
+settle()
+let fanOutAsked = ACPMessage(role: "You", text: fanOutTask)
+fanOutSnapshot(ACPState(phase: "ready", status: "Ready", sessionID: "fictional-codex",
+                        messages: [fanOutAsked, ACPMessage(role: "Agent", text: "One fictional migration risk remains open.")]), to: fanOutResults[0])
+fanOutSnapshot(ACPState(phase: "ready", status: "Fictional provider: usage limit reached. Try again later.", sessionID: "fictional-gemini",
+                        messages: [fanOutAsked]), to: fanOutResults[1])
+verify(!fanOutResults[0].active && fanOutResults[0].unread && fanOutResults[0].state.status == "Finished after its first turn.",
+       "A headless task ends after its first turn, unread, with its transcript")
+verify(fanOutResults[1].limited && fanOutResults[1].unread && fanOutResults[2].active && fanOutDone.current === fanOutDoneSource,
+       "A usage-limit stop is marked Limited and the third task still runs")
+let fanOutDoneChat = NSHostingView(rootView: ACPConversationView(model: fanOutDoneSource, conversations: fanOutDone)
+    .background(Color(nsColor: .windowBackgroundColor)))
+let fanOutDoneWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 740, height: 450), styleMask: [.titled], backing: .buffered, defer: false)
+fanOutDoneWindow.contentView = fanOutDoneChat; fanOutDoneWindow.makeKeyAndOrderFront(nil); settle()
+try render("ai-acp-fan-out-results", view: fanOutDoneChat)
+fanOutDoneWindow.orderOut(nil)
+let fanOutDoneStrip = NSHostingView(rootView: VStack(spacing: 0) {
+    ACPActivityStrip(conversations: fanOutDone) { _ in }
+    Spacer(minLength: 0)
+}.background(Color(nsColor: .windowBackgroundColor)))
+let fanOutDoneStripWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 740, height: 60), styleMask: [.titled], backing: .buffered, defer: false)
+fanOutDoneStripWindow.contentView = fanOutDoneStrip; fanOutDoneStripWindow.makeKeyAndOrderFront(nil); settle()
+try render("ai-acp-fan-out-results-strip", view: fanOutDoneStrip)
+fanOutDoneStripWindow.orderOut(nil)
+for list in [fanOutPick, fanOutQueue, fanOutDone] { list.cancelWaiting(); for model in list.all { model.disconnect() } }
+UserDefaults().removePersistentDomain(forName: fanOutSuite)
+print("PASS: Send to Several renders its picker, waiting count, unread marks and Limited without a helper connection")
 
 // Clipboard failures never access the owner's Keychain or pasteboard.
 clipboard.record("Fictional clipboard recovery fixture")

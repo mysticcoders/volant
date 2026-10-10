@@ -33,6 +33,20 @@ final class ACPResumeRecordTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(ACPResumeRecord.self, from: JSONEncoder().encode(record)), record)
     }
 
+    func testAWorkspaceMustBeAnAbsolutePathWithoutNUL() throws {
+        let isolated = ACPResumeRecord(provider: "claude", project: "/tmp/fictional-project", sessionID: "fictional-session",
+                                       workspace: "/tmp/Worktrees/fictional-project-ab12cd34")
+        XCTAssertTrue(isolated.isValid)
+        XCTAssertEqual(try JSONDecoder().decode(ACPResumeRecord.self, from: JSONEncoder().encode(isolated)), isolated)
+        for bad in ["", "Worktrees/fictional", "/tmp/fictional\u{0}"] {
+            XCTAssertFalse(ACPResumeRecord(provider: "claude", project: "", sessionID: "fictional-session", workspace: bad).isValid, bad)
+        }
+        let older = #"{"provider":"codex","project":"","sessionID":"fictional-session","savedAt":0}"#
+        let record = try JSONDecoder().decode(ACPResumeRecord.self, from: Data(older.utf8))
+        XCTAssertNil(record.workspace, "a record saved before workspaces existed still loads")
+        XCTAssertTrue(record.isValid)
+    }
+
     func testLoadSessionCapabilityIsReadOnlyWhenAdvertised() {
         XCTAssertTrue(ACPCapabilities.supportsLoadSession(#"{"loadSession":true}"#))
         XCTAssertFalse(ACPCapabilities.supportsLoadSession(#"{"loadSession":false}"#))
