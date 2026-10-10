@@ -91,8 +91,10 @@ public enum TimeCalculator {
 
     /// Parses the whole query. A wall time that falls in a daylight-saving gap or overlap is never
     /// guessed: it comes back as `skipped` or `repeated` for `suggestions` to explain. A reading
-    /// written in parentheses straight after the clock, as in "1:30am (EDT) New York in Paris",
-    /// picks one side of an overlap and must name the reading actually in effect.
+    /// written in parentheses straight after the clock and followed by the source zone, as in
+    /// "1:30am (EDT) New York in Paris", picks one side of an overlap and must name the reading
+    /// actually in effect. With nothing after it, or only "in"/"to", the parenthesized word is the
+    /// source zone itself, so "1pm (est) in CET" still reads as "1pm est in CET".
     private static func outcome(_ text: String, now: Date, localZone: TimeZone, locale: Locale) -> Outcome? {
         guard text.utf8.count <= 256 else { return nil }
         var localCalendar = Calendar(identifier: .gregorian)
@@ -100,7 +102,7 @@ public enum TimeCalculator {
         let baseline = localCalendar.dateComponents([.year, .month, .day], from: now)
         var words = text.lowercased().split(whereSeparator: { $0.isWhitespace }).map { ["noon": "12pm", "midnight": "12am"][$0] ?? String($0) }
         var reading: String?
-        if let span = clockSpan(words), span.upperBound < words.count,
+        if let span = clockSpan(words), span.upperBound + 1 < words.count, !["in", "to"].contains(words[span.upperBound + 1]),
            words[span.upperBound].count > 2, words[span.upperBound].hasPrefix("("), words[span.upperBound].hasSuffix(")") {
             reading = String(words.remove(at: span.upperBound).dropFirst().dropLast())
         }
@@ -200,7 +202,7 @@ public enum TimeCalculator {
         } else if let reading, readingName(first, zone: source).lowercased() != reading {
             return nil
         }
-        if part(5) == nil, let relativeDay {
+        if let relativeDay, part(5) == nil || (targets.count == 1 && ["local", "here", "my time"].contains(targets[0])) {
             return .answer(localResult(chosen, offset: relativeDay, zone: localZone, now: now, locale: locale))
         }
         let name = targets.count == 2 ? targets[1] : "local"
@@ -210,6 +212,10 @@ public enum TimeCalculator {
         answer.swap = swapQuery(chosen, from: destination, name: name, to: sourceName, now: now)
         return .answer(answer)
     }
+
+    /// The most cards an ambiguous abbreviation or city offers, the same three as `CityDirectory`
+    /// alternatives, even when an alternative lands on a repeated wall time and offers two readings.
+    private static let maximumAlternatives = 3
 
     /// The words of a query that hold its clock: "2:30am", "14:30", "noon", or "2:30" followed by
     /// a separate "am" or "pm". A date such as "2026-03-08" is never a clock.
@@ -247,7 +253,9 @@ public enum TimeCalculator {
 
     /// The cards for one complete time question: its answer; for a wall time the zone skips, the
     /// nearest valid time with an explanation; or for a repeated wall time, one card per reading
-    /// with the reading written after the clock so each card's query answers on its own.
+    /// with the reading written after the clock so each card's query answers on its own. A reading
+    /// is only a selector when a source zone follows it, so "1:30am in New York" becomes
+    /// "1:30am (EDT) New York" and a question on the owner's clock gains an explicit "local".
     private static func cards(_ text: String, now: Date, localZone: TimeZone, locale: Locale) -> [(query: String, result: Result)] {
         let words = text.split(whereSeparator: { $0.isWhitespace }).map(String.init)
         switch outcome(text, now: now, localZone: localZone, locale: locale) {
@@ -263,9 +271,13 @@ public enum TimeCalculator {
                                    source: explanation, swap: found.swap))]
         case .repeated(let names)?:
             guard let span = clockSpan(words) else { return [] }
+            var base = words
+            let at = span.upperBound
+            if at + 1 < base.count, base[at].lowercased() == "in" { base.remove(at: at) }
+            if at == base.count || ["in", "to"].contains(base[at].lowercased()) { base.insert("local", at: at) }
             return names.compactMap { name in
-                var qualified = words
-                qualified.insert("(\(name))", at: span.upperBound)
+                var qualified = base
+                qualified.insert("(\(name))", at: at)
                 let query = qualified.joined(separator: " ")
                 return evaluate(query, now: now, localZone: localZone, locale: locale).map { (query, $0) }
             }
@@ -329,7 +341,7 @@ public enum TimeCalculator {
                 qualified[index] = "\(word.uppercased()) (\(choice.place))"
                 return cards(qualified.joined(separator: " "), now: now, localZone: localZone, locale: locale)
             }
-            if !found.isEmpty { return found }
+            if !found.isEmpty { return Array(found.prefix(maximumAlternatives)) }
         }
         let skip: Set<String> = ["time", "now", "in", "to", "diff", "difference", "with", "from", "at", "am", "pm"]
         for length in stride(from: min(3, words.count), through: 1, by: -1) {
@@ -342,7 +354,7 @@ public enum TimeCalculator {
                     let query = (words[..<start] + [alternative] + words[(start + length)...]).joined(separator: " ")
                     return cards(query, now: now, localZone: localZone, locale: locale)
                 }
-                if !found.isEmpty { return found }
+                if !found.isEmpty { return Array(found.prefix(maximumAlternatives)) }
             }
         }
         return []

@@ -265,7 +265,7 @@ final class TimeCalculatorTests: XCTestCase {
         XCTAssertEqual(answer("2026-07-01 1:30am (EDT) New York in UTC")?.date, instant("2026-07-01T05:30:00Z"))
         for query in ["2026-07-01 1:30am (EST) New York in UTC", "2026-11-01 1:30am (CET) New York in UTC",
                       "2026-11-01 1:30am (later) New York in UTC", "2026-03-08 2:30am (EDT) New York in UTC",
-                      "time in (EDT) New York", "1:30am (EDT)"] {
+                      "time in (EDT) New York"] {
             XCTAssertNil(answer(query), query)
             XCTAssertEqual(suggestions(query), [], query)
         }
@@ -278,8 +278,11 @@ final class TimeCalculatorTests: XCTestCase {
                 .map { "\($0.query) = \($0.result.headline) · \($0.result.source)" }
         }
         XCTAssertEqual(around("tomorrow 1:30am", "2026-10-31T16:00:00Z"),
-                       ["tomorrow 1:30am (EDT) = Tomorrow at 1:30 AM · Sunday, November 1",
-                        "tomorrow 1:30am (EST) = Tomorrow at 1:30 AM · Sunday, November 1"])
+                       ["tomorrow 1:30am (EDT) local = Tomorrow at 1:30 AM · Sunday, November 1",
+                        "tomorrow 1:30am (EST) local = Tomorrow at 1:30 AM · Sunday, November 1"])
+        XCTAssertEqual(around("1:30am tomorrow", "2026-10-31T16:00:00Z"),
+                       ["1:30am (EDT) tomorrow = Tomorrow at 1:30 AM · Sunday, November 1",
+                        "1:30am (EST) tomorrow = Tomorrow at 1:30 AM · Sunday, November 1"])
         XCTAssertEqual(around("tomorrow 2:30am", "2026-03-07T16:00:00Z"),
                        ["tomorrow 3:00am = Tomorrow at 3:00 AM · 2:30 AM is skipped · clocks jump to 3:00 AM"])
         XCTAssertEqual(around("1:30am local in London", "2026-11-01T12:00:00Z"),
@@ -310,5 +313,30 @@ final class TimeCalculatorTests: XCTestCase {
         let skipped = CalculationAnswer.answers(for: "2026-03-08 2:30am New York in Paris", now: now, localZone: paris,
                                                 locale: Locale(identifier: "en_US"))
         XCTAssertEqual(skipped.map(\.inputDetail), ["2:30 AM is skipped · clocks jump to 3:00 AM"])
+    }
+
+    func testParenthesizedZoneWithoutAFollowingSourceStaysTheSourceZone() {
+        XCTAssertNotNil(answer("1pm (est)"))
+        for (written, plain) in [("1pm (est)", "1pm est"), ("1pm (est) in CET", "1pm est in CET"), ("1pm (EST) to CET", "1pm EST to CET")] {
+            XCTAssertEqual(answer(written)?.date, answer(plain)?.date, written)
+            XCTAssertEqual(answer(written)?.text, answer(plain)?.text, written)
+            XCTAssertEqual(answer(written)?.source, answer(plain)?.source, written)
+        }
+        XCTAssertEqual(answer("2026-07-15 1pm (est) in CET")?.text, "7:00 PM CEST · Jul 15, 2026")
+        XCTAssertEqual(answer("2026-11-01 1:30am (EST) New York in Paris")?.date, instant("2026-11-01T06:30:00Z"),
+                       "Followed by a source zone, the parenthesized word selects a reading")
+        XCTAssertEqual(suggestions("2026-11-01 1:30am in New York in Paris"),
+                       ["2026-11-01 1:30am (EDT) New York in Paris = 6:30 AM in Paris",
+                        "2026-11-01 1:30am (EST) New York in Paris = 7:30 AM in Paris"])
+    }
+
+    func testAmbiguousAbbreviationOnARepeatedTimeOffersAtMostThreeCards() {
+        XCTAssertEqual(suggestions("2026-11-01 1:30am cst in utc"),
+                       ["2026-11-01 1:30am (CDT) CST (US) in utc = 6:30 AM UTC",
+                        "2026-11-01 1:30am (CST) CST (US) in utc = 7:30 AM UTC",
+                        "2026-11-01 1:30am CST (China) in utc = 5:30 PM UTC"])
+        let irish = suggestions("2026-10-25 1:30am ist in utc")
+        XCTAssertEqual(irish.count, 3, irish.joined(separator: "\n"))
+        XCTAssertEqual(irish.first, "2026-10-25 1:30am IST (India) in utc = 8:00 PM UTC")
     }
 }
