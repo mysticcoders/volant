@@ -73,4 +73,28 @@ final class LauncherActionsTests: XCTestCase {
         model.sections = []
         XCTAssertNil(model.actionTarget)
     }
+
+    /// The panel reopens with AI Chat still set and resets it to search, as `LauncherPanel.toggle`
+    /// does, so reopening must not count as showing the conversation.
+    func testReopeningTheLauncherKeepsAnUnreadMarkUntilAIChatShowsIt() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let model = LauncherModel(index: AppIndex(entries: []), clipboard: ClipboardStore(retention: 2, storageURL: root.appendingPathComponent("clipboard.sqlite"), encryptionKey: SymmetricKey(size: .bits256)), notes: NotesStore(directory: root.appendingPathComponent("Notes")), config: Preferences(), usage: UsageStore(url: root.appendingPathComponent("usage.sqlite"))) { _ in }
+        model.searchesSecondarySources = false
+        model.isPresented = true
+        model.presentAIChat()
+        let chat = model.acp
+        // Helper snapshots without a session ID, so nothing is recorded for resume.
+        chat.handleRead(try JSONEncoder().encode(ACPState(phase: "working", status: "Working…")), revision: 1, after: chat.helperRevision)
+        model.isPresented = false
+        chat.handleRead(try JSONEncoder().encode(ACPState(phase: "ready", status: "Ready")), revision: 2, after: chat.helperRevision)
+        XCTAssertTrue(chat.unread, "the turn ended while the launcher was hidden")
+        model.isPresented = true
+        model.reset()
+        XCTAssertTrue(chat.unread, "reopening shows search, not the conversation")
+        model.presentAIChat()
+        XCTAssertFalse(chat.unread, "showing it clears the mark")
+        chat.disconnect()
+    }
 }

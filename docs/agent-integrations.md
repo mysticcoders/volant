@@ -394,3 +394,91 @@ can `stat` the helper's folder; whether `Process` on macOS makes the child a pro
 the git versions in the Command Line Tools and Xcode; that the header's status read runs when a
 live conversation becomes ready and after each turn (the tests check only `ACPModel.turnEnded`);
 and the header, buttons, Settings toggle and footer inspected in light and dark renders.
+
+## Send to Several and headless tasks — October 10, 2026
+
+Asking several agents the same question meant starting each conversation, pasting the prompt into
+each and watching each one. Send to Several starts them from one draft.
+
+**Picker.** Send to Several… sits beside Send and is enabled for a draft with text on an ACP
+connection. It opens a picker above the composer, in place of the @ picker, with a stepper per ACP
+provider, a Headless checkbox, a count such as "3 of 4", Cancel and Send. It starts at most
+`AIConfiguration.fanOut` conversations, read from `ai.fanOut` in config.json when the picker opens,
+4 by default and clamped to 2 through 6; Settings has no control for it.
+
+**Plan.** `ACPFanOut.targets` in Core returns one configuration per conversation in provider order,
+or refuses before anything starts: a connection other than ACP, a blank prompt, more than 64,000
+UTF-8 bytes, a negative count, no conversation, or more than the setting allows. With a working
+folder every target runs in its own worktree whatever the Isolated workspace setting says, because
+agents editing one checkout change the same files. First the helper's `checkWorktree` runs
+`ACPWorktree.check` on the folder over a separate connection, with creation's environment and
+two-minute limit: creation's settings read and status, in that order, then reads of `HEAD` and
+`refs/heads/volant`. A folder that creation would refuse, or where it would fail because the
+repository has no commit or has a branch named `volant`, starts nothing, and the picker shows the
+reason. Closing the picker or leaving AI Chat during the check cancels the send: nothing starts and
+the draft stays. One send checks at a time. Once the targets start, the composer's draft and
+attachments are cleared unless the owner changed them.
+
+**Sent once.** Each target is a new conversation holding `pendingPrompt`. When first ready it sends
+the prompt and copies of the attachments through Send's helper calls, shaped for its agent's
+`embeddedContext`. The prompt is cleared before the helper is asked, so no later snapshot, reconnect
+or resume sends it again. A target that stops before its prompt goes out drops the prompt, except
+the limit retry below. One that fails after the prompt went out, whether or not the helper replied,
+shows "This task may have run. It was not sent again." after its failure message. A later failure
+changes neither, and an attached note or a refused workspace removal, which clear or replace the
+message, leave the notice. A prompt the helper refuses never reached the agent and shows the
+helper's message alone. A target keeps its provider, folder and workspace: AI Settings and opening
+AI Chat leave it as it is, it resumes only a session it recorded itself, and New or AI Settings'
+button, disabled while 6 run, starts another conversation beside it.
+
+**Headless.** The shown conversation stays shown, and when the first turn ends, with any stop reason
+or a provider error the helper reports as a ready status, the app calls `acpStop`, waits up to 5 s
+for its reply, closes the connection and keeps the transcript in memory; the status reads "Finished
+after its first turn." after a normal end, else the helper's status, such as `Stopped: max_tokens`.
+Without Headless the first target to start is shown, and all keep running.
+
+**Queue.** Targets past the live limit of 6 wait in `ACPConversations.waiting` and start in order as
+conversations stop running. The conversation buttons and the launcher row show the number waiting,
+and Cancel beside the buttons drops only those. A headless end calls `acpStop`, which the helper
+answers after freeing the slot, and starts the next target on that reply, after 5 s without one, or
+on a connection error. End frees the slot when invalidation reaches the helper, or, for a
+conversation ended while the helper makes its workspace, once that workspace is made. A target
+refused with the limit message before its prompt goes out, after either kind of end, returns to its
+place in the queue with its prompt and is tried again after 1 s up to 3 times, then every 30 s until
+it starts or Cancel drops it, with one wait running at a time.
+
+**Unread and Limited.** A conversation whose turn ends while it is not current or AI Chat is not
+open in the launcher gets a dot on its button and launcher badge, and VoiceOver reads "Unread";
+showing it clears the dot. A Send to Several or workspace conversation that stops running then gets
+one too; a plain one does not, since opening it may connect it again. An ended conversation with a
+dot stays listed until it has been shown and left, and Open conversation falls back to the first
+such one when none runs. A target that ran in a workspace keeps its button after that until Remove
+Workspace succeeds, since one send can leave six workspaces, and Remove Workspace waits while
+another live conversation runs in that workspace. "Limited", in orange, marks a conversation that is
+not starting, working or canceling and whose status contains one of
+`ACPStopReason.usageLimitPhrases` ("usage limit", "rate limit", "limit reached", "quota exceeded",
+"out of credits"), ignoring case and reading hyphens as spaces. ACP has no stop reason for a usage
+limit, so a provider that words its limit differently shows as failed or stopped. Volant's own limit
+message does not match.
+
+**Approvals.** Each target's permission requests appear in its own conversation, unapproved until
+the owner chooses; a raised hand on its button and badge shows which wait. No App Intent starts Send
+to Several: starting agents with the owner's provider logins while no one is at the launcher needs
+its own security review.
+
+Evidence: `ACPSendToSeveralTests` drive each target through `ACPModel.handleRead`, the path every
+poll's reply takes, with helper snapshots encoded under rising revisions, an injected start and
+prompt sender, and an injected folder check. They cover the queue, the single send, headless ends,
+unread marks and Limited, the helper-limit retry, the folder check, and results that stay bound.
+One case answers the model's own reads through an injected reader: a stale reply reads the helper's
+full state again, and a read the helper could not answer fails the target. A `LauncherActionsTests`
+case covers reopening the launcher with an unread conversation. In Core, `ACPFanOutTests` cover the
+planner and `ACPStopReasonTests` the usage-limit phrases. The shared limit message adds one case to
+`ACPConversationSlotsTests`, and `ACPWorktree.check` adds one to `ACPWorktreeTests`, which runs real
+git, and one to `ACPWorktreeCommandTests`; Volant's own PR checks do not run Core's package tests,
+so these need `swift test --package-path Core`. The ACP check runs
+the helper's refusal at its limit, and `tools/launcher/actions.swift` renders
+`ai-acp-fan-out-picker`, `ai-acp-fan-out-waiting`, `ai-acp-fan-out-waiting-strip`,
+`ai-acp-fan-out-results` and `ai-acp-fan-out-results-strip`. Not verified: Send to Several with
+real providers in the signed installed app, `checkWorktree` over a real helper connection (the
+tests inject the checker), and the renders inspected in light and dark.

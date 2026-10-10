@@ -295,10 +295,15 @@ final class LauncherModel: ObservableObject {
     /// The conversation AI Chat shows; everything that acts on "the" conversation acts on this one.
     var acp: ACPModel { conversations.current }
     private var conversationSubscription: AnyCancellable?
-    @Published private(set) var showingACP = false
+    @Published private(set) var showingACP = false {
+        didSet { conversations.chatShown = showingACP && isPresented }
+    }
     @Published var promotedHarness: String?
     var isPresented = false {
         didSet {
+            // Only showing AI Chat raises this: the panel reopens with `showingACP` still set and
+            // resets it after, which must not count as showing the conversation.
+            if !isPresented { conversations.chatShown = false }
             guard isPresented != oldValue else { return }
             prefixBranch = nil
             if !isPresented { clipboard.endSearchSession() }
@@ -1225,6 +1230,10 @@ final class LauncherModel: ObservableObject {
     func selectConversation(_ model: ACPModel) {
         conversations.select(model)
         presentAIChat()
+    }
+    /// Send to Several reads the AI settings when its picker opens, as New does.
+    var fanOutHost: ACPFanOutHost {
+        ACPFanOutHost(settings: { try? AIConfiguration.load() }, send: conversations.sendToSeveral, cancel: conversations.cancelSend)
     }
     func openAIChat() { onNote(.ai) }
     func openSettings() { dismiss(); onNote(.settings) }

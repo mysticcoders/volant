@@ -17,6 +17,9 @@ import Foundation
     /// The reply carries that branch's name or the error, and neither when no folder is left at
     /// `path`.
     func removeWorktree(path: String, reply: @escaping (String?, String?) -> Void)
+    /// Runs the checks `acpStartIsolated` makes on `project` before it creates a worktree, and
+    /// creates nothing. The reply carries the reason a worktree couldn't be made, or nil.
+    func checkWorktree(project: String, reply: @escaping (String?) -> Void)
     /// The conversation as JSON `ACPState` with its revision. When `after` is already the current
     /// revision the reply carries no data: nothing changed. A negative `after` always gets the state.
     func acpRead(after revision: Int, reply: @escaping (Data?, Int, String?) -> Void)

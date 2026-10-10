@@ -6,6 +6,12 @@ public enum ACPConversationLimit {
     /// Counted in the agent helper across every connection the app opens, and checked again in the
     /// app before it asks for another.
     public static let live = 6
+
+    /// The refusal at the limit. The app and the helper word it the same way, so the app can tell a
+    /// start the helper refused at its limit from any other failure.
+    public static func refusal(limit: Int = live) -> String {
+        "Volant runs up to \(limit) conversations at once. End one to start another."
+    }
 }
 
 /// The conversation slots of one helper process, shared by every connection in it. A connection

@@ -62,18 +62,8 @@ public struct ACPWorktree {
     /// commit and tracks nothing.
     public func create(project: String, id: String) throws -> String {
         guard Self.isValidID(id) else { throw Self.failure("This workspace name is not valid.") }
-        // An empty project is general chat, which has no repository to copy.
-        guard !project.isEmpty, let source = try? ACPWorkingDirectory.resolve(project: project, generalChat: root) else {
-            throw Self.failure("Choose a working folder that exists to use an isolated workspace.")
-        }
         Self.lock.lock(); defer { Self.lock.unlock() }
-        // Read before the first status, which can run a filter on a file whose timestamp changed.
-        guard try !definesRefusedSettings(in: source) else {
-            throw Self.failure("This repository’s own Git settings define a filter, a hook or a conditional include. Volant doesn’t run them, so it won’t create an isolated workspace here.")
-        }
-        guard let state = try status(in: source) else {
-            throw Self.failure("The working folder isn’t a Git repository, so Volant can’t create an isolated workspace for it.")
-        }
+        let (source, state) = try self.source(project)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         let path = root.appendingPathComponent(Self.folderName(project: source, id: id), isDirectory: true).path
         // Attributes are read without following a final symlink, so a dangling link counts too.
@@ -91,6 +81,38 @@ public struct ACPWorktree {
             return URL(fileURLWithPath: path).resolvingSymlinksInPath().path
         }
         throw leftovers(path: path, branch: branch, in: source)
+    }
+
+    /// Refuses `project` where `create` would fail for any new ID, and makes nothing. It runs the
+    /// settings read and the status `create` starts with, then refuses a repository with no commit,
+    /// which has nothing to start a branch from, and one with a branch named `volant`, which leaves
+    /// no room for a `volant/<id>` branch. Send to Several asks before it starts several
+    /// conversations in one folder.
+    public func check(project: String) throws {
+        let (source, _) = try self.source(project)
+        guard try git(["rev-parse", "--verify", "--quiet", "HEAD"], in: source).status == 0 else {
+            throw Self.failure("This repository has no commit yet, so Volant can’t create an isolated workspace from it.")
+        }
+        guard try !hasBranch("volant", in: source) else {
+            throw Self.failure("This repository has a branch named volant, so Git can’t create the volant/ branches isolated workspaces use.")
+        }
+    }
+
+    /// The project folder with symlinks resolved and its status, once it is a repository whose own
+    /// settings define nothing Volant refuses.
+    private func source(_ project: String) throws -> (path: String, state: RepositoryState) {
+        // An empty project is general chat, which has no repository to copy.
+        guard !project.isEmpty, let source = try? ACPWorkingDirectory.resolve(project: project, generalChat: root) else {
+            throw Self.failure("Choose a working folder that exists to use an isolated workspace.")
+        }
+        // Read before the first status, which can run a filter on a file whose timestamp changed.
+        guard try !definesRefusedSettings(in: source) else {
+            throw Self.failure("This repository’s own Git settings define a filter, a hook or a conditional include. Volant doesn’t run them, so it won’t create an isolated workspace here.")
+        }
+        guard let state = try status(in: source) else {
+            throw Self.failure("The working folder isn’t a Git repository, so Volant can’t create an isolated workspace for it.")
+        }
+        return (source, state)
     }
 
     /// Removes a workspace under `root` that has no change, staged, unstaged or untracked, and

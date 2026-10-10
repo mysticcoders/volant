@@ -231,6 +231,54 @@ final class ACPWorktreeTests: XCTestCase {
         }
     }
 
+    func testACheckRefusesWhatCreationWouldAndMakesNothing() throws {
+        let source = try repository()
+        try Data("*.bin filter=fixture\n".utf8).write(to: source.appendingPathComponent(".gitattributes"))
+        let asset = source.appendingPathComponent("asset.bin")
+        try Data("version fictional-pointer\n".utf8).write(to: asset)
+        try git(["add", ".gitattributes", "asset.bin"], in: source)
+        try git(["commit", "-q", "-m", "Asset"], in: source)
+        // A required global filter whose command fails, as Git LFS's does when its program is not on
+        // the helper's PATH, and a new timestamp that makes a status with global settings run it.
+        let marker = scratch.appendingPathComponent("filter-ran")
+        try Data("[filter \"fixture\"]\n\tclean = \"touch '\(marker.path)'; false\"\n\trequired = true\n".utf8)
+            .write(to: home.appendingPathComponent(".gitconfig"))
+        try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(120)], ofItemAtPath: asset.path)
+        XCTAssertNoThrow(try worktrees.check(project: source.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path), "the global filter must not run")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.path), "nothing is created")
+        XCTAssertEqual(try git(["branch", "--list", "volant/*"], in: source), "")
+
+        try git(["config", "filter.fixture.clean", "touch '\(marker.path)'; cat"], in: source)
+        XCTAssertThrowsError(try worktrees.check(project: source.path)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("define a filter, a hook or a conditional include"), error.localizedDescription)
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: marker.path), "the repository's own filter must not run either")
+        let plain = scratch.appendingPathComponent("plain", isDirectory: true)
+        try FileManager.default.createDirectory(at: plain, withIntermediateDirectories: true)
+        XCTAssertThrowsError(try worktrees.check(project: plain.path)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("isn’t a Git repository"), error.localizedDescription)
+        }
+        XCTAssertThrowsError(try worktrees.check(project: ""), "general chat has no repository")
+
+        let empty = scratch.appendingPathComponent("empty", isDirectory: true)
+        try FileManager.default.createDirectory(at: empty, withIntermediateDirectories: true)
+        try git(["init", "-q", "-b", "fixture"], in: empty)
+        XCTAssertThrowsError(try worktrees.check(project: empty.path)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("no commit yet"), error.localizedDescription)
+        }
+        let taken = try repository("taken")
+        try git(["branch", "volant"], in: taken)
+        XCTAssertThrowsError(try worktrees.check(project: taken.path)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("a branch named volant"), error.localizedDescription)
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.path), "nothing is created")
+        // Creation fails in both, so several targets would each fail the same way.
+        XCTAssertThrowsError(try worktrees.create(project: empty.path, id: "12340001"))
+        XCTAssertThrowsError(try worktrees.create(project: taken.path, id: "12340002"))
+        XCTAssertEqual(try git(["branch", "--list", "volant/*"], in: taken), "")
+    }
+
     func testRemovalRefusesChangesAndKeepsTheBranchOfACleanWorkspace() throws {
         let source = try repository()
         let path = try worktrees.create(project: source.path, id: "33334444")
@@ -400,6 +448,27 @@ final class ACPWorktreeCommandTests: XCTestCase {
             XCTAssertEqual(call.environment["GIT_CONFIG_GLOBAL"], "/dev/null")
             XCTAssertEqual(call.environment["HOME"], "/fictional-home")
             XCTAssertFalse(call.arguments.contains("--force"))
+        }
+    }
+
+    func testACheckRunsTheSettingsReadAndTheStatusThenTwoRefReads() throws {
+        var calls: [(arguments: [String], environment: [String: String])] = []
+        let project = FileManager.default.temporaryDirectory.resolvingSymlinksInPath()
+        let worktrees = ACPWorktree(root: project.appendingPathComponent("volant-worktree-" + UUID().uuidString), home: "/fictional-home") { arguments, _, environment in
+            calls.append((arguments, environment))
+            // A status on branch "main", a HEAD that resolves, no refused setting and no branch named volant.
+            if arguments.contains("status") { return GitResult(status: 0, output: Data("# branch.oid abc\n# branch.head main\n".utf8)) }
+            if arguments.last == "HEAD" { return GitResult(status: 0, output: Data("abc\n".utf8)) }
+            return GitResult(status: 1, output: Data())
+        }
+        try worktrees.check(project: project.path)
+        XCTAssertEqual(calls.map { Array($0.arguments.dropFirst(4)) },
+                       [["config", "--includes", "--name-only", "--get-regexp", "^(filter|hook|includeif)\\."], RepositoryStatusCommand.arguments,
+                        ["rev-parse", "--verify", "--quiet", "HEAD"], ["rev-parse", "--verify", "--quiet", "refs/heads/volant"]])
+        for call in calls {
+            XCTAssertEqual(Array(call.arguments.prefix(4)), ACPWorktree.isolation)
+            XCTAssertEqual(call.environment["GIT_CONFIG_GLOBAL"], "/dev/null")
+            XCTAssertEqual(call.environment["GIT_CONFIG_NOSYSTEM"], "1")
         }
     }
 

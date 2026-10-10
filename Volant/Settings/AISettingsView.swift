@@ -68,14 +68,18 @@ struct AISettingsView: View {
             LabeledContent(conversationTitle) {
                 Button(config.connection == .acp ? "Connect ACP" : "Open AI Chat") {
                     if persist() { openConversation(config) }
-                }.disabled(!config.isConfigured || !loaded || (config.connection == .apple && !appleAvailability.isReady))
+                }.disabled(!config.isConfigured || !loaded || (config.connection == .apple && !appleAvailability.isReady) || startRefused)
                     .background(ControlAnchor("settings.connect"))
             }
         }
     }
+    /// A Send to Several conversation keeps its result, so the button would start another conversation
+    /// beside it, which the live limit refuses.
+    private var startRefused: Bool { conversations.current.fanOutTarget && !conversations.canStartAnother }
     /// With several conversations running, the row counts them instead of naming one.
     private var conversationTitle: String {
         let running = conversations.live.count
+        if startRefused { return "\(running) conversations running. End one to start another." }
         if running > 1 { return "\(running) conversations running" }
         if conversations.current.active { return "Current conversation: \(conversations.current.providerTitle)" }
         return config.isConfigured ? "Ready" : "Finish the settings above to connect"

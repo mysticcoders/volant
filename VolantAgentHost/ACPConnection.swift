@@ -121,9 +121,7 @@ final class ACPConnection {
     /// so `tools/acp/check.swift` can hold a slot without an installed agent; never exposed over XPC.
     func takeSlot() throws {
         guard !holdsSlot else { return }
-        guard slots.acquire() else {
-            throw failure("Volant runs up to \(slots.limit) conversations at once. End one to start another.")
-        }
+        guard slots.acquire() else { throw failure(ACPConversationLimit.refusal(limit: slots.limit)) }
         holdsSlot = true
     }
     private func releaseSlot() {

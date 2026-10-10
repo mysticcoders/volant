@@ -61,17 +61,20 @@ final class ACPModel: ObservableObject {
         return usesAPI ? configuration.isConfigured : ACPProvider(rawValue: provider) != nil
     }
 
+    /// Ignored while the conversation runs, and for a Send to Several conversation, which keeps the
+    /// agent and folder that produced its transcript.
     func configure(_ value: AIConfiguration) {
-        guard !active else { return }
+        guard !active, !fanOutTarget else { return }
         configuration = value
         provider = value.provider; project = value.connection == .acp ? value.project : ""
         isolate = value.connection == .acp && !value.project.isEmpty && value.isolate
     }
     /// Reopening an active chat must never replace its session or draft. A conversation that can be
     /// resumed is offered instead of connecting, so opening the chat never replaces its record, and
-    /// one that kept a workspace is shown as it is, so Remove Workspace stays within reach.
+    /// one that kept a workspace is shown as it is, so Remove Workspace stays within reach. So is a
+    /// Send to Several conversation, so its result is never replaced by a new conversation.
     @discardableResult func openChat(configuration: AIConfiguration?, connect: () -> Void) -> Bool {
-        if active { return true }
+        if active || fanOutTarget { return true }
         guard let configuration, configuration.isConfigured, keyReady(for: configuration) else { return false }
         configure(configuration)
         if !canResume, workspace == nil { connect() }
@@ -150,6 +153,70 @@ final class ACPModel: ObservableObject {
     }
     var canSend: Bool { state.phase == "ready" && !submitting && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
+    /// A prompt that a Send to Several conversation sends once, with copies of the attachments.
+    struct PendingPrompt: Equatable {
+        let text: String
+        let attachments: [ChatAttachment]
+    }
+    /// Set on a conversation that Send to Several started.
+    private(set) var fanOutTarget = false
+    /// A headless conversation is not shown when it starts, and ends its session once its first turn
+    /// is over, keeping its transcript in memory.
+    private(set) var headless = false
+    /// The prompt to send when this conversation is first ready. It is cleared before the helper is
+    /// asked, so no later snapshot, retry, reconnect or resume can send it again.
+    private(set) var pendingPrompt: PendingPrompt?
+    /// True from the moment the prompt goes to the helper until its turn is over. A failure in that
+    /// time may have come after the agent acted on it.
+    private(set) var promptInFlight = false
+    static let mayHaveRun = "This task may have run. It was not sent again."
+    /// Set when the conversation failed after its prompt went out; the view shows `mayHaveRun` after
+    /// the error. Kept apart from `error`, which attaching a note or removing the workspace replaces.
+    @Published private(set) var taskMayHaveRun = false
+    /// A turn ended while AI Chat did not show the conversation, or a Send to Several or workspace
+    /// conversation stopped running then. Cleared when it is shown.
+    @Published var unread = false
+    /// Whether AI Chat shows this conversation now: it is current, the launcher is open and AI Chat
+    /// is on screen. Set by the launcher's list.
+    var onScreen = false {
+        didSet { if onScreen, unread { unread = false } }
+    }
+    /// The last turn stopped, or the conversation failed, with a message that reads as a provider's
+    /// usage limit; the status keeps the provider's message.
+    var limited: Bool { !state.busy && ACPStopReason.isUsageLimit(state.status) }
+    /// How often the launcher has put this conversation back in its queue after the helper refused
+    /// it at its limit.
+    var limitRetries = 0
+    /// Where Send to Several queued this conversation, so one the helper refused goes back in its
+    /// place.
+    var queuePosition = 0
+    /// Called once a running conversation has ended or failed, with its status and error in place.
+    var ended: () -> Void = {}
+    /// Replaced in tests, so a pending prompt is sent without a helper connection.
+    var promptSender: ((String, [ChatAttachment], @escaping (String?) -> Void) -> Void)?
+    /// Replaced in tests: receives what the helper would be asked for, and no connection opens.
+    var connector: ((HelperStart) -> Void)?
+    /// Replaced in tests: answers each read in place of the helper, given the revision the read
+    /// asks after, so reads run without a connection.
+    var reader: ((Int, @escaping (Data?, Int, String?) -> Void) -> Void)?
+
+    /// Makes this a Send to Several conversation that sends `prompt` once it is first ready. It
+    /// offers Resume only for a session it records itself, so it never loads another conversation's
+    /// session over its own transcript and workspace.
+    func assign(_ prompt: PendingPrompt, headless: Bool) {
+        fanOutTarget = true
+        self.headless = headless
+        pendingPrompt = prompt
+        resumable = nil
+    }
+    /// Drops a prompt that was never sent, so no later start of this conversation sends it.
+    func dropPendingPrompt() { pendingPrompt = nil }
+    /// Clears the draft and attachments Send to Several copied, unless the owner has changed them since.
+    func clearComposer(sent text: String, attachments sent: [ChatAttachment]) {
+        if draft == text { draft = "" }
+        if attachments == sent { attachments = [] }
+    }
+
     /// Does nothing while this conversation's workspace is being removed, since the removal reports
     /// its result here.
     func start() {
@@ -158,8 +225,10 @@ final class ACPModel: ObservableObject {
         connect(resume: nil)
     }
 
+    /// A resume loads an earlier conversation, so it never sends a Send to Several prompt.
     func resume() {
         guard canResume, let record = resumable else { return }
+        pendingPrompt = nil
         resumedSession = record.sessionID
         connect(resume: record)
     }
@@ -170,12 +239,13 @@ final class ACPModel: ObservableObject {
         if usesApple { startApple(); return }
         if usesAPI { startAPI(); return }
         let current = generation, request = helperStart(resume: record)
-        state = ACPState(); state.phase = "starting"; error = nil
+        state = ACPState(); state.phase = "starting"; error = nil; taskMayHaveRun = false
         switch request {
         case .start: state.status = "Connecting…"
         case .isolated: state.status = "Creating workspace…"
         case .resume: state.status = "Restoring conversation…"
         }
+        if let connector { connector(request); return }
         let connection = NSXPCConnection(serviceName: "com.mysticcoders.volant.AgentHost")
         connection.remoteObjectInterface = NSXPCInterface(with: VolantAgentHostProtocol.self)
         connection.invalidationHandler = { [weak self] in DispatchQueue.main.async { self?.failed("Agent helper disconnected. Start a new conversation to reconnect.", current: current) } }
@@ -289,6 +359,11 @@ final class ACPModel: ObservableObject {
         } }
     }
     func disconnect() {
+        let old = state.phase
+        teardown()
+        phaseChanged(from: old)
+    }
+    private func teardown() {
         generation = UUID(); timer?.invalidate(); timer = nil; reading = false; submitting = false
         apple?.cancel(); apple = nil
         // Invalidation stops the provider even if it is waiting on a permission request.
@@ -303,26 +378,40 @@ final class ACPModel: ObservableObject {
             DispatchQueue.main.async { self?.failed(error.localizedDescription, current: current) }
         } as? VolantAgentHostProtocol
     }
-    private func read() {
-        guard !reading, connection != nil else { return }
+    /// Asks the helper for its state after the revision this conversation holds, as each poll does.
+    /// Internal so tests can read where the poll timer would.
+    func read() {
+        guard !reading, connection != nil || reader != nil else { return }
         reading = true
         let current = generation, currentRevision = revision, known = usesAPI ? -1 : helperRevision
         let reply: (Data?, Int, String?) -> Void = { [weak self] data, snapshotRevision, error in DispatchQueue.main.async {
             guard let self, self.generation == current else { return }
             self.reading = false
             guard self.revision == currentRevision else { self.read(); return }
-            let before = self.state.phase
-            switch self.receive(data, revision: snapshotRevision, after: known) {
-            case .unchanged: return
-            case .stale: self.read(); return
-            case .invalid: self.failed(error ?? "Invalid conversation state from helper.", current: current); return
-            case .applied: break
-            }
-            if Self.turnEnded(from: before, to: self.state.phase) { self.refreshWorkspace() }
-            if self.state.phase == "failed" || (self.usesAPI && self.state.phase == "ready") { self.timer?.invalidate(); self.timer = nil }
+            self.handleRead(data, revision: snapshotRevision, after: known, error: error)
         } }
-        if usesAPI { apiProxy()?.read { reply($0, -1, $1) } }
+        if let reader { reader(known, reply) }
+        else if usesAPI { apiProxy()?.read { reply($0, -1, $1) } }
         else { proxy()?.acpRead(after: known, reply: reply) }
+    }
+    /// What `read` does with each reply: applies it through `receive(_:revision:after:)`, reads
+    /// again after a stale reply, fails on an invalid one, and once a snapshot is applied runs the
+    /// rules that follow a change of phase. Internal so tests can drive a conversation with the
+    /// replies a helper would send.
+    @discardableResult func handleRead(_ data: Data?, revision snapshotRevision: Int, after known: Int, error: String? = nil) -> SnapshotResult {
+        let before = state.phase
+        let result = receive(data, revision: snapshotRevision, after: known)
+        switch result {
+        case .unchanged: break
+        case .stale: read()
+        case .invalid: failed(error ?? "Invalid conversation state from helper.", current: generation)
+        case .applied:
+            if Self.turnEnded(from: before, to: state.phase) { refreshWorkspace() }
+            if state.phase == "failed" { closeConnection() }
+            else if usesAPI && state.phase == "ready" { timer?.invalidate(); timer = nil }
+            phaseChanged(from: before)
+        }
+        return result
     }
     enum SnapshotResult { case applied, unchanged, stale, invalid }
     /// Applies one helper reply to a read that asked for changes after `known`. A reply without
@@ -336,6 +425,81 @@ final class ACPModel: ObservableObject {
         helperRevision = revision
         remember(snapshot)
         return .applied
+    }
+    /// The rules that follow a change of phase, run once the status and error of the change are in
+    /// place: the unread mark, the pending prompt's one send, the end of its turn, and the notice that
+    /// a running conversation ended.
+    private func phaseChanged(from old: String) {
+        let phase = state.phase
+        guard phase != old else { return }
+        let turnOver = ["working", "cancelling"].contains(old) && !["working", "cancelling"].contains(phase)
+        let stopped = !["failed", "disconnected"].contains(old) && !active
+        // Opening a plain conversation that stopped connects it again, which replaces what it showed,
+        // so only one that opens as it is, a Send to Several conversation or one with a workspace,
+        // is marked when it stops.
+        if !onScreen, turnOver || (stopped && (fanOutTarget || workspace != nil)) { unread = true }
+        var endsHeadless = false
+        if promptInFlight, turnOver || !active {
+            promptInFlight = false
+            // The status holds the failure, whether the helper reported it or the connection did.
+            if phase == "failed" { error = state.status; taskMayHaveRun = true }
+            else { endsHeadless = headless && phase == "ready" }
+        }
+        if phase == "ready", pendingPrompt != nil { sendPending() }
+        if stopped { ended() }
+        if endsHeadless { endHeadless(status: state.status == "Ready" ? "Finished after its first turn." : state.status) }
+    }
+    /// Sends the pending prompt the first time the conversation is ready, through the same helper
+    /// calls as Send. Each connection shapes the attachments for its own agent.
+    private func sendPending() {
+        guard let prompt = pendingPrompt else { return }
+        pendingPrompt = nil
+        promptInFlight = true
+        let current = generation
+        revision += 1
+        submitting = true
+        let reply: (String?) -> Void = { [weak self] error in
+            DispatchQueue.main.async {
+                guard let self, self.generation == current else { return }
+                self.submitting = false
+                if let error { self.promptRefused(error) } else { self.state.phase = "working" }
+                self.read()
+            }
+        }
+        if let promptSender { promptSender(prompt.text, prompt.attachments, reply); return }
+        guard !prompt.attachments.isEmpty, let data = try? JSONEncoder().encode(prompt.attachments) else {
+            proxy()?.acpPrompt(text: prompt.text, reply: reply); return
+        }
+        proxy()?.acpPromptWithContext(text: prompt.text, attachments: data, reply: reply)
+    }
+    /// The helper refused the prompt before the agent received it, so the task did not run.
+    private func promptRefused(_ message: String) {
+        promptInFlight = false
+        error = message
+        if headless { endHeadless(status: message) }
+    }
+    /// Ends a headless conversation once its first turn is over, keeping its transcript and showing
+    /// `status`, which holds the provider's message when the turn did not end normally.
+    private func endHeadless(status: String) {
+        let current = generation
+        stopSession { [weak self] in
+            guard let self, self.generation == current else { return }
+            let old = self.state.phase
+            self.teardown()
+            self.state.status = status
+            self.phaseChanged(from: old)
+        }
+    }
+    /// Stops the agent through the helper before the connection closes, so the helper has returned
+    /// this conversation's slot by the time the launcher starts a waiting conversation in its place.
+    /// `finish` may be called more than once and checks the generation itself; after 5 s it runs
+    /// whether or not the helper replied.
+    private func stopSession(then finish: @escaping () -> Void) {
+        guard let proxy = connection?.remoteObjectProxyWithErrorHandler({ _ in DispatchQueue.main.async(execute: finish) }) as? VolantAgentHostProtocol else {
+            finish(); return
+        }
+        proxy.acpStop { DispatchQueue.main.async(execute: finish) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: finish)
     }
     /// True when the conversation becomes ready or a turn ends.
     static func turnEnded(from old: String, to new: String) -> Bool {
@@ -353,7 +517,13 @@ final class ACPModel: ObservableObject {
             }
         }
     }
-    var canRemoveWorkspace: Bool { !active && workspace != nil && !removingWorkspace }
+    /// Workspaces that the launcher's other live conversations run in. Another conversation can resume
+    /// a session in this conversation's workspace, so removal waits until none runs there.
+    var workspacesElsewhere: () -> [String] = { [] }
+    var canRemoveWorkspace: Bool {
+        guard !active, let workspace, !removingWorkspace else { return false }
+        return !workspacesElsewhere().contains(workspace)
+    }
     /// Replaced in tests, so they never open a helper connection.
     var worktreeRemover: (String, @escaping (String?, String?) -> Void) -> Void = ACPModel.removeWorktree
     /// Removes the ended conversation's workspace. The helper refuses one with any change, and its
@@ -451,10 +621,12 @@ final class ACPModel: ObservableObject {
             self.state.messages[index] = ACPMessage(id: self.state.messages[index].id, role: "Assistant", text: snapshot)
         }, finished: { [weak self] failure in
             guard let self, self.generation == current else { return }
+            let old = self.state.phase
             self.submitting = false
             self.state.phase = "ready"
             self.state.status = failure ?? "Ready."
             if let failure { self.error = failure }
+            self.phaseChanged(from: old)
         })
     }
 
@@ -470,8 +642,19 @@ final class ACPModel: ObservableObject {
             self?.failed("AI helper disconnected. Connect again to start a new conversation.", current: current)
         } } as? VolantAIHostProtocol
     }
-    private func failed(_ message: String, current: UUID) {
-        guard generation == current else { return }
-        disconnect(); state.phase = "failed"; error = message; state.status = message
+    /// A failure the helper reports is the conversation's last snapshot. Closing the connection lets
+    /// the helper drop its side, while the transcript, status and error stay.
+    private func closeConnection() {
+        generation = UUID(); timer?.invalidate(); timer = nil; reading = false; submitting = false
+        connection?.invalidate(); connection = nil
     }
+    /// A conversation that already failed keeps its message and status.
+    private func failed(_ message: String, current: UUID) {
+        guard generation == current, state.phase != "failed" else { return }
+        let old = state.phase
+        teardown(); state.phase = "failed"; error = message; state.status = message
+        phaseChanged(from: old)
+    }
+    /// Fails the conversation as the helper would. Internal so tests can drive a failure.
+    func fail(_ message: String) { failed(message, current: generation) }
 }

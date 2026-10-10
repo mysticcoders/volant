@@ -54,6 +54,11 @@ final class ACPConversationSlotsTests: XCTestCase {
         XCTAssertEqual(ACPConversationLimit.live, 6)
         XCTAssertEqual(ACPConversationSlots.shared.limit, ACPConversationLimit.live)
     }
+
+    func testTheRefusalNamesTheLimit() {
+        XCTAssertEqual(ACPConversationLimit.refusal(), "Volant runs up to 6 conversations at once. End one to start another.")
+        XCTAssertEqual(ACPConversationLimit.refusal(limit: 2), "Volant runs up to 2 conversations at once. End one to start another.")
+    }
 }
 
 /// Counts callers holding a slot at the same moment, and the most there ever were.

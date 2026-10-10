@@ -39,6 +39,12 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
             catch { reply(nil, error.localizedDescription) }
         }
     }
+    func checkWorktree(project: String, reply: @escaping (String?) -> Void) {
+        inspectionQueue.async {
+            do { try RepositoryInspector.worktrees().check(project: project); reply(nil) }
+            catch { reply(error.localizedDescription) }
+        }
+    }
     func acpRead(after revision: Int, reply: @escaping (Data?, Int, String?) -> Void) {
         acp.queue.async {
             do { let (data, current) = try self.acp.snapshot(after: revision); reply(data, current, nil) }

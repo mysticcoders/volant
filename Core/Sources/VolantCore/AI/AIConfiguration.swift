@@ -18,13 +18,16 @@ public struct AIConfiguration: Codable, Equatable {
     public var project = ""
     /// Each new ACP conversation runs in its own git worktree of `project`. Ignored without a project.
     public var isolate = false
-    public enum CodingKeys: String, CodingKey { case provider, project, connection, api, localAPI, isolate }
+    /// How many conversations one Send to Several may start, clamped to `ACPFanOut.limits` when read.
+    public var fanOut = ACPFanOut.defaultLimit
+    public enum CodingKeys: String, CodingKey { case provider, project, connection, api, localAPI, isolate, fanOut }
     public init() {}
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         provider = try c.decodeIfPresent(String.self, forKey: .provider) ?? ""
         project = try c.decodeIfPresent(String.self, forKey: .project) ?? ""
         isolate = try c.decodeIfPresent(Bool.self, forKey: .isolate) ?? false
+        fanOut = ACPFanOut.clamp(try c.decodeIfPresent(Int.self, forKey: .fanOut) ?? ACPFanOut.defaultLimit)
         connection = try c.decodeIfPresent(AIConnectionKind.self, forKey: .connection) ?? .acp
         api = try c.decodeIfPresent(AIHTTPConfiguration.self, forKey: .api) ?? AIHTTPConfiguration()
         localAPI = try c.decodeIfPresent(AIHTTPConfiguration.self, forKey: .localAPI) ?? AIHTTPConfiguration(provider: .compatible, endpoint: "http://127.0.0.1:11434/v1", local: true)
