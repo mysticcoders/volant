@@ -391,6 +391,7 @@ final class LauncherModel: ObservableObject {
     private var immediate: [ResultSection] = []
     private var contactRows: [ResultRow] = []
     private var fileRows: [ResultRow] = []
+    private var notesSearch: NotesSearchTask?
     /// The prefix source the last refresh routed to (`ext`, `notes`, `clip`), so a source reloads
     /// from disk when it is entered rather than on every keystroke inside it.
     private var prefixBranch: String?
@@ -483,6 +484,7 @@ final class LauncherModel: ObservableObject {
         wifiJoin = nil
         actionFeedback = nil
         files.cancel()
+        notesSearch?.cancel()
         // Changing the query already refreshes suggestions. Empty-query reopens still
         // refresh recency, which may have changed while the panel was hidden.
         if query.isEmpty { showSuggestions() }
@@ -584,7 +586,8 @@ final class LauncherModel: ObservableObject {
     }
     /// What the chat's @ picker offers: recent clipboard text and notes, snapshotted when chosen.
     /// A note with unsaved edits contributes the text on screen. Images and unreadable notes are
-    /// left out of this first version.
+    /// left out of this first version. Notes match without scanning files (resident text, title or
+    /// preview), and only the offered notes' text is read.
     func contextCandidates(_ query: String) -> [ChatAttachment] {
         let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
         let formatter = RelativeDateTimeFormatter()
@@ -600,10 +603,11 @@ final class LauncherModel: ObservableObject {
             return ChatAttachment(id: "clip:\(clip.id)", kind: .clipboard, title: String(first.trimmingCharacters(in: .whitespaces).prefix(60)),
                                   detail: "Clipboard · " + age(clip.copiedAt), text: clip.text)
         }
-        let found = notes.search(term, limit: 16).filter { $0.readError == nil }.prefix(8).map { note in
-            ChatAttachment(id: "note:" + note.id, kind: .note, title: note.title,
-                           detail: "Note · edited " + age(note.modified),
-                           text: notes.dirtyText[note.id] ?? note.text)
+        let found = notes.search(term, limit: 16).filter { $0.readError == nil }.prefix(8).compactMap { note in
+            notes.text(of: note.id).map { text in
+                ChatAttachment(id: "note:" + note.id, kind: .note, title: note.title,
+                               detail: "Note · edited " + age(note.modified), text: text)
+            }
         }
         return Array(clips) + Array(found)
     }
@@ -645,6 +649,8 @@ final class LauncherModel: ObservableObject {
         actionFeedback = nil
         wifiJoin = nil
         files.cancel()
+        notesSearch?.cancel()
+        notesSearch = nil
         let q = query.trimmingCharacters(in: .whitespaces)
         if !showingDictionary { dictionary.clear() }
         if showingAppleShortcuts {
@@ -751,9 +757,11 @@ final class LauncherModel: ObservableObject {
         if q.lowercased() == "note" || q.lowercased().hasPrefix("note ") {
             let term = q.dropFirst(4).trimmingCharacters(in: .whitespaces)
             enterNotes(from: previousBranch)
-            var rows = notes.search(term).map { ResultRow.note($0) }
-            if !term.isEmpty { rows.append(.newNote(term)) }
-            sections = rows.isEmpty ? [] : [ResultSection(title: term.isEmpty ? "Recent Notes" : "Notes", rows: rows)]
+            showNotes(notes.search(term), term: term)
+            notesSearch = notes.searchFiles(term) { [weak self] found in
+                guard let self, gen == self.generation else { return }
+                self.showNotes(found, term: term, preservingSelection: true)
+            }
             return
         }
         if showingClipboard {
@@ -929,6 +937,17 @@ final class LauncherModel: ObservableObject {
         guard gen == generation else { return }
         apply(self)
         compose()
+    }
+
+    /// Shows the `note` prefix results: matches found at once, then the full-text matches for the same query,
+    /// which keep the selected row by identity.
+    private func showNotes(_ found: [Note], term: String, preservingSelection: Bool = false) {
+        let selectedID = preservingSelection ? selectedRow?.id : nil
+        var rows = found.map { ResultRow.note($0) }
+        if !term.isEmpty { rows.append(.newNote(term)) }
+        sections = rows.isEmpty ? [] : [ResultSection(title: term.isEmpty ? "Recent Notes" : "Notes", rows: rows)]
+        if let selectedID, let index = self.rows.firstIndex(where: { $0.id == selectedID }) { selection = index }
+        else if preservingSelection { selection = 0 }
     }
 
     /// Keeps the selected row by identity when async sections arrive above it.

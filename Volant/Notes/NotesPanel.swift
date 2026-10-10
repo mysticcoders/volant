@@ -139,12 +139,24 @@ final class NotesModel: ObservableObject {
     enum Overlay { case browse, actions }
     let store: NotesStore
     @Published var selectedID: String? {
-        didSet { UserDefaults.standard.set(selectedID, forKey: preferenceKey + ".selected") }
+        didSet {
+            UserDefaults.standard.set(selectedID, forKey: preferenceKey + ".selected")
+            store.open(selectedID)
+        }
     }
     @Published var editing = true
     @Published var liveMode = true
-    @Published var filter = ""
+    @Published var filter = "" { didSet { if filter != oldValue { searchFiles() } } }
     @Published var toast: String?
+    @Published private var fileMatches: FileMatches?
+    private var fileSearch: NotesSearchTask?
+
+    /// Full-text matches for one filter, valid while the store's list is unchanged.
+    private struct FileMatches {
+        let filter: String
+        let generation: Int
+        let notes: [Note]
+    }
     @Published var overlay: Overlay?
     @Published private(set) var pinned: Set<String>
     private var preferenceKey: String { "notes." + store.directory.path }
@@ -155,10 +167,16 @@ final class NotesModel: ObservableObject {
         selectedID = UserDefaults.standard.string(forKey: key + ".selected")
         pinned = Set(UserDefaults.standard.stringArray(forKey: key + ".pinned") ?? [])
         selectIfNeeded()
+        store.open(selectedID)
     }
 
+    /// Browse results: matches available at once, replaced by the background full-text matches for the same
+    /// filter when they arrive. Pinned notes lead, then the most recently modified.
     var filtered: [Note] {
-        store.search(filter, limit: Int.max).sorted {
+        let found: [Note]
+        if let matches = fileMatches, matches.filter == filter, matches.generation == store.generation { found = matches.notes }
+        else { found = store.search(filter, limit: Int.max) }
+        return found.sorted {
             let left = pinned.contains($0.id), right = pinned.contains($1.id)
             if left != right { return left }
             if $0.modified != $1.modified { return $0.modified > $1.modified }
@@ -173,6 +191,18 @@ final class NotesModel: ObservableObject {
     /// Whether a shortcut's control is enabled in the current state.
     func isAvailable(_ shortcut: NotesShortcut) -> Bool {
         !shortcut.actsOnSelectedNote || noteCommandsAvailable
+    }
+
+    /// Cancels the previous filter's file scan and starts one for the current filter; results for a filter that
+    /// has since changed are dropped.
+    private func searchFiles() {
+        fileSearch?.cancel()
+        fileMatches = nil
+        let filter = filter
+        fileSearch = store.searchFiles(filter, limit: Int.max) { [weak self] notes in
+            guard let self, self.filter == filter else { return }
+            self.fileMatches = FileMatches(filter: filter, generation: self.store.generation, notes: notes)
+        }
     }
 
     func selectIfNeeded() {
@@ -220,10 +250,10 @@ final class NotesModel: ObservableObject {
     }
 
     func copyMarkdown() {
-        guard let note = selected, note.readError == nil else { return }
+        guard let note = selected, note.readError == nil, let text = note.text else { return }
         let pb = NSPasteboard.general
         pb.clearContents()
-        pb.setString(note.text, forType: .string)
+        pb.setString(text, forType: .string)
         flash("Copied Markdown")
     }
 
@@ -346,20 +376,24 @@ struct NotesView: View {
                         Button("Reveal in Finder") { NSWorkspace.shared.activateFileViewerSelecting([note.url]) }
                     }.padding(NotesStyle.inset).frame(maxWidth: .infinity, alignment: .leading)
                 }.frame(maxHeight: .infinity)
-            } else if model.editing {
-                ZStack(alignment: .topLeading) {
-                    LiveMarkdownEditor(text: Binding(get: { store.notes.first { $0.id == note.id }?.text ?? "" },
-                                                     set: { store.update(note.id, text: $0) }),
-                                       live: model.liveMode, state: liveState)
-                        .id(note.id)
-                    if note.text.isEmpty {
-                        Text("Start writing…").foregroundStyle(.tertiary)
-                            .padding(.top, 12).allowsHitTesting(false)
+            } else if let text = note.text {
+                if model.editing {
+                    ZStack(alignment: .topLeading) {
+                        LiveMarkdownEditor(text: Binding(get: { store.notes.first { $0.id == note.id }?.text ?? text },
+                                                         set: { store.update(note.id, text: $0) }),
+                                           live: model.liveMode, state: liveState)
+                            .id(note.id)
+                        if text.isEmpty {
+                            Text("Start writing…").foregroundStyle(.tertiary)
+                                .padding(.top, 12).allowsHitTesting(false)
+                        }
                     }
+                    .padding(.horizontal, NotesStyle.inset).padding(.top, 4)
+                } else {
+                    MarkdownView(text: text) { _ in model.flash("Copied") }
                 }
-                .padding(.horizontal, NotesStyle.inset).padding(.top, 4)
             } else {
-                MarkdownView(text: note.text) { _ in model.flash("Copied") }
+                Color.clear.frame(maxHeight: .infinity).onAppear { store.open(note.id) }
             }
         } else {
             VStack(spacing: 14) {
@@ -405,8 +439,8 @@ struct NotesView: View {
                 Text(model.toast ?? (!store.saveErrors.isEmpty ? "Not saved" : !store.dirtyText.isEmpty ? "Saving…" : ""))
                     .font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 Spacer(minLength: 8)
-                if let note = model.selected, note.readError == nil {
-                    Text("\(note.text.split(whereSeparator: { $0.isWhitespace }).count) words")
+                if let note = model.selected, note.readError == nil, let text = note.text {
+                    Text("\(text.split(whereSeparator: { $0.isWhitespace }).count) words")
                         .font(.caption).foregroundStyle(.tertiary)
                     Menu {
                         Button("Live") { model.liveMode = true; model.editing = true }
@@ -437,7 +471,7 @@ struct NotesView: View {
         Group {
             Button("Toggle Preview") { model.editing.toggle() }.keyboardShortcut(NotesShortcut.togglePreview.keyboardShortcut)
             Button("Copy Markdown") { model.copyMarkdown() }.keyboardShortcut(NotesShortcut.copyMarkdown.keyboardShortcut)
-            Button("Duplicate Note") { if let note = model.selected { model.newNote(text: note.text) } }.keyboardShortcut(NotesShortcut.duplicate.keyboardShortcut)
+            Button("Duplicate Note") { if let text = model.selected?.text { model.newNote(text: text) } }.keyboardShortcut(NotesShortcut.duplicate.keyboardShortcut)
             Button("Pin Note") { model.togglePin() }.keyboardShortcut(NotesShortcut.pin.keyboardShortcut)
             Button("Trash Note") { model.deleteSelected() }.keyboardShortcut(NotesShortcut.trash.keyboardShortcut)
         }
@@ -450,6 +484,7 @@ struct NotesPicker: View {
     @ObservedObject var model: NotesModel
     @ObservedObject var store: NotesStore
     @State private var selection = 0
+    @State private var shownFilter = ""
     @FocusState private var searchFocused: Bool
     @Environment(\.volantTheme) private var theme
 
@@ -479,7 +514,7 @@ struct NotesPicker: View {
         }
         if let note = model.selected, note.readError == nil {
             actions += [
-                Entry(id: "duplicate", title: "Duplicate Note", subtitle: "", symbol: "plus.square.on.square", shortcut: "⌘D") { model.newNote(text: note.text) },
+                Entry(id: "duplicate", title: "Duplicate Note", subtitle: "", symbol: "plus.square.on.square", shortcut: "⌘D") { if let text = note.text { model.newNote(text: text) } },
                 Entry(id: "pin", title: model.pinned.contains(note.id) ? "Unpin Note" : "Pin Note", subtitle: "", symbol: "pin", shortcut: "⇧⌘P") { model.togglePin() },
                 Entry(id: "preview", title: model.editing ? "Preview Markdown" : "Return to Editor", subtitle: "", symbol: "eye", shortcut: "⌘E") { model.editing.toggle() },
                 Entry(id: "copy", title: "Copy Markdown", subtitle: "", symbol: "doc.on.doc", shortcut: "⇧⌘C") { model.copyMarkdown() },
@@ -544,9 +579,18 @@ struct NotesPicker: View {
         .background(theme.raisedSurface)
         .onAppear { searchFocused = true }
         .onChange(of: model.filter) { _, _ in selection = 0 }
+        .onChange(of: entries.map(\.id)) { old, new in keepSelection(old, new) }
         .onChange(of: model.overlay) { _, _ in selection = 0; searchFocused = true }
         .onKeyPress(.downArrow) { selection = min(selection + 1, max(0, entries.count - 1)); return .handled }
         .onKeyPress(.upArrow) { selection = max(0, selection - 1); return .handled }
+    }
+
+    /// Keeps the highlighted entry by identity when full-text matches arrive for the same filter; a new filter
+    /// starts again at the first entry.
+    private func keepSelection(_ old: [String], _ new: [String]) {
+        guard model.filter == shownFilter else { shownFilter = model.filter; return }
+        if old.indices.contains(selection), let index = new.firstIndex(of: old[selection]) { selection = index }
+        else { selection = min(selection, max(0, new.count - 1)) }
     }
 
     private func activate(_ index: Int? = nil) {
