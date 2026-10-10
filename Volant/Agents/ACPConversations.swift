@@ -42,12 +42,15 @@ final class ACPConversations: ObservableObject {
     /// Runs a retry after the given seconds, once the helper refused a start at its limit. Replaced in
     /// tests.
     var retryLater: (TimeInterval, @escaping () -> Void) -> Void = { DispatchQueue.main.asyncAfter(deadline: .now() + $0, execute: $1) }
-    /// The Send to Several whose folder check is out. Closing the picker cancels it, so a check that
+    /// The Send to Several whose checks are out. Closing the picker cancels it, so a check that
     /// replies afterwards starts nothing and leaves the draft as it is.
     private var pendingSend: UUID?
     /// Asks the helper whether a workspace could be made of a folder, replying with the reason when
     /// it couldn't. Replaced in tests, so they never open a helper connection.
     var worktreeChecker: (String, @escaping (String?) -> Void) -> Void = ACPConversations.checkWorktree
+    /// Asks the helper whether a provider could start under an account folder, replying with the
+    /// reason when it couldn't. Replaced in tests, so they never open a helper connection.
+    var accountChecker: (String, String, @escaping (String?) -> Void) -> Void = ACPConversations.checkAccount
 
     /// `start` is injected so tests never open an XPC connection.
     init(make: @escaping () -> ACPModel = { ACPModel() }, start: @escaping (ACPModel) -> Void = { $0.start() }) {
@@ -107,6 +110,14 @@ final class ACPConversations: ObservableObject {
         return true
     }
 
+    /// Applies saved AI settings. The current conversation takes them through `configure` unless it
+    /// runs or is a Send to Several conversation, and the next start of every ACP conversation but a
+    /// Send to Several one follows the account now chosen for its provider.
+    func apply(_ configuration: AIConfiguration) {
+        current.configure(configuration)
+        all.forEach { $0.followAccountChoice(configuration) }
+    }
+
     func select(_ model: ACPModel) {
         guard all.contains(where: { $0 === model }) else { return }
         current = model
@@ -128,8 +139,8 @@ final class ACPConversations: ObservableObject {
 
     /// Send to Several: one new conversation per target, each sending `prompt` with copies of
     /// `attachments` once it is first ready. Targets past the live limit wait and start in order as
-    /// conversations end. Unless `headless`, the first one that starts is shown. Returns the new
-    /// conversations in target order.
+    /// conversations end. Unless `headless`, the first one that starts is shown. Each runs under the
+    /// account chosen for its own provider. Returns the new conversations in target order.
     @discardableResult func fanOut(prompt: String, attachments: [ChatAttachment], targets: [AIConfiguration], headless: Bool) -> [ACPModel] {
         let pending = ACPModel.PendingPrompt(text: prompt, attachments: attachments)
         let models = targets.map { target -> ACPModel in
@@ -157,10 +168,10 @@ final class ACPConversations: ObservableObject {
         dropped.forEach { $0.dropPendingPrompt() }
     }
 
-    /// Plans Send to Several from `source`'s draft and attachments, checks the folder, starts the
-    /// targets and clears what was copied from `source`'s composer. Replies on the main queue with
-    /// the reason when nothing started, else with nil; a send canceled during its check never
-    /// replies. One send checks its folder at a time.
+    /// Plans Send to Several from `source`'s draft and attachments, checks the account folders and
+    /// the folder, starts the targets and clears what was copied from `source`'s composer. Replies
+    /// on the main queue with the reason when nothing started, else with nil; a send canceled during
+    /// its checks never replies. One send checks at a time.
     func sendToSeveral(from source: ACPModel, settings: AIConfiguration, counts: [ACPProvider: Int], headless: Bool,
                        done: @escaping (String?) -> Void) {
         guard pendingSend == nil else { done("Send to Several is still checking the folder."); return }
@@ -171,7 +182,7 @@ final class ACPConversations: ObservableObject {
         if let problem = ChatAttachmentLimits.problem(sent) { done(problem); return }
         let send = UUID()
         pendingSend = send
-        checkFolder(of: targets) { [weak self] problem in
+        checkTargets(targets) { [weak self] problem in
             guard let self, self.pendingSend == send else { return }
             self.pendingSend = nil
             if let problem { done(problem); return }
@@ -181,15 +192,38 @@ final class ACPConversations: ObservableObject {
         }
     }
 
-    /// Drops the Send to Several waiting for its folder check, as closing its picker does.
+    /// Drops the Send to Several waiting for its checks, as closing its picker does.
     func cancelSend() { pendingSend = nil }
 
-    /// Each target in a folder gets its own workspace, so the helper first runs the checks an
-    /// isolated start makes, in the same order, and a folder it would refuse starts nothing. Replies
-    /// on the main queue.
-    func checkFolder(of targets: [AIConfiguration], reply: @escaping (String?) -> Void) {
-        guard let folder = targets.first(where: \.isolate)?.project else { reply(nil); return }
-        worktreeChecker(folder) { problem in DispatchQueue.main.async { reply(problem) } }
+    /// The helper first runs the checks each target's start makes, in the same order: the account
+    /// folder, once for each provider that has one, then the folder, since each target in a folder
+    /// gets its own workspace. An account folder or a folder it would refuse starts nothing, and a
+    /// refused account folder's reason starts with its provider and account, as in "Codex account
+    /// Personal: …". Replies on the main queue once a check ran.
+    func checkTargets(_ targets: [AIConfiguration], reply: @escaping (String?) -> Void) {
+        var accounts: [(provider: String, folder: String, name: String)] = []
+        for target in targets {
+            guard let account = target.account(for: target.provider),
+                  !accounts.contains(where: { $0.provider == target.provider && $0.folder == account.directory }) else { continue }
+            let title = ACPProvider(rawValue: target.provider)?.title ?? target.provider
+            accounts.append((target.provider, account.directory, title + " account " + account.label))
+        }
+        check(accounts: accounts[...], then: targets.first(where: \.isolate)?.project, reply: reply)
+    }
+
+    private func check(accounts: ArraySlice<(provider: String, folder: String, name: String)>, then folder: String?,
+                       reply: @escaping (String?) -> Void) {
+        guard let account = accounts.first else {
+            guard let folder else { reply(nil); return }
+            worktreeChecker(folder) { problem in DispatchQueue.main.async { reply(problem) } }
+            return
+        }
+        accountChecker(account.provider, account.folder) { [weak self] problem in
+            DispatchQueue.main.async {
+                if let problem { reply(account.name + ": " + problem) }
+                else { self?.check(accounts: accounts.dropFirst(), then: folder, reply: reply) }
+            }
+        }
     }
 
     /// Starts waiting conversations, in order, while the live limit allows. One that already runs, or
@@ -231,9 +265,17 @@ final class ACPConversations: ObservableObject {
         startWaiting()
     }
 
-    /// The conversation Send to Several starts from may have no connection, so the check opens one of
-    /// its own.
     private static func checkWorktree(_ project: String, reply: @escaping (String?) -> Void) {
+        askHelper(reply) { $0.checkWorktree(project: project, reply: $1) }
+    }
+
+    private static func checkAccount(_ provider: String, _ folder: String, reply: @escaping (String?) -> Void) {
+        askHelper(reply) { $0.checkAccount(provider: provider, profile: folder, reply: $1) }
+    }
+
+    /// The conversation Send to Several starts from may have no connection, so each check opens one
+    /// of its own.
+    private static func askHelper(_ reply: @escaping (String?) -> Void, _ call: (VolantAgentHostProtocol, @escaping (String?) -> Void) -> Void) {
         let connection = NSXPCConnection(serviceName: "com.mysticcoders.volant.AgentHost")
         connection.remoteObjectInterface = NSXPCInterface(with: VolantAgentHostProtocol.self)
         connection.resume()
@@ -241,7 +283,7 @@ final class ACPConversations: ObservableObject {
         guard let proxy = connection.remoteObjectProxyWithErrorHandler({ _ in connection.invalidate(); reply(failed) }) as? VolantAgentHostProtocol else {
             connection.invalidate(); reply(failed); return
         }
-        proxy.checkWorktree(project: project) { problem in connection.invalidate(); reply(problem) }
+        call(proxy) { problem in connection.invalidate(); reply(problem) }
     }
 
     private func adopt(_ model: ACPModel) {

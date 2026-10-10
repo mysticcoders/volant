@@ -17,17 +17,19 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
         shortcutsQueue.async { self.shortcutsHost.run(id: id, reply: reply) }
     }
     private let acp = ACPConnection()
-    func acpStart(provider: String, project: String, reply: @escaping (String?) -> Void) {
-        acp.queue.async { do { try self.acp.start(provider: provider, project: project); reply(nil) } catch { reply(error.localizedDescription) } }
+    func acpStart(provider: String, project: String, profile: String, reply: @escaping (String?) -> Void) {
+        acp.queue.async { do { try self.acp.start(provider: provider, project: project, profile: profile); reply(nil) } catch { reply(error.localizedDescription) } }
     }
-    func acpResume(provider: String, project: String, session: String, reply: @escaping (String?) -> Void) {
-        acp.queue.async { do { try self.acp.start(provider: provider, project: project, resume: session); reply(nil) } catch { reply(error.localizedDescription) } }
+    func acpResume(provider: String, project: String, profile: String, session: String, reply: @escaping (String?) -> Void) {
+        acp.queue.async {
+            do { try self.acp.start(provider: provider, project: project, resume: session, profile: profile); reply(nil) } catch { reply(error.localizedDescription) }
+        }
     }
     /// The worktree is made on the conversation's queue, after its slot is taken and before its agent
     /// starts, so the conversation's state stays serialized while git runs.
-    func acpStartIsolated(provider: String, project: String, reply: @escaping (String?, String?) -> Void) {
+    func acpStartIsolated(provider: String, project: String, profile: String, reply: @escaping (String?, String?) -> Void) {
         acp.queue.async {
-            let started = self.acp.startIsolated(provider: provider, project: project) { source in
+            let started = self.acp.startIsolated(provider: provider, project: project, profile: profile) { source in
                 try RepositoryInspector.worktrees().create(project: source, id: ACPWorktree.newID())
             }
             reply(started.workspace, started.error)
@@ -44,6 +46,9 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
             do { try RepositoryInspector.worktrees().check(project: project); reply(nil) }
             catch { reply(error.localizedDescription) }
         }
+    }
+    func checkAccount(provider: String, profile: String, reply: @escaping (String?) -> Void) {
+        inspectionQueue.async { reply(ACPConnection.accountProblem(provider: provider, profile: profile)) }
     }
     func acpRead(after revision: Int, reply: @escaping (Data?, Int, String?) -> Void) {
         acp.queue.async {

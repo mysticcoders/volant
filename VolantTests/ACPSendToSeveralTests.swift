@@ -42,6 +42,7 @@ final class ACPSendToSeveralTests: XCTestCase {
         })
         list.retryLater = { [unowned self] delay, retry in self.retryDelays.append(delay); self.retries.append(retry) }
         list.worktreeChecker = { _, reply in reply(folderProblem) }
+        list.accountChecker = { _, _, reply in reply(nil) }
         list.chatShown = true
         return list
     }
@@ -62,6 +63,11 @@ final class ACPSendToSeveralTests: XCTestCase {
         let done = expectation(description: "main queue")
         DispatchQueue.main.async { done.fulfill() }
         wait(for: [done], timeout: 2)
+    }
+
+    /// Each check's reply returns to the main queue before the next check is asked.
+    private func drain(checks: Int) {
+        for _ in 0..<checks { drain() }
     }
 
     /// Stands in for the helper's revision, which every change to its state advances.
@@ -341,7 +347,7 @@ final class ACPSendToSeveralTests: XCTestCase {
         models[1].disconnect()
         XCTAssertTrue(models[1].canResume)
         models[1].resume()
-        XCTAssertEqual(requests, [.resume(folder: own, session: "fictional-session")])
+        XCTAssertEqual(requests, [.resume(folder: own, profile: "", session: "fictional-session")])
         ready(models[1])
         drain()
         XCTAssertEqual(sentCount(models[1]), 1)
@@ -561,7 +567,7 @@ final class ACPSendToSeveralTests: XCTestCase {
         XCTAssertEqual(result, .some(nil))
         XCTAssertEqual(checked, ["/tmp/fictional-project"])
         XCTAssertEqual(started.map(\.provider), ["claude", "codex"])
-        XCTAssertTrue(started.allSatisfy { $0.helperStart(resume: nil) == .isolated(project: "/tmp/fictional-project") },
+        XCTAssertTrue(started.allSatisfy { $0.helperStart(resume: nil) == .isolated(project: "/tmp/fictional-project", profile: "") },
                       "isolated with the setting off")
         XCTAssertEqual(source.draft, "", "the composer's prompt went to the targets")
         XCTAssertTrue(source.attachments.isEmpty)
@@ -579,6 +585,46 @@ final class ACPSendToSeveralTests: XCTestCase {
         XCTAssertTrue(started.isEmpty)
         XCTAssertTrue(list.waiting.isEmpty)
         XCTAssertEqual(source.draft, "Fictional task", "the prompt stays in the composer")
+    }
+
+    func testAnAccountFolderTheHelperWouldRefuseStartsNothing() {
+        let list = conversations()
+        let source = list.current
+        source.draft = "Fictional task"
+        let work = ACPAccountProfile(id: "fictional-work", provider: "claude", label: "Work", directory: "/tmp/fictional-claude-work")
+        let personal = ACPAccountProfile(id: "fictional-personal", provider: "codex", label: "Personal", directory: "/tmp/fictional-codex-personal")
+        var accounts = settings(project: "/tmp/fictional-project")
+        accounts.profiles = [work, personal]
+        accounts.chooseAccount(work.id, for: "claude")
+        accounts.chooseAccount(personal.id, for: "codex")
+        let refusal = "Could not open this conversation’s account folder. Check the Account section in AI Settings."
+        var checked: [String] = [], folders = 0
+        list.accountChecker = { provider, folder, reply in checked.append(provider + " " + folder); reply(provider == "codex" ? refusal : nil) }
+        list.worktreeChecker = { _, reply in folders += 1; reply(nil) }
+        var result: String?
+        list.sendToSeveral(from: source, settings: accounts, counts: [.claude: 2, .codex: 1, .gemini: 1], headless: true) { result = $0 }
+        drain(checks: 2)
+        XCTAssertEqual(result, "Codex account Personal: " + refusal, "the helper's reason is shown after the account it refused")
+        XCTAssertEqual(checked, ["claude /tmp/fictional-claude-work", "codex /tmp/fictional-codex-personal"],
+                       "each account folder once, in provider order, and none for a provider without an account")
+        XCTAssertEqual(folders, 0, "the folder is checked after the accounts")
+        XCTAssertTrue(started.isEmpty)
+        XCTAssertTrue(list.waiting.isEmpty)
+        XCTAssertEqual(source.draft, "Fictional task", "the prompt stays in the composer")
+
+        checked = []
+        list.accountChecker = { provider, folder, reply in checked.append(provider + " " + folder); reply(nil) }
+        list.sendToSeveral(from: source, settings: accounts, counts: [.claude: 2, .codex: 1, .gemini: 1], headless: true) { result = $0 }
+        drain(checks: 3)
+        XCTAssertNil(result)
+        XCTAssertEqual(checked.count, 2)
+        XCTAssertEqual(folders, 1)
+        XCTAssertEqual(started.map { $0.helperStart(resume: nil) }, [
+            .isolated(project: "/tmp/fictional-project", profile: "/tmp/fictional-claude-work"),
+            .isolated(project: "/tmp/fictional-project", profile: "/tmp/fictional-claude-work"),
+            .isolated(project: "/tmp/fictional-project", profile: "/tmp/fictional-codex-personal"),
+            .isolated(project: "/tmp/fictional-project", profile: "")])
+        XCTAssertEqual(source.draft, "")
     }
 
     func testClosingThePickerDuringTheFolderCheckStartsNothing() {
@@ -617,7 +663,7 @@ final class ACPSendToSeveralTests: XCTestCase {
         drain()
         XCTAssertEqual(result, .some(nil))
         XCTAssertEqual(checks, 0)
-        XCTAssertEqual(started.map { $0.helperStart(resume: nil) }, [.start(project: "")])
+        XCTAssertEqual(started.map { $0.helperStart(resume: nil) }, [.start(project: "", profile: "")])
     }
 
     func testAPlanRefusalStartsNothing() {
@@ -684,7 +730,7 @@ final class ACPSendToSeveralTests: XCTestCase {
         var requests: [ACPModel.HelperStart] = []
         other.connector = { requests.append($0) }
         other.resume()
-        XCTAssertEqual(requests, [.resume(folder: workspace, session: "fictional-session")])
+        XCTAssertEqual(requests, [.resume(folder: workspace, profile: "", session: "fictional-session")])
         list.select(target)
         XCTAssertFalse(target.canRemoveWorkspace, "a live conversation runs in its workspace")
         other.disconnect()

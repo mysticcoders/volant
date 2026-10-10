@@ -6,6 +6,19 @@ import VolantCore
 final class ACPModel: ObservableObject {
     @Published var provider = "opencode"
     @Published var project = ""
+    /// The account this conversation runs under, or ran under once it has ended; nil for the
+    /// provider's default login. Each start sets it, so a transcript and its Limited stop keep the
+    /// account that produced them when the choice changes later. Before the first start it shows the
+    /// account that start will use. Settings that show an ended conversation under another provider
+    /// or connection show the account chosen for that one, and back under the provider and connection
+    /// it ran under it shows the account it ran under, so the provider shown and the account beside
+    /// it belong together.
+    @Published private(set) var account: ACPAccountProfile?
+    /// The account the next start uses: the choice for this conversation's provider in the settings
+    /// last applied.
+    private var nextAccount: ACPAccountProfile?
+    /// The provider, connection and account of the last start; nil before the first.
+    private var ranUnder: (provider: String, connection: AIConnectionKind, account: ACPAccountProfile?)?
     @Published var draft = ""
     /// Owner-chosen context for the next prompt. Kept in memory with the draft, cleared once sent.
     @Published private(set) var attachments: [ChatAttachment] = []
@@ -67,7 +80,25 @@ final class ACPModel: ObservableObject {
         guard !active, !fanOutTarget else { return }
         configuration = value
         provider = value.provider; project = value.connection == .acp ? value.project : ""
+        nextAccount = value.connection == .acp ? value.account(for: value.provider) : nil
+        showAccount()
         isolate = value.connection == .acp && !value.project.isEmpty && value.isolate
+    }
+    /// Points the next start at the account now chosen for this conversation's provider, whether it
+    /// runs or has ended, so after a changed choice or a removed account no later start or Resume
+    /// uses the earlier account. A running conversation keeps its launch and the account it shows,
+    /// and its provider and folder stay. Ignored for a Send to Several conversation, which keeps its
+    /// account as it keeps its agent and folder.
+    func followAccountChoice(_ value: AIConfiguration) {
+        guard !fanOutTarget, configuration.connection == .acp else { return }
+        nextAccount = value.account(for: provider)
+        if !active { showAccount() }
+    }
+    /// Shows the account of the last start while the conversation shows that start's provider and
+    /// connection, else the account its next start uses.
+    private func showAccount() {
+        if let ranUnder, ranUnder.provider == provider, ranUnder.connection == configuration.connection { account = ranUnder.account }
+        else { account = nextAccount }
     }
     /// Reopening an active chat must never replace its session or draft. A conversation that can be
     /// resumed is offered instead of connecting, so opening the chat never replaces its record, and
@@ -123,11 +154,11 @@ final class ACPModel: ObservableObject {
         return line.count > 24 ? String(line.prefix(23)) + "…" : String(line)
     }
     var active: Bool { !["failed", "disconnected"].contains(state.phase) }
-    /// Resume is offered only for the provider and project currently chosen, so it can never
-    /// reopen a conversation in a folder the owner has since moved away from, and not once its
-    /// workspace is known to be gone or while it is being removed.
+    /// Resume is offered only for the provider, project and account currently chosen, so it can never
+    /// reopen a conversation in a folder the owner has since moved away from or under another login,
+    /// and not once its workspace is known to be gone or while it is being removed.
     var canResume: Bool {
-        guard !active, !usesAPI, !usesApple, let record = resumable, record.matches(provider: provider, project: project),
+        guard !active, !usesAPI, !usesApple, let record = resumable, record.matches(provider: provider, project: project, profile: profile),
               !resumeWorkspaceGone, !removingWorkspace else { return false }
         return !sessionsElsewhere().contains(record.sessionID)
     }
@@ -140,16 +171,19 @@ final class ACPModel: ObservableObject {
         if stat(path, &info) == 0 { return info.st_mode & S_IFMT != S_IFDIR }
         return errno == ENOENT || errno == ENOTDIR
     }
-    /// What `connect` asks the helper for. A resume runs in the folder the conversation ran in, since
-    /// an agent may keep its sessions by working folder, as Claude Code does.
+    /// The account folder the next start sends to the helper, or "" for the default login.
+    var profile: String { nextAccount?.directory ?? "" }
+    /// What `connect` asks the helper for. A resume runs in the folder and under the account the
+    /// conversation ran in, since an agent may keep its sessions by working folder, as Claude Code
+    /// does, and keeps them with the login that started them.
     enum HelperStart: Equatable {
-        case start(project: String)
-        case isolated(project: String)
-        case resume(folder: String, session: String)
+        case start(project: String, profile: String)
+        case isolated(project: String, profile: String)
+        case resume(folder: String, profile: String, session: String)
     }
     func helperStart(resume record: ACPResumeRecord?) -> HelperStart {
-        if let record { return .resume(folder: record.workspace ?? project, session: record.sessionID) }
-        return isolate ? .isolated(project: project) : .start(project: project)
+        if let record { return .resume(folder: record.workspace ?? project, profile: record.profile ?? "", session: record.sessionID) }
+        return isolate ? .isolated(project: project, profile: profile) : .start(project: project, profile: profile)
     }
     var canSend: Bool { state.phase == "ready" && !submitting && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
@@ -184,6 +218,13 @@ final class ACPModel: ObservableObject {
     /// The last turn stopped, or the conversation failed, with a message that reads as a provider's
     /// usage limit; the status keeps the provider's message.
     var limited: Bool { !state.busy && ACPStopReason.isUsageLimit(state.status) }
+    /// The status as shown. A usage limit belongs to one login, so a Limited stop under an account
+    /// names the label of the account it ran under before the provider's message, also while the
+    /// settings show another provider's account.
+    var statusLine: String {
+        guard limited, let label = (ranUnder.map { $0.account } ?? account)?.label else { return state.status }
+        return label + ": " + state.status
+    }
     /// How often the launcher has put this conversation back in its queue after the helper refused
     /// it at its limit.
     var limitRetries = 0
@@ -235,6 +276,8 @@ final class ACPModel: ObservableObject {
 
     private func connect(resume record: ACPResumeRecord?) {
         disconnect()
+        // A resume asks for the record's account folder, which `canResume` matched to this one.
+        account = nextAccount; ranUnder = (provider, configuration.connection, account)
         workspace = record?.workspace; workspaceState = nil
         if usesApple { startApple(); return }
         if usesAPI { startAPI(); return }
@@ -260,11 +303,12 @@ final class ACPModel: ObservableObject {
             }
         }
         switch request {
-        case .start(let folder): proxy()?.acpStart(provider: provider, project: folder, reply: started)
-        case .resume(let folder, let session): proxy()?.acpResume(provider: provider, project: folder, session: session, reply: started)
-        case .isolated(let folder):
+        case .start(let folder, let profile): proxy()?.acpStart(provider: provider, project: folder, profile: profile, reply: started)
+        case .resume(let folder, let profile, let session):
+            proxy()?.acpResume(provider: provider, project: folder, profile: profile, session: session, reply: started)
+        case .isolated(let folder, let profile):
             // A workspace made before a failed start is kept, so it is recorded either way.
-            proxy()?.acpStartIsolated(provider: provider, project: folder) { [weak self] path, error in
+            proxy()?.acpStartIsolated(provider: provider, project: folder, profile: profile) { [weak self] path, error in
                 DispatchQueue.main.async { if let self, self.generation == current, let path { self.workspace = path } }
                 started(error)
             }
@@ -285,8 +329,8 @@ final class ACPModel: ObservableObject {
         }
         guard !usesAPI, !usesApple, snapshot.phase == "ready", let session = snapshot.sessionID,
               snapshot.messages.contains(where: { $0.role == "You" }) else { return }
-        let record = ACPResumeRecord(provider: provider, project: project, sessionID: session, workspace: workspace)
-        guard record.isValid, resumable?.sessionID != session || resumable?.matches(provider: provider, project: project) != true,
+        let record = ACPResumeRecord(provider: provider, project: project, sessionID: session, workspace: workspace, profile: account?.directory)
+        guard record.isValid, resumable?.sessionID != session || resumable?.matches(provider: provider, project: project, profile: record.profile ?? "") != true,
               let data = try? JSONEncoder().encode(record) else { return }
         resumeStore.set(data, forKey: Self.resumeKey)
         resumable = record

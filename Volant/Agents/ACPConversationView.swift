@@ -34,6 +34,7 @@ struct ACPConversationView: View {
                 if let caffeinate { CaffeinateStatusView(service: caffeinate) }
                 Text("AI Chat").fontWeight(.medium)
                 Text(model.providerTitle).foregroundStyle(.secondary).lineLimit(1).help(model.providerTitle)
+                if let account = model.account { ACPAccountLabel(label: account.label).help(account.directory) }
                 folderLabel
                 Spacer(minLength: 4)
                 Button("Settings", action: settings)
@@ -93,7 +94,7 @@ struct ACPConversationView: View {
             Divider()
             HStack(spacing: 8) {
                 if model.state.busy && model.state.permissions.isEmpty { ProgressView().controlSize(.small) }
-                Text(model.state.status).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                Text(model.statusLine).font(.caption).foregroundStyle(.secondary).lineLimit(2)
                 Spacer()
                 Toggle("Follow", isOn: $follow).toggleStyle(.checkbox).font(.caption)
                 if ["working", "cancelling"].contains(model.state.phase) {
@@ -171,7 +172,7 @@ struct ACPConversationView: View {
             Button("Remove Workspace", action: model.removeWorkspace).disabled(!model.canRemoveWorkspace)
                 .help("Delete this conversation’s workspace folder if it has no changes; its branch and commits stay")
         }
-        if model.canResume { Button("Resume", action: model.resume).help("Continue your last conversation with this provider and folder") }
+        if model.canResume { Button("Resume", action: model.resume).help("Continue your last conversation with this provider, folder and account") }
         // A Send to Several conversation keeps its result, so New starts another conversation beside it.
         if model.fanOutTarget, let conversations {
             ACPNewConversationButton(conversations: conversations, action: newConversation)
@@ -272,6 +273,15 @@ private struct ACPUnreadDot: View {
     }
 }
 
+/// The account a conversation runs under. Nothing is shown for the provider's default login.
+private struct ACPAccountLabel: View {
+    let label: String
+    var body: some View {
+        Label(label, systemImage: "person.crop.circle").foregroundStyle(.secondary).lineLimit(1)
+            .accessibilityLabel("Account " + label)
+    }
+}
+
 /// Shown on a conversation whose last message reads as a provider's usage limit.
 private struct ACPLimitedLabel: View {
     var body: some View {
@@ -289,10 +299,11 @@ private struct ACPConversationTab: View {
     /// The workspace's branch, once read, for a conversation in its own workspace.
     private var branch: String? { model.workspace == nil ? nil : model.workspaceState?.branch }
     private var waiting: Bool { !model.state.permissions.isEmpty }
-    /// Provider, folder, branch, first question, marks and status, so VoiceOver tells the buttons
-    /// apart without the visual marks.
+    /// Provider, account, folder, branch, first question, marks and status, so VoiceOver tells the
+    /// buttons apart without the visual marks.
     private var spokenLabel: String {
         var parts = [model.providerTitle]
+        if let account = model.account { parts.append("account " + account.label) }
         if let folder { parts.append(folder) }
         if let branch { parts.append(branch) }
         if let topic = model.topic { parts.append(topic) }
@@ -309,6 +320,7 @@ private struct ACPConversationTab: View {
                 if waiting { Image(systemName: "hand.raised") }
                 else if model.state.busy { ProgressView().controlSize(.mini) }
                 Text(model.providerTitle).lineLimit(1)
+                if let account = model.account { ACPAccountLabel(label: account.label) }
                 if let folder { Text(folder).foregroundStyle(.secondary).lineLimit(1) }
                 if let branch { Text(branch).foregroundStyle(.secondary).lineLimit(1) }
                 if let topic = model.topic { Text(topic).foregroundStyle(.secondary).lineLimit(1) }
@@ -366,6 +378,7 @@ private struct ACPActivityRow: View {
                 Text("AI Chat").fontWeight(.medium)
                 if model.unread { ACPUnreadDot() }
                 Text(model.providerTitle).foregroundStyle(.secondary).lineLimit(1).help(model.providerTitle)
+                if let account = model.account { ACPAccountLabel(label: account.label) }
                 if model.limited { ACPLimitedLabel() }
                 Text(model.state.status).foregroundStyle(.secondary).lineLimit(1)
                 Spacer()
@@ -381,7 +394,8 @@ private struct ACPConversationBadge: View {
     @Environment(\.volantTheme) private var theme
     private var waiting: Bool { !model.state.permissions.isEmpty }
     private var spokenLabel: String {
-        let parts: [String?] = [model.providerTitle, model.topic, model.unread ? "Unread" : nil, model.limited ? "Limited" : nil,
+        let account: String? = model.account.map { "account " + $0.label }
+        let parts: [String?] = [model.providerTitle, account, model.topic, model.unread ? "Unread" : nil, model.limited ? "Limited" : nil,
                                 model.taskMayHaveRun ? "May have run" : nil, waiting ? "Needs your permission" : model.state.status]
         return parts.compactMap { $0 }.joined(separator: ", ")
     }
@@ -391,6 +405,7 @@ private struct ACPConversationBadge: View {
                 if model.unread { ACPUnreadDot() }
                 if waiting { Image(systemName: "hand.raised") }
                 Text(model.providerTitle).lineLimit(1)
+                if let account = model.account { ACPAccountLabel(label: account.label) }
                 if let topic = model.topic { Text(topic).foregroundStyle(.secondary).lineLimit(1) }
                 if model.limited { ACPLimitedLabel() }
             }
@@ -398,7 +413,7 @@ private struct ACPConversationBadge: View {
             .background(theme.card(selected: false), in: Capsule())
         }
         .buttonStyle(.plain)
-        .help(model.state.status)
+        .help(model.statusLine)
         .accessibilityLabel(spokenLabel)
     }
 }

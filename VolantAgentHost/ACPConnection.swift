@@ -37,14 +37,19 @@ final class ACPConnection {
     /// Where agents are looked up. Swift checks substitute fictional install locations; nothing
     /// over XPC can change it.
     var resolver = ACPAgentResolver.system
+    /// Receives each provider's environment just before it is launched. Swift checks only.
+    var testLaunch: (([String: String]) -> Void)?
 
     init(slots: ACPConversationSlots = .shared) {
         self.slots = slots
     }
 
-    func start(provider: String, project: String, resume: String? = nil) throws {
+    /// Starts `provider` in `project`, or resumes the conversation `resume` names. `profile` is the
+    /// conversation's account folder, or "" for the provider's default login.
+    func start(provider: String, project: String, resume: String? = nil, profile: String = "") throws {
         guard task == nil, state.phase == "disconnected" else { throw failure("End this conversation before starting another.") }
         if let resume, !ACPResumeRecord.isValidSessionID(resume) { throw failure("This conversation can’t be resumed. Start a new conversation.") }
+        let account = try Self.accountVariables(provider: provider, profile: profile)
         try takeSlot()
         // Every exit below that launches no agent returns the slot.
         var launched = false
@@ -67,7 +72,9 @@ final class ACPConnection {
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = arguments
         process.currentDirectoryURL = URL(fileURLWithPath: self.project)
-        process.environment = ChildProcessEnvironment.acpProvider(home: home, user: NSUserName(), executable: executable, launch: providerEnvironment)
+        let environment = ChildProcessEnvironment.acpProvider(home: home, user: NSUserName(), executable: executable,
+                                                              launch: providerEnvironment.merging(account) { $1 })
+        process.environment = environment
         process.standardInput = stdin; process.standardOutput = stdout; process.standardError = FileHandle.nullDevice
         let generation = epoch
         process.terminationHandler = { [weak self] _ in
@@ -76,6 +83,7 @@ final class ACPConnection {
                 self.stop("Agent process exited. Check the provider’s terminal login and reconnect.", failed: true)
             }
         }
+        testLaunch?(environment)
         try process.run()
         launched = true
         task = process; input = stdin.fileHandleForWriting; output = stdout.fileHandleForReading
@@ -99,12 +107,14 @@ final class ACPConnection {
         known == revision ? (nil, revision) : (try JSONEncoder().encode(state), revision)
     }
     /// Starts a new conversation in a workspace made for it by `makeWorkspace`, which receives the
-    /// project and returns the workspace's path. The slot and the provider are checked first, so a
-    /// start refused at the limit, or for an agent that is not installed, makes no workspace. Once
-    /// the workspace exists it belongs to the owner: a failed start leaves it and names it in the
-    /// error. Returns the workspace when one was made, and the error when the start failed.
-    func startIsolated(provider: String, project: String, makeWorkspace: (String) throws -> String) -> (workspace: String?, error: String?) {
+    /// project and returns the workspace's path. The account folder, the slot and the provider are
+    /// checked first, so a start refused for its account folder, at the limit, or for an agent that
+    /// is not installed, makes no workspace. Once the workspace exists it belongs to the owner: a
+    /// failed start leaves it and names it in the error. Returns the workspace when one was made,
+    /// and the error when the start failed.
+    func startIsolated(provider: String, project: String, profile: String = "", makeWorkspace: (String) throws -> String) -> (workspace: String?, error: String?) {
         guard task == nil, state.phase == "disconnected" else { return (nil, "End this conversation before starting another.") }
+        if let problem = Self.accountProblem(provider: provider, profile: profile) { return (nil, problem) }
         do { try takeSlot() } catch { return (nil, error.localizedDescription) }
         // `start` keeps the slot once its agent launches; every other exit returns it.
         defer { if task == nil { releaseSlot() } }
@@ -112,10 +122,33 @@ final class ACPConnection {
         do { _ = try resolver.launch(selected) } catch { return (nil, error.localizedDescription) }
         let workspace: String
         do { workspace = try makeWorkspace(project) } catch { return (nil, error.localizedDescription) }
-        do { try start(provider: provider, project: workspace) } catch {
+        do { try start(provider: provider, project: workspace, profile: profile) } catch {
             return (workspace, error.localizedDescription + " Its workspace stays at " + workspace + ".")
         }
         return (workspace, nil)
+    }
+    /// The launch variable for a conversation under the account folder `profile`; none for the
+    /// default login (""). The Core rules run first, so a partial path never reaches the file
+    /// system. Then only whether the folder exists is checked: nothing in it is read, copied or
+    /// moved. Called before a slot is taken, so a refused folder starts nothing, and through
+    /// `accountProblem` by `checkAccount` before Send to Several starts anything.
+    static func accountVariables(provider: String, profile: String) throws -> [String: String] {
+        guard !profile.isEmpty else { return [:] }
+        guard let selected = ACPProvider(rawValue: provider) else { throw failure("Unknown ACP provider.") }
+        let variables: [String: String]
+        do { variables = try ACPAccountProfile.launchVariables(provider: selected, directory: profile) }
+        catch { throw failure(error.localizedDescription) }
+        var directory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: profile, isDirectory: &directory), directory.boolValue else {
+            throw failure("Could not open this conversation’s account folder. Check the Account section in AI Settings.")
+        }
+        return variables
+    }
+    /// The reason `accountVariables` refuses the account folder `profile` for `provider`, or nil
+    /// when a start would accept it. An isolated start returns it, and `checkAccount` replies with it.
+    static func accountProblem(provider: String, profile: String) -> String? {
+        do { _ = try accountVariables(provider: provider, profile: profile); return nil }
+        catch { return error.localizedDescription }
     }
     /// Takes one of the helper's conversation slots before anything is resolved or launched. Internal
     /// so `tools/acp/check.swift` can hold a slot without an installed agent; never exposed over XPC.
@@ -344,5 +377,6 @@ final class ACPConnection {
             replayTrimmed = true
         }
     }
-    private func failure(_ message: String) -> NSError { NSError(domain: "VolantACP", code: 1, userInfo: [NSLocalizedDescriptionKey: message]) }
+    private func failure(_ message: String) -> NSError { Self.failure(message) }
+    private static func failure(_ message: String) -> NSError { NSError(domain: "VolantACP", code: 1, userInfo: [NSLocalizedDescriptionKey: message]) }
 }

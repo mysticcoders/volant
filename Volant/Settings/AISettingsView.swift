@@ -9,6 +9,8 @@ struct AISettingsView: View {
     let onChange: () -> Void
     let openConversation: (AIConfiguration) -> Void
     let chooseProject: (@escaping (URL?) -> Void) -> Void
+    /// Opens a folder chooser for a new account folder.
+    var chooseAccountFolder: (@escaping (URL?) -> Void) -> Void = { _ in }
     var credentials = AICredentials.keychain
     @StateObject var discovery = AIModelDiscovery()
     @StateObject var agentDetection = ACPAgentDetection()
@@ -30,7 +32,7 @@ struct AISettingsView: View {
                         if kind == .acp { agentDetection.detect() } else { agentDetection.cancel() }
                     }
             }
-            if config.connection == .acp { detectedAgents; acpControls }
+            if config.connection == .acp { detectedAgents; acpControls; accountControls }
             else if config.connection == .apple { appleControls }
             else { apiControls }
             Section {
@@ -160,8 +162,17 @@ struct AISettingsView: View {
             SettingsFooter(acpFooter)
         }
     }
+    /// Claude Code and Codex can run under an account folder; the other providers have no setting.
+    @ViewBuilder private var accountControls: some View {
+        if let provider = ACPProvider(rawValue: config.provider), ACPAccountProfile.environmentKey(for: provider) != nil {
+            ACPAccountsSection(config: $config, provider: provider, enabled: loaded, chooseFolder: chooseAccountFolder,
+                               save: { _ = persist() }, refuse: { report($0, failure: true) })
+        }
+    }
     private var acpFooter: String {
-        let login = "Uses your agent’s existing CLI login; sign in with that provider first. A working folder is optional and is not a sandbox: your agent’s permissions still control tool access."
+        let accounts = ACPProvider(rawValue: config.provider).flatMap(ACPAccountProfile.environmentKey(for:)) != nil
+        let login = (accounts ? "Uses your agent’s existing CLI login, or the account chosen below;" : "Uses your agent’s existing CLI login;")
+            + " sign in with that provider first. A working folder is optional and is not a sandbox: your agent’s permissions still control tool access."
         guard !config.project.isEmpty else { return login }
         return login + " With Isolated workspace on, each new conversation runs in its own Git worktree, on a new branch such as volant/3f9c2a1b, in Volant’s Application Support folder. Git hooks and filters don’t run while Volant creates or removes it, so Git LFS files stay pointer files, and a repository whose own Git settings define a filter, a hook or a conditional include is refused. A workspace confines nothing: your agent keeps your logins and can reach any path."
     }

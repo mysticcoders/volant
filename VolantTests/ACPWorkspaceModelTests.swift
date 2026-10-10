@@ -44,23 +44,23 @@ final class ACPWorkspaceModelTests: XCTestCase {
         let model = ACPModel(resumeStore: store)
         model.configure(configuration(isolate: true))
         XCTAssertTrue(model.isolate)
-        XCTAssertEqual(model.helperStart(resume: nil), .isolated(project: "/tmp/fictional-project"))
+        XCTAssertEqual(model.helperStart(resume: nil), .isolated(project: "/tmp/fictional-project", profile: ""))
         model.configure(configuration(isolate: true, project: ""))
         XCTAssertFalse(model.isolate)
-        XCTAssertEqual(model.helperStart(resume: nil), .start(project: ""))
+        XCTAssertEqual(model.helperStart(resume: nil), .start(project: "", profile: ""))
         var api = configuration(isolate: true); api.connection = .byok
         model.configure(api)
         XCTAssertFalse(model.isolate)
         model.configure(configuration(isolate: false))
-        XCTAssertEqual(model.helperStart(resume: nil), .start(project: "/tmp/fictional-project"))
+        XCTAssertEqual(model.helperStart(resume: nil), .start(project: "/tmp/fictional-project", profile: ""))
     }
 
     func testResumeRunsInTheFolderTheConversationRanIn() {
         let model = ACPModel(resumeStore: store)
         model.configure(configuration(isolate: true))
-        XCTAssertEqual(model.helperStart(resume: record(workspace: folder.path)), .resume(folder: folder.path, session: "fictional-session"))
+        XCTAssertEqual(model.helperStart(resume: record(workspace: folder.path)), .resume(folder: folder.path, profile: "", session: "fictional-session"))
         // A conversation recorded without a workspace resumes in the project, never in a new workspace.
-        XCTAssertEqual(model.helperStart(resume: record(workspace: nil)), .resume(folder: "/tmp/fictional-project", session: "fictional-session"))
+        XCTAssertEqual(model.helperStart(resume: record(workspace: nil)), .resume(folder: "/tmp/fictional-project", profile: "", session: "fictional-session"))
     }
 
     func testRememberStoresTheWorkspace() {
