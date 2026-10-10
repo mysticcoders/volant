@@ -139,7 +139,10 @@ final class NotesModel: ObservableObject {
     enum Overlay { case browse, actions }
     let store: NotesStore
     @Published var selectedID: String? {
-        didSet { UserDefaults.standard.set(selectedID, forKey: preferenceKey + ".selected") }
+        didSet {
+            UserDefaults.standard.set(selectedID, forKey: preferenceKey + ".selected")
+            store.open(selectedID)
+        }
     }
     @Published var editing = true
     @Published var liveMode = true
@@ -155,6 +158,7 @@ final class NotesModel: ObservableObject {
         selectedID = UserDefaults.standard.string(forKey: key + ".selected")
         pinned = Set(UserDefaults.standard.stringArray(forKey: key + ".pinned") ?? [])
         selectIfNeeded()
+        store.open(selectedID)
     }
 
     var filtered: [Note] {
@@ -220,10 +224,10 @@ final class NotesModel: ObservableObject {
     }
 
     func copyMarkdown() {
-        guard let note = selected, note.readError == nil else { return }
+        guard let note = selected, note.readError == nil, let text = note.text else { return }
         let pb = NSPasteboard.general
         pb.clearContents()
-        pb.setString(note.text, forType: .string)
+        pb.setString(text, forType: .string)
         flash("Copied Markdown")
     }
 
@@ -346,20 +350,24 @@ struct NotesView: View {
                         Button("Reveal in Finder") { NSWorkspace.shared.activateFileViewerSelecting([note.url]) }
                     }.padding(NotesStyle.inset).frame(maxWidth: .infinity, alignment: .leading)
                 }.frame(maxHeight: .infinity)
-            } else if model.editing {
-                ZStack(alignment: .topLeading) {
-                    LiveMarkdownEditor(text: Binding(get: { store.notes.first { $0.id == note.id }?.text ?? "" },
-                                                     set: { store.update(note.id, text: $0) }),
-                                       live: model.liveMode, state: liveState)
-                        .id(note.id)
-                    if note.text.isEmpty {
-                        Text("Start writing…").foregroundStyle(.tertiary)
-                            .padding(.top, 12).allowsHitTesting(false)
+            } else if let text = note.text {
+                if model.editing {
+                    ZStack(alignment: .topLeading) {
+                        LiveMarkdownEditor(text: Binding(get: { store.notes.first { $0.id == note.id }?.text ?? text },
+                                                         set: { store.update(note.id, text: $0) }),
+                                           live: model.liveMode, state: liveState)
+                            .id(note.id)
+                        if text.isEmpty {
+                            Text("Start writing…").foregroundStyle(.tertiary)
+                                .padding(.top, 12).allowsHitTesting(false)
+                        }
                     }
+                    .padding(.horizontal, NotesStyle.inset).padding(.top, 4)
+                } else {
+                    MarkdownView(text: text) { _ in model.flash("Copied") }
                 }
-                .padding(.horizontal, NotesStyle.inset).padding(.top, 4)
             } else {
-                MarkdownView(text: note.text) { _ in model.flash("Copied") }
+                Color.clear.frame(maxHeight: .infinity).onAppear { store.open(note.id) }
             }
         } else {
             VStack(spacing: 14) {
@@ -405,8 +413,8 @@ struct NotesView: View {
                 Text(model.toast ?? (!store.saveErrors.isEmpty ? "Not saved" : !store.dirtyText.isEmpty ? "Saving…" : ""))
                     .font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 Spacer(minLength: 8)
-                if let note = model.selected, note.readError == nil {
-                    Text("\(note.text.split(whereSeparator: { $0.isWhitespace }).count) words")
+                if let note = model.selected, note.readError == nil, let text = note.text {
+                    Text("\(text.split(whereSeparator: { $0.isWhitespace }).count) words")
                         .font(.caption).foregroundStyle(.tertiary)
                     Menu {
                         Button("Live") { model.liveMode = true; model.editing = true }
@@ -437,7 +445,7 @@ struct NotesView: View {
         Group {
             Button("Toggle Preview") { model.editing.toggle() }.keyboardShortcut(NotesShortcut.togglePreview.keyboardShortcut)
             Button("Copy Markdown") { model.copyMarkdown() }.keyboardShortcut(NotesShortcut.copyMarkdown.keyboardShortcut)
-            Button("Duplicate Note") { if let note = model.selected { model.newNote(text: note.text) } }.keyboardShortcut(NotesShortcut.duplicate.keyboardShortcut)
+            Button("Duplicate Note") { if let text = model.selected?.text { model.newNote(text: text) } }.keyboardShortcut(NotesShortcut.duplicate.keyboardShortcut)
             Button("Pin Note") { model.togglePin() }.keyboardShortcut(NotesShortcut.pin.keyboardShortcut)
             Button("Trash Note") { model.deleteSelected() }.keyboardShortcut(NotesShortcut.trash.keyboardShortcut)
         }
@@ -479,7 +487,7 @@ struct NotesPicker: View {
         }
         if let note = model.selected, note.readError == nil {
             actions += [
-                Entry(id: "duplicate", title: "Duplicate Note", subtitle: "", symbol: "plus.square.on.square", shortcut: "⌘D") { model.newNote(text: note.text) },
+                Entry(id: "duplicate", title: "Duplicate Note", subtitle: "", symbol: "plus.square.on.square", shortcut: "⌘D") { if let text = note.text { model.newNote(text: text) } },
                 Entry(id: "pin", title: model.pinned.contains(note.id) ? "Unpin Note" : "Pin Note", subtitle: "", symbol: "pin", shortcut: "⇧⌘P") { model.togglePin() },
                 Entry(id: "preview", title: model.editing ? "Preview Markdown" : "Return to Editor", subtitle: "", symbol: "eye", shortcut: "⌘E") { model.editing.toggle() },
                 Entry(id: "copy", title: "Copy Markdown", subtitle: "", symbol: "doc.on.doc", shortcut: "⇧⌘C") { model.copyMarkdown() },

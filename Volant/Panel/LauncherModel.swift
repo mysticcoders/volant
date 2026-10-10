@@ -603,10 +603,11 @@ final class LauncherModel: ObservableObject {
             return ChatAttachment(id: "clip:\(clip.id)", kind: .clipboard, title: String(first.trimmingCharacters(in: .whitespaces).prefix(60)),
                                   detail: "Clipboard · " + age(clip.copiedAt), text: clip.text)
         }
-        let found = notes.search(term, limit: 16).filter { $0.readError == nil }.prefix(8).map { note in
-            ChatAttachment(id: "note:" + note.id, kind: .note, title: note.title,
-                           detail: "Note · edited " + age(note.modified),
-                           text: notes.dirtyText[note.id] ?? note.text)
+        let found = notes.search(term, limit: 16).filter { $0.readError == nil }.prefix(8).compactMap { note in
+            notes.text(of: note.id).map { text in
+                ChatAttachment(id: "note:" + note.id, kind: .note, title: note.title,
+                               detail: "Note · edited " + age(note.modified), text: text)
+            }
         }
         return Array(clips) + Array(found)
     }
