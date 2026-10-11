@@ -44,8 +44,16 @@ struct LauncherEntryFormView: View {
             buttons
         }
         .padding(.horizontal, 24).padding(.vertical, 14)
-        .onAppear { field = .name }
+        .task(id: ObjectIdentifier(draft)) { await focusName() }
         .onKeyPress(.escape) { model.cancelEntryForm(); return .handled }
+    }
+
+    /// Focuses the name field once per opened draft, after the form is installed in the window. A
+    /// focus request made while the view is still appearing can be dropped when the form reopens
+    /// right after being closed, leaving neither the form nor the search field focused.
+    @MainActor private func focusName() async {
+        await Task.yield()
+        field = .name
     }
 
     @ViewBuilder private var fields: some View {

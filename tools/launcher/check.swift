@@ -511,7 +511,7 @@ homePanel.model.query = "new snippet"
 verify(waitUntil { homePanel.model.selectedRow?.id == "core:newSnippet" }, "Create Snippet is the first result for its command")
 sendHomeKey("\r", code: 36)
 verify(homePanel.model.entryForm?.kind == .snippet, "Return on Create Snippet opens the in-panel form")
-verify(entryFieldFocused(), "Snippet form focuses its name field")
+verify(waitUntil { entryFieldFocused() }, "Snippet form focuses its name field")
 /// Saves a render of the entry form where the UI VM runner collects launcher captures.
 func captureEntry(_ state: String) throws {
     RunLoop.main.run(until: Date().addingTimeInterval(0.2))
@@ -555,7 +555,7 @@ try captureEntry("saved")
 homePanel.model.query = "new snippet"
 verify(waitUntil { homePanel.model.selectedRow?.id == "core:newSnippet" }, "Create Snippet is offered again")
 sendHomeKey("\r", code: 36)
-verify(waitUntil { homePanel.model.entryForm?.kind == .snippet } && entryFieldFocused(), "The snippet form opens again with a focused name field")
+verify(waitUntil { homePanel.model.entryForm?.kind == .snippet } && waitUntil { entryFieldFocused() }, "The snippet form opens again with a focused name field")
 let multiline = entryTextView(in: homePanel.contentView!)
 verify(multiline != nil && homePanel.makeFirstResponder(multiline), "The snippet text takes focus")
 typeEntry("ab")
@@ -570,7 +570,7 @@ verify(entrySearchFocused(), "Escape from the snippet text returns focus to the 
 homePanel.model.query = "new quicklink"
 verify(waitUntil { homePanel.model.selectedRow?.id == "core:newQuicklink" }, "Create Quicklink is the first result for its command")
 sendHomeKey("\r", code: 36)
-verify(homePanel.model.entryForm?.kind == .quicklink && entryFieldFocused(), "Return on Create Quicklink opens a focused form")
+verify(homePanel.model.entryForm?.kind == .quicklink && waitUntil { entryFieldFocused() }, "Return on Create Quicklink opens a focused form")
 typeEntry("docs")
 try captureEntry("quicklink")
 let beforeCancel = try Data(contentsOf: entryConfig)
@@ -581,7 +581,7 @@ verify(entrySearchFocused(), "Escape returns focus to the search field, so the n
 verify(homePanel.model.selectedRow?.id == "core:newQuicklink", "The unchanged search keeps Create Quicklink selected")
 sendHomeKey("\r", code: 36)
 verify(waitUntil { homePanel.model.entryForm?.kind == .quicklink }, "Return reopens the quicklink form")
-verify(entryFieldFocused(), "The quicklink form reopens with a focused name field")
+verify(waitUntil { entryFieldFocused() }, "The quicklink form reopens with a focused name field")
 typeEntry("docs")
 let linkDraft = homePanel.model.entryForm!
 linkDraft.text = "file:///etc/passwd"
