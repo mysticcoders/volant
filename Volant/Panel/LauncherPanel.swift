@@ -41,6 +41,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         isReleasedWhenClosed = false
         hidesOnDeactivate = false
         model.dismiss = { [weak self] in self?.orderOut(nil) }
+        model.restoreSearchEditor = { [weak self] in self?.restoreSearchEditorAfterForm() }
         contentView = NSHostingView(rootView: ThemedRoot { ThemedLauncher(model: model) })
     }
 
@@ -172,6 +173,26 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         }
     }
 
+    /// When a form's focused field is removed, AppKit leaves the window itself as first responder,
+    /// so neither SwiftUI focus nor its key handlers see the next key. After SwiftUI has removed
+    /// the form, this hands focus to the search field unless the field already holds it.
+    private func restoreSearchEditorAfterForm() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.isVisible, self.model.entryForm == nil,
+                  let field = self.searchInput(in: self.contentView), field.currentEditor() == nil else { return }
+            self.makeFirstResponder(field)
+        }
+    }
+
+    /// Escape in a form's multi-line text would otherwise run NSTextView completion. It closes
+    /// the form instead, unless an input method is composing.
+    private func cancelsEntryForm(_ event: NSEvent) -> Bool {
+        guard event.type == .keyDown, event.keyCode == 53, model.entryForm != nil,
+              event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty else { return false }
+        if let editor = firstResponder as? NSTextView, editor.hasMarkedText() { return false }
+        return true
+    }
+
     private func searchInput(in view: NSView?) -> NSTextField? {
         guard !model.showingACP else { return nil }
         guard let view else { return nil }
@@ -292,6 +313,10 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         if event.type == .keyDown, event.keyCode == 43,
            event.modifierFlags.intersection([.command, .control, .option, .shift]) == .command {
             model.openSettings()
+            return
+        }
+        if cancelsEntryForm(event) {
+            if !event.isARepeat { model.cancelEntryForm() }
             return
         }
         // Own Tab only in the main search editor, never in a form, menu, or chat.

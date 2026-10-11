@@ -1213,10 +1213,14 @@ final class LauncherModel: ObservableObject {
         entryForm = LauncherEntryDraft(kind: kind, snapshot: LauncherEntries.Snapshot(config))
     }
 
+    /// Puts keyboard focus back in the search field after a form closes; the panel supplies it.
+    var restoreSearchEditor: () -> Void = {}
+
     /// Escape and Cancel return to the launcher search with the query unchanged.
     func cancelEntryForm() {
         entryForm = nil
         searchFocusRequest = UUID()
+        restoreSearchEditor()
     }
 
     /// Appends the draft as one configuration entry. On success the form closes, the search shows
@@ -1245,6 +1249,7 @@ final class LauncherModel: ObservableObject {
             if query == search { refresh() } else { query = search }
             actionFeedback = draft.kind.savedMessage
             searchFocusRequest = UUID()
+            restoreSearchEditor()
             onNote(.reloadConfig)
             return true
         } catch let failure as LauncherEntries.Failure {

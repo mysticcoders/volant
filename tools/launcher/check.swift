@@ -512,7 +512,28 @@ verify(waitUntil { homePanel.model.selectedRow?.id == "core:newSnippet" }, "Crea
 sendHomeKey("\r", code: 36)
 verify(homePanel.model.entryForm?.kind == .snippet, "Return on Create Snippet opens the in-panel form")
 verify(entryFieldFocused(), "Snippet form focuses its name field")
-try captureVolume("entry-snippet")
+/// Saves a render of the entry form where the UI VM runner collects launcher captures.
+func captureEntry(_ state: String) throws {
+    RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+    let content = homePanel.contentView!
+    content.layoutSubtreeIfNeeded()
+    let bitmap = content.bitmapImageRepForCachingDisplay(in: content.bounds)!
+    content.cacheDisplay(in: content.bounds, to: bitmap)
+    try bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.75])!.write(to: URL(fileURLWithPath: "/tmp/volant-launcher-entry-\(state)-\(dark ? "dark" : "light").jpg"))
+}
+/// Whether the launcher's own search field editor holds keyboard focus again.
+func entrySearchFocused() -> Bool {
+    waitUntil {
+        guard let editor = homePanel.firstResponder as? NSTextView else { return false }
+        return editor === coreSearchField(in: homePanel.contentView!)?.currentEditor()
+    }
+}
+/// The snippet form's multi-line text view, which is not a field editor.
+func entryTextView(in view: NSView) -> NSTextView? {
+    if let text = view as? NSTextView, !text.isFieldEditor { return text }
+    return view.subviews.lazy.compactMap { entryTextView(in: $0) }.first
+}
+try captureEntry("snippet")
 typeEntry("signoff")
 let snippetDraft = homePanel.model.entryForm!
 verify(snippetDraft.name == "signoff", "Native typing fills the snippet name")
@@ -520,39 +541,60 @@ snippetDraft.keyword = "exist"
 snippetDraft.text = "Fictional regards {date}"
 sendHomeKey("\r", code: 36)
 verify(homePanel.model.entryForm === snippetDraft && snippetDraft.error?.contains("already used") == true, "A duplicate keyword keeps the form open with an error")
-try captureVolume("entry-snippet-error")
+try captureEntry("snippet-error")
 snippetDraft.keyword = "fsig"
 sendHomeKey("\r", code: 36)
 let savedSnippet = ResultRow.snippet(Snippet(name: "signoff", keyword: "fsig", body: "Fictional regards {date}"))
 verify(homePanel.model.entryForm == nil && homePanel.isVisible, "Return saves and returns to the launcher")
 verify(homePanel.model.query == "fsig" && homePanel.model.selectedRow?.id == savedSnippet.id, "The new snippet is searchable and selected at once")
+verify(entrySearchFocused(), "Saving returns focus to the search field")
 let savedEntries = try JSONSerialization.jsonObject(with: Data(contentsOf: entryConfig)) as? [String: Any] ?? [:]
 verify((savedEntries["futureSetting"] as? [String: Bool])?["keep"] == true, "Unknown top-level fields survive")
 verify((savedEntries["snippets"] as? [[String: Any]])?.first?["futureField"] as? Int == 1, "Unknown fields inside existing snippets survive")
-try captureVolume("entry-saved")
+try captureEntry("saved")
+homePanel.model.query = "new snippet"
+verify(waitUntil { homePanel.model.selectedRow?.id == "core:newSnippet" }, "Create Snippet is offered again")
+sendHomeKey("\r", code: 36)
+verify(waitUntil { homePanel.model.entryForm?.kind == .snippet } && entryFieldFocused(), "The snippet form opens again with a focused name field")
+let multiline = entryTextView(in: homePanel.contentView!)
+verify(multiline != nil && homePanel.makeFirstResponder(multiline), "The snippet text takes focus")
+typeEntry("ab")
+sendHomeKey("\r", code: 36)
+typeEntry("cd")
+verify(waitUntil { homePanel.model.entryForm?.text == "ab\ncd" },"Return in the snippet text adds a line instead of saving")
+let beforeTextEscape = try Data(contentsOf: entryConfig)
+sendHomeKey(String(UnicodeScalar(27)!), code: 53)
+verify(homePanel.model.entryForm == nil && homePanel.isVisible && homePanel.model.query == "new snippet", "Escape in the snippet text cancels the form, not the launcher")
+verify((try? Data(contentsOf: entryConfig)) == beforeTextEscape, "Escape from the snippet text writes nothing")
+verify(entrySearchFocused(), "Escape from the snippet text returns focus to the search field")
 homePanel.model.query = "new quicklink"
 verify(waitUntil { homePanel.model.selectedRow?.id == "core:newQuicklink" }, "Create Quicklink is the first result for its command")
 sendHomeKey("\r", code: 36)
 verify(homePanel.model.entryForm?.kind == .quicklink && entryFieldFocused(), "Return on Create Quicklink opens a focused form")
 typeEntry("docs")
-try captureVolume("entry-quicklink")
+try captureEntry("quicklink")
 let beforeCancel = try Data(contentsOf: entryConfig)
 sendHomeKey(String(UnicodeScalar(27)!), code: 53)
 verify(homePanel.model.entryForm == nil && homePanel.isVisible && homePanel.model.query == "new quicklink", "Escape cancels the form, not the launcher")
 verify((try? Data(contentsOf: entryConfig)) == beforeCancel, "Cancelling writes nothing")
+verify(entrySearchFocused(), "Escape returns focus to the search field, so the next key reaches the launcher")
+verify(homePanel.model.selectedRow?.id == "core:newQuicklink", "The unchanged search keeps Create Quicklink selected")
 sendHomeKey("\r", code: 36)
+verify(waitUntil { homePanel.model.entryForm?.kind == .quicklink }, "Return reopens the quicklink form")
 verify(entryFieldFocused(), "The quicklink form reopens with a focused name field")
 typeEntry("docs")
 let linkDraft = homePanel.model.entryForm!
 linkDraft.text = "file:///etc/passwd"
 sendHomeKey("\r", code: 36)
 verify(homePanel.model.entryForm === linkDraft && linkDraft.error?.contains("https://") == true, "An unsupported URL scheme is rejected")
+try captureEntry("quicklink-error")
 linkDraft.text = "https://docs.example.com/?q={query}"
 sendHomeKey("\r", code: 36)
 verify(homePanel.model.entryForm == nil && homePanel.model.query == "docs" && homePanel.model.selectedRow?.id == "ql:docs:", "The new quicklink is searchable and selected at once")
 homePanel.orderOut(nil)
 homePanel.model.config = Preferences()
-print("PASS: create snippet and quicklink forms, native typing, Return saves, Escape cancels, validation errors, unknown fields kept")
+print("PASS: create snippet and quicklink forms, native typing, Return saves, Escape cancels from fields and text, focus returns to search, validation errors, unknown fields kept")
+
 
 
 // A real key-window transfer must preserve a live conversation and unsent input.
