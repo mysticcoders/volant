@@ -6,6 +6,8 @@ enum LauncherEntryKind: String {
 
     var title: String { self == .snippet ? "Create Snippet" : "Create Quicklink" }
     var savedMessage: String { self == .snippet ? "Snippet saved." : "Quicklink saved." }
+    /// The name field's placeholder, which also lets the panel find that field to focus it.
+    var namePlaceholder: String { self == .snippet ? "Email signature" : "Search Docs" }
 }
 
 /// The in-panel form's fields. It is observed by the form alone, so typing does not redraw the
@@ -44,21 +46,13 @@ struct LauncherEntryFormView: View {
             buttons
         }
         .padding(.horizontal, 24).padding(.vertical, 14)
-        .task(id: ObjectIdentifier(draft)) { await focusName() }
+        .onAppear { field = .name }
         .onKeyPress(.escape) { model.cancelEntryForm(); return .handled }
-    }
-
-    /// Focuses the name field once per opened draft, after the form is installed in the window. A
-    /// focus request made while the view is still appearing can be dropped when the form reopens
-    /// right after being closed, leaving neither the form nor the search field focused.
-    @MainActor private func focusName() async {
-        await Task.yield()
-        field = .name
     }
 
     @ViewBuilder private var fields: some View {
         labeled("Name") {
-            TextField(draft.kind == .snippet ? "Email signature" : "Search Docs", text: $draft.name)
+            TextField(draft.kind.namePlaceholder, text: $draft.name)
                 .focused($field, equals: .name).onSubmit(save)
                 .accessibilityIdentifier("launcher-entry-name")
         }

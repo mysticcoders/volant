@@ -1211,7 +1211,11 @@ final class LauncherModel: ObservableObject {
         showingAppMenu = false
         actionFeedback = nil
         entryForm = LauncherEntryDraft(kind: kind, snapshot: LauncherEntries.Snapshot(config))
+        focusEntryName()
     }
+
+    /// Puts keyboard focus in an opened form's name field; the panel supplies it.
+    var focusEntryName: () -> Void = {}
 
     /// Puts keyboard focus back in the search field after a form closes; the panel supplies it.
     var restoreSearchEditor: () -> Void = {}

@@ -42,6 +42,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         hidesOnDeactivate = false
         model.dismiss = { [weak self] in self?.orderOut(nil) }
         model.restoreSearchEditor = { [weak self] in self?.restoreSearchEditorAfterForm() }
+        model.focusEntryName = { [weak self] in self?.focusEntryNameField() }
         contentView = NSHostingView(rootView: ThemedRoot { ThemedLauncher(model: model) })
     }
 
@@ -182,6 +183,29 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
                   let field = self.searchInput(in: self.contentView), field.currentEditor() == nil else { return }
             self.makeFirstResponder(field)
         }
+    }
+
+    /// SwiftUI's focus request does not reliably take first responder from the AppKit search field,
+    /// so after the form is installed this hands focus to its name field directly, retrying briefly
+    /// while SwiftUI builds the form. A form closed in the meantime is left alone.
+    private func focusEntryNameField(attempt: Int = 0) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.isVisible, self.model.entryForm != nil else { return }
+            guard let kind = self.model.entryForm?.kind, let field = self.entryNameField(in: self.contentView, placeholder: kind.namePlaceholder) else {
+                if attempt < 10 { self.focusEntryNameField(attempt: attempt + 1) }
+                return
+            }
+            if field.currentEditor() == nil { self.makeFirstResponder(field) }
+        }
+    }
+
+    /// Finds the entry form's name field by its accessibility identifier or its placeholder.
+    private func entryNameField(in view: NSView?, placeholder: String) -> NSTextField? {
+        guard let view else { return nil }
+        if let field = view as? NSTextField,
+           field.accessibilityIdentifier() == "launcher-entry-name" || field.placeholderString == placeholder { return field }
+        for child in view.subviews { if let found = entryNameField(in: child, placeholder: placeholder) { return found } }
+        return nil
     }
 
     /// Escape in a form's multi-line text would otherwise run NSTextView completion. It closes
