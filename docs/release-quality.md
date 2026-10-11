@@ -265,3 +265,16 @@ Final publication: the signed build-10 feed was activated in Cloudflare Worker d
 - **Feed:** the signed build-13 appcast generated with this DMG passes `sign_update --verify`.
 
 **Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
+
+## 0.2.6 build 14 — October 11, 2026
+
+**What's in it.** See the [release notes](releases/0.2.6.md).
+
+**Build.** Built from `a5bf7cd` on `release/0.2.6` by `Scripts/ship.sh`.
+
+- **Notarization:** Apple accepted app submission `6ff2f59b-06f9-4725-b788-e115b3a5c35d` and DMG submission `aa739a19-58ae-4b5e-900d-0028816d623e`. Both were stapled and passed Gatekeeper as Notarized Developer ID.
+- **Mounted DMG:** `Volant.app` 0.2.6, build 14, `x86_64 arm64`, valid deep strict signature, stapled, Applications link present.
+- **DMG SHA-256:** `dd551dff91001411a200dc9e082821efc4436a26ec3f3181c5ebb6ecc02b76e3` (14845915 bytes).
+- **Feed:** the signed build-14 appcast generated with this DMG passes `sign_update --verify`.
+
+**Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
