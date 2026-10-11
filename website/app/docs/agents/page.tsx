@@ -160,6 +160,22 @@ export default function Agents() {
         conversations show their most recent part. If a provider can&rsquo;t
         load earlier conversations, Resume says so and starts nothing.
       </p>
+      <p>
+        <strong>Several conversations</strong> can run at once, up to six.{' '}
+        <strong>New</strong> in the chat header starts another while the first
+        keeps working; buttons under the header switch between them and show a
+        raised hand when one is waiting for your permission. The launcher&rsquo;s
+        AI Chat row shows a badge for each conversation.
+      </p>
+      <p>
+        <strong>Accounts.</strong> If you use more than one Claude Code or Codex
+        login, add each as an account in AI Settings with a label and its
+        configuration folder, and sign in once with the command shown there.
+        A new conversation runs under the account you chose and keeps it until
+        it ends; its label shows in the header. Volant passes only the
+        folder&rsquo;s path to the provider (<code>CLAUDE_CONFIG_DIR</code> or{' '}
+        <code>CODEX_HOME</code>) and never reads or copies what it holds.
+      </p>
 
       <h3>Provider status</h3>
       <div className="docs-table-scroll">
