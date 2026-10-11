@@ -283,6 +283,8 @@ final class LauncherModel: ObservableObject {
     var audioRouting: AudioRouting = CoreAudioRouting()
     lazy var connectivity: ConnectivityAccess = ConnectivityService()
     @Published var wifiJoin: WiFiChoice?
+    /// The open Create Snippet or Create Quicklink form, if any.
+    @Published var entryForm: LauncherEntryDraft?
     @Published var connectivityBusy = false
     @Published var notice: String? = nil
     var dismiss: () -> Void = {}
@@ -482,6 +484,7 @@ final class LauncherModel: ObservableObject {
         actionTarget = nil
         showingAppMenu = false
         wifiJoin = nil
+        entryForm = nil
         actionFeedback = nil
         files.cancel()
         notesSearch?.cancel()
@@ -648,6 +651,7 @@ final class LauncherModel: ObservableObject {
         notice = nil
         actionFeedback = nil
         wifiJoin = nil
+        entryForm = nil
         files.cancel()
         notesSearch?.cancel()
         notesSearch = nil
@@ -670,6 +674,11 @@ final class LauncherModel: ObservableObject {
                 guard let self, self.query.trimmingCharacters(in: .whitespaces).lowercased() == "emoji" else { return }
                 self.query = ":"
             }
+            return
+        }
+        if LauncherRouting.snippetCreatePhrases.contains(q.lowercased()) || LauncherRouting.quicklinkCreatePhrases.contains(q.lowercased()) {
+            let command: CoreCommand = LauncherRouting.snippetCreatePhrases.contains(q.lowercased()) ? .newSnippet : .newQuicklink
+            sections = [ResultSection(title: "Volant", rows: [.core(command)])]
             return
         }
         if ["volant settings", "reload", "reload config", "reload configuration"].contains(q.lowercased()) {
@@ -737,8 +746,7 @@ final class LauncherModel: ObservableObject {
         }
         if q.lowercased() == "snip" || q.lowercased().hasPrefix("snip ") {
             let rows = SnippetExpander.search(config.snippets, q.dropFirst(4).trimmingCharacters(in: .whitespaces)).map { ResultRow.snippet($0) }
-            notice = rows.isEmpty ? "No snippets. Add them under \"snippets\" in config.json." : nil
-            sections = rows.isEmpty ? [] : [ResultSection(title: "Snippets", rows: rows)]
+            sections = [ResultSection(title: "Snippets", rows: rows + [.core(.newSnippet)])]
             return
         }
         if q.lowercased() == "ext" || q.lowercased().hasPrefix("ext ") {
@@ -1097,6 +1105,8 @@ final class LauncherModel: ObservableObject {
             if command == .ai { presentAIChat() }
             else if command == .talk { toggleDictation() }
             else if command == .confetti { onNote(.confetti); dismiss(); return }
+            else if command == .newSnippet { openEntryForm(.snippet) }
+            else if command == .newQuicklink { openEntryForm(.quicklink) }
             else { query = command.query }
             return
         case .caffeinate(let command):
@@ -1191,7 +1201,62 @@ final class LauncherModel: ObservableObject {
 
     var canTabToAIChat: Bool {
         !showingACP && !showingDictionary && !showingTranslation && !showingEmoji &&
-        !showingAppleShortcuts && !showingAgents && wifiJoin == nil && actionTarget == nil
+        !showingAppleShortcuts && !showingAgents && wifiJoin == nil && entryForm == nil && actionTarget == nil
+    }
+
+    /// Opens the form for a new snippet or quicklink over the results, validated against the
+    /// configuration the launcher has loaded. Typing a new search closes it.
+    func openEntryForm(_ kind: LauncherEntryKind) {
+        actionTarget = nil
+        showingAppMenu = false
+        actionFeedback = nil
+        entryForm = LauncherEntryDraft(kind: kind, snapshot: LauncherEntries.Snapshot(config))
+    }
+
+    /// Escape and Cancel return to the launcher search with the query unchanged.
+    func cancelEntryForm() {
+        entryForm = nil
+        searchFocusRequest = UUID()
+    }
+
+    /// Appends the draft as one configuration entry. On success the form closes, the search shows
+    /// the new item so it can be used at once, and the app reloads configuration as Settings edits
+    /// do. A stale snapshot reloads the lists and keeps the draft, so a second save revalidates.
+    /// Returns whether the entry was saved.
+    @discardableResult
+    func saveEntry(_ draft: LauncherEntryDraft) -> Bool {
+        guard entryForm === draft else { return false }
+        do {
+            let saved: Preferences
+            let search: String
+            switch draft.kind {
+            case .snippet:
+                saved = try LauncherEntries.appendSnippet(Snippet(name: draft.name, keyword: draft.keyword, body: draft.text),
+                                                          expected: draft.snapshot, at: actionConfigURL)
+                let entry = saved.snippets.last
+                search = entry.map { $0.keyword.isEmpty ? "snip " + $0.name : $0.keyword } ?? ""
+            case .quicklink:
+                saved = try LauncherEntries.appendQuicklink(Quicklink(name: draft.name, url: draft.text),
+                                                            expected: draft.snapshot, at: actionConfigURL)
+                search = saved.quicklinks.last.map { String($0.name.split(separator: " ").first ?? "") } ?? ""
+            }
+            config = saved
+            entryForm = nil
+            if query == search { refresh() } else { query = search }
+            actionFeedback = draft.kind.savedMessage
+            searchFocusRequest = UUID()
+            onNote(.reloadConfig)
+            return true
+        } catch let failure as LauncherEntries.Failure {
+            if failure.isConflict, let latest = try? JSONDecoder().decode(Preferences.self, from: Data(contentsOf: actionConfigURL)) {
+                config = latest
+                draft.snapshot = LauncherEntries.Snapshot(latest)
+            }
+            draft.error = failure.message
+        } catch {
+            draft.error = "Couldn’t save to the configuration file. Check config.json, then try again."
+        }
+        return false
     }
 
     func chatFromSearch() {

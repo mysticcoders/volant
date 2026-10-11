@@ -56,7 +56,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
     var keepsVisibleOnBlur: Bool {
         (model.showingACP && (model.acp.active || model.acp.submitting ||
         !model.acp.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)) ||
-        model.pendingExtension != nil || model.extensionRunning || model.wifiJoin != nil || model.connectivityBusy ||
+        model.pendingExtension != nil || model.extensionRunning || model.wifiJoin != nil || model.connectivityBusy || model.entryForm != nil ||
         (model.showingTranslation && model.translation.hasDraft) ||
         model.dictation.phase == .listening || model.dictation.phase == .finishing
     }
@@ -313,7 +313,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
             return true
         }
         if modifiers == .command, event.charactersIgnoringModifiers?.lowercased() == "k",
-           model.selectedRow?.supportsActions == true {
+           model.entryForm == nil, model.selectedRow?.supportsActions == true {
             model.toggleActions()
             if model.actionTarget == nil { model.searchFocusRequest = UUID() }
             return true
@@ -323,6 +323,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
 
     override func cancelOperation(_ sender: Any?) {
         if model.actionTarget != nil { model.actionTarget = nil; model.searchFocusRequest = UUID() }
+        else if model.entryForm != nil { model.cancelEntryForm() }
         else if model.dictation.isListening { model.cancelDictation() }
         else { orderOut(nil) }
     }

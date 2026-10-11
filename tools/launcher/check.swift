@@ -492,6 +492,68 @@ try captureVolume("wifi-denied")
 homePanel.orderOut(nil)
 print("PASS: connectivity lists, password form, cancel, duplicate joins, errors, stale scan rejection, denied state")
 
+// Create a snippet and a quicklink in the launcher against an isolated fictional configuration.
+let entryConfig = root.appendingPathComponent("entries-\(dark ? "dark" : "light").json")
+try Data(#"{"futureSetting":{"keep":true},"snippets":[{"name":"Existing","keyword":"exist","body":"Fixture text","futureField":1}],"quicklinks":[]}"#.utf8).write(to: entryConfig)
+homePanel.model.actionConfigURL = entryConfig
+homePanel.model.config = try JSONDecoder().decode(Preferences.self, from: Data(contentsOf: entryConfig))
+homePanel.toggle()
+func typeEntry(_ text: String) {
+    for letter in text { sendHomeKey(String(letter), code: UInt16(KeyCombo.keyCodes[String(letter)]!)) }
+}
+func entryFieldFocused() -> Bool {
+    waitUntil {
+        guard let editor = homePanel.firstResponder as? NSTextView, editor.isFieldEditor else { return false }
+        return editor !== coreSearchField(in: homePanel.contentView!)?.currentEditor()
+    }
+}
+homePanel.model.query = "new snippet"
+verify(waitUntil { homePanel.model.selectedRow?.id == "core:newSnippet" }, "Create Snippet is the first result for its command")
+sendHomeKey("\r", code: 36)
+verify(homePanel.model.entryForm?.kind == .snippet, "Return on Create Snippet opens the in-panel form")
+verify(entryFieldFocused(), "Snippet form focuses its name field")
+try captureVolume("entry-snippet")
+typeEntry("signoff")
+let snippetDraft = homePanel.model.entryForm!
+verify(snippetDraft.name == "signoff", "Native typing fills the snippet name")
+snippetDraft.keyword = "exist"
+snippetDraft.text = "Fictional regards {date}"
+sendHomeKey("\r", code: 36)
+verify(homePanel.model.entryForm === snippetDraft && snippetDraft.error?.contains("already used") == true, "A duplicate keyword keeps the form open with an error")
+try captureVolume("entry-snippet-error")
+snippetDraft.keyword = "fsig"
+sendHomeKey("\r", code: 36)
+let savedSnippet = ResultRow.snippet(Snippet(name: "signoff", keyword: "fsig", body: "Fictional regards {date}"))
+verify(homePanel.model.entryForm == nil && homePanel.isVisible, "Return saves and returns to the launcher")
+verify(homePanel.model.query == "fsig" && homePanel.model.selectedRow?.id == savedSnippet.id, "The new snippet is searchable and selected at once")
+let savedEntries = try JSONSerialization.jsonObject(with: Data(contentsOf: entryConfig)) as? [String: Any] ?? [:]
+verify((savedEntries["futureSetting"] as? [String: Bool])?["keep"] == true, "Unknown top-level fields survive")
+verify((savedEntries["snippets"] as? [[String: Any]])?.first?["futureField"] as? Int == 1, "Unknown fields inside existing snippets survive")
+try captureVolume("entry-saved")
+homePanel.model.query = "new quicklink"
+verify(waitUntil { homePanel.model.selectedRow?.id == "core:newQuicklink" }, "Create Quicklink is the first result for its command")
+sendHomeKey("\r", code: 36)
+verify(homePanel.model.entryForm?.kind == .quicklink && entryFieldFocused(), "Return on Create Quicklink opens a focused form")
+typeEntry("docs")
+try captureVolume("entry-quicklink")
+let beforeCancel = try Data(contentsOf: entryConfig)
+sendHomeKey(String(UnicodeScalar(27)!), code: 53)
+verify(homePanel.model.entryForm == nil && homePanel.isVisible && homePanel.model.query == "new quicklink", "Escape cancels the form, not the launcher")
+verify((try? Data(contentsOf: entryConfig)) == beforeCancel, "Cancelling writes nothing")
+sendHomeKey("\r", code: 36)
+verify(entryFieldFocused(), "The quicklink form reopens with a focused name field")
+typeEntry("docs")
+let linkDraft = homePanel.model.entryForm!
+linkDraft.text = "file:///etc/passwd"
+sendHomeKey("\r", code: 36)
+verify(homePanel.model.entryForm === linkDraft && linkDraft.error?.contains("https://") == true, "An unsupported URL scheme is rejected")
+linkDraft.text = "https://docs.example.com/?q={query}"
+sendHomeKey("\r", code: 36)
+verify(homePanel.model.entryForm == nil && homePanel.model.query == "docs" && homePanel.model.selectedRow?.id == "ql:docs:", "The new quicklink is searchable and selected at once")
+homePanel.orderOut(nil)
+homePanel.model.config = Preferences()
+print("PASS: create snippet and quicklink forms, native typing, Return saves, Escape cancels, validation errors, unknown fields kept")
+
 
 // A real key-window transfer must preserve a live conversation and unsent input.
 var openedSettings = 0
