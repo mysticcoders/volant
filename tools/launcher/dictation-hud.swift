@@ -79,7 +79,18 @@ verify(panel.collectionBehavior.contains(.canJoinAllSpaces) && panel.collectionB
        "Indicator joins all Spaces and full-screen apps")
 verify(!panel.isVisible, "Indicator starts hidden")
 
-// Phase 1: Volant is in the background, as it is when the global hotkey fires over another app.
+// Phase 1: Volant is in the background behind a real editor, as it is when the global hotkey fires
+// over another app. TextEdit is made frontmost first, so an unchanged frontmost app means it kept focus.
+let editorID = "com.apple.TextEdit"
+if let editorURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: editorID) {
+    let configuration = NSWorkspace.OpenConfiguration()
+    configuration.activates = true
+    NSWorkspace.shared.openApplication(at: editorURL, configuration: configuration) { _, _ in }
+    verify(waitUntil(timeout: 20) { NSWorkspace.shared.frontmostApplication?.bundleIdentifier == editorID },
+           "TextEdit becomes the frontmost app before dictation starts")
+} else {
+    print("NOTE: TextEdit is not installed here; the frontmost check uses whichever app is in front")
+}
 let frontmostBefore = NSWorkspace.shared.frontmostApplication?.processIdentifier
 let startedActive = app.isActive
 if startedActive { print("NOTE: fixture process started active; background-only checks use the key-window phase") }
@@ -90,6 +101,10 @@ settle()
 verify(startedActive || !app.isActive, "Showing the indicator does not activate Volant")
 verify(NSWorkspace.shared.frontmostApplication?.processIdentifier == frontmostBefore,
        "The frontmost app is unchanged by the indicator")
+model.heard("Fictional words heard while TextEdit stays in front")
+settle()
+verify(NSWorkspace.shared.frontmostApplication?.processIdentifier == frontmostBefore && !app.isActive,
+       "Live text in the indicator leaves the frontmost app in front")
 verify(!panel.isKeyWindow && app.keyWindow == nil || startedActive, "No Volant window becomes key while in the background")
 if let screen = DictationIndicatorPanel.targetScreen() {
     verify(abs(panel.frame.midX - screen.visibleFrame.midX) <= 1, "Indicator is centered horizontally: \(panel.frame) on \(screen.visibleFrame)")
@@ -139,4 +154,5 @@ pendingHides.last?()
 verify(model.phase == .hidden, "The scheduled hide clears the result")
 verify(waitUntil { !panel.isVisible }, "Hiding removes the indicator")
 if keyBefore { verify(other.isKeyWindow, "The other window is still key after the indicator hides") }
+NSRunningApplication.runningApplications(withBundleIdentifier: editorID).forEach { $0.terminate() }
 print("PASS: dictation indicator (\(appearanceName))")
