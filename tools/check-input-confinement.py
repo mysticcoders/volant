@@ -7,6 +7,7 @@ does: only the input helper may call these APIs. The Phase 0 spike sources are e
 are not part of any target. Run with --self-test to check the matcher itself.
 """
 import re
+import os
 import subprocess
 import sys
 import unittest
@@ -32,9 +33,27 @@ def violations(files):
                 yield path, number, match.group(0)
 
 
+SKIPPED_DIRECTORIES = {".git", "build", "build-release", "dist", "node_modules", ".build", ".wrangler"}
+
+
+def source_names():
+    """Repository file names: git's tracked and untracked non-ignored files, or, in a source copy
+    without git metadata such as the Tart VM's tarball, every file outside build output."""
+    try:
+        listed = subprocess.check_output(["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+                                         stderr=subprocess.DEVNULL)
+        return listed.decode().split("\0")
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        names = []
+        for root, directories, files in os.walk("."):
+            directories[:] = [d for d in directories if d not in SKIPPED_DIRECTORIES and not d.startswith("dist-release")]
+            names.extend(os.path.relpath(os.path.join(root, name)) for name in files)
+        return names
+
+
 def tracked_sources():
     """Tracked and untracked, non-ignored source files with their contents."""
-    names = subprocess.check_output(["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"]).decode().split("\0")
+    names = source_names()
     files = {}
     for name in filter(None, names):
         if name.endswith(SOURCE_SUFFIXES):
