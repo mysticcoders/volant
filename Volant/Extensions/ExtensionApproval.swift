@@ -32,6 +32,13 @@ enum ExtensionApproval {
         grants[manifest.id] = grant; object["extensions"] = grants
         try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys]).write(to: url, options: .atomic)
     }
+    /// Drops an extension's grant entirely, for uninstalling it.
+    static func forget(_ id: String, at url: URL) throws {
+        var object = try read(url)
+        guard var grants = object["extensions"] as? [String: Any], grants[id] != nil else { return }
+        grants[id] = nil; object["extensions"] = grants
+        try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys]).write(to: url, options: .atomic)
+    }
     private static func read(_ url: URL) throws -> [String: Any] {
         guard let object = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any],
               object["extensions"] == nil || object["extensions"] is [String: Any] else { throw CocoaError(.fileReadCorruptFile) }

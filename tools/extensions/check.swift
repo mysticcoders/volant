@@ -1,4 +1,5 @@
 import Foundation
+import VolantCore
 let root = URL(fileURLWithPath: CommandLine.arguments[1])
 let module = try Data(contentsOf: root.appendingPathComponent("extensions/hello-rust/hello.wasm"))
 let engine = ExtensionHost()
@@ -57,5 +58,25 @@ for name in ["failedExit", "bounds", "vectorLimit", "outputLimit", "stderrLimit"
     check(result.0 == nil && result.1 != nil, "Command rejects \(name) without partial output")
 }
 check(try commandProbe("streams").0 == "OK", "Fresh command recovers after rejected calls")
+// List extensions: the real Hacker News and Lobsters modules plan only their approved host and render
+// fictional pages into rows the launcher accepts. No network is used here.
+for (name, host, page) in [
+    ("hackernews", "hn.algolia.com", #"{"hits":[{"objectID":"1","title":"Fictional story","url":"https://example.com/a","points":3,"num_comments":1,"author":"pat","created_at_i":0}]}"#),
+    ("lobsters", "lobste.rs", #"[{"title":"Fictional story","url":"https://example.com/a","score":3,"comment_count":1,"created_at":"1970-01-01T00:00:00Z","submitter_user":"pat","tags":["rust"],"comments_url":"https://lobste.rs/s/abc/x"}]"#)] {
+    let bytes = try Data(contentsOf: root.appendingPathComponent("extensions/\(name)/\(name).wasm"))
+    check((try? ExtensionMemory.validate(bytes)) != nil, "\(name) declares bounded memory")
+    let plan = evaluate(bytes, input: try ExtensionNetwork.request(phase: "plan", query: "", now: Date(timeIntervalSince1970: 3600)))
+    let urls = try ExtensionNetwork.plannedURLs(from: plan.0 ?? "", hosts: [host])
+    check(urls.count == 1 && urls[0].host == host, "\(name) plans one URL on \(host): \(plan)")
+    check((try? ExtensionNetwork.plannedURLs(from: plan.0 ?? "", hosts: ["example.com"])) == nil, "\(name) plan is refused for other hosts")
+    let response = ExtensionNetwork.Response(url: urls[0].absoluteString, status: 200, body: page)
+    let render = evaluate(bytes, input: try ExtensionNetwork.request(phase: "render", query: "", now: Date(timeIntervalSince1970: 3600), responses: [response]))
+    let items = try ExtensionNetwork.items(from: render.0 ?? "")
+    check(items.count == 1 && items[0].url == "https://example.com/a" && items[0].secondaryTitle == "Open Comments" &&
+          items[0].subtitle?.contains("1h ago") == true, "\(name) renders rows: \(render)")
+    let failed = evaluate(bytes, input: try ExtensionNetwork.request(phase: "render", query: "", now: Date(),
+        responses: [.init(url: urls[0].absoluteString, status: 0, body: "")]))
+    check((try? ExtensionNetwork.items(from: failed.0 ?? ""))?.count == 1, "\(name) explains a failed fetch in one row")
+}
 print("PASS: production ABI 2 executes Raycast TypeScript and enforces stream, import, pointer, output and host-call boundaries")
 print("PASS: actual WASM greeting, UTF-8, input/output limits, malformed modules and denied imports")

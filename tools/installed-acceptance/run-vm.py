@@ -25,7 +25,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = ROOT / "tools" / "installed-acceptance"
-SECTIONS = ("shortcuts", "translation", "settings")
+SECTIONS = ("shortcuts", "translation", "settings", "extensions")
 
 
 def newest_dmg():
@@ -103,6 +103,12 @@ else:
     build_adhoc()
 for path in (HERE / "guest").iterdir():
     shutil.copy(path, output / path.name)
+for name in ("hackernews", "lobsters"):
+    folder = output / "extensions" / name
+    folder.mkdir(parents=True)
+    manifest = json.loads((ROOT / "extensions" / name / "manifest.json").read_text())
+    for file in ("manifest.json", manifest["module"]):
+        shutil.copy(ROOT / "extensions" / name / file, folder / file)
 key = output / "ssh-key"
 subprocess.run(["ssh-keygen", "-t", "ed25519", "-N", "", "-q", "-f", str(key)], check=True)
 guest_dir = "/Volumes/My Shared Files/artifacts"
@@ -186,6 +192,8 @@ try:
         phase("restart-app", "shortcuts")
     if "translation" in sections:
         phase("translation")
+    if "extensions" in sections:
+        phase("extensions")
     if "settings" in sections:
         phase("settings")
     if "settings" in sections and args.build:

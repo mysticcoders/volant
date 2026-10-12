@@ -17,7 +17,7 @@ UI_PATTERNS = (
     "tools/check-launcher.sh", "tools/check-launcher-actions.sh", "tools/check-dictation-hud.sh", "tools/run-bounded-check.py", "tools/test-ui-vm.py", "tools/preview-settings.sh", "tools/render-*.sh",
     "VolantTests/LiveMarkdownTests.swift", "VolantTests/NotesStoreTests.swift",
 )
-NATIVE_PATTERNS = ("Volant/*", "VolantTests/*", "VolantAgentHost/*", "VolantExtensionHost/*", "VolantAIHost/*", "VolantInputHost/*",
+NATIVE_PATTERNS = ("Volant/*", "VolantTests/*", "VolantAgentHost/*", "VolantExtensionHost/*", "VolantAIHost/*", "VolantInputHost/*", "VolantFetchHost/*",
                    "Shared/*", "Core/*", "extensions/*", "Scripts/*", "tools/*", "project.yml", ".swiftlint.yml", ".github/workflows/*")
 
 

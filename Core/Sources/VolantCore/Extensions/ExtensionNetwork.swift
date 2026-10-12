@@ -1,0 +1,181 @@
+import Foundation
+
+/// Network extensions never touch the network themselves. A run has two phases, each a separate,
+/// ordinary invocation of the module with a JSON request as its input:
+///
+/// 1. `plan`: the module receives the query and returns `{"fetch": [url, …]}`.
+/// 2. `render`: Volant fetches the permitted URLs through its fetch helper and runs the module again
+///    with the responses and the current time; the module returns `{"items": […]}`.
+///
+/// A URL is permitted only when it is https on the default port, carries no credentials, and its host
+/// is one the manifest declares and the owner approved. The JavaScriptCore runtime and its limits are
+/// unchanged; the plan, responses and items all pass through the existing 64 KiB input and output.
+public enum ExtensionNetwork {
+    public static let maximumHosts = 8
+    public static let maximumFetches = 4
+    public static let maximumResponseBytes = 48 * 1024
+    public static let maximumItems = 100
+    public static let maximumURLLength = 2048
+
+    /// An exact, lowercase DNS hostname with at least two labels: no scheme, port, path, wildcard or IP literal.
+    public static func isValidHost(_ host: String) -> Bool {
+        guard (4...253).contains(host.count), host == host.lowercased() else { return false }
+        let labels = host.split(separator: ".", omittingEmptySubsequences: false)
+        guard labels.count >= 2, labels.last?.allSatisfy(\.isLetter) == true else { return false }
+        return labels.allSatisfy { label in
+            (1...63).contains(label.count) && label.first != "-" && label.last != "-" &&
+                label.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "-") }
+        }
+    }
+
+    /// The URL a plan asked for, if Volant may fetch it for an extension allowed to reach `hosts`.
+    public static func permittedURL(_ string: String, hosts: Set<String>) -> URL? {
+        guard string.count <= maximumURLLength, let components = URLComponents(string: string),
+              components.scheme == "https", components.user == nil, components.password == nil,
+              components.port == nil || components.port == 443, components.fragment == nil,
+              let host = components.host?.lowercased(), hosts.contains(host),
+              let url = components.url else { return nil }
+        return url
+    }
+
+    /// The URLs from a plan's output, in order. Throws when the plan is malformed, asks for too many
+    /// URLs, or names any URL outside `hosts`, rather than silently dropping it.
+    public static func plannedURLs(from output: String, hosts: Set<String>) throws -> [URL] {
+        guard let data = output.data(using: .utf8), let plan = try? JSONDecoder().decode(Plan.self, from: data) else {
+            throw ExtensionNetworkError.malformedPlan
+        }
+        guard plan.fetch.count <= maximumFetches else { throw ExtensionNetworkError.tooManyFetches }
+        return try plan.fetch.map { requested in
+            guard let url = permittedURL(requested, hosts: hosts) else { throw ExtensionNetworkError.hostNotAllowed(requested) }
+            return url
+        }
+    }
+
+    /// The JSON a module receives. `responses` is absent in the plan phase.
+    public static func request(phase: String, query: String, now: Date, responses: [Response]? = nil) throws -> String {
+        let encoder = JSONEncoder(); encoder.outputFormatting = .sortedKeys
+        let body = Request(phase: phase, query: query, now: Int(now.timeIntervalSince1970), responses: responses)
+        return String(decoding: try encoder.encode(body), as: UTF8.self)
+    }
+
+    /// The rows a render returned, trimmed to the launcher's limits. Links other than http and https
+    /// are dropped so a row can never open another scheme.
+    public static func items(from output: String) throws -> [ExtensionItem] {
+        guard let data = output.data(using: .utf8), let list = try? JSONDecoder().decode(ItemList.self, from: data) else {
+            throw ExtensionNetworkError.malformedItems
+        }
+        return list.items.prefix(maximumItems).compactMap { $0.sanitized() }
+    }
+
+    private struct Plan: Decodable { let fetch: [String] }
+    private struct ItemList: Decodable { let items: [ExtensionItem] }
+    private struct Request: Encodable {
+        let phase: String
+        let query: String
+        let now: Int
+        let responses: [Response]?
+    }
+
+    /// One fetched URL as the module sees it. A failed fetch has status 0 and an empty body.
+    public struct Response: Codable, Equatable {
+        public let url: String
+        public let status: Int
+        public let body: String
+        public init(url: String, status: Int, body: String) { self.url = url; self.status = status; self.body = body }
+    }
+}
+
+/// One row a list extension returns: Return opens `url`, Command-Return opens `secondaryURL`.
+public struct ExtensionItem: Codable, Hashable {
+    public var title: String
+    public var subtitle: String?
+    public var url: String?
+    public var secondaryURL: String?
+    public var secondaryTitle: String?
+
+    public init(title: String, subtitle: String? = nil, url: String? = nil, secondaryURL: String? = nil, secondaryTitle: String? = nil) {
+        self.title = title; self.subtitle = subtitle; self.url = url; self.secondaryURL = secondaryURL; self.secondaryTitle = secondaryTitle
+    }
+
+    /// Trims text to display limits and drops links that are not http or https. A row without a
+    /// title is dropped.
+    func sanitized() -> ExtensionItem? {
+        let title = String(title.prefix(300)).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else { return nil }
+        func link(_ value: String?) -> String? {
+            guard let value, value.count <= ExtensionNetwork.maximumURLLength, let url = URL(string: value),
+                  ["http", "https"].contains(url.scheme?.lowercased()), url.host != nil else { return nil }
+            return value
+        }
+        let secondary = link(secondaryURL)
+        return ExtensionItem(title: title, subtitle: subtitle.map { String($0.prefix(300)) }, url: link(url),
+                             secondaryURL: secondary, secondaryTitle: secondary == nil ? nil : secondaryTitle.map { String($0.prefix(40)) })
+    }
+}
+
+public enum ExtensionNetworkError: Error, LocalizedError, Equatable {
+    case malformedPlan, tooManyFetches, hostNotAllowed(String), malformedItems, hostsNotApproved([String])
+    public var errorDescription: String? {
+        switch self {
+        case .malformedPlan: return "Extension returned an invalid fetch plan."
+        case .tooManyFetches: return "Extension asked for more than \(ExtensionNetwork.maximumFetches) URLs."
+        case .hostNotAllowed(let url): return "Extension asked for a URL it is not allowed to reach: \(url)"
+        case .malformedItems: return "Extension returned an invalid list."
+        case .hostsNotApproved(let hosts): return "Allow access to \(hosts.joined(separator: ", ")) to use this extension."
+        }
+    }
+}
+
+/// Hosts the owner allowed network extensions to reach, kept as `extensionHosts` in config.json. A host
+/// is shared: removing it affects every extension that declares it. Writes patch only that key and
+/// preserve every other field. The list is per Mac and is not synced through iCloud.
+public enum ExtensionHostApprovals {
+    public static let key = "extensionHosts"
+
+    public static func approved(at url: URL) -> Set<String> {
+        guard let object = try? read(url), let hosts = object[key] as? [String] else { return [] }
+        return Set(hosts.filter(ExtensionNetwork.isValidHost))
+    }
+
+    public static func missing(_ manifest: ExtensionManifest, at url: URL) -> [String] {
+        let approved = approved(at: url)
+        return manifest.declaredHosts.filter { !approved.contains($0) }
+    }
+
+    public static func approve(_ hosts: [String], at url: URL) throws {
+        try write(at: url) { $0.union(hosts.filter(ExtensionNetwork.isValidHost)) }
+    }
+
+    public static func remove(_ host: String, at url: URL) throws {
+        try write(at: url) { $0.subtracting([host]) }
+    }
+
+    /// After an extension is removed, drops hosts it declared that no remaining extension declares.
+    /// Hosts the removed extension did not declare are left alone.
+    @discardableResult
+    public static func pruneAfterRemoving(_ removed: ExtensionManifest, remaining: [ExtensionManifest], at url: URL) throws -> [String] {
+        let stillUsed = Set(remaining.flatMap(\.declaredHosts))
+        let orphaned = removed.declaredHosts.filter { !stillUsed.contains($0) && approved(at: url).contains($0) }
+        if !orphaned.isEmpty { try write(at: url) { $0.subtracting(orphaned) } }
+        return orphaned
+    }
+
+    private static func write(at url: URL, _ change: (Set<String>) -> Set<String>) throws {
+        var object = try read(url)
+        let current = Set((object[key] as? [String] ?? []).filter(ExtensionNetwork.isValidHost))
+        object[key] = change(current).sorted()
+        try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys]).write(to: url, options: .atomic)
+    }
+
+    private static func read(_ url: URL) throws -> [String: Any] {
+        guard let object = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any],
+              object[key] == nil || object[key] is [String] else { throw CocoaError(.fileReadCorruptFile) }
+        return object
+    }
+}
+
+/// What the app asks the sandboxed fetch helper to do. The helper re-checks every URL against
+/// `allowedHosts`, refuses redirects, sends no cookies and stops reading past `maximumBytes`.
+@objc public protocol VolantFetchHostProtocol {
+    func fetch(url: String, allowedHosts: [String], maximumBytes: Int, reply: @escaping (Data?, Int, String?) -> Void)
+}

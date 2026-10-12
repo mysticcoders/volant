@@ -1,5 +1,8 @@
 import SwiftUI
+import VolantCore
 
+/// Reloads whenever a window becomes key as well as on appear, so enabling an extension or allowing
+/// hosts from the launcher shows here when Settings comes back, even if this pane never left the screen.
 struct ExtensionSettingsView: View {
     let configURL: URL
     let onChange: () -> Void
@@ -8,10 +11,21 @@ struct ExtensionSettingsView: View {
     @State private var problems: [String] = []
     @State private var error: String?
     @State private var communityAllowed = false
+    @State private var approvedHosts: [String] = []
+    @State private var confirmingHosts: InstalledExtension?
+    @State private var confirmingUninstall: InstalledExtension?
     private var manager: ExtensionManager { ExtensionManager(configURL: configURL, roots: roots) }
     private func reload() {
         let manager = manager; manager.reload()
         installed = manager.extensions; problems = manager.loadErrors; communityAllowed = manager.communityAllowed
+        approvedHosts = ExtensionHostApprovals.approved(at: configURL).sorted()
+    }
+    private func setEnabled(_ ext: InstalledExtension, _ enabled: Bool) {
+        do { try manager.setEnabled(ext, enabled); reload(); onChange() }
+        catch { self.error = error.localizedDescription; reload() }
+    }
+    private func users(of host: String) -> [String] {
+        installed.filter { $0.manifest.declaredHosts.contains(host) }.map(\.name)
     }
     var body: some View {
         Form {
@@ -26,14 +40,21 @@ struct ExtensionSettingsView: View {
             Section {
                 if installed.isEmpty { Text("No extensions installed.").foregroundStyle(.secondary) }
                 ForEach(installed) { ext in
-                    Toggle(isOn: Binding(get: { ext.enabled }, set: { enabled in
-                        do { try manager.setEnabled(ext, enabled); reload(); onChange() }
-                        catch { self.error = error.localizedDescription; reload() }
-                    })) {
-                        Text(ext.name)
-                        Text((ext.isCommunity ? (ext.communityBlocked ? "Community · Blocked by master switch" : "Community") : "Bundled with Volant")
-                             + " · Version \(ext.manifest.version) · " + ext.accessDescription)
-                    }.disabled(ext.communityBlocked).accessibilityIdentifier("extension-toggle-" + ext.id)
+                    HStack {
+                        Toggle(isOn: Binding(get: { ext.enabled }, set: { enabled in
+                            if enabled && !ExtensionHostApprovals.missing(ext.manifest, at: configURL).isEmpty { confirmingHosts = ext }
+                            else { setEnabled(ext, enabled) }
+                        })) {
+                            Text(ext.name)
+                            Text((ext.isCommunity ? (ext.communityBlocked ? "Community · Blocked by master switch" : "Community") : "Bundled with Volant")
+                                 + " · Version \(ext.manifest.version) · " + ext.accessDescription
+                                 + (ext.enabled && !ExtensionHostApprovals.missing(ext.manifest, at: configURL).isEmpty ? " · Asks for host access on next use" : ""))
+                        }.disabled(ext.communityBlocked).accessibilityIdentifier("extension-toggle-" + ext.id)
+                        if ext.isCommunity {
+                            Button("Uninstall…") { confirmingUninstall = ext }.controlSize(.small)
+                                .accessibilityIdentifier("extension-uninstall-" + ext.id)
+                        }
+                    }
                 }
                 ForEach(problems, id: \.self) { Text($0).foregroundStyle(.secondary) }
             } header: {
@@ -44,11 +65,56 @@ struct ExtensionSettingsView: View {
                     Button("Refresh") { reload(); onChange() }.controlSize(.small).font(.callout)
                 }
             } footer: {
-                SettingsFooter("Extensions start off and run only when you invoke them. Enable one here or choose Enable and Run the first time you use it; changed code or permissions require enabling again. Try the bundled example: hello Andrew")
+                SettingsFooter("Uninstalling moves a community extension to the Trash and removes host access no other extension uses. Extensions start off and run only when you invoke them. Enable one here or choose Enable and Run the first time you use it; changed code or permissions require enabling again. Try the bundled example: hello Andrew")
+            }
+            Section {
+                if approvedHosts.isEmpty { Text("No hosts allowed.").foregroundStyle(.secondary) }
+                ForEach(approvedHosts, id: \.self) { host in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(host).font(.body.monospaced())
+                            let names = users(of: host)
+                            Text(names.isEmpty ? "Not used by any installed extension" : "Used by " + names.joined(separator: ", "))
+                                .font(.callout).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button("Remove") {
+                            do { try ExtensionHostApprovals.remove(host, at: configURL); reload(); onChange() }
+                            catch { self.error = error.localizedDescription }
+                        }.controlSize(.small).accessibilityIdentifier("extension-host-remove-" + host)
+                    }
+                }
+            } header: {
+                Text("Network Access")
+            } footer: {
+                SettingsFooter("Hosts you allowed network extensions to read. Volant fetches from them for the extension; the extension itself has no network access. Removing a host stops every extension that uses it until you allow it again.")
             }
         }
         .formStyle(.grouped)
         .onAppear(perform: reload)
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in reload() }
+        .sheet(item: $confirmingHosts) { ext in
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Enable \(ext.name)?").font(.title2.bold())
+                ExtensionHostList(hosts: ExtensionHostApprovals.missing(ext.manifest, at: configURL))
+                HStack {
+                    Spacer()
+                    Button("Cancel") { confirmingHosts = nil }.keyboardShortcut(.cancelAction)
+                    Button("Allow and Enable") { confirmingHosts = nil; setEnabled(ext, true) }.keyboardShortcut(.defaultAction)
+                }
+            }.padding(24).frame(width: 420).background(Color(nsColor: .windowBackgroundColor))
+        }
+        .alert("Uninstall \(confirmingUninstall?.name ?? "extension")?", isPresented: Binding(get: { confirmingUninstall != nil }, set: { if !$0 { confirmingUninstall = nil } })) {
+            Button("Cancel", role: .cancel) { confirmingUninstall = nil }
+            Button("Uninstall", role: .destructive) {
+                guard let ext = confirmingUninstall else { return }
+                confirmingUninstall = nil
+                do { try manager.uninstall(ext); reload(); onChange() }
+                catch { self.error = error.localizedDescription; reload() }
+            }
+        } message: {
+            Text("Volant moves it to the Trash and removes host access that no other extension needs.")
+        }
         .alert("Couldn’t change extension", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
             Button("OK") { error = nil }
         } message: { Text(error ?? "") }
@@ -59,6 +125,7 @@ struct ExtensionPermissionRequest: Identifiable {
     let id = UUID()
     let extensionItem: InstalledExtension
     let input: String
+    var hosts: [String] = []
 }
 
 struct ExtensionPermissionView: View {
@@ -67,16 +134,37 @@ struct ExtensionPermissionView: View {
     let cancel: () -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Enable \(request.extensionItem.name)?").font(.title2.bold())
-            Text(request.extensionItem.accessDescription)
-            Text("This extension will run now and stay enabled. You can turn it off in Settings → Extensions.")
-                .font(.callout).foregroundStyle(.secondary)
+            Text(request.extensionItem.enabled ? "Allow \(request.extensionItem.name) to go online?" : "Enable \(request.extensionItem.name)?")
+                .font(.title2.bold())
+            if request.hosts.isEmpty {
+                Text(request.extensionItem.accessDescription)
+            } else {
+                ExtensionHostList(hosts: request.hosts)
+            }
+            Text("This extension will run now and stay enabled. You can turn it off, or remove its hosts, in Settings → Extensions.")
+                .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             HStack {
                 Spacer()
                 Button("Cancel", action: cancel).keyboardShortcut(.cancelAction)
-                Button("Enable and Run", action: enable).keyboardShortcut(.defaultAction)
+                Button(request.hosts.isEmpty ? "Enable and Run" : "Allow and Run", action: enable).keyboardShortcut(.defaultAction)
             }
         }.padding(24).frame(width: 390)
             .background(Color(nsColor: .windowBackgroundColor))
+    }
+}
+
+/// The hosts an extension needs, as shown before the owner allows them.
+struct ExtensionHostList: View {
+    let hosts: [String]
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("To use this extension, Volant needs to allow access to the following hosts:")
+                .fixedSize(horizontal: false, vertical: true)
+            ForEach(hosts, id: \.self) { host in
+                Label(host, systemImage: "network").font(.body.monospaced())
+            }
+            Text("Volant fetches pages from these hosts for the extension. The extension itself has no network access.")
+                .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        }
     }
 }

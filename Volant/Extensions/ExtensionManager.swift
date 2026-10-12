@@ -10,9 +10,9 @@ struct InstalledExtension: Identifiable, Hashable {
     var isCommunity: Bool { !ExtensionManager.isBundled(directory) }
     var name: String { manifest.name }
     var accessDescription: String {
-        manifest.capabilities.isEmpty ? "No permissions required" : manifest.capabilities.sorted().map {
-            $0 == "clipboard.write" ? "Write to clipboard" : "Send diagnostic messages"
-        }.joined(separator: ", ")
+        let access = manifest.capabilities.sorted().map { $0 == "clipboard.write" ? "Write to clipboard" : "Send diagnostic messages" } +
+            (manifest.declaredHosts.isEmpty ? [] : ["Read " + manifest.declaredHosts.joined(separator: ", ")])
+        return access.isEmpty ? "No permissions required" : access.joined(separator: ", ")
     }
 }
 
@@ -114,15 +114,75 @@ final class ExtensionManager {
         try ExtensionMemory.validate(module)
         return module
     }
+    /// Hosts this extension declares that the owner has not allowed yet. A host removed in Settings
+    /// shows up here again, so the next run asks before fetching.
+    func missingHosts(_ ext: InstalledExtension) -> [String] { ExtensionHostApprovals.missing(ext.manifest, at: configURL) }
+    /// Ready to run without asking: enabled and every declared host allowed.
+    func isReady(_ ext: InstalledExtension) -> Bool { ext.enabled && missingHosts(ext).isEmpty }
+
+    /// Enabling also allows the extension's declared hosts; the caller has shown the owner that list.
+    /// Disabling leaves host approvals alone, because other extensions may share them.
     func setEnabled(_ ext: InstalledExtension, _ enabled: Bool) throws {
         if enabled && isBlocked(ext) { throw ExtensionError.communityDisabled }
         if enabled { _ = try verifiedModule(ext) }
+        if enabled && ext.enabled { try ExtensionHostApprovals.approve(ext.manifest.declaredHosts, at: configURL); reload(); return }
         try ExtensionApproval.update(ext.manifest, enabled: enabled, expected: ext.enabled, at: configURL)
+        if enabled { try ExtensionHostApprovals.approve(ext.manifest.declaredHosts, at: configURL) }
         if !enabled, Self.activeExecution?.extensionID == ext.id, Self.activeExecution?.configURL == configURL {
             Self.activeExecution?.finish(.failure(ExtensionError.disabled))
         }
         reload()
     }
+    /// Moves a community extension's folder to the Trash, forgets its approval, and removes any host
+    /// approvals that no other installed extension declares. Bundled extensions cannot be removed.
+    /// Tests pass `remove` so fixtures are deleted rather than put in the owner's Trash.
+    @discardableResult
+    func uninstall(_ ext: InstalledExtension,
+                   remove: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }) throws -> [String] {
+        guard ext.isCommunity else { throw ExtensionError.runtime("Extensions bundled with Volant cannot be uninstalled.") }
+        if Self.activeExecution?.extensionID == ext.id { Self.activeExecution?.finish(.failure(ExtensionError.disabled)) }
+        try remove(ext.directory)
+        try ExtensionApproval.forget(ext.manifest.id, at: configURL)
+        reload()
+        return try ExtensionHostApprovals.pruneAfterRemoving(ext.manifest, remaining: extensions.map(\.manifest), at: configURL)
+    }
+
+    /// Runs a list extension. With declared hosts it plans, fetches the permitted URLs through the fetch
+    /// helper, then renders; without hosts it renders straight away. A plan may instead return items, for
+    /// example a row explaining an unusable query, and those are shown without fetching. Approval and hosts are checked again
+    /// between phases, so a change made mid-run stops it.
+    func runItems(_ ext: InstalledExtension, query: String, now: Date = Date(),
+                  fetch: @escaping ([URL], [String], @escaping ([ExtensionNetwork.Response]) -> Void) -> Void = ExtensionFetcher.fetch,
+                  completion: @escaping (Result<[ExtensionItem], Error>) -> Void) {
+        let hosts = ext.manifest.declaredHosts
+        func render(_ responses: [ExtensionNetwork.Response]) {
+            do {
+                let input = try ExtensionNetwork.request(phase: "render", query: query, now: now, responses: hosts.isEmpty ? nil : responses)
+                run(ext, input: input) { result in
+                    completion(result.flatMap { output in Result { try ExtensionNetwork.items(from: output) } })
+                }
+            } catch { completion(.failure(error)) }
+        }
+        guard !hosts.isEmpty else { render([]); return }
+        let missing = missingHosts(ext)
+        guard missing.isEmpty else { completion(.failure(ExtensionNetworkError.hostsNotApproved(missing))); return }
+        do {
+            run(ext, input: try ExtensionNetwork.request(phase: "plan", query: query, now: now)) { [self] result in
+                do {
+                    let approved = Set(hosts).intersection(ExtensionHostApprovals.approved(at: configURL))
+                    let output = try result.get()
+                    if let items = try? ExtensionNetwork.items(from: output) { completion(.success(items)); return }
+                    let urls = try ExtensionNetwork.plannedURLs(from: output, hosts: approved)
+                    fetch(urls, Array(approved).sorted()) { responses in
+                        let missing = self.missingHosts(ext)
+                        guard missing.isEmpty else { completion(.failure(ExtensionNetworkError.hostsNotApproved(missing))); return }
+                        render(responses)
+                    }
+                } catch { completion(.failure(error)) }
+            }
+        } catch { completion(.failure(error)) }
+    }
+
     func run(_ ext: InstalledExtension, input: String, completion: @escaping (Result<String, Error>) -> Void) {
         do {
             guard !isBlocked(ext) else { throw ExtensionError.communityDisabled }

@@ -63,3 +63,8 @@ A [restricted WASI command adapter](../tools/raycast-wasm/README.md) now runs th
 A Developer ID archive/export provided the sandboxed helper for `tools/check-extensions-xpc.sh`. The headless signed fixture used only fictional config and sample modules: Hello World succeeded, a runaway module terminated, then a new Hello World invocation succeeded through a restarted service. No normal app startup, clipboard monitoring, owner configuration, host windows or hotkeys were involved.
 
 This caught a real difference from the direct engine checks: launchd throttles rapid restarts (its documented default is ten seconds). A single short deadline made the next request fail even though the new service would become available. Prevention: a separate bounded readiness handshake and execution deadline, no replay after submission, and the repeatable signed-XPC smoke script. The script requires signing credentials and is separate from ordinary CI. The direct WASM and approval tests are automated in CI. Signed installed-app consent interaction and a granted clipboard callback are not claimed by this headless test.
+
+## Network extensions
+
+List extensions can declare `hosts` and `"output": "items"` to read public web data and show it as launcher rows. The module still never touches the network: it plans URLs, Volant fetches them through the sandboxed `VolantFetchHost` from hosts the owner allowed, and the module renders the responses. Hosts are approved in a prompt, shared between extensions, listed under Settings → Extensions → Network Access, and pruned when the last extension using them is uninstalled. See [network extensions](network-extensions.md); the Hacker News and Lobsters readers in `extensions/` are the first two.
+

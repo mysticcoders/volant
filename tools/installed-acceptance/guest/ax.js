@@ -16,7 +16,8 @@
 //   count    <window> <match>        how many elements match
 //   frames   <window> <match>        every match, as in dump, followed by @ x y width height
 // <window> is a window title or "*" for any window. <match> is "text", "role=AXButton",
-// "role=AXButton:text" or "prefix=text"; text matches name, description, title or value exactly.
+// "role=AXButton:text" or "prefix=text"; text matches name, description, title, value or
+// accessibility identifier exactly.
 // A "#n" suffix picks the nth match, for unlabeled buttons that share their row's name.
 
 function run(argv) {
@@ -97,7 +98,8 @@ function run(argv) {
     return e => {
       if (role && safe(() => e.role()) !== role) return false;
       if (text === null) return true;
-      const fields = [safe(() => e.name()), safe(() => e.description()), safe(() => e.title()), safe(() => e.value())];
+      const fields = [safe(() => e.name()), safe(() => e.description()), safe(() => e.title()), safe(() => e.value()),
+        safe(() => e.attributes.byName("AXIdentifier").value())];
       return fields.some(f => typeof f === "string" && (prefix ? f.startsWith(text) : f === text));
     };
   }

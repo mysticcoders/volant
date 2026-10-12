@@ -86,6 +86,8 @@ targets:
         embed: true
       - target: VolantRatesHost
         embed: true
+      - target: VolantFetchHost
+        embed: true
       - target: VolantInputHost
         embed: true
     settings:
@@ -169,6 +171,29 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.RatesHost
+        GENERATE_INFOPLIST_FILE: NO
+  VolantFetchHost:
+    type: xpc-service
+    platform: macOS
+    sources:
+      - path: VolantFetchHost
+    dependencies:
+      - package: VolantCore
+    entitlements:
+      path: VolantFetchHost/VolantFetchHost.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+    info:
+      path: VolantFetchHost/Info.plist
+      properties:
+        CFBundleIdentifier: com.mysticcoders.volant.FetchHost
+        CFBundleName: VolantFetchHost
+        XPCService:
+          ServiceType: Application
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.FetchHost
         GENERATE_INFOPLIST_FILE: NO
   VolantAgentHost:
     type: xpc-service

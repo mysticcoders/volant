@@ -5,7 +5,7 @@ import ApplicationServices
 /// System Events, whose name-based element references resolve every element sharing a name to
 /// the first one. Runs from the guest's SSH session, which holds the image's Accessibility grant.
 ///
-/// Usage: axtree <bundle id> dump <window title>
+/// Usage: axtree <bundle id> dump <window title or *>
 ///        axtree <bundle id> press <window title> <role> <index>   (index among that role, from 1)
 ///        axtree <bundle id> focused <window title>               (the app's focused element)
 let arguments = CommandLine.arguments
@@ -34,19 +34,21 @@ func walk(_ element: AXUIElement, _ visit: (AXUIElement) -> Void) {
 
 let root = AXUIElementCreateApplication(app.processIdentifier)
 let windows: [AXUIElement] = attribute(root, kAXWindowsAttribute) ?? []
-guard let window = windows.first(where: { (attribute($0, kAXTitleAttribute) as String?) == arguments[3] }) else {
+let chosen = windows.filter { arguments[3] == "*" || (attribute($0, kAXTitleAttribute) as String?) == arguments[3] }
+guard let first = chosen.first else {
     print("no window titled \(arguments[3])")
     exit(1)
 }
+let window = first
 switch arguments[2] {
 case "dump":
-    walk(window) { element in
+    for window in chosen { walk(window) { element in
         let role: String = attribute(element, kAXRoleAttribute) ?? ""
         let title: String = attribute(element, kAXTitleAttribute) ?? ""
         let description: String = attribute(element, kAXDescriptionAttribute) ?? ""
         let label: String = attribute(element, "AXLabel") ?? ""
         print([role, title, description, label, frame(element)].joined(separator: " | "))
-    }
+    } }
 case "focused":
     guard let element: AXUIElement = attribute(root, kAXFocusedUIElementAttribute) else { print("none"); exit(0) }
     let role: String = attribute(element, kAXRoleAttribute) ?? ""

@@ -37,6 +37,7 @@ enum ResultRow: Identifiable, Hashable {
     case quicklink(Quicklink, query: String)
     case extensionRun(InstalledExtension, input: String)
     case extensionResult(String)
+    case extensionItem(ExtensionItem, source: String)
     case note(Note)
     case newNote(String)
     case calculation(CalculationAnswer, slot: Int)
@@ -71,6 +72,7 @@ enum ResultRow: Identifiable, Hashable {
         case .newNote(let t): return "newnote:\(t)"
         case .extensionRun(let e, let i): return "ext:\(e.id):\(i)"
         case .extensionResult(let s): return "extresult:\(s)"
+        case .extensionItem(let item, let source): return "extitem:\(source):\(item.url ?? item.title)"
         case .snippet(let s): return "snip:\(s.name.utf8.count):\(s.name)\(s.keyword.utf8.count):\(s.keyword)\(s.body)"
         case .emoji(let e): return "emoji:\(e.symbol)"
         case .quicklink(let q, let t): return "ql:\(q.name):\(t)"
@@ -99,6 +101,7 @@ enum ResultRow: Identifiable, Hashable {
         case .note, .newNote: return "Note"
         case .extensionRun: return "Extension"
         case .extensionResult: return "Result"
+        case .extensionItem(_, let source): return source
         case .snippet: return "Snippet"
         case .emoji: return "Emoji"
         case .quicklink: return "Quicklink"
@@ -143,6 +146,7 @@ enum ResultRow: Identifiable, Hashable {
         case .newNote: return "Create Note"
         case .extensionRun(let ext, _): return ext.communityBlocked ? "Open Extension Settings" : (ext.enabled ? "Run Extension" : "Enable and Run…")
         case .extensionResult: return "Copy Result"
+        case .extensionItem(let item, _): return item.url == nil ? "Copy Title" : "Open Link"
         case .snippet: return "Copy Snippet"
         case .emoji: return "Copy Emoji"
         case .quicklink: return "Open Link"
@@ -156,6 +160,7 @@ enum ResultRow: Identifiable, Hashable {
         case .app: return "Reveal in Finder"
         case .contact(let c): return c.secondaryField?.copyTitle
         case .calculation: return "Use Answer"
+        case .extensionItem(let item, _): return item.secondaryURL == nil ? nil : (item.secondaryTitle ?? "Open Second Link")
         default: return nil
         }
     }
@@ -499,6 +504,21 @@ final class LauncherModel: ObservableObject {
         extensionRunning = true
         let gen = generation
         notice = "Running \(ext.name)…"
+        if ext.manifest.listsItems {
+            extensions.runItems(ext, query: input) { [weak self] result in
+                guard let self else { return }
+                self.extensionRunning = false
+                guard gen == self.generation else { return }
+                switch result {
+                case .success(let items):
+                    self.notice = items.isEmpty ? "\(ext.name) returned nothing." : nil
+                    self.sections = [ResultSection(title: ext.name, rows: items.map { .extensionItem($0, source: ext.name) })]
+                    self.selection = 0
+                case .failure(let error): self.notice = "Extension failed: \(error.localizedDescription)"
+                }
+            }
+            return
+        }
         extensions.run(ext, input: input) { [weak self] result in
             guard let self else { return }
             self.extensionRunning = false
@@ -1233,7 +1253,7 @@ final class LauncherModel: ObservableObject {
     func activateSelection() {
         guard let row = selectedRow else { return }
         switch row {
-        case .appleShortcut, .connectivity, .audioRoute, .volume, .extensionResult, .newNote, .calculation: break
+        case .appleShortcut, .connectivity, .audioRoute, .volume, .extensionResult, .extensionItem, .newNote, .calculation: break
         default: usage.record(key: row.id, query: query)
         }
         switch row {
@@ -1311,10 +1331,14 @@ final class LauncherModel: ObservableObject {
         case .extensionRun(let ext, let input):
             guard !extensionRunning else { notice = "An extension is already running."; return }
             if extensions.isBlocked(ext) { dismiss(); onNote(.extensionSettings); return }
-            if !ext.enabled { pendingExtension = ExtensionPermissionRequest(extensionItem: ext, input: input) }
-            else { runExtension(ext, input: input) }
+            if !extensions.isReady(ext) {
+                pendingExtension = ExtensionPermissionRequest(extensionItem: ext, input: input, hosts: extensions.missingHosts(ext))
+            } else { runExtension(ext, input: input) }
             return
         case .extensionResult(let text): copy(text)
+        case .extensionItem(let item, _):
+            guard let link = item.url, let url = URL(string: link) else { copy(item.title); return }
+            _ = QuicklinkResolver.open(url)
         case .snippet(let snippet): copy(SnippetExpander.expand(snippet.body))
         case .emoji(let e): copy(e.symbol)
         case .quicklink(let link, let query):
@@ -1520,6 +1544,9 @@ final class LauncherModel: ObservableObject {
         case .file(let file): FileSearch.reveal(file)
         case .app(let app): NSWorkspace.shared.activateFileViewerSelecting([app.url])
         case .contact(let contact): if let field = contact.secondaryField { copy(field.value) }
+        case .extensionItem(let item, _):
+            guard let link = item.secondaryURL, let url = URL(string: link) else { activateSelection(); return }
+            _ = QuicklinkResolver.open(url)
         default: activateSelection(); return
         }
         dismiss()
