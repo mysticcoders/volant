@@ -130,10 +130,11 @@ export default function Configuration() {
 
       <h2>Backing it up</h2>
       <p>
-        <strong>Export Backup</strong> and <strong>Import Backup</strong> in the
-        menu bar copy your configuration and notes to and from a folder you
-        choose. Import shows every hotkey and quicklink it would install before
-        applying anything. Clipboard history is deliberately excluded, because
+        <strong>Export&hellip;</strong> and <strong>Import&hellip;</strong> under
+        Settings &rsaquo; Data &amp; Configuration &rsaquo; Volant backup copy
+        your configuration and notes to and from a folder you choose. Export
+        creates a dated backup folder inside it. Import shows every hotkey and
+        quicklink it would install before applying anything. Clipboard history is deliberately excluded, because
         it is encrypted under this Mac&rsquo;s Keychain key and would not
         decrypt elsewhere.
       </p>
