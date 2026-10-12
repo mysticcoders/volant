@@ -9,19 +9,27 @@ sw_vers
 step "install"
 pkill -x Volant 2>/dev/null
 rm -rf "$APP" "$HOME/Library/Containers/$ID"
-hdiutil attach "$A/Volant.dmg" -nobrowse -readonly -mountpoint "$W/dmg" >/dev/null || { record FAIL "mount DMG"; exit 1; }
-ditto "$W/dmg/Volant.app" "$APP"
-hdiutil detach "$W/dmg" >/dev/null
+if [ -f "$A/Volant.zip" ]; then
+  ditto -x -k "$A/Volant.zip" /Applications/
+else
+  hdiutil attach "$A/Volant.dmg" -nobrowse -readonly -mountpoint "$W/dmg" >/dev/null || { record FAIL "mount DMG"; exit 1; }
+  ditto "$W/dmg/Volant.app" "$APP"
+  hdiutil detach "$W/dmg" >/dev/null
+fi
 xattr -cr "$APP"
 version=$(defaults read "$APP/Contents/Info.plist" CFBundleShortVersionString)
 build=$(defaults read "$APP/Contents/Info.plist" CFBundleVersion)
 echo "$version ($build)" > "$W/version"
 record NOTE "installed" "Volant $version ($build), $(sw_vers -productVersion) $(uname -m)"
 gatekeeper=$(spctl -a -vv "$APP" 2>&1 | tr '\n' ' ')
-case "$gatekeeper" in
-  *"Notarized Developer ID"*) record PASS "Gatekeeper accepts the app" "$gatekeeper" ;;
-  *) record FAIL "Gatekeeper accepts the app" "$gatekeeper" ;;
-esac
+if [ -f "$A/Volant.zip" ]; then
+  record NOTE "ad hoc build, so Gatekeeper is not checked" "$gatekeeper"
+else
+  case "$gatekeeper" in
+    *"Notarized Developer ID"*) record PASS "Gatekeeper accepts the app" "$gatekeeper" ;;
+    *) record FAIL "Gatekeeper accepts the app" "$gatekeeper" ;;
+  esac
+fi
 
 step "Spotlight (off in Cirrus images; Volant's app list comes from it)"
 sudo mdutil -i on / >/dev/null 2>&1
