@@ -1,4 +1,5 @@
-# Network extensions: install the Hacker News and Lobsters extensions, approve their hosts from the
+# Network extensions: install the Hacker News and Lobsters extensions from the live signed catalog
+# through Settings → Extensions → Catalog (the fetch helper's fixed-path download), approve their hosts from the
 # launcher prompt, read real stories, open a story and its discussion, then remove a host and uninstall
 # an extension in Settings. Needs the guest's network. Results are read from config.json, the
 # extensions folder, the launcher's accessibility text and the browser's window title.
@@ -28,17 +29,31 @@ pgrep -x Volant >/dev/null || launch_volant
 allow_capture
 key 53; sleep 1
 
-step "install"
+step "install from the catalog"
 mkdir -p "$EXT_DIR"
-rm -rf "$EXT_DIR/hackernews" "$EXT_DIR/lobsters"
-cp -R "$A/extensions/hackernews" "$A/extensions/lobsters" "$EXT_DIR/"
+rm -rf "$EXT_DIR/hackernews" "$EXT_DIR/lobsters" "$EXT_DIR/community.volant.hn" "$EXT_DIR/community.volant.lobsters"
 open_settings Extensions
 if [ "$(AX Volant find "$S" "community-extensions-toggle" | sed 's/.* | //')" != 1 ]; then
   AX Volant press "$S" "community-extensions-toggle" >/dev/null; sleep 1
 fi
-AX Volant press "$S" "Refresh" >/dev/null; sleep 1.5
 expect_eq "community extensions are allowed" true "$(config_get communityExtensionsAllowed)"
+AX Volant press "$S" "extension-catalog-check" >/dev/null
+for _ in $(seq 1 30); do [ "$(AX Volant count "$S" "prefix=extension-catalog-install-community.volant.")" -ge 2 ] && break; sleep 1; done
+shot catalog-loaded
+expect_eq "the signed catalog lists both readers" 2 "$(AX Volant count "$S" "prefix=extension-catalog-install-community.volant.")"
+for id in community.volant.hn community.volant.lobsters; do
+  AX Volant press "$S" "extension-catalog-install-$id" >/dev/null
+  for _ in $(seq 1 30); do [ -f "$EXT_DIR/$id/manifest.json" ] && break; sleep 1; done
+  sleep 1
+done
+shot catalog-installed
 expect_eq "both extensions are listed" 2 "$(AX Volant count "$S" "prefix=extension-toggle-community.volant.")"
+expect_eq "Hacker News installed from the catalog" yes "$([ -f "$EXT_DIR/community.volant.hn/.volant-catalog.json" ] && echo yes || echo no)"
+expect_eq "Lobsters installed from the catalog" yes "$([ -f "$EXT_DIR/community.volant.lobsters/.volant-catalog.json" ] && echo yes || echo no)"
+expect_eq "installing allows no hosts" '[]' "$(hosts)"
+expect_eq "installing enables nothing" 0 "$(/usr/bin/python3 -c "import json;print(sum(1 for v in json.load(open('$CONFIG')).get('extensions', {}).values() if v.get('enabled')))")"
+expect_eq "no staging folders remain" 0 "$(ls -A "$EXT_DIR" | grep -c '^\.staging-\|^\.previous-')"
+expect_eq "installed listings read Installed" 0 "$(AX Volant count "$S" "prefix=extension-catalog-install-community.volant.")"
 key 53; sleep 1
 
 step "Hacker News: approve its host from the launcher"
@@ -128,11 +143,11 @@ open_settings Extensions
 AX Volant press "$S" "extension-uninstall-community.volant.hn" >/dev/null; sleep 1.5
 shot uninstall-confirm
 AX Volant press "*" "Uninstall" >/dev/null; sleep 2
-expect_eq "Uninstall removes the Hacker News folder" no "$([ -d "$EXT_DIR/hackernews" ] && echo yes || echo no)"
+expect_eq "Uninstall removes the Hacker News folder" no "$([ -d "$EXT_DIR/community.volant.hn" ] && echo yes || echo no)"
 expect_eq "Uninstall removes hn.algolia.com, which nothing else uses" "[]" "$(hosts)"
 expect_eq "Uninstall forgets the Hacker News approval" no \
   "$(/usr/bin/python3 -c "import json;print('yes' if 'community.volant.hn' in json.load(open('$CONFIG')).get('extensions',{}) else 'no')")"
-expect_eq "Lobsters stays installed" yes "$([ -d "$EXT_DIR/lobsters" ] && echo yes || echo no)"
+expect_eq "Lobsters stays installed" yes "$([ -d "$EXT_DIR/community.volant.lobsters" ] && echo yes || echo no)"
 key 53; sleep 0.5
 
 step "dark appearance screenshots"

@@ -93,8 +93,12 @@ old version declared are pruned as for an uninstall. A run of that extension in 
   Form row identities, which misplaced Installed rows when a listed extension was installed. Catalog
   rows now use their own identity.
 
-Not yet verified: the signed installed app reaching the live catalog through `VolantFetchHost`, and
-installing and updating from it. Those need the next signed build.
+- The notarized 0.3.0 DMG, in the installed-acceptance VM, loaded the live catalog through the signed
+  `VolantFetchHost` and installed both readers from Settings → Catalog without enabling them or
+  allowing hosts (`tools/installed-acceptance/guest/extensions.sh`).
+
+Not yet verified: Update in the signed app, which needs a second published version of a listed
+extension.
 
 ## Remaining work
 
