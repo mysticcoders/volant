@@ -7,7 +7,7 @@ clone of `volant-ui-xcode`, never on the owner's Mac and never with owner data.
 ```sh
 tools/installed-acceptance/run-vm.py                      # newest DMG in website/public/updates
 tools/installed-acceptance/run-vm.py --dmg path/to/Volant-0.2.6.dmg
-tools/installed-acceptance/run-vm.py --only shortcuts     # shortcuts, translation or settings; repeatable
+tools/installed-acceptance/run-vm.py --only shortcuts     # shortcuts, translation, settings or extensions; repeatable
 tools/installed-acceptance/run-vm.py --explore            # install only, keep the clone to look around
 tools/installed-acceptance/run-vm.py --build --only settings   # an ad hoc build of this checkout
 tools/installed-acceptance/run-vm.py --build ../other-worktree # an ad hoc build of another checkout
@@ -60,6 +60,7 @@ at Login needs two reboots.
 |---|---|---|
 | App shortcuts (#3) | Record, deliver, hide, show, change and remove without restarting; conflicts with Volant's own shortcuts and with another process; bindings after a restart; keyboard-only editing from the launcher; reopening an app with no windows | A physical keyboard, including the owner's Caps Lock Hyper mapping; the owner's window manager |
 | Settings and data (#2) | Status menu version and build; Settings keyboard navigation in light and dark; changing a setting; export, import, Reload Configuration and Reveal in Finder; Launch at Login on, removal in System Settings, restart, off, restart | Backup files with real data; login items on the owner's account; macOS releases other than the VM's |
+| Network extensions | Installing the Hacker News and Lobsters extensions from a sibling volant-extensions checkout, the host prompt, real stories, opening a story and its discussion, removing a host in Settings, uninstalling with host pruning | Extensions installed from a catalog (not built yet) |
 | Translation (#5) | Download consent declined and accepted; translation and Copy; an installed pair offline; a missing pair offline and after reconnecting; Arabic results, copying and Arabic input | Visual review of right-to-left layout (screenshots are collected); Hebrew (not in the macOS 15 target list); Intel hardware |
 
 The clone runs macOS 15.7.7 on Apple silicon. The results are evidence for that system, not for

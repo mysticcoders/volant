@@ -1,4 +1,5 @@
 import Foundation
+import VolantCore
 let root = URL(fileURLWithPath: CommandLine.arguments[1])
 let module = try Data(contentsOf: root.appendingPathComponent("extensions/hello-rust/hello.wasm"))
 let engine = ExtensionHost()
@@ -57,5 +58,21 @@ for name in ["failedExit", "bounds", "vectorLimit", "outputLimit", "stderrLimit"
     check(result.0 == nil && result.1 != nil, "Command rejects \(name) without partial output")
 }
 check(try commandProbe("streams").0 == "OK", "Fresh command recovers after rejected calls")
+// List extensions: a dependency-free fixture plans only its host and renders rows the launcher
+// accepts. The real readers live in github.com/mysticcoders/volant-extensions. No network is used.
+let fixture = try Data(contentsOf: root.appendingPathComponent("tools/extensions/list-fixture/list-fixture.wasm"))
+check((try? ExtensionMemory.validate(fixture)) != nil, "List fixture declares bounded memory")
+let fixturePlan = evaluate(fixture, input: try ExtensionNetwork.request(phase: "plan", query: "", now: Date()))
+let fixtureURLs = try ExtensionNetwork.plannedURLs(from: fixturePlan.0 ?? "", hosts: ["fixture.example.com"])
+check(fixtureURLs.map(\.host) == ["fixture.example.com"], "List fixture plans its one host: \(fixturePlan)")
+check((try? ExtensionNetwork.plannedURLs(from: fixturePlan.0 ?? "", hosts: ["other.example.com"])) == nil, "A plan outside the approved hosts is refused")
+let explained = evaluate(fixture, input: try ExtensionNetwork.request(phase: "plan", query: "explain", now: Date()))
+check((try? ExtensionNetwork.items(from: explained.0 ?? ""))?.first?.title == "Fixture explains its query", "A plan may return rows instead of URLs")
+for (status, title) in [(200, "Fixture fetched"), (0, "Fixture nothing fetched")] {
+    let response = ExtensionNetwork.Response(url: fixtureURLs[0].absoluteString, status: status, body: status == 200 ? "{}" : "")
+    let rendered = evaluate(fixture, input: try ExtensionNetwork.request(phase: "render", query: "", now: Date(), responses: [response]))
+    let items = try ExtensionNetwork.items(from: rendered.0 ?? "")
+    check(items.first?.title == title && items.first?.secondaryTitle == "Open Comments", "List fixture renders responses with status \(status): \(rendered)")
+}
 print("PASS: production ABI 2 executes Raycast TypeScript and enforces stream, import, pointer, output and host-call boundaries")
 print("PASS: actual WASM greeting, UTF-8, input/output limits, malformed modules and denied imports")

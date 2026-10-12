@@ -1,6 +1,9 @@
 import Foundation
 
 /// Manifest shipped beside a module. Capabilities are the complete list of host imports the module may call.
+/// `hosts` lists the exact hostnames a network extension may read through Volant's fetch helper; the
+/// module itself never gets network access (see `ExtensionNetwork`). `output` is "text" (the default) or
+/// "items", a list of links the launcher shows as rows.
 public struct ExtensionManifest: Codable, Hashable {
     public var abiVersion: Int? = 1
     public var id: String
@@ -10,6 +13,11 @@ public struct ExtensionManifest: Codable, Hashable {
     public var capabilities: [String]
     public var timeoutSeconds: Double?
     public var sha256: String?
+    public var hosts: [String]?
+    public var output: String?
+
+    public var declaredHosts: [String] { hosts ?? [] }
+    public var listsItems: Bool { output == "items" }
 
     public func validate() throws {
         guard [1, 2].contains(abiVersion ?? 0), abiVersion != 2 || capabilities.isEmpty,
@@ -17,13 +25,17 @@ public struct ExtensionManifest: Codable, Hashable {
               !version.isEmpty, module.hasSuffix(".wasm"), !module.contains("/"), !module.contains("\\"),
               Set(capabilities).isSubset(of: Self.knownCapabilities), Set(capabilities).count == capabilities.count,
               let hash = sha256, hash.count == 64, hash.allSatisfy({ $0.isHexDigit }),
-              (timeoutSeconds ?? 2).isFinite, (0.5...10).contains(timeoutSeconds ?? 2) else {
+              (timeoutSeconds ?? 2).isFinite, (0.5...10).contains(timeoutSeconds ?? 2),
+              [nil, "text", "items"].contains(output), declaredHosts.count <= ExtensionNetwork.maximumHosts,
+              Set(declaredHosts).count == declaredHosts.count, declaredHosts.allSatisfy(ExtensionNetwork.isValidHost),
+              declaredHosts.isEmpty || listsItems else {
             throw ExtensionValidationError.invalidManifest
         }
     }
     public static let knownCapabilities: Set<String> = ["log", "clipboard.write"]
 
-    public init(abiVersion: Int? = 1, id: String, name: String, version: String, module: String, capabilities: [String], timeoutSeconds: Double? = nil, sha256: String? = nil) {
+    public init(abiVersion: Int? = 1, id: String, name: String, version: String, module: String, capabilities: [String], timeoutSeconds: Double? = nil, sha256: String? = nil,
+                hosts: [String]? = nil, output: String? = nil) {
         self.abiVersion = abiVersion
         self.id = id
         self.name = name
@@ -32,6 +44,8 @@ public struct ExtensionManifest: Codable, Hashable {
         self.capabilities = capabilities
         self.timeoutSeconds = timeoutSeconds
         self.sha256 = sha256
+        self.hosts = hosts
+        self.output = output
     }
 }
 

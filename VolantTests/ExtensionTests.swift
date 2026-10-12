@@ -145,4 +145,73 @@ final class ExtensionTests: XCTestCase {
         let escaped = ExtensionManager(configURL: config, roots: [unslashed]); escaped.reload()
         XCTAssertTrue(escaped.extensions.isEmpty, "A manifest symlinked out of its folder is still refused")
     }
+
+    /// Two list extensions sharing one host, each in its own folder under `root`.
+    private func networkFixture() throws -> (URL, URL, [URL]) {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let config = root.appendingPathComponent("config.json")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try Data(#"{"future":{"keep":true},"extensions":{}}"#.utf8).write(to: config)
+        let module = Data([0,97,115,109,1,0,0,0,5,4,1,1,1,1])
+        let folders = try [("fixture.news", "Fictional News", ["news.example.com", "shared.example.com"]),
+                           ("fixture.feed", "Fictional Feed", ["shared.example.com"])].map { id, name, hosts -> URL in
+            let folder = root.appendingPathComponent(id, isDirectory: true)
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            try module.write(to: folder.appendingPathComponent("reader.wasm"))
+            let manifest = VolantCore.ExtensionManifest(id: id, name: name, version: "1", module: "reader.wasm", capabilities: [],
+                                                        sha256: Volant.Integrity.sha256(module), hosts: hosts, output: "items")
+            try JSONEncoder().encode(manifest).write(to: folder.appendingPathComponent("manifest.json"))
+            return folder
+        }
+        return (root, config, folders)
+    }
+
+    func testEnablingAllowsHostsAndRemovingAHostAsksAgain() async throws {
+        let (root, config, folders) = try networkFixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let manager = ExtensionManager(configURL: config, roots: folders); manager.reload()
+        try manager.setCommunityAllowed(true, expected: false)
+        let news = try XCTUnwrap(manager.extensions.first { $0.id == "fixture.news" })
+        XCTAssertEqual(manager.missingHosts(news), ["news.example.com", "shared.example.com"])
+        XCTAssertFalse(manager.isReady(news))
+        var refusal: Error?
+        manager.runItems(news, query: "", fetch: { _, _, _ in XCTFail("must not fetch before approval") }) {
+            if case .failure(let error) = $0 { refusal = error }
+        }
+        XCTAssertNotNil(refusal)
+
+        try manager.setEnabled(news, true)
+        let enabled = try XCTUnwrap(manager.extensions.first { $0.id == "fixture.news" })
+        XCTAssertTrue(manager.isReady(enabled))
+        XCTAssertEqual(ExtensionHostApprovals.approved(at: config), ["news.example.com", "shared.example.com"])
+        let feed = try XCTUnwrap(manager.extensions.first { $0.id == "fixture.feed" })
+        XCTAssertEqual(manager.missingHosts(feed), [], "a shared host approved for one extension counts for the other")
+        XCTAssertFalse(manager.isReady(feed), "the other extension still needs its own enablement")
+
+        try ExtensionHostApprovals.remove("shared.example.com", at: config)
+        XCTAssertFalse(manager.isReady(enabled))
+        XCTAssertEqual(manager.missingHosts(enabled), ["shared.example.com"])
+        try manager.setEnabled(enabled, true)
+        XCTAssertTrue(manager.isReady(try XCTUnwrap(manager.extensions.first { $0.id == "fixture.news" })))
+        let object = try JSONSerialization.jsonObject(with: Data(contentsOf: config)) as! [String: Any]
+        XCTAssertNotNil(object["future"])
+    }
+
+    func testUninstallForgetsApprovalAndOnlyOrphanedHosts() async throws {
+        let (root, config, folders) = try networkFixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let manager = ExtensionManager(configURL: config, roots: folders); manager.reload()
+        try manager.setCommunityAllowed(true, expected: false)
+        for id in ["fixture.news", "fixture.feed"] { try manager.setEnabled(try XCTUnwrap(manager.extensions.first { $0.id == id }), true) }
+        let news = try XCTUnwrap(manager.extensions.first { $0.id == "fixture.news" })
+        var removed: [URL] = []
+        let pruned = try manager.uninstall(news) { removed.append($0); try FileManager.default.removeItem(at: $0) }
+        XCTAssertEqual(removed, [folders[0]])
+        XCTAssertEqual(pruned, ["news.example.com"])
+        XCTAssertEqual(ExtensionHostApprovals.approved(at: config), ["shared.example.com"], "the feed still uses the shared host")
+        XCTAssertEqual(manager.extensions.map(\.id), ["fixture.feed"])
+        let object = try JSONSerialization.jsonObject(with: Data(contentsOf: config)) as! [String: Any]
+        XCTAssertNil((object["extensions"] as? [String: Any])?["fixture.news"])
+        XCTAssertNotNil((object["extensions"] as? [String: Any])?["fixture.feed"])
+    }
 }

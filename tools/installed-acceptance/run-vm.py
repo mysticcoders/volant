@@ -25,7 +25,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = ROOT / "tools" / "installed-acceptance"
-SECTIONS = ("shortcuts", "translation", "settings")
+SECTIONS = ("shortcuts", "translation", "settings", "extensions")
 
 
 def newest_dmg():
@@ -47,6 +47,8 @@ parser.add_argument("--source-vm", default=os.environ.get("VOLANT_UI_VM", "volan
 parser.add_argument("--clone", default="volant-acceptance")
 parser.add_argument("--keep", action="store_true", help="leave the clone running afterwards; delete it yourself")
 parser.add_argument("--explore", action="store_true", help="install only and keep the clone, to inspect the UI by hand")
+parser.add_argument("--extensions-checkout", type=Path, default=ROOT.parent / "volant-extensions",
+                    help="a checkout of github.com/mysticcoders/volant-extensions (default: next to this repository)")
 args = parser.parse_args()
 sections = [] if args.explore else args.only or list(SECTIONS)
 args.keep = args.keep or args.explore
@@ -103,6 +105,16 @@ else:
     build_adhoc()
 for path in (HERE / "guest").iterdir():
     shutil.copy(path, output / path.name)
+if "extensions" in sections:
+    if not (args.extensions_checkout / "hackernews" / "manifest.json").exists():
+        raise SystemExit(f"The extensions section needs a volant-extensions checkout at {args.extensions_checkout} "
+                         "(git clone https://github.com/mysticcoders/volant-extensions), or pass --extensions-checkout.")
+    for name in ("hackernews", "lobsters"):
+        folder = output / "extensions" / name
+        folder.mkdir(parents=True)
+        manifest = json.loads((args.extensions_checkout / name / "manifest.json").read_text())
+        for file in ("manifest.json", manifest["module"]):
+            shutil.copy(args.extensions_checkout / name / file, folder / file)
 key = output / "ssh-key"
 subprocess.run(["ssh-keygen", "-t", "ed25519", "-N", "", "-q", "-f", str(key)], check=True)
 guest_dir = "/Volumes/My Shared Files/artifacts"
@@ -186,6 +198,8 @@ try:
         phase("restart-app", "shortcuts")
     if "translation" in sections:
         phase("translation")
+    if "extensions" in sections:
+        phase("extensions")
     if "settings" in sections:
         phase("settings")
     if "settings" in sections and args.build:

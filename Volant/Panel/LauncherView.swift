@@ -492,6 +492,7 @@ private struct RowView: View {
         case .newNote(let t): return "New note “\(t)”"
         case .extensionRun(let e, let i): return i.isEmpty ? e.name : "\(e.name) — \(i)"
         case .extensionResult(let s): return s
+        case .extensionItem(let item, _): return item.title
         case .snippet(let s): return s.name
         case .emoji(let e): return "\(e.symbol)  \(e.name)"
         case .quicklink(let q, let t): return t.isEmpty ? q.name : "\(q.name) — \(t)"
@@ -523,6 +524,7 @@ private struct RowView: View {
         case .newNote: return nil
         case .extensionRun(let e, _): return (e.communityBlocked ? "Community extensions off · " : (e.enabled ? "Enabled · " : "Off · ")) + e.accessDescription
         case .extensionResult: return "Press return to copy"
+        case .extensionItem(let item, _): return item.subtitle ?? item.url ?? ""
         case .snippet(let s): return s.body.replacingOccurrences(of: "\n", with: " ")
         case .emoji: return nil
         case .quicklink(let q, _): return q.url
@@ -575,6 +577,7 @@ private struct RowView: View {
         case .quicklink: Image(systemName: "link").font(.system(size: 20)).foregroundStyle(.secondary)
         case .extensionRun: Image(systemName: "puzzlepiece.extension").font(.system(size: 20)).foregroundStyle(.secondary)
         case .extensionResult: Image(systemName: "checkmark.circle").font(.system(size: 20)).foregroundStyle(.secondary)
+        case .extensionItem: Image(systemName: "newspaper").font(.system(size: 20)).foregroundStyle(.secondary)
         }
     }
 }
