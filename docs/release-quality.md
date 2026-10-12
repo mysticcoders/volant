@@ -291,3 +291,7 @@ Final publication: the signed build-10 feed was activated in Cloudflare Worker d
 - **Feed:** the signed build-15 appcast generated with this DMG passes `sign_update --verify`.
 
 **Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
+
+**Installed acceptance.** `tools/installed-acceptance/run-vm.py --dmg` against this DMG in a disposable macOS 15.7.7 VM: 124 passed or noted, 0 failed. This was the first run of the signed `VolantFetchHost`: the Hacker News and Lobsters readers from mysticcoders/volant-extensions showed real stories, opened stories and discussions, and handled host removal and uninstall.
+
+**Owner verification (October 12, 2026).** Check for Updates upgraded the owner's installed 0.2.5 directly to 0.2.7 through Sparkle, and the Hacker News and Lobsters extensions worked in the installed app after approving their hosts. Intel hardware remains unverified.
