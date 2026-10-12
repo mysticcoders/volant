@@ -12,6 +12,8 @@ final class HotKeyCenter {
     /// registered combination, so holding a hotkey needs no Input Monitoring or Accessibility grant.
     private var releaseHandlers: [UInt32: () -> Void] = [:]
     private var refs: [UInt32: EventHotKeyRef] = [:]
+    private var combos: [UInt32: KeyCombo] = [:]
+    private var suspensions = 0
     private var nextID: UInt32 = 1
     private var eventHandler: EventHandlerRef?
     private var releaseEventHandler: EventHandlerRef?
@@ -51,17 +53,44 @@ final class HotKeyCenter {
         guard eventHandler != nil else { return nil }
         let id = nextID
         nextID += 1
+        if suspensions == 0 {
+            guard let ref = carbonRegister(combo, id: id) else { return nil }
+            refs[id] = ref
+        }
+        combos[id] = combo
+        handlers[id] = handler
+        if let onRelease { releaseHandlers[id] = onRelease }
+        return id
+    }
+
+    /// While a shortcut recorder listens, Volant's own hotkeys are released so a combination Volant
+    /// already uses reaches the recorder, and its duplicate check, instead of firing. Registrations
+    /// made meanwhile are remembered, and `resume` restores them all. Calls nest.
+    func suspend() {
+        suspensions += 1
+        guard suspensions == 1 else { return }
+        for ref in refs.values { UnregisterEventHotKey(ref) }
+        refs.removeAll()
+    }
+
+    func resume() {
+        guard suspensions > 0 else { return }
+        suspensions -= 1
+        guard suspensions == 0 else { return }
+        for (id, combo) in combos {
+            if let ref = carbonRegister(combo, id: id) { refs[id] = ref }
+        }
+    }
+
+    private func carbonRegister(_ combo: KeyCombo, id: UInt32) -> EventHotKeyRef? {
         var ref: EventHotKeyRef?
-        let hotKeyID = EventHotKeyID(signature: HotKeyCenter.signature, id: id)
-        let status = RegisterEventHotKey(combo.keyCode, combo.carbonModifiers, hotKeyID, GetApplicationEventTarget(), 0, &ref)
+        let status = RegisterEventHotKey(combo.keyCode, combo.carbonModifiers, EventHotKeyID(signature: HotKeyCenter.signature, id: id),
+                                         GetApplicationEventTarget(), 0, &ref)
         guard status == noErr, let ref else {
             Self.logger.error("Hotkey registration failed: \(status)")
             return nil
         }
-        handlers[id] = handler
-        if let onRelease { releaseHandlers[id] = onRelease }
-        refs[id] = ref
-        return id
+        return ref
     }
 
     func isAvailable(_ combo: KeyCombo) -> Bool {
@@ -76,6 +105,7 @@ final class HotKeyCenter {
     /// dictation Escape key. Unknown identifiers are ignored.
     func unregister(_ id: UInt32) {
         if let ref = refs.removeValue(forKey: id) { UnregisterEventHotKey(ref) }
+        combos[id] = nil
         handlers[id] = nil
         releaseHandlers[id] = nil
     }
@@ -83,6 +113,7 @@ final class HotKeyCenter {
     func unregisterAll() {
         for ref in refs.values { UnregisterEventHotKey(ref) }
         refs.removeAll()
+        combos.removeAll()
         handlers.removeAll()
         releaseHandlers.removeAll()
     }
