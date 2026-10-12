@@ -9,7 +9,13 @@ tools/installed-acceptance/run-vm.py                      # newest DMG in websit
 tools/installed-acceptance/run-vm.py --dmg path/to/Volant-0.2.6.dmg
 tools/installed-acceptance/run-vm.py --only shortcuts     # shortcuts, translation or settings; repeatable
 tools/installed-acceptance/run-vm.py --explore            # install only, keep the clone to look around
+tools/installed-acceptance/run-vm.py --build --only settings   # an ad hoc build of this checkout
+tools/installed-acceptance/run-vm.py --build ../other-worktree # an ad hoc build of another checkout
 ```
+
+`--build` signs the Release app ad hoc, without the iCloud key-value entitlement (it needs a
+provisioning profile), as `tools/memory/app-vm.py` does. Use it to check a fix before release;
+Gatekeeper and signing are then not evidence, and the app reports the version in `project.yml`.
 
 The runner prints an artifact folder that holds `summary.md`, `results.tsv` (section, PASS, FAIL
 or NOTE, check, detail), one log per phase, screenshots in `shots/`, the unified log for

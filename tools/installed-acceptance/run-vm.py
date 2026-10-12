@@ -15,6 +15,7 @@ failed or a phase could not run.
 import argparse
 import json
 import os
+import plistlib
 from pathlib import Path
 import re
 import shutil
@@ -39,6 +40,8 @@ def newest_dmg():
 
 parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
 parser.add_argument("--dmg", type=Path, help="a notarized Volant DMG (default: newest in website/public/updates)")
+parser.add_argument("--build", nargs="?", const=ROOT, type=Path, metavar="CHECKOUT",
+                    help="build a checkout's Release app (default: this one), sign it ad hoc and test that instead of a DMG")
 parser.add_argument("--only", action="append", choices=SECTIONS, help="run only these sections (repeatable)")
 parser.add_argument("--source-vm", default=os.environ.get("VOLANT_UI_VM", "volant-ui-xcode"))
 parser.add_argument("--clone", default="volant-acceptance")
@@ -47,13 +50,13 @@ parser.add_argument("--explore", action="store_true", help="install only and kee
 args = parser.parse_args()
 sections = [] if args.explore else args.only or list(SECTIONS)
 args.keep = args.keep or args.explore
-dmg = (args.dmg or newest_dmg()).resolve()
-if not dmg.is_file():
+dmg = None if args.build else (args.dmg or newest_dmg()).resolve()
+if dmg and not dmg.is_file():
     raise SystemExit(f"{dmg} does not exist.")
 
 output = Path(tempfile.mkdtemp(prefix="volant-acceptance-"))
 print(f"Artifacts: {output}", flush=True)
-print(f"DMG: {dmg}", flush=True)
+print(f"DMG: {dmg}" if dmg else "Build: working tree, signed ad hoc", flush=True)
 
 vms = {vm["Name"]: vm for vm in json.loads(subprocess.check_output(["tart", "list", "--format", "json"]))}
 if args.source_vm not in vms:
@@ -63,7 +66,41 @@ if any(vm["Running"] for vm in vms.values() if vm["Source"] == "local"):
 if args.clone in vms:
     raise SystemExit(f"{args.clone} already exists; delete it first (tart delete {args.clone}).")
 
-shutil.copy(dmg, output / "Volant.dmg")
+def build_adhoc():
+    """Builds the chosen checkout's Release app unsigned and signs it ad hoc, as tools/memory/app-vm.py does. The iCloud
+    key-value entitlement needs a provisioning profile, so it is left out; the sandbox and every
+    other entitlement are kept. Gatekeeper rejects the result, so the install phase notes it."""
+    print("Building the Release app on the host", flush=True)
+    source = args.build.resolve()
+    subprocess.run(["xcodegen", "generate", "--quiet"], check=True, cwd=source)
+    subprocess.run(["xcodebuild", "-project", "Volant.xcodeproj", "-scheme", "Volant", "-configuration", "Release",
+                    "-derivedDataPath", str(output / "build"), "CODE_SIGNING_ALLOWED=NO", "build"],
+                   check=True, cwd=source, stdout=(output / "build.log").open("w"), stderr=subprocess.STDOUT)
+    app = output / "build" / "Build" / "Products" / "Release" / "Volant.app"
+    for framework in sorted((app / "Contents" / "Frameworks").glob("*.framework")):
+        subprocess.run(["codesign", "-f", "-s", "-", "--deep", str(framework)], check=True, capture_output=True)
+    for service in sorted((app / "Contents" / "XPCServices").glob("*.xpc")):
+        entitlements = source / service.stem / f"{service.stem}.entitlements"
+        command = ["codesign", "-f", "-s", "-"] + (["--entitlements", str(entitlements)] if entitlements.exists() else [])
+        subprocess.run(command + [str(service)], check=True, capture_output=True)
+    with (source / "Volant" / "Volant.entitlements").open("rb") as handle:
+        entitlements = plistlib.load(handle)
+    entitlements.pop("com.apple.developer.ubiquity-kvstore-identifier", None)
+    names = entitlements.get("com.apple.security.temporary-exception.mach-lookup.global-name", [])
+    entitlements["com.apple.security.temporary-exception.mach-lookup.global-name"] = [
+        name.replace("$(PRODUCT_BUNDLE_IDENTIFIER)", "com.mysticcoders.volant") for name in names]
+    with (output / "app.entitlements").open("wb") as target:
+        plistlib.dump(entitlements, target)
+    subprocess.run(["codesign", "-f", "-s", "-", "--entitlements", str(output / "app.entitlements"), str(app)],
+                   check=True, capture_output=True)
+    subprocess.run(["ditto", "-c", "-k", "--keepParent", str(app), str(output / "Volant.zip")], check=True)
+    shutil.rmtree(output / "build")
+
+
+if dmg:
+    shutil.copy(dmg, output / "Volant.dmg")
+else:
+    build_adhoc()
 for path in (HERE / "guest").iterdir():
     shutil.copy(path, output / path.name)
 key = output / "ssh-key"
@@ -151,6 +188,9 @@ try:
         phase("translation")
     if "settings" in sections:
         phase("settings")
+    if "settings" in sections and args.build:
+        print("skipping Launch at Login: an ad hoc build is not evidence for login items", flush=True)
+    elif "settings" in sections:
         phase("login-on")
         reboot()
         phase("login-check", "on")
@@ -169,13 +209,14 @@ finally:
         subprocess.run(["tart", "delete", args.clone], check=False)
     log.close()
     (output / "Volant.dmg").unlink(missing_ok=True)
+    (output / "Volant.zip").unlink(missing_ok=True)
 
 rows = []
 results = output / "results.tsv"
 if results.exists():
     rows = [line.split("\t") for line in results.read_text().splitlines() if line.count("\t") >= 2]
 failed = [row for row in rows if row[1] == "FAIL"]
-lines = [f"# Installed acceptance: {dmg.name}", "", "| Section | Result | Check | Detail |", "|---|---|---|---|"]
+lines = [f"# Installed acceptance: {dmg.name if dmg else 'ad hoc build of the working tree'}", "", "| Section | Result | Check | Detail |", "|---|---|---|---|"]
 lines += [f"| {row[0]} | {row[1]} | {row[2]} | {row[3] if len(row) > 3 else ''} |" for row in rows]
 lines += [""] + [f"- {failure}" for failure in failures]
 (output / "summary.md").write_text("\n".join(lines) + "\n")
