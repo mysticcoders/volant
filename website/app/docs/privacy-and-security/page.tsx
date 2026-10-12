@@ -65,7 +65,9 @@ export default function PrivacyAndSecurity() {
           them before you allow them, and a separate sandboxed fetch helper
           requests only https pages on hosts you allowed, with no cookies and
           no redirects. Allowed hosts are listed, and can be removed, in
-          Settings → Extensions → Network Access. See{' '}
+          Settings → Extensions → Network Access. The same helper downloads
+          the signed extension catalog from one fixed address, only when you
+          choose Check Catalog. See{' '}
           <a href="/docs/extensions">Extensions</a>.
         </li>
         <li>

@@ -152,15 +152,41 @@ export default function Extensions() {
           needs.
         </li>
       </ul>
+
+      <h2>Install from the catalog</h2>
       <p>
-        To install one, turn on Allow Community Extensions in Settings →
-        Extensions, choose Open Folder, copy the extension&rsquo;s folder in,
-        and choose Refresh.
+        Settings → Extensions → Catalog lists extensions reviewed for Volant,
+        with each one&rsquo;s publisher, license, the hosts it reads and a link
+        to the exact source it was built from. Turn on Allow Community
+        Extensions, choose Check Catalog, then Install. Volant contacts the
+        catalog only when you choose Check Catalog.
+      </p>
+      <ul>
+        <li>
+          <strong>Signed and checked.</strong> The catalog is signed, and Volant
+          refuses one whose signature fails or that is older than one it has
+          already seen. Every downloaded file must match the size and hash the
+          signed catalog lists before anything is installed.
+        </li>
+        <li>
+          <strong>Installing runs nothing.</strong> An installed extension
+          starts off. Its first use asks as usual, including for any hosts.
+        </li>
+        <li>
+          <strong>Updates ask again when they change.</strong> Update replaces
+          the extension in one step and puts the old version back if that
+          fails. An update with changed code, permissions or hosts stays off
+          until you turn it on again.
+        </li>
+      </ul>
+      <p>
+        You can still install an extension by hand: choose Open Folder, copy
+        its folder in, and choose Refresh.
       </p>
 
       <h2>Not yet</h2>
       <p>
-        A catalog with one-click install, signed manifests, per-extension
+        Background update checks, revoking a published extension, per-extension
         storage and preferences, async or streaming results, and a stable ABI.
         Each will be added deliberately.
       </p>
