@@ -12,10 +12,10 @@ SUPPORT="$CONTAINER/Library/Application Support/Vey"
 CONFIG="$SUPPORT/config.json"
 SECTION=${SECTION:-general}
 
-# Builds the small window-list and hotkey-holder tools; /tmp does not survive the reboots.
+# Builds the small window-list, hotkey-holder and accessibility-tree tools; /tmp does not survive the reboots.
 build_tools() {
   mkdir -p "$W/bin"
-  for tool in windows hold-hotkey; do
+  for tool in windows hold-hotkey axtree; do
     [ -x "$W/bin/$tool" ] || xcrun swiftc -O -o "$W/bin/$tool" "$A/$tool.swift" 2>&1 | tail -5
   done
 }
@@ -151,3 +151,7 @@ forget_relaunch() {
   defaults write com.apple.loginwindow LoginwindowLaunchesRelaunchApps -bool false
   sleep 2
 }
+
+# Volant's focused element as "role | title | description | frame", read through AXUIElement
+# (guest/axtree.swift) rather than System Events, which resolves same-named elements to the first.
+ax_focused() { "$W/bin/axtree" "$ID" focused "${1:-Volant Settings}" | cut -d'|' -f1,3,4; }

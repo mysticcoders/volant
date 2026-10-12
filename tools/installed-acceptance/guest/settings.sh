@@ -38,6 +38,14 @@ record NOTE "status menu items" "$(cat "$W/menu.txt")"
 open_settings
 expect_eq "Settings… opens Settings in front" "$ID" "$(front)"
 
+SECTIONS="General|Appearance|Status Bar|AI|Extensions|App Shortcuts|Data & Configuration"
+
+# Moves focus back to the sidebar with Shift-Tab; fails if it never gets there.
+to_sidebar() {
+  for _ in $(seq 1 25); do ax_focused | grep -q '^AXOutline' && return 0; key 48 "{shift down}"; sleep 0.25; done
+  return 1
+}
+
 for appearance in light dark; do
   step "keyboard navigation, $appearance"
   osascript -e "tell application \"System Events\" to tell appearance preferences to set dark mode to $([ $appearance = dark ] && echo true || echo false)"
@@ -48,18 +56,22 @@ for appearance in light dark; do
   key 125; sleep 1
   expect_eq "Down arrow in the sidebar moves to Appearance ($appearance)" Appearance "$(selected_section)"
   shot "keyboard-$appearance-appearance"
-  key 125; key 125; key 125; key 125; key 125; sleep 1
-  expect_eq "repeated Down reaches Data & Configuration ($appearance)" "Data & Configuration" "$(selected_section)"
+  key 126; sleep 1
+  trapped=""
+  IFS='|' read -ra names <<< "$SECTIONS"
+  for name in "${names[@]}"; do
+    to_sidebar || { trapped="$trapped $name (no way back to the sidebar)"; break; }
+    key 48; sleep 0.6
+    ax_focused | grep -q '^AXOutline' && trapped="$trapped $name;"
+    to_sidebar || { trapped="$trapped $name (Shift-Tab did not return)"; break; }
+    key 125; sleep 1.5
+  done
+  if [ -z "$trapped" ]; then
+    record PASS "Tab leaves the sidebar into every section after changing section, Shift-Tab returns ($appearance)"
+  else
+    record FAIL "Tab leaves the sidebar into every section after changing section, Shift-Tab returns ($appearance)" "stuck in the sidebar on:$trapped"
+  fi
   shot "keyboard-$appearance-data"
-  key 126; key 126; key 126; key 126; key 126; key 126; sleep 1
-  expect_eq "Up returns to General ($appearance)" General "$(selected_section)"
-  key 48; sleep 0.5
-  focus=$(focused)
-  case "$focus" in
-    AXCheckBox*|AXButton*) record PASS "Tab moves from the sidebar into the pane ($appearance)" "$focus" ;;
-    *) record FAIL "Tab moves from the sidebar into the pane ($appearance)" "focused: $focus" ;;
-  esac
-  shot "keyboard-$appearance-general"
 done
 osascript -e 'tell application "System Events" to tell appearance preferences to set dark mode to false'
 sleep 1
@@ -76,13 +88,14 @@ record NOTE "showOnLaunch before the change" "$before"
 
 step "export"
 AX Volant select "$S" "Data & Configuration" >/dev/null; sleep 1.5
-AX Volant press "$S" "role=AXButton:Volant backup#2" >/dev/null; sleep 3
-if [ "$(AX Volant count "*" "Export Here")" -ge 1 ]; then
-  record PASS "accessibility can press Export…"
-else
-  record FAIL "accessibility can press Export…" \
-    "pressing the second button in the Volant backup row opened the $(AX Volant count "*" "Import" | sed 's/^[1-9].*/Import/;s/^0$/no/') panel; both buttons expose Import…'s label and frame"
-fi
+buttons=$("$W/bin/axtree" "$ID" dump "$S" | awk -F' [|] ' '$1 == "AXButton" { print $3 }' | tr '\n' ',')
+case "$buttons" in
+  *"Import…,Export…"*) record PASS "accessibility names Import… and Export… separately" ;;
+  *) record FAIL "accessibility names Import… and Export… separately" "buttons: $buttons" ;;
+esac
+index=$("$W/bin/axtree" "$ID" dump "$S" | awk -F' [|] ' '$1 == "AXButton" { n++; if ($3 == "Export…") { print n; exit } }')
+"$W/bin/axtree" "$ID" press "$S" AXButton "$index" >/dev/null; sleep 3
+expect_eq "an accessibility press on Export… opens the export panel" 1 "$(AX Volant count "*" "Export Here")"
 AX Volant press "*" Cancel >/dev/null 2>&1; sleep 1.5
 click_element "$S" "role=AXButton:Volant backup" 78; sleep 3
 expect_eq "clicking Export… opens a folder panel with Export Here" 1 "$(AX Volant count "*" "Export Here")"

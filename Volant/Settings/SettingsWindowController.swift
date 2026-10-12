@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 import ServiceManagement
 import VolantCore
@@ -18,6 +19,10 @@ final class SettingsWindowController: NSWindowController {
     let state = SettingsState()
     private let onChange: () -> Void
     private let configURL: URL
+    /// Changing section replaces the detail view, but AppKit keeps the key view loop it built for the
+    /// first one, so Tab from the sidebar stopped reaching the new section's controls. The loop is
+    /// rebuilt after each change.
+    private var sectionChanges: AnyCancellable?
 
     /// `dictationAccess` defaults to a real helper connection, which connects only when typing is
     /// chosen; fixtures pass one with a fake client.
@@ -57,6 +62,9 @@ final class SettingsWindowController: NSWindowController {
         window.contentMinSize = NSSize(width: 680, height: 500)
         window.setFrame(NSWindow.frameRect(forContentRect: NSRect(x: 0, y: 0, width: 760, height: 540), styleMask: window.styleMask), display: false)
         window.center()
+        sectionChanges = state.$section.dropFirst().sink { [weak window] _ in
+            DispatchQueue.main.async { window?.recalculateKeyViewLoop() }
+        }
     }
     private func chooseAIProject(_ completion: @escaping (URL?) -> Void) {
         guard let window, window.attachedSheet == nil else { return }
