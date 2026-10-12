@@ -59,7 +59,8 @@ export default function Extensions() {
       <p>
         Extension code never runs inside the Volant app. It runs in a separate
         XPC service that holds only the App Sandbox entitlement — no network, no
-        files, no interface. A crash, a runaway loop, or a memory blow-up ends
+        files, no interface. Extensions that read the web get pages through a
+        different helper, described below. A crash, a runaway loop, or a memory blow-up ends
         there.
       </p>
       <p>
@@ -114,12 +115,54 @@ export default function Extensions() {
         same and prints the log.
       </p>
 
+      <h2>Extensions that read the web</h2>
+      <p>
+        A list extension can show live data, such as the{' '}
+        <a href="https://github.com/mysticcoders/volant-extensions">
+          Hacker News and Lobsters readers
+        </a>
+        . Its manifest adds <code>&quot;output&quot;: &quot;items&quot;</code>{' '}
+        and the exact <code>hosts</code> it reads, such as{' '}
+        <code>[&quot;lobste.rs&quot;]</code>. The extension still has no
+        network access. Volant runs it twice: first it returns the URLs it
+        wants, then it receives the pages and returns rows. Return opens a
+        row&rsquo;s link and Command-Return opens its second link, typically
+        the discussion.
+      </p>
+      <ul>
+        <li>
+          <strong>You approve hosts first.</strong> The first run, or turning
+          the extension on in Settings, lists the hosts it needs. Allow enables
+          it and allows them together.
+        </li>
+        <li>
+          <strong>Only approved https hosts.</strong> A separate sandboxed
+          fetch helper requests each URL only if its host is in the manifest
+          and allowed by you: https, no credentials, no redirects, no cookies,
+          and at most 48&nbsp;KB per page.
+        </li>
+        <li>
+          <strong>Hosts are shared and removable.</strong> Settings →
+          Extensions → Network Access lists every allowed host and the
+          extensions that use it. Remove takes it away from all of them.
+        </li>
+        <li>
+          <strong>Uninstall cleans up.</strong> Uninstalling a community
+          extension moves it to the Trash and removes hosts no other extension
+          needs.
+        </li>
+      </ul>
+      <p>
+        To install one, turn on Allow Community Extensions in Settings →
+        Extensions, choose Open Folder, copy the extension&rsquo;s folder in,
+        and choose Refresh.
+      </p>
+
       <h2>Not yet</h2>
       <p>
-        Per-module memory caps, a capability catalog beyond two functions, a
-        permissions dialog at install time, signed manifests, an install flow,
-        async or streaming results, and a stable ABI. Each will be added
-        deliberately.
+        A catalog with one-click install, signed manifests, per-extension
+        storage and preferences, async or streaming results, and a stable ABI.
+        Each will be added deliberately.
       </p>
 
       <DocFooterNav {...adjacentDocs('extensions')} />

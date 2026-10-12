@@ -60,6 +60,15 @@ export default function PrivacyAndSecurity() {
           Configuration.
         </li>
         <li>
+          <strong>Network extensions</strong> never reach the network
+          themselves. An extension lists the exact hosts it reads; Volant shows
+          them before you allow them, and a separate sandboxed fetch helper
+          requests only https pages on hosts you allowed, with no cookies and
+          no redirects. Allowed hosts are listed, and can be removed, in
+          Settings → Extensions → Network Access. See{' '}
+          <a href="/docs/extensions">Extensions</a>.
+        </li>
+        <li>
           <strong>Exchange rates</strong> come through a small
           rates helper that can reach only three fixed addresses. It downloads
           the European Central Bank&rsquo;s public daily rates the first time
