@@ -40,6 +40,12 @@ Added in 0.2.7:
 | Network extensions (Hacker News, Lobsters) with per-host approval | Yes | #214; Core boundary tests, extension manager tests, production JavaScriptCore runs of a list fixture, an installed-acceptance VM run of the notarized DMG that approved hosts, read real stories and opened links, and the owner using both readers in the installed app on October 12, 2026; readers live in the separate mysticcoders/volant-extensions repository and are installed by copying a folder | Extensions docs; the module has no network access, Volant fetches only approved https hosts; no catalog or one-click install claim |
 | Network Access list and extension uninstall | Yes | #214; same VM run removed a host and uninstalled an extension with orphaned-host pruning | Extensions docs |
 
+Merged after 0.2.7, not in the current download:
+
+| Story | Released | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| Signed extension catalog with Install and Update in Settings | No | Core and app tests with a throwaway key and in-memory files; native light/dark fixture renders. The live catalog through the signed fetch helper is unverified until a signed build; only the two readers are listed | None until a release ships it; then "signed, reviewed extensions", never "Raycast extensions" or a store |
+
 ## Privacy language
 
 No Volant account or telemetry. Notes and encrypted clipboard history remain local. Submitted AI prompts and selected context reach the chosen provider/server. Keys stay in Keychain. Updates, HTTP AI, rates and network extensions use separate helpers; opt-in iCloud uses Apple's system service. Avoid blanket “everything stays on your Mac,” “entirely offline,” or “zero dependencies” claims. Say “no Accessibility unless you choose Type at the cursor”: the main app stays sandboxed and never uses Accessibility, and only the separate input helper does, listed as Volant in System Settings, after the owner picks that output.

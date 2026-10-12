@@ -3,10 +3,13 @@ import VolantCore
 
 /// Reloads whenever a window becomes key as well as on appear, so enabling an extension or allowing
 /// hosts from the launcher shows here when Settings comes back, even if this pane never left the screen.
+/// The catalog is fetched only when the owner chooses Check Catalog; fixtures pass `catalog` to start loaded.
 struct ExtensionSettingsView: View {
     let configURL: URL
     let onChange: () -> Void
-    var roots: [URL]? = nil
+    var roots: [URL]?
+    var directory: URL?
+    var catalogClient: ExtensionCatalogClient
     @State private var installed: [InstalledExtension] = []
     @State private var problems: [String] = []
     @State private var error: String?
@@ -14,7 +17,17 @@ struct ExtensionSettingsView: View {
     @State private var approvedHosts: [String] = []
     @State private var confirmingHosts: InstalledExtension?
     @State private var confirmingUninstall: InstalledExtension?
-    private var manager: ExtensionManager { ExtensionManager(configURL: configURL, roots: roots) }
+    @State private var catalog: ExtensionCatalog?
+    @State private var catalogLoading = false
+    @State private var catalogError: String?
+    @State private var installing: String?
+    init(configURL: URL, onChange: @escaping () -> Void, roots: [URL]? = nil, directory: URL? = nil,
+         catalogClient: ExtensionCatalogClient = .live, catalog: ExtensionCatalog? = nil) {
+        self.configURL = configURL; self.onChange = onChange; self.roots = roots; self.directory = directory
+        self.catalogClient = catalogClient
+        _catalog = State(initialValue: catalog)
+    }
+    private var manager: ExtensionManager { ExtensionManager(configURL: configURL, roots: roots, directory: directory) }
     private func reload() {
         let manager = manager; manager.reload()
         installed = manager.extensions; problems = manager.loadErrors; communityAllowed = manager.communityAllowed
@@ -23,6 +36,29 @@ struct ExtensionSettingsView: View {
     private func setEnabled(_ ext: InstalledExtension, _ enabled: Bool) {
         do { try manager.setEnabled(ext, enabled); reload(); onChange() }
         catch { self.error = error.localizedDescription; reload() }
+    }
+    private func loadCatalog() {
+        catalogLoading = true; catalogError = nil
+        catalogClient.load { result in
+            catalogLoading = false
+            switch result {
+            case .success(let loaded): catalog = loaded
+            case .failure(let failure): catalogError = failure.localizedDescription
+            }
+        }
+    }
+    private func install(_ listing: ExtensionCatalog.Listing, from catalog: ExtensionCatalog) {
+        installing = listing.id
+        catalogClient.download(listing) { result in
+            installing = nil
+            do {
+                let manager = manager
+                guard manager.communityAllowed else { throw ExtensionManager.ExtensionError.communityDisabled }
+                let files = try result.get()
+                try manager.install(listing, manifest: files.manifest, module: files.module, from: catalog)
+                reload(); onChange()
+            } catch { self.error = error.localizedDescription; reload() }
+        }
     }
     private func users(of host: String) -> [String] {
         installed.filter { $0.manifest.declaredHosts.contains(host) }.map(\.name)
@@ -47,6 +83,7 @@ struct ExtensionSettingsView: View {
                         })) {
                             Text(ext.name)
                             Text((ext.isCommunity ? (ext.communityBlocked ? "Community · Blocked by master switch" : "Community") : "Bundled with Volant")
+                                 + (ext.catalogOrigin == nil ? "" : " · From catalog")
                                  + " · Version \(ext.manifest.version) · " + ext.accessDescription
                                  + (ext.enabled && !ExtensionHostApprovals.missing(ext.manifest, at: configURL).isEmpty ? " · Asks for host access on next use" : ""))
                         }.disabled(ext.communityBlocked).accessibilityIdentifier("extension-toggle-" + ext.id)
@@ -66,6 +103,28 @@ struct ExtensionSettingsView: View {
                 }
             } footer: {
                 SettingsFooter("Uninstalling moves a community extension to the Trash and removes host access no other extension uses. Extensions start off and run only when you invoke them. Enable one here or choose Enable and Run the first time you use it; changed code or permissions require enabling again. Try the bundled example: hello Andrew")
+            }
+            Section {
+                if let catalog {
+                    if catalog.extensions.isEmpty { Text("The catalog has no extensions yet.").foregroundStyle(.secondary) }
+                    // Installed rows already use extension IDs; sharing them in one Form misplaces rows.
+                    ForEach(catalog.extensions, id: \.catalogRowID) { listing in catalogRow(listing, from: catalog) }
+                } else if catalogLoading {
+                    HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Checking the catalog…").foregroundStyle(.secondary) }
+                } else {
+                    Text(catalogError ?? "Volant contacts the catalog only when you check it.").foregroundStyle(.secondary)
+                }
+            } header: {
+                HStack {
+                    Text("Catalog")
+                    Spacer()
+                    Button(catalog == nil ? "Check Catalog" : "Check Again") { loadCatalog() }
+                        .controlSize(.small).font(.callout).disabled(catalogLoading || installing != nil)
+                        .accessibilityIdentifier("extension-catalog-check")
+                }
+            } footer: {
+                SettingsFooter((communityAllowed ? "" : "Turn on Allow Community Extensions to install from the catalog. ")
+                    + "Extensions here are reviewed and signed for Volant. Each download is checked against the signed catalog before it is installed. Installing never turns an extension on or runs it; first use asks as usual, and an update with changed code or permissions needs enabling again.")
             }
             Section {
                 if approvedHosts.isEmpty { Text("No hosts allowed.").foregroundStyle(.secondary) }
@@ -118,6 +177,42 @@ struct ExtensionSettingsView: View {
         .alert("Couldn’t change extension", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
             Button("OK") { error = nil }
         } message: { Text(error ?? "") }
+    }
+}
+
+private extension ExtensionCatalog.Listing {
+    var catalogRowID: String { "catalog:" + id }
+}
+
+extension ExtensionSettingsView {
+    @ViewBuilder
+    private func catalogRow(_ listing: ExtensionCatalog.Listing, from catalog: ExtensionCatalog) -> some View {
+        let status = ExtensionManager.catalogStatus(listing, installed: installed)
+        HStack(alignment: .top, spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(listing.name) + Text("  " + listing.version).foregroundColor(.secondary)
+                Text(listing.summary).font(.callout)
+                Text([listing.publisher, listing.license, InstalledExtension.accessDescription(capabilities: listing.capabilities, hosts: listing.hosts)]
+                    .joined(separator: " · ")).font(.callout).foregroundStyle(.secondary)
+            }
+            Spacer()
+            if let source = listing.sourceURL {
+                Button("Source") { NSWorkspace.shared.open(source) }.controlSize(.small)
+                    .accessibilityIdentifier("extension-catalog-source-" + listing.id)
+            }
+            if installing == listing.id {
+                ProgressView().controlSize(.small)
+            } else {
+                switch status {
+                case .available, .update:
+                    Button(status == .available ? "Install" : "Update") { install(listing, from: catalog) }
+                        .controlSize(.small).disabled(!communityAllowed || installing != nil)
+                        .accessibilityIdentifier("extension-catalog-install-" + listing.id)
+                case .installed: Text("Installed").font(.callout).foregroundStyle(.secondary)
+                case .bundled: Text("Bundled").font(.callout).foregroundStyle(.secondary)
+                }
+            }
+        }
     }
 }
 

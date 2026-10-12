@@ -1,7 +1,8 @@
 import Foundation
 import VolantCore
 
-/// Fetches URLs that network extensions planned, on the owner's approved hosts only. Volant and the
+/// Fetches URLs that network extensions planned, on the owner's approved hosts only, and the files of
+/// the signed extension catalog from its one fixed location. Volant and the
 /// extension helper have no network access; this helper has nothing else. Every URL is checked again
 /// here against the hosts Volant passed, redirects are refused so a response cannot move the request to
 /// another host, no cookies or cache are used, and reading stops once the response passes the byte limit.
@@ -30,7 +31,18 @@ final class FetchHost: NSObject, VolantFetchHostProtocol, URLSessionDataDelegate
         guard let target = ExtensionNetwork.permittedURL(url, hosts: hosts) else {
             reply(nil, 0, "This URL is not on a host the extension may reach."); return
         }
-        let limit = min(max(maximumBytes, 0), ExtensionNetwork.maximumResponseBytes)
+        start(target, limit: min(max(maximumBytes, 0), ExtensionNetwork.maximumResponseBytes), reply: reply)
+    }
+
+    /// Reads one file of the signed extension catalog. Only the index, its signature and package paths
+    /// under the fixed catalog URL are accepted, so Volant cannot use this to reach any other host.
+    /// Volant verifies the signature and hashes; this helper only bounds the download.
+    func fetchCatalogFile(path: String, maximumBytes: Int, reply: @escaping (Data?, Int, String?) -> Void) {
+        guard let target = ExtensionCatalog.url(for: path) else { reply(nil, 0, "This is not an extension catalog file."); return }
+        start(target, limit: min(max(maximumBytes, 0), ExtensionCatalog.maximumModuleBytes), reply: reply)
+    }
+
+    private func start(_ target: URL, limit: Int, reply: @escaping (Data?, Int, String?) -> Void) {
         let task = session.dataTask(with: URLRequest(url: target))
         lock.lock(); pending[task.taskIdentifier] = Pending(limit: limit, reply: reply); lock.unlock()
         task.resume()
