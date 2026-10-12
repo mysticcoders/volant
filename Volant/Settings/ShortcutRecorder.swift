@@ -5,9 +5,14 @@ import Carbon.HIToolbox
 struct ShortcutRecorder: NSViewRepresentable {
     @Binding var value: String
     var removable = false
+    var onMissedKey: (Bool) -> Void = { _ in }
+    /// The button keeps the width its row gives it and truncates a long title, so "Press shortcut…"
+    /// cannot widen a 160-point column past the window's edge.
     func makeNSView(context: Context) -> RecorderButton {
         let button = RecorderButton()
         button.bezelStyle = .rounded
+        button.lineBreakMode = .byTruncatingTail
+        button.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         button.target = button
         button.action = #selector(RecorderButton.beginRecording)
         return button
@@ -17,6 +22,7 @@ struct ShortcutRecorder: NSViewRepresentable {
         button.removable = removable
         button.value = value
         button.onRecord = { value = $0 }
+        button.onMissedKey = onMissedKey
         button.updateTitle()
     }
 }
@@ -59,12 +65,55 @@ final class RecorderButton: NSButton {
         updateTitle()
     }
     var onRecord: (String) -> Void = { _ in }
-    private var recording = false
+    /// Reports true when Command, Control or Option was held and released while recording without any
+    /// key arriving, which is what happens when macOS or another app's global shortcut takes the key
+    /// first (its key down and key up never reach Volant), and false when that no longer applies.
+    var onMissedKey: (Bool) -> Void = { _ in }
+    private var heldGlobalModifier = false
+    private var sawKey = false
+    private var reportedMiss = false
+    private func reportMiss(_ missed: Bool) {
+        guard missed != reportedMiss else { return }
+        reportedMiss = missed
+        onMissedKey(missed)
+    }
+    /// Volant's own hotkeys are suspended for exactly as long as the button records, so pressing a
+    /// combination Volant already uses reaches this button instead of firing that shortcut.
+    private var recording = false {
+        didSet {
+            guard recording != suspendsHotKeys else { return }
+            suspendsHotKeys = recording
+            if recording { HotKeyCenter.shared.suspend() } else { HotKeyCenter.shared.resume() }
+            heldGlobalModifier = false
+            sawKey = false
+            reportMiss(false)
+        }
+    }
+    private var suspendsHotKeys = false
+    deinit { if suspendsHotKeys { HotKeyCenter.shared.resume() } }
+    /// Recording ends when the button leaves its window or the window stops being key, so switching
+    /// away or closing Settings mid-recording never leaves Volant's hotkeys suspended.
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        NotificationCenter.default.removeObserver(self, name: NSWindow.didResignKeyNotification, object: nil)
+        if let window {
+            NotificationCenter.default.addObserver(self, selector: #selector(stopRecording), name: NSWindow.didResignKeyNotification, object: window)
+        } else {
+            stopRecording()
+        }
+    }
+    @objc private func stopRecording() {
+        guard recording else { return }
+        recording = false
+        updateTitle()
+    }
     override var acceptsFirstResponder: Bool { true }
     @objc func beginRecording() { recording = true; window?.makeFirstResponder(self); updateTitle() }
     func updateTitle() {
-        title = recording ? "Press shortcut… (Esc to cancel)" : value.isEmpty ? "Record Hotkey" : KeyCombo.display(value)
+        title = recording ? "Press shortcut…" : value.isEmpty ? "Record Hotkey" : KeyCombo.display(value)
+        toolTip = recording ? "Press a shortcut, or Esc to cancel." : nil
         setAccessibilityLabel("Global shortcut: " + (value.isEmpty || recording ? title : value))
+        setAccessibilityHelp(recording ? "Press a shortcut, or Escape to cancel." : nil)
         updateRemoveButton()
     }
     override func resignFirstResponder() -> Bool { recording = false; updateTitle(); return super.resignFirstResponder() }
@@ -73,7 +122,17 @@ final class RecorderButton: NSButton {
         keyDown(with: event)
         return true
     }
+    override func flagsChanged(with event: NSEvent) {
+        guard recording else { return super.flagsChanged(with: event) }
+        let flags = event.modifierFlags.intersection([.command, .control, .option, .shift])
+        if !flags.isDisjoint(with: [.command, .control, .option]) { heldGlobalModifier = true }
+        guard flags.isEmpty else { return }
+        if heldGlobalModifier && !sawKey { reportMiss(true) }
+        heldGlobalModifier = false
+        sawKey = false
+    }
     override func keyDown(with event: NSEvent) {
+        if recording { sawKey = true; reportMiss(false) }
         guard recording else {
             if removable && event.keyCode == UInt16(kVK_Delete) { removeShortcut() }
             else { super.keyDown(with: event) }

@@ -8,14 +8,19 @@ struct ShortcutControl: View {
     @State private var feedback = ShortcutFeedback()
     @State private var pending: String?
     @State private var error: String?
+    @State private var missedKey = false
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 3) {
-            ShortcutRecorder(value: Binding(get: { value }, set: { persist($0) }), removable: true)
+            ShortcutRecorder(value: Binding(get: { value }, set: { persist($0) }), removable: true,
+                             onMissedKey: { missedKey = $0 })
                 .frame(height: 26)
                 .accessibilityLabel(title + " shortcut: " + (value.isEmpty ? "Not set" : value))
                 .accessibilityAction(named: "Remove shortcut") { persist("") }
-            if let error {
+            if missedKey {
+                Text("No key arrived. If you pressed one, macOS or another app is using it.")
+                    .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            } else if let error {
                 Text(error).font(.callout).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
                 if let pending { Button("Retry") { persist(pending) }.font(.callout) }
             } else if let message = feedback.message {

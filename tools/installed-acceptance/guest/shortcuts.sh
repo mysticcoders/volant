@@ -96,8 +96,10 @@ else
 fi
 expect_eq "the earlier binding is kept after that attempt" "cmd+option+y" "$(textedit_hotkey)"
 close_notes
-osascript -e "tell application id \"$ID\" to activate"; sleep 1
-key 53; sleep 0.5
+osascript -e 'tell application "Finder" to activate' >/dev/null; sleep 1
+key 45 "{option down}"; sleep 1.5
+expect_eq "Option-N opens Notes again once recording ends" 1 "$(onscreen Volant | grep -c ' Notes$')"
+close_notes
 
 step "conflict with another app's shortcut"
 "$W/bin/hold-hotkey" 38 2304 > "$W/hold.log" 2>&1 &
@@ -109,11 +111,12 @@ record_textedit 38 "$CMD_OPT"
 shot conflict-other-app
 after=$(textedit_hotkey)
 expect_eq "the old binding is kept when another app holds the combination" "cmd+option+y" "$after"
-if [ "$(AX Volant count "$S" "prefix=macOS or another app")" -ge 1 ]; then
-  record PASS "a combination another app holds is refused with a message"
+if [ "$(AX Volant count "$S" "prefix=No key arrived")" -ge 1 ]; then
+  record PASS "the recorder says no key arrived when another app takes the combination" \
+    "the other app received $(grep -c pressed "$W/hold.log") press(es)"
 else
-  record FAIL "a combination another app holds is refused with a message" \
-    "no message; the other app received $(grep -c pressed "$W/hold.log") press(es) and the recorder kept waiting"
+  record FAIL "the recorder says no key arrived when another app takes the combination" \
+    "no hint; the other app received $(grep -c pressed "$W/hold.log") press(es)"
 fi
 key 53; sleep 0.5
 if [ "$after" != "cmd+option+y" ]; then record_textedit 16 "$CMD_OPT"; fi
