@@ -3,8 +3,9 @@
 
 Phase 0 showed that once the owner grants Accessibility to Volant, the sandboxed main app also reads
 as trusted and can create a listen-only event tap. The sandbox does not stop that, so this check
-does: only the input helper may call these APIs. The Phase 0 spike sources are exempt because they
-are not part of any target. Run with --self-test to check the matcher itself.
+does: only the input helper may call these APIs. The Phase 0 spike sources and the installed-
+acceptance guest tools are exempt because they are not part of any target; the guest tools run only
+inside a disposable VM to read Volant's accessibility tree the way VoiceOver does. Run with --self-test to check the matcher itself.
 """
 import re
 import os
@@ -12,7 +13,7 @@ import subprocess
 import sys
 import unittest
 
-ALLOWED_PREFIXES = ("VolantInputHost/", "tools/input-spike/")
+ALLOWED_PREFIXES = ("VolantInputHost/", "tools/input-spike/", "tools/installed-acceptance/guest/")
 SOURCE_SUFFIXES = (".swift", ".m", ".mm", ".c", ".h")
 FORBIDDEN = re.compile(
     r"AXUIElement\w*|AXIsProcessTrusted\w*|kAXTrustedCheckOption\w*|"

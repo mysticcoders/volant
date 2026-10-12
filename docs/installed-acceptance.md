@@ -45,6 +45,10 @@ at Login needs two reboots.
   window-server window lists (`guest/windows.swift`), `config.json`, `sfltool dumpbtm` for the login
   item, the clipboard and the file system. Accessibility values are used to find controls and to
   read the translation view's status and result.
+- **Accessibility claims:** System Events names elements by their title, so two buttons in one
+  Settings row (both titled with the row's label) resolve to the first one. Checks about what
+  VoiceOver can reach use `guest/axtree.swift`, which reads and presses elements through
+  `AXUIElement` directly.
 - **Another app's shortcut:** `guest/hold-hotkey.swift` registers a combination with
   `RegisterEventHotKey` from a separate process, standing in for another app.
 - **Offline:** `pf` blocks everything except the SSH connection the test runs over.
