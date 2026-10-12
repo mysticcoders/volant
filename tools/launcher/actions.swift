@@ -385,11 +385,13 @@ verify(panel.model.rows.first?.primaryAction == "Open Extension Settings", "Bloc
 try render("community-blocked-launcher")
 key("\r", 36)
 verify(extensionSettingsRequests == 1 && panel.model.pendingExtension == nil, "Master off routes to Settings without offering enable or executing")
-func renderCommunitySettings(_ name: String) throws {
-    let view = NSHostingView(rootView: ExtensionSettingsView(configURL: panel.model.actionConfigURL, onChange: {}, roots: extensionRoots)
+func renderCommunitySettings(_ name: String, catalog: ExtensionCatalog? = nil, height: CGFloat = 440) throws {
+    let view = NSHostingView(rootView: ExtensionSettingsView(configURL: panel.model.actionConfigURL, onChange: {}, roots: extensionRoots,
+                                                             catalogClient: ExtensionCatalogClient(fetchFile: { _, _, _ in }), catalog: catalog)
         .background(Color(nsColor: .windowBackgroundColor)))
-    let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 440), styleMask: [.titled], backing: .buffered, defer: false)
+    let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: height), styleMask: [.titled], backing: .buffered, defer: false)
     window.contentView = view; window.makeKeyAndOrderFront(nil); settle()
+    view.layoutSubtreeIfNeeded(); settle()
     try render(name, view: view)
     window.orderOut(nil)
 }
@@ -407,8 +409,22 @@ panel.orderOut(nil)
 try communityManager.setCommunityAllowed(true, expected: false)
 try communityManager.setEnabled(communityManager.search("community").first!, true)
 try renderCommunitySettings("community-on")
+let installedCommunity = communityManager.search("community").first!.manifest
+let fictionalCatalog = ExtensionCatalog(format: 1, sequence: 1, generated: "2026-10-12T00:00:00Z", revision: String(repeating: "0", count: 40), extensions: [
+    ExtensionCatalog.Listing(id: installedCommunity.id, name: installedCommunity.name, version: installedCommunity.version, module: installedCommunity.module,
+                             summary: "Greets the name you type.", publisher: "Fictional Publisher", license: "MIT", source: "https://example.com/fictional/greeting",
+                             manifest: .init(sha256: String(repeating: "1", count: 64), size: 200),
+                             moduleFile: .init(sha256: installedCommunity.sha256!, size: 100)),
+    ExtensionCatalog.Listing(id: "community.fictional.reader", name: "Fictional Reader", version: "1.2.0", module: "reader.wasm",
+                             summary: "Front page and newest stories from a fictional news site.", publisher: "Fictional Publisher", license: "MIT",
+                             hosts: ["news.example.com"], source: "https://example.com/fictional/reader",
+                             manifest: .init(sha256: String(repeating: "2", count: 64), size: 300), moduleFile: .init(sha256: String(repeating: "3", count: 64), size: 4000)),
+])
+verify(ExtensionManager.catalogStatus(fictionalCatalog.extensions[0], installed: communityManager.extensions) == .installed, "Matching catalog listing reads as installed")
+try renderCommunitySettings("community-catalog", catalog: fictionalCatalog, height: 760)
 try communityManager.setCommunityAllowed(false, expected: true)
 try renderCommunitySettings("community-paused")
+try renderCommunitySettings("community-catalog-paused", catalog: fictionalCatalog, height: 760)
 print("PASS: community master default, Settings routing, individual consent, stale consent rejection and retained individual choices")
 panel.model.query = ""
 

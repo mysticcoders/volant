@@ -9,9 +9,17 @@ struct InstalledExtension: Identifiable, Hashable {
     var communityBlocked = false
     var isCommunity: Bool { !ExtensionManager.isBundled(directory) }
     var name: String { manifest.name }
-    var accessDescription: String {
-        let access = manifest.capabilities.sorted().map { $0 == "clipboard.write" ? "Write to clipboard" : "Send diagnostic messages" } +
-            (manifest.declaredHosts.isEmpty ? [] : ["Read " + manifest.declaredHosts.joined(separator: ", ")])
+    /// The catalog record beside this extension, if the catalog installed it.
+    var catalogOrigin: ExtensionCatalogOrigin? {
+        let url = directory.appendingPathComponent(ExtensionCatalogOrigin.fileName)
+        guard let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize, size <= 4096,
+              let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(ExtensionCatalogOrigin.self, from: data)
+    }
+    var accessDescription: String { Self.accessDescription(capabilities: manifest.capabilities, hosts: manifest.declaredHosts) }
+    static func accessDescription(capabilities: [String], hosts: [String]) -> String {
+        let access = capabilities.sorted().map { $0 == "clipboard.write" ? "Write to clipboard" : "Send diagnostic messages" } +
+            (hosts.isEmpty ? [] : ["Read " + hosts.joined(separator: ", ")])
         return access.isEmpty ? "No permissions required" : access.joined(separator: ", ")
     }
 }
@@ -23,12 +31,16 @@ final class ExtensionManager {
     var configURL: URL { didSet { if configURL != oldValue { invalidateCatalog() } } }
     private var catalogLoaded = false
     private let roots: [URL]?
+    private let installRoot: URL?
     private var execution: ExtensionExecution?
     private static var running = false
     private static weak var activeExecution: ExtensionExecution?
-    init(configURL: URL = Preferences.configURL, roots: [URL]? = nil) {
-        self.configURL = configURL; self.roots = roots
+    /// `roots` lists extension folders to load instead of the bundled example and the Extensions folder.
+    /// `directory` replaces the Extensions folder, which is also where the catalog installs.
+    init(configURL: URL = Preferences.configURL, roots: [URL]? = nil, directory: URL? = nil) {
+        self.configURL = configURL; self.roots = roots; self.installRoot = directory
     }
+    var installDirectory: URL { installRoot ?? Self.directory }
     static var directory: URL {
         let dir = Preferences.supportDirectory.appendingPathComponent("Extensions", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -57,7 +69,7 @@ final class ExtensionManager {
     func reload() {
         catalogLoaded = true
         let folders = roots ?? ((Bundle.main.url(forResource: "HelloWorld", withExtension: nil).map { [$0] } ?? []) +
-            ((try? FileManager.default.contentsOfDirectory(at: Self.directory, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])) ?? []))
+            ((try? FileManager.default.contentsOfDirectory(at: installDirectory, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])) ?? []))
         loadErrors = []
         let candidates = folders.compactMap { dir -> InstalledExtension? in
             do {
@@ -145,6 +157,84 @@ final class ExtensionManager {
         try ExtensionApproval.forget(ext.manifest.id, at: configURL)
         reload()
         return try ExtensionHostApprovals.pruneAfterRemoving(ext.manifest, remaining: extensions.map(\.manifest), at: configURL)
+    }
+
+    /// How a catalog listing relates to what is installed. A listing is current only when its version,
+    /// module hash, permissions and hosts all match the installed manifest.
+    enum CatalogStatus: Equatable {
+        case available, installed, update(from: String), bundled
+    }
+    static func catalogStatus(_ listing: ExtensionCatalog.Listing, installed: [InstalledExtension]) -> CatalogStatus {
+        guard let existing = installed.first(where: { $0.id == listing.id }) else { return .available }
+        guard existing.isCommunity else { return .bundled }
+        let manifest = existing.manifest
+        let current = manifest.version == listing.version && manifest.sha256?.lowercased() == listing.moduleFile.sha256 &&
+            manifest.capabilities == listing.capabilities && manifest.declaredHosts == listing.hosts
+        return current ? .installed : .update(from: manifest.version)
+    }
+
+    /// Installs or updates a catalog extension from downloaded bytes. The bytes must match the signed
+    /// listing, a bundled extension is never replaced, and an unrelated folder already using the ID's
+    /// name is left alone. Files are written to a hidden staging folder and moved into place in one
+    /// step; an update moves the old folder aside first and puts it back if the move fails.
+    ///
+    /// Installing never enables or runs the extension. Approval stays bound to the manifest, so an
+    /// update with changed code or permissions needs enabling again, while reinstalling identical bytes
+    /// keeps the owner's choice. Hosts only the old version declared are pruned like an uninstall.
+    /// Tests pass `move` to fail a step deliberately.
+    @discardableResult
+    func install(_ listing: ExtensionCatalog.Listing, manifest manifestData: Data, module moduleData: Data, from catalog: ExtensionCatalog,
+                 move: (URL, URL) throws -> Void = { try FileManager.default.moveItem(at: $0, to: $1) }) throws -> InstalledExtension {
+        _ = try listing.verify(manifest: manifestData, module: moduleData, sha256: Integrity.sha256)
+        reload()
+        let existing = extensions.first { $0.id == listing.id }
+        if let existing, !existing.isCommunity {
+            throw ExtensionCatalogError.conflict("\(listing.name) is bundled with Volant and can’t be replaced.")
+        }
+        let files = FileManager.default
+        let root = installDirectory
+        let target = existing?.directory ?? root.appendingPathComponent(listing.id, isDirectory: true)
+        if existing == nil, files.fileExists(atPath: target.path) {
+            throw ExtensionCatalogError.conflict("A folder named \(listing.id) is already in the Extensions folder. Remove it, then install again.")
+        }
+        let staging = root.appendingPathComponent(".staging-" + UUID().uuidString, isDirectory: true)
+        defer { try? files.removeItem(at: staging) }
+        do {
+            try files.createDirectory(at: staging, withIntermediateDirectories: true)
+            try manifestData.write(to: staging.appendingPathComponent("manifest.json"))
+            try moduleData.write(to: staging.appendingPathComponent(listing.module))
+            let origin = ExtensionCatalogOrigin(id: listing.id, version: listing.version, sequence: catalog.sequence,
+                                                revision: catalog.revision, source: listing.source)
+            let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            try encoder.encode(origin).write(to: staging.appendingPathComponent(ExtensionCatalogOrigin.fileName))
+            if Self.activeExecution?.extensionID == listing.id, Self.activeExecution?.configURL == configURL {
+                Self.activeExecution?.finish(.failure(ExtensionError.changed))
+            }
+            if let existing {
+                let previous = root.appendingPathComponent(".previous-" + UUID().uuidString, isDirectory: true)
+                try move(existing.directory, previous)
+                do { try move(staging, target) } catch {
+                    try? move(previous, target)
+                    throw error
+                }
+                try? files.removeItem(at: previous)
+            } else {
+                try move(staging, target)
+            }
+        } catch let error as ExtensionCatalogError {
+            reload(); throw error
+        } catch {
+            reload()
+            throw ExtensionCatalogError.conflict("Couldn’t install \(listing.name): \(error.localizedDescription)")
+        }
+        reload()
+        if let existing {
+            _ = try? ExtensionHostApprovals.pruneAfterRemoving(existing.manifest, remaining: extensions.map(\.manifest), at: configURL)
+        }
+        guard let installed = extensions.first(where: { $0.id == listing.id }) else {
+            throw ExtensionCatalogError.conflict("\(listing.name) was installed but couldn’t be loaded. Check the Extensions folder.")
+        }
+        return installed
     }
 
     /// Runs a list extension. With declared hosts it plans, fetches the permitted URLs through the fetch

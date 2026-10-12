@@ -176,6 +176,8 @@ public enum ExtensionHostApprovals {
 
 /// What the app asks the sandboxed fetch helper to do. The helper re-checks every URL against
 /// `allowedHosts`, refuses redirects, sends no cookies and stops reading past `maximumBytes`.
+/// `fetchCatalogFile` reads only the fixed extension catalog paths that `ExtensionCatalog.url(for:)` accepts.
 @objc public protocol VolantFetchHostProtocol {
     func fetch(url: String, allowedHosts: [String], maximumBytes: Int, reply: @escaping (Data?, Int, String?) -> Void)
+    func fetchCatalogFile(path: String, maximumBytes: Int, reply: @escaping (Data?, Int, String?) -> Void)
 }

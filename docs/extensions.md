@@ -1,6 +1,6 @@
 # Volant extensions — ABI 1 and text-command ABI 2
 
-Volant supports small, user-invoked WebAssembly commands in its sandboxed XPC helper. This is a deliberately narrow first version: plain-text input and output, no background activation, no extension UI or store. A bundled Hello World example starts disabled.
+Volant supports small, user-invoked WebAssembly commands in its sandboxed XPC helper. This is a deliberately narrow first version: plain-text input and output, no background activation and no extension UI. Signed, reviewed extensions can be installed from the catalog in Settings. A bundled Hello World example starts disabled.
 
 Settings → Extensions now has **Allow Community Extensions**, off by default, in addition to each extension's enable switch. The master gate applies to installed community folders; origin is determined by the app's resource location, never a manifest's claimed ID. Bundled Hello World has its own switch and is independent of the community gate. Allowing community extensions does not approve any individual module. First use still offers Enable and Run. When the master gate is off, activating a community result opens Extension Settings instead.
 
@@ -13,7 +13,7 @@ Turning the master gate off preserves individual approvals but revokes the pendi
 3. The real WASM module returns `Hello, Andrew!`. Return on the result copies it; merely running Hello World does not change the clipboard.
 4. Settings → Extensions can disable it again. No extension code runs during search or Settings browsing.
 
-Installed folders live in Volant's preserved storage location: `~/Library/Containers/com.mysticcoders.volant/Data/Library/Application Support/Vey/Extensions/`. Use **Open Extensions Folder** and **Refresh** in Settings. Each folder contains `manifest.json` and its module. Duplicate IDs, invalid manifests and unsupported ABI versions are reported and excluded. There is no automatic downloader or package installer yet.
+Installed folders live in Volant's preserved storage location: `~/Library/Containers/com.mysticcoders.volant/Data/Library/Application Support/Vey/Extensions/`. Use **Open Extensions Folder** and **Refresh** in Settings. Each folder contains `manifest.json` and its module. Duplicate IDs, invalid manifests and unsupported ABI versions are reported and excluded. Settings → Extensions → Catalog installs and updates signed, reviewed extensions into this folder; see [extension catalog](extension-catalog.md).
 
 ## Direct command discovery
 
@@ -21,7 +21,7 @@ Search by display name or the final component of an extension ID: `base64`, `bas
 
 Direct matches appear alongside app and quicklink matches; reserved built-in routes retain precedence. Two extensions sharing a trigger remain separate selectable rows. The catalog caches only manifest metadata, not executable modules. Settings changes, Refresh and Reload Configuration invalidate it; execution still rechecks current approval and the exact manifest/module hash.
 
-See [catalog roadmap](extension-catalog.md) for distribution and curation plans.
+See [extension catalog](extension-catalog.md) for signed distribution, updates and curation plans.
 
 ## Example
 
