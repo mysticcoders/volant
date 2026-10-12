@@ -295,3 +295,16 @@ Final publication: the signed build-10 feed was activated in Cloudflare Worker d
 **Installed acceptance.** `tools/installed-acceptance/run-vm.py --dmg` against this DMG in a disposable macOS 15.7.7 VM: 124 passed or noted, 0 failed. This was the first run of the signed `VolantFetchHost`: the Hacker News and Lobsters readers from mysticcoders/volant-extensions showed real stories, opened stories and discussions, and handled host removal and uninstall.
 
 **Owner verification (October 12, 2026).** Check for Updates upgraded the owner's installed 0.2.5 directly to 0.2.7 through Sparkle, and the Hacker News and Lobsters extensions worked in the installed app after approving their hosts. Intel hardware remains unverified.
+
+## 0.3.0 build 16 — October 12, 2026
+
+**What's in it.** See the [release notes](releases/0.3.0.md).
+
+**Build.** Built from `a06099a` on `release/0.3.0` by `Scripts/ship.sh`.
+
+- **Notarization:** Apple accepted app submission `08df80e8-ae43-443e-b779-16ac1224271a` and DMG submission `c1925003-37b1-4ac8-9a64-cee2c21a48b9`. Both were stapled and passed Gatekeeper as Notarized Developer ID.
+- **Mounted DMG:** `Volant.app` 0.3.0, build 16, `x86_64 arm64`, valid deep strict signature, stapled, Applications link present.
+- **DMG SHA-256:** `6918b9f98d2b54d96cd950728c7f9ca9529971b4bbf9094659cbed83c61739ec` (16950139 bytes).
+- **Feed:** the signed build-16 appcast generated with this DMG passes `sign_update --verify`.
+
+**Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
