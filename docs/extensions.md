@@ -66,5 +66,5 @@ This caught a real difference from the direct engine checks: launchd throttles r
 
 ## Network extensions
 
-List extensions can declare `hosts` and `"output": "items"` to read public web data and show it as launcher rows. The module still never touches the network: it plans URLs, Volant fetches them through the sandboxed `VolantFetchHost` from hosts the owner allowed, and the module renders the responses. Hosts are approved in a prompt, shared between extensions, listed under Settings → Extensions → Network Access, and pruned when the last extension using them is uninstalled. See [network extensions](network-extensions.md); the Hacker News and Lobsters readers in `extensions/` are the first two.
+List extensions can declare `hosts` and `"output": "items"` to read public web data and show it as launcher rows. The module still never touches the network: it plans URLs, Volant fetches them through the sandboxed `VolantFetchHost` from hosts the owner allowed, and the module renders the responses. Hosts are approved in a prompt, shared between extensions, listed under Settings → Extensions → Network Access, and pruned when the last extension using them is uninstalled. See [network extensions](network-extensions.md); the first two, Hacker News and Lobsters, are in [mysticcoders/volant-extensions](https://github.com/mysticcoders/volant-extensions).
 

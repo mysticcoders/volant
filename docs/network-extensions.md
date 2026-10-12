@@ -2,9 +2,10 @@
 
 Network extensions read public web data, such as the Hacker News front page or Lobsters' hottest
 stories, and show it as rows in the launcher. Return opens a row's link; Command-Return opens its
-second link, typically the discussion. The first two are in `extensions/hackernews` and
-`extensions/lobsters`. Both are Rust modules built with `extensions/build-list-extensions.sh` on a
-shared kit (`extensions/volant-extension-kit`).
+second link, typically the discussion. The first two, Hacker News and Lobsters, live in their own
+repository, [mysticcoders/volant-extensions](https://github.com/mysticcoders/volant-extensions), as
+Rust modules on a shared kit with a pinned toolchain and a reproducible build. This repository keeps
+only the host side and a dependency-free fixture, `tools/extensions/list-fixture`, for its own checks.
 
 ## The boundary
 
@@ -80,9 +81,10 @@ The launcher keyword is the extension's name or the last part of its ID: `hn`, `
   item trimming and shared host approvals.
 - `VolantTests/ExtensionTests`: enabling allows hosts, a removed host asks again, uninstall prunes only
   orphaned hosts.
-- `tools/check-extensions.sh`: the real Hacker News and Lobsters modules run in the production
-  JavaScriptCore host, plan only their host, and render fictional pages.
-- `cargo test` in each extension folder (run by the build script).
-- `tools/installed-acceptance/run-vm.py --build --only extensions`: installs both extensions in a
-  disposable VM, approves hosts from the prompt, reads real stories, opens a story and its discussion,
-  removes a host and uninstalls one extension.
+- `tools/check-extensions.sh`: the list fixture runs in the production JavaScriptCore host, plans only
+  its host, may return rows instead of URLs, and renders fetched and failed responses.
+- In volant-extensions, `./build.sh --check` runs each extension's tests and confirms the committed
+  modules and hashes match a fresh build (CI runs it).
+- `tools/installed-acceptance/run-vm.py --build --only extensions`, with volant-extensions checked out
+  next to this repository: installs both readers in a disposable VM, approves hosts from the prompt,
+  reads real stories, opens a story and its discussion, removes a host and uninstalls one extension.
