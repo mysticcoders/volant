@@ -31,32 +31,12 @@ targets:
         type: folder
         buildPhase: resources
       - path: Shared
-    entitlements:
-      path: Volant/Volant.entitlements
-      properties:
-        com.apple.security.app-sandbox: true
-        com.apple.security.files.user-selected.read-write: true
-        com.apple.security.personal-information.addressbook: true
-        com.apple.security.personal-information.calendars: true
-        com.apple.security.device.bluetooth: true
-        com.apple.security.device.audio-input: true
-        com.apple.security.personal-information.location: true
-        # Restart, Shut Down and Log Out ask loginwindow to show its own confirmation dialog.
-        # Measured in docs/system-actions-spike.md: no Automation prompt results.
-        com.apple.security.automation.apple-events: true
-        com.apple.security.temporary-exception.apple-events:
-          - com.apple.loginwindow
-        com.apple.developer.ubiquity-kvstore-identifier: $(TeamIdentifierPrefix)$(CFBundleIdentifier)
-        com.apple.security.temporary-exception.mach-lookup.global-name:
-          - com.apple.airportd
-          - $(PRODUCT_BUNDLE_IDENTIFIER)-spks
-          - $(PRODUCT_BUNDLE_IDENTIFIER)-spki
     info:
       path: Volant/Info.plist
       properties:
-        CFBundleName: Volant
-        CFBundleDisplayName: Volant
-        CFBundleIdentifier: com.mysticcoders.volant
+        CFBundleName: $(VOLANT_DISPLAY_NAME)
+        CFBundleDisplayName: $(VOLANT_DISPLAY_NAME)
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         SUFeedURL: $(VOLANT_UPDATE_FEED_URL)
@@ -90,9 +70,29 @@ targets:
         embed: true
       - target: VolantInputHost
         embed: true
+    # Debug builds are "Volant Dev" with their own bundle ID, so macOS keeps their Accessibility,
+    # Microphone and Location grants, sandbox container, Keychain items and iCloud store apart from
+    # the installed app. A same-ID build with a different signature leaves the installed app's
+    # Accessibility switch on while macOS refuses it. Debug builds have no update feed.
+    # tools/check-dev-entitlements.py keeps VolantDev.entitlements equal to Volant.entitlements minus iCloud.
     settings:
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.dev
+          VOLANT_DISPLAY_NAME: Volant Dev
+          VOLANT_UPDATE_FEED_URL: ""
+          # No iCloud key-value entitlement, so no provisioning profile: dev builds sign with the
+          # development certificate alone and never sync settings into the owner's iCloud store.
+          CODE_SIGN_ENTITLEMENTS: Volant/VolantDev.entitlements
+          CODE_SIGN_STYLE: Manual
+          CODE_SIGN_IDENTITY: Apple Development
+          PROVISIONING_PROFILE_SPECIFIER: ""
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant
+        VOLANT_DISPLAY_NAME: Volant
+        # Volant.entitlements is maintained by hand; Restart, Shut Down and Log Out use the loginwindow
+        # Apple-events exception to show its own confirmation dialog (docs/system-actions-spike.md).
+        CODE_SIGN_ENTITLEMENTS: Volant/Volant.entitlements
         PROVISIONING_PROFILE_SPECIFIER: $(VOLANT_PROVISIONING_PROFILE)
         PRODUCT_NAME: Volant
         PRODUCT_MODULE_NAME: Volant

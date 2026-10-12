@@ -156,12 +156,13 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
 
 final class ListenerDelegate: NSObject, NSXPCListenerDelegate {
     func listener(_ listener: NSXPCListener, shouldAcceptNewConnection connection: NSXPCConnection) -> Bool {
-        // Only the signed Volant application from this team may request local automation.
+        // Only the app this helper is embedded in, signed by this team, may request local automation.
+        guard let appID = Self.embeddingAppIdentifier else { return false }
         var code: SecCode?
         let attributes = [kSecGuestAttributePid as String: NSNumber(value: connection.processIdentifier)] as CFDictionary
         guard SecCodeCopyGuestWithAttributes(nil, attributes, [], &code) == errSecSuccess, let code else { return false }
         var requirement: SecRequirement?
-        let text = "anchor apple generic and identifier \"com.mysticcoders.volant\" and certificate leaf[subject.OU] = \"REMBT6JY4N\""
+        let text = "anchor apple generic and identifier \"\(appID)\" and certificate leaf[subject.OU] = \"REMBT6JY4N\""
         guard SecRequirementCreateWithString(text as CFString, [], &requirement) == errSecSuccess,
               let requirement, SecCodeCheckValidity(code, [], requirement) == errSecSuccess else { return false }
         connection.exportedInterface = NSXPCInterface(with: VolantAgentHostProtocol.self)
@@ -172,6 +173,15 @@ final class ListenerDelegate: NSObject, NSXPCListenerDelegate {
         connection.resume()
         return true
     }
+
+    /// The bundle ID of the app that embeds this service (`<App>.app/Contents/XPCServices/<this>.xpc`):
+    /// Volant, or Volant Dev for Debug builds. Only a Volant ID is accepted, so a copied helper cannot
+    /// be pointed at another app.
+    static let embeddingAppIdentifier: String? = {
+        let app = Bundle.main.bundleURL.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        guard let id = Bundle(url: app)?.bundleIdentifier, ["com.mysticcoders.volant", "com.mysticcoders.volant.dev"].contains(id) else { return nil }
+        return id
+    }()
 }
 let delegate = ListenerDelegate()
 let listener = NSXPCListener.service()

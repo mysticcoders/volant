@@ -28,6 +28,7 @@ python3 tools/check-input-confinement.py
 python3 tools/interaction-speed/check.py
 python3 tools/ui-vm-dispatch-tests.py
 xcodegen generate --quiet
+python3 tools/check-dev-entitlements.py
 build_options=(-project Volant.xcodeproj -scheme Volant -derivedDataPath build -destination 'platform=macOS')
 if [[ "$ci" == true ]]; then
     build_options+=(CODE_SIGNING_ALLOWED=NO ENABLE_APP_SANDBOX=NO)
