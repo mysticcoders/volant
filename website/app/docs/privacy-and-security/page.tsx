@@ -109,8 +109,8 @@ export default function PrivacyAndSecurity() {
                 later. Audio stays on the Mac; the transcript is copied for you
                 to paste. The Dictate Text shortcut shows a small indicator
                 instead of the launcher, so the app you are typing in keeps
-                focus. From the next release, you can choose to have dictation
-                typed at the cursor instead (see Accessibility below).
+                focus. You can also choose to have dictation typed at the cursor
+                instead (see Accessibility below).
               </td>
             </tr>
             <tr>
@@ -142,13 +142,12 @@ export default function PrivacyAndSecurity() {
       </p>
       <p>
         <strong>No Accessibility grant unless you choose Type at the cursor.</strong>{' '}
-        The downloadable app never asks for it: results are copied to the
-        clipboard instead of pasted, so no keystroke is ever synthesized.
-        Window management and system-wide text expansion stay absent for the
-        same reason.
+        Unless you choose it, Volant never asks for it: results are copied to
+        the clipboard instead of pasted, so no keystroke is synthesized. Window
+        management and system-wide text expansion stay absent.
       </p>
       <p>
-        From the next release, Settings → General → Dictation lets you choose{' '}
+        Settings → General → Dictation lets you choose{' '}
         <strong>Type at the cursor</strong> instead of{' '}
         <strong>Copy to clipboard</strong>. Only then does Volant start a
         separate helper inside the app, which asks macOS once for Accessibility
