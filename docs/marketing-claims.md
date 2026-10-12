@@ -37,7 +37,7 @@ Added in 0.2.7:
 
 | Story | In 0.2.7 | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
-| Network extensions (Hacker News, Lobsters) with per-host approval | Yes | #214; Core boundary tests, extension manager tests, production JavaScriptCore runs of a list fixture, and an installed-acceptance VM run of the notarized DMG that approved hosts, read real stories and opened links; readers live in the separate mysticcoders/volant-extensions repository and are installed by copying a folder | Extensions docs; the module has no network access, Volant fetches only approved https hosts; no catalog or one-click install claim |
+| Network extensions (Hacker News, Lobsters) with per-host approval | Yes | #214; Core boundary tests, extension manager tests, production JavaScriptCore runs of a list fixture, an installed-acceptance VM run of the notarized DMG that approved hosts, read real stories and opened links, and the owner using both readers in the installed app on October 12, 2026; readers live in the separate mysticcoders/volant-extensions repository and are installed by copying a folder | Extensions docs; the module has no network access, Volant fetches only approved https hosts; no catalog or one-click install claim |
 | Network Access list and extension uninstall | Yes | #214; same VM run removed a host and uninstalled an extension with orphaned-host pruning | Extensions docs |
 
 ## Privacy language
