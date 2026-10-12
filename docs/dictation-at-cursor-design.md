@@ -58,6 +58,33 @@ unverified claim that the design depends on is listed under Phase 0.
 | SMAppService agents and login items | Agents need a plist in `Contents/Library/LaunchAgents`. Registration shows the system's background-item notification and an entry in Login Items & Extensions | API verified: [SMAppService](https://developer.apple.com/documentation/servicemanagement/smappservice), [agent(plistName:)](https://developer.apple.com/documentation/servicemanagement/smappservice/agent(plistname:)). The notification is a secondary source ([Kandji](https://support.kandji.io/support/solutions/articles/72000578621)) |
 | Repository precedent | An unsandboxed XPC service inside a sandboxed, Developer ID signed app keeps the privilege the app lacks. Measured for `kill`. The code-signing requirement on callers held up when tested by attacking it | Verified: `docs/process-control-spike.md` ("Follow-up", September 20, 2026). TCC was **not** part of that spike |
 
+### Grants across updates and development builds (October 12, 2026)
+
+Symptom: on the owner's Mac, System Settings showed Volant switched on under Accessibility, yet
+Settings → Dictation said "Not allowed" and typing was refused by a freshly started input helper.
+
+Cause, inferred rather than read from the TCC database (that needs Full Disk Access): TCC matches a
+grant against the designated requirement. Released builds 0.2.5, 0.2.6 and 0.2.7 have identical
+requirements for the app and for `VolantInputHost` (anchor apple generic, the bundle identifier and
+team `REMBT6JY4N`), so a Sparkle update matches the existing grant. Local Debug and Release builds
+used the same identifier, `com.mysticcoders.volant`, signed with an Apple Development certificate,
+whose requirement names that certificate. One "Volant" row can then hold a grant that only one of
+the two signatures satisfies, and switching it off and on does not change which.
+
+Change: Debug builds are now **Volant Dev**, `com.mysticcoders.volant.dev`, so they get their own
+Accessibility, Microphone and Location entries, sandbox container, Keychain items and launch
+services identity. They have no update feed and no iCloud key-value entitlement, so they sign with
+the development certificate alone and never sync settings into the owner's iCloud store.
+`Volant/VolantDev.entitlements` must equal `Volant/Volant.entitlements` without that entitlement;
+`tools/check-dev-entitlements.py` enforces it in `Scripts/test.sh`. `VolantAgentHost` accepts callers
+by the identifier of the app that embeds it, limited to these two IDs. Release builds are unchanged.
+
+A grant already recorded against a development signature has to be removed once (select Volant
+under Privacy & Security → Accessibility and choose −, or `tccutil reset Accessibility
+com.mysticcoders.volant`) and granted again from the installed app. Release users never had a
+second signature for the same identifier, so they should not need this; it remains unverified on a
+Mac that only ever had release builds through several updates.
+
 ## Process model options
 
 | | A. Embedded XPC service (recommended) | B. `SMAppService.agent` launch agent | C. Bundled helper app (`SMAppService.loginItem`, or launched with `NSWorkspace`) |
