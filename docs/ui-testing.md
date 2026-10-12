@@ -25,6 +25,8 @@ Non-UI checks stay local. When UI checks are selected, `tools/test-ui-vm.py` sna
 
 `--ci` keeps hosted GitHub UI checks on their disposable runner. `VOLANT_HOST_UI_TESTS=1` is an explicit local escape hatch, requiring an agreed testing window with the owner. Do not use it just to get past VM setup failures. Native performance measurements and installed-app hardware checks need their own agreed window; VM timing is not a performance comparison.
 
+Installed-app checks for Settings, app shortcuts and translation run against a notarized DMG in a disposable clone of this VM; see [installed acceptance](installed-acceptance.md).
+
 `tools/ui-vm-dispatch-tests.py` verifies that successful and failed VM dispatch do not reach host UI execution. Builds, functional fixtures, rendered-screen inspection and installed hardware checks remain separate evidence.
 
 Verified on 2026-09-15: `Scripts/test.sh --ui only` passed in `volant-ui-xcode` (macOS 15.7.7, Xcode 16.4, four cores, 8 GB). Both light/dark launcher fixtures and the selected XCTest rendering/editor tests passed. Logs, rendered fixtures and xcresults were collected, and Tart stopped the VM automatically. The first setup attempt failed because `xcodegen` was absent; installing it in the guest resolved the setup gap. No host UI fallback was used.
