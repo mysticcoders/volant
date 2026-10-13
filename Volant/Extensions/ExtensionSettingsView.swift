@@ -9,6 +9,7 @@ struct ExtensionSettingsView: View {
     let onChange: () -> Void
     var roots: [URL]?
     var directory: URL?
+    var dataDirectory: URL?
     var catalogClient: ExtensionCatalogClient
     @State private var installed: [InstalledExtension] = []
     @State private var problems: [String] = []
@@ -17,17 +18,18 @@ struct ExtensionSettingsView: View {
     @State private var approvedHosts: [String] = []
     @State private var confirmingHosts: InstalledExtension?
     @State private var confirmingUninstall: InstalledExtension?
+    @State private var confirmingClear: InstalledExtension?
     @State private var catalog: ExtensionCatalog?
     @State private var catalogLoading = false
     @State private var catalogError: String?
     @State private var installing: String?
-    init(configURL: URL, onChange: @escaping () -> Void, roots: [URL]? = nil, directory: URL? = nil,
+    init(configURL: URL, onChange: @escaping () -> Void, roots: [URL]? = nil, directory: URL? = nil, dataDirectory: URL? = nil,
          catalogClient: ExtensionCatalogClient = .live, catalog: ExtensionCatalog? = nil) {
-        self.configURL = configURL; self.onChange = onChange; self.roots = roots; self.directory = directory
+        self.configURL = configURL; self.onChange = onChange; self.roots = roots; self.directory = directory; self.dataDirectory = dataDirectory
         self.catalogClient = catalogClient
         _catalog = State(initialValue: catalog)
     }
-    private var manager: ExtensionManager { ExtensionManager(configURL: configURL, roots: roots, directory: directory) }
+    private var manager: ExtensionManager { ExtensionManager(configURL: configURL, roots: roots, directory: directory, dataDirectory: dataDirectory) }
     private func reload() {
         let manager = manager; manager.reload()
         installed = manager.extensions; problems = manager.loadErrors; communityAllowed = manager.communityAllowed
@@ -94,6 +96,10 @@ struct ExtensionSettingsView: View {
                                  + " · Version \(ext.manifest.version) · " + ext.accessDescription
                                  + (ext.enabled && !ExtensionHostApprovals.missing(ext.manifest, at: configURL).isEmpty ? " · Asks for host access on next use" : ""))
                         }.disabled(ext.communityBlocked).accessibilityIdentifier("extension-toggle-" + ext.id)
+                        if ext.manifest.usesStorage && manager.hasStoredData(ext) {
+                            Button("Clear Data…") { confirmingClear = ext }.controlSize(.small)
+                                .accessibilityIdentifier("extension-clear-data-" + ext.id)
+                        }
                         if ext.isCommunity {
                             Button("Uninstall…") { confirmingUninstall = ext }.controlSize(.small)
                                 .accessibilityIdentifier("extension-uninstall-" + ext.id)
@@ -110,7 +116,7 @@ struct ExtensionSettingsView: View {
                         .disabled(catalogLoading || installing != nil)
                 }
             } footer: {
-                SettingsFooter("Uninstalling moves a community extension to the Trash and removes host access no other extension uses. Extensions start off and run only when you invoke them. Enable one here or choose Enable and Run the first time you use it; changed code or permissions require enabling again. Try the bundled example: hello Andrew")
+                SettingsFooter("Uninstalling moves a community extension to the Trash, deletes what it saved and removes host access no other extension uses. Extensions start off and run only when you invoke them. Enable one here or choose Enable and Run the first time you use it; changed code or permissions require enabling again. Try the bundled example: hello Andrew")
             }
             Section {
                 if let catalog {
@@ -181,6 +187,17 @@ struct ExtensionSettingsView: View {
         } message: {
             Text("Volant moves it to the Trash and removes host access that no other extension needs.")
         }
+        .alert("Clear data for \(confirmingClear?.name ?? "extension")?", isPresented: Binding(get: { confirmingClear != nil }, set: { if !$0 { confirmingClear = nil } })) {
+            Button("Cancel", role: .cancel) { confirmingClear = nil }
+            Button("Clear Data", role: .destructive) {
+                guard let ext = confirmingClear else { return }
+                confirmingClear = nil
+                do { try manager.clearStoredData(ext); reload() }
+                catch { self.error = error.localizedDescription; reload() }
+            }
+        } message: {
+            Text("Volant forgets what this extension saved on this Mac, such as pinned or hidden items. The extension stays installed and keeps its permissions.")
+        }
         .alert("Couldn’t change extension", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
             Button("OK") { error = nil }
         } message: { Text(error ?? "") }
@@ -199,7 +216,7 @@ extension ExtensionSettingsView {
             VStack(alignment: .leading, spacing: 2) {
                 Text(listing.name) + Text("  " + listing.version).foregroundColor(.secondary)
                 Text(listing.summary).font(.callout)
-                Text([listing.publisher, listing.license, InstalledExtension.accessDescription(capabilities: listing.capabilities, hosts: listing.hosts)]
+                Text([listing.publisher, listing.license, InstalledExtension.accessDescription(capabilities: listing.capabilities, hosts: listing.hosts, storage: listing.storage == true)]
                     .joined(separator: " · ")).font(.callout).foregroundStyle(.secondary)
             }
             Spacer()

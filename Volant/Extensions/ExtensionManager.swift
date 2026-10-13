@@ -16,10 +16,10 @@ struct InstalledExtension: Identifiable, Hashable {
               let data = try? Data(contentsOf: url) else { return nil }
         return try? JSONDecoder().decode(ExtensionCatalogOrigin.self, from: data)
     }
-    var accessDescription: String { Self.accessDescription(capabilities: manifest.capabilities, hosts: manifest.declaredHosts) }
-    static func accessDescription(capabilities: [String], hosts: [String]) -> String {
+    var accessDescription: String { Self.accessDescription(capabilities: manifest.capabilities, hosts: manifest.declaredHosts, storage: manifest.usesStorage) }
+    static func accessDescription(capabilities: [String], hosts: [String], storage: Bool = false) -> String {
         let access = capabilities.sorted().map { $0 == "clipboard.write" ? "Write to clipboard" : "Send diagnostic messages" } +
-            (hosts.isEmpty ? [] : ["Read " + hosts.joined(separator: ", ")])
+            (hosts.isEmpty ? [] : ["Read " + hosts.joined(separator: ", ")]) + (storage ? ["Remember settings and lists on this Mac"] : [])
         return access.isEmpty ? "No permissions required" : access.joined(separator: ", ")
     }
 }
@@ -32,13 +32,17 @@ final class ExtensionManager {
     private var catalogLoaded = false
     private let roots: [URL]?
     private let installRoot: URL?
+    let dataStore: ExtensionDataStore
+    /// Replaces the extension helper in tests: given the extension and its request, returns its output.
+    var invokeOverride: ((InstalledExtension, String, @escaping (Result<String, Error>) -> Void) -> Void)?
     private var execution: ExtensionExecution?
     private static var running = false
     private static weak var activeExecution: ExtensionExecution?
     /// `roots` lists extension folders to load instead of the bundled example and the Extensions folder.
     /// `directory` replaces the Extensions folder, which is also where the catalog installs.
-    init(configURL: URL = Preferences.configURL, roots: [URL]? = nil, directory: URL? = nil) {
+    init(configURL: URL = Preferences.configURL, roots: [URL]? = nil, directory: URL? = nil, dataDirectory: URL? = nil) {
         self.configURL = configURL; self.roots = roots; self.installRoot = directory
+        self.dataStore = ExtensionDataStore(directory: dataDirectory ?? ExtensionDataStore.defaultDirectory)
     }
     var installDirectory: URL { installRoot ?? Self.directory }
     static var directory: URL {
@@ -155,6 +159,7 @@ final class ExtensionManager {
         if Self.activeExecution?.extensionID == ext.id { Self.activeExecution?.finish(.failure(ExtensionError.disabled)) }
         try remove(ext.directory)
         try ExtensionApproval.forget(ext.manifest.id, at: configURL)
+        try? dataStore.clear(ext.id)
         reload()
         return try ExtensionHostApprovals.pruneAfterRemoving(ext.manifest, remaining: extensions.map(\.manifest), at: configURL)
     }
@@ -244,16 +249,24 @@ final class ExtensionManager {
     /// Runs a list extension. With declared hosts it plans, fetches the permitted URLs through the fetch
     /// helper, then renders; without hosts it renders straight away. A plan may instead return items, for
     /// example a row explaining an unusable query, and those are shown without fetching. Approval and hosts are checked again
-    /// between phases, so a change made mid-run stops it.
+    /// between phases, so a change made mid-run stops it. An extension that uses storage receives its saved
+    /// object with every request, and any reply's `storage` replaces it (see `save(_:for:run:)`).
     func runItems(_ ext: InstalledExtension, query: String, now: Date = Date(),
                   fetch: @escaping ([URL], [String], @escaping ([ExtensionNetwork.Response]) -> Void) -> Void = ExtensionFetcher.fetch,
                   completion: @escaping (Result<[ExtensionItem], Error>) -> Void) {
         let hosts = ext.manifest.declaredHosts
+        let sequence = beginRun(ext)
+        let storage = ext.manifest.usesStorage ? dataStore.load(ext.id) : nil
         func render(_ responses: [ExtensionNetwork.Response]) {
             do {
-                let input = try ExtensionNetwork.request(phase: "render", query: query, now: now, responses: hosts.isEmpty ? nil : responses)
-                run(ext, input: input) { result in
-                    completion(result.flatMap { output in Result { try ExtensionNetwork.items(from: output) } })
+                let input = try ExtensionNetwork.request(phase: "render", query: query, now: now, responses: hosts.isEmpty ? nil : responses, storage: storage)
+                invoke(ext, input) { [self] result in
+                    completion(result.flatMap { output in Result {
+                        let reply = try ExtensionNetwork.reply(from: output)
+                        try self.save(reply.storage, for: ext, run: sequence)
+                        guard let items = reply.items else { throw ExtensionNetworkError.malformedItems }
+                        return items
+                    } })
                 }
             } catch { completion(.failure(error)) }
         }
@@ -261,11 +274,14 @@ final class ExtensionManager {
         let missing = missingHosts(ext)
         guard missing.isEmpty else { completion(.failure(ExtensionNetworkError.hostsNotApproved(missing))); return }
         do {
-            run(ext, input: try ExtensionNetwork.request(phase: "plan", query: query, now: now)) { [self] result in
+            invoke(ext, try ExtensionNetwork.request(phase: "plan", query: query, now: now, storage: storage)) { [self] result in
                 do {
                     let approved = Set(hosts).intersection(ExtensionHostApprovals.approved(at: configURL))
                     let output = try result.get()
-                    if let items = try? ExtensionNetwork.items(from: output) { completion(.success(items)); return }
+                    if let reply = try? ExtensionNetwork.reply(from: output), let items = reply.items {
+                        try self.save(reply.storage, for: ext, run: sequence)
+                        completion(.success(items)); return
+                    }
                     let urls = try ExtensionNetwork.plannedURLs(from: output, hosts: approved)
                     fetch(urls, Array(approved).sorted()) { responses in
                         let missing = self.missingHosts(ext)
@@ -275,6 +291,55 @@ final class ExtensionManager {
                 } catch { completion(.failure(error)) }
             }
         } catch { completion(.failure(error)) }
+    }
+
+    /// Runs a row's action, or with `action` nil tells the extension a row's link was opened. The module
+    /// gets the row, the query that produced it and its saved object; it never fetches. A reply's
+    /// `storage` is saved under the same rules as a list run, and its `items`, if any, replace the rows.
+    func runAction(_ ext: InstalledExtension, item: ExtensionItem, action: String?, query: String, now: Date = Date(),
+                   completion: @escaping (Result<[ExtensionItem]?, Error>) -> Void) {
+        let sequence = beginRun(ext)
+        do {
+            let input = try ExtensionNetwork.request(phase: action == nil ? "opened" : "action", query: query, now: now,
+                                                     storage: ext.manifest.usesStorage ? dataStore.load(ext.id) : nil, action: action, item: item)
+            invoke(ext, input) { [self] result in
+                completion(result.flatMap { output in Result {
+                    let reply = try ExtensionNetwork.reply(from: output)
+                    try self.save(reply.storage, for: ext, run: sequence)
+                    return reply.items
+                } })
+            }
+        } catch { completion(.failure(error)) }
+    }
+
+    /// Saved data for an extension that declares storage; `{}` before its first save.
+    func storedData(_ ext: InstalledExtension) -> JSONValue { dataStore.load(ext.id) }
+    func hasStoredData(_ ext: InstalledExtension) -> Bool { dataStore.hasData(ext.id) }
+    /// Clear Data in Settings: forgets the saved object without changing approval.
+    func clearStoredData(_ ext: InstalledExtension) throws { try dataStore.clear(ext.id) }
+
+    private static var runSequence = 0
+    private static var lastSaved: [String: Int] = [:]
+
+    private func beginRun(_ ext: InstalledExtension) -> Int {
+        Self.runSequence += 1
+        return Self.runSequence
+    }
+
+    /// Saves a reply's storage only when the extension declares storage, is still approved and not
+    /// blocked by the community switch, its manifest is unchanged, and no later run has saved since.
+    /// Otherwise the reply's storage is discarded and the saved object stays as it was.
+    private func save(_ value: JSONValue?, for ext: InstalledExtension, run sequence: Int) throws {
+        guard let value, ext.manifest.usesStorage else { return }
+        guard !isBlocked(ext), ExtensionApproval.enabled(ext.manifest, at: configURL),
+              (try? readManifest(ext.directory)) == ext.manifest, sequence >= Self.lastSaved[ext.id, default: 0] else { return }
+        try dataStore.save(value, for: ext.id)
+        Self.lastSaved[ext.id] = sequence
+    }
+
+    /// Runs the module through the extension helper; tests replace it to return fixed output.
+    private func invoke(_ ext: InstalledExtension, _ input: String, completion: @escaping (Result<String, Error>) -> Void) {
+        if let invokeOverride { invokeOverride(ext, input, completion) } else { run(ext, input: input, completion: completion) }
     }
 
     func run(_ ext: InstalledExtension, input: String, completion: @escaping (Result<String, Error>) -> Void) {

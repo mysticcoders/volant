@@ -1,4 +1,5 @@
 import SwiftUI
+import VolantCore
 
 /// Only everyday actions belong here; app termination and uninstall are deliberately separate work.
 enum LauncherItemAction: String, CaseIterable, Identifiable {
@@ -37,6 +38,30 @@ enum LauncherItemAction: String, CaseIterable, Identifiable {
     }
 }
 
+/// One entry in the Actions menu: a built-in action, or an action a list extension's row offers.
+enum LauncherMenuEntry: Hashable, Identifiable {
+    case item(LauncherItemAction)
+    case custom(ExtensionItemAction)
+    var id: String {
+        switch self {
+        case .item(let action): return action.rawValue
+        case .custom(let action): return "extension-" + action.id
+        }
+    }
+    var symbol: String {
+        switch self {
+        case .item(let action): return action.symbol
+        case .custom: return "puzzlepiece.extension"
+        }
+    }
+    var group: Int {
+        switch self {
+        case .item(let action): return action.group
+        case .custom: return 1
+        }
+    }
+}
+
 extension ResultRow {
     var actionURL: URL? {
         switch self {
@@ -45,13 +70,22 @@ extension ResultRow {
         default: return nil
         }
     }
-    var supportsActions: Bool { actionURL != nil }
+    var supportsActions: Bool {
+        if case .extensionItem(let item, _) = self { return !(item.actions ?? []).isEmpty }
+        return actionURL != nil
+    }
     var actionTitle: String {
         switch self {
         case .app(let app): return app.name
         case .file(let file): return file.name
+        case .extensionItem(let item, _): return item.title
         default: return ""
         }
+    }
+    /// What the Actions menu lists for this row: built-in actions, then an extension row's own.
+    var menuEntries: [LauncherMenuEntry] {
+        if case .extensionItem(let item, _) = self { return [.item(.open)] + (item.actions ?? []).map { .custom($0) } }
+        return itemActions.map { .item($0) }
     }
     var itemActions: [LauncherItemAction] {
         switch self {
@@ -67,17 +101,18 @@ struct LauncherActionsView: View {
     let target: ResultRow
     let close: () -> Void
     @State private var query = ""
-    @State private var selected: LauncherItemAction = .open
+    @State private var selected: LauncherMenuEntry = .item(.open)
     @FocusState private var focused: Bool
     @Environment(\.volantTheme) private var theme
 
-    private func title(_ action: LauncherItemAction) -> String {
+    private func title(_ entry: LauncherMenuEntry) -> String {
+        guard case .item(let action) = entry else { if case .custom(let custom) = entry { return custom.title }; return "" }
         if action == .open { return target.primaryAction }
         if action == .favorite, case .app(let app) = target, model.config.favoriteApps.contains(app.id) { return "Remove from Favorites" }
         return action.title
     }
-    private var actions: [LauncherItemAction] {
-        target.itemActions.filter { query.isEmpty || title($0).localizedCaseInsensitiveContains(query) }
+    private var actions: [LauncherMenuEntry] {
+        target.menuEntries.filter { query.isEmpty || title($0).localizedCaseInsensitiveContains(query) }
     }
     private func move(_ delta: Int) {
         guard !actions.isEmpty else { return }
@@ -86,7 +121,7 @@ struct LauncherActionsView: View {
     }
     private func activate() {
         guard actions.contains(selected) else { return }
-        model.performAction(selected, target: target)
+        model.performMenuEntry(selected, target: target)
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -100,23 +135,23 @@ struct LauncherActionsView: View {
                             if let index = actions.firstIndex(of: action), index > 0, actions[index - 1].group != action.group {
                                 Divider().padding(.vertical, 5)
                             }
-                            Button { model.performAction(action, target: target) } label: {
+                            Button { model.performMenuEntry(action, target: target) } label: {
                                 HStack(spacing: 10) {
                                     Image(systemName: action.symbol).frame(width: 20)
                                     Text(title(action)).lineLimit(1)
                                     Spacer(minLength: 4)
-                                    if action == .open { KeyCap("↩") }
-                                    if action == .reveal { KeyCap("⌘"); KeyCap("↩") }
+                                    if action == .item(.open) { KeyCap("↩") }
+                                    if action == .item(.reveal) { KeyCap("⌘"); KeyCap("↩") }
                                 }.font(.system(size: 13)).padding(.horizontal, 10).padding(.vertical, 9)
                                     .contentShape(Rectangle())
                                     .background(selected == action ? theme.selection : AnyShapeStyle(Color.clear), in: RoundedRectangle(cornerRadius: 7))
                             }.buttonStyle(.plain).focusable(false).id(action)
-                                .accessibilityIdentifier("launcher-action-" + action.rawValue)
+                                .accessibilityIdentifier("launcher-action-" + action.id)
                         }
                     }.padding(.horizontal, 8)
                 }.frame(maxHeight: min(285, LauncherPanel.size.height - 150))
                 .onChange(of: selected) { _, value in proxy.scrollTo(value) }
-                .onChange(of: query) { _, _ in selected = actions.first ?? .open; proxy.scrollTo(selected) }
+                .onChange(of: query) { _, _ in selected = actions.first ?? .item(.open); proxy.scrollTo(selected) }
             }
             Divider().padding(.top, 8)
             TextField("Search for actions…", text: $query)
@@ -131,7 +166,7 @@ struct LauncherActionsView: View {
         .onKeyPress(.downArrow) { move(1); return .handled }
         .onKeyPress(.upArrow) { move(-1); return .handled }
         .onKeyPress(.return, phases: .down) { press in
-            if press.modifiers.contains(.command) { model.performAction(.reveal, target: target) } else { activate() }
+            if press.modifiers.contains(.command) { model.performMenuEntry(.item(.reveal), target: target) } else { activate() }
             return .handled
         }
         .onKeyPress(.escape) { close(); return .handled }

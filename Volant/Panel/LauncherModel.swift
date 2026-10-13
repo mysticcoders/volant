@@ -390,6 +390,8 @@ final class LauncherModel: ObservableObject {
     @Published private(set) var extensionRunning = false
     /// The Extension Catalog shown for `catalog` queries. It keeps the loaded catalog for the session.
     let catalog = ExtensionCatalogModel()
+    /// The input of the list run whose rows are showing, sent with their actions.
+    private var extensionItemsQuery = ""
     let usage: UsageStore
     var config: Preferences { didSet { promotedHarness = config.promotedHarness; extensions.invalidateCatalog() } }
     var searchesSecondarySources = true
@@ -504,6 +506,7 @@ final class LauncherModel: ObservableObject {
     }
     private func runExtension(_ ext: InstalledExtension, input: String) {
         guard !extensionRunning else { return }
+        extensionItemsQuery = input
         extensionRunning = true
         let gen = generation
         notice = "Running \(ext.name)…"
@@ -1348,9 +1351,10 @@ final class LauncherModel: ObservableObject {
             } else { runExtension(ext, input: input) }
             return
         case .extensionResult(let text): copy(text)
-        case .extensionItem(let item, _):
+        case .extensionItem(let item, let source):
             guard let link = item.url, let url = URL(string: link) else { copy(item.title); return }
             _ = QuicklinkResolver.open(url)
+            if item.onOpen == true { runItemAction(source, item: item, action: nil) }
         case .snippet(let snippet): copy(SnippetExpander.expand(snippet.body))
         case .emoji(let e): copy(e.symbol)
         case .quicklink(let link, let query):
@@ -1494,6 +1498,45 @@ final class LauncherModel: ObservableObject {
         case .about: dismiss(); onNote(.about)
         case .settings: openSettings()
         case .quit: onNote(.quit)
+        }
+    }
+
+    /// Runs an Actions menu entry. Extension rows run their own actions through the extension; other
+    /// rows use the built-in application and file actions.
+    func performMenuEntry(_ entry: LauncherMenuEntry, target snapshot: ResultRow) {
+        if case .extensionItem(let item, let source) = snapshot {
+            guard let target = selectedRow, target.id == snapshot.id else { actionTarget = nil; return }
+            actionTarget = nil
+            switch entry {
+            case .item(.reveal): activateSecondary()
+            case .item: activate(rowID: target.id)
+            case .custom(let action): runItemAction(source, item: item, action: action.id)
+            }
+            return
+        }
+        guard case .item(let action) = entry else { actionTarget = nil; return }
+        performAction(action, target: snapshot)
+    }
+
+    /// Runs a list extension's row action, or tells it a row was opened when `action` is nil, and shows
+    /// the rows it returns. Errors appear as feedback; nothing is fetched.
+    func runItemAction(_ ext: InstalledExtension, item: ExtensionItem, action: String?) {
+        guard !extensionRunning else { notice = "An extension is already running."; return }
+        extensionRunning = true
+        let gen = generation, opened = action == nil
+        extensions.runAction(ext, item: item, action: action, query: extensionItemsQuery) { [weak self] result in
+            guard let self else { return }
+            self.extensionRunning = false
+            switch result {
+            case .success(let items):
+                guard !opened, gen == self.generation, let items else { return }
+                let selectedID = self.selectedRow?.id
+                self.sections = [ResultSection(title: ext.name, rows: items.map { .extensionItem($0, source: ext) })]
+                self.notice = items.isEmpty ? "\(ext.name) returned nothing." : nil
+                self.selection = selectedID.flatMap { id in self.rows.firstIndex { $0.id == id } } ?? 0
+            case .failure(let error):
+                if !opened { self.actionFeedback = "\(ext.name): \(error.localizedDescription)" }
+            }
         }
     }
 

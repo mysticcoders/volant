@@ -18,9 +18,13 @@ public struct ExtensionManifest: Codable, Hashable {
     public var output: String?
     public var icon: String?
     public var iconSha256: String?
+    /// A list extension that keeps a small JSON object on this Mac (see `ExtensionStorage`). Part of the
+    /// approval fingerprint when present, so adding it needs the owner to enable the extension again.
+    public var storage: Bool?
 
     public var declaredHosts: [String] { hosts ?? [] }
     public var listsItems: Bool { output == "items" }
+    public var usesStorage: Bool { storage == true }
 
     public func validate() throws {
         guard [1, 2].contains(abiVersion ?? 0), abiVersion != 2 || capabilities.isEmpty,
@@ -31,7 +35,7 @@ public struct ExtensionManifest: Codable, Hashable {
               (timeoutSeconds ?? 2).isFinite, (0.5...10).contains(timeoutSeconds ?? 2),
               [nil, "text", "items"].contains(output), declaredHosts.count <= ExtensionNetwork.maximumHosts,
               Set(declaredHosts).count == declaredHosts.count, declaredHosts.allSatisfy(ExtensionNetwork.isValidHost),
-              declaredHosts.isEmpty || listsItems, Self.isValidIcon(icon, sha256: iconSha256) else {
+              declaredHosts.isEmpty || listsItems, Self.isValidIcon(icon, sha256: iconSha256), !usesStorage || listsItems else {
             throw ExtensionValidationError.invalidManifest
         }
     }
@@ -57,7 +61,7 @@ public struct ExtensionManifest: Codable, Hashable {
     }
 
     public init(abiVersion: Int? = 1, id: String, name: String, version: String, module: String, capabilities: [String], timeoutSeconds: Double? = nil, sha256: String? = nil,
-                hosts: [String]? = nil, output: String? = nil, icon: String? = nil, iconSha256: String? = nil) {
+                hosts: [String]? = nil, output: String? = nil, icon: String? = nil, iconSha256: String? = nil, storage: Bool? = nil) {
         self.abiVersion = abiVersion
         self.id = id
         self.name = name
@@ -70,6 +74,7 @@ public struct ExtensionManifest: Codable, Hashable {
         self.output = output
         self.icon = icon
         self.iconSha256 = iconSha256
+        self.storage = storage
     }
 }
 

@@ -51,11 +51,27 @@ public enum ExtensionNetwork {
         }
     }
 
-    /// The JSON a module receives. `responses` is absent in the plan phase.
-    public static func request(phase: String, query: String, now: Date, responses: [Response]? = nil) throws -> String {
+    /// The JSON a module receives. `responses` is absent in the plan phase. Extensions that use
+    /// storage also get their saved object, and the `action` and `opened` phases name the row and action.
+    public static func request(phase: String, query: String, now: Date, responses: [Response]? = nil,
+                               storage: JSONValue? = nil, action: String? = nil, item: ExtensionItem? = nil) throws -> String {
         let encoder = JSONEncoder(); encoder.outputFormatting = .sortedKeys
-        let body = Request(phase: phase, query: query, now: Int(now.timeIntervalSince1970), responses: responses)
+        let body = Request(phase: phase, query: query, now: Int(now.timeIntervalSince1970), responses: responses,
+                           storage: storage, action: action, item: item)
         return String(decoding: try encoder.encode(body), as: UTF8.self)
+    }
+
+    /// A reply that may carry rows, data to save, or both. Missing parts are nil; a reply with neither,
+    /// or that is not JSON, is malformed.
+    public struct Reply: Equatable {
+        public var items: [ExtensionItem]?
+        public var storage: JSONValue?
+    }
+
+    public static func reply(from output: String) throws -> Reply {
+        guard let data = output.data(using: .utf8), let raw = try? JSONDecoder().decode(RawReply.self, from: data),
+              raw.items != nil || raw.storage != nil else { throw ExtensionNetworkError.malformedItems }
+        return Reply(items: raw.items.map { Array($0.prefix(maximumItems)).compactMap { $0.sanitized() } }, storage: raw.storage)
     }
 
     /// The rows a render returned, trimmed to the launcher's limits. Links other than http and https
@@ -69,11 +85,15 @@ public enum ExtensionNetwork {
 
     private struct Plan: Decodable { let fetch: [String] }
     private struct ItemList: Decodable { let items: [ExtensionItem] }
+    private struct RawReply: Decodable { let items: [ExtensionItem]?; let storage: JSONValue? }
     private struct Request: Encodable {
         let phase: String
         let query: String
         let now: Int
         let responses: [Response]?
+        let storage: JSONValue?
+        let action: String?
+        let item: ExtensionItem?
     }
 
     /// One fetched URL as the module sees it. A failed fetch has status 0 and an empty body.
@@ -85,16 +105,22 @@ public enum ExtensionNetwork {
     }
 }
 
-/// One row a list extension returns: Return opens `url`, Command-Return opens `secondaryURL`.
+/// One row a list extension returns: Return opens `url`, Command-Return opens `secondaryURL`. A row
+/// may offer `actions` in its Actions menu, and `onOpen` asks Volant to tell the extension after Return
+/// opens the link; both run the module again with its saved data, never fetching.
 public struct ExtensionItem: Codable, Hashable {
     public var title: String
     public var subtitle: String?
     public var url: String?
     public var secondaryURL: String?
     public var secondaryTitle: String?
+    public var actions: [ExtensionItemAction]?
+    public var onOpen: Bool?
 
-    public init(title: String, subtitle: String? = nil, url: String? = nil, secondaryURL: String? = nil, secondaryTitle: String? = nil) {
+    public init(title: String, subtitle: String? = nil, url: String? = nil, secondaryURL: String? = nil, secondaryTitle: String? = nil,
+                actions: [ExtensionItemAction]? = nil, onOpen: Bool? = nil) {
         self.title = title; self.subtitle = subtitle; self.url = url; self.secondaryURL = secondaryURL; self.secondaryTitle = secondaryTitle
+        self.actions = actions; self.onOpen = onOpen
     }
 
     /// Trims text to display limits and drops links that are not http or https. A row without a
@@ -108,8 +134,27 @@ public struct ExtensionItem: Codable, Hashable {
             return value
         }
         let secondary = link(secondaryURL)
+        var seen = Set<String>()
+        let unique = (actions ?? []).compactMap { $0.sanitized() }.filter { seen.insert($0.id).inserted }.prefix(ExtensionItemAction.maximumPerItem)
         return ExtensionItem(title: title, subtitle: subtitle.map { String($0.prefix(300)) }, url: link(url),
-                             secondaryURL: secondary, secondaryTitle: secondary == nil ? nil : secondaryTitle.map { String($0.prefix(40)) })
+                             secondaryURL: secondary, secondaryTitle: secondary == nil ? nil : secondaryTitle.map { String($0.prefix(40)) },
+                             actions: unique.isEmpty ? nil : Array(unique), onOpen: onOpen == true ? true : nil)
+    }
+}
+
+/// An action a row offers in its Actions menu, such as Pin Story. `id` is what the module receives.
+public struct ExtensionItemAction: Codable, Hashable {
+    public static let maximumPerItem = 6
+    public var id: String
+    public var title: String
+    public init(id: String, title: String) { self.id = id; self.title = title }
+
+    /// Lowercase ASCII identifiers of at most 32 characters and titles of at most 40; others are dropped.
+    func sanitized() -> ExtensionItemAction? {
+        let title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard (1...32).contains(id.count), id.allSatisfy({ $0.isASCII && ($0.isLowercase || $0.isNumber || "-_.".contains($0)) }),
+              (1...40).contains(title.count) else { return nil }
+        return ExtensionItemAction(id: id, title: title)
     }
 }
 
