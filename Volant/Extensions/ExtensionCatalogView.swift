@@ -122,7 +122,7 @@ struct ExtensionCatalogView: View {
         switch model.status(listing) {
         case .available: return "Version \(listing.version)"
         case .update(let from): return "Update: \(from) → \(listing.version)"
-        case .installed: return "Installed · \(listing.version)"
+        case .installed: return (model.installed(listing)?.enabled == true ? "Installed · " : "Off · ") + listing.version
         case .bundled: return "Bundled with Volant"
         }
     }
@@ -177,7 +177,8 @@ struct ExtensionCatalogView: View {
         case .update(let from):
             return "Version \(from) is installed. Updating replaces it in one step; changed code, permissions or hosts need enabling again."
         case .installed:
-            return (installed?.enabled == true ? "Installed and on." : "Installed and off. Use it once to turn it on.") + " Type \(listing.name) in the launcher."
+            return installed?.enabled == true ? "Installed and on. Type \(listing.name) in the launcher."
+                : "Installed and off, so it doesn’t appear in search. Choose Turn On to allow it; it asks for any hosts first."
         case .bundled:
             return "Bundled with Volant."
         }

@@ -8,8 +8,8 @@ Turning the master gate off preserves individual approvals but revokes the pendi
 
 ## Try it
 
-1. Type `hello Andrew` in Volant.
-2. Press Return. Review **No permissions required**, then choose **Enable and Run**.
+1. Type `ext hello Andrew` in Volant. Extensions that are off, as Hello World is at first, stay out of everyday search.
+2. Press Return. Review **No permissions required**, then choose **Enable and Run**. From then on `hello Andrew` works directly.
 3. The real WASM module returns `Hello, Andrew!`. Return on the result copies it; merely running Hello World does not change the clipboard.
 4. Settings → Extensions can disable it again. No extension code runs during search or Settings browsing.
 
@@ -17,7 +17,7 @@ Installed folders live in Volant's preserved storage location: `~/Library/Contai
 
 ## Direct command discovery
 
-Search by display name or the final component of an extension ID: `base64`, `base64 some text`, or `Base64 Encode some text`. Full display names are matched before their shorter ID trigger so arguments retain their text and casing. Partial names find commands without running them. Once a complete short trigger is present, following text is input (`base64 Enc` encodes `Enc`); a complete full display name takes precedence. Return invokes the selected result; typing never executes code. Disabled commands still offer Enable and Run, and master-blocked community commands open Settings. Existing `ext …` searches remain supported for compatibility and explicit extension-only browsing.
+Search by display name or the final component of an extension ID: `base64`, `base64 some text`, or `Base64 Encode some text`. Full display names are matched before their shorter ID trigger so arguments retain their text and casing. Partial names find commands without running them. Once a complete short trigger is present, following text is input (`base64 Enc` encodes `Enc`); a complete full display name takes precedence. Return invokes the selected result; typing never executes code. Everyday search shows only extensions that are on (October 13, 2026, at the owner's request); `ext <name>` and the Extension Catalog still list extensions that are off, where Enable and Run or Turn On asks first, and master-blocked community commands open Settings. Existing `ext …` searches remain supported for compatibility and explicit extension-only browsing.
 
 Direct matches appear alongside app and quicklink matches; reserved built-in routes retain precedence. Two extensions sharing a trigger remain separate selectable rows. The catalog caches only manifest metadata, not executable modules. Settings changes, Refresh and Reload Configuration invalidate it; execution still rechecks current approval and the exact manifest/module hash.
 

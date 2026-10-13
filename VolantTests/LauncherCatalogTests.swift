@@ -129,6 +129,20 @@ final class LauncherCatalogTests: XCTestCase {
         XCTAssertFalse(installed.enabled)
         XCTAssertTrue(ExtensionHostApprovals.approved(at: config).isEmpty)
         XCTAssertNotNil(model.catalog.feedback)
+        XCTAssertEqual(model.catalog.primaryTitle, "Turn On…", "An installed extension that is off offers Turn On")
+        model.catalog.performPrimary()
+        XCTAssertFalse(model.showingCatalog)
+        XCTAssertEqual(model.pendingExtension?.extensionItem.id, "community.fictional.reader")
+        XCTAssertEqual(model.pendingExtension?.hosts, ["news.example.com"], "Turn On shows the hosts before enabling")
+        model.pendingExtension = nil
+        model.query = "Fictional Reader"
+        XCTAssertFalse(model.rows.contains { if case .extensionRun = $0 { return true }; return false }, "Off extensions stay out of everyday search")
+        model.query = "ext fictional"
+        XCTAssertTrue(model.rows.contains { if case .extensionRun = $0 { return true }; return false }, "ext still lists them")
+        try model.extensions.setEnabled(try XCTUnwrap(model.extensions.extensions.first { $0.id == "community.fictional.reader" }), true)
+        model.query = "Fictional Reader"
+        XCTAssertTrue(model.rows.contains { if case .extensionRun = $0 { return true }; return false }, "Turned-on extensions appear in search")
+        model.query = "catalog reader"
         XCTAssertEqual(model.catalog.primaryTitle, "Use Extension")
         model.catalog.performPrimary()
         XCTAssertEqual(model.query, "Fictional Reader ")
