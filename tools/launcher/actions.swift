@@ -449,7 +449,9 @@ var storageRequests: [String] = []
 storageManager.invokeOverride = { _, input, completion in
     storageRequests.append(input)
     if input.contains(#""phase":"action""#) {
-        completion(.success(#"{"items":[{"title":"Fictional story","subtitle":"Pinned · fixture.example.com","url":"https://fixture.example.com/1"}],"storage":{"pinned":["1"]}}"#))
+        completion(.success(#"{"storage":{"pinned":["1"]}}"#))
+    } else if input.contains(#""pinned":["1"]"#) {
+        completion(.success(#"{"items":[{"title":"Fictional story","subtitle":"Pinned · fixture.example.com","url":"https://fixture.example.com/1"}]}"#))
     } else {
         completion(.success(#"{"items":[{"title":"Fictional story","subtitle":"fixture.example.com","url":"https://fixture.example.com/1","actions":[{"id":"pin","title":"Pin Story"},{"id":"hide","title":"Hide Story"}]}]}"#))
     }
@@ -464,7 +466,10 @@ verify(panel.model.actionTarget != nil, "Command K opens a row's Actions")
 try render("extension-row-actions")
 key("\u{F701}", 125); key("\r", 36); settle()
 verify(storageManager.storedData(storageManager.extensions.first!) == .object(["pinned": .array([.string("1")])]), "Pin saves the extension's data")
-verify(panel.model.rows.count == 1 && storageRequests.last?.contains(#""action":"pin""#) == true, "The action reply redraws the rows")
+verify(storageRequests.count == 3 && storageRequests[1].contains(#""action":"pin""#) && storageRequests[2].contains(#""phase":"render""#),
+       "A storage-only action reply runs the list again")
+verify(panel.model.rows.first.map { if case .extensionItem(let item, _) = $0 { return item.subtitle?.hasPrefix("Pinned") == true }; return false } == true,
+       "The list run after Pin shows the pinned story")
 panel.orderOut(nil)
 func renderStorageSettings(_ name: String) throws {
     let view = NSHostingView(rootView: ExtensionSettingsView(configURL: panel.model.actionConfigURL, onChange: {}, roots: [storageDirectory],
