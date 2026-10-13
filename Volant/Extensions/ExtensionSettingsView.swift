@@ -3,7 +3,7 @@ import VolantCore
 
 /// Reloads whenever a window becomes key as well as on appear, so enabling an extension or allowing
 /// hosts from the launcher shows here when Settings comes back, even if this pane never left the screen.
-/// The catalog is fetched only when the owner chooses Check Catalog; fixtures pass `catalog` to start loaded.
+/// The catalog is fetched only when the owner chooses Refresh; fixtures pass `catalog` to start loaded.
 struct ExtensionSettingsView: View {
     let configURL: URL
     let onChange: () -> Void
@@ -112,11 +112,12 @@ struct ExtensionSettingsView: View {
                     Text("Installed")
                     Spacer()
                     Button("Open Folder") { NSWorkspace.shared.open(ExtensionManager.directory) }.controlSize(.small).font(.callout)
-                    Button("Refresh") { reload(); onChange(); if catalog != nil { loadCatalog() } }.controlSize(.small).font(.callout)
+                    Button("Refresh") { reload(); onChange(); loadCatalog() }.controlSize(.small).font(.callout)
                         .disabled(catalogLoading || installing != nil)
+                        .accessibilityIdentifier("extension-refresh")
                 }
             } footer: {
-                SettingsFooter("Uninstalling moves a community extension to the Trash, deletes what it saved and removes host access no other extension uses. Extensions start off and run only when you invoke them. Enable one here or choose Enable and Run the first time you use it; changed code or permissions require enabling again. Try the bundled example: hello Andrew")
+                SettingsFooter("Uninstalling moves a community extension to the Trash, deletes what it saved and removes host access no other extension uses. Extensions start off and run only when you invoke them. Enable one here or choose Enable and Run the first time you use it; changed code or permissions require enabling again. Turned-off extensions stay out of search; type ext and a name to find one. Try the bundled example: turn on Hello World, then type hello Andrew")
             }
             Section {
                 if let catalog {
@@ -126,18 +127,13 @@ struct ExtensionSettingsView: View {
                 } else if catalogLoading {
                     HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Checking the catalog…").foregroundStyle(.secondary) }
                 } else {
-                    HStack {
-                        Text(catalogError ?? "Volant contacts the catalog only when you check it.").foregroundStyle(.secondary)
-                        Spacer()
-                        Button("Check Catalog") { loadCatalog() }.controlSize(.small)
-                            .accessibilityIdentifier("extension-catalog-check")
-                    }
+                    Text(catalogError ?? "Choose Refresh to check the catalog. Volant contacts it only then.").foregroundStyle(.secondary)
                 }
             } header: {
                 Text("Catalog")
             } footer: {
                 SettingsFooter((communityAllowed ? "" : "Turn on Allow Community Extensions to install from the catalog. ")
-                    + "Extensions here are reviewed and signed for Volant. Refresh above checks the catalog again. You can also browse it from the launcher: type catalog. Each download is checked against the signed catalog before it is installed. Installing never turns an extension on or runs it; first use asks as usual, and an update with changed code or permissions needs enabling again.")
+                    + "Extensions here are reviewed and signed for Volant. Refresh reloads installed extensions and checks the catalog. You can also browse it from the launcher: type catalog. Each download is checked against the signed catalog before it is installed. Installing never turns an extension on or runs it; first use asks as usual, and an update with changed code or permissions needs enabling again.")
             }
             Section {
                 if approvedHosts.isEmpty { Text("No hosts allowed.").foregroundStyle(.secondary) }

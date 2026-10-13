@@ -2,8 +2,9 @@
 
 ## Current behavior
 
-Settings → Extensions has a **Catalog** section. Choosing **Check Catalog** fetches the signed index from
-`https://mysticcoders.github.io/volant-extensions/`; Volant contacts it at no other time. Each listing
+Settings → Extensions has a **Catalog** section. Choosing **Refresh** reloads installed extensions and fetches the signed index from
+`https://mysticcoders.github.io/volant-extensions/`; Volant contacts it at no other time. Refresh is the page's
+only reload button. Each listing
 shows its name, version, summary, publisher, license and the permissions and hosts it declares, a
 **Source** link to the exact reviewed revision, and **Install**, **Update**, **Installed** or **Bundled**.
 Install and Update need **Allow Community Extensions** on.
@@ -15,7 +16,8 @@ summary, notes, publisher, version, license, the permissions and hosts it needs,
 installed and on, and a link to the reviewed source. Typing `catalog` opens the view but fetches
 nothing; choosing the command, Check Catalog or Return loads the catalog once for the session. Search
 matches name, ID, summary, publisher and hosts. Arrow keys move the selection; Return installs,
-updates or uses the selected extension (it puts the name in the launcher's search field);
+updates or uses the selected extension (it puts the name in the launcher's search field), or for an
+installed extension that is off, **Turn On…** shows the hosts it needs and enables and runs it;
 Command-Return opens its source; ⌘[ goes back. With community extensions off, Return opens
 Extension Settings.
 In Settings a single Refresh reloads installed extensions and, once the catalog has been checked,

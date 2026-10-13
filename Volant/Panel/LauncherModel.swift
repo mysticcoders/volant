@@ -736,6 +736,11 @@ final class LauncherModel: ObservableObject {
             catalog.manager = { [weak self] in self?.extensions ?? ExtensionManager() }
             catalog.openSettings = { [weak self] in self?.dismiss(); self?.onNote(.extensionSettings) }
             catalog.useExtension = { [weak self] name in self?.query = name + " "; self?.searchFocusRequest = UUID() }
+            catalog.turnOn = { [weak self] ext in
+                guard let self else { return }
+                self.query = ""
+                self.pendingExtension = ExtensionPermissionRequest(extensionItem: ext, input: "", hosts: self.extensions.missingHosts(ext))
+            }
             catalog.input = term; sections = []; return
         }
         if showingTranslation { sections = []; return }
@@ -900,7 +905,9 @@ final class LauncherModel: ObservableObject {
         let links = QuicklinkResolver.search(config.quicklinks, head).map { ResultRow.quicklink($0, query: tail) }
         if !links.isEmpty { immediate.append(ResultSection(title: "Quicklinks", rows: links)) }
         extensions.configURL = actionConfigURL
-        let extensionRows = extensions.commandMatches(q).map { ResultRow.extensionRun($0.extensionItem, input: $0.input) }
+        // Everyday search shows only extensions that are on; `ext` and the catalog list the rest.
+        let extensionRows = extensions.commandMatches(q).filter { $0.extensionItem.enabled && !$0.extensionItem.communityBlocked }
+            .map { ResultRow.extensionRun($0.extensionItem, input: $0.input) }
         if !extensionRows.isEmpty { immediate.append(ResultSection(title: "Extensions", rows: extensionRows)) }
         let aliased = Set(immediate.flatMap(\.rows).map(\.id))
         let apps = index.search(q, limit: 6, usage: usage).map { ResultRow.app($0) }.filter { !aliased.contains($0.id) }

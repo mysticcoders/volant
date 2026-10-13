@@ -324,18 +324,15 @@ try render("ai-settings", view: settings.window!.contentView!)
 settings.window!.orderOut(nil)
 print("PASS: AI Chat setup routing, automatic general-chat connection, prompt focus, and active-draft preservation")
 
-// Bundled extensions are discoverable but never run before explicit consent.
+// Bundled extensions start off: everyday search leaves them out, `ext` finds them, and nothing runs before consent.
 panel.toggle()
 panel.model.query = "hello Andrew"
 settle()
-verify(panel.model.rows.first?.primaryAction == "Enable and Run…", "Hello World starts disabled")
+verify(!panel.model.rows.contains { if case .extensionRun = $0 { return true }; return false }, "Hello World starts off and out of everyday search")
+panel.model.query = "ext hello Andrew"; settle()
+verify(panel.model.rows.first?.primaryAction == "Enable and Run…", "ext lists Hello World, which starts disabled")
 verify(!panel.model.extensionRunning && panel.model.pendingExtension == nil, "Typing an extension name never executes or enables it")
 try render("direct-extension-launcher")
-panel.model.query = "hello world Andrew"; settle()
-verify(panel.model.rows.contains { if case .extensionRun(_, let input) = $0 { return input == "Andrew" }; return false }, "Full display name separates arguments")
-panel.model.query = "ext hello Andrew"; settle()
-verify(panel.model.rows.first?.primaryAction == "Enable and Run…", "Legacy ext prefix remains supported")
-panel.model.query = "hello Andrew"; settle()
 
 key("\r", 36)
 verify(panel.model.pendingExtension?.input == "Andrew", "First invocation requests consent without executing")
@@ -376,15 +373,17 @@ communityManager.reload()
 panel.model.query = "Fixture"; settle()
 verify(panel.model.rows.contains { if case .app = $0 { return true }; return false }, "An extension name cannot hide a matching application")
 verify(communityManager.loadErrors.isEmpty, "Copied community extension loads: \(communityManager.loadErrors)")
-verify(panel.model.rows.contains { if case .extensionRun = $0 { return true }; return false }, "Extension and app name collisions remain selectable")
+verify(!panel.model.rows.contains { if case .extensionRun = $0 { return true }; return false }, "An extension that is off stays out of everyday search")
 communityManifest.name = "Community Greeting"
 try JSONEncoder().encode(communityManifest).write(to: communityManifestURL)
 communityManager.reload()
 
 panel.model.query = "community"; settle()
-verify(panel.model.rows.contains { if case .extensionRun = $0 { return true }; return false }, "Direct search discovers master-blocked commands without execution")
+verify(!panel.model.rows.contains { if case .extensionRun = $0 { return true }; return false }, "Master-blocked commands stay out of everyday search")
+panel.model.query = "ext community"; settle()
+verify(panel.model.rows.contains { if case .extensionRun = $0 { return true }; return false }, "ext lists master-blocked commands without execution")
 
-panel.toggle(); panel.model.query = "community Andrew"; settle()
+panel.toggle(); panel.model.query = "ext community Andrew"; settle()
 verify(panel.model.rows.first?.primaryAction == "Open Extension Settings", "Blocked community command points to Settings")
 try render("community-blocked-launcher")
 key("\r", 36)
@@ -401,7 +400,7 @@ func renderCommunitySettings(_ name: String, catalog: ExtensionCatalog? = nil, h
 }
 try renderCommunitySettings("community-off")
 try communityManager.setCommunityAllowed(true, expected: false)
-panel.toggle(); panel.model.query = "community Andrew"; settle()
+panel.toggle(); panel.model.query = "ext community Andrew"; settle()
 verify(panel.model.rows.first?.primaryAction == "Enable and Run…", "Allowing community code still requires individual consent")
 try render("community-first-use-launcher")
 key("\r", 36)

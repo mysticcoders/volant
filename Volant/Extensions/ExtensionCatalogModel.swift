@@ -30,6 +30,8 @@ final class ExtensionCatalogModel: ObservableObject {
     var manager: () -> ExtensionManager = { ExtensionManager() }
     var openSettings: () -> Void = {}
     var useExtension: (String) -> Void = { _ in }
+    /// Asks to turn on an installed extension that is off, showing the hosts it needs first.
+    var turnOn: (InstalledExtension) -> Void = { _ in }
     var openURL: (URL) -> Void = { NSWorkspace.shared.open($0) }
 
     /// Listings matching the search text by name, ID, summary, publisher or host.
@@ -62,7 +64,9 @@ final class ExtensionCatalogModel: ObservableObject {
         switch status(selected) {
         case .available: return communityAllowed ? "Install" : "Open Extension Settings"
         case .update: return communityAllowed ? "Update" : "Open Extension Settings"
-        case .installed, .bundled: return "Use Extension"
+        case .installed, .bundled:
+            guard let ext = installed(selected), ext.enabled else { return communityAllowed || installed(selected)?.isCommunity == false ? "Turn On…" : "Open Extension Settings" }
+            return "Use Extension"
         }
     }
 
@@ -92,7 +96,11 @@ final class ExtensionCatalogModel: ObservableObject {
         guard catalog != nil else { load(); return }
         guard let listing = selected, installing == nil else { return }
         switch status(listing) {
-        case .installed, .bundled: useExtension(listing.name)
+        case .installed, .bundled:
+            guard let ext = installed(listing) else { return }
+            if ext.enabled { useExtension(listing.name) }
+            else if ext.isCommunity && !communityAllowed { openSettings() }
+            else { turnOn(ext) }
         case .available, .update:
             guard communityAllowed else { openSettings(); return }
             install(listing)
@@ -115,7 +123,7 @@ final class ExtensionCatalogModel: ObservableObject {
                 let manager = self.manager()
                 guard manager.communityAllowed else { throw ExtensionManager.ExtensionError.communityDisabled }
                 let installed = try manager.install(listing, manifest: files.manifest, module: files.module, icon: files.icon, from: catalog)
-                self.feedback = "Installed \(installed.name). It stays off until you turn it on or use it."
+                self.feedback = "Installed \(installed.name). Choose Turn On to use it."
             } catch {
                 self.feedback = error.localizedDescription
             }

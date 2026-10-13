@@ -37,7 +37,7 @@ if [ "$(AX Volant find "$S" "community-extensions-toggle" | sed 's/.* | //')" !=
   AX Volant press "$S" "community-extensions-toggle" >/dev/null; sleep 1
 fi
 expect_eq "community extensions are allowed" true "$(config_get communityExtensionsAllowed)"
-AX Volant press "$S" "extension-catalog-check" >/dev/null
+AX Volant press "$S" "extension-refresh" >/dev/null
 for _ in $(seq 1 30); do [ "$(AX Volant count "$S" "prefix=extension-catalog-install-community.volant.")" -ge 2 ] && break; sleep 1; done
 shot catalog-loaded
 expect_eq "the signed catalog lists both readers" 2 "$(AX Volant count "$S" "prefix=extension-catalog-install-community.volant.")"
