@@ -504,12 +504,15 @@ final class LauncherModel: ObservableObject {
             runExtension(enabled, input: request.input)
         } catch { notice = error.localizedDescription }
     }
-    private func runExtension(_ ext: InstalledExtension, input: String) {
+    /// Runs an extension and shows its result. `keepingSelection` redraws a list after an action
+    /// without moving the selection back to the top.
+    private func runExtension(_ ext: InstalledExtension, input: String, keepingSelection: Bool = false) {
         guard !extensionRunning else { return }
         extensionItemsQuery = input
         extensionRunning = true
         let gen = generation
-        notice = "Running \(ext.name)…"
+        let selectedID = keepingSelection ? selectedRow?.id : nil
+        notice = keepingSelection ? nil : "Running \(ext.name)…"
         if ext.manifest.listsItems {
             extensions.runItems(ext, query: input) { [weak self] result in
                 guard let self else { return }
@@ -519,7 +522,7 @@ final class LauncherModel: ObservableObject {
                 case .success(let items):
                     self.notice = items.isEmpty ? "\(ext.name) returned nothing." : nil
                     self.sections = [ResultSection(title: ext.name, rows: items.map { .extensionItem($0, source: ext) })]
-                    self.selection = 0
+                    self.selection = selectedID.flatMap { id in self.rows.firstIndex { $0.id == id } } ?? 0
                 case .failure(let error): self.notice = "Extension failed: \(error.localizedDescription)"
                 }
             }
@@ -1519,7 +1522,9 @@ final class LauncherModel: ObservableObject {
     }
 
     /// Runs a list extension's row action, or tells it a row was opened when `action` is nil, and shows
-    /// the rows it returns. Errors appear as feedback; nothing is fetched.
+    /// the rows it returns. An action that only saves data runs the list again, keeping the selected row
+    /// where it still exists, so a hidden story disappears and a pinned one moves up. Errors appear as
+    /// feedback.
     func runItemAction(_ ext: InstalledExtension, item: ExtensionItem, action: String?) {
         guard !extensionRunning else { notice = "An extension is already running."; return }
         extensionRunning = true
@@ -1529,7 +1534,8 @@ final class LauncherModel: ObservableObject {
             self.extensionRunning = false
             switch result {
             case .success(let items):
-                guard !opened, gen == self.generation, let items else { return }
+                guard !opened, gen == self.generation else { return }
+                guard let items else { self.runExtension(ext, input: self.extensionItemsQuery, keepingSelection: true); return }
                 let selectedID = self.selectedRow?.id
                 self.sections = [ResultSection(title: ext.name, rows: items.map { .extensionItem($0, source: ext) })]
                 self.notice = items.isEmpty ? "\(ext.name) returned nothing." : nil

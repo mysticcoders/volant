@@ -28,7 +28,8 @@ Pinning and hiding need something to happen to one row. Items gain optional acti
 They appear in the row's Command-K menu. Choosing one runs the module with
 `{"phase": "action", "action": "pin", "item": {…the row…}, "query": …, "now": …, "storage": {…}}`.
 The reply is `{"storage": {…}}` and optionally `{"items": […]}` to redraw at once. An action
-never fetches; to show fresh data Volant runs the normal plan and render again.
+never fetches. When the reply only saves data, Volant runs the list again (plan, fetch and render),
+keeping the selected row where it still exists, so a hidden story disappears and a pinned one moves up.
 
 Read state uses the same path. When Return opens a row's link, Volant can send
 `{"phase": "opened", "item": {…}}` if the extension asked for it with `"onOpen": true` on the item.
