@@ -37,8 +37,9 @@ The first catalog holds the Hacker News and Lobsters readers from
 }
 ```
 
-A package is exactly two files at `packages/<id>/<version>/manifest.json` and
-`packages/<id>/<version>/<module>`. Volant derives these paths itself; nothing in the index chooses a
+A package is `packages/<id>/<version>/manifest.json`, `packages/<id>/<version>/<module>` and, when the
+listing has `icon` and `iconFile`, `packages/<id>/<version>/<icon>` (a WebP of at most 32 KB that the
+manifest names and pins). Volant 0.3.0 ignores the icon fields and downloads only the first two. Volant derives these paths itself; nothing in the index chooses a
 path or a write location, and there is no archive to extract. IDs must be lowercase dotted labels (they
 become the folder name), versions and module names path-safe, text bounded, capabilities known, and
 hosts valid. At most 64 listings, a 256 KB index, 32 KB manifests and 2 MiB modules.

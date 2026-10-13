@@ -122,6 +122,67 @@ final class ExtensionCatalogTests: XCTestCase {
         }
     }
 
+    private let icon = Data(base64Encoded: "UklGRh4AAABXRUJQVlA4TBEAAAAvH8AHAAdQvKIUuf+BiOh/AAA=")!
+
+    private func iconPackage(_ change: (inout ExtensionManifest) -> Void = { _ in }) throws -> (ExtensionCatalog.Listing, Data) {
+        let manifest = try manifestData { $0.icon = "reader.webp"; $0.iconSha256 = self.hash(self.icon); change(&$0) }
+        var listing = try listing(manifest: manifest)
+        listing.icon = "reader.webp"
+        listing.iconFile = .init(sha256: hash(icon), size: icon.count)
+        return (listing, manifest)
+    }
+
+    func testManifestIconNeedsASafeWebPNameAndHash() {
+        let base = ExtensionManifest(id: "community.fictional.reader", name: "Fictional Reader", version: "1", module: "reader.wasm",
+                                     capabilities: [], sha256: String(repeating: "a", count: 64))
+        var manifest = base
+        XCTAssertNoThrow(try manifest.validate())
+        manifest.icon = "reader.webp"; manifest.iconSha256 = String(repeating: "b", count: 64)
+        XCTAssertNoThrow(try manifest.validate())
+        for (icon, sha) in [("reader.webp", nil), (nil, String(repeating: "b", count: 64)), ("reader.png", String(repeating: "b", count: 64)),
+                            ("../reader.webp", String(repeating: "b", count: 64)), ("sub/reader.webp", String(repeating: "b", count: 64)),
+                            (".webp", String(repeating: "b", count: 64)), ("reader.webp", String(repeating: "B", count: 64)), ("reader.webp", "abc")] as [(String?, String?)] {
+            manifest = base; manifest.icon = icon; manifest.iconSha256 = sha
+            XCTAssertThrowsError(try manifest.validate(), "\(String(describing: icon)) \(String(describing: sha))")
+        }
+        XCTAssertTrue(ExtensionManifest.looksLikeWebP(icon))
+        XCTAssertFalse(ExtensionManifest.looksLikeWebP(Data([0x89, 0x50, 0x4e, 0x47, 13, 10, 26, 10, 0, 0, 0, 13])))
+    }
+
+    func testOlderManifestsKeepTheirEncodingWithoutIconFields() throws {
+        let text = String(decoding: try manifestData(), as: UTF8.self)
+        XCTAssertFalse(text.contains("icon"), "Approval fingerprints of manifests without icons must not change")
+    }
+
+    func testListingIconIsSignedFetchedAtADerivedPathAndChecked() throws {
+        let (listing, manifest) = try iconPackage()
+        XCTAssertNoThrow(try decode(try index(listings: [listing])))
+        XCTAssertEqual(listing.iconPath, "packages/community.fictional.reader/1.0.0/reader.webp")
+        XCTAssertNotNil(ExtensionCatalog.url(for: try XCTUnwrap(listing.iconPath)))
+        XCTAssertNil(ExtensionCatalog.url(for: "packages/community.fictional.reader/1.0.0/reader.png"))
+        XCTAssertEqual(try listing.verify(manifest: manifest, module: module, icon: icon, sha256: hash).icon, "reader.webp")
+        XCTAssertThrowsError(try listing.verify(manifest: manifest, module: module, sha256: hash), "A listed icon must be downloaded")
+        var tampered = icon; tampered[tampered.count - 1] ^= 1
+        XCTAssertThrowsError(try listing.verify(manifest: manifest, module: module, icon: tampered, sha256: hash))
+        let png = Data([0x89, 0x50, 0x4e, 0x47, 13, 10, 26, 10, 0, 0, 0, 13])
+        var pngListing = listing; pngListing.iconFile = .init(sha256: hash(png), size: png.count)
+        let (_, pngManifest) = try iconPackage { $0.iconSha256 = self.hash(png) }
+        pngListing.manifest = .init(sha256: hash(pngManifest), size: pngManifest.count)
+        XCTAssertThrowsError(try pngListing.verify(manifest: pngManifest, module: module, icon: png, sha256: hash), "Only WebP icons")
+        let noIconManifest = try manifestData()
+        var disagreeing = listing; disagreeing.manifest = .init(sha256: hash(noIconManifest), size: noIconManifest.count)
+        XCTAssertThrowsError(try disagreeing.verify(manifest: noIconManifest, module: module, icon: icon, sha256: hash),
+                             "The manifest must name the listed icon")
+        let unsafe: [(inout ExtensionCatalog.Listing) -> Void] = [
+            { $0.icon = "../reader.webp" }, { $0.iconFile = nil }, { $0.icon = nil },
+            { $0.iconFile?.size = ExtensionManifest.maximumIconBytes + 1 }, { $0.icon = "reader.svg" },
+        ]
+        for (offset, change) in unsafe.enumerated() {
+            var bad = listing; change(&bad)
+            XCTAssertThrowsError(try decode(try index(listings: [bad])), "case \(offset)")
+        }
+    }
+
     func testUnboundedMemoryModuleIsRejectedEvenWhenHashesMatch() throws {
         let unbounded = Data([0, 97, 115, 109, 1, 0, 0, 0, 5, 3, 1, 0, 1])
         let manifest = try manifestData { $0.sha256 = self.hash(unbounded) }

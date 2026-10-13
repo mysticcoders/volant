@@ -40,6 +40,8 @@ Source: `extensions/hello-rust/src/lib.rs`. Build with `bash extensions/hello-ru
 }
 ```
 
+An optional `"icon": "icon.webp"` with `"iconSha256"` gives the extension an icon in launcher rows and Settings. It must be a square WebP of 16–512 pixels and at most 32 KB in the extension's folder, matching its hash; ImageIO in the app decodes it, and anything else falls back to the generic symbol. Both fields are part of the approval fingerprint, so a changed icon needs enabling again; manifests without them keep their existing fingerprint.
+
 ABI 1 exports `memory`, `alloc(byteCount) -> i32`, and `run(ptr, byteCount) -> i32`. Inputs are UTF-8. The returned pointer addresses a little-endian u32 length followed by UTF-8 output. Memory belongs to a single invocation; the instance is discarded afterward. Supported capability imports retain the original namespace `vey`: `log(ptr,len)` and `clipboard_write(ptr,len)`. No other import types or namespaces are accepted. Hello World imports neither.
 
 ## Enablement and isolation

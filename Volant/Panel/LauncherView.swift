@@ -575,9 +575,13 @@ private struct RowView: View {
         case .snippet: Image(systemName: "text.badge.plus").font(.system(size: 20)).foregroundStyle(.secondary)
         case .emoji(let emoji): Text(emoji.symbol).font(.system(size: 20))
         case .quicklink: Image(systemName: "link").font(.system(size: 20)).foregroundStyle(.secondary)
-        case .extensionRun: Image(systemName: "puzzlepiece.extension").font(.system(size: 20)).foregroundStyle(.secondary)
+        case .extensionRun(let ext, _):
+            if let icon = ExtensionIcon.image(for: ext) { Image(nsImage: icon).resizable().clipShape(RoundedRectangle(cornerRadius: 5)) }
+            else { Image(systemName: "puzzlepiece.extension").font(.system(size: 20)).foregroundStyle(.secondary) }
         case .extensionResult: Image(systemName: "checkmark.circle").font(.system(size: 20)).foregroundStyle(.secondary)
-        case .extensionItem: Image(systemName: "newspaper").font(.system(size: 20)).foregroundStyle(.secondary)
+        case .extensionItem(_, let source):
+            if let icon = ExtensionIcon.image(for: source) { Image(nsImage: icon).resizable().clipShape(RoundedRectangle(cornerRadius: 5)) }
+            else { Image(systemName: "newspaper").font(.system(size: 20)).foregroundStyle(.secondary) }
         }
     }
 }

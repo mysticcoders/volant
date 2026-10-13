@@ -168,8 +168,10 @@ final class ExtensionManager {
         guard let existing = installed.first(where: { $0.id == listing.id }) else { return .available }
         guard existing.isCommunity else { return .bundled }
         let manifest = existing.manifest
+        let iconPresent = manifest.icon.map { FileManager.default.fileExists(atPath: existing.directory.appendingPathComponent($0).path) } ?? true
         let current = manifest.version == listing.version && manifest.sha256?.lowercased() == listing.moduleFile.sha256 &&
-            manifest.capabilities == listing.capabilities && manifest.declaredHosts == listing.hosts
+            manifest.capabilities == listing.capabilities && manifest.declaredHosts == listing.hosts &&
+            manifest.iconSha256 == listing.iconFile?.sha256 && iconPresent
         return current ? .installed : .update(from: manifest.version)
     }
 
@@ -183,9 +185,10 @@ final class ExtensionManager {
     /// keeps the owner's choice. Hosts only the old version declared are pruned like an uninstall.
     /// Tests pass `move` to fail a step deliberately.
     @discardableResult
-    func install(_ listing: ExtensionCatalog.Listing, manifest manifestData: Data, module moduleData: Data, from catalog: ExtensionCatalog,
+    func install(_ listing: ExtensionCatalog.Listing, manifest manifestData: Data, module moduleData: Data, icon iconData: Data? = nil,
+                 from catalog: ExtensionCatalog,
                  move: (URL, URL) throws -> Void = { try FileManager.default.moveItem(at: $0, to: $1) }) throws -> InstalledExtension {
-        _ = try listing.verify(manifest: manifestData, module: moduleData, sha256: Integrity.sha256)
+        _ = try listing.verify(manifest: manifestData, module: moduleData, icon: iconData, sha256: Integrity.sha256)
         reload()
         let existing = extensions.first { $0.id == listing.id }
         if let existing, !existing.isCommunity {
@@ -203,6 +206,7 @@ final class ExtensionManager {
             try files.createDirectory(at: staging, withIntermediateDirectories: true)
             try manifestData.write(to: staging.appendingPathComponent("manifest.json"))
             try moduleData.write(to: staging.appendingPathComponent(listing.module))
+            if let icon = listing.icon, let iconData { try iconData.write(to: staging.appendingPathComponent(icon)) }
             let origin = ExtensionCatalogOrigin(id: listing.id, version: listing.version, sequence: catalog.sequence,
                                                 revision: catalog.revision, source: listing.source)
             let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]

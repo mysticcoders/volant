@@ -55,7 +55,7 @@ struct ExtensionSettingsView: View {
                 let manager = manager
                 guard manager.communityAllowed else { throw ExtensionManager.ExtensionError.communityDisabled }
                 let files = try result.get()
-                try manager.install(listing, manifest: files.manifest, module: files.module, from: catalog)
+                try manager.install(listing, manifest: files.manifest, module: files.module, icon: files.icon, from: catalog)
                 reload(); onChange()
             } catch { self.error = error.localizedDescription; reload() }
         }
@@ -77,6 +77,13 @@ struct ExtensionSettingsView: View {
                 if installed.isEmpty { Text("No extensions installed.").foregroundStyle(.secondary) }
                 ForEach(installed) { ext in
                     HStack {
+                        Group {
+                            if let icon = ExtensionIcon.image(for: ext) {
+                                Image(nsImage: icon).resizable().clipShape(RoundedRectangle(cornerRadius: 5))
+                            } else {
+                                Image(systemName: "puzzlepiece.extension").font(.system(size: 16)).foregroundStyle(.secondary)
+                            }
+                        }.frame(width: 24, height: 24).accessibilityHidden(true)
                         Toggle(isOn: Binding(get: { ext.enabled }, set: { enabled in
                             if enabled && !ExtensionHostApprovals.missing(ext.manifest, at: configURL).isEmpty { confirmingHosts = ext }
                             else { setEnabled(ext, enabled) }

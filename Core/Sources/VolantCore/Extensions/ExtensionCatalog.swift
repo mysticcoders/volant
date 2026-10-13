@@ -4,10 +4,10 @@ import Foundation
 /// GitHub Pages. `catalog.json` is signed with Ed25519 in that repository's CI; Volant holds the public
 /// key and rejects an index whose signature fails or whose sequence is lower than one it already accepted.
 ///
-/// A package is exactly two files, `manifest.json` and its module, at paths Volant derives from the
-/// listing's ID, version and module name, so nothing in the index chooses where a file is written and
-/// there is no archive to extract. Every downloaded byte must match the listed size and SHA-256, and the
-/// manifest must agree with the listing. Installing never enables or runs an extension.
+/// A package is `manifest.json`, its module and optionally a small WebP icon, at paths Volant derives
+/// from the listing's ID, version and file names, so nothing in the index chooses where a file is
+/// written and there is no archive to extract. Every downloaded byte must match the listed size and
+/// SHA-256, and the manifest must agree with the listing. Installing never enables or runs an extension.
 public struct ExtensionCatalog: Codable, Equatable {
     public static let host = "mysticcoders.github.io"
     public static let baseURL = URL(string: "https://mysticcoders.github.io/volant-extensions/")!
@@ -53,17 +53,22 @@ public struct ExtensionCatalog: Codable, Equatable {
         public var source: String
         public var manifest: File
         public var moduleFile: File
+        /// The icon's file name and entry, when the extension has one. Older Volant versions ignore both.
+        public var icon: String?
+        public var iconFile: File?
 
         public init(id: String, name: String, version: String, module: String, summary: String, publisher: String, license: String,
                     notes: String? = nil, abiVersion: Int = 1, capabilities: [String] = [], hosts: [String] = [], source: String,
-                    manifest: File, moduleFile: File) {
+                    manifest: File, moduleFile: File, icon: String? = nil, iconFile: File? = nil) {
             self.id = id; self.name = name; self.version = version; self.module = module; self.summary = summary
             self.publisher = publisher; self.license = license; self.notes = notes; self.abiVersion = abiVersion
             self.capabilities = capabilities; self.hosts = hosts; self.source = source; self.manifest = manifest; self.moduleFile = moduleFile
+            self.icon = icon; self.iconFile = iconFile
         }
 
         public var manifestPath: String { "packages/\(id)/\(version)/manifest.json" }
         public var modulePath: String { "packages/\(id)/\(version)/\(module)" }
+        public var iconPath: String? { icon.map { "packages/\(id)/\(version)/\($0)" } }
         public var sourceURL: URL? { URL(string: source) }
 
         /// Checks every field Volant relies on: an ID that is also a safe folder name, path-safe version
@@ -77,7 +82,9 @@ public struct ExtensionCatalog: Codable, Equatable {
                   hosts.count <= ExtensionNetwork.maximumHosts, Set(hosts).count == hosts.count, hosts.allSatisfy(ExtensionNetwork.isValidHost),
                   let url = URL(string: source), url.scheme == "https", url.host != nil, source.count <= 512,
                   ExtensionCatalog.isValid(manifest, maximum: ExtensionCatalog.maximumManifestBytes),
-                  ExtensionCatalog.isValid(moduleFile, maximum: ExtensionCatalog.maximumModuleBytes) else {
+                  ExtensionCatalog.isValid(moduleFile, maximum: ExtensionCatalog.maximumModuleBytes),
+                  ExtensionManifest.isValidIcon(icon, sha256: iconFile?.sha256), icon == nil || iconFile != nil,
+                  iconFile.map({ ExtensionCatalog.isValid($0, maximum: ExtensionManifest.maximumIconBytes) }) ?? true else {
                 throw ExtensionCatalogError.invalidIndex
             }
         }
@@ -85,7 +92,8 @@ public struct ExtensionCatalog: Codable, Equatable {
         /// Checks downloaded bytes against this listing and returns the manifest they contain. Sizes and
         /// hashes must match the signed index, the manifest must be valid and agree with the listing, and
         /// the module must hash to the manifest's pinned SHA-256 and declare bounded memory.
-        public func verify(manifest manifestData: Data, module moduleData: Data, sha256: (Data) -> String) throws -> ExtensionManifest {
+        public func verify(manifest manifestData: Data, module moduleData: Data, icon iconData: Data? = nil,
+                           sha256: (Data) -> String) throws -> ExtensionManifest {
             guard manifestData.count == manifest.size, sha256(manifestData) == manifest.sha256 else {
                 throw ExtensionCatalogError.mismatch("\(name)’s manifest does not match the signed catalog.")
             }
@@ -97,8 +105,14 @@ public struct ExtensionCatalog: Codable, Equatable {
             }
             guard decoded.id == id, decoded.name == name, decoded.version == version, decoded.module == module,
                   (decoded.abiVersion ?? 1) == abiVersion, decoded.capabilities == capabilities, decoded.declaredHosts == hosts,
-                  decoded.sha256?.lowercased() == moduleFile.sha256 else {
+                  decoded.sha256?.lowercased() == moduleFile.sha256, decoded.icon == icon, decoded.iconSha256 == iconFile?.sha256 else {
                 throw ExtensionCatalogError.mismatch("\(name)’s manifest does not agree with its catalog listing.")
+            }
+            if let iconFile {
+                guard let iconData, iconData.count == iconFile.size, sha256(iconData) == iconFile.sha256,
+                      ExtensionManifest.looksLikeWebP(iconData) else {
+                    throw ExtensionCatalogError.mismatch("\(name)’s icon does not match the signed catalog.")
+                }
             }
             do { try ExtensionMemory.validate(moduleData) } catch {
                 throw ExtensionCatalogError.mismatch("\(name)’s module must declare bounded memory.")
@@ -130,7 +144,7 @@ public struct ExtensionCatalog: Codable, Equatable {
         let parts = path.split(separator: "/", omittingEmptySubsequences: false).map(String.init)
         let allowed = path == indexPath || path == signaturePath ||
             (parts.count == 4 && parts[0] == "packages" && isSafeID(parts[1]) && isSafeVersion(parts[2]) &&
-                (parts[3] == "manifest.json" || isSafeModule(parts[3])))
+                (parts[3] == "manifest.json" || isSafeModule(parts[3]) || ExtensionManifest.isSafeIconName(parts[3])))
         return allowed ? URL(string: path, relativeTo: baseURL)?.absoluteURL : nil
     }
 
