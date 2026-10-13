@@ -130,6 +130,24 @@ While listening, the default output is lowered to a fifth of its level and resto
 ends; Settings → General → Dictation → Lower volume while dictating turns it off. See
 [lowering volume while dictating](system-control.md#lowering-volume-while-dictating-2026-10-10).
 
+When listening starts, Volant plays the macOS "Tink" sound, and when it finishes or is cancelled it plays
+"Pop", so it is clear the microphone is live without looking; a failure is silent. The volume is
+lowered only after the start sound (0.3 s), and the stop sound plays once the volume is restored. The
+microphone starts capturing after the speech model is ready, so the start sound is not transcribed.
+Settings → General → Dictation → Play sounds when dictation starts and stops (`dictationPlaysSounds`,
+on by default, per Mac) turns both off. `DictationSounds.plan` holds the ordering and is unit tested;
+hearing the sounds on real hardware is separate evidence.
+
+Apple's recognizer has no option to drop filler sounds (its transcription options are punctuation,
+emoji and etiquette replacements), so `DictationCleanup` removes them from English dictation: "um",
+"uh", "uhm", "er", "erm" and "hmm", as whole words only. It runs on each phrase as it becomes final and
+on the volatile text shown while speaking, so a filler is never shown, typed or copied. Commas around
+a removed filler, leftover spaces, a sentence that was only filler, and the capital it took from the
+start of a sentence are repaired. Words that can carry meaning stay ("like", "you know", "I mean",
+"uh-oh", "uh-huh", "mhm", "err", and all-capitals acronyms such as "ER"). Other languages are left
+unchanged. It is on by default and per Mac: Settings → General → Dictation → Remove filler words
+(`dictationRemovesFillers`). It cannot repair a filler the recognizer heard as another word.
+
 Availability is rechecked at start, because microphone permission can be revoked between uses. On
 macOS 15 the command is present and reports that it needs macOS 26, the same pattern Apple
 Intelligence uses.

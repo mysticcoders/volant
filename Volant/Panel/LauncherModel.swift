@@ -401,6 +401,8 @@ final class LauncherModel: ObservableObject {
     private let contacts = ContactSearch()
     let dictation = SpeechDictation()
     var dictationVolume = DictationVolumeDuck()
+    var dictationSounds = DictationSounds()
+    private var previousDictationPhase = SpeechDictation.Phase.idle
     private var dictationPhaseSubscription: AnyCancellable?
     private var dictationTranscriptSubscription: AnyCancellable?
     /// A volume problem from this dictation, repeated in its final message so a quiet Mac is explained.
@@ -983,6 +985,7 @@ final class LauncherModel: ObservableObject {
             }
             return
         }
+        dictation.removesFillers = config.dictationRemovesFillers
         if surface == .indicator, config.dictationOutput == .type, let inputHost {
             let typing = DictationTypingSession(client: inputHost,
                                                 timing: config.dictationTypesWhileSpeaking ? .whileSpeaking : .whenFinished)
@@ -1063,14 +1066,24 @@ final class LauncherModel: ObservableObject {
     /// Lowers the output once the microphone is live and restores it as soon as listening ends,
     /// whether dictation finished, was cancelled or failed. Transcription after release runs at
     /// the restored level. Volume problems never interrupt dictation; they are only reported.
+    /// With sounds on, a start sound plays first and the volume drops only after it, and a stop
+    /// sound plays at the restored level when listening finishes or is cancelled; failures are silent.
     /// A recognition failure while the indicator is listening has no completion callback, so it
     /// is reported here rather than leaving the indicator stuck on Listening.
     private func dictationPhaseChanged(_ phase: SpeechDictation.Phase) {
+        let previous = previousDictationPhase
+        previousDictationPhase = phase
         dictationVolume.onProblem = { [weak self] problem in self?.noteDictationVolumeProblem(problem) }
-        let problem = phase == .listening
-            ? (config.dictationLowersVolume ? dictationVolume.lower() : nil)
-            : dictationVolume.restore()
-        if let problem { noteDictationVolumeProblem(problem) }
+        let plan = DictationSounds.plan(from: previous, to: phase, sounds: config.dictationPlaysSounds, lowersVolume: config.dictationLowersVolume)
+        if plan.restore, let problem = dictationVolume.restore() { noteDictationVolumeProblem(problem) }
+        if let sound = plan.sound { dictationSounds.play(sound) }
+        if let delay = plan.lowerAfter {
+            let lower = { [weak self] in
+                guard let self, self.dictation.isListening, let problem = self.dictationVolume.lower() else { return }
+                self.noteDictationVolumeProblem(problem)
+            }
+            if delay > 0 { DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: lower) } else { lower() }
+        }
         if case .failed(let reason) = phase, dictationSurface == .indicator, dictationIndicator.isListening {
             endDictationTyping()
             reportDictation(reason, outcome: .failed)
