@@ -31,6 +31,12 @@ struct DictationSettingsSection: View {
                         .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
             }
+            Toggle("Remove filler words", isOn: Binding(get: { config.dictationRemovesFillers }, set: { value in
+                apply { try Preferences.updateBoolean("dictationRemovesFillers", value: value, at: configURL) }
+            })).help("Removes um, uh, er and hmm from English dictation as you speak.")
+            Toggle("Play sounds when dictation starts and stops", isOn: Binding(get: { config.dictationPlaysSounds }, set: { value in
+                apply { try Preferences.updateBoolean("dictationPlaysSounds", value: value, at: configURL) }
+            }))
             Toggle("Lower volume while dictating", isOn: Binding(get: { config.dictationLowersVolume }, set: { value in
                 apply { try Preferences.updateBoolean("dictationLowersVolume", value: value, at: configURL) }
             }))
@@ -57,7 +63,7 @@ struct DictationSettingsSection: View {
     }
 
     private var footer: String {
-        let volume = "While the microphone is listening, the current output plays at a fifth of its volume. It returns to its previous level when you stop, unless you changed the volume yourself in the meantime. Muted outputs and outputs without software volume are left alone."
+        let volume = "Remove filler words takes um, uh, er and hmm out of English dictation as each phrase finishes; words like “like” and “you know” stay. While the microphone is listening, the current output plays at a fifth of its volume. It returns to its previous level when you stop, unless you changed the volume yourself in the meantime. Muted outputs and outputs without software volume are left alone."
         guard config.dictationOutput == .type else {
             return "Dictation from the shortcut copies what you said; press ⌘V to paste it. Type at the cursor types it into the app you’re using instead, and asks once for Accessibility permission. " + volume
         }

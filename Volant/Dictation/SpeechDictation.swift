@@ -45,6 +45,8 @@ final class SpeechDictation: ObservableObject {
     /// Called on the main actor with each finalized phrase, in order, for typing while speaking.
     /// Volatile text that may still change is never passed here.
     var onFinalPhrase: ((String) -> Void)?
+    /// Removes filler sounds from English phrases before they are shown, typed or copied.
+    var removesFillers = true
 
     nonisolated static var availability: Availability {
         #if canImport(Speech) && canImport(FoundationModels)
@@ -157,14 +159,16 @@ final class SpeechDictation: ObservableObject {
 
                 session.collector = Task { @MainActor in
                     // Volatile results refine as you speak, so the newest value replaces the last.
+                    // Each phrase is cleaned before it is shown or typed, so a filler never appears.
                     var settled = ""
+                    let clean = { (text: String) in self.removesFillers ? DictationCleanup.removingFillers(text, locale: locale) : text }
                     do {
                         for try await result in transcriber.results {
-                            let text = String(result.text.characters)
+                            let text = clean(String(result.text.characters))
                             if result.isFinal {
                                 settled += text
                                 self.transcript = settled
-                                self.onFinalPhrase?(text)
+                                if !text.isEmpty { self.onFinalPhrase?(text) }
                             } else {
                                 self.transcript = settled + text
                             }
