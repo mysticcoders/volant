@@ -434,6 +434,54 @@ try renderCommunitySettings("community-catalog-paused", catalog: fictionalCatalo
 print("PASS: community master default, Settings routing, individual consent, stale consent rejection and retained individual choices")
 panel.model.query = ""
 
+// A list extension with storage: its rows offer actions in Actions, Pin saves data, and Settings offers Clear Data.
+let storageDirectory = root.appendingPathComponent("storage-reader-" + UUID().uuidString)
+try FileManager.default.copyItem(at: bundledExtension, to: storageDirectory)
+var storageManifest = try JSONDecoder().decode(ExtensionManifest.self, from: Data(contentsOf: storageDirectory.appendingPathComponent("manifest.json")))
+storageManifest.id = "fixture.reader"; storageManifest.name = "Fixture Reader"; storageManifest.output = "items"; storageManifest.storage = true
+try JSONEncoder().encode(storageManifest).write(to: storageDirectory.appendingPathComponent("manifest.json"))
+let storageData = root.appendingPathComponent("ExtensionData-" + UUID().uuidString)
+let storageManager = ExtensionManager(configURL: panel.model.actionConfigURL, roots: [storageDirectory], dataDirectory: storageData)
+storageManager.reload()
+try storageManager.setCommunityAllowed(true, expected: false)
+try storageManager.setEnabled(storageManager.extensions.first!, true)
+var storageRequests: [String] = []
+storageManager.invokeOverride = { _, input, completion in
+    storageRequests.append(input)
+    if input.contains(#""phase":"action""#) {
+        completion(.success(#"{"items":[{"title":"Fictional story","subtitle":"Pinned · fixture.example.com","url":"https://fixture.example.com/1"}],"storage":{"pinned":["1"]}}"#))
+    } else {
+        completion(.success(#"{"items":[{"title":"Fictional story","subtitle":"fixture.example.com","url":"https://fixture.example.com/1","actions":[{"id":"pin","title":"Pin Story"},{"id":"hide","title":"Hide Story"}]}]}"#))
+    }
+}
+panel.model.extensions = storageManager
+panel.toggle(); panel.model.query = "Fixture Reader"; settle()
+key("\r", 36); settle()
+verify(panel.model.rows.first.map { if case .extensionItem = $0 { return true }; return false } == true, "A storage list extension shows its rows")
+verify(storageRequests.first?.contains(#""storage":{}"#) == true, "The first run receives an empty saved object")
+key("k", 40, .command); settle()
+verify(panel.model.actionTarget != nil, "Command K opens a row's Actions")
+try render("extension-row-actions")
+key("\u{F701}", 125); key("\r", 36); settle()
+verify(storageManager.storedData(storageManager.extensions.first!) == .object(["pinned": .array([.string("1")])]), "Pin saves the extension's data")
+verify(panel.model.rows.count == 1 && storageRequests.last?.contains(#""action":"pin""#) == true, "The action reply redraws the rows")
+panel.orderOut(nil)
+func renderStorageSettings(_ name: String) throws {
+    let view = NSHostingView(rootView: ExtensionSettingsView(configURL: panel.model.actionConfigURL, onChange: {}, roots: [storageDirectory],
+                                                             dataDirectory: storageData, catalogClient: ExtensionCatalogClient(fetchFile: { _, _, _ in }))
+        .background(Color(nsColor: .windowBackgroundColor)))
+    let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 440), styleMask: [.titled], backing: .buffered, defer: false)
+    window.contentView = view; window.makeKeyAndOrderFront(nil); settle()
+    view.layoutSubtreeIfNeeded(); settle()
+    try render(name, view: view)
+    window.orderOut(nil)
+}
+try renderStorageSettings("extension-storage-settings")
+panel.model.extensions = communityManager
+try storageManager.setCommunityAllowed(false, expected: true)
+print("PASS: storage list extension receives and saves data, row actions run from Actions, Settings offers Clear Data")
+panel.model.query = ""
+
 // The launcher's Extension Catalog: typing never fetches; Check Catalog loads a signed fictional index.
 let fixtureCatalogKey = Curve25519.Signing.PrivateKey()
 let fixtureIndex = try JSONEncoder().encode(fictionalCatalog)

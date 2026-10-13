@@ -142,7 +142,10 @@ struct ExtensionCatalogView: View {
                 Text(notes).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
             section("Access") {
-                if listing.capabilities.isEmpty && listing.hosts.isEmpty {
+                if listing.storage == true {
+                    Label("Remember settings and lists on this Mac", systemImage: "internaldrive")
+                }
+                if listing.capabilities.isEmpty && listing.hosts.isEmpty && listing.storage != true {
                     Label("No permissions required", systemImage: "checkmark.shield").foregroundStyle(.secondary)
                 }
                 ForEach(listing.capabilities, id: \.self) { capability in

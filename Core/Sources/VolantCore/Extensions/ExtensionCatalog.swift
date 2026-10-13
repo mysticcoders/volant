@@ -56,6 +56,8 @@ public struct ExtensionCatalog: Codable, Equatable {
         /// The icon's file name and entry, when the extension has one. Older Volant versions ignore both.
         public var icon: String?
         public var iconFile: File?
+        /// Whether the extension keeps saved data on this Mac; must match the manifest.
+        public var storage: Bool?
 
         public init(id: String, name: String, version: String, module: String, summary: String, publisher: String, license: String,
                     notes: String? = nil, abiVersion: Int = 1, capabilities: [String] = [], hosts: [String] = [], source: String,
@@ -105,7 +107,8 @@ public struct ExtensionCatalog: Codable, Equatable {
             }
             guard decoded.id == id, decoded.name == name, decoded.version == version, decoded.module == module,
                   (decoded.abiVersion ?? 1) == abiVersion, decoded.capabilities == capabilities, decoded.declaredHosts == hosts,
-                  decoded.sha256?.lowercased() == moduleFile.sha256, decoded.icon == icon, decoded.iconSha256 == iconFile?.sha256 else {
+                  decoded.sha256?.lowercased() == moduleFile.sha256, decoded.icon == icon, decoded.iconSha256 == iconFile?.sha256,
+                  decoded.usesStorage == (storage == true) else {
                 throw ExtensionCatalogError.mismatch("\(name)’s manifest does not agree with its catalog listing.")
             }
             if let iconFile {
