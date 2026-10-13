@@ -44,7 +44,7 @@ Added in 0.3.0:
 
 | Story | In 0.3.0 | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
-| Signed extension catalog with Install and Update in Settings | Yes | #218; Core and app tests with a throwaway key and in-memory files, native light/dark renders, and the published catalog (sequence 5) decoded and both packages verified by the production code on the host. Installing through the signed fetch helper in the notarized app is pending the release's installed-acceptance run; only the Hacker News and Lobsters readers are listed | Extensions and Privacy docs; "signed, reviewed extensions", never "Raycast extensions", a store, or automatic updates |
+| Signed extension catalog with Install and Update in Settings | Yes | #218; Core and app tests with a throwaway key and in-memory files, native light/dark renders, and the published catalog (sequence 5) decoded and both packages verified by the production code on the host. The notarized 0.3.0 DMG installed both readers from the live catalog in the installed-acceptance VM (#220), and the owner's installed app, updated from 0.2.7 through Sparkle, listed the catalog on October 12, 2026; only the Hacker News and Lobsters readers are listed | Extensions and Privacy docs; "signed, reviewed extensions", never "Raycast extensions", a store, or automatic updates |
 
 ## Privacy language
 
