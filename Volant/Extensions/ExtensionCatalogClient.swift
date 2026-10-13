@@ -58,12 +58,19 @@ struct ExtensionCatalogClient {
         }
     }
 
-    /// Downloads a listing's manifest and module. The caller verifies them while installing.
-    func download(_ listing: ExtensionCatalog.Listing, completion: @escaping (Result<(manifest: Data, module: Data), Error>) -> Void) {
+    /// Downloads a listing's manifest, module and icon, if it has one. The caller verifies them while installing.
+    func download(_ listing: ExtensionCatalog.Listing,
+                  completion: @escaping (Result<(manifest: Data, module: Data, icon: Data?), Error>) -> Void) {
         fetchFile(listing.manifestPath, listing.manifest.size) { manifest in
             fetchFile(listing.modulePath, listing.moduleFile.size) { module in
-                let result = Result<(manifest: Data, module: Data), Error> { (try manifest.get(), try module.get()) }
-                DispatchQueue.main.async { completion(result) }
+                let finish = { (icon: Result<Data, Error>?) in
+                    let result = Result<(manifest: Data, module: Data, icon: Data?), Error> {
+                        (try manifest.get(), try module.get(), try icon?.get())
+                    }
+                    DispatchQueue.main.async { completion(result) }
+                }
+                guard let iconPath = listing.iconPath, let iconFile = listing.iconFile else { finish(nil); return }
+                fetchFile(iconPath, iconFile.size) { finish($0) }
             }
         }
     }

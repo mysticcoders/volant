@@ -37,7 +37,7 @@ enum ResultRow: Identifiable, Hashable {
     case quicklink(Quicklink, query: String)
     case extensionRun(InstalledExtension, input: String)
     case extensionResult(String)
-    case extensionItem(ExtensionItem, source: String)
+    case extensionItem(ExtensionItem, source: InstalledExtension)
     case note(Note)
     case newNote(String)
     case calculation(CalculationAnswer, slot: Int)
@@ -72,7 +72,7 @@ enum ResultRow: Identifiable, Hashable {
         case .newNote(let t): return "newnote:\(t)"
         case .extensionRun(let e, let i): return "ext:\(e.id):\(i)"
         case .extensionResult(let s): return "extresult:\(s)"
-        case .extensionItem(let item, let source): return "extitem:\(source):\(item.url ?? item.title)"
+        case .extensionItem(let item, let source): return "extitem:\(source.id):\(item.url ?? item.title)"
         case .snippet(let s): return "snip:\(s.name.utf8.count):\(s.name)\(s.keyword.utf8.count):\(s.keyword)\(s.body)"
         case .emoji(let e): return "emoji:\(e.symbol)"
         case .quicklink(let q, let t): return "ql:\(q.name):\(t)"
@@ -101,7 +101,7 @@ enum ResultRow: Identifiable, Hashable {
         case .note, .newNote: return "Note"
         case .extensionRun: return "Extension"
         case .extensionResult: return "Result"
-        case .extensionItem(_, let source): return source
+        case .extensionItem(_, let source): return source.name
         case .snippet: return "Snippet"
         case .emoji: return "Emoji"
         case .quicklink: return "Quicklink"
@@ -512,7 +512,7 @@ final class LauncherModel: ObservableObject {
                 switch result {
                 case .success(let items):
                     self.notice = items.isEmpty ? "\(ext.name) returned nothing." : nil
-                    self.sections = [ResultSection(title: ext.name, rows: items.map { .extensionItem($0, source: ext.name) })]
+                    self.sections = [ResultSection(title: ext.name, rows: items.map { .extensionItem($0, source: ext) })]
                     self.selection = 0
                 case .failure(let error): self.notice = "Extension failed: \(error.localizedDescription)"
                 }

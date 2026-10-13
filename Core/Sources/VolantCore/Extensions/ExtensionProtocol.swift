@@ -3,7 +3,8 @@ import Foundation
 /// Manifest shipped beside a module. Capabilities are the complete list of host imports the module may call.
 /// `hosts` lists the exact hostnames a network extension may read through Volant's fetch helper; the
 /// module itself never gets network access (see `ExtensionNetwork`). `output` is "text" (the default) or
-/// "items", a list of links the launcher shows as rows.
+/// "items", a list of links the launcher shows as rows. `icon` names an optional square WebP beside the
+/// module, pinned by `iconSha256`; both are part of the approval fingerprint when present.
 public struct ExtensionManifest: Codable, Hashable {
     public var abiVersion: Int? = 1
     public var id: String
@@ -15,6 +16,8 @@ public struct ExtensionManifest: Codable, Hashable {
     public var sha256: String?
     public var hosts: [String]?
     public var output: String?
+    public var icon: String?
+    public var iconSha256: String?
 
     public var declaredHosts: [String] { hosts ?? [] }
     public var listsItems: Bool { output == "items" }
@@ -28,14 +31,33 @@ public struct ExtensionManifest: Codable, Hashable {
               (timeoutSeconds ?? 2).isFinite, (0.5...10).contains(timeoutSeconds ?? 2),
               [nil, "text", "items"].contains(output), declaredHosts.count <= ExtensionNetwork.maximumHosts,
               Set(declaredHosts).count == declaredHosts.count, declaredHosts.allSatisfy(ExtensionNetwork.isValidHost),
-              declaredHosts.isEmpty || listsItems else {
+              declaredHosts.isEmpty || listsItems, Self.isValidIcon(icon, sha256: iconSha256) else {
             throw ExtensionValidationError.invalidManifest
         }
     }
     public static let knownCapabilities: Set<String> = ["log", "clipboard.write"]
+    public static let maximumIconBytes = 32_768
+
+    /// No icon, or a plain `.webp` file name in the extension's folder with a lowercase SHA-256.
+    static func isValidIcon(_ icon: String?, sha256: String?) -> Bool {
+        guard let icon else { return sha256 == nil }
+        return isSafeIconName(icon) && sha256?.count == 64 && sha256?.allSatisfy({ $0.isASCII && $0.isHexDigit && !$0.isUppercase }) == true
+    }
+
+    static func isSafeIconName(_ icon: String) -> Bool {
+        let stem = icon.dropLast(5)
+        return icon.hasSuffix(".webp") && (1...64).contains(stem.count) &&
+            stem.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "_" || $0 == "-") }
+    }
+
+    /// Whether `data` starts like a WebP file (`RIFF`, a length, `WEBP`). Decoding happens in the app.
+    public static func looksLikeWebP(_ data: Data) -> Bool {
+        let bytes = [UInt8](data.prefix(12))
+        return bytes.count == 12 && bytes[0..<4] == [82, 73, 70, 70] && bytes[8..<12] == [87, 69, 66, 80]
+    }
 
     public init(abiVersion: Int? = 1, id: String, name: String, version: String, module: String, capabilities: [String], timeoutSeconds: Double? = nil, sha256: String? = nil,
-                hosts: [String]? = nil, output: String? = nil) {
+                hosts: [String]? = nil, output: String? = nil, icon: String? = nil, iconSha256: String? = nil) {
         self.abiVersion = abiVersion
         self.id = id
         self.name = name
@@ -46,6 +68,8 @@ public struct ExtensionManifest: Codable, Hashable {
         self.sha256 = sha256
         self.hosts = hosts
         self.output = output
+        self.icon = icon
+        self.iconSha256 = iconSha256
     }
 }
 

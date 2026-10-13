@@ -177,6 +177,50 @@ final class ExtensionCatalogInstallTests: XCTestCase {
         XCTAssertThrowsError(try manager.install(impostor, manifest: impostorManifest, module: moduleV1, from: catalog([impostor])))
         XCTAssertTrue(ExtensionManager.isBundled(try XCTUnwrap(manager.extensions.first { $0.id == bundled.id }).directory))
     }
+
+    private let squareIcon = Data(base64Encoded: "UklGRh4AAABXRUJQVlA4TBEAAAAvH8AHAAdQvKIUuf+BiOh/AAA=")!
+    private let wideIcon = Data(base64Encoded: "UklGRh4AAABXRUJQVlA4TBEAAAAvH8ADAAdQqCIXpf+BiOh/AAA=")!
+
+    func testIconLoadsOnlyWhenItMatchesItsHashFolderAndShape() throws {
+        let folder = directory.appendingPathComponent("icons", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let url = folder.appendingPathComponent("reader.webp")
+        try squareIcon.write(to: url)
+        XCTAssertEqual(ExtensionIcon.load(url, in: folder, sha256: Integrity.sha256(squareIcon))?.size, NSSize(width: 32, height: 32))
+        XCTAssertNil(ExtensionIcon.load(url, in: folder, sha256: Integrity.sha256(wideIcon)), "Hash must match")
+        try wideIcon.write(to: url)
+        XCTAssertNil(ExtensionIcon.load(url, in: folder, sha256: Integrity.sha256(wideIcon)), "Icons must be square")
+        let png = Data([0x89, 0x50, 0x4e, 0x47, 13, 10, 26, 10, 0, 0, 0, 13])
+        try png.write(to: url)
+        XCTAssertNil(ExtensionIcon.load(url, in: folder, sha256: Integrity.sha256(png)), "Icons must be WebP")
+        let outside = root.appendingPathComponent("outside.webp")
+        try squareIcon.write(to: outside)
+        try FileManager.default.removeItem(at: url)
+        try FileManager.default.createSymbolicLink(at: url, withDestinationURL: outside)
+        XCTAssertNil(ExtensionIcon.load(url, in: folder, sha256: Integrity.sha256(squareIcon)), "Icons must stay in their folder")
+        let large = squareIcon + Data(count: ExtensionManifest.maximumIconBytes)
+        try FileManager.default.removeItem(at: url)
+        try large.write(to: url)
+        XCTAssertNil(ExtensionIcon.load(url, in: folder, sha256: Integrity.sha256(large)), "Icons are capped at 32 KB")
+    }
+
+    func testCatalogInstallWritesTheIconAndAMissingIconOffersUpdate() throws {
+        let manifest = ExtensionManifest(id: "community.fictional.reader", name: "Fictional Reader", version: "1.0.0", module: "reader.wasm",
+                                         capabilities: [], timeoutSeconds: 2, sha256: Integrity.sha256(moduleV1), hosts: ["news.example.com"],
+                                         output: "items", icon: "reader.webp", iconSha256: Integrity.sha256(squareIcon))
+        let encoder = JSONEncoder(); encoder.outputFormatting = .sortedKeys
+        let data = try encoder.encode(manifest)
+        var (listing, _) = try package(module: moduleV1)
+        listing.manifest = .init(sha256: Integrity.sha256(data), size: data.count)
+        listing.icon = "reader.webp"; listing.iconFile = .init(sha256: Integrity.sha256(squareIcon), size: squareIcon.count)
+        let manager = manager()
+        XCTAssertThrowsError(try manager.install(listing, manifest: data, module: moduleV1, from: catalog([listing])), "A listed icon is required")
+        let installed = try manager.install(listing, manifest: data, module: moduleV1, icon: squareIcon, from: catalog([listing]))
+        XCTAssertNotNil(ExtensionIcon.image(for: installed))
+        XCTAssertEqual(ExtensionManager.catalogStatus(listing, installed: manager.extensions), .installed)
+        try FileManager.default.removeItem(at: installed.directory.appendingPathComponent("reader.webp"))
+        XCTAssertEqual(ExtensionManager.catalogStatus(listing, installed: manager.extensions), .update(from: "1.0.0"))
+    }
 }
 
 private extension Result {

@@ -359,6 +359,10 @@ try FileManager.default.copyItem(at: bundledExtension, to: communityDirectory)
 let communityManifestURL = communityDirectory.appendingPathComponent("manifest.json")
 var communityManifest = try JSONDecoder().decode(ExtensionManifest.self, from: Data(contentsOf: communityManifestURL))
 communityManifest.id = "fixture.community"; communityManifest.name = "Community Greeting"
+// A fictional solid-color WebP icon, so launcher and Settings renders show an extension icon.
+let fixtureIcon = Data(base64Encoded: "UklGRh4AAABXRUJQVlA4TBEAAAAvH8AHAAdQvKIUuf+BiOh/AAA=")!
+try fixtureIcon.write(to: communityDirectory.appendingPathComponent("icon.webp"))
+communityManifest.icon = "icon.webp"; communityManifest.iconSha256 = Integrity.sha256(fixtureIcon)
 try JSONEncoder().encode(communityManifest).write(to: communityManifestURL)
 let extensionRoots = [bundledExtension, communityDirectory]
 let communityManager = ExtensionManager(configURL: panel.model.actionConfigURL, roots: extensionRoots)
@@ -409,12 +413,14 @@ panel.orderOut(nil)
 try communityManager.setCommunityAllowed(true, expected: false)
 try communityManager.setEnabled(communityManager.search("community").first!, true)
 try renderCommunitySettings("community-on")
+verify(ExtensionIcon.image(for: communityManager.search("community").first!) != nil, "A valid extension icon loads for rows")
 let installedCommunity = communityManager.search("community").first!.manifest
 let fictionalCatalog = ExtensionCatalog(format: 1, sequence: 1, generated: "2026-10-12T00:00:00Z", revision: String(repeating: "0", count: 40), extensions: [
     ExtensionCatalog.Listing(id: installedCommunity.id, name: installedCommunity.name, version: installedCommunity.version, module: installedCommunity.module,
                              summary: "Greets the name you type.", publisher: "Fictional Publisher", license: "MIT", source: "https://example.com/fictional/greeting",
                              manifest: .init(sha256: String(repeating: "1", count: 64), size: 200),
-                             moduleFile: .init(sha256: installedCommunity.sha256!, size: 100)),
+                             moduleFile: .init(sha256: installedCommunity.sha256!, size: 100),
+                             icon: "icon.webp", iconFile: .init(sha256: Integrity.sha256(fixtureIcon), size: fixtureIcon.count)),
     ExtensionCatalog.Listing(id: "community.fictional.reader", name: "Fictional Reader", version: "1.2.0", module: "reader.wasm",
                              summary: "Front page and newest stories from a fictional news site.", publisher: "Fictional Publisher", license: "MIT",
                              hosts: ["news.example.com"], source: "https://example.com/fictional/reader",
