@@ -26,6 +26,8 @@ struct LauncherView: View {
         VStack(spacing: 0) {
             if model.showingDictionary {
                 DictionaryView(model: model.dictionary, caffeinate: model.caffeinate, back: { model.query = ""; model.searchFocusRequest = UUID() }, copy: model.copyText)
+            } else if model.showingCatalog {
+                ExtensionCatalogView(model: model.catalog, caffeinate: model.caffeinate, back: { model.query = ""; model.searchFocusRequest = UUID() })
             } else if model.showingTranslation {
                 TranslationView(model: model.translation, caffeinate: model.caffeinate, back: { model.query = ""; model.searchFocusRequest = UUID() }, copy: model.copyText)
             } else if model.showingACP {
@@ -111,8 +113,8 @@ struct LauncherView: View {
         .onChange(of: model.actionTarget?.id) { old, new in if old != nil && new == nil { requestSearchFocus() } }
         .onChange(of: model.showingAppMenu) { old, new in if old && !new { requestSearchFocus() } }
         .onChange(of: model.searchFocusRequest) { _, _ in requestSearchFocus() }
-        .onKeyPress(.downArrow) { guard !popoverOpen && !model.showingDictionary && !model.showingTranslation && !model.showingACP && !formOpen else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(LauncherModel.emojiColumns) } else { model.moveSelection(1) }; return .handled }
-        .onKeyPress(.upArrow) { guard !popoverOpen && !model.showingDictionary && !model.showingTranslation && !model.showingACP && !formOpen else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(-LauncherModel.emojiColumns) } else { model.moveSelection(-1) }; return .handled }
+        .onKeyPress(.downArrow) { if model.showingCatalog { model.catalog.moveSelection(1); return .handled }; guard !popoverOpen && !model.showingDictionary && !model.showingCatalog && !model.showingTranslation && !model.showingACP && !formOpen else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(LauncherModel.emojiColumns) } else { model.moveSelection(1) }; return .handled }
+        .onKeyPress(.upArrow) { if model.showingCatalog { model.catalog.moveSelection(-1); return .handled }; guard !popoverOpen && !model.showingDictionary && !model.showingCatalog && !model.showingTranslation && !model.showingACP && !formOpen else { return .ignored }; if model.showingEmoji { model.moveEmojiSelection(-LauncherModel.emojiColumns) } else { model.moveSelection(-1) }; return .handled }
         .onKeyPress(.leftArrow) { guard model.showingEmoji else { return .ignored }; model.moveEmojiSelection(-1); return .handled }
         .onKeyPress(.rightArrow) { guard model.showingEmoji else { return .ignored }; model.moveEmojiSelection(1); return .handled }
         .onKeyPress(.escape) {
@@ -125,7 +127,11 @@ struct LauncherView: View {
             return .handled
         }
         .onKeyPress(.return, phases: .down) { press in
-            guard !popoverOpen && !model.showingDictionary && !model.showingTranslation && !model.showingACP && !formOpen else { return .ignored }
+            if model.showingCatalog && !popoverOpen {
+                if press.modifiers.contains(.command) { model.catalog.openSource() } else { model.catalog.performPrimary() }
+                return .handled
+            }
+            guard !popoverOpen && !model.showingDictionary && !model.showingCatalog && !model.showingTranslation && !model.showingACP && !formOpen else { return .ignored }
             if press.modifiers.contains(.command) && press.modifiers.contains(.shift) { model.activateSwap() }
             else if press.modifiers.contains(.command) { model.activateSecondary() } else { model.activateSelection() }
             return .handled
@@ -249,11 +255,11 @@ struct LauncherView: View {
     }
 
     private func requestSearchFocus() {
-        guard !popoverOpen && !model.showingACP && !model.showingDictionary && !model.showingTranslation && model.entryForm == nil else { return }
+        guard !popoverOpen && !model.showingACP && !model.showingDictionary && !model.showingCatalog && !model.showingTranslation && model.entryForm == nil else { return }
         // A persistent hosting view does not appear again each time its panel is summoned.
         focused = false
         DispatchQueue.main.async {
-            guard !popoverOpen && !model.showingACP && !model.showingDictionary && !model.showingTranslation && model.entryForm == nil else { return }
+            guard !popoverOpen && !model.showingACP && !model.showingDictionary && !model.showingCatalog && !model.showingTranslation && model.entryForm == nil else { return }
             focused = true
         }
     }
@@ -494,8 +500,6 @@ private struct RowView: View {
         case .extensionRun(let e, let i): return i.isEmpty ? e.name : "\(e.name) — \(i)"
         case .extensionResult(let s): return s
         case .extensionItem(let item, _): return item.title
-        case .catalogCheck: return "Check the Extension Catalog"
-        case .catalogListing(let listing, _, _): return listing.name
         case .snippet(let s): return s.name
         case .emoji(let e): return "\(e.symbol)  \(e.name)"
         case .quicklink(let q, let t): return t.isEmpty ? q.name : "\(q.name) — \(t)"
@@ -528,11 +532,6 @@ private struct RowView: View {
         case .extensionRun(let e, _): return (e.communityBlocked ? "Community extensions off · " : (e.enabled ? "Enabled · " : "Off · ")) + e.accessDescription
         case .extensionResult: return "Press return to copy"
         case .extensionItem(let item, _): return item.subtitle ?? item.url ?? ""
-        case .catalogCheck: return "Download the signed list of reviewed extensions"
-        case .catalogListing(let listing, let status, _):
-            var parts = [listing.summary, listing.publisher, InstalledExtension.accessDescription(capabilities: listing.capabilities, hosts: listing.hosts)]
-            if case .update(let from) = status { parts.insert("\(from) → \(listing.version)", at: 1) } else { parts.insert(listing.version, at: 1) }
-            return parts.joined(separator: " · ")
         case .snippet(let s): return s.body.replacingOccurrences(of: "\n", with: " ")
         case .emoji: return nil
         case .quicklink(let q, _): return q.url
@@ -587,11 +586,6 @@ private struct RowView: View {
             if let icon = ExtensionIcon.image(for: ext) { Image(nsImage: icon).resizable().clipShape(RoundedRectangle(cornerRadius: 5)) }
             else { Image(systemName: "puzzlepiece.extension").font(.system(size: 20)).foregroundStyle(.secondary) }
         case .extensionResult: Image(systemName: "checkmark.circle").font(.system(size: 20)).foregroundStyle(.secondary)
-        case .catalogCheck: CommandTile(symbol: CoreCommand.catalog.symbol, tint: CoreCommand.catalog.tint)
-        case .catalogListing(_, _, let installed):
-            if let installed, let icon = ExtensionIcon.image(for: installed) {
-                Image(nsImage: icon).resizable().clipShape(RoundedRectangle(cornerRadius: 5))
-            } else { CommandTile(symbol: CoreCommand.catalog.symbol, tint: CoreCommand.catalog.tint) }
         case .extensionItem(_, let source):
             if let icon = ExtensionIcon.image(for: source) { Image(nsImage: icon).resizable().clipShape(RoundedRectangle(cornerRadius: 5)) }
             else { Image(systemName: "newspaper").font(.system(size: 20)).foregroundStyle(.secondary) }

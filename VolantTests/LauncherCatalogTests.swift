@@ -64,31 +64,37 @@ final class LauncherCatalogTests: XCTestCase {
 
     private func settle() async { for _ in 0..<5 { await Task.yield(); try? await Task.sleep(nanoseconds: 20_000_000) } }
 
-    func testTypingCatalogNeverFetchesAndCheckLoadsOnce() async throws {
+    func testTypingCatalogOpensTheViewWithoutFetchingAndCheckLoadsOnce() async throws {
         var fetched: [String] = []
         let model = model()
-        model.catalogClient = try client { fetched.append($0) }
+        model.catalog.client = try client { fetched.append($0) }
         model.query = "catalog"
-        XCTAssertEqual(model.rows.map(\.id), ["catalog:check"])
-        model.query = "catalog fictional"
+        XCTAssertTrue(model.showingCatalog)
+        XCTAssertNil(model.catalog.catalog)
+        XCTAssertEqual(model.catalog.primaryTitle, "Check Catalog")
+        model.query = "catalog weather"
+        XCTAssertEqual(model.catalog.input, "weather")
         XCTAssertEqual(fetched, [], "Typing a catalog query must not contact the catalog")
-        XCTAssertTrue(LauncherRouting.isReserved("catalog fictional"))
-        model.query = "catalog"
-        model.activateSelection()
+        XCTAssertTrue(LauncherRouting.isReserved("catalog weather"))
+        model.catalog.performPrimary()
         await settle()
         XCTAssertEqual(fetched, [ExtensionCatalog.indexPath, ExtensionCatalog.signaturePath])
-        XCTAssertEqual(model.rows.map(\.id), ["catalog:community.fictional.reader", "catalog:community.fictional.weather"])
-        model.query = "catalog weather"
-        XCTAssertEqual(model.rows.map(\.id), ["catalog:community.fictional.weather"])
-        model.query = "catalog nothing like this"
-        XCTAssertTrue(model.rows.isEmpty)
-        XCTAssertEqual(fetched.count, 2, "Filtering reuses the loaded catalog")
+        XCTAssertEqual(model.catalog.listings.map(\.id), ["community.fictional.weather"])
+        model.catalog.input = ""
+        XCTAssertEqual(model.catalog.listings.count, 2)
+        model.catalog.input = "news.example.com"
+        XCTAssertEqual(model.catalog.listings.count, 2, "Search matches the hosts an extension reads")
+        model.catalog.input = "nothing like this"
+        XCTAssertTrue(model.catalog.listings.isEmpty)
+        XCTAssertNil(model.catalog.selected)
+        model.catalog.load()
+        XCTAssertEqual(fetched.count, 2, "The loaded catalog is kept for the session")
     }
 
-    func testChoosingTheCommandLoadsTheCatalog() async throws {
+    func testChoosingTheCommandOpensAndLoadsTheCatalog() async throws {
         var fetched: [String] = []
         let model = model()
-        model.catalogClient = try client { fetched.append($0) }
+        model.catalog.client = try client { fetched.append($0) }
         XCTAssertTrue(CoreCommand.search("store").contains(.catalog))
         model.query = "extension catalog"
         let index = try XCTUnwrap(model.rows.firstIndex { $0.id == "core:catalog" })
@@ -96,39 +102,49 @@ final class LauncherCatalogTests: XCTestCase {
         model.selection = index
         model.activateSelection()
         await settle()
-        XCTAssertEqual(model.query, "catalog ")
-        XCTAssertEqual(model.rows.count, 2)
+        XCTAssertTrue(model.showingCatalog)
+        XCTAssertEqual(model.catalog.listings.count, 2)
     }
 
-    func testReturnInstallsWithoutEnablingAndThenUsesTheExtension() async throws {
+    func testSelectionMovesAndReturnInstallsWithoutEnablingThenUses() async throws {
         let model = model()
-        model.catalogClient = try client { _ in }
+        model.catalog.client = try client { _ in }
         model.query = "catalog"
-        model.activateSelection()
+        model.catalog.load()
         await settle()
-        model.query = "catalog reader"
-        XCTAssertEqual(model.selectedRow?.primaryAction, "Install Extension")
-        XCTAssertEqual(model.selectedRow?.secondaryAction, "View Source")
-        model.activateSelection()
+        XCTAssertEqual(model.catalog.selected?.id, "community.fictional.reader")
+        model.catalog.moveSelection(1)
+        XCTAssertEqual(model.catalog.selected?.id, "community.fictional.weather")
+        model.catalog.moveSelection(5)
+        XCTAssertEqual(model.catalog.selected?.id, "community.fictional.weather", "Selection stops at the last listing")
+        model.catalog.moveSelection(-1)
+        XCTAssertEqual(model.catalog.primaryTitle, "Install")
+        var opened: [URL] = []
+        model.catalog.openURL = { opened.append($0) }
+        model.catalog.openSource()
+        XCTAssertEqual(opened, [URL(string: "https://example.com/community.fictional.reader")!])
+        model.catalog.performPrimary()
         await settle()
         let installed = try XCTUnwrap(model.extensions.extensions.first { $0.id == "community.fictional.reader" })
         XCTAssertFalse(installed.enabled)
         XCTAssertTrue(ExtensionHostApprovals.approved(at: config).isEmpty)
-        XCTAssertEqual(model.selectedRow?.primaryAction, "Use Extension")
-        model.activateSelection()
+        XCTAssertNotNil(model.catalog.feedback)
+        XCTAssertEqual(model.catalog.primaryTitle, "Use Extension")
+        model.catalog.performPrimary()
         XCTAssertEqual(model.query, "Fictional Reader ")
+        XCTAssertFalse(model.showingCatalog)
     }
 
     func testCommunityOffOpensSettingsInsteadOfInstalling() async throws {
         try Data(#"{"extensions":{}}"#.utf8).write(to: config)
         var actions: [String] = []
         let model = model { actions.append(String(describing: $0)) }
-        model.catalogClient = try client { _ in }
+        model.catalog.client = try client { _ in }
         model.query = "catalog"
-        model.activateSelection()
+        model.catalog.load()
         await settle()
-        model.query = "catalog reader"
-        model.activateSelection()
+        XCTAssertEqual(model.catalog.primaryTitle, "Open Extension Settings")
+        model.catalog.performPrimary()
         await settle()
         XCTAssertEqual(actions, ["extensionSettings"])
         XCTAssertFalse(model.extensions.extensions.contains { $0.isCommunity })

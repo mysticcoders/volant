@@ -438,7 +438,7 @@ panel.model.query = ""
 let fixtureCatalogKey = Curve25519.Signing.PrivateKey()
 let fixtureIndex = try JSONEncoder().encode(fictionalCatalog)
 var fixtureCatalogFetches = 0
-panel.model.catalogClient = ExtensionCatalogClient(fetchFile: { path, _, completion in
+panel.model.catalog.client = ExtensionCatalogClient(fetchFile: { path, _, completion in
     fixtureCatalogFetches += 1
     switch path {
     case ExtensionCatalog.indexPath: completion(.success(fixtureIndex))
@@ -448,14 +448,22 @@ panel.model.catalogClient = ExtensionCatalogClient(fetchFile: { path, _, complet
 }, publicKey: fixtureCatalogKey.publicKey.rawRepresentation.base64EncodedString(), stateURL: root.appendingPathComponent("extension-catalog.json"))
 try communityManager.setCommunityAllowed(true, expected: false)
 panel.toggle(); panel.model.query = "catalog"; settle()
-verify(fixtureCatalogFetches == 0 && panel.model.rows.map(\.id) == ["catalog:check"], "Typing catalog shows Check Catalog without fetching")
+verify(panel.model.showingCatalog && fixtureCatalogFetches == 0, "Typing catalog opens the catalog view without fetching")
 try render("catalog-check-launcher")
+func catalogField(in view: NSView) -> NSTextField? {
+    if let field = view as? NSTextField, field.placeholderString == "Search extensions…" { return field }
+    return view.subviews.lazy.compactMap { catalogField(in: $0) }.first
+}
+verify(panel.makeFirstResponder(catalogField(in: panel.contentView!)!), "Focus the catalog search field")
 key("\r", 36); settle(); settle()
-verify(fixtureCatalogFetches == 2 && panel.model.rows.count == 2, "Check Catalog loads the signed index once")
-verify(panel.model.selectedRow?.primaryAction == "Use Extension", "An installed listing offers to use it")
+verify(fixtureCatalogFetches == 2 && panel.model.catalog.listings.count == 2, "Return checks the signed catalog once")
+verify(panel.model.catalog.primaryTitle == "Use Extension", "An installed listing offers to use it")
 try render("catalog-launcher")
-panel.model.query = "catalog reader"; settle()
-verify(panel.model.rows.count == 1 && panel.model.selectedRow?.primaryAction == "Install Extension", "Typing filters the loaded catalog")
+key("\u{F701}", 125); settle()
+verify(panel.model.catalog.selected?.id == "community.fictional.reader" && panel.model.catalog.primaryTitle == "Install", "Down arrow selects the next listing")
+try render("catalog-detail-launcher")
+panel.model.catalog.input = "news.example"; settle()
+verify(panel.model.catalog.listings.count == 1, "Typing filters the loaded catalog, including by host")
 try render("catalog-filtered-launcher")
 panel.orderOut(nil)
 try communityManager.setCommunityAllowed(false, expected: true)

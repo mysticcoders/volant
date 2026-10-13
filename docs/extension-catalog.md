@@ -8,12 +8,16 @@ shows its name, version, summary, publisher, license and the permissions and hos
 **Source** link to the exact reviewed revision, and **Install**, **Update**, **Installed** or **Bundled**.
 Install and Update need **Allow Community Extensions** on.
 
-The launcher has the same catalog: choose **Extension Catalog** (or type `catalog`, `store` or
-`marketplace` to find it). Typing `catalog` alone shows only a Check the Extension Catalog row and
-fetches nothing; choosing the command or that row loads the catalog once for the session, and
-`catalog <text>` then filters it by name, ID, summary or publisher. Return installs or updates a
-listing, or for an installed one puts its name in the search field so it can be run;
-Command-Return opens its source. With community extensions off, Return opens Extension Settings.
+The launcher has the same catalog as its own view, like Dictionary: choose **Extension Catalog**
+(or type `catalog`, `store` or `marketplace` to find it), or type `catalog` directly. The view has its
+own search field, the matching extensions on the left and the selected one's details on the right:
+summary, notes, publisher, version, license, the permissions and hosts it needs, whether it is
+installed and on, and a link to the reviewed source. Typing `catalog` opens the view but fetches
+nothing; choosing the command, Check Catalog or Return loads the catalog once for the session. Search
+matches name, ID, summary, publisher and hosts. Arrow keys move the selection; Return installs,
+updates or uses the selected extension (it puts the name in the launcher's search field);
+Command-Return opens its source; ⌘[ goes back. With community extensions off, Return opens
+Extension Settings.
 In Settings a single Refresh reloads installed extensions and, once the catalog has been checked,
 checks it again.
 
