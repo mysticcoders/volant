@@ -8,6 +8,15 @@ shows its name, version, summary, publisher, license and the permissions and hos
 **Source** link to the exact reviewed revision, and **Install**, **Update**, **Installed** or **Bundled**.
 Install and Update need **Allow Community Extensions** on.
 
+The launcher has the same catalog: choose **Extension Catalog** (or type `catalog`, `store` or
+`marketplace` to find it). Typing `catalog` alone shows only a Check the Extension Catalog row and
+fetches nothing; choosing the command or that row loads the catalog once for the session, and
+`catalog <text>` then filters it by name, ID, summary or publisher. Return installs or updates a
+listing, or for an installed one puts its name in the search field so it can be run;
+Command-Return opens its source. With community extensions off, Return opens Extension Settings.
+In Settings a single Refresh reloads installed extensions and, once the catalog has been checked,
+checks it again.
+
 Installing never turns an extension on, allows a host or runs code. The installed extension appears
 under Installed, off, marked "From catalog", and its first use asks as usual. Removing it is the
 existing **Uninstall…**, which moves the folder to the Trash, forgets its approval and prunes hosts no

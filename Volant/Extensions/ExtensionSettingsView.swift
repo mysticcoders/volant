@@ -106,7 +106,8 @@ struct ExtensionSettingsView: View {
                     Text("Installed")
                     Spacer()
                     Button("Open Folder") { NSWorkspace.shared.open(ExtensionManager.directory) }.controlSize(.small).font(.callout)
-                    Button("Refresh") { reload(); onChange() }.controlSize(.small).font(.callout)
+                    Button("Refresh") { reload(); onChange(); if catalog != nil { loadCatalog() } }.controlSize(.small).font(.callout)
+                        .disabled(catalogLoading || installing != nil)
                 }
             } footer: {
                 SettingsFooter("Uninstalling moves a community extension to the Trash and removes host access no other extension uses. Extensions start off and run only when you invoke them. Enable one here or choose Enable and Run the first time you use it; changed code or permissions require enabling again. Try the bundled example: hello Andrew")
@@ -119,19 +120,18 @@ struct ExtensionSettingsView: View {
                 } else if catalogLoading {
                     HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Checking the catalog…").foregroundStyle(.secondary) }
                 } else {
-                    Text(catalogError ?? "Volant contacts the catalog only when you check it.").foregroundStyle(.secondary)
+                    HStack {
+                        Text(catalogError ?? "Volant contacts the catalog only when you check it.").foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Check Catalog") { loadCatalog() }.controlSize(.small)
+                            .accessibilityIdentifier("extension-catalog-check")
+                    }
                 }
             } header: {
-                HStack {
-                    Text("Catalog")
-                    Spacer()
-                    Button(catalog == nil ? "Check Catalog" : "Check Again") { loadCatalog() }
-                        .controlSize(.small).font(.callout).disabled(catalogLoading || installing != nil)
-                        .accessibilityIdentifier("extension-catalog-check")
-                }
+                Text("Catalog")
             } footer: {
                 SettingsFooter((communityAllowed ? "" : "Turn on Allow Community Extensions to install from the catalog. ")
-                    + "Extensions here are reviewed and signed for Volant. Each download is checked against the signed catalog before it is installed. Installing never turns an extension on or runs it; first use asks as usual, and an update with changed code or permissions needs enabling again.")
+                    + "Extensions here are reviewed and signed for Volant. Refresh above checks the catalog again. You can also browse it from the launcher: type catalog. Each download is checked against the signed catalog before it is installed. Installing never turns an extension on or runs it; first use asks as usual, and an update with changed code or permissions needs enabling again.")
             }
             Section {
                 if approvedHosts.isEmpty { Text("No hosts allowed.").foregroundStyle(.secondary) }

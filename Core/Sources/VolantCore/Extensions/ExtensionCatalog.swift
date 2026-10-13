@@ -30,7 +30,7 @@ public struct ExtensionCatalog: Codable, Equatable {
     }
 
     /// One downloadable file's expected size and lowercase SHA-256.
-    public struct File: Codable, Equatable {
+    public struct File: Codable, Hashable {
         public var sha256: String
         public var size: Int
         public init(sha256: String, size: Int) { self.sha256 = sha256; self.size = size }
@@ -38,7 +38,7 @@ public struct ExtensionCatalog: Codable, Equatable {
 
     /// One installable extension. The manifest fields repeated here let Settings describe permissions
     /// before anything is downloaded; `verify` requires the downloaded manifest to agree with them.
-    public struct Listing: Codable, Equatable, Identifiable {
+    public struct Listing: Codable, Hashable, Identifiable {
         public var id: String
         public var name: String
         public var version: String

@@ -434,6 +434,34 @@ try renderCommunitySettings("community-catalog-paused", catalog: fictionalCatalo
 print("PASS: community master default, Settings routing, individual consent, stale consent rejection and retained individual choices")
 panel.model.query = ""
 
+// The launcher's Extension Catalog: typing never fetches; Check Catalog loads a signed fictional index.
+let fixtureCatalogKey = Curve25519.Signing.PrivateKey()
+let fixtureIndex = try JSONEncoder().encode(fictionalCatalog)
+var fixtureCatalogFetches = 0
+panel.model.catalogClient = ExtensionCatalogClient(fetchFile: { path, _, completion in
+    fixtureCatalogFetches += 1
+    switch path {
+    case ExtensionCatalog.indexPath: completion(.success(fixtureIndex))
+    case ExtensionCatalog.signaturePath: completion(.success(Data(try! fixtureCatalogKey.signature(for: fixtureIndex).base64EncodedString().utf8)))
+    default: completion(.failure(ExtensionCatalogError.unavailable("Fixture has no packages.")))
+    }
+}, publicKey: fixtureCatalogKey.publicKey.rawRepresentation.base64EncodedString(), stateURL: root.appendingPathComponent("extension-catalog.json"))
+try communityManager.setCommunityAllowed(true, expected: false)
+panel.toggle(); panel.model.query = "catalog"; settle()
+verify(fixtureCatalogFetches == 0 && panel.model.rows.map(\.id) == ["catalog:check"], "Typing catalog shows Check Catalog without fetching")
+try render("catalog-check-launcher")
+key("\r", 36); settle(); settle()
+verify(fixtureCatalogFetches == 2 && panel.model.rows.count == 2, "Check Catalog loads the signed index once")
+verify(panel.model.selectedRow?.primaryAction == "Use Extension", "An installed listing offers to use it")
+try render("catalog-launcher")
+panel.model.query = "catalog reader"; settle()
+verify(panel.model.rows.count == 1 && panel.model.selectedRow?.primaryAction == "Install Extension", "Typing filters the loaded catalog")
+try render("catalog-filtered-launcher")
+panel.orderOut(nil)
+try communityManager.setCommunityAllowed(false, expected: true)
+print("PASS: launcher catalog checks only on request, filters locally and labels install state")
+panel.model.query = ""
+
 // Local panes remain visible while remote machines are still loading.
 panel.model.agents.connected = true
 panel.model.agents.busy = true

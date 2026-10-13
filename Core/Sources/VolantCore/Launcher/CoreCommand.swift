@@ -2,7 +2,7 @@ import Foundation
 
 /// Discoverable entry points. Data rows keep their own identity and aren't branded as apps.
 public enum CoreCommand: String, CaseIterable, Hashable {
-    case define, translate, caffeinate, emoji, notes, clipboard, shortcuts, agents, ai, talk, confetti, wifi, bluetooth, audio, newSnippet, newQuicklink
+    case define, translate, caffeinate, emoji, notes, clipboard, shortcuts, agents, ai, talk, confetti, wifi, bluetooth, audio, newSnippet, newQuicklink, catalog
     public var title: String {
         switch self {
         case .ai: return "AI Chat"
@@ -21,6 +21,7 @@ public enum CoreCommand: String, CaseIterable, Hashable {
         case .audio: return "Audio Devices"
         case .newSnippet: return "Create Snippet"
         case .newQuicklink: return "Create Quicklink"
+        case .catalog: return "Extension Catalog"
         }
     }
     public var query: String {
@@ -50,6 +51,7 @@ public enum CoreCommand: String, CaseIterable, Hashable {
         case .audio: return "speaker.wave.2"
         case .newSnippet: return "text.badge.plus"
         case .newQuicklink: return "link.badge.plus"
+        case .catalog: return "puzzlepiece.extension"
         }
     }
     public var detail: String {
@@ -61,6 +63,7 @@ public enum CoreCommand: String, CaseIterable, Hashable {
         case .emoji: return "Browse emoji and copy one"
         case .newSnippet: return "Save text to copy by keyword"
         case .newQuicklink: return "Save a link to open by name"
+        case .catalog: return "Browse and install reviewed extensions"
         default: return "Built into Volant"
         }
     }
@@ -68,6 +71,7 @@ public enum CoreCommand: String, CaseIterable, Hashable {
     var searchTerms: String {
         switch self {
         case .ai: return "acp"
+        case .catalog: return "extensions | store | marketplace | install"
         case .newSnippet: return LauncherRouting.snippetCreatePhrases.sorted().joined(separator: " | ")
         case .newQuicklink: return LauncherRouting.quicklinkCreatePhrases.sorted().joined(separator: " | ") + " | new link"
         default: return ""
