@@ -38,6 +38,8 @@ enum ResultRow: Identifiable, Hashable {
     case extensionRun(InstalledExtension, input: String)
     case extensionResult(String)
     case extensionItem(ExtensionItem, source: InstalledExtension)
+    case catalogCheck
+    case catalogListing(ExtensionCatalog.Listing, status: ExtensionManager.CatalogStatus, installed: InstalledExtension?)
     case note(Note)
     case newNote(String)
     case calculation(CalculationAnswer, slot: Int)
@@ -73,6 +75,8 @@ enum ResultRow: Identifiable, Hashable {
         case .extensionRun(let e, let i): return "ext:\(e.id):\(i)"
         case .extensionResult(let s): return "extresult:\(s)"
         case .extensionItem(let item, let source): return "extitem:\(source.id):\(item.url ?? item.title)"
+        case .catalogCheck: return "catalog:check"
+        case .catalogListing(let listing, _, _): return "catalog:" + listing.id
         case .snippet(let s): return "snip:\(s.name.utf8.count):\(s.name)\(s.keyword.utf8.count):\(s.keyword)\(s.body)"
         case .emoji(let e): return "emoji:\(e.symbol)"
         case .quicklink(let q, let t): return "ql:\(q.name):\(t)"
@@ -102,6 +106,14 @@ enum ResultRow: Identifiable, Hashable {
         case .extensionRun: return "Extension"
         case .extensionResult: return "Result"
         case .extensionItem(_, let source): return source.name
+        case .catalogCheck: return "Catalog"
+        case .catalogListing(_, let status, _):
+            switch status {
+            case .available: return "Available"
+            case .update: return "Update Available"
+            case .installed: return "Installed"
+            case .bundled: return "Bundled"
+            }
         case .snippet: return "Snippet"
         case .emoji: return "Emoji"
         case .quicklink: return "Quicklink"
@@ -147,6 +159,13 @@ enum ResultRow: Identifiable, Hashable {
         case .extensionRun(let ext, _): return ext.communityBlocked ? "Open Extension Settings" : (ext.enabled ? "Run Extension" : "Enable and Run…")
         case .extensionResult: return "Copy Result"
         case .extensionItem(let item, _): return item.url == nil ? "Copy Title" : "Open Link"
+        case .catalogCheck: return "Check Catalog"
+        case .catalogListing(_, let status, _):
+            switch status {
+            case .available: return "Install Extension"
+            case .update: return "Update Extension"
+            case .installed, .bundled: return "Use Extension"
+            }
         case .snippet: return "Copy Snippet"
         case .emoji: return "Copy Emoji"
         case .quicklink: return "Open Link"
@@ -161,6 +180,7 @@ enum ResultRow: Identifiable, Hashable {
         case .contact(let c): return c.secondaryField?.copyTitle
         case .calculation: return "Use Answer"
         case .extensionItem(let item, _): return item.secondaryURL == nil ? nil : (item.secondaryTitle ?? "Open Second Link")
+        case .catalogListing(let listing, _, _): return listing.sourceURL == nil ? nil : "View Source"
         default: return nil
         }
     }
@@ -387,6 +407,13 @@ final class LauncherModel: ObservableObject {
     var extensions = ExtensionManager()
     @Published var pendingExtension: ExtensionPermissionRequest?
     @Published private(set) var extensionRunning = false
+    /// The catalog as last loaded in this launcher session. It is fetched only when the owner chooses
+    /// Extension Catalog or Check Catalog, never while a `catalog` query is typed.
+    private(set) var catalog: ExtensionCatalog?
+    private(set) var catalogLoading = false
+    private var catalogError: String?
+    private(set) var catalogInstalling: String?
+    var catalogClient = ExtensionCatalogClient.live
     let usage: UsageStore
     var config: Preferences { didSet { promotedHarness = config.promotedHarness; extensions.invalidateCatalog() } }
     var searchesSecondarySources = true
@@ -813,6 +840,14 @@ final class LauncherModel: ObservableObject {
             let rows = extensions.search(name).map { ResultRow.extensionRun($0, input: input) }
             notice = rows.isEmpty ? "No matching extensions. Manage extensions in Settings → Extensions." : nil
             sections = rows.isEmpty ? [] : [ResultSection(title: "Extensions", rows: rows)]
+            return
+        }
+        if q.lowercased() == "catalog" || q.lowercased().hasPrefix("catalog ") {
+            let term = q.dropFirst(7).trimmingCharacters(in: .whitespaces)
+            extensions.configURL = actionConfigURL
+            if previousBranch == "catalog" { extensions.loadIfNeeded() } else { extensions.reload() }
+            prefixBranch = "catalog"
+            showCatalog(term)
             return
         }
         if q.lowercased() == "note" || q.lowercased().hasPrefix("note ") {
@@ -1260,6 +1295,7 @@ final class LauncherModel: ObservableObject {
         case .appleShortcut(let shortcut): shortcutRunQuery = query; appleShortcuts.run(shortcut); return
         case .systemAction(let action): onNote(.systemAction(action)); return
         case .core(let command):
+            if command == .catalog { query = command.query + " "; loadCatalog(); return }
             if command == .ai { presentAIChat() }
             else if command == .talk { toggleDictation() }
             else if command == .confetti { onNote(.confetti); dismiss(); return }
@@ -1336,6 +1372,13 @@ final class LauncherModel: ObservableObject {
             } else { runExtension(ext, input: input) }
             return
         case .extensionResult(let text): copy(text)
+        case .catalogCheck: loadCatalog(); return
+        case .catalogListing(let listing, let status, _):
+            switch status {
+            case .installed, .bundled: query = listing.name + " "; searchFocusRequest = UUID()
+            case .available, .update: installFromCatalog(listing)
+            }
+            return
         case .extensionItem(let item, _):
             guard let link = item.url, let url = URL(string: link) else { copy(item.title); return }
             _ = QuicklinkResolver.open(url)
@@ -1547,8 +1590,79 @@ final class LauncherModel: ObservableObject {
         case .extensionItem(let item, _):
             guard let link = item.secondaryURL, let url = URL(string: link) else { activateSelection(); return }
             _ = QuicklinkResolver.open(url)
+        case .catalogListing(let listing, _, _):
+            guard let url = listing.sourceURL else { activateSelection(); return }
+            NSWorkspace.shared.open(url)
         default: activateSelection(); return
         }
         dismiss()
+    }
+}
+
+extension LauncherModel {
+    /// Lists the loaded catalog, filtered by name, ID, summary or publisher. Before the owner asks
+    /// for it, the only row is Check Catalog: typing `catalog` never contacts the network.
+    fileprivate func showCatalog(_ term: String) {
+        guard let catalog else {
+            notice = catalogLoading ? "Checking the extension catalog…" : (catalogError ?? "Volant contacts the extension catalog only when you check it.")
+            sections = catalogLoading ? [] : [ResultSection(title: "Extension Catalog", rows: [.catalogCheck])]
+            return
+        }
+        let matches = catalog.extensions.filter { listing in
+            term.isEmpty || [listing.name, listing.id, listing.summary, listing.publisher].contains { $0.localizedCaseInsensitiveContains(term) }
+        }
+        let rows = matches.map { listing in
+            ResultRow.catalogListing(listing, status: ExtensionManager.catalogStatus(listing, installed: extensions.extensions),
+                                     installed: extensions.extensions.first { $0.id == listing.id })
+        }
+        if catalogInstalling != nil { notice = "Installing…" }
+        else if rows.isEmpty { notice = catalog.extensions.isEmpty ? "The catalog has no extensions yet." : "No catalog extensions match “\(term)”." }
+        else { notice = extensions.communityAllowed ? nil : "Turn on Allow Community Extensions in Settings to install from the catalog." }
+        sections = rows.isEmpty ? [] : [ResultSection(title: "Extension Catalog", rows: rows)]
+    }
+
+    /// Fetches the signed catalog once, then redraws the catalog query if it is still showing.
+    func loadCatalog() {
+        guard !catalogLoading else { return }
+        catalogLoading = true; catalogError = nil
+        redrawCatalog()
+        catalogClient.load { [weak self] result in
+            guard let self else { return }
+            self.catalogLoading = false
+            switch result {
+            case .success(let loaded): self.catalog = loaded
+            case .failure(let error): self.catalogError = error.localizedDescription
+            }
+            self.redrawCatalog()
+        }
+    }
+
+    /// Downloads and installs a listing. Installing never enables or runs it; with community
+    /// extensions off, Settings opens instead, where the switch is.
+    func installFromCatalog(_ listing: ExtensionCatalog.Listing) {
+        guard catalogInstalling == nil, let catalog else { return }
+        guard extensions.communityAllowed else { dismiss(); onNote(.extensionSettings); return }
+        catalogInstalling = listing.id
+        redrawCatalog()
+        catalogClient.download(listing) { [weak self] result in
+            guard let self else { return }
+            self.catalogInstalling = nil
+            do {
+                let files = try result.get()
+                guard self.extensions.communityAllowed else { throw ExtensionManager.ExtensionError.communityDisabled }
+                let installed = try self.extensions.install(listing, manifest: files.manifest, module: files.module, icon: files.icon, from: catalog)
+                self.actionFeedback = "Installed \(installed.name). It runs only after you turn it on; type \(installed.name) to start."
+            } catch {
+                self.actionFeedback = error.localizedDescription
+            }
+            self.redrawCatalog()
+        }
+    }
+
+    private func redrawCatalog() {
+        guard prefixBranch == "catalog" else { return }
+        let selectedID = selectedRow?.id
+        showCatalog(query.dropFirst(7).trimmingCharacters(in: .whitespaces))
+        if let selectedID, let offset = rows.firstIndex(where: { $0.id == selectedID }) { selection = offset }
     }
 }

@@ -415,6 +415,7 @@ private extension CoreCommand {
         case .wifi, .bluetooth: return .blue
         case .audio: return .mint
         case .newSnippet, .newQuicklink: return .cyan
+        case .catalog: return Color(red: 0.95, green: 0.42, blue: 0.29)
         }
     }
 }
@@ -493,6 +494,8 @@ private struct RowView: View {
         case .extensionRun(let e, let i): return i.isEmpty ? e.name : "\(e.name) — \(i)"
         case .extensionResult(let s): return s
         case .extensionItem(let item, _): return item.title
+        case .catalogCheck: return "Check the Extension Catalog"
+        case .catalogListing(let listing, _, _): return listing.name
         case .snippet(let s): return s.name
         case .emoji(let e): return "\(e.symbol)  \(e.name)"
         case .quicklink(let q, let t): return t.isEmpty ? q.name : "\(q.name) — \(t)"
@@ -525,6 +528,11 @@ private struct RowView: View {
         case .extensionRun(let e, _): return (e.communityBlocked ? "Community extensions off · " : (e.enabled ? "Enabled · " : "Off · ")) + e.accessDescription
         case .extensionResult: return "Press return to copy"
         case .extensionItem(let item, _): return item.subtitle ?? item.url ?? ""
+        case .catalogCheck: return "Download the signed list of reviewed extensions"
+        case .catalogListing(let listing, let status, _):
+            var parts = [listing.summary, listing.publisher, InstalledExtension.accessDescription(capabilities: listing.capabilities, hosts: listing.hosts)]
+            if case .update(let from) = status { parts.insert("\(from) → \(listing.version)", at: 1) } else { parts.insert(listing.version, at: 1) }
+            return parts.joined(separator: " · ")
         case .snippet(let s): return s.body.replacingOccurrences(of: "\n", with: " ")
         case .emoji: return nil
         case .quicklink(let q, _): return q.url
@@ -579,6 +587,11 @@ private struct RowView: View {
             if let icon = ExtensionIcon.image(for: ext) { Image(nsImage: icon).resizable().clipShape(RoundedRectangle(cornerRadius: 5)) }
             else { Image(systemName: "puzzlepiece.extension").font(.system(size: 20)).foregroundStyle(.secondary) }
         case .extensionResult: Image(systemName: "checkmark.circle").font(.system(size: 20)).foregroundStyle(.secondary)
+        case .catalogCheck: CommandTile(symbol: CoreCommand.catalog.symbol, tint: CoreCommand.catalog.tint)
+        case .catalogListing(_, _, let installed):
+            if let installed, let icon = ExtensionIcon.image(for: installed) {
+                Image(nsImage: icon).resizable().clipShape(RoundedRectangle(cornerRadius: 5))
+            } else { CommandTile(symbol: CoreCommand.catalog.symbol, tint: CoreCommand.catalog.tint) }
         case .extensionItem(_, let source):
             if let icon = ExtensionIcon.image(for: source) { Image(nsImage: icon).resizable().clipShape(RoundedRectangle(cornerRadius: 5)) }
             else { Image(systemName: "newspaper").font(.system(size: 20)).foregroundStyle(.secondary) }

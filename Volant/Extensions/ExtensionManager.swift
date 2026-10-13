@@ -161,7 +161,7 @@ final class ExtensionManager {
 
     /// How a catalog listing relates to what is installed. A listing is current only when its version,
     /// module hash, permissions and hosts all match the installed manifest.
-    enum CatalogStatus: Equatable {
+    enum CatalogStatus: Hashable {
         case available, installed, update(from: String), bundled
     }
     static func catalogStatus(_ listing: ExtensionCatalog.Listing, installed: [InstalledExtension]) -> CatalogStatus {

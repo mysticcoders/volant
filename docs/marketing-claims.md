@@ -46,6 +46,13 @@ Added in 0.3.0:
 | --- | --- | --- | --- |
 | Signed extension catalog with Install and Update in Settings | Yes | #218; Core and app tests with a throwaway key and in-memory files, native light/dark renders, and the published catalog (sequence 5) decoded and both packages verified by the production code on the host. The notarized 0.3.0 DMG installed both readers from the live catalog in the installed-acceptance VM (#220), and the owner's installed app, updated from 0.2.7 through Sparkle, listed the catalog on October 12, 2026; only the Hacker News and Lobsters readers are listed | Extensions and Privacy docs; "signed, reviewed extensions", never "Raycast extensions", a store, or automatic updates |
 
+Merged after 0.3.0, not in the current download:
+
+| Story | Released | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| Extension icons in the launcher and Settings | No | #222; Core and app tests, VM renders with a fictional icon; Hacker News and Lobsters icons are published in volant-extensions | None until released; the site icons are their owners' marks, credited in volant-extensions |
+| Browse and install the catalog from the launcher | No | Launcher catalog tests and VM renders; typing never fetches | None until released |
+
 ## Privacy language
 
 No Volant account or telemetry. Notes and encrypted clipboard history remain local. Submitted AI prompts and selected context reach the chosen provider/server. Keys stay in Keychain. Updates, HTTP AI, rates and network extensions use separate helpers; opt-in iCloud uses Apple's system service. Avoid blanket “everything stays on your Mac,” “entirely offline,” or “zero dependencies” claims. Say “no Accessibility unless you choose Type at the cursor”: the main app stays sandboxed and never uses Accessibility, and only the separate input helper does, listed as Volant in System Settings, after the owner picks that output.
