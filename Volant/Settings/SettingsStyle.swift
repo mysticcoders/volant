@@ -139,3 +139,25 @@ extension ResolvedTheme {
         palette.flatMap { Color(hex: $0.secondaryBackground) } ?? Color.primary.opacity(0.055)
     }
 }
+
+/// A rounded search field without a bezel, used by the sidebar and App Shortcuts.
+struct SettingsSearchField: View {
+    let prompt: String
+    @Binding var text: String
+    var submit: () -> Void = {}
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass").foregroundStyle(.secondary).accessibilityHidden(true)
+            TextField(prompt, text: $text)
+                .textFieldStyle(.plain)
+                .onSubmit(submit)
+            if !text.isEmpty {
+                Button { text = "" } label: { Image(systemName: "xmark.circle.fill") }
+                    .buttonStyle(.plain).foregroundStyle(.secondary).help("Clear search")
+            }
+        }
+        .padding(.horizontal, 8).padding(.vertical, 6)
+        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.primary.opacity(0.06)))
+    }
+}

@@ -163,18 +163,9 @@ private struct SettingsView: View {
     private var sidebar: some View {
         let visible = SettingsSection.allCases.filter { $0.matches(sectionSearch) }
         return VStack(spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: "magnifyingglass").foregroundStyle(.secondary).accessibilityHidden(true)
-                TextField("Search settings", text: $sectionSearch)
-                    .textFieldStyle(.plain)
-                    .onSubmit { if let first = visible.first { state.section = first } }
-                if !sectionSearch.isEmpty {
-                    Button { sectionSearch = "" } label: { Image(systemName: "xmark.circle.fill") }
-                        .buttonStyle(.plain).foregroundStyle(.secondary).help("Clear search")
-                }
+            SettingsSearchField(prompt: "Search settings", text: $sectionSearch) {
+                if let first = visible.first { state.section = first }
             }
-            .padding(.horizontal, 8).padding(.vertical, 6)
-            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.primary.opacity(0.06)))
             .padding(.horizontal, 12)
             .padding(.top, titleBand - 8)
             List(selection: Binding(get: { state.section }, set: { if let section = $0 { state.section = section } })) {
@@ -295,25 +286,43 @@ private struct SettingsView: View {
         .formStyle(.settings)
     }
 
+    /// App aliases and hotkeys as one card of rows under a search field, laid out like the other sections.
     private var shortcuts: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 6) {
-                TextField("Search applications", text: $search).textFieldStyle(.roundedBorder)
-                Text("Type an alias to open the app from the launcher, or record a global hotkey. Aliases save on Return or when you leave the field.")
-                    .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                if !state.registrationErrors.isEmpty {
-                    Text(state.registrationErrors.joined(separator: "\n")).font(.callout).foregroundStyle(.red).textSelection(.enabled)
+        let apps = state.apps.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }
+        return VStack(alignment: .leading, spacing: 10) {
+            SettingsSearchField(prompt: "Search applications", text: $search)
+            Text("Type an alias to open the app from the launcher, or record a global hotkey. Aliases save on Return or when you leave the field.")
+                .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 4)
+            if !state.registrationErrors.isEmpty {
+                Text(state.registrationErrors.joined(separator: "\n")).font(.callout).foregroundStyle(.red).textSelection(.enabled)
+                    .padding(.horizontal, 4)
+            }
+            HStack(spacing: 10) {
+                Text("Application").frame(maxWidth: .infinity, alignment: .leading)
+                Text("Alias").frame(width: 90, alignment: .leading)
+                Text("Hotkey").frame(width: 160, alignment: .leading)
+            }
+            .font(.caption.weight(.medium)).foregroundStyle(.secondary)
+            .padding(.horizontal, 16).padding(.top, 6)
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(apps) { app in
+                        AppBindingRow(app: app, config: state.config, configURL: configURL, onChange: onChange)
+                            .padding(.horizontal, 16).padding(.vertical, 6)
+                    }
                 }
-            }.padding(12)
-            Divider()
-            List {
-                ForEach(state.apps.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }) { app in
-                    AppBindingRow(app: app, config: state.config, configURL: configURL, onChange: onChange)
-                }
-            }.listStyle(.plain).overlay {
+                .padding(.vertical, 6)
+                .background(theme.settingsCard, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .padding(.bottom, 24)
+            }
+            .overlay {
                 if state.apps.isEmpty { Text("No applications indexed yet. This list updates automatically.").foregroundStyle(.secondary) }
+                else if apps.isEmpty { Text("No matching applications").foregroundStyle(.secondary) }
             }
         }
+        .padding(.horizontal, 24)
+        .padding(.top, 4)
     }
 
     private var data: some View {
