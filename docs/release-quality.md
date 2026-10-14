@@ -329,3 +329,16 @@ Later the same day the owner installed a reader from Settings → Catalog in the
 **Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
 
 **Installed acceptance (before publishing).** `tools/installed-acceptance/run-vm.py --dmg` against this DMG in a disposable macOS VM. A first full run had 21 failures caused by the acceptance script, not the app: a new step left the launcher open, so the next summon closed it and `ext hn` was typed into the desktop (Hacker News was never turned on, so its later checks failed with it), two catalog counts assumed only two listings (npm and Wikipedia are now listed too), and three Finder checks in settings were disturbed by the window that step left open; the shortcut confirmation checks that had failed since 0.2.7 passed. After fixing the script, a rerun of the extensions and settings sections passed 86 of 86: Hacker News and Lobsters installed from the live catalog without enabling or allowing hosts; `hn` did not list Hacker News while it was off and `ext hn` led to consent; stories loaded and opened; the opened story showed as Read, Command-K offered Pin Story, Pin moved it to the top as Pinned and the extension's data was saved on disk (the first signed-app evidence for extension storage); the readers showed their icons; host approval, removal and uninstall passed, and uninstall deleted the saved data. Installed 0.3.0 → 0.3.1 Sparkle upgrades and Intel hardware remain unverified.
+
+## 0.3.2 build 18 — October 14, 2026
+
+**What's in it.** See the [release notes](releases/0.3.2.md).
+
+**Build.** Built from `069d934` on `release/0.3.2` by `Scripts/ship.sh`.
+
+- **Notarization:** Apple accepted app submission `84c64eee-3336-402f-ae09-df4bbe162e83` and DMG submission `1dc98e35-c545-4dce-b19b-49b246e20942`. Both were stapled and passed Gatekeeper as Notarized Developer ID.
+- **Mounted DMG:** `Volant.app` 0.3.2, build 18, `x86_64 arm64`, valid deep strict signature, stapled, Applications link present.
+- **DMG SHA-256:** `570e0b37ec0c4a5843b8ff96e1b2c9e7b6e97e2e703edf0765613c19ae303462` (17652286 bytes).
+- **Feed:** the signed build-18 appcast generated with this DMG passes `sign_update --verify`.
+
+**Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
