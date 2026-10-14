@@ -63,6 +63,7 @@ Added in 0.3.3 (built once as 0.3.2, never published; see release-quality.md):
 | --- | --- | --- | --- |
 | Optional fsearch file search (whole disk, typo tolerance) | Yes | #234, #235; Core and app tests, the client against the owner's real fsearch daemon, the owner's installed Developer ID build on October 14, 2026 | Launcher docs; "works with fsearch if you run it", never implying Volant searches the disk itself or bundles fsearch |
 | Redesigned Settings: searchable sidebar, theme colors, sections for Keyboard Shortcuts, Dictation, File Search and About | Yes | #236; VM renders in light, dark and palette themes, the launcher fixture's Settings checks, the owner's look at a development-signed install on October 14, 2026 | Settings paths in the docs updated (Dictation, File Search, Import from Raycast); no screenshots of Settings on the website |
+| What's New in the app (bundled release notes) | Yes | #240; Core parser tests, launcher menu test, VM renders in light and dark | Release notes only; no website change |
 
 Merged after 0.3.1, not in the current download:
 
