@@ -314,3 +314,16 @@ Final publication: the signed build-10 feed was activated in Cloudflare Worker d
 **Owner verification (October 12, 2026).** Check for Updates upgraded the owner's installed 0.2.7 to 0.3.0 through Sparkle, and Settings → Extensions → Check Catalog listed the catalog in the installed app. Installing from the catalog on the owner's Mac was not tried; the acceptance VM run above covers that path. Intel hardware remains unverified.
 
 Later the same day the owner installed a reader from Settings → Catalog in the installed 0.3.0 app and used it successfully.
+
+## 0.3.1 build 17 — October 13, 2026
+
+**What's in it.** See the [release notes](releases/0.3.1.md).
+
+**Build.** Built from `017a85b` on `release/0.3.1` by `Scripts/ship.sh`.
+
+- **Notarization:** Apple accepted app submission `0d314bd4-4213-4909-b3e8-32e1873c40fa` and DMG submission `a0217003-2f9c-40d5-bf40-fe37f19a916d`. Both were stapled and passed Gatekeeper as Notarized Developer ID.
+- **Mounted DMG:** `Volant.app` 0.3.1, build 17, `x86_64 arm64`, valid deep strict signature, stapled, Applications link present.
+- **DMG SHA-256:** `50687d72baceb89e1f90bef53434a7138cc773bf2b0d783dd6a64b07c1f88ed8` (17466781 bytes).
+- **Feed:** the signed build-17 appcast generated with this DMG passes `sign_update --verify`.
+
+**Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
