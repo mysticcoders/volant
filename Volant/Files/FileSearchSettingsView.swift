@@ -29,7 +29,7 @@ struct FileSearchSettingsView: View {
                 SettingsFooter("Spotlight finds files in your home folder. fsearch is a separate tool you install and run yourself, with its own Full Disk Access. Whenever it isn’t running, Volant uses Spotlight.")
             }
         }
-        .formStyle(.grouped)
+        .formStyle(.settings)
         .onAppear(perform: check)
     }
 

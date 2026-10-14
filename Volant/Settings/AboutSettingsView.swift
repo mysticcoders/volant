@@ -49,6 +49,6 @@ struct AboutSettingsView: View {
                 SettingsFooter("GeoNames city names are licensed under Creative Commons Attribution 4.0. Airport codes from mwgg/Airports and the color theme palettes are MIT licensed; their licenses are included with Volant.")
             }
         }
-        .formStyle(.grouped)
+        .formStyle(.settings)
     }
 }

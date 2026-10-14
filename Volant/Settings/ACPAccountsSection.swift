@@ -17,9 +17,11 @@ struct ACPAccountsSection: View {
 
     var body: some View {
         Section {
-            Picker("Account", selection: choice) {
-                Text("Default login").tag("")
-                ForEach(config.profiles(for: provider.rawValue)) { Text($0.label).tag($0.id) }
+            LabeledContent("Account") {
+                Picker("Account", selection: choice) {
+                    Text("Default login").tag("")
+                    ForEach(config.profiles(for: provider.rawValue)) { Text($0.label).tag($0.id) }
+                }.labelsHidden().fixedSize()
             }.disabled(!enabled)
             ForEach(config.profiles(for: provider.rawValue)) { profile in
                 LabeledContent {
@@ -31,7 +33,7 @@ struct ACPAccountsSection: View {
                 }
             }
             HStack {
-                TextField("Add account", text: $label, prompt: Text("Label, such as Work"))
+                TextField("Add account", text: $label, prompt: Text("Label, such as Work")).textFieldStyle(.roundedBorder)
                 Button("Choose Folder…", action: add).disabled(!enabled || ACPAccountProfile.trimmedLabel(label) == nil)
                     .background(ControlAnchor("settings.add-account"))
             }

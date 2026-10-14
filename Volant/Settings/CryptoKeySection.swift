@@ -13,25 +13,32 @@ struct CryptoKeySection: View {
 
     var body: some View {
         Section {
-            if saved {
-                LabeledContent("CoinGecko key") { Text("Saved in Keychain").foregroundStyle(.secondary) }
-                LabeledContent {
-                    Button("Remove Key") { store(nil) }
-                } label: { EmptyView() }
-            } else {
-                SecureField("CoinGecko key", text: $draft, prompt: Text("Optional Demo key"))
-                LabeledContent {
-                    Button("Save Key") { store(draft.trimmingCharacters(in: .whitespaces)) }
-                        .disabled(!CryptoPrices.validKey(draft.trimmingCharacters(in: .whitespaces)))
-                } label: { EmptyView() }
-            }
-            if let message { Text(message).foregroundStyle(.red) }
+            Group { keyRows }.onAppear { saved = ((try? credentials.read(CurrencyRatesStore.keyAccount)) ?? nil) != nil }
         } header: {
             Text("Crypto prices")
         } footer: {
             SettingsFooter("Conversions include Bitcoin, Ether and other major coins without a key. A free CoinGecko Demo key is optional and gives steadier rate limits. Prices refresh at most every 10 minutes while you convert crypto, and nothing you type is sent. Data provided by CoinGecko.")
         }
-        .onAppear { saved = ((try? credentials.read(CurrencyRatesStore.keyAccount)) ?? nil) != nil }
+    }
+
+    /// The key's rows. Settings rebuilds sections row by row, so the Keychain check rides on the rows
+    /// rather than on the section.
+    @ViewBuilder private var keyRows: some View {
+        if saved {
+            LabeledContent("CoinGecko key") { Text("Saved in Keychain").foregroundStyle(.secondary) }
+            LabeledContent {
+                Button("Remove Key") { store(nil) }
+            } label: { EmptyView() }
+        } else {
+            LabeledContent("CoinGecko key") {
+                SecureField("CoinGecko key", text: $draft, prompt: Text("Optional Demo key")).labelsHidden().frame(maxWidth: 240)
+            }
+            LabeledContent {
+                Button("Save Key") { store(draft.trimmingCharacters(in: .whitespaces)) }
+                    .disabled(!CryptoPrices.validKey(draft.trimmingCharacters(in: .whitespaces)))
+            } label: { EmptyView() }
+        }
+        if let message { Text(message).foregroundStyle(.red) }
     }
 
     private func store(_ key: String?) {

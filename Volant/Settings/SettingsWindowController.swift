@@ -111,6 +111,7 @@ private struct SettingsView: View {
     let importRaycast: () -> Void
     @State private var search = ""
     @State private var sectionSearch = ""
+    @Environment(\.volantTheme) private var theme
     @State private var error: String?
     @State private var loginStatus = SMAppService.mainApp.status
     /// The title band is the toolbar's height, so the traffic lights sit in the sidebar and the section
@@ -123,23 +124,21 @@ private struct SettingsView: View {
         HStack(spacing: 0) {
             sidebar
                 .frame(width: 220)
-                .background(SidebarMaterial())
-            Divider()
+                .background(sidebarPane)
+                .padding([.top, .leading, .bottom], 8)
             detail
-                .scrollContentBackground(.hidden)
-                .contentMargins(.top, 8, for: .scrollContent)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .padding(.top, titleBand)
                 .overlay(alignment: .top) {
                     Text(state.section.title)
                         .font(.system(size: 15, weight: .semibold))
-                        .padding(.leading, 20)
+                        .padding(.leading, 24)
                         .frame(maxWidth: .infinity, minHeight: titleBand, maxHeight: titleBand, alignment: .leading)
-                        .background(Color(nsColor: .windowBackgroundColor))
+                        .background(theme.windowBackground)
                         .accessibilityAddTraits(.isHeader)
                 }
-                .background(Color(nsColor: .windowBackgroundColor))
         }
+        .background(theme.windowBackground)
         .ignoresSafeArea(.container, edges: .top)
         .sheet(item: $state.editing) { app in
             AppBindingEditor(app: app, configURL: configURL, onChange: onChange)
@@ -147,6 +146,17 @@ private struct SettingsView: View {
         .alert("Couldn’t apply change", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
             Button("OK") { error = nil }
         } message: { Text(error ?? "") }
+    }
+
+    /// The sidebar floats as a rounded pane inset from the window's edges: translucent with the system
+    /// themes, the palette's raised layer with a color theme.
+    @ViewBuilder private var sidebarPane: some View {
+        let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
+        if theme.hasPalette {
+            shape.fill(theme.settingsCard)
+        } else {
+            SidebarMaterial().clipShape(shape)
+        }
     }
 
     /// Sections filtered by the search field, keeping core sections and features in separate groups.
@@ -166,7 +176,7 @@ private struct SettingsView: View {
             .padding(.horizontal, 8).padding(.vertical, 6)
             .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.primary.opacity(0.06)))
             .padding(.horizontal, 12)
-            .padding(.top, titleBand)
+            .padding(.top, titleBand - 8)
             List(selection: Binding(get: { state.section }, set: { if let section = $0 { state.section = section } })) {
                 Section {
                     ForEach(visible.filter { !$0.isFeature }) { row($0) }
@@ -233,7 +243,7 @@ private struct SettingsView: View {
                 Text("Caffeinate")
             }
         }
-        .formStyle(.grouped)
+        .formStyle(.settings)
         .onAppear { loginStatus = SMAppService.mainApp.status }
     }
 
@@ -251,7 +261,7 @@ private struct SettingsView: View {
                 SettingsFooter("Click a shortcut and press a new combination; it saves immediately. Hold Dictate Text while you speak, or tap it to start and again to stop.")
             }
         }
-        .formStyle(.grouped)
+        .formStyle(.settings)
     }
 
     private var statusBar: some View {
@@ -260,10 +270,12 @@ private struct SettingsView: View {
                 Toggle("Herdr agent activity", isOn: Binding(get: { state.config.statusBar.sources.contains("herdr") }, set: { value in
                     apply { try Preferences.updateStatusBar(enabled: value, at: configURL) }
                 }))
-                Picker("Agents", selection: Binding(get: { state.config.statusBar.herdrFilter }, set: { value in
-                    apply { try Preferences.updateStatusBar(filter: value, at: configURL) }
-                })) {
-                    ForEach(Preferences.harnessOptions, id: \.id) { Text($0.title).tag($0.id) }
+                LabeledContent("Agents") {
+                    Picker("Agents", selection: Binding(get: { state.config.statusBar.herdrFilter }, set: { value in
+                        apply { try Preferences.updateStatusBar(filter: value, at: configURL) }
+                    })) {
+                        ForEach(Preferences.harnessOptions, id: \.id) { Text($0.title).tag($0.id) }
+                    }.labelsHidden().fixedSize()
                 }.disabled(!state.config.statusBar.sources.contains("herdr"))
             } header: {
                 Text("Herdr")
@@ -280,7 +292,7 @@ private struct SettingsView: View {
                 SettingsFooter("Shows your active conversation below the launcher’s search field, and whether it needs you.")
             }
         }
-        .formStyle(.grouped)
+        .formStyle(.settings)
     }
 
     private var shortcuts: some View {
@@ -344,7 +356,7 @@ private struct SettingsView: View {
             }
             CryptoKeySection(onChange: onChange)
         }
-        .formStyle(.grouped)
+        .formStyle(.settings)
     }
     private func boolean(_ key: String, _ value: Bool) -> Binding<Bool> {
         Binding(get: { value }, set: { newValue in apply { try Preferences.updateBoolean(key, value: newValue, at: configURL) } })

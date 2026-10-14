@@ -49,7 +49,7 @@ struct AppearanceSettingsView: View {
                     HStack {
                         Button("Import File…") { importFile() }
                             .background(ControlAnchor("settings.import-raycast-theme-file"))
-                        Button("Paste Link or JSON") { importClipboard() }
+                        Button("Paste Theme") { importClipboard() }
                             .background(ControlAnchor("settings.paste-raycast-theme"))
                     }
                 }
@@ -59,25 +59,33 @@ struct AppearanceSettingsView: View {
                 SettingsFooter("System uses your macOS accent color and Volant its coral one; the others bring their own palette and a fixed appearance. Import a theme from themes.ray.so as a file or a copied link; Volant reads it locally and never downloads themes. Control-click an imported theme to remove it.")
             }
             Section {
-                Slider(value: $scale, in: Appearance.scaleRange, step: 0.05) {
+                LabeledContent {
+                    Slider(value: $scale, in: Appearance.scaleRange, step: 0.05) {
+                        Text("Size")
+                    } minimumValueLabel: {
+                        Image(systemName: "textformat.size.smaller").accessibilityLabel("Smaller")
+                    } maximumValueLabel: {
+                        Image(systemName: "textformat.size.larger").accessibilityLabel("Larger")
+                    } onEditingChanged: { editing in
+                        if !editing { save { $0.scale = scale } }
+                    }.labelsHidden().frame(maxWidth: 280)
+                } label: {
                     Text("Size")
                     Text("\(Int((scale * 100).rounded()))%")
-                } minimumValueLabel: {
-                    Image(systemName: "textformat.size.smaller").accessibilityLabel("Smaller")
-                } maximumValueLabel: {
-                    Image(systemName: "textformat.size.larger").accessibilityLabel("Larger")
-                } onEditingChanged: { editing in
-                    if !editing { save { $0.scale = scale } }
                 }
-                Slider(value: $opacity, in: Appearance.opacityRange, step: 0.05) {
+                LabeledContent {
+                    Slider(value: $opacity, in: Appearance.opacityRange, step: 0.05) {
+                        Text("Opacity")
+                    } minimumValueLabel: {
+                        Image(systemName: "circle.dotted").accessibilityLabel("More transparent")
+                    } maximumValueLabel: {
+                        Image(systemName: "circle.fill").accessibilityLabel("Opaque")
+                    } onEditingChanged: { editing in
+                        if !editing { save { $0.opacity = opacity } }
+                    }.labelsHidden().frame(maxWidth: 280)
+                } label: {
                     Text("Opacity")
                     Text("\(Int((opacity * 100).rounded()))%")
-                } minimumValueLabel: {
-                    Image(systemName: "circle.dotted").accessibilityLabel("More transparent")
-                } maximumValueLabel: {
-                    Image(systemName: "circle.fill").accessibilityLabel("Opaque")
-                } onEditingChanged: { editing in
-                    if !editing { save { $0.opacity = opacity } }
                 }
                 if appearance.clampedScale != 1 || appearance.clampedOpacity != 1 {
                     LabeledContent("Launcher") {
@@ -90,7 +98,7 @@ struct AppearanceSettingsView: View {
                 SettingsFooter("Changes apply when you let go of a slider. Lower opacity lets more of the desktop show through the launcher.")
             }
         }
-        .formStyle(.grouped)
+        .formStyle(.settings)
         .onAppear(perform: adopt)
         .onChange(of: appearance) { _, _ in adopt() }
         .alert("Couldn’t change appearance", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {

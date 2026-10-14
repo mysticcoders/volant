@@ -158,7 +158,7 @@ struct ExtensionSettingsView: View {
                 SettingsFooter("Volant fetches from these hosts for network extensions, which have no network access themselves. Removing a host stops every extension that uses it until you allow it again.")
             }
         }
-        .formStyle(.grouped)
+        .formStyle(.settings)
         .onAppear(perform: reload)
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in reload() }
         .sheet(item: $confirmingHosts) { ext in

@@ -12,19 +12,23 @@ struct DictationSettingsView: View {
     var body: some View {
         Form {
             Section {
-                Picker(selection: Binding(get: { config.dictationOutput }, set: choose)) {
-                    Text("Copy to clipboard").tag(DictationOutput.copy)
-                    Text("Type at the cursor").tag(DictationOutput.type)
+                LabeledContent {
+                    Picker("Dictation output", selection: Binding(get: { config.dictationOutput }, set: choose)) {
+                        Text("Copy to clipboard").tag(DictationOutput.copy)
+                        Text("Type at the cursor").tag(DictationOutput.type)
+                    }.labelsHidden().fixedSize()
                 } label: {
                     Text("Dictation output")
                     Text(config.dictationOutput == .type ? "Types into the app you’re using." : "Copies what you said; press ⌘V to paste it.")
                 }
                 if config.dictationOutput == .type {
-                    Picker("Type", selection: Binding(get: { config.dictationTypesWhileSpeaking }, set: { value in
-                        apply { try Preferences.updateBoolean("dictationTypesWhileSpeaking", value: value, at: configURL) }
-                    })) {
-                        Text("While speaking").tag(true)
-                        Text("When finished").tag(false)
+                    LabeledContent("Type") {
+                        Picker("Type", selection: Binding(get: { config.dictationTypesWhileSpeaking }, set: { value in
+                            apply { try Preferences.updateBoolean("dictationTypesWhileSpeaking", value: value, at: configURL) }
+                        })) {
+                            Text("While speaking").tag(true)
+                            Text("When finished").tag(false)
+                        }.labelsHidden().fixedSize()
                     }
                     LabeledContent("Accessibility") { DictationAccessStatus(access: access) }
                 } else if access.stoppedHelper {
@@ -58,7 +62,7 @@ struct DictationSettingsView: View {
                 Text("While Dictating")
             }
         }
-        .formStyle(.grouped)
+        .formStyle(.settings)
         .onAppear { access.refresh(config.dictationOutput) }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             access.refresh(config.dictationOutput)
