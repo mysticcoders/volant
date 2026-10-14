@@ -7,7 +7,7 @@ import VolantCore
 final class SettingsState: ObservableObject {
     @Published var config = Preferences()
     @Published var apps: [AppEntry] = []
-    @Published var section = "General"
+    @Published var section = SettingsSection.general
     @Published var editing: AppEntry?
     @Published var registrationErrors: [String] = []
     @Published var iCloudStatus = ICloudSettingsSync.Status.off.text
@@ -31,10 +31,14 @@ final class SettingsWindowController: NSWindowController {
          openAI: @escaping (AIConfiguration) -> Void = { _ in }, onChange: @escaping () -> Void) {
         self.onChange = onChange
         self.configURL = configURL
-        let window = SettingsPanel(contentRect: NSRect(x: 0, y: 0, width: 760, height: 540),
-                              styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
+        let window = SettingsPanel(contentRect: NSRect(x: 0, y: 0, width: 820, height: 600),
+                              styleMask: [.titled, .closable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
         window.minSize = NSSize(width: 680, height: 500)
         window.title = "Volant Settings"
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.toolbar = NSToolbar(identifier: "VolantSettings")
+        window.toolbarStyle = .unified
         window.collectionBehavior = [.fullScreenNone]
         window.setAccessibilitySubrole(.dialog)
         window.hidesOnDeactivate = false
@@ -46,10 +50,11 @@ final class SettingsWindowController: NSWindowController {
                          chooseAIProject: { [weak self] completion in self?.chooseAIProject(completion) },
                          chooseAccountFolder: { [weak self] completion in self?.chooseAccountFolder(completion) },
                          importRaycast: { [weak self] in self?.showRaycastImport() })
-                .frame(minWidth: 680, idealWidth: 760, maxWidth: .infinity, minHeight: 500, idealHeight: 540, maxHeight: .infinity)
+                .frame(minWidth: 680, idealWidth: 820, maxWidth: .infinity, minHeight: 500, idealHeight: 600, maxHeight: .infinity)
+                .ignoresSafeArea(.container, edges: .top)
         })
         hosting.sizingOptions = []
-        let content = NSView(frame: NSRect(x: 0, y: 0, width: 760, height: 540))
+        let content = NSView(frame: NSRect(x: 0, y: 0, width: 820, height: 600))
         hosting.translatesAutoresizingMaskIntoConstraints = false
         content.addSubview(hosting)
         NSLayoutConstraint.activate([
@@ -60,7 +65,7 @@ final class SettingsWindowController: NSWindowController {
         ])
         window.contentView = content
         window.contentMinSize = NSSize(width: 680, height: 500)
-        window.setFrame(NSWindow.frameRect(forContentRect: NSRect(x: 0, y: 0, width: 760, height: 540), styleMask: window.styleMask), display: false)
+        window.setFrame(NSWindow.frameRect(forContentRect: NSRect(x: 0, y: 0, width: 820, height: 600), styleMask: window.styleMask), display: false)
         window.center()
         sectionChanges = state.$section.dropFirst().sink { [weak window] _ in
             DispatchQueue.main.async { window?.recalculateKeyViewLoop() }
@@ -90,7 +95,7 @@ final class SettingsWindowController: NSWindowController {
         if let apps { state.apps = apps }
         if let errors { state.registrationErrors = errors }
     }
-    func edit(_ app: AppEntry) { state.section = "App Shortcuts"; state.editing = app; showWindow(nil); NSApp.activate(ignoringOtherApps: true) }
+    func edit(_ app: AppEntry) { state.section = .appShortcuts; state.editing = app; showWindow(nil); NSApp.activate(ignoringOtherApps: true) }
     func showRaycastImport() { raycastImport.showWindow(nil); NSApp.activate(ignoringOtherApps: true) }
 }
 
@@ -105,34 +110,37 @@ private struct SettingsView: View {
     let chooseAccountFolder: (@escaping (URL?) -> Void) -> Void
     let importRaycast: () -> Void
     @State private var search = ""
+    @State private var sectionSearch = ""
     @State private var error: String?
     @State private var loginStatus = SMAppService.mainApp.status
-    private let sections = ["General", "Appearance", "Status Bar", "AI", "Extensions", "App Shortcuts", "Data & Configuration"]
-    private let symbols = ["General": "gearshape", "Appearance": "circle.lefthalf.filled", "Status Bar": "menubar.rectangle", "AI": "sparkles",
-                           "Extensions": "puzzlepiece.extension", "App Shortcuts": "command", "Data & Configuration": "externaldrive"]
+    /// The title band is the toolbar's height, so the traffic lights sit in the sidebar and the section
+    /// title lines up with them. The split ignores the toolbar's safe area and insets the detail itself;
+    /// a grouped form's scroll view still reaches under the band, so the title draws over it with an
+    /// opaque background.
+    private let titleBand: CGFloat = 52
 
     var body: some View {
         HStack(spacing: 0) {
-            List(selection: Binding(get: { state.section }, set: { if let section = $0 { state.section = section } })) {
-                ForEach(sections, id: \.self) { section in
-                    Label(section, systemImage: symbols[section] ?? "circle").tag(section)
-                }
-            }
-            .listStyle(.sidebar)
-            .frame(width: 215)
+            sidebar
+                .frame(width: 220)
+                .background(SidebarMaterial())
             Divider()
-            Group {
-                if state.section == "General" { general }
-                else if state.section == "Appearance" { AppearanceSettingsView(appearance: state.config.appearance, configURL: configURL, onChange: onChange) }
-                else if state.section == "Status Bar" { statusBar }
-                else if state.section == "AI" { AISettingsView(conversations: conversations, configURL: configURL, onChange: onChange, openConversation: openAI, chooseProject: chooseAIProject,
-                                                                       chooseAccountFolder: chooseAccountFolder) }
-                else if state.section == "Extensions" { ExtensionSettingsView(configURL: configURL, onChange: onChange) }
-                else if state.section == "App Shortcuts" { shortcuts }
-                else { data }
-            }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            detail
+                .scrollContentBackground(.hidden)
+                .contentMargins(.top, 8, for: .scrollContent)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .padding(.top, titleBand)
+                .overlay(alignment: .top) {
+                    Text(state.section.title)
+                        .font(.system(size: 15, weight: .semibold))
+                        .padding(.leading, 20)
+                        .frame(maxWidth: .infinity, minHeight: titleBand, maxHeight: titleBand, alignment: .leading)
+                        .background(Color(nsColor: .windowBackgroundColor))
+                        .accessibilityAddTraits(.isHeader)
+                }
+                .background(Color(nsColor: .windowBackgroundColor))
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .ignoresSafeArea(.container, edges: .top)
         .sheet(item: $state.editing) { app in
             AppBindingEditor(app: app, configURL: configURL, onChange: onChange)
         }
@@ -141,11 +149,65 @@ private struct SettingsView: View {
         } message: { Text(error ?? "") }
     }
 
+    /// Sections filtered by the search field, keeping core sections and features in separate groups.
+    private var sidebar: some View {
+        let visible = SettingsSection.allCases.filter { $0.matches(sectionSearch) }
+        return VStack(spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass").foregroundStyle(.secondary).accessibilityHidden(true)
+                TextField("Search settings", text: $sectionSearch)
+                    .textFieldStyle(.plain)
+                    .onSubmit { if let first = visible.first { state.section = first } }
+                if !sectionSearch.isEmpty {
+                    Button { sectionSearch = "" } label: { Image(systemName: "xmark.circle.fill") }
+                        .buttonStyle(.plain).foregroundStyle(.secondary).help("Clear search")
+                }
+            }
+            .padding(.horizontal, 8).padding(.vertical, 6)
+            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.primary.opacity(0.06)))
+            .padding(.horizontal, 12)
+            .padding(.top, titleBand)
+            List(selection: Binding(get: { state.section }, set: { if let section = $0 { state.section = section } })) {
+                Section {
+                    ForEach(visible.filter { !$0.isFeature }) { row($0) }
+                }
+                Section("Features") {
+                    ForEach(visible.filter(\.isFeature)) { row($0) }
+                }
+            }
+            .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
+            .overlay {
+                if visible.isEmpty { Text("No matching settings").foregroundStyle(.secondary) }
+            }
+        }
+    }
+
+    private func row(_ section: SettingsSection) -> some View {
+        Label { Text(section.title) } icon: { SettingsIcon(section: section) }
+            .tag(section)
+    }
+
+    @ViewBuilder private var detail: some View {
+        switch state.section {
+        case .general: general
+        case .appearance: AppearanceSettingsView(appearance: state.config.appearance, configURL: configURL, onChange: onChange)
+        case .keyboardShortcuts: keyboardShortcuts
+        case .appShortcuts: shortcuts
+        case .data: data
+        case .about: AboutSettingsView()
+        case .ai: AISettingsView(conversations: conversations, configURL: configURL, onChange: onChange, openConversation: openAI, chooseProject: chooseAIProject,
+                                 chooseAccountFolder: chooseAccountFolder)
+        case .dictation: DictationSettingsView(config: state.config, access: dictationAccess, apply: apply, configURL: configURL)
+        case .extensions: ExtensionSettingsView(configURL: configURL, onChange: onChange)
+        case .fileSearch: FileSearchSettingsView(config: state.config, apply: apply, configURL: configURL)
+        case .statusBar: statusBar
+        }
+    }
+
     private var general: some View {
         Form {
             Section {
-                Toggle("Show Volant in the Dock", isOn: boolean("showInDock", state.config.showInDock))
-                Toggle("Show launcher when Volant starts", isOn: boolean("showOnLaunch", state.config.showOnLaunch))
                 Toggle("Launch at Login", isOn: Binding(get: { loginStatus == .enabled }, set: { enabled in
                     do {
                         if enabled { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
@@ -159,16 +221,24 @@ private struct SettingsView: View {
                         Text("Allow Volant in System Settings → General → Login Items.").foregroundStyle(.secondary)
                     }
                 }
+                Toggle("Show Volant in the Dock", isOn: boolean("showInDock", state.config.showInDock))
+                Toggle("Show launcher when Volant starts", isOn: boolean("showOnLaunch", state.config.showOnLaunch))
             }
             Section {
-                Toggle("Keep display on and unlocked", isOn: boolean("caffeinateKeepsDisplayAwake", state.config.caffeinateKeepsDisplayAwake))
+                Toggle(isOn: boolean("caffeinateKeepsDisplayAwake", state.config.caffeinateKeepsDisplayAwake)) {
+                    Text("Keep display on and unlocked")
+                    Text("Off keeps only the Mac awake. Add display or system to a caffeinate command to choose for one session.")
+                }
             } header: {
                 Text("Caffeinate")
-            } footer: {
-                SettingsFooter("Caffeinate sessions keep the display from dimming, sleeping or locking. Turn this off to keep only the Mac awake and let the display sleep. Add display or system to a caffeinate command to choose for one session.")
             }
-            DictationSettingsSection(config: state.config, access: dictationAccess, apply: apply, configURL: configURL)
-            FileSearchSettingsSection(config: state.config, apply: apply, configURL: configURL)
+        }
+        .formStyle(.grouped)
+        .onAppear { loginStatus = SMAppService.mainApp.status }
+    }
+
+    private var keyboardShortcuts: some View {
+        Form {
             Section {
                 if !state.registrationErrors.isEmpty { Text(state.registrationErrors.joined(separator: "\n")).foregroundStyle(.red) }
                 GlobalShortcutRow(title: "Show Volant", key: "summonHotKey", value: state.config.summonHotKey, configURL: configURL, onChange: onChange)
@@ -177,14 +247,11 @@ private struct SettingsView: View {
                 GlobalShortcutRow(title: "Dictate Text", key: "talkHotKey", value: state.config.talkHotKey, configURL: configURL, onChange: onChange)
                 GlobalShortcutRow(title: "Lock Screen", key: "lockScreenHotKey", value: state.config.lockScreenHotKey, configURL: configURL, onChange: onChange)
                 GlobalShortcutRow(title: "Sleep Displays", key: "sleepDisplaysHotKey", value: state.config.sleepDisplaysHotKey, configURL: configURL, onChange: onChange)
-            } header: {
-                Text("Keyboard Shortcuts")
             } footer: {
-                SettingsFooter("Click a shortcut and press a new combination; changes save immediately. Hold the dictation shortcut while you speak and let go to finish, or tap it to start and again to stop.")
+                SettingsFooter("Click a shortcut and press a new combination; it saves immediately. Hold Dictate Text while you speak, or tap it to start and again to stop.")
             }
         }
         .formStyle(.grouped)
-        .onAppear { loginStatus = SMAppService.mainApp.status }
     }
 
     private var statusBar: some View {
@@ -201,7 +268,7 @@ private struct SettingsView: View {
             } header: {
                 Text("Herdr")
             } footer: {
-                SettingsFooter("Shows “Herdr: 3 waiting” in the launcher footer when agents need you. Click it, or type herdr, to see the panes with waiting ones first and answer supported questions. Includes Local and enabled machines saved in Herdr. Manage remote connections in Herdr.")
+                SettingsFooter("Shows “Herdr: 3 waiting” in the launcher footer when agents need you. Click it, or type herdr, to see waiting panes first and answer their questions. Includes Local and the machines enabled in Herdr.")
             }
             Section {
                 Toggle("AI Chat activity", isOn: Binding(get: { state.config.statusBar.sources.contains("ai-chat") }, set: { value in
@@ -210,7 +277,7 @@ private struct SettingsView: View {
             } header: {
                 Text("AI Chat")
             } footer: {
-                SettingsFooter("Links to your active conversation, its provider, and whether it needs you. Hidden when no conversation is active. AI Chat activity appears below the launcher’s search field; Herdr appears in the footer.")
+                SettingsFooter("Shows your active conversation below the launcher’s search field, and whether it needs you.")
             }
         }
         .formStyle(.grouped)
@@ -276,28 +343,6 @@ private struct SettingsView: View {
                 SettingsFooter("Imports show a preview before applying changes. Export a backup before moving to another Mac.")
             }
             CryptoKeySection(onChange: onChange)
-            Section {
-                LabeledContent("City time zones") {
-                    Link("GeoNames", destination: URL(string: "https://www.geonames.org")!)
-                }
-                LabeledContent("Airport codes") {
-                    Link("mwgg/Airports", destination: URL(string: "https://github.com/mwgg/Airports")!)
-                }
-                LabeledContent("Exchange rates") {
-                    Link("Rates By Exchange Rate API", destination: WorldRates.attribution)
-                }
-                LabeledContent("Crypto prices") {
-                    Link("Data provided by CoinGecko", destination: URL(string: "https://www.coingecko.com")!)
-                }
-                LabeledContent("Color themes") {
-                    Text("Catppuccin, Nord, Dracula, Gruvbox, Solarized, Tokyo Night, Rosé Pine, One Dark")
-                        .multilineTextAlignment(.trailing)
-                }
-            } header: {
-                Text("Acknowledgements")
-            } footer: {
-                SettingsFooter("City names for calculator time conversions come from GeoNames, licensed under Creative Commons Attribution 4.0. Airport codes come from mwgg/Airports, licensed under MIT; its license is included with Volant. Color theme palettes come from their projects under MIT licenses, also included.")
-            }
         }
         .formStyle(.grouped)
     }

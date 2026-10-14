@@ -249,7 +249,7 @@ if CommandLine.arguments.contains("--render") {
                 return (color.redComponent + color.greenComponent + color.blueComponent) / 3
             }
             let selected = brightness(x: frame.maxX - 8, y: frame.midY)
-            let unselected = brightness(x: frame.maxX - 8, y: frame.midY - frame.height)
+            let unselected = brightness(x: frame.maxX - 8, y: frame.minY - frame.height > 0 ? frame.midY - frame.height : frame.midY + frame.height)
             let dark = window.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
             precondition(selected > (dark ? 0.12 : 0.6), "\(name): sidebar selection draws black (\(selected))")
             precondition(abs(selected - unselected) > 0.02, "\(name): sidebar selection does not stand out (\(selected) vs \(unselected))")
@@ -271,7 +271,7 @@ if CommandLine.arguments.contains("--render") {
         }
         for theme in ["light", "dark"] {
             app.appearance = NSAppearance(named: theme == "dark" ? .darkAqua : .aqua)
-            for section in ["General", "Appearance", "Status Bar", "AI", "Extensions", "App Shortcuts", "Data & Configuration"] {
+            for section in SettingsSection.allCases {
                 controller.state.section = section
                 controller.window!.setFrame(NSWindow.frameRect(forContentRect: NSRect(x: 100, y: 100, width: 680, height: 500), styleMask: controller.window!.styleMask), display: true)
                 RunLoop.main.run(until: Date().addingTimeInterval(0.15))
@@ -281,7 +281,7 @@ if CommandLine.arguments.contains("--render") {
                 func recorders(_ view: NSView) -> [RecorderButton] {
                     (view as? RecorderButton).map { [$0] } ?? view.subviews.flatMap(recorders)
                 }
-                if section == "General" {
+                if section == .keyboardShortcuts {
                     let event = NSEvent.mouseEvent(with: .mouseMoved, location: .zero, modifierFlags: [], timestamp: 0,
                                                    windowNumber: controller.window!.windowNumber, context: nil, eventNumber: 0, clickCount: 0, pressure: 0)!
                     for recorder in recorders(view) where !recorder.value.isEmpty {
@@ -289,9 +289,9 @@ if CommandLine.arguments.contains("--render") {
                         precondition(recorder.subviews.contains { !$0.isHidden && ($0 as? NSButton)?.toolTip == "Remove shortcut" })
                     }
                 }
-                capture(theme + "-" + section)
-                print("Rendered \(theme) \(section): \(view.bounds.size)")
-                if section == "Data & Configuration" || section == "Appearance" {
+                capture(theme + "-" + section.title)
+                print("Rendered \(theme) \(section.title): \(view.bounds.size)")
+                if section == .data || section == .appearance || section == .extensions {
                     func scrollViews(_ view: NSView) -> [NSScrollView] {
                         (view as? NSScrollView).map { [$0] } ?? view.subviews.flatMap(scrollViews)
                     }
@@ -300,41 +300,29 @@ if CommandLine.arguments.contains("--render") {
                         document.scroll(NSPoint(x: 0, y: document.isFlipped ? document.bounds.height : 0))
                     }
                     RunLoop.main.run(until: Date().addingTimeInterval(0.15))
-                    capture(theme + "-" + section + "-bottom")
+                    capture(theme + "-" + section.title + "-bottom")
                 }
             }
         }
         // Dictation output states, with the fake input host: typing chosen but not allowed, allowed,
         // and copying again after typing was turned off. No helper runs and nothing prompts.
-        func scrollGeneral(toFraction fraction: CGFloat) {
-            func scrollViews(_ view: NSView) -> [NSScrollView] {
-                (view as? NSScrollView).map { [$0] } ?? view.subviews.flatMap(scrollViews)
-            }
-            for scroll in scrollViews(controller.window!.contentView!) {
-                guard let document = scroll.documentView else { continue }
-                let range = max(0, document.bounds.height - scroll.contentView.bounds.height)
-                document.scroll(NSPoint(x: 0, y: document.isFlipped ? range * fraction : range * (1 - fraction)))
-            }
-        }
         for theme in ["light", "dark"] {
             app.appearance = NSAppearance(named: theme == "dark" ? .darkAqua : .aqua)
-            controller.state.section = "General"
+            controller.state.section = .dictation
             for (name, output, trusted) in [("typing-not-allowed", DictationOutput.type, false), ("typing-allowed", .type, true), ("copy-after-typing", .copy, true)] {
                 previewInputHost.trusted = trusted
                 try! Preferences.updateDictationOutput(output, at: configURL)
                 controller.refresh(try! JSONDecoder().decode(Preferences.self, from: Data(contentsOf: configURL)), apps: apps)
                 dictationAccess.chose(output)
                 RunLoop.main.run(until: Date().addingTimeInterval(0.3))
-                scrollGeneral(toFraction: 0.45)
-                RunLoop.main.run(until: Date().addingTimeInterval(0.15))
-                capture(theme + "-General-dictation-" + name)
-                print("Rendered \(theme) General dictation \(name)")
+                capture(theme + "-Dictation-" + name)
+                print("Rendered \(theme) Dictation \(name)")
             }
         }
         controller.refresh(try! JSONDecoder().decode(Preferences.self, from: Data(contentsOf: configURL)), apps: apps)
         for (colorTheme, mode) in [("volant", Appearance.Theme.light), ("catppuccin-mocha", .dark), ("rose-pine-dawn", .light)] {
             ThemeStore.shared.apply(Appearance(theme: mode, colorTheme: colorTheme))
-            controller.state.section = "Appearance"
+            controller.state.section = .appearance
             RunLoop.main.run(until: Date().addingTimeInterval(0.2))
             capture("theme-" + colorTheme + "-Appearance")
             print("Rendered Appearance in \(colorTheme)")
@@ -345,7 +333,7 @@ if CommandLine.arguments.contains("--render") {
         let withImport = try! JSONDecoder().decode(Preferences.self, from: Data(contentsOf: configURL))
         controller.refresh(withImport, apps: apps)
         ThemeStore.shared.apply(withImport.appearance)
-        controller.state.section = "Appearance"
+        controller.state.section = .appearance
         RunLoop.main.run(until: Date().addingTimeInterval(0.2))
         let importedView = controller.window!.contentView!
         func allScrollViews(_ view: NSView) -> [NSScrollView] {

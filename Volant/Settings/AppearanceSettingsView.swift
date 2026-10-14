@@ -26,7 +26,7 @@ struct AppearanceSettingsView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 4)
             } header: {
-                Text("Appearance")
+                Text("Mode")
             } footer: {
                 SettingsFooter(appearanceFooter)
             }
@@ -56,7 +56,7 @@ struct AppearanceSettingsView: View {
             } header: {
                 Text("Color Theme")
             } footer: {
-                SettingsFooter("System uses macOS materials and your accent color from System Settings. Volant adds its coral accent. The others paint the launcher, notes and accents with their own palette in a fixed light or dark appearance. Import a theme JSON from themes.ray.so, or copy a Raycast theme link and paste it; Volant reads the colors locally and never downloads themes. Control-click an imported theme to remove it.")
+                SettingsFooter("System uses your macOS accent color and Volant its coral one; the others bring their own palette and a fixed appearance. Import a theme from themes.ray.so as a file or a copied link; Volant reads it locally and never downloads themes. Control-click an imported theme to remove it.")
             }
             Section {
                 Slider(value: $scale, in: Appearance.scaleRange, step: 0.05) {

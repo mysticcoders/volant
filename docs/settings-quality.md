@@ -107,3 +107,11 @@ against the expected snapshot, keep unknown keys inside and outside it, and clam
 and 0.5–1.0 opacity. A partial or unknown block loads with per-field defaults instead of failing.
 On macOS 26 and later the native sliders and switches take the system's Liquid Glass styling with
 no code of their own; the headless macOS 15 guest cannot show that.
+
+## Sidebar redesign — October 14, 2026
+
+The owner asked for Settings to look like Raycast's. Settings now has a full-height translucent sidebar with the traffic lights inside it, a search field that filters sections by name or keyword (`SettingsSection.keywords`), colored icon tiles, and a Features group. Each section shows its title in a band the height of the toolbar. General was split up: Keyboard Shortcuts, Dictation and File Search are their own sections, and Acknowledgements moved from Data & Configuration to a new About section with the version. Long footers became row subtitles or one or two sentences. The default window is 820×600; the minimum stays 680×500.
+
+Layout lesson: the window has `fullSizeContentView` and an empty unified toolbar, whose top safe area is 66 pt on macOS 27. With the safe area left to SwiftUI, the root's 500 pt minimum height was applied to the remaining 434 pt and the content overflowed by 33 pt at each edge, which put the bottom of every form below the window. The root frame and the split both ignore the top safe area, the detail is inset by the title band itself, and the title is an opaque overlay because a grouped form's scroll view still reaches under it. The launcher fixture caught this when Connect ACP was scrolled to y = −33.
+
+Evidence: all sections were rendered in light and dark in the headless macOS 27 VM (`tools/render-vm.py`) and inspected. The launcher fixture's sidebar clicks, minimum size after navigation, theme tiles (scrolled into view, since the grid is lazy), Connect ACP, the project sheet and Escape all pass. The sidebar clicks learn each row's section first because the Features heading takes a table row. Not verified: the installed app on the owner's desktop, keyboard navigation through the sidebar search field, and window dragging by the title band.

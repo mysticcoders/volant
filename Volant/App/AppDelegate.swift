@@ -24,7 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func showAISettings() {
         panel.orderOut(nil)
         showSettings()
-        settingsPanel.state.section = "AI"
+        settingsPanel.state.section = .ai
     }
 
     private func openAIChat() {
@@ -65,7 +65,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .settings: self?.showSettings()
         case .extensionSettings:
             self?.showSettings()
-            self?.settingsPanel.state.section = "Extensions"
+            self?.settingsPanel.state.section = .extensions
         case .ai: self?.openAIChat()
         case .aiSettings: self?.showAISettings()
         case .reloadConfig: self?.reloadConfig()
