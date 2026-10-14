@@ -67,6 +67,36 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
             }
         }
     }
+    /// fsearch calls go only to the daemon socket in the owner's home, never run the fsearch binary,
+    /// and return at most `FSearch.maximumHits` validated hits.
+    private let fsearchQueue = DispatchQueue(label: "com.mysticcoders.volant.fsearch")
+    private var fsearchSocket: String { FSearch.socketPath(home: NSHomeDirectory()) }
+
+    func fsearchSearch(query: String, limit: Int, reply: @escaping (Data?, String?) -> Void) {
+        fsearchQueue.async { [fsearchSocket] in
+            do {
+                guard let request = FSearch.searchRequest(query, limit: limit) else { throw FSearchError.malformed }
+                let hits = try FSearch.hits(from: try FSearch.exchange(socket: fsearchSocket, request: request))
+                reply(try JSONEncoder().encode(hits), nil)
+            } catch { reply(nil, error.localizedDescription) }
+        }
+    }
+
+    func fsearchStatus(reply: @escaping (Data?, String?) -> Void) {
+        fsearchQueue.async { [fsearchSocket] in
+            do { reply(try JSONEncoder().encode(try FSearch.status(from: try FSearch.exchange(socket: fsearchSocket, request: FSearch.statusRequest))), nil) }
+            catch { reply(nil, error.localizedDescription) }
+        }
+    }
+
+    func fsearchOpened(path: String, reply: @escaping (String?) -> Void) {
+        fsearchQueue.async { [fsearchSocket] in
+            guard let request = FSearch.openedRequest(path) else { reply("Not a file path."); return }
+            do { _ = try FSearch.exchange(socket: fsearchSocket, request: request); reply(nil) }
+            catch { reply(error.localizedDescription) }
+        }
+    }
+
     private let queue = DispatchQueue(label: "com.mysticcoders.volant.agent-host")
     private let localInventoryQueue = DispatchQueue(label: "com.mysticcoders.volant.herdr-local")
     private let catalogQueue = DispatchQueue(label: "com.mysticcoders.volant.herdr-catalog")

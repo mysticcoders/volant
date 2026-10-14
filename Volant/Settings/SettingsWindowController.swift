@@ -168,6 +168,7 @@ private struct SettingsView: View {
                 SettingsFooter("Caffeinate sessions keep the display from dimming, sleeping or locking. Turn this off to keep only the Mac awake and let the display sleep. Add display or system to a caffeinate command to choose for one session.")
             }
             DictationSettingsSection(config: state.config, access: dictationAccess, apply: apply, configURL: configURL)
+            FileSearchSettingsSection(config: state.config, apply: apply, configURL: configURL)
             Section {
                 if !state.registrationErrors.isEmpty { Text(state.registrationErrors.joined(separator: "\n")).foregroundStyle(.red) }
                 GlobalShortcutRow(title: "Show Volant", key: "summonHotKey", value: state.config.summonHotKey, configURL: configURL, onChange: onChange)

@@ -34,6 +34,13 @@ import Foundation
     func detectACPAgents(reply: @escaping (Data?, String?) -> Void)
     /// Change counts for up to 32 local working folders, as a JSON map from path to state.
     func repositoryStates(paths: Data, reply: @escaping (Data?, String?) -> Void)
+    /// Asks a running fsearch daemon for files matching `query`, as JSON `[FSearch.Hit]`. Volant never
+    /// starts fsearch; with no daemon the reply is an error and the caller uses Spotlight instead.
+    func fsearchSearch(query: String, limit: Int, reply: @escaping (Data?, String?) -> Void)
+    /// The daemon's `FSearch.Status` as JSON, or an error when it isn't running.
+    func fsearchStatus(reply: @escaping (Data?, String?) -> Void)
+    /// Tells fsearch the owner opened `path`, so it ranks higher. Best effort.
+    func fsearchOpened(path: String, reply: @escaping (String?) -> Void)
 }
 
 public struct AgentSession: Codable, Identifiable, Hashable {
