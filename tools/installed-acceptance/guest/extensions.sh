@@ -1,4 +1,6 @@
-# Network extensions: install the Hacker News and Lobsters extensions from the live signed catalog
+# Network extensions: install the Hacker News and Lobsters extensions from the live signed catalog,
+# check that readers that are off stay out of everyday search, that opened stories show as read and Pin
+# saves data on this Mac, and that uninstall deletes it
 # through Settings → Extensions → Catalog (the fetch helper's fixed-path download), approve their hosts from the
 # launcher prompt, read real stories, open a story and its discussion, then remove a host and uninstall
 # an extension in Settings. Needs the guest's network. Results are read from config.json, the
@@ -40,7 +42,8 @@ expect_eq "community extensions are allowed" true "$(config_get communityExtensi
 AX Volant press "$S" "extension-refresh" >/dev/null
 for _ in $(seq 1 30); do [ "$(AX Volant count "$S" "prefix=extension-catalog-install-community.volant.")" -ge 2 ] && break; sleep 1; done
 shot catalog-loaded
-expect_eq "the signed catalog lists both readers" 2 "$(AX Volant count "$S" "prefix=extension-catalog-install-community.volant.")"
+expect_eq "the signed catalog lists both readers" 2 \
+  "$(( $(AX Volant count "$S" "extension-catalog-install-community.volant.hn") + $(AX Volant count "$S" "extension-catalog-install-community.volant.lobsters") ))"
 for id in community.volant.hn community.volant.lobsters; do
   AX Volant press "$S" "extension-catalog-install-$id" >/dev/null
   for _ in $(seq 1 30); do [ -f "$EXT_DIR/$id/manifest.json" ] && break; sleep 1; done
@@ -53,11 +56,20 @@ expect_eq "Lobsters installed from the catalog" yes "$([ -f "$EXT_DIR/community.
 expect_eq "installing allows no hosts" '[]' "$(hosts)"
 expect_eq "installing enables nothing" 0 "$(/usr/bin/python3 -c "import json;print(sum(1 for v in json.load(open('$CONFIG')).get('extensions', {}).values() if v.get('enabled')))")"
 expect_eq "no staging folders remain" 0 "$(ls -A "$EXT_DIR" | grep -c '^\.staging-\|^\.previous-')"
-expect_eq "installed listings read Installed" 0 "$(AX Volant count "$S" "prefix=extension-catalog-install-community.volant.")"
+expect_eq "installed listings no longer offer Install" 0 \
+  "$(( $(AX Volant count "$S" "extension-catalog-install-community.volant.hn") + $(AX Volant count "$S" "extension-catalog-install-community.volant.lobsters") ))"
 key 53; sleep 1
 
 step "Hacker News: approve its host from the launcher"
+# Extensions that are off stay out of everyday search, so the first run goes through ext.
 query hn
+expect_eq "a reader that is off stays out of everyday search" 0 "$(story_rows)"
+case "$(launcher_text)" in
+  *"Hacker News"*) record FAIL "hn does not list Hacker News while it is off" ;;
+  *) record PASS "hn does not list Hacker News while it is off" ;;
+esac
+key 53; sleep 1
+query "ext hn"
 key 36; sleep 2
 shot hn-prompt
 prompt=$(launcher_text)
@@ -91,6 +103,27 @@ case "$title" in
 esac
 osascript -e "quit app id \"$(front)\"" >/dev/null 2>&1; sleep 2
 
+step "Hacker News: read state and pins are saved on this Mac"
+query hn; key 36; wait_stories 20 >/dev/null; sleep 1
+case "$(launcher_text)" in
+  *"Read · "*) record PASS "the story opened earlier shows as read" ;;
+  *) record FAIL "the story opened earlier shows as read" ;;
+esac
+key 40 "{command down}"; sleep 1
+shot hn-row-actions
+case "$(launcher_text)" in
+  *"Pin Story"*) record PASS "a story's Actions offer Pin Story" ;;
+  *) record FAIL "a story's Actions offer Pin Story" ;;
+esac
+key 125; sleep 0.3; key 36; sleep 6
+shot hn-pinned
+case "$(launcher_text)" in
+  *"Pinned · "*) record PASS "Pin Story pins it and the list redraws" ;;
+  *) record FAIL "Pin Story pins it and the list redraws" ;;
+esac
+expect_eq "the reader's data is saved on this Mac" yes "$(ls "$SUPPORT/ExtensionData"/*.json >/dev/null 2>&1 && echo yes || echo no)"
+key 53; sleep 0.5
+
 step "Hacker News: new and search"
 query "hn new"; key 36
 expect_eq "hn new shows stories" yes "$([ "$(wait_stories 20)" -ge 5 ] && echo yes || echo no)"
@@ -100,7 +133,7 @@ expect_eq "hn rust searches stories" yes "$([ "$(wait_stories 20)" -ge 1 ] && ec
 key 53; sleep 0.5
 
 step "Lobsters"
-query lobsters; key 36; sleep 2
+query "ext lobsters"; key 36; sleep 2
 case "$(launcher_text)" in
   *"lobste.rs"*) record PASS "the Lobsters prompt lists lobste.rs" ;;
   *) record FAIL "the Lobsters prompt lists lobste.rs" ;;
@@ -148,6 +181,7 @@ expect_eq "Uninstall removes hn.algolia.com, which nothing else uses" "[]" "$(ho
 expect_eq "Uninstall forgets the Hacker News approval" no \
   "$(/usr/bin/python3 -c "import json;print('yes' if 'community.volant.hn' in json.load(open('$CONFIG')).get('extensions',{}) else 'no')")"
 expect_eq "Lobsters stays installed" yes "$([ -d "$EXT_DIR/community.volant.lobsters" ] && echo yes || echo no)"
+expect_eq "Uninstall deletes Hacker News' saved data" 0 "$(ls "$SUPPORT/ExtensionData" 2>/dev/null | grep -c '\.json$')"
 key 53; sleep 0.5
 
 step "dark appearance screenshots"
