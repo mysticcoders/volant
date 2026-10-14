@@ -36,8 +36,9 @@ not synced). The owner chose this over a native index to avoid giving Volant Ful
 - `FSearchFileSearchTests` (app): fsearch answering without Spotlight and hiding noise, fallback to
   Spotlight, stale answers dropped, and the setting switching the source.
 - Against the owner's real fsearch 0.2.1 daemon (9.48M entries, no Full Disk Access), the Core client
-  answered `mian.rs` in 4.6 ms and other queries in under 1 ms (October 14, 2026). The installed
-  app's helper path needs a signed build.
+  answered `mian.rs` in 4.6 ms and other queries in under 1 ms (October 14, 2026). The owner then
+  used it in an installed Developer ID build: the File Search status, typo-tolerant `/` searches and
+  fsearch's filters worked through `VolantAgentHost` (October 14, 2026).
 - Measured on the same Mac: `fd -uu --glob main.rs ~` took 34–48 s; fsearch's own benchmark put the
   same query at a 0.65 ms median. The fsearch daemon held about 920 MB resident with content indexing,
   and its index used about 446 MB on disk; that memory belongs to fsearch, not Volant.

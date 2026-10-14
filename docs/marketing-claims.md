@@ -57,6 +57,12 @@ Added in 0.3.1:
 | Dictation start and stop sounds | Yes | #229; ordering unit tests; the owner heard them in the installed app on October 14, 2026 | System control docs |
 | Turned-off extensions hidden from search; one Refresh | Yes | #230; launcher tests and VM fixture | Extensions docs |
 
+Merged after 0.3.1, not in the current download:
+
+| Story | Released | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| Optional fsearch file search (whole disk, typo tolerance) | No | #234; Core and app tests, the client against the owner's real fsearch daemon, the owner's installed Developer ID build | None until released; then "works with fsearch if you run it", never implying Volant searches the disk itself or bundles fsearch |
+
 ## Privacy language
 
 No Volant account or telemetry. Notes and encrypted clipboard history remain local. Submitted AI prompts and selected context reach the chosen provider/server. Keys stay in Keychain. Updates, HTTP AI, rates and network extensions use separate helpers; opt-in iCloud uses Apple's system service. Avoid blanket “everything stays on your Mac,” “entirely offline,” or “zero dependencies” claims. Say “no Accessibility unless you choose Type at the cursor”: the main app stays sandboxed and never uses Accessibility, and only the separate input helper does, listed as Volant in System Settings, after the owner picks that output.
