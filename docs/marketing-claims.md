@@ -57,17 +57,17 @@ Added in 0.3.1:
 | Dictation start and stop sounds | Yes | #229; ordering unit tests; the owner heard them in the installed app on October 14, 2026 | System control docs |
 | Turned-off extensions hidden from search; one Refresh | Yes | #230; launcher tests and VM fixture | Extensions docs |
 
-Built as 0.3.2 but never published (see release-quality.md); ships in 0.3.3:
+Added in 0.3.3 (built once as 0.3.2, never published; see release-quality.md):
 
-| Story | Released | Evidence and limits | Website treatment |
+| Story | In 0.3.3 | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
 | Optional fsearch file search (whole disk, typo tolerance) | Yes | #234, #235; Core and app tests, the client against the owner's real fsearch daemon, the owner's installed Developer ID build on October 14, 2026 | Launcher docs; "works with fsearch if you run it", never implying Volant searches the disk itself or bundles fsearch |
+| Redesigned Settings: searchable sidebar, theme colors, sections for Keyboard Shortcuts, Dictation, File Search and About | Yes | #236; VM renders in light, dark and palette themes, the launcher fixture's Settings checks, the owner's look at a development-signed install on October 14, 2026 | Settings paths in the docs updated (Dictation, File Search, Import from Raycast); no screenshots of Settings on the website |
 
 Merged after 0.3.1, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
-| Redesigned Settings: searchable sidebar with sections for Keyboard Shortcuts, Dictation, File Search and About | No | VM renders in light and dark and the launcher fixture's Settings checks | At release, update paths in the docs: Settings → General → Dictation becomes Settings → Dictation, fsearch moves to Settings → File Search, lower volume moves to Settings → Dictation |
 
 ## Privacy language
 

@@ -85,7 +85,7 @@ export default function SystemControl() {
         A restore that fails is reported in the launcher, or, for dictation
         started with the Dictate Text shortcut, in its small floating
         indicator. Turn this off with{' '}
-        <strong>Lower volume while dictating</strong> in Settings → General.
+        <strong>Lower volume while dictating</strong> in Settings → Dictation.
         A short sound plays when dictation starts listening, before the volume
         drops, and another once it stops; turn them off with{' '}
         <strong>Play sounds when dictation starts and stops</strong>.

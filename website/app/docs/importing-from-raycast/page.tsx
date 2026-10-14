@@ -22,7 +22,7 @@ export default function ImportingFromRaycast() {
       </p>
       <h1>Importing from Raycast</h1>
       <p className="docs-lede">
-        Choose Settings &rsaquo; Import from Raycast, pick your export file,
+        Choose Settings &rsaquo; Data &amp; Configuration &rsaquo; Import from Raycast, pick your export file,
         enter its password, review exactly what would change, then select the
         categories you want.
       </p>
