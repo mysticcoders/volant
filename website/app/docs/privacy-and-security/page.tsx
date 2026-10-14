@@ -90,6 +90,10 @@ export default function PrivacyAndSecurity() {
       <p>
         Opening a link hands it to another app. Running an Apple Shortcut hands
         execution to Shortcuts, whose workflows use their own permissions.
+        If you turn on fsearch file search, the local agent helper sends file
+        queries to the fsearch daemon you run on this Mac, and tells it which
+        result you opened; nothing is sent over the network. See{' '}
+        <a href="/docs/launcher">The launcher</a>.
       </p>
 
       <h2>Permissions Volant asks for</h2>
