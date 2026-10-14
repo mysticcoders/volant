@@ -104,7 +104,7 @@ export default function Launcher() {
         File results come from Spotlight. If you already run the{' '}
         <a href="https://github.com/noahdunnagan/fsearch">fsearch</a> daemon,
         turn on <em>Use fsearch for file search</em> in Settings &rsaquo;
-        General &rsaquo; File Search to take them from it instead: whole-disk
+        File Search to take them from it instead: whole-disk
         results that tolerate typos, and fsearch&rsquo;s own filters after{' '}
         <code>/</code>, such as <code>/ext:swift launcher</code>. Volant does
         not include, install or start fsearch, and it goes back to Spotlight
