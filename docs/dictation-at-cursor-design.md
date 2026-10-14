@@ -395,6 +395,12 @@ then also be pasted). TextEdit's own autosave crashed several times in the guest
 (`-[NSDocument writeToURL:ofType:error:]`), including in runs where nothing was typed; the readbacks
 avoid reopening documents.
 
+**Owner verification (October 14, 2026).** On the owner's Mac, with Type at the cursor turned on in
+the installed app (Developer ID signed, Apple's live recognizer, the physical Dictate Text hotkey),
+dictation typed correctly into Obsidian (Electron) and into Claude Code running in Ghostty, and the
+start and stop sounds played. This covered the owner's whole SuperWhisper use (#228). Other Electron
+apps, iTerm2, Office, `contenteditable` editors and the remaining items above are still unverified.
+
 **Light and dark inspection still needed:** Settings → General with Type at the cursor (not allowed,
 allowed) and after switching back to Copy (`tools/preview-settings.sh --render` writes
 `/tmp/volant-settings-renders/<theme>-General-dictation-*.png` from a fake input host), and the
