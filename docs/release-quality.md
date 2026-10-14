@@ -342,3 +342,5 @@ Later the same day the owner installed a reader from Settings → Catalog in the
 - **Feed:** the signed build-18 appcast generated with this DMG passes `sign_update --verify`.
 
 **Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
+
+**Withdrawn, October 14, 2026.** Build 18 (0.3.2) was notarized and its release PR #237 merged, but `Scripts/ship.sh` refused to publish: the Settings redesign (#236) had merged first, so the DMG no longer matched `main`. Nothing was deployed and no GitHub release was made. The DMG, its checksum and the 0.3.2 feed were removed from `main` again, and the feed restored to the live 0.3.1 one. Build 18 stays used. fsearch and the Settings redesign ship together as 0.3.3. Lesson: merge app changes either before a release branch is cut or after its release PR is published, never in between.
