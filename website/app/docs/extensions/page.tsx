@@ -155,11 +155,13 @@ export default function Extensions() {
 
       <h2>Install from the catalog</h2>
       <p>
-        Settings → Extensions → Catalog lists extensions reviewed for Volant,
-        with each one&rsquo;s publisher, license, the hosts it reads and a link
-        to the exact source it was built from. Turn on Allow Community
-        Extensions, choose Check Catalog, then Install. Volant contacts the
-        catalog only when you choose Check Catalog.
+        The catalog lists extensions reviewed for Volant, with each one&rsquo;s
+        publisher, license, the hosts it reads and a link to the exact source
+        it was built from. In the launcher, type <code>catalog</code> (or
+        choose Extension Catalog) to search it and read about an extension
+        before you install it; in Settings → Extensions, choose Refresh. Turn
+        on Allow Community Extensions, then Install, then Turn On. Volant
+        contacts the catalog only when you check it or choose Refresh.
       </p>
       <ul>
         <li>
@@ -180,15 +182,44 @@ export default function Extensions() {
         </li>
       </ul>
       <p>
-        You can still install an extension by hand: choose Open Folder, copy
-        its folder in, and choose Refresh.
+        Extensions that are off stay out of everyday search; type{' '}
+        <code>ext</code> and a name to find one. You can still install an
+        extension by hand: choose Open Folder, copy its folder in, and choose
+        Refresh. An extension can include its own icon, which Volant shows in
+        the launcher and Settings.
       </p>
+
+      <h2>Extensions that remember</h2>
+      <p>
+        A list extension can keep a small amount of data on your Mac, such as
+        the Hacker News and Lobsters readers&rsquo; pinned and hidden stories
+        and the stories you have read. It asks to &ldquo;Remember settings and
+        lists on this Mac&rdquo; before you turn it on. Its rows can offer
+        actions in Command-K, such as Pin Story or Hide Stories from a site.
+      </p>
+      <ul>
+        <li>
+          <strong>Small and local.</strong> At most 16&nbsp;KB per extension,
+          kept only on this Mac: never synced through iCloud and never part of
+          Volant&rsquo;s backups.
+        </li>
+        <li>
+          <strong>Yours to clear.</strong> Settings → Extensions → Clear Data
+          forgets it; uninstalling the extension deletes it; turning it off or
+          updating it keeps it.
+        </li>
+        <li>
+          <strong>Still no network or files.</strong> The extension gets its
+          own data with each request and nothing else. An action never fetches;
+          Volant runs the list again to show the change.
+        </li>
+      </ul>
 
       <h2>Not yet</h2>
       <p>
-        Background update checks, revoking a published extension, per-extension
-        storage and preferences, async or streaming results, and a stable ABI.
-        Each will be added deliberately.
+        Background update checks, revoking a published extension, preferences
+        forms, storage for text commands, async or streaming results, and a
+        stable ABI. Each will be added deliberately.
       </p>
 
       <DocFooterNav {...adjacentDocs('extensions')} />

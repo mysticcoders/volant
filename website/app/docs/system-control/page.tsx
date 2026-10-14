@@ -86,6 +86,9 @@ export default function SystemControl() {
         started with the Dictate Text shortcut, in its small floating
         indicator. Turn this off with{' '}
         <strong>Lower volume while dictating</strong> in Settings → General.
+        A short sound plays when dictation starts listening, before the volume
+        drops, and another once it stops; turn them off with{' '}
+        <strong>Play sounds when dictation starts and stops</strong>.
         None of this needs Accessibility; only the separate, opt-in Type at the
         cursor dictation output does.
       </p>

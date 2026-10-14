@@ -67,7 +67,10 @@ export default function PrivacyAndSecurity() {
           no redirects. Allowed hosts are listed, and can be removed, in
           Settings → Extensions → Network Access. The same helper downloads
           the signed extension catalog from one fixed address, only when you
-          choose Check Catalog. See{' '}
+          check the catalog or choose Refresh. An extension can keep up to
+          16&nbsp;KB of its own data on this Mac, only if it asks first; it is
+          never synced or backed up, and Clear Data or uninstalling removes it.
+          See{' '}
           <a href="/docs/extensions">Extensions</a>.
         </li>
         <li>
@@ -118,7 +121,8 @@ export default function PrivacyAndSecurity() {
               <td>
                 For on-device dictation with <code>talk</code>, on macOS 26 or
                 later. Audio stays on the Mac; the transcript is copied for you
-                to paste. The Dictate Text shortcut shows a small indicator
+                to paste. Filler words such as &ldquo;um&rdquo; are removed on the
+                Mac as you speak. The Dictate Text shortcut shows a small indicator
                 instead of the launcher, so the app you are typing in keeps
                 focus. You can also choose to have dictation typed at the cursor
                 instead (see Accessibility below).
