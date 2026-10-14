@@ -8,7 +8,7 @@ enum LauncherMenuItem: String, CaseIterable, Identifiable {
         switch self {
         case .feedback: return "Send Feedback"
         case .manual: return "Manual"
-        case .changelog: return "Changelog"
+        case .changelog: return "What’s New"
         case .updates: return "Check for Updates…"
         case .about: return "About Volant"
         case .settings: return "Settings"

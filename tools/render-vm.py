@@ -43,6 +43,7 @@ for pair in {" ".join(f"{name}:{path}" for name, path in FIXTURES)}; do
     xcrun actool Volant/Resources/Assets.xcassets --compile "$bundle/Resources" --platform macosx --minimum-deployment-target 15.0 \\
         --target-device mac --optimization space --output-partial-info-plist "{output}/work/$name/assets.plist" >/dev/null
     cp Volant/Resources/emoji.json "$bundle/Resources/"
+    ditto docs/releases "$bundle/Resources/releases"
     # tools/check-launcher.sh runs the launcher fixture as a bare executable with no bundled extension,
     # and its ranking checks expect that; a bundled Hello World would rank above Applications for "h".
     [[ "$name" == VolantLauncherFixture ]] || ditto Volant/Resources/HelloWorld "$bundle/Resources/HelloWorld"

@@ -57,18 +57,19 @@ final class LauncherAppMenuTests: XCTestCase {
     func testLinksOpenInTheBrowserAndAppCommandsGoToTheDelegate() {
         var notes: [String] = []
         let (model, opened, dismissed) = makeModel { notes.append(String(describing: $0)) }
-        for item in [LauncherMenuItem.manual, .changelog, .feedback] {
+        for item in [LauncherMenuItem.manual, .feedback] {
             model.showingAppMenu = true
             model.performMenuItem(item)
             XCTAssertFalse(model.showingAppMenu)
         }
-        XCTAssertEqual(opened().map(\.absoluteString).prefix(2), [LauncherMenuItem.manualURL.absoluteString, LauncherMenuItem.changelogURL.absoluteString])
+        XCTAssertEqual(opened().map(\.absoluteString).first, LauncherMenuItem.manualURL.absoluteString)
         XCTAssertEqual(opened().last?.path, "/mysticcoders/volant/issues/new")
+        model.performMenuItem(.changelog)
         model.performMenuItem(.updates)
         model.performMenuItem(.about)
         model.performMenuItem(.settings)
         model.performMenuItem(.quit)
-        XCTAssertEqual(notes, ["checkForUpdates", "about", "settings", "quit"])
+        XCTAssertEqual(notes, ["whatsNew", "checkForUpdates", "about", "settings", "quit"])
         XCTAssertEqual(dismissed(), 6)
     }
 

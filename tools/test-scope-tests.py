@@ -27,6 +27,9 @@ class ScopeTests(unittest.TestCase):
             if "import SwiftUI" in path.read_text():
                 self.assertTrue(scope.classify([path.as_posix()])["ui"], str(path))
 
+    def test_bundled_release_notes_require_native_checks(self):
+        self.assertEqual(scope.classify(["docs/releases/0.3.3.md"]), {"native": True, "ui": False})
+
     def test_ai_helper_requires_native_checks(self):
         self.assertEqual(scope.classify(["VolantAIHost/AIHTTPHost.swift"]), {"native": True, "ui": False})
 

@@ -1246,7 +1246,14 @@ func clickSidebarRow(_ section: SettingsSection) {
     guard let index = sidebarRow(section, in: table) else { verify(false, "Settings sidebar has a \(section.title) row"); return }
     settingsController.state.section = .general
     RunLoop.main.run(until: Date().addingTimeInterval(0.15))
+    // At the minimum height the last rows are below the sidebar's fold; a click there lands on the
+    // window edge, where AppKit starts a resize loop that waits for a mouse-up that never comes.
+    table.scrollRowToVisible(index)
+    RunLoop.main.run(until: Date().addingTimeInterval(0.15))
     let frame = table.convert(table.rect(ofRow: index), to: nil)
+    guard settingsWindow.contentView!.bounds.contains(frame.insetBy(dx: 1, dy: 1)) else {
+        verify(false, "Settings sidebar row for \(section.title) is visible before clicking"); return
+    }
     clickSettings(NSPoint(x: frame.midX, y: frame.midY))
     if settingsController.state.section != section {
         print("NOTE: sidebar click not delivered (Settings key: \(settingsWindow.isKeyWindow)); selecting row \(index) through the table")
