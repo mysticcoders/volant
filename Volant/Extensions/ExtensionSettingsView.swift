@@ -117,7 +117,7 @@ struct ExtensionSettingsView: View {
                         .accessibilityIdentifier("extension-refresh")
                 }
             } footer: {
-                SettingsFooter("Uninstalling moves a community extension to the Trash, deletes what it saved and removes host access no other extension uses. Extensions start off and run only when you invoke them. Enable one here or choose Enable and Run the first time you use it; changed code or permissions require enabling again. Turned-off extensions stay out of search; type ext and a name to find one. Try the bundled example: turn on Hello World, then type hello Andrew")
+                SettingsFooter("Extensions start off and run only when you invoke them; changed code or permissions need enabling again. Turned-off extensions stay out of search; type ext and a name to find one. Uninstalling moves an extension to the Trash with its data and unused host access. Try Hello World: turn it on, then type hello Andrew")
             }
             Section {
                 if let catalog {
@@ -133,7 +133,7 @@ struct ExtensionSettingsView: View {
                 Text("Catalog")
             } footer: {
                 SettingsFooter((communityAllowed ? "" : "Turn on Allow Community Extensions to install from the catalog. ")
-                    + "Extensions here are reviewed and signed for Volant. Refresh reloads installed extensions and checks the catalog. You can also browse it from the launcher: type catalog. Each download is checked against the signed catalog before it is installed. Installing never turns an extension on or runs it; first use asks as usual, and an update with changed code or permissions needs enabling again.")
+                    + "Reviewed and signed for Volant, and each download is checked against the signed catalog. Installing never turns an extension on or runs it. Volant checks the catalog only when you choose Refresh; you can also type catalog in the launcher.")
             }
             Section {
                 if approvedHosts.isEmpty { Text("No hosts allowed.").foregroundStyle(.secondary) }
@@ -155,10 +155,10 @@ struct ExtensionSettingsView: View {
             } header: {
                 Text("Network Access")
             } footer: {
-                SettingsFooter("Hosts you allowed network extensions to read. Volant fetches from them for the extension; the extension itself has no network access. Removing a host stops every extension that uses it until you allow it again.")
+                SettingsFooter("Volant fetches from these hosts for network extensions, which have no network access themselves. Removing a host stops every extension that uses it until you allow it again.")
             }
         }
-        .formStyle(.grouped)
+        .formStyle(.settings)
         .onAppear(perform: reload)
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in reload() }
         .sheet(item: $confirmingHosts) { ext in

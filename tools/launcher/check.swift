@@ -1199,8 +1199,22 @@ func clickSettings(_ point: NSPoint) {
     }
     RunLoop.main.run(until: Date().addingTimeInterval(0.15))
 }
+/// Grids inside a grouped form build their rows lazily, so a control below the fold has no view until
+/// the form scrolls toward it.
+func revealSettingsControl(_ name: String) {
+    func scrollViews(_ view: NSView) -> [NSScrollView] { ((view as? NSScrollView).map { [$0] } ?? []) + view.subviews.flatMap(scrollViews) }
+    for fraction in stride(from: 0.2, through: 1.0, by: 0.2) where controlFrame(name, in: settingsWindow, reportMissing: false) == nil {
+        for scroll in scrollViews(settingsWindow.contentView!) {
+            guard let document = scroll.documentView else { continue }
+            let range = max(0, document.bounds.height - scroll.contentView.bounds.height)
+            document.scroll(NSPoint(x: 0, y: document.isFlipped ? range * fraction : range * (1 - fraction)))
+        }
+        RunLoop.main.run(until: Date().addingTimeInterval(0.15))
+    }
+}
 func clickSettings(_ name: String) {
     waitUntil { controlFrame(name, in: settingsWindow, reportMissing: false) != nil }
+    if controlFrame(name, in: settingsWindow, reportMissing: false) == nil { revealSettingsControl(name) }
     guard let frame = controlFrame(name, in: settingsWindow) else { verify(false, "Settings shows \(name)"); return }
     clickSettings(NSPoint(x: frame.midX, y: frame.midY))
 }
@@ -1208,28 +1222,43 @@ func clickHerdrSwitch() {
     guard let frame = topSwitchFrame(in: settingsWindow) else { verify(false, "Status Bar shows the Herdr switch"); return }
     clickSettings(NSPoint(x: frame.midX, y: frame.midY))
 }
-/// SwiftUI draws sidebar text without a readable field, so rows are found by their fixed order.
+/// SwiftUI draws sidebar text without a readable field, and the Features heading takes a row, so each
+/// row's section is learned by selecting it through the table first.
 /// A native table ignores a first click while its window is not key, which is how the headless
 /// guest leaves this fixture; the row is then selected through the table so the SwiftUI selection
 /// binding is still exercised, and the miss is reported.
-func clickSidebarRow(_ index: Int) {
+func sidebarTable() -> NSTableView? {
     func views(_ view: NSView) -> [NSView] { [view] + view.subviews.flatMap(views) }
-    guard let table = views(settingsWindow.contentView!).compactMap({ $0 as? NSTableView }).first(where: { $0.numberOfRows == 7 }) else {
-        verify(false, "Settings shows a seven-row sidebar"); return
+    return views(settingsWindow.contentView!).compactMap({ $0 as? NSTableView }).first(where: { $0.numberOfRows >= SettingsSection.allCases.count })
+}
+func sidebarRow(_ section: SettingsSection, in table: NSTableView) -> Int? {
+    let original = settingsController.state.section
+    defer { settingsController.state.section = original; RunLoop.main.run(until: Date().addingTimeInterval(0.1)) }
+    for row in 0..<table.numberOfRows {
+        table.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+        RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+        if settingsController.state.section == section && table.selectedRow == row { return row }
     }
+    return nil
+}
+func clickSidebarRow(_ section: SettingsSection) {
+    guard let table = sidebarTable() else { verify(false, "Settings shows a sidebar with every section"); return }
+    guard let index = sidebarRow(section, in: table) else { verify(false, "Settings sidebar has a \(section.title) row"); return }
+    settingsController.state.section = .general
+    RunLoop.main.run(until: Date().addingTimeInterval(0.15))
     let frame = table.convert(table.rect(ofRow: index), to: nil)
     clickSettings(NSPoint(x: frame.midX, y: frame.midY))
-    if table.selectedRow != index {
+    if settingsController.state.section != section {
         print("NOTE: sidebar click not delivered (Settings key: \(settingsWindow.isKeyWindow)); selecting row \(index) through the table")
         table.selectRowIndexes(IndexSet(integer: index), byExtendingSelection: false)
         RunLoop.main.run(until: Date().addingTimeInterval(0.2))
     }
 }
-clickSidebarRow(2)
-verify(settingsController.state.section == "Status Bar", "Status Bar sidebar row selects its section")
-clickSidebarRow(3)
-verify(settingsController.state.section == "AI", "AI sidebar row selects its section")
-for section in ["General", "Appearance", "Status Bar", "AI", "Extensions", "App Shortcuts", "Data & Configuration"] {
+clickSidebarRow(.statusBar)
+verify(settingsController.state.section == .statusBar, "Status Bar sidebar row selects its section")
+clickSidebarRow(.ai)
+verify(settingsController.state.section == .ai, "AI sidebar row selects its section")
+for section in SettingsSection.allCases {
     settingsController.state.section = section
     RunLoop.main.run(until: Date().addingTimeInterval(0.15))
     let content = settingsWindow.contentView!
@@ -1237,7 +1266,7 @@ for section in ["General", "Appearance", "Status Bar", "AI", "Extensions", "App 
     verify(abs(content.bounds.width - 680) < 1 && abs(content.bounds.height - 500) < 1, "Settings respects minimum size after navigation")
     let bitmap = content.bitmapImageRepForCachingDisplay(in: content.bounds)!
     content.cacheDisplay(in: content.bounds, to: bitmap)
-    try bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "/tmp/volant-core-settings-\(section)-\(dark ? "dark" : "light").png"))
+    try bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "/tmp/volant-core-settings-\(section.title)-\(dark ? "dark" : "light").png"))
 }
 settingsWindow.cancelOperation(nil)
 verify(!settingsWindow.isVisible, "Escape dismisses Settings")
@@ -1245,7 +1274,7 @@ verify(openedAI.isEmpty, "Navigating AI settings never connects automatically")
 let settingsAfterNavigation = try Data(contentsOf: settingsURL)
 verify(settingsAfterNavigation == settingsBeforeNavigation, "Navigating AI settings never rewrites configuration")
 settingsController.showWindow(nil)
-settingsController.state.section = "Appearance"
+settingsController.state.section = .appearance
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 clickSettings("settings.theme-dark")
 verify(waitUntil { settingsController.state.config.appearance.theme == .dark }, "Dark theme tile saves the theme")
@@ -1256,7 +1285,7 @@ verify(waitUntil { settingsController.state.config.appearance.colorTheme == "nor
 clickSettings("settings.color-theme-system")
 verify(waitUntil { settingsController.state.config.appearance.colorTheme == "system" }, "System color theme tile restores the default")
 settingsController.showWindow(nil)
-settingsController.state.section = "AI"
+settingsController.state.section = .ai
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 print("CHECK: Settings Connect ACP")
 clickSettings("settings.connect")
@@ -1271,7 +1300,7 @@ print("CHECK: Cancel project sheet")
 settingsWindow.endSheet(settingsWindow.attachedSheet!, returnCode: .cancel)
 RunLoop.main.run(until: Date().addingTimeInterval(0.3))
 verify(settingsWindow.attachedSheet == nil, "Project selection can be cancelled")
-settingsController.state.section = "Status Bar"
+settingsController.state.section = .statusBar
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 clickHerdrSwitch()
 verify(settingsController.state.config.promotedHarness == nil, "Disabling Herdr hides its status source")

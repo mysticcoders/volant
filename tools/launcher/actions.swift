@@ -314,7 +314,7 @@ try render("chat-back")
 panel.orderOut(nil)
 let settings = SettingsWindowController(configURL: panel.model.actionConfigURL, conversations: panel.model.conversations) {}
 try chatConfig!.save(at: panel.model.actionConfigURL)
-settings.state.section = "AI"
+settings.state.section = .ai
 settings.window!.setContentSize(NSSize(width: 680, height: 500))
 settings.showWindow(nil); settle()
 try render("ai-settings-active", view: settings.window!.contentView!)
@@ -344,7 +344,7 @@ try render("extension-consent", view: consentView)
 panel.model.pendingExtension = nil
 settle()
 panel.orderOut(nil)
-settings.state.section = "Extensions"
+settings.state.section = .extensions
 settings.showWindow(nil); settle()
 try render("extension-settings", view: settings.window!.contentView!)
 settings.window!.orderOut(nil)

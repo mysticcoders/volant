@@ -63,6 +63,12 @@ Merged after 0.3.1, not in the current download:
 | --- | --- | --- | --- |
 | Optional fsearch file search (whole disk, typo tolerance) | No | #234; Core and app tests, the client against the owner's real fsearch daemon, the owner's installed Developer ID build | None until released; then "works with fsearch if you run it", never implying Volant searches the disk itself or bundles fsearch |
 
+Merged after 0.3.2, not in the current download:
+
+| Story | Released | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| Redesigned Settings: searchable sidebar with sections for Keyboard Shortcuts, Dictation, File Search and About | No | VM renders in light and dark and the launcher fixture's Settings checks | At release, update paths in the docs: Settings → General → Dictation becomes Settings → Dictation, fsearch moves to Settings → File Search, lower volume moves to Settings → Dictation |
+
 ## Privacy language
 
 No Volant account or telemetry. Notes and encrypted clipboard history remain local. Submitted AI prompts and selected context reach the chosen provider/server. Keys stay in Keychain. Updates, HTTP AI, rates and network extensions use separate helpers; opt-in iCloud uses Apple's system service. Avoid blanket “everything stays on your Mac,” “entirely offline,” or “zero dependencies” claims. Say “no Accessibility unless you choose Type at the cursor”: the main app stays sandboxed and never uses Accessibility, and only the separate input helper does, listed as Volant in System Settings, after the owner picks that output.

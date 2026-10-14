@@ -25,7 +25,7 @@ struct AISettingsView: View {
             Section {
                 Picker("Connection", selection: $config.connection) {
                     ForEach(AIConnectionKind.allCases) { Text($0.title).tag($0) }
-                }.pickerStyle(.segmented).disabled(!loaded)
+                }.pickerStyle(.segmented).labelsHidden().disabled(!loaded)
                     .onChange(of: config.connection) { _, kind in
                         keyDraft = ""; discovery.cancel(); persist()
                         if kind == .local { discovery.discover() }
@@ -46,7 +46,7 @@ struct AISettingsView: View {
                 }.font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.leading).frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .formStyle(.grouped)
+        .formStyle(.settings)
         .onAppear {
             do {
                 config = try AIConfiguration.load(at: configURL); saved = config; loaded = true
@@ -138,9 +138,11 @@ struct AISettingsView: View {
 
     private var acpControls: some View {
         Section {
-            Picker("Provider", selection: $config.provider) {
-                Text("Choose a provider…").tag("")
-                ForEach(ACPProvider.allCases) { Text($0.title).tag($0.rawValue) }
+            LabeledContent("Provider") {
+                Picker("Provider", selection: $config.provider) {
+                    Text("Choose a provider…").tag("")
+                    ForEach(ACPProvider.allCases) { Text($0.title).tag($0.rawValue) }
+                }.labelsHidden().fixedSize()
             }.disabled(!loaded).onChange(of: config.provider) { _, _ in persist() }
             LabeledContent("Working folder") {
                 Text(config.project.isEmpty ? "General chat" : (config.project as NSString).lastPathComponent)
@@ -174,25 +176,36 @@ struct AISettingsView: View {
         if config.connection == .local { localServers }
         Section {
             if config.connection == .byok {
-                Picker("Provider", selection: $config.api.provider) {
-                    ForEach(AIAPIProvider.allCases) { Text($0.title).tag($0) }
+                LabeledContent("Provider") {
+                    Picker("Provider", selection: $config.api.provider) {
+                        ForEach(AIAPIProvider.allCases) { Text($0.title).tag($0) }
+                    }.labelsHidden().fixedSize()
                 }.onChange(of: config.api.provider) { _, provider in
                     config.api.endpoint = provider.endpoint; config.api.model = ""; keyDraft = ""; discovery.cancel(); persist()
                 }
             }
             if config.http.provider == .compatible {
-                TextField("API base URL", text: httpBinding.endpoint, prompt: Text("https://"))
-                    .onSubmit { discovery.cancel(); keyDraft = ""; persist() }
+                LabeledContent("API base URL") {
+                    TextField("API base URL", text: httpBinding.endpoint, prompt: Text("https://")).labelsHidden().frame(maxWidth: 280)
+                        .onSubmit { discovery.cancel(); keyDraft = ""; persist() }
+                }
             }
-            TextField("Model ID", text: httpBinding.model, prompt: Text("Model name")).onSubmit { persist() }
+            LabeledContent("Model ID") {
+                TextField("Model ID", text: httpBinding.model, prompt: Text("Model name")).labelsHidden().frame(maxWidth: 280).onSubmit { persist() }
+            }
             if !discovery.models.isEmpty {
-                Picker("Available models", selection: httpBinding.model) {
-                    Text("Choose a model…").tag("")
-                    if !config.http.model.isEmpty && !discovery.models.contains(config.http.model) { Text(config.http.model).tag(config.http.model) }
-                    ForEach(discovery.models, id: \.self) { Text($0).tag($0) }
+                LabeledContent("Available models") {
+                    Picker("Available models", selection: httpBinding.model) {
+                        Text("Choose a model…").tag("")
+                        if !config.http.model.isEmpty && !discovery.models.contains(config.http.model) { Text(config.http.model).tag(config.http.model) }
+                        ForEach(discovery.models, id: \.self) { Text($0).tag($0) }
+                    }.labelsHidden().fixedSize()
                 }.onChange(of: config.http.model) { _, _ in persist() }
             }
-            SecureField(config.connection == .local ? "API key (optional)" : "API key", text: $keyDraft, prompt: Text("Paste a key to save it"))
+            LabeledContent(config.connection == .local ? "API key (optional)" : "API key") {
+                SecureField(config.connection == .local ? "API key (optional)" : "API key", text: $keyDraft, prompt: Text("Paste a key to save it"))
+                    .labelsHidden().frame(maxWidth: 280)
+            }
             LabeledContent {
                 Button("Save Key") { saveKey() }.disabled(keyDraft.isEmpty || !loaded)
                 Button("Remove Key") { removeKey() }.disabled(!loaded)
