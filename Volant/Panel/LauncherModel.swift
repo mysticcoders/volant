@@ -393,7 +393,10 @@ final class LauncherModel: ObservableObject {
     /// The input of the list run whose rows are showing, sent with their actions.
     private var extensionItemsQuery = ""
     let usage: UsageStore
-    var config: Preferences { didSet { promotedHarness = config.promotedHarness; extensions.invalidateCatalog() } }
+    var config: Preferences { didSet { promotedHarness = config.promotedHarness; extensions.invalidateCatalog(); useFSearch() } }
+    /// Points file search at fsearch while Use fsearch is on; Spotlight otherwise.
+    private func useFSearch() { files.fsearch = config.fileSearchUsesFSearch ? fsearchClient : nil }
+    var fsearchClient = FSearchClient.shared
     var searchesSecondarySources = true
     let files: FileSearch
     @Published private(set) var filesUnavailable = false
@@ -451,6 +454,7 @@ final class LauncherModel: ObservableObject {
         self.config = config
         self.onNote = onNote
         self.promotedHarness = config.promotedHarness
+        useFSearch()
         clipboardSubscription = clipboard.changes.receive(on: DispatchQueue.main).sink { [weak self] in
             guard let self, self.showingClipboard else { return }
             self.objectWillChange.send()
@@ -1357,7 +1361,9 @@ final class LauncherModel: ObservableObject {
                 let pb = NSPasteboard.general; pb.clearContents(); pb.setData(data, forType: .png)
             } else { copy(clip.text) }
         case .app(let app): index.launch(app)
-        case .file(let file): FileSearch.open(file)
+        case .file(let file):
+            FileSearch.open(file)
+            if files.fsearch != nil { fsearchClient.opened(file.url.path) }
         case .herdrMachine(let machine, let enabled, let busy):
             guard let machine, !busy else { return }
             agents.setMachineEnabled(machine, !enabled)

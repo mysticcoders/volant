@@ -1,4 +1,5 @@
 import AppKit
+import VolantCore
 
 struct FileEntry: Identifiable, Hashable {
     let id: String
@@ -8,6 +9,8 @@ struct FileEntry: Identifiable, Hashable {
 }
 
 /// Debounced Spotlight file search within the user's home. Sandbox-safe: opening a hit hands the URL to the system.
+/// With `fsearch` set (the owner turned on Use fsearch), a running fsearch daemon answers first, across
+/// the whole disk with typo tolerance; if it can't, the same query falls back to Spotlight.
 /// Not final so launcher tests can deliver fictional results without Spotlight.
 class FileSearch: NSObject {
     enum Failure: Error { case unavailable }
@@ -21,17 +24,40 @@ class FileSearch: NSObject {
     private var query: NSMetadataQuery?
     private var completion: ((SearchResult) -> Void)?
     private var pending: DispatchWorkItem?
+    /// Set while Use fsearch is on.
+    var fsearch: FSearchClient?
+    private var fsearchGeneration = 0
 
     func search(_ term: String, completion: @escaping (SearchResult) -> Void) {
         cancel()
-        let work = DispatchWorkItem { [weak self] in self?.run(term, completion: completion) }
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            if let fsearch = self.fsearch, term.trimmingCharacters(in: .whitespaces).count >= 2 { self.runFSearch(fsearch, term, completion: completion) }
+            else { self.run(term, completion: completion) }
+        }
         pending = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: work)
+        // fsearch answers in about a millisecond, so it needs only enough delay to skip keystrokes.
+        DispatchQueue.main.asyncAfter(deadline: .now() + (fsearch == nil ? 0.15 : 0.05), execute: work)
+    }
+
+    /// Asks fsearch, keeping only the newest request's answer. Noisy paths are hidden as for Spotlight;
+    /// an error falls back to Spotlight for the same term.
+    private func runFSearch(_ fsearch: FSearchClient, _ term: String, completion: @escaping (SearchResult) -> Void) {
+        fsearchGeneration += 1
+        let generation = fsearchGeneration
+        fsearch.search(term, limit: FSearch.maximumHits) { [weak self] result in
+            guard let self, generation == self.fsearchGeneration else { return }
+            switch result {
+            case .success(let entries): completion(.success(Array(entries.filter { FileSearch.isInteresting($0.url.path) }.prefix(8))))
+            case .failure: self.run(term, completion: completion)
+            }
+        }
     }
 
     func cancel() {
         pending?.cancel()
         pending = nil
+        fsearchGeneration += 1
         stop()
     }
 
