@@ -57,11 +57,11 @@ Added in 0.3.1:
 | Dictation start and stop sounds | Yes | #229; ordering unit tests; the owner heard them in the installed app on October 14, 2026 | System control docs |
 | Turned-off extensions hidden from search; one Refresh | Yes | #230; launcher tests and VM fixture | Extensions docs |
 
-Merged after 0.3.1, not in the current download:
+Added in 0.3.2:
 
-| Story | Released | Evidence and limits | Website treatment |
+| Story | In 0.3.2 | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
-| Optional fsearch file search (whole disk, typo tolerance) | No | #234; Core and app tests, the client against the owner's real fsearch daemon, the owner's installed Developer ID build | None until released; then "works with fsearch if you run it", never implying Volant searches the disk itself or bundles fsearch |
+| Optional fsearch file search (whole disk, typo tolerance) | Yes | #234, #235; Core and app tests, the client against the owner's real fsearch daemon, the owner's installed Developer ID build on October 14, 2026 | Launcher docs; "works with fsearch if you run it", never implying Volant searches the disk itself or bundles fsearch |
 
 ## Privacy language
 
