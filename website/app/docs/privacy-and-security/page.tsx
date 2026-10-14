@@ -166,7 +166,7 @@ export default function PrivacyAndSecurity() {
         management and system-wide text expansion stay absent.
       </p>
       <p>
-        Settings → General → Dictation lets you choose{' '}
+        Settings → Dictation lets you choose{' '}
         <strong>Type at the cursor</strong> instead of{' '}
         <strong>Copy to clipboard</strong>. Only then does Volant start a
         separate helper inside the app, which asks macOS once for Accessibility
