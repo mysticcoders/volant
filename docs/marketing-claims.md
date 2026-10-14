@@ -29,7 +29,7 @@ Added in 0.2.6:
 
 | Story | In 0.2.6 | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
-| Dictation typed at the cursor (opt-in output; while speaking or when finished) | Yes | Fake-client unit tests; a VM run of the real Developer ID signed helper with a stand-in container (TextEdit through Accessibility, Chrome through the paste fallback, password fields refused, app change refused, Return finishes). Owner installed-app check pending at release; live speech, macOS 26/27, Electron and terminals other than Terminal are unverified (docs/dictation-at-cursor-design.md) | Never "no Accessibility", only "no Accessibility unless you choose Type at the cursor" |
+| Dictation typed at the cursor (opt-in output; while speaking or when finished) | Yes | Fake-client unit tests; a VM run of the real Developer ID signed helper with a stand-in container (TextEdit through Accessibility, Chrome through the paste fallback, password fields refused, app change refused, Return finishes). The owner dictated into Obsidian (Electron) and Claude Code in Ghostty with the installed app and live speech on October 14, 2026; other Electron apps and terminals remain unverified (docs/dictation-at-cursor-design.md) | Never "no Accessibility", only "no Accessibility unless you choose Type at the cursor" |
 | Several AI conversations at once (up to six) | Yes | #197 (contributed); slot limit tests, ACP check, native fixtures and light/dark renders; several live conversations with real providers in the signed installed app unverified | Agents docs; no unattended or fan-out claims |
 | Provider account per conversation (Claude Code, Codex) | Yes | #200 (contributed, reworked); account tests, ACP check, renders; real second-account conversations and per-folder Keychain logins unverified | Agents docs; Volant never reads or copies the account folder; no automatic routing |
 
@@ -54,7 +54,7 @@ Added in 0.3.1:
 | Per-extension storage and row actions; Hacker News and Lobsters pin, hide and read state | Yes | #226, #227, volant-extensions #6; Core and app storage tests, the real reader module run through the production extension runtime, VM fixture of Pin; signed installed-app use pending the release's acceptance run | Extensions and Privacy docs; "kept only on this Mac", 16 KB, never synced or backed up |
 | Extension icons | Yes | #222; tests and VM renders with a fictional icon; the readers' icons are their sites' marks, credited in volant-extensions | Extensions docs only; no logos on the website |
 | Filler words removed from English dictation | Yes | #229; Core cleanup tests; the owner confirmed fillers gone in a Developer ID test build on October 13, 2026 | Privacy docs; English only, cannot fix a filler heard as another word |
-| Dictation start and stop sounds | Yes | #229; ordering unit tests; owner hearing them pending | System control docs |
+| Dictation start and stop sounds | Yes | #229; ordering unit tests; the owner heard them in the installed app on October 14, 2026 | System control docs |
 | Turned-off extensions hidden from search; one Refresh | Yes | #230; launcher tests and VM fixture | Extensions docs |
 
 ## Privacy language
