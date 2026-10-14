@@ -346,3 +346,16 @@ Later the same day the owner installed a reader from Settings → Catalog in the
 **Withdrawn, October 14, 2026.** Build 18 (0.3.2) was notarized and its release PR #237 merged, but `Scripts/ship.sh` refused to publish: the Settings redesign (#236) had merged first, so the DMG no longer matched `main`. Nothing was deployed and no GitHub release was made. The DMG, its checksum and the 0.3.2 feed were removed from `main` again, and the feed restored to the live 0.3.1 one. Build 18 stays used. fsearch and the Settings redesign ship together as 0.3.3. Lesson: merge app changes either before a release branch is cut or after its release PR is published, never in between.
 
 **Build 19 withdrawn too.** 0.3.3 build 19 was notarized and its release PR #239 was closed unmerged, because the owner wanted the changelog built into the app first. `main` moved to build 19 with that change so the next release uses build 20; nothing from build 19 was published.
+
+## 0.3.3 build 20 — October 14, 2026
+
+**What's in it.** See the [release notes](releases/0.3.3.md).
+
+**Build.** Built from `34d7cf6` on `release/0.3.3` by `Scripts/ship.sh`.
+
+- **Notarization:** Apple accepted app submission `975a9a2b-9619-4dd3-a758-6b2213147506` and DMG submission `4b6e6665-ce49-492e-9bdf-d2a62d38c295`. Both were stapled and passed Gatekeeper as Notarized Developer ID.
+- **Mounted DMG:** `Volant.app` 0.3.3, build 20, `x86_64 arm64`, valid deep strict signature, stapled, Applications link present.
+- **DMG SHA-256:** `6ab20ab4fe64724e0ae7dc1652247f03474ddd2b3536d0ee71b9feedfe630959` (17862453 bytes).
+- **Feed:** the signed build-20 appcast generated with this DMG passes `sign_update --verify`.
+
+**Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
