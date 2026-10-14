@@ -78,6 +78,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .confetti: ConfettiWindow.celebrate()
         case .systemAction(let action): self?.performSystemAction(action)
         case .checkForUpdates: self?.checkForUpdates()
+        case .whatsNew:
+            self?.showSettings()
+            self?.settingsPanel.state.section = .whatsNew
         case .about:
             NSApp.activate(ignoringOtherApps: true)
             NSApp.orderFrontStandardAboutPanel(nil)

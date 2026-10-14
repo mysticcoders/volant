@@ -8,6 +8,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     case keyboardShortcuts = "Keyboard Shortcuts"
     case appShortcuts = "App Shortcuts"
     case data = "Data & Configuration"
+    case whatsNew = "What’s New"
     case about = "About"
     case ai = "AI"
     case dictation = "Dictation"
@@ -26,6 +27,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .keyboardShortcuts: "keyboard.fill"
         case .appShortcuts: "command"
         case .data: "externaldrive.fill"
+        case .whatsNew: "gift.fill"
         case .about: "info"
         case .ai: "sparkles"
         case .dictation: "mic.fill"
@@ -41,6 +43,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .appearance: .indigo
         case .appShortcuts: .teal
         case .data: .blue
+        case .whatsNew: .purple
         case .ai: .pink
         case .dictation: .red
         case .extensions: .green
@@ -56,6 +59,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .keyboardShortcuts: ["hotkey", "shortcut", "notes", "emoji", "lock screen", "sleep displays", "dictate"]
         case .appShortcuts: ["alias", "hotkey", "application"]
         case .data: ["config", "json", "icloud", "sync", "backup", "import", "export", "raycast", "coingecko", "crypto"]
+        case .whatsNew: ["changelog", "release notes", "new", "changes", "version", "update"]
         case .about: ["version", "acknowledgements", "license", "geonames", "website"]
         case .ai: ["chat", "acp", "claude", "codex", "api key", "model", "apple intelligence", "ollama"]
         case .dictation: ["microphone", "speech", "voice", "type", "filler", "accessibility", "sound", "volume"]

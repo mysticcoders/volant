@@ -196,6 +196,7 @@ private struct SettingsView: View {
         case .keyboardShortcuts: keyboardShortcuts
         case .appShortcuts: shortcuts
         case .data: data
+        case .whatsNew: WhatsNewSettingsView()
         case .about: AboutSettingsView()
         case .ai: AISettingsView(conversations: conversations, configURL: configURL, onChange: onChange, openConversation: openAI, chooseProject: chooseAIProject,
                                  chooseAccountFolder: chooseAccountFolder)

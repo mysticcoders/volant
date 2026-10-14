@@ -15,7 +15,7 @@ enum LauncherAction {
     case create(String)
     case confetti
     case systemAction(SystemAction)
-    case checkForUpdates, about, quit
+    case checkForUpdates, whatsNew, about, quit
 }
 
 enum ResultRow: Identifiable, Hashable {
@@ -1515,14 +1515,15 @@ final class LauncherModel: ObservableObject {
         showingAppMenu.toggle()
     }
 
-    /// Runs a Volant menu item. Links open in the browser and app commands go to the app delegate;
+    /// Runs a Volant menu item. Links open in the browser and app commands, including the changelog in
+    /// Settings → What's New, go to the app delegate;
     /// both hide the launcher first, as every other command that leaves it does.
     func performMenuItem(_ item: LauncherMenuItem) {
         showingAppMenu = false
         switch item {
         case .feedback: dismiss(); openURL(LauncherMenuItem.feedbackURL())
         case .manual: dismiss(); openURL(LauncherMenuItem.manualURL)
-        case .changelog: dismiss(); openURL(LauncherMenuItem.changelogURL)
+        case .changelog: dismiss(); onNote(.whatsNew)
         case .updates: dismiss(); onNote(.checkForUpdates)
         case .about: dismiss(); onNote(.about)
         case .settings: openSettings()
