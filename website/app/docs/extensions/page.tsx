@@ -142,8 +142,20 @@ export default function Extensions() {
         <li>
           <strong>Only approved https hosts.</strong> A separate sandboxed
           fetch helper requests each URL only if its host is in the manifest
-          and allowed by you: https, no credentials, no redirects, no cookies,
-          and at most 512&nbsp;KB per page.
+          and allowed by you: https, no redirects, no cookies, and at most
+          512&nbsp;KB per page. The only credential is a token you gave the
+          extension for that host, which Volant adds itself.
+        </li>
+        <li>
+          <strong>Changes need an action.</strong> Listing only reads. An
+          extension can send a change, such as completing a task, only from
+          an action you choose in Command-K or with Return, and asks first.
+        </li>
+        <li>
+          <strong>Location only if you allow it.</strong> An extension that
+          asks for your location gets it rounded to about 11&nbsp;km, only
+          after you allow that extension, and can pass it to the sites it
+          reads. Settings → Extensions → Location removes it.
         </li>
         <li>
           <strong>Hosts are shared and removable.</strong> Settings →
