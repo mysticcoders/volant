@@ -22,10 +22,12 @@ struct InstalledExtension: Identifiable, Hashable {
     }
     static func accessDescription(capabilities: [String], hosts: [String], storage: Bool = false, secrets: [ExtensionSecret] = [],
                                   appLinks: [String] = [], location: Bool = false) -> String {
-        let access = capabilities.sorted().map { $0 == "clipboard.write" ? "Write to clipboard" : "Send diagnostic messages" } +
-            (hosts.isEmpty ? [] : ["Read " + hosts.joined(separator: ", ")]) + (storage ? ["Remember settings and lists on this Mac"] : []) +
-            secrets.map { "Uses your \($0.title)" } +
-            appLinks.map { "Opens \($0): links" } + (location ? ["Share your approximate location with the sites it reads"] : [])
+        var access: [String] = capabilities.sorted().map { $0 == "clipboard.write" ? "Write to clipboard" : "Send diagnostic messages" }
+        if !hosts.isEmpty { access.append("Read " + hosts.joined(separator: ", ")) }
+        if storage { access.append("Remember settings and lists on this Mac") }
+        access += secrets.map { "Uses your \($0.title)" }
+        access += appLinks.map { "Opens \($0): links" }
+        if location { access.append("Share your approximate location with the sites it reads") }
         return access.isEmpty ? "No permissions required" : access.joined(separator: ", ")
     }
 }
