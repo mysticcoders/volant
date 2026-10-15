@@ -127,6 +127,7 @@ if [[ -z "$MODE" ]]; then
   [[ "$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Contents/Info.plist")" == "$VERSION" ]] || fail "DMG app version mismatch"
   [[ "$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Contents/Info.plist")" == "$BUILD" ]] || fail "DMG app build mismatch"
   ARCHS="$(lipo -archs "$APP/Contents/MacOS/Volant")"
+  [[ " $ARCHS " == *" x86_64 "* && " $ARCHS " == *" arm64 "* ]] || fail "DMG app is not universal ($ARCHS)"
   codesign --verify --deep --strict "$APP"
   xcrun stapler validate "$APP" > /dev/null
   [[ -L "$MOUNT/Applications" ]] || fail "DMG has no Applications link"
@@ -175,7 +176,7 @@ Everything for the release, in one pull request:
 - \`shasum -a 256 -c SHA256SUMS\` and \`sign_update --verify\` on the appcast pass.
 
 ## Limitations
-- Installed $CURRENT → $VERSION Sparkle upgrades and Intel hardware are not verified by this script.
+- Installed $CURRENT → $VERSION Sparkle upgrades are not verified by this script.
 EOF
   PR="$(open_pr "Release Volant $VERSION" "$LOGS/pr.md")"
   STATE="release PR #$PR open; nothing published"
@@ -245,7 +246,7 @@ cat > "$LOGS/report.md" <<EOF
 - **Stage 2:** Worker version \`$DEPLOY2\` serves the $VERSION feed: $FEED_SIGNATURE.
 - **Pages:** \`/\`, \`/docs\`, and the $VERSION and $PREVIOUS DMGs return 200.
 - **GitHub release:** $RELEASE_URL
-- **Still unverified:** installed $PREVIOUS → $VERSION Sparkle upgrades, and Intel hardware.
+- **Still unverified:** installed $PREVIOUS → $VERSION Sparkle upgrades.
 EOF
 gh pr comment "$PR" --body-file "$LOGS/report.md" > /dev/null
 
