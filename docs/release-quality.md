@@ -20,7 +20,7 @@ Every step stops on failure and states what is and is not published; the new fee
 
 **One-time setup.** Store the App Store Connect API key used for earlier releases as the `volant` notarization profile: `xcrun notarytool store-credentials volant --key ~/.appstoreconnect/private_keys/AuthKey_SCV5964PL2.p8 --key-id SCV5964PL2 --issuer <issuer-ID>`. `Scripts/release.sh` also still accepts `VOLANT_NOTARY_KEY`, `VOLANT_NOTARY_KEY_ID` and `VOLANT_NOTARY_ISSUER`. Allow Keychain access for the Developer ID key and the Sparkle key (account `volant`) when first prompted so later runs are unattended. `gh` and `wrangler` must be signed in.
 
-Not automated: an installed previous build updating through Sparkle (decline/cancel, relaunch, preserved notes and config) and Intel hardware checks. A signed appcast alone does not establish a working update installation.
+Not automated: an installed previous build updating through Sparkle (decline/cancel, relaunch, preserved notes and config). A signed appcast alone does not establish a working update installation.
 
 ## Evidence
 
@@ -35,7 +35,7 @@ Not automated: an installed previous build updating through Sparkle (decline/can
 - Notarization completed for build 2; see the release evidence below.
 - Installed signed-app live smoke test: OS appearance switching, Herdr disclosure click/persistence, Settings/menus, updater prompt, larger text and minimum launcher scale. Render fixtures do not establish these.
 - Two-version Sparkle installation verified on October 7, 2026: the owner updated two Macs from 0.1.5 to 0.2.0 through Sparkle. See the 0.2.0 entry.
-- Intel hardware verification remains outstanding. Inspect archive architecture before making hardware support claims.
+- Intel hardware testing is out of scope (decided October 15, 2026): the owner has no Intel Mac. Releases stay universal, and `Scripts/ship.sh` refuses a DMG whose app lacks the `x86_64` slice, which is what the "Apple silicon & Intel" download line rests on. Records before this date list Intel as unverified; that is no longer tracked.
 
 ## Automation
 
