@@ -124,8 +124,10 @@ export default function Extensions() {
         . Its manifest adds <code>&quot;output&quot;: &quot;items&quot;</code>{' '}
         and the exact <code>hosts</code> it reads, such as{' '}
         <code>[&quot;lobste.rs&quot;]</code>. The extension still has no
-        network access. Volant runs it twice: first it returns the URLs it
-        wants, then it receives the pages and returns rows. Return opens a
+        network access. Volant runs it in rounds: first it returns the URLs it
+        wants, then it receives the pages and returns rows, or asks for more
+        pages, up to three rounds. Each request also says whether you use US
+        or metric units. Return opens a
         row&rsquo;s link and Command-Return opens its second link, typically
         the discussion.
       </p>
@@ -139,7 +141,7 @@ export default function Extensions() {
           <strong>Only approved https hosts.</strong> A separate sandboxed
           fetch helper requests each URL only if its host is in the manifest
           and allowed by you: https, no credentials, no redirects, no cookies,
-          and at most 48&nbsp;KB per page.
+          and at most 512&nbsp;KB per page.
         </li>
         <li>
           <strong>Hosts are shared and removable.</strong> Settings →
@@ -199,7 +201,7 @@ export default function Extensions() {
       </p>
       <ul>
         <li>
-          <strong>Small and local.</strong> At most 16&nbsp;KB per extension,
+          <strong>Small and local.</strong> At most 256&nbsp;KB per extension,
           kept only on this Mac: never synced through iCloud and never part of
           Volant&rsquo;s backups.
         </li>
