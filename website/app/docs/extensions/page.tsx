@@ -129,7 +129,9 @@ export default function Extensions() {
         pages, up to three rounds. Each request also says whether you use US
         or metric units. Return opens a
         row&rsquo;s link and Command-Return opens its second link, typically
-        the discussion.
+        the discussion. An extension may also open its own app, such as a
+        task in Todoist, if it says so before you approve it; if that app
+        is not installed, the web link opens instead.
       </p>
       <ul>
         <li>

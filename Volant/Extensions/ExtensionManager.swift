@@ -17,12 +17,15 @@ struct InstalledExtension: Identifiable, Hashable {
         return try? JSONDecoder().decode(ExtensionCatalogOrigin.self, from: data)
     }
     var accessDescription: String {
-        Self.accessDescription(capabilities: manifest.capabilities, hosts: manifest.declaredHosts, storage: manifest.usesStorage, secrets: manifest.declaredSecrets)
+        Self.accessDescription(capabilities: manifest.capabilities, hosts: manifest.declaredHosts, storage: manifest.usesStorage, secrets: manifest.declaredSecrets,
+                               appLinks: manifest.declaredAppLinks)
     }
-    static func accessDescription(capabilities: [String], hosts: [String], storage: Bool = false, secrets: [ExtensionSecret] = []) -> String {
+    static func accessDescription(capabilities: [String], hosts: [String], storage: Bool = false, secrets: [ExtensionSecret] = [],
+                                  appLinks: [String] = []) -> String {
         let access = capabilities.sorted().map { $0 == "clipboard.write" ? "Write to clipboard" : "Send diagnostic messages" } +
             (hosts.isEmpty ? [] : ["Read " + hosts.joined(separator: ", ")]) + (storage ? ["Remember settings and lists on this Mac"] : []) +
-            secrets.map { "Uses your \($0.title)" }
+            secrets.map { "Uses your \($0.title)" } +
+            appLinks.map { "Opens \($0): links" }
         return access.isEmpty ? "No permissions required" : access.joined(separator: ", ")
     }
 }
@@ -310,7 +313,7 @@ final class ExtensionManager {
                 invoke(ext, input) { [self] result in
                     do {
                         let output = try result.get()
-                        if let reply = try? ExtensionNetwork.reply(from: output) {
+                        if let reply = try? ExtensionNetwork.reply(from: output, appLinks: Set(ext.manifest.declaredAppLinks)) {
                             try self.save(reply.storage, for: ext, run: sequence)
                             guard let items = reply.items else { throw ExtensionNetworkError.malformedItems }
                             completion(.success(items)); return
@@ -335,7 +338,7 @@ final class ExtensionManager {
             invoke(ext, try ExtensionNetwork.request(phase: "plan", query: query, now: now, storage: storage)) { [self] result in
                 do {
                     let output = try result.get()
-                    if let reply = try? ExtensionNetwork.reply(from: output), let items = reply.items {
+                    if let reply = try? ExtensionNetwork.reply(from: output, appLinks: Set(ext.manifest.declaredAppLinks)), let items = reply.items {
                         try self.save(reply.storage, for: ext, run: sequence)
                         completion(.success(items)); return
                     }
@@ -363,7 +366,7 @@ final class ExtensionManager {
         let sequence = beginRun(ext)
         let storage = ext.manifest.usesStorage ? dataStore.load(ext.id) : nil
         func outcome(_ output: String) throws -> ActionOutcome {
-            let reply = try ExtensionNetwork.reply(from: output)
+            let reply = try ExtensionNetwork.reply(from: output, appLinks: Set(ext.manifest.declaredAppLinks))
             try save(reply.storage, for: ext, run: sequence)
             return ActionOutcome(items: reply.items, notice: reply.notice)
         }

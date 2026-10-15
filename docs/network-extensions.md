@@ -57,7 +57,14 @@ response past 512 KB. Requests to the module are limited to 1 MiB and its replie
 at 16 MiB. In the production host a 730 KB render request parses in about 60 ms.
 
 Items are trimmed before display: at most 100 rows, titles and subtitles cut to 300 characters, and
-any link that is not http or https dropped, so a row can only open a web page.
+any link that is not http, https or a declared app link dropped.
+
+**App links.** A list extension may declare up to four app URL schemes, `"appLinks": ["todoist"]`, so
+a row can open its item in that app (`todoist://task?id=…`). The schemes are part of the approval
+fingerprint and appear in the prompt and Settings as "Opens todoist: links". Files, scripts, inline
+data, the web, network shares, remote sessions, `prefs` and every `x-apple` scheme are always refused.
+Volant opens an app link only through an installed app that handles it; otherwise it opens the row's
+other link instead, so a task without Todoist.app opens on the web.
 
 ## Manifest
 

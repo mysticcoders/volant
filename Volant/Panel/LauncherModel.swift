@@ -1387,7 +1387,7 @@ final class LauncherModel: ObservableObject {
         case .extensionItem(let item, let source):
             if let primary = item.primaryAction { runItemAction(source, item: item, action: primary); return }
             guard let link = item.url, let url = URL(string: link) else { copy(item.title); return }
-            _ = QuicklinkResolver.open(url)
+            _ = Self.openExtensionLink(url, fallback: item.secondaryURL.flatMap(URL.init(string:)))
             if item.onOpen == true { runItemAction(source, item: item, action: nil) }
         case .snippet(let snippet): copy(SnippetExpander.expand(snippet.body))
         case .emoji(let e): copy(e.symbol)
@@ -1536,6 +1536,13 @@ final class LauncherModel: ObservableObject {
         }
     }
 
+    /// Opens an extension row's link. An app link, such as `todoist://task?id=…`, that no installed app
+    /// handles falls back to the row's other link, typically the same item on the web. Returns whether
+    /// anything opened.
+    static func openExtensionLink(_ url: URL, fallback: URL?, open: (URL) -> Bool = { QuicklinkResolver.open($0) }) -> Bool {
+        open(url) || (fallback.map(open) ?? false)
+    }
+
     /// Runs an Actions menu entry. Extension rows run their own actions through the extension; other
     /// rows use the built-in application and file actions.
     func performMenuEntry(_ entry: LauncherMenuEntry, target snapshot: ResultRow) {
@@ -1640,7 +1647,7 @@ final class LauncherModel: ObservableObject {
         case .contact(let contact): if let field = contact.secondaryField { copy(field.value) }
         case .extensionItem(let item, _):
             guard let link = item.secondaryURL, let url = URL(string: link) else { activateSelection(); return }
-            _ = QuicklinkResolver.open(url)
+            _ = Self.openExtensionLink(url, fallback: item.url.flatMap(URL.init(string:)))
         default: activateSelection(); return
         }
         dismiss()

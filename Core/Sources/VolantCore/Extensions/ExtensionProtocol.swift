@@ -24,8 +24,12 @@ public struct ExtensionManifest: Codable, Hashable {
     /// Tokens the owner gives once for some of the declared hosts (see `ExtensionSecret`). Part of the
     /// approval fingerprint when present.
     public var secrets: [ExtensionSecret]?
+    /// URL schemes of apps a row may open, such as `todoist`, so Return can open a task in its app. Part of
+    /// the approval fingerprint when present; system and file schemes are never allowed.
+    public var appLinks: [String]?
 
     public var declaredSecrets: [ExtensionSecret] { secrets ?? [] }
+    public var declaredAppLinks: [String] { appLinks ?? [] }
     public var declaredHosts: [String] { hosts ?? [] }
     public var listsItems: Bool { output == "items" }
     public var usesStorage: Bool { storage == true }
@@ -41,11 +45,26 @@ public struct ExtensionManifest: Codable, Hashable {
               Set(declaredHosts).count == declaredHosts.count, declaredHosts.allSatisfy(ExtensionNetwork.isValidHost),
               declaredHosts.isEmpty || listsItems, Self.isValidIcon(icon, sha256: iconSha256), !usesStorage || listsItems,
               declaredSecrets.count <= ExtensionSecret.maximumPerExtension, Set(declaredSecrets.map(\.id)).count == declaredSecrets.count,
-              Set(declaredSecrets.map(\.host)).count == declaredSecrets.count, declaredSecrets.allSatisfy({ $0.isValid(hosts: declaredHosts) }) else {
+              Set(declaredSecrets.map(\.host)).count == declaredSecrets.count, declaredSecrets.allSatisfy({ $0.isValid(hosts: declaredHosts) }),
+              declaredAppLinks.count <= Self.maximumAppLinks, Set(declaredAppLinks).count == declaredAppLinks.count,
+              declaredAppLinks.allSatisfy(Self.isAllowedAppLink), declaredAppLinks.isEmpty || listsItems else {
             throw ExtensionValidationError.invalidManifest
         }
     }
     public static let knownCapabilities: Set<String> = ["log", "clipboard.write"]
+    public static let maximumAppLinks = 4
+    /// Schemes no extension may open: files, scripts, inline data, the web (rows use http and https
+    /// directly), network shares and remote sessions, and Apple's system URLs.
+    static let refusedAppLinks: Set<String> = ["file", "javascript", "data", "blob", "about", "http", "https", "ftp", "sftp", "smb", "afp", "nfs",
+                                                "vnc", "ssh", "telnet", "rdp", "applescript", "prefs", "x-apple.systempreferences", "itms-services"]
+
+    /// A lowercase scheme of 2 to 32 letters, digits, `+`, `-` or `.`, starting with a letter, that is not
+    /// refused and not one of Apple's `x-apple` system schemes.
+    public static func isAllowedAppLink(_ scheme: String) -> Bool {
+        (2...32).contains(scheme.count) && scheme.first?.isLetter == true &&
+            scheme.allSatisfy { $0.isASCII && ($0.isLowercase || $0.isNumber || "+-.".contains($0)) } &&
+            !refusedAppLinks.contains(scheme) && !scheme.hasPrefix("x-apple")
+    }
     public static let maximumIconBytes = 32_768
 
     /// No icon, or a plain `.webp` file name in the extension's folder with a lowercase SHA-256.
@@ -68,7 +87,7 @@ public struct ExtensionManifest: Codable, Hashable {
 
     public init(abiVersion: Int? = 1, id: String, name: String, version: String, module: String, capabilities: [String], timeoutSeconds: Double? = nil, sha256: String? = nil,
                 hosts: [String]? = nil, output: String? = nil, icon: String? = nil, iconSha256: String? = nil, storage: Bool? = nil,
-                secrets: [ExtensionSecret]? = nil) {
+                secrets: [ExtensionSecret]? = nil, appLinks: [String]? = nil) {
         self.abiVersion = abiVersion
         self.id = id
         self.name = name
@@ -83,6 +102,7 @@ public struct ExtensionManifest: Codable, Hashable {
         self.iconSha256 = iconSha256
         self.storage = storage
         self.secrets = secrets
+        self.appLinks = appLinks
     }
 }
 

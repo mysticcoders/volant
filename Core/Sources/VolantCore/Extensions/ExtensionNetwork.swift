@@ -98,22 +98,22 @@ public enum ExtensionNetwork {
     /// The longest confirmation Volant shows, such as "Completed “Ship 0.3.3”".
     public static let maximumNoticeLength = 120
 
-    public static func reply(from output: String) throws -> Reply {
+    public static func reply(from output: String, appLinks: Set<String> = []) throws -> Reply {
         guard let data = output.data(using: .utf8), let raw = try? JSONDecoder().decode(RawReply.self, from: data) else {
             throw ExtensionNetworkError.malformedItems
         }
         let notice = raw.notice.map { String($0.trimmingCharacters(in: .whitespacesAndNewlines).prefix(maximumNoticeLength)) }.flatMap { $0.isEmpty ? nil : $0 }
         guard raw.items != nil || raw.storage != nil || notice != nil else { throw ExtensionNetworkError.malformedItems }
-        return Reply(items: raw.items.map { Array($0.prefix(maximumItems)).compactMap { $0.sanitized() } }, storage: raw.storage, notice: notice)
+        return Reply(items: raw.items.map { Array($0.prefix(maximumItems)).compactMap { $0.sanitized(appLinks: appLinks) } }, storage: raw.storage, notice: notice)
     }
 
-    /// The rows a render returned, trimmed to the launcher's limits. Links other than http and https
-    /// are dropped so a row can never open another scheme.
-    public static func items(from output: String) throws -> [ExtensionItem] {
+    /// The rows a render returned, trimmed to the launcher's limits. Links other than http, https and the
+    /// manifest's declared `appLinks` schemes are dropped, so a row can never open anything else.
+    public static func items(from output: String, appLinks: Set<String> = []) throws -> [ExtensionItem] {
         guard let data = output.data(using: .utf8), let list = try? JSONDecoder().decode(ItemList.self, from: data) else {
             throw ExtensionNetworkError.malformedItems
         }
-        return list.items.prefix(maximumItems).compactMap { $0.sanitized() }
+        return list.items.prefix(maximumItems).compactMap { $0.sanitized(appLinks: appLinks) }
     }
 
     private struct Plan: Decodable { let fetch: [String]; let state: String? }
@@ -160,15 +160,16 @@ public struct ExtensionItem: Codable, Hashable {
         self.actions = actions; self.onOpen = onOpen; self.primaryAction = primaryAction
     }
 
-    /// Trims text to display limits and drops links that are not http or https. A row without a
-    /// title is dropped.
-    func sanitized() -> ExtensionItem? {
+    /// Trims text to display limits and drops links that are not http or https, or a scheme from
+    /// `appLinks`, the manifest's declared app links. A row without a title is dropped.
+    func sanitized(appLinks: Set<String> = []) -> ExtensionItem? {
         let title = String(title.prefix(300)).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return nil }
         func link(_ value: String?) -> String? {
             guard let value, value.count <= ExtensionNetwork.maximumURLLength, let url = URL(string: value),
-                  ["http", "https"].contains(url.scheme?.lowercased()), url.host != nil else { return nil }
-            return value
+                  let scheme = url.scheme?.lowercased() else { return nil }
+            if ["http", "https"].contains(scheme) { return url.host == nil ? nil : value }
+            return appLinks.contains(scheme) && ExtensionManifest.isAllowedAppLink(scheme) ? value : nil
         }
         let secondary = link(secondaryURL)
         var seen = Set<String>()
