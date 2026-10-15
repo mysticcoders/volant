@@ -74,11 +74,16 @@ Added in 0.3.4:
 | Extension tokens kept in the Keychain and added only for their host; actions may POST, confirm, and run from Return (for the Todoist extension) | Yes | Core validation tests, app tests that the token reaches only its host and never the module or config, that only actions may POST, and the opened phase cannot; no live Todoist account test yet | Privacy and Extensions docs: tokens stay in the Keychain and go only to their host; changes only from an action you choose |
 | List extensions fetch in up to three rounds with state, every request says US or metric units, and limits rise to 1 MiB in, 256 KiB out, 512 KB per fetched page and 256 KB of storage | Yes | #242; Core and app tests (rounds, round limit, a host removed mid-run), `tools/check-extensions.sh` with exact-boundary probes, VM extensions acceptance 44/44 | Extensions and Privacy docs updated on main (rounds, units, 512 KB pages, 256 KB storage); live with the next release, which includes #242 |
 
-Merged after 0.3.4, not in the current download:
+Added in 0.3.5:
+
+| Story | In 0.3.5 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| Extension rows can show one of Volant's weather icons (sun, rain, snow and 12 more), drawn by Volant | Yes | Core tests that known names survive and unknown ones are dropped, an app test that every symbol exists in SF Symbols, VM renders in light and dark | Extensions doc: rows can show Volant's weather icons, drawn by Volant |
+
+Merged after 0.3.5, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
-| Extension rows can show one of Volant's weather icons (sun, rain, snow and 12 more), drawn by Volant | No | Core tests that known names survive and unknown ones are dropped, an app test that every symbol exists in SF Symbols, VM renders in light and dark | Extensions doc updated on main: rows can show Volant's weather icons; live with the next release |
 
 ## Privacy language
 
