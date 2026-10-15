@@ -469,14 +469,22 @@ struct NotesView: View {
 
     private var shortcuts: some View {
         Group {
-            Button("Toggle Preview") { model.editing.toggle() }.keyboardShortcut(NotesShortcut.togglePreview.keyboardShortcut)
-            Button("Copy Markdown") { model.copyMarkdown() }.keyboardShortcut(NotesShortcut.copyMarkdown.keyboardShortcut)
-            Button("Duplicate Note") { if let text = model.selected?.text { model.newNote(text: text) } }.keyboardShortcut(NotesShortcut.duplicate.keyboardShortcut)
-            Button("Pin Note") { model.togglePin() }.keyboardShortcut(NotesShortcut.pin.keyboardShortcut)
-            Button("Trash Note") { model.deleteSelected() }.keyboardShortcut(NotesShortcut.trash.keyboardShortcut)
+            Button("Toggle Preview") { whenAvailable { model.editing.toggle() } }.keyboardShortcut(NotesShortcut.togglePreview.keyboardShortcut)
+            Button("Copy Markdown") { whenAvailable { model.copyMarkdown() } }.keyboardShortcut(NotesShortcut.copyMarkdown.keyboardShortcut)
+            Button("Duplicate Note") { whenAvailable { if let text = model.selected?.text { model.newNote(text: text) } } }
+                .keyboardShortcut(NotesShortcut.duplicate.keyboardShortcut)
+            Button("Pin Note") { whenAvailable { model.togglePin() } }.keyboardShortcut(NotesShortcut.pin.keyboardShortcut)
+            Button("Trash Note") { whenAvailable { model.deleteSelected() } }.keyboardShortcut(NotesShortcut.trash.keyboardShortcut)
         }
         .disabled(!model.noteCommandsAvailable)
         .hidden().accessibilityHidden(true)
+    }
+
+    /// Runs a note command only if note commands are available now. SwiftUI applies `.disabled` on its
+    /// next render, so a shortcut pressed right after Actions or Browse opens could otherwise still
+    /// toggle preview or trash the note under the overlay.
+    private func whenAvailable(_ command: () -> Void) {
+        if model.noteCommandsAvailable { command() }
     }
 }
 
