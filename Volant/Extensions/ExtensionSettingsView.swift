@@ -72,124 +72,40 @@ struct ExtensionSettingsView: View {
     }
     var body: some View {
         Form {
-            Section {
-                Toggle("Allow Community Extensions", isOn: Binding(get: { communityAllowed }, set: { allowed in
-                    do { try manager.setCommunityAllowed(allowed, expected: communityAllowed); reload(); onChange() }
-                    catch { self.error = error.localizedDescription; reload() }
-                })).accessibilityIdentifier("community-extensions-toggle")
-            } footer: {
-                SettingsFooter("Off blocks community commands and discards results from active runs. Your individual choices are kept. Bundled extensions are controlled separately below.")
-            }
-            Section {
-                if installed.isEmpty { Text("No extensions installed.").foregroundStyle(.secondary) }
-                ForEach(installed) { ext in
-                    HStack {
-                        Group {
-                            if let icon = ExtensionIcon.image(for: ext) {
-                                Image(nsImage: icon).resizable().clipShape(RoundedRectangle(cornerRadius: 5))
-                            } else {
-                                Image(systemName: "puzzlepiece.extension").font(.system(size: 16)).foregroundStyle(.secondary)
-                            }
-                        }.frame(width: 24, height: 24).accessibilityHidden(true)
-                        Toggle(isOn: Binding(get: { ext.enabled }, set: { enabled in
-                            if enabled && !ExtensionHostApprovals.missing(ext.manifest, at: configURL).isEmpty { confirmingHosts = ext }
-                            else { setEnabled(ext, enabled) }
-                        })) {
-                            Text(ext.name)
-                            Text((ext.isCommunity ? (ext.communityBlocked ? "Community · Blocked by master switch" : "Community") : "Bundled with Volant")
-                                 + (ext.catalogOrigin == nil ? "" : " · From catalog")
-                                 + " · Version \(ext.manifest.version) · " + ext.accessDescription
-                                 + (ext.enabled && !ExtensionHostApprovals.missing(ext.manifest, at: configURL).isEmpty ? " · Asks for host access on next use" : ""))
-                        }.disabled(ext.communityBlocked).accessibilityIdentifier("extension-toggle-" + ext.id)
-                        if ext.manifest.usesStorage && manager.hasStoredData(ext) {
-                            Button("Clear Data…") { confirmingClear = ext }.controlSize(.small)
-                                .accessibilityIdentifier("extension-clear-data-" + ext.id)
-                        }
-                        if manager.hasSecrets(ext) {
-                            Button("Remove Tokens") {
-                                do { try manager.forgetSecrets(ext); reload() } catch { problems = [error.localizedDescription] }
-                            }.controlSize(.small).help("Deletes this extension’s tokens from your Keychain; it asks again on next use.")
-                                .accessibilityIdentifier("extension-remove-tokens-" + ext.id)
-                        }
-                        if ext.isCommunity {
-                            Button("Uninstall…") { confirmingUninstall = ext }.controlSize(.small)
-                                .accessibilityIdentifier("extension-uninstall-" + ext.id)
-                        }
+            if communityAllowed {
+                Section {
+                    LabeledContent {
+                        Button("Turn Off") { setCommunityAllowed(false) }
+                            .accessibilityIdentifier("community-extensions-turn-off")
+                    } label: {
+                        Text("Community extensions are on")
+                        Text("Turn off to stop every community extension at once. Your choices are kept for when you turn them back on.")
                     }
                 }
+            } else {
+                communityIntro
+            }
+            Section {
+                if visibleExtensions.isEmpty { Text("No extensions installed.").foregroundStyle(.secondary) }
+                ForEach(visibleExtensions) { ext in extensionRow(ext) }
                 ForEach(problems, id: \.self) { Text($0).foregroundStyle(.secondary) }
             } header: {
                 HStack {
-                    Text("Installed")
+                    Text(communityAllowed ? "Installed" : "Built In")
                     Spacer()
-                    Button("Open Folder") { NSWorkspace.shared.open(ExtensionManager.directory) }.controlSize(.small).font(.callout)
-                    Button("Refresh") { reload(); onChange(); loadCatalog() }.controlSize(.small).font(.callout)
-                        .disabled(catalogLoading || installing != nil)
-                        .accessibilityIdentifier("extension-refresh")
+                    if communityAllowed {
+                        Button("Open Folder") { NSWorkspace.shared.open(ExtensionManager.directory) }.controlSize(.small).font(.callout)
+                        Button("Refresh") { reload(); onChange(); loadCatalog() }.controlSize(.small).font(.callout)
+                            .disabled(catalogLoading || installing != nil)
+                            .accessibilityIdentifier("extension-refresh")
+                    }
                 }
             } footer: {
                 SettingsFooter("Extensions start off and run only when you invoke them; changed code or permissions need enabling again. Turned-off extensions stay out of search; type ext and a name to find one. Uninstalling moves an extension to the Trash with its data and unused host access. Try Hello World: turn it on, then type hello Andrew")
             }
-            Section {
-                if let catalog {
-                    if catalog.extensions.isEmpty { Text("The catalog has no extensions yet.").foregroundStyle(.secondary) }
-                    // Installed rows already use extension IDs; sharing them in one Form misplaces rows.
-                    ForEach(catalog.extensions, id: \.catalogRowID) { listing in catalogRow(listing, from: catalog) }
-                } else if catalogLoading {
-                    HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Checking the catalog…").foregroundStyle(.secondary) }
-                } else {
-                    Text(catalogError ?? "Choose Refresh to check the catalog. Volant contacts it only then.").foregroundStyle(.secondary)
-                }
-            } header: {
-                Text("Catalog")
-            } footer: {
-                SettingsFooter((communityAllowed ? "" : "Turn on Allow Community Extensions to install from the catalog. ")
-                    + "Reviewed and signed for Volant, and each download is checked against the signed catalog. Installing never turns an extension on or runs it. Volant checks the catalog only when you choose Refresh; you can also type catalog in the launcher.")
-            }
-            Section {
-                if approvedHosts.isEmpty { Text("No hosts allowed.").foregroundStyle(.secondary) }
-                ForEach(approvedHosts, id: \.self) { host in
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(host).font(.body.monospaced())
-                            let names = users(of: host)
-                            Text(names.isEmpty ? "Not used by any installed extension" : "Used by " + names.joined(separator: ", "))
-                                .font(.callout).foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Button("Remove") {
-                            do { try ExtensionHostApprovals.remove(host, at: configURL); reload(); onChange() }
-                            catch { self.error = error.localizedDescription }
-                        }.controlSize(.small).accessibilityIdentifier("extension-host-remove-" + host)
-                    }
-                }
-            } header: {
-                Text("Network Access")
-            } footer: {
-                SettingsFooter("Volant fetches from these hosts for network extensions, which have no network access themselves. Removing a host stops every extension that uses it until you allow it again.")
-            }
-            Section {
-                let sharing = installed.filter { manager.locationApproved($0) }
-                if sharing.isEmpty { Text("No extensions use your location.").foregroundStyle(.secondary) }
-                ForEach(sharing) { ext in
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(ext.name)
-                            Text("Approximate location, about 11 km, shared with " + ext.manifest.declaredHosts.joined(separator: ", "))
-                                .font(.callout).foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Button("Stop Sharing") {
-                            do { try manager.stopSharingLocation(ext); reload(); onChange() }
-                            catch { self.error = error.localizedDescription }
-                        }.controlSize(.small).accessibilityIdentifier("extension-stop-location-" + ext.id)
-                    }
-                }
-            } header: {
-                Text("Location")
-            } footer: {
-                SettingsFooter("Each extension here was allowed your location separately. Volant asks macOS for it only when the extension runs, rounds it to about 11 km, and never saves it. Stopping makes the extension ask again on its next run.")
-            }
+            if communityAllowed { catalogSection }
+            if communityAllowed || !approvedHosts.isEmpty { networkAccessSection }
+            if communityAllowed || !locationSharing.isEmpty { locationSection }
         }
         .formStyle(.settings)
         .onAppear(perform: reload)
@@ -230,6 +146,171 @@ struct ExtensionSettingsView: View {
         .alert("Couldn’t change extension", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
             Button("OK") { error = nil }
         } message: { Text(error ?? "") }
+    }
+
+    /// One installed extension: icon, name and details beside its switch, with its management buttons
+    /// on a line of their own so the details keep their width at Settings' minimum size.
+    private func extensionRow(_ ext: InstalledExtension) -> some View {
+        let manager = manager
+        let hasData = ext.manifest.usesStorage && manager.hasStoredData(ext)
+        let hasSecrets = manager.hasSecrets(ext)
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 10) {
+                Group {
+                    if let icon = ExtensionIcon.image(for: ext) {
+                        Image(nsImage: icon).resizable().clipShape(RoundedRectangle(cornerRadius: 5))
+                    } else {
+                        Image(systemName: "puzzlepiece.extension").font(.system(size: 16)).foregroundStyle(.secondary)
+                    }
+                }.frame(width: 24, height: 24).accessibilityHidden(true)
+                Toggle(isOn: Binding(get: { ext.enabled }, set: { enabled in
+                    if enabled && !ExtensionHostApprovals.missing(ext.manifest, at: configURL).isEmpty { confirmingHosts = ext }
+                    else { setEnabled(ext, enabled) }
+                })) {
+                    Text(ext.name)
+                    Text((ext.isCommunity ? (ext.communityBlocked ? "Community · Blocked by master switch" : "Community") : "Bundled with Volant")
+                         + (ext.catalogOrigin == nil ? "" : " · From catalog")
+                         + " · Version \(ext.manifest.version) · " + ext.accessDescription
+                         + (ext.enabled && !ExtensionHostApprovals.missing(ext.manifest, at: configURL).isEmpty ? " · Asks for host access on next use" : ""))
+                }.disabled(ext.communityBlocked).accessibilityIdentifier("extension-toggle-" + ext.id)
+            }
+            if hasData || hasSecrets || ext.isCommunity {
+                HStack(spacing: 8) {
+                    if hasData {
+                        Button("Clear Data…") { confirmingClear = ext }.controlSize(.small)
+                            .accessibilityIdentifier("extension-clear-data-" + ext.id)
+                    }
+                    if hasSecrets {
+                        Button("Remove Tokens") {
+                            do { try manager.forgetSecrets(ext); reload() } catch { problems = [error.localizedDescription] }
+                        }.controlSize(.small).help("Deletes this extension’s tokens from your Keychain; it asks again on next use.")
+                            .accessibilityIdentifier("extension-remove-tokens-" + ext.id)
+                    }
+                    if ext.isCommunity {
+                        Button("Uninstall…") { confirmingUninstall = ext }.controlSize(.small)
+                            .accessibilityIdentifier("extension-uninstall-" + ext.id)
+                    }
+                }
+                .padding(.leading, 34)
+            }
+        }
+    }
+
+    /// Community rows show only while the master switch is on; built-in extensions always show.
+    private var visibleExtensions: [InstalledExtension] { communityAllowed ? installed : installed.filter { !$0.isCommunity } }
+    private var locationSharing: [InstalledExtension] { let manager = manager; return installed.filter { manager.locationApproved($0) } }
+    private var blockedCommunityCount: Int { installed.filter(\.isCommunity).count }
+
+    private func setCommunityAllowed(_ allowed: Bool) {
+        do { try manager.setCommunityAllowed(allowed, expected: communityAllowed); reload(); onChange() }
+        catch { self.error = error.localizedDescription; reload() }
+    }
+
+    /// What Volant does to keep community extensions safe, and the one way to turn them on. Shown
+    /// while they are off, in place of the catalog and community rows.
+    @ViewBuilder private var communityIntro: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Community extensions run code written by other people. Here is how Volant keeps them in check:")
+                    .fixedSize(horizontal: false, vertical: true)
+                Grid(alignment: .topLeading, horizontalSpacing: 20, verticalSpacing: 14) {
+                    GridRow {
+                        CommunityPoint(symbol: "shield.lefthalf.filled", title: "Sandboxed",
+                                       text: "Each runs as WebAssembly in a separate sandboxed helper, with no access to your files or the network.")
+                        CommunityPoint(symbol: "checkmark.seal", title: "Reviewed and signed",
+                                       text: "Catalog extensions are reviewed for Volant, and every download is checked against the signed catalog.")
+                    }
+                    GridRow {
+                        CommunityPoint(symbol: "hand.raised", title: "You approve access",
+                                       text: "Volant fetches only from sites you allow for each extension. Location needs its own approval.")
+                        CommunityPoint(symbol: "chevron.left.forwardslash.chevron.right", title: "Source you can read",
+                                       text: "Every catalog listing links to the exact source it was built from.")
+                    }
+                }
+            }
+            .padding(.vertical, 4)
+            LabeledContent {
+                Button("Turn On") { setCommunityAllowed(true) }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityIdentifier("community-extensions-turn-on")
+            } label: {
+                Text("Allow community extensions")
+                Text(blockedCommunityCount == 0
+                     ? "You choose which ones to install and turn on."
+                     : "Your \(blockedCommunityCount) installed community \(blockedCommunityCount == 1 ? "extension comes" : "extensions come") back as you left \(blockedCommunityCount == 1 ? "it" : "them").")
+            }
+        } footer: {
+            Link("Learn more about extension security", destination: URL(string: "https://usevolant.com/docs/privacy-and-security")!)
+                .font(.callout)
+        }
+    }
+
+    @ViewBuilder private var catalogSection: some View {
+            Section {
+                if let catalog {
+                    if catalog.extensions.isEmpty { Text("The catalog has no extensions yet.").foregroundStyle(.secondary) }
+                    // Installed rows already use extension IDs; sharing them in one Form misplaces rows.
+                    ForEach(catalog.extensions, id: \.catalogRowID) { listing in catalogRow(listing, from: catalog) }
+                } else if catalogLoading {
+                    HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Checking the catalog…").foregroundStyle(.secondary) }
+                } else {
+                    Text(catalogError ?? "Choose Refresh to check the catalog. Volant contacts it only then.").foregroundStyle(.secondary)
+                }
+            } header: {
+                Text("Catalog")
+            } footer: {
+                SettingsFooter("Reviewed and signed for Volant, and each download is checked against the signed catalog. Installing never turns an extension on or runs it. Volant checks the catalog only when you choose Refresh; you can also type catalog in the launcher.")
+            }
+    }
+
+    @ViewBuilder private var networkAccessSection: some View {
+            Section {
+                if approvedHosts.isEmpty { Text("No hosts allowed.").foregroundStyle(.secondary) }
+                ForEach(approvedHosts, id: \.self) { host in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(host).font(.body.monospaced())
+                            let names = users(of: host)
+                            Text(names.isEmpty ? "Not used by any installed extension" : "Used by " + names.joined(separator: ", "))
+                                .font(.callout).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button("Remove") {
+                            do { try ExtensionHostApprovals.remove(host, at: configURL); reload(); onChange() }
+                            catch { self.error = error.localizedDescription }
+                        }.controlSize(.small).accessibilityIdentifier("extension-host-remove-" + host)
+                    }
+                }
+            } header: {
+                Text("Network Access")
+            } footer: {
+                SettingsFooter("Volant fetches from these hosts for network extensions, which have no network access themselves. Removing a host stops every extension that uses it until you allow it again.")
+            }
+    }
+
+    @ViewBuilder private var locationSection: some View {
+            Section {
+                let sharing = locationSharing
+                if sharing.isEmpty { Text("No extensions use your location.").foregroundStyle(.secondary) }
+                ForEach(sharing) { ext in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(ext.name)
+                            Text("Approximate location, about 11 km, shared with " + ext.manifest.declaredHosts.joined(separator: ", "))
+                                .font(.callout).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button("Stop Sharing") {
+                            do { try manager.stopSharingLocation(ext); reload(); onChange() }
+                            catch { self.error = error.localizedDescription }
+                        }.controlSize(.small).accessibilityIdentifier("extension-stop-location-" + ext.id)
+                    }
+                }
+            } header: {
+                Text("Location")
+            } footer: {
+                SettingsFooter("Each extension here was allowed your location separately. Volant asks macOS for it only when the extension runs, rounds it to about 11 km, and never saves it. Stopping makes the extension ask again on its next run.")
+            }
     }
 }
 
@@ -345,5 +426,23 @@ struct ExtensionHostList: View {
             Text("Volant fetches pages from these hosts for the extension. The extension itself has no network access.")
                 .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
+    }
+}
+
+/// One point in the community extensions explanation: a symbol, a short title and a sentence.
+private struct CommunityPoint: View {
+    let symbol: String
+    let title: String
+    let text: String
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Image(systemName: symbol).foregroundStyle(.secondary).frame(width: 18).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.body.weight(.semibold))
+                Text(text).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
