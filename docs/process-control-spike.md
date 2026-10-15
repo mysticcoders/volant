@@ -150,3 +150,81 @@ decision rather than a feature one. Unchanged from the first spike: the helper w
 by anything that satisfies the requirement, the refusals must stay in the helper rather than the
 launcher, and the README's "sandboxed macOS launcher" framing needs to grow a fuller disclosure
 than it currently carries for the agent helper.
+
+## Ports: who is listening, and can Volant stop it — October 14, 2026
+
+The owner wants a `ports` view for the many localhost dev servers people run: one row per listening
+TCP port, such as "3000 · node · ~/code/my-app · 2h", where Return opens `http://localhost:3000`,
+Command-Return copies the URL and a further action stops the server. `tools/spike-ports.sh` measures
+whether that can be built. It starts a fictional dev server (`tools/process/ports.swift` in
+`listen` mode, bound to 127.0.0.1:47823) inside a temporary project folder, probes it from two
+ad-hoc signed bundles that differ only by App Sandbox, and stops the listener. The sandboxed bundle
+carries `VolantDev.entitlements` (the release set minus iCloud, because an ad-hoc signature cannot
+launch with the iCloud entitlement; the first attempt with `Volant.entitlements` was killed at
+launch). Only counts are printed for the owner's other processes, never their names or ports.
+
+Measured on macOS 27.0.1 on the owner's Mac:
+
+| Probe | Unsandboxed | Sandboxed |
+| --- | --- | --- |
+| Target's descriptors, `PROC_PIDLISTFDS` + `PROC_PIDFDSOCKETINFO` | found the listening socket on 47823 | **DENIED, EPERM** |
+| Scan of every same-user pid from `sysctl KERN_PROC_UID` | 1115 of 1118 descriptor tables readable, 26 listening sockets, target found | **1 of 1118** (its own), none found |
+| `/usr/sbin/lsof -iTCP -sTCP:LISTEN` as a child process | found the owner | exit 1, no owner (the child inherits the sandbox) |
+| `sysctl net.inet.tcp.pcblist_n` | 48 bytes, the header with no entries | same |
+| `proc_name` | readable | readable |
+| Working directory, `PROC_PIDVNODEPATHINFO` | matches the project folder | **matches the project folder** |
+| Start time and uid, `PROC_PIDTBSDINFO` | readable | readable |
+| `kill(pid, 0)` on the listener | permitted | EPERM |
+
+So the sandbox splits the row in half. Given a pid, the app can name it, find its project folder
+and work out its age, but it cannot learn which pid owns a port: socket ownership is behind the
+same per-process check that blocks signalling. `pcblist_n` would have carried ports without
+ownership anyway, and returns no entries to a non-root caller. The main app has no network
+entitlement, so it cannot even probe the port with a connection. The port-to-pid mapping has to
+come from an unsandboxed helper, as a read-only call, alongside the termination the first spike
+already showed needs one.
+
+The earlier follow-up showed that an unsandboxed helper embedded in the signed, sandboxed app keeps
+its own permissions and refuses repackaged callers. The unsandboxed column above is therefore what
+such a helper would see. That was not re-measured from an embedded helper for ports, nor on the
+macOS 15 baseline.
+
+### Proposed helper API (for the owner to approve before anything is built)
+
+A new helper, `VolantProcessHost`, rather than more methods on `VolantAgentHost`: `AGENTS.md`
+requires the agent helper to keep an explicit narrow API, and process control is a separate grant
+the owner should be able to reason about on its own. Same signing, same
+`setCodeSigningRequirement` caller check, launched only when a process command is first used,
+never at startup.
+
+Three operations. None takes a name, pattern, path or signal number.
+
+1. `listeners() -> [Listener]`, read-only. For processes owned by the caller's uid only, each
+   listening TCP socket as `pid`, `port`, whether it is bound to loopback or all interfaces,
+   process name, working directory and start time. At most 256 rows; root and other users'
+   processes are never returned. No command-line arguments: they often carry tokens, and the
+   working directory already says which project it is.
+2. `quitApplication(pid, bundleIdentifier)`, the operation the first follow-up already built: the
+   helper confirms the pid is still that user-facing application, then asks it to quit.
+3. `stopListener(pid, port, startTime, force)`. Dev servers are background node, python or ruby
+   processes, not applications, so this needs its own rule. At call time the helper re-checks that
+   the pid is owned by the caller's uid, is not root, is not Volant or one of its helpers, has an
+   executable outside `/System`, `/usr/libexec` and `/usr/sbin`, still has the recorded start time
+   (so a reused pid is refused), and is listening on exactly that port right now. Then it sends
+   SIGTERM, or SIGKILL only when `force` is true; the launcher offers Force Stop only after a stop
+   has not worked. Every refusal returns a reason the launcher shows.
+
+The launcher keeps selection: it shows what `listeners()` returned and sends back the exact pid,
+port and start time of the chosen row. Opening `http://localhost:<port>` and copying the URL need
+no helper.
+
+### Still open
+
+- Whether to ship a helper that can stop the owner's processes at all. That is the owner's
+  security decision; this spike only shows it is the one route that works.
+- The README and privacy docs would need to say that Volant has a second unsandboxed helper and
+  exactly what it can do.
+- Not measured: IPv6-only listeners (the probe bound IPv4) and a listener in another user's session.
+- Cost is not a concern: scanning every same-user process's descriptors (about 1,118 processes)
+  took 6, 16 and 8 ms unsandboxed in three runs, so `listeners()` can scan on each query rather
+  than cache.
