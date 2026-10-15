@@ -482,6 +482,28 @@ func renderStorageSettings(_ name: String) throws {
 }
 try renderStorageSettings("extension-storage-settings")
 
+// A weather-style list extension names a row symbol per condition; Volant draws it in color in
+// place of the extension's icon, and an unknown name falls back to that icon.
+let symbolDirectory = root.appendingPathComponent("symbol-weather-" + UUID().uuidString)
+try FileManager.default.copyItem(at: bundledExtension, to: symbolDirectory)
+var symbolManifest = try JSONDecoder().decode(ExtensionManifest.self, from: Data(contentsOf: symbolDirectory.appendingPathComponent("manifest.json")))
+symbolManifest.id = "fixture.weather"; symbolManifest.name = "Fixture Weather"; symbolManifest.output = "items"
+try JSONEncoder().encode(symbolManifest).write(to: symbolDirectory.appendingPathComponent("manifest.json"))
+let symbolManager = ExtensionManager(configURL: panel.model.actionConfigURL, roots: [symbolDirectory], dataDirectory: root.appendingPathComponent("SymbolData-" + UUID().uuidString))
+symbolManager.reload()
+try symbolManager.setCommunityAllowed(true, expected: symbolManager.communityAllowed)
+try symbolManager.setEnabled(symbolManager.extensions.first!, true)
+symbolManager.invokeOverride = { _, _, completion in
+    completion(.success(#"{"items":[{"title":"Now · 24°","subtitle":"Sunny in Fictionville","url":"https://weather.example.com/now","symbol":"sun"},{"title":"Tonight · 15°","subtitle":"Partly cloudy","url":"https://weather.example.com/tonight","symbol":"cloud-moon"},{"title":"Tomorrow · 18°","subtitle":"Rain","url":"https://weather.example.com/tomorrow","symbol":"rain"},{"title":"Friday · 2°","subtitle":"Snow","url":"https://weather.example.com/friday","symbol":"snow"},{"title":"Saturday · 21°","subtitle":"Thunderstorms","url":"https://weather.example.com/saturday","symbol":"thunderstorm"},{"title":"Sunday · 19°","subtitle":"Unknown symbol","url":"https://weather.example.com/sunday","symbol":"tornado"}]}"#))
+}
+panel.model.extensions = symbolManager
+panel.toggle(); panel.model.query = "Fixture Weather"; settle()
+key("\r", 36); settle()
+let symbolRows = panel.model.rows.compactMap { row -> ExtensionItem? in if case .extensionItem(let item, _) = row { return item }; return nil }
+verify(symbolRows.map(\.symbol) == ["sun", "cloud-moon", "rain", "snow", "thunderstorm", nil], "Rows keep known symbols and drop unknown ones")
+try render("extension-row-symbols")
+panel.orderOut(nil)
+
 // An extension with a saved token, saved data and community origin shows all three row buttons at
 // Settings' 680-point minimum width without squeezing its subtitle.
 let tokenDirectory = root.appendingPathComponent("token-tasks-" + UUID().uuidString)

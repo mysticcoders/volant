@@ -131,7 +131,9 @@ export default function Extensions() {
         row&rsquo;s link and Command-Return opens its second link, typically
         the discussion. An extension may also open its own app, such as a
         task in Todoist, if it says so before you approve it; if that app
-        is not installed, the web link opens instead.
+        is not installed, the web link opens instead. Rows can show one of
+        Volant&rsquo;s weather icons, such as sun, rain or snow, which
+        Volant draws itself.
       </p>
       <ul>
         <li>

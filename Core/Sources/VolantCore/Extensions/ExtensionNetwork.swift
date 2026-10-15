@@ -154,11 +154,14 @@ public struct ExtensionItem: Codable, Hashable {
     public var onOpen: Bool?
     /// An action id that Return runs instead of opening `url`, such as adding the typed text as a task.
     public var primaryAction: String?
+    /// A row icon chosen from `ExtensionItemSymbol`, which Volant draws itself; the extension's own
+    /// icon shows when it is absent or unknown.
+    public var symbol: String?
 
     public init(title: String, subtitle: String? = nil, url: String? = nil, secondaryURL: String? = nil, secondaryTitle: String? = nil,
-                actions: [ExtensionItemAction]? = nil, onOpen: Bool? = nil, primaryAction: String? = nil) {
+                actions: [ExtensionItemAction]? = nil, onOpen: Bool? = nil, primaryAction: String? = nil, symbol: String? = nil) {
         self.title = title; self.subtitle = subtitle; self.url = url; self.secondaryURL = secondaryURL; self.secondaryTitle = secondaryTitle
-        self.actions = actions; self.onOpen = onOpen; self.primaryAction = primaryAction
+        self.actions = actions; self.onOpen = onOpen; self.primaryAction = primaryAction; self.symbol = symbol
     }
 
     /// Trims text to display limits and drops links that are not http or https, or a scheme from
@@ -178,7 +181,8 @@ public struct ExtensionItem: Codable, Hashable {
         return ExtensionItem(title: title, subtitle: subtitle.map { String($0.prefix(300)) }, url: link(url),
                              secondaryURL: secondary, secondaryTitle: secondary == nil ? nil : secondaryTitle.map { String($0.prefix(40)) },
                              actions: unique.isEmpty ? nil : Array(unique), onOpen: onOpen == true ? true : nil,
-                             primaryAction: primaryAction.flatMap { ExtensionItemAction(id: $0, title: $0).sanitized()?.id })
+                             primaryAction: primaryAction.flatMap { ExtensionItemAction(id: $0, title: $0).sanitized()?.id },
+                             symbol: symbol.flatMap(ExtensionItemSymbol.init(rawValue:))?.rawValue)
     }
 }
 
