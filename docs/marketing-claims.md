@@ -80,7 +80,13 @@ Added in 0.3.5:
 | --- | --- | --- | --- |
 | Extension rows can show one of Volant's weather icons (sun, rain, snow and 12 more), drawn by Volant | Yes | Core tests that known names survive and unknown ones are dropped, an app test that every symbol exists in SF Symbols, VM renders in light and dark | Extensions doc: rows can show Volant's weather icons, drawn by Volant |
 
-Merged after 0.3.5, not in the current download:
+Added in 0.3.6:
+
+| Story | In 0.3.6 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| Settings explains community extensions before they are turned on, and hides the catalog and community rows until then | Yes | #252; VM renders of the off and on states in light and dark; the installed-acceptance script presses the new Turn On button but has not run against it yet | None; Settings only |
+
+Merged after 0.3.6, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
