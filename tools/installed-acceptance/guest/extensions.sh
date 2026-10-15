@@ -35,8 +35,8 @@ step "install from the catalog"
 mkdir -p "$EXT_DIR"
 rm -rf "$EXT_DIR/hackernews" "$EXT_DIR/lobsters" "$EXT_DIR/community.volant.hn" "$EXT_DIR/community.volant.lobsters"
 open_settings Extensions
-if [ "$(AX Volant find "$S" "community-extensions-toggle" | sed 's/.* | //')" != 1 ]; then
-  AX Volant press "$S" "community-extensions-toggle" >/dev/null; sleep 1
+if [ "$(config_get communityExtensionsAllowed)" != true ]; then
+  AX Volant press "$S" "community-extensions-turn-on" >/dev/null; sleep 1
 fi
 expect_eq "community extensions are allowed" true "$(config_get communityExtensionsAllowed)"
 AX Volant press "$S" "extension-refresh" >/dev/null
