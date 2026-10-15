@@ -23,13 +23,18 @@ struct ExtensionSettingsView: View {
     @State private var catalogLoading = false
     @State private var catalogError: String?
     @State private var installing: String?
+    private let secretStore: ExtensionSecretStore
     init(configURL: URL, onChange: @escaping () -> Void, roots: [URL]? = nil, directory: URL? = nil, dataDirectory: URL? = nil,
-         catalogClient: ExtensionCatalogClient = .live, catalog: ExtensionCatalog? = nil) {
+         catalogClient: ExtensionCatalogClient = .live, catalog: ExtensionCatalog? = nil, secretStore: ExtensionSecretStore = .keychain) {
         self.configURL = configURL; self.onChange = onChange; self.roots = roots; self.directory = directory; self.dataDirectory = dataDirectory
-        self.catalogClient = catalogClient
+        self.catalogClient = catalogClient; self.secretStore = secretStore
         _catalog = State(initialValue: catalog)
     }
-    private var manager: ExtensionManager { ExtensionManager(configURL: configURL, roots: roots, directory: directory, dataDirectory: dataDirectory) }
+    private var manager: ExtensionManager {
+        let manager = ExtensionManager(configURL: configURL, roots: roots, directory: directory, dataDirectory: dataDirectory)
+        manager.secretStore = secretStore
+        return manager
+    }
     private func reload() {
         let manager = manager; manager.reload()
         installed = manager.extensions; problems = manager.loadErrors; communityAllowed = manager.communityAllowed
@@ -99,6 +104,12 @@ struct ExtensionSettingsView: View {
                         if ext.manifest.usesStorage && manager.hasStoredData(ext) {
                             Button("Clear Data…") { confirmingClear = ext }.controlSize(.small)
                                 .accessibilityIdentifier("extension-clear-data-" + ext.id)
+                        }
+                        if manager.hasSecrets(ext) {
+                            Button("Remove Tokens") {
+                                do { try manager.forgetSecrets(ext); reload() } catch { problems = [error.localizedDescription] }
+                            }.controlSize(.small).help("Deletes this extension’s tokens from your Keychain; it asks again on next use.")
+                                .accessibilityIdentifier("extension-remove-tokens-" + ext.id)
                         }
                         if ext.isCommunity {
                             Button("Uninstall…") { confirmingUninstall = ext }.controlSize(.small)
@@ -241,12 +252,16 @@ struct ExtensionPermissionRequest: Identifiable {
     let extensionItem: InstalledExtension
     let input: String
     var hosts: [String] = []
+    /// Declared tokens not saved yet; the prompt asks for each before it can run.
+    var secrets: [ExtensionSecret] = []
 }
 
 struct ExtensionPermissionView: View {
     let request: ExtensionPermissionRequest
-    let enable: () -> Void
+    let enable: ([String: String]) -> Void
     let cancel: () -> Void
+    @State private var values: [String: String] = [:]
+    private var complete: Bool { request.secrets.allSatisfy { ExtensionSecret.isValidValue(values[$0.id, default: ""].trimmingCharacters(in: .whitespacesAndNewlines)) } }
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(request.extensionItem.enabled ? "Allow \(request.extensionItem.name) to go online?" : "Enable \(request.extensionItem.name)?")
@@ -256,15 +271,34 @@ struct ExtensionPermissionView: View {
             } else {
                 ExtensionHostList(hosts: request.hosts)
             }
+            ForEach(request.secrets, id: \.id) { secret in
+                ExtensionSecretField(secret: secret, value: Binding(get: { values[secret.id, default: ""] }, set: { values[secret.id] = $0 }))
+            }
             Text("This extension will run now and stay enabled. You can turn it off, or remove its hosts, in Settings → Extensions.")
                 .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             HStack {
                 Spacer()
                 Button("Cancel", action: cancel).keyboardShortcut(.cancelAction)
-                Button(request.hosts.isEmpty ? "Enable and Run" : "Allow and Run", action: enable).keyboardShortcut(.defaultAction)
+                Button(request.hosts.isEmpty ? "Enable and Run" : "Allow and Run") { enable(values) }
+                    .keyboardShortcut(.defaultAction).disabled(!complete)
             }
         }.padding(24).frame(width: 390)
             .background(Color(nsColor: .windowBackgroundColor))
+    }
+}
+
+/// One token field in the first-run prompt, with where the token goes and that the extension never sees it.
+struct ExtensionSecretField: View {
+    let secret: ExtensionSecret
+    @Binding var value: String
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(secret.title).font(.headline)
+            SecureField(secret.title, text: $value).textFieldStyle(.roundedBorder).labelsHidden()
+                .accessibilityIdentifier("extension-secret-\(secret.id)")
+            Text((secret.help.map { $0 + " " } ?? "") + "Volant keeps it in your Keychain and adds it only to requests to \(secret.host). The extension never sees it.")
+                .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        }
     }
 }
 

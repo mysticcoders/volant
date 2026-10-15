@@ -1,17 +1,18 @@
 import Foundation
 import VolantCore
 
-/// Fetches a network extension's planned URLs through the sandboxed VolantFetchHost, one short-lived
-/// connection per URL. Volant itself has no network access. Each fetch completes exactly once: with the
-/// helper's reply, a connection failure, or a timeout. A failed fetch becomes status 0 with an empty body
-/// so the extension can still render the URLs that did load.
+/// Sends a network extension's requests through the sandboxed VolantFetchHost, one short-lived
+/// connection per request. Volant itself has no network access. Each request completes exactly once: with
+/// the helper's reply, a connection failure, or a timeout. A failed request becomes status 0 with an empty
+/// body so the extension can still render the ones that did load. Header values, which carry the owner's
+/// tokens, go only to the helper and are never logged.
 enum ExtensionFetcher {
-    static func fetch(_ urls: [URL], hosts: [String], completion: @escaping ([ExtensionNetwork.Response]) -> Void) {
-        var responses = [ExtensionNetwork.Response?](repeating: nil, count: urls.count)
+    static func fetch(_ requests: [ExtensionRequest], hosts: [String], completion: @escaping ([ExtensionNetwork.Response]) -> Void) {
+        var responses = [ExtensionNetwork.Response?](repeating: nil, count: requests.count)
         let group = DispatchGroup()
-        for (index, url) in urls.enumerated() {
+        for (index, request) in requests.enumerated() {
             group.enter()
-            fetchOne(url, hosts: hosts) { response in
+            fetchOne(request, hosts: hosts) { response in
                 responses[index] = response
                 group.leave()
             }
@@ -19,13 +20,14 @@ enum ExtensionFetcher {
         group.notify(queue: .main) { completion(responses.compactMap { $0 }) }
     }
 
-    private static func fetchOne(_ url: URL, hosts: [String], completion: @escaping (ExtensionNetwork.Response) -> Void) {
+    private static func fetchOne(_ request: ExtensionRequest, hosts: [String], completion: @escaping (ExtensionNetwork.Response) -> Void) {
         call(timeout: 35, { proxy, reply in
-            proxy.fetch(url: url.absoluteString, allowedHosts: hosts, maximumBytes: ExtensionNetwork.maximumResponseBytes, reply: reply)
+            proxy.request(url: request.url.absoluteString, method: request.method, body: request.body, headers: request.headers,
+                          allowedHosts: hosts, maximumBytes: ExtensionNetwork.maximumResponseBytes, reply: reply)
         }) { data, status, error in
             let body = error == nil ? data : nil
             let text = body.flatMap { String(data: $0, encoding: .utf8) }
-            completion(ExtensionNetwork.Response(url: url.absoluteString, status: body == nil || text == nil ? 0 : status, body: text ?? ""))
+            completion(ExtensionNetwork.Response(url: request.url.absoluteString, status: body == nil || text == nil ? 0 : status, body: text ?? ""))
         }
     }
 

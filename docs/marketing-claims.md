@@ -69,6 +69,7 @@ Merged after 0.3.3, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
+| Extension tokens kept in the Keychain and added only for their host; actions may POST, confirm, and run from Return (for the Todoist extension) | No | Core validation tests, app tests that the token reaches only its host and never the module or config, that only actions may POST, and the opened phase cannot; no live Todoist account test yet | Privacy doc updated on main: extension tokens stay in the Keychain on this Mac and go only to the host they are for; live with the next release |
 | List extensions fetch in up to three rounds with state, every request says US or metric units, and limits rise to 1 MiB in, 256 KiB out, 512 KB per fetched page and 256 KB of storage | No | #242; Core and app tests (rounds, round limit, a host removed mid-run), `tools/check-extensions.sh` with exact-boundary probes, VM extensions acceptance 44/44 | Extensions and Privacy docs updated on main (rounds, units, 512 KB pages, 256 KB storage); live with the next release, which includes #242 |
 
 ## Privacy language

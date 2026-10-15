@@ -72,7 +72,7 @@ struct LauncherView: View {
         }
         .frame(width: LauncherPanel.size.width, height: LauncherPanel.size.height)
         .sheet(item: $model.pendingExtension) { request in
-            ExtensionPermissionView(request: request, enable: model.enablePendingExtension, cancel: { model.pendingExtension = nil })
+            ExtensionPermissionView(request: request, enable: { model.enablePendingExtension(secrets: $0) }, cancel: { model.pendingExtension = nil })
         }
         .background(theme.surface(opacity: LauncherPanel.opacity))
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))

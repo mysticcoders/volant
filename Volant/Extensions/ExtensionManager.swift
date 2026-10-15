@@ -16,10 +16,13 @@ struct InstalledExtension: Identifiable, Hashable {
               let data = try? Data(contentsOf: url) else { return nil }
         return try? JSONDecoder().decode(ExtensionCatalogOrigin.self, from: data)
     }
-    var accessDescription: String { Self.accessDescription(capabilities: manifest.capabilities, hosts: manifest.declaredHosts, storage: manifest.usesStorage) }
-    static func accessDescription(capabilities: [String], hosts: [String], storage: Bool = false) -> String {
+    var accessDescription: String {
+        Self.accessDescription(capabilities: manifest.capabilities, hosts: manifest.declaredHosts, storage: manifest.usesStorage, secrets: manifest.declaredSecrets)
+    }
+    static func accessDescription(capabilities: [String], hosts: [String], storage: Bool = false, secrets: [ExtensionSecret] = []) -> String {
         let access = capabilities.sorted().map { $0 == "clipboard.write" ? "Write to clipboard" : "Send diagnostic messages" } +
-            (hosts.isEmpty ? [] : ["Read " + hosts.joined(separator: ", ")]) + (storage ? ["Remember settings and lists on this Mac"] : [])
+            (hosts.isEmpty ? [] : ["Read " + hosts.joined(separator: ", ")]) + (storage ? ["Remember settings and lists on this Mac"] : []) +
+            secrets.map { "Uses your \($0.title)" }
         return access.isEmpty ? "No permissions required" : access.joined(separator: ", ")
     }
 }
@@ -33,6 +36,8 @@ final class ExtensionManager {
     private let roots: [URL]?
     private let installRoot: URL?
     let dataStore: ExtensionDataStore
+    /// Where declared tokens live; tests replace the Keychain with `ExtensionSecretStore.memory()`.
+    var secretStore: ExtensionSecretStore = .keychain
     /// Replaces the extension helper in tests: given the extension and its request, returns its output.
     var invokeOverride: ((InstalledExtension, String, @escaping (Result<String, Error>) -> Void) -> Void)?
     private var execution: ExtensionExecution?
@@ -133,8 +138,38 @@ final class ExtensionManager {
     /// Hosts this extension declares that the owner has not allowed yet. A host removed in Settings
     /// shows up here again, so the next run asks before fetching.
     func missingHosts(_ ext: InstalledExtension) -> [String] { ExtensionHostApprovals.missing(ext.manifest, at: configURL) }
-    /// Ready to run without asking: enabled and every declared host allowed.
-    func isReady(_ ext: InstalledExtension) -> Bool { ext.enabled && missingHosts(ext).isEmpty }
+    /// Ready to run without asking: enabled, every declared host allowed and every declared token saved.
+    func isReady(_ ext: InstalledExtension) -> Bool { ext.enabled && missingHosts(ext).isEmpty && missingSecrets(ext).isEmpty }
+
+    /// Declared tokens the owner has not given yet, or that the Keychain cannot read now.
+    func missingSecrets(_ ext: InstalledExtension) -> [ExtensionSecret] {
+        ext.manifest.declaredSecrets.filter { (try? secretStore.read(ExtensionSecretStore.account(ext.id, $0))) == nil }
+    }
+    func hasSecrets(_ ext: InstalledExtension) -> Bool { ext.manifest.declaredSecrets.count > missingSecrets(ext).count }
+
+    /// Saves the tokens the owner typed in the first-run prompt, by secret id. Unknown ids are ignored.
+    func saveSecrets(_ ext: InstalledExtension, _ values: [String: String]) throws {
+        for secret in ext.manifest.declaredSecrets {
+            guard let value = values[secret.id]?.trimmingCharacters(in: .whitespacesAndNewlines) else { continue }
+            try secretStore.write(ExtensionSecretStore.account(ext.id, secret), value)
+        }
+    }
+
+    /// Settings → Remove Tokens, and uninstall: deletes every token this extension declared.
+    func forgetSecrets(_ ext: InstalledExtension) throws {
+        for secret in ext.manifest.declaredSecrets { try secretStore.write(ExtensionSecretStore.account(ext.id, secret), nil) }
+    }
+
+    /// The request Volant sends for a URL: the declared token for that exact host, if one is saved, as its
+    /// header. A token is never attached to any other host.
+    private func authorized(_ request: ExtensionRequest, for ext: InstalledExtension) -> ExtensionRequest {
+        var request = request
+        let host = request.url.host?.lowercased()
+        for secret in ext.manifest.declaredSecrets where secret.host == host {
+            if let value = try? secretStore.read(ExtensionSecretStore.account(ext.id, secret)) { request.headers[secret.header] = secret.headerValue(value) }
+        }
+        return request
+    }
 
     /// Enabling also allows the extension's declared hosts; the caller has shown the owner that list.
     /// Disabling leaves host approvals alone, because other extensions may share them.
@@ -160,6 +195,7 @@ final class ExtensionManager {
         try remove(ext.directory)
         try ExtensionApproval.forget(ext.manifest.id, at: configURL)
         try? dataStore.clear(ext.id)
+        try? forgetSecrets(ext)
         reload()
         return try ExtensionHostApprovals.pruneAfterRemoving(ext.manifest, remaining: extensions.map(\.manifest), at: configURL)
     }
@@ -254,14 +290,14 @@ final class ExtensionManager {
     /// made mid-run stops it. An extension that uses storage receives its saved object with every request,
     /// and any reply's `storage` replaces it (see `save(_:for:run:)`).
     func runItems(_ ext: InstalledExtension, query: String, now: Date = Date(),
-                  fetch: @escaping ([URL], [String], @escaping ([ExtensionNetwork.Response]) -> Void) -> Void = ExtensionFetcher.fetch,
+                  fetch: @escaping ([ExtensionRequest], [String], @escaping ([ExtensionNetwork.Response]) -> Void) -> Void = ExtensionFetcher.fetch,
                   completion: @escaping (Result<[ExtensionItem], Error>) -> Void) {
         let hosts = ext.manifest.declaredHosts
         let sequence = beginRun(ext)
         let storage = ext.manifest.usesStorage ? dataStore.load(ext.id) : nil
         func approvedHosts() -> Set<String> { Set(hosts).intersection(ExtensionHostApprovals.approved(at: configURL)) }
         func fetchRound(_ planned: ExtensionNetwork.Fetch, round: Int) {
-            fetch(planned.urls, Array(approvedHosts()).sorted()) { responses in
+            fetch(planned.urls.map { self.authorized(ExtensionRequest(url: $0), for: ext) }, Array(approvedHosts()).sorted()) { responses in
                 let missing = self.missingHosts(ext)
                 guard missing.isEmpty else { completion(.failure(ExtensionNetworkError.hostsNotApproved(missing))); return }
                 render(responses, state: planned.state, round: round)
@@ -293,6 +329,8 @@ final class ExtensionManager {
         guard !hosts.isEmpty else { render([], state: nil, round: 0); return }
         let missing = missingHosts(ext)
         guard missing.isEmpty else { completion(.failure(ExtensionNetworkError.hostsNotApproved(missing))); return }
+        let secrets = missingSecrets(ext)
+        guard secrets.isEmpty else { completion(.failure(ExtensionError.secretsMissing(secrets.map(\.title)))); return }
         do {
             invoke(ext, try ExtensionNetwork.request(phase: "plan", query: query, now: now, storage: storage)) { [self] result in
                 do {
@@ -307,21 +345,50 @@ final class ExtensionManager {
         } catch { completion(.failure(error)) }
     }
 
+    /// What a row's action produced: rows to show instead of the list, a confirmation to show, or
+    /// neither, in which case the list runs again.
+    struct ActionOutcome: Equatable {
+        var items: [ExtensionItem]?
+        var notice: String?
+    }
+
     /// Runs a row's action, or with `action` nil tells the extension a row's link was opened. The module
-    /// gets the row, the query that produced it and its saved object; it never fetches. A reply's
-    /// `storage` is saved under the same rules as a list run, and its `items`, if any, replace the rows.
+    /// gets the row, the query that produced it and its saved object. An action, never an `opened` notice,
+    /// may reply `{"fetch": [{"url", "method": "POST", "json"}], "state"}`: Volant checks approval, hosts
+    /// and tokens again, sends those requests with the declared tokens as headers, and renders with the
+    /// responses and that state. A reply's `storage` is saved under the same rules as a list run.
     func runAction(_ ext: InstalledExtension, item: ExtensionItem, action: String?, query: String, now: Date = Date(),
-                   completion: @escaping (Result<[ExtensionItem]?, Error>) -> Void) {
+                   fetch: @escaping ([ExtensionRequest], [String], @escaping ([ExtensionNetwork.Response]) -> Void) -> Void = ExtensionFetcher.fetch,
+                   completion: @escaping (Result<ActionOutcome, Error>) -> Void) {
         let sequence = beginRun(ext)
+        let storage = ext.manifest.usesStorage ? dataStore.load(ext.id) : nil
+        func outcome(_ output: String) throws -> ActionOutcome {
+            let reply = try ExtensionNetwork.reply(from: output)
+            try save(reply.storage, for: ext, run: sequence)
+            return ActionOutcome(items: reply.items, notice: reply.notice)
+        }
         do {
             let input = try ExtensionNetwork.request(phase: action == nil ? "opened" : "action", query: query, now: now,
-                                                     storage: ext.manifest.usesStorage ? dataStore.load(ext.id) : nil, action: action, item: item)
+                                                     storage: storage, action: action, item: item)
             invoke(ext, input) { [self] result in
-                completion(result.flatMap { output in Result {
-                    let reply = try ExtensionNetwork.reply(from: output)
-                    try self.save(reply.storage, for: ext, run: sequence)
-                    return reply.items
-                } })
+                do {
+                    let output = try result.get()
+                    if let done = try? outcome(output) { completion(.success(done)); return }
+                    guard action != nil, !ext.manifest.declaredHosts.isEmpty else { throw ExtensionNetworkError.malformedItems }
+                    let approved = Set(ext.manifest.declaredHosts).intersection(ExtensionHostApprovals.approved(at: configURL))
+                    let submitted = try ExtensionNetwork.submissions(from: output, hosts: approved)
+                    let missing = missingHosts(ext)
+                    guard missing.isEmpty else { throw ExtensionNetworkError.hostsNotApproved(missing) }
+                    let secrets = missingSecrets(ext)
+                    guard secrets.isEmpty else { throw ExtensionError.secretsMissing(secrets.map(\.title)) }
+                    fetch(submitted.requests.map { self.authorized($0, for: ext) }, Array(approved).sorted()) { responses in
+                        do {
+                            let render = try ExtensionNetwork.request(phase: "render", query: query, now: now, responses: responses,
+                                                                      storage: storage, action: action, item: item, state: submitted.state)
+                            self.invoke(ext, render) { result in completion(result.flatMap { output in Result { try outcome(output) } }) }
+                        } catch { completion(.failure(error)) }
+                    }
+                } catch { completion(.failure(error)) }
             }
         } catch { completion(.failure(error)) }
     }
@@ -373,7 +440,7 @@ final class ExtensionManager {
         } catch { completion(.failure(error)) }
     }
     enum ExtensionError: Error, LocalizedError {
-        case missingModule, hashMismatch, changed, disabled, communityDisabled, runtime(String)
+        case missingModule, hashMismatch, changed, disabled, communityDisabled, secretsMissing([String]), runtime(String)
         var errorDescription: String? {
             switch self {
             case .missingModule: return "Extension module is missing, too large, or outside its folder."
@@ -381,6 +448,7 @@ final class ExtensionManager {
             case .changed: return "Extension changed. Refresh and review it before enabling."
             case .disabled: return "Extension is disabled. Enable it before running."
             case .communityDisabled: return "Community extensions are off. Allow them in Settings → Extensions."
+            case .secretsMissing(let titles): return "Add your \(titles.joined(separator: " and ")) to use this extension."
             case .runtime(let message): return message
             }
         }

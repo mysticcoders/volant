@@ -221,7 +221,7 @@ final class ExtensionTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: root) }
         var fetched: [String] = [], outcome: Result<[ExtensionItem], Error>?
         manager.runItems(news, query: "paris", fetch: { urls, _, reply in
-            fetched += urls.map(\.absoluteString); reply(urls.map { .init(url: $0.absoluteString, status: 200, body: "{}") })
+            fetched += urls.map(\.url.absoluteString); reply(urls.map { .init(url: $0.url.absoluteString, status: 200, body: "{}") })
         }) { outcome = $0 }
         XCTAssertEqual(try XCTUnwrap(outcome).get().map(\.title), ["Paris"])
         XCTAssertEqual(fetched, ["https://news.example.com/find?q=paris", "https://news.example.com/forecast?at=1"])
@@ -236,7 +236,7 @@ final class ExtensionTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: root) }
         var rounds = 0, outcome: Result<[ExtensionItem], Error>?
         manager.runItems(news, query: "", fetch: { urls, _, reply in
-            rounds += 1; reply(urls.map { .init(url: $0.absoluteString, status: 200, body: "") })
+            rounds += 1; reply(urls.map { .init(url: $0.url.absoluteString, status: 200, body: "") })
         }) { outcome = $0 }
         XCTAssertEqual(rounds, ExtensionNetwork.maximumRounds)
         guard case .failure(let error) = try XCTUnwrap(outcome) else { return XCTFail("a fourth round must fail") }
@@ -253,11 +253,99 @@ final class ExtensionTests: XCTestCase {
         manager.runItems(news, query: "", fetch: { urls, _, reply in
             rounds += 1
             try? ExtensionHostApprovals.remove("news.example.com", at: config)
-            reply(urls.map { .init(url: $0.absoluteString, status: 200, body: "") })
+            reply(urls.map { .init(url: $0.url.absoluteString, status: 200, body: "") })
         }) { outcome = $0 }
         XCTAssertEqual(rounds, 1, "the second round must not fetch")
         guard case .failure(let error) = try XCTUnwrap(outcome) else { return XCTFail("a removed host must stop the run") }
         XCTAssertEqual(error as? ExtensionNetworkError, .hostsNotApproved(["news.example.com"]))
+    }
+
+    /// A list extension on two hosts with a token declared for one of them, enabled with both hosts
+    /// allowed, its tokens in memory instead of the Keychain, answering requests from `replies` in turn.
+    private func tokenFixture(_ replies: [String]) throws -> (URL, URL, ExtensionManager, () -> [String]) {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let folder = root.appendingPathComponent("fixture.tasks", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let config = root.appendingPathComponent("config.json")
+        try Data(#"{"extensions":{},"communityExtensionsAllowed":true}"#.utf8).write(to: config)
+        let module = Data([0,97,115,109,1,0,0,0,5,4,1,1,1,1])
+        try module.write(to: folder.appendingPathComponent("tasks.wasm"))
+        let token = ExtensionSecret(id: "token", title: "Fictional API token", host: "api.tasks.example.com", header: "Authorization", prefix: "Bearer ")
+        let manifest = VolantCore.ExtensionManifest(id: "fixture.tasks", name: "Fictional Tasks", version: "1", module: "tasks.wasm", capabilities: [],
+                                                    sha256: Volant.Integrity.sha256(module), hosts: ["api.tasks.example.com", "cdn.example.com"],
+                                                    output: "items", secrets: [token])
+        try JSONEncoder().encode(manifest).write(to: folder.appendingPathComponent("manifest.json"))
+        let manager = ExtensionManager(configURL: config, roots: [folder]); manager.secretStore = .memory(); manager.reload()
+        var queue = replies, requests: [String] = []
+        manager.invokeOverride = { _, input, completion in
+            requests.append(input)
+            completion(.success(queue.isEmpty ? #"{"items":[]}"# : queue.removeFirst()))
+        }
+        return (root, config, manager, { requests })
+    }
+
+    func testTokensAreAskedForThenSentOnlyToTheirHost() async throws {
+        let (root, config, manager, requests) = try tokenFixture([#"{"fetch":["https://api.tasks.example.com/tasks","https://cdn.example.com/icons"]}"#,
+                                                                    #"{"items":[{"title":"Ship it"}]}"#])
+        defer { try? FileManager.default.removeItem(at: root) }
+        let tasks = try XCTUnwrap(manager.extensions.first)
+        try manager.setEnabled(tasks, true)
+        let enabled = try XCTUnwrap(manager.extensions.first)
+        XCTAssertFalse(manager.isReady(enabled), "a declared token must be given before the first run")
+        XCTAssertEqual(manager.missingSecrets(enabled).map(\.id), ["token"])
+        var refusal: Result<[ExtensionItem], Error>?
+        manager.runItems(enabled, query: "", fetch: { _, _, _ in XCTFail("must not fetch without the token") }) { refusal = $0 }
+        guard case .failure = try XCTUnwrap(refusal) else { return XCTFail("a missing token must stop the run") }
+        XCTAssertThrowsError(try manager.saveSecrets(enabled, ["token": "has space"]))
+        try manager.saveSecrets(enabled, ["token": "fictional-token-123"])
+        XCTAssertTrue(manager.isReady(enabled))
+
+        var sent: [ExtensionRequest] = [], outcome: Result<[ExtensionItem], Error>?
+        manager.runItems(enabled, query: "", fetch: { batch, _, reply in
+            sent += batch; reply(batch.map { .init(url: $0.url.absoluteString, status: 200, body: "{}") })
+        }) { outcome = $0 }
+        XCTAssertEqual(try XCTUnwrap(outcome).get().map(\.title), ["Ship it"])
+        XCTAssertEqual(sent.first { $0.url.host == "api.tasks.example.com" }?.headers, ["Authorization": "Bearer fictional-token-123"])
+        XCTAssertEqual(sent.first { $0.url.host == "cdn.example.com" }?.headers, [:], "the token never goes to another host")
+        XCTAssertFalse(requests().contains { $0.contains("fictional-token-123") }, "the module never sees the token")
+        XCTAssertFalse(String(decoding: try Data(contentsOf: config), as: UTF8.self).contains("fictional-token-123"), "tokens stay out of config")
+
+        try manager.forgetSecrets(enabled)
+        XCTAssertFalse(manager.isReady(enabled))
+    }
+
+    func testActionsMayPostAndConfirmButOpenedNoticesMayNot() async throws {
+        let submit = #"{"fetch":[{"url":"https://api.tasks.example.com/tasks/quick","method":"POST","json":{"text":"buy milk"}}],"state":"added"}"#
+        let (root, _, manager, requests) = try tokenFixture([submit, #"{"notice":"Added “buy milk”"}"#, submit])
+        defer { try? FileManager.default.removeItem(at: root) }
+        try manager.setEnabled(try XCTUnwrap(manager.extensions.first), true)
+        let tasks = try XCTUnwrap(manager.extensions.first)
+        try manager.saveSecrets(tasks, ["token": "fictional-token-123"])
+        let row = ExtensionItem(title: "Add “buy milk”", primaryAction: "add")
+        XCTAssertEqual(row.primaryAction, "add")
+
+        var sent: [ExtensionRequest] = [], outcome: Result<ExtensionManager.ActionOutcome, Error>?
+        manager.runAction(tasks, item: row, action: "add", query: "buy milk", fetch: { batch, _, reply in
+            sent += batch; reply(batch.map { .init(url: $0.url.absoluteString, status: 200, body: #"{"content":"buy milk"}"#) })
+        }) { outcome = $0 }
+        XCTAssertEqual(try XCTUnwrap(outcome).get(), .init(items: nil, notice: "Added “buy milk”"))
+        XCTAssertEqual(sent.map(\.method), ["POST"])
+        XCTAssertEqual(sent.first?.body, Data(#"{"text":"buy milk"}"#.utf8))
+        XCTAssertEqual(sent.first?.headers["Authorization"], "Bearer fictional-token-123")
+        XCTAssertTrue(requests()[1].contains(#""phase":"render""#) && requests()[1].contains(#""state":"added""#), requests()[1])
+
+        var opened: Result<ExtensionManager.ActionOutcome, Error>?
+        manager.runAction(tasks, item: row, action: nil, query: "", fetch: { _, _, _ in XCTFail("an opened notice must not send requests") }) { opened = $0 }
+        guard case .failure = try XCTUnwrap(opened) else { return XCTFail("an opened notice that submits must fail") }
+    }
+
+    func testSubmissionsOnlyPostToDeclaredHosts() throws {
+        let hosts: Set = ["api.tasks.example.com"]
+        XCTAssertThrowsError(try ExtensionNetwork.submissions(from: #"{"fetch":[{"url":"https://evil.example.com/x","method":"POST"}]}"#, hosts: hosts))
+        XCTAssertThrowsError(try ExtensionNetwork.submissions(from: #"{"fetch":[{"url":"https://api.tasks.example.com/x","method":"DELETE"}]}"#, hosts: hosts))
+        XCTAssertFalse(ExtensionRequest.isAllowed(method: "GET", body: Data("x".utf8), headers: [:]), "a GET never carries a body")
+        XCTAssertFalse(ExtensionRequest.isAllowed(method: "POST", body: nil, headers: ["Cookie": "a=b"]), "only declared secret headers")
+        XCTAssertFalse(ExtensionRequest.isAllowed(method: "POST", body: nil, headers: ["Authorization": "Bearer a\r\nX: y"]))
     }
 
     func testUninstallForgetsApprovalAndOnlyOrphanedHosts() async throws {

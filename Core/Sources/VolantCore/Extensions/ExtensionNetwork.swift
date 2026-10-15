@@ -87,17 +87,24 @@ public enum ExtensionNetwork {
         return String(decoding: try encoder.encode(body), as: UTF8.self)
     }
 
-    /// A reply that may carry rows, data to save, or both. Missing parts are nil; a reply with neither,
-    /// or that is not JSON, is malformed.
+    /// A reply that may carry rows, data to save, a short confirmation, or several of these. Missing
+    /// parts are nil; a reply with none of them, or that is not JSON, is malformed.
     public struct Reply: Equatable {
         public var items: [ExtensionItem]?
         public var storage: JSONValue?
+        public var notice: String?
     }
 
+    /// The longest confirmation Volant shows, such as "Completed “Ship 0.3.3”".
+    public static let maximumNoticeLength = 120
+
     public static func reply(from output: String) throws -> Reply {
-        guard let data = output.data(using: .utf8), let raw = try? JSONDecoder().decode(RawReply.self, from: data),
-              raw.items != nil || raw.storage != nil else { throw ExtensionNetworkError.malformedItems }
-        return Reply(items: raw.items.map { Array($0.prefix(maximumItems)).compactMap { $0.sanitized() } }, storage: raw.storage)
+        guard let data = output.data(using: .utf8), let raw = try? JSONDecoder().decode(RawReply.self, from: data) else {
+            throw ExtensionNetworkError.malformedItems
+        }
+        let notice = raw.notice.map { String($0.trimmingCharacters(in: .whitespacesAndNewlines).prefix(maximumNoticeLength)) }.flatMap { $0.isEmpty ? nil : $0 }
+        guard raw.items != nil || raw.storage != nil || notice != nil else { throw ExtensionNetworkError.malformedItems }
+        return Reply(items: raw.items.map { Array($0.prefix(maximumItems)).compactMap { $0.sanitized() } }, storage: raw.storage, notice: notice)
     }
 
     /// The rows a render returned, trimmed to the launcher's limits. Links other than http and https
@@ -111,7 +118,7 @@ public enum ExtensionNetwork {
 
     private struct Plan: Decodable { let fetch: [String]; let state: String? }
     private struct ItemList: Decodable { let items: [ExtensionItem] }
-    private struct RawReply: Decodable { let items: [ExtensionItem]?; let storage: JSONValue? }
+    private struct RawReply: Decodable { let items: [ExtensionItem]?; let storage: JSONValue?; let notice: String? }
     private struct Request: Encodable {
         let phase: String
         let query: String
@@ -144,11 +151,13 @@ public struct ExtensionItem: Codable, Hashable {
     public var secondaryTitle: String?
     public var actions: [ExtensionItemAction]?
     public var onOpen: Bool?
+    /// An action id that Return runs instead of opening `url`, such as adding the typed text as a task.
+    public var primaryAction: String?
 
     public init(title: String, subtitle: String? = nil, url: String? = nil, secondaryURL: String? = nil, secondaryTitle: String? = nil,
-                actions: [ExtensionItemAction]? = nil, onOpen: Bool? = nil) {
+                actions: [ExtensionItemAction]? = nil, onOpen: Bool? = nil, primaryAction: String? = nil) {
         self.title = title; self.subtitle = subtitle; self.url = url; self.secondaryURL = secondaryURL; self.secondaryTitle = secondaryTitle
-        self.actions = actions; self.onOpen = onOpen
+        self.actions = actions; self.onOpen = onOpen; self.primaryAction = primaryAction
     }
 
     /// Trims text to display limits and drops links that are not http or https. A row without a
@@ -166,7 +175,8 @@ public struct ExtensionItem: Codable, Hashable {
         let unique = (actions ?? []).compactMap { $0.sanitized() }.filter { seen.insert($0.id).inserted }.prefix(ExtensionItemAction.maximumPerItem)
         return ExtensionItem(title: title, subtitle: subtitle.map { String($0.prefix(300)) }, url: link(url),
                              secondaryURL: secondary, secondaryTitle: secondary == nil ? nil : secondaryTitle.map { String($0.prefix(40)) },
-                             actions: unique.isEmpty ? nil : Array(unique), onOpen: onOpen == true ? true : nil)
+                             actions: unique.isEmpty ? nil : Array(unique), onOpen: onOpen == true ? true : nil,
+                             primaryAction: primaryAction.flatMap { ExtensionItemAction(id: $0, title: $0).sanitized()?.id })
     }
 }
 
@@ -249,9 +259,12 @@ public enum ExtensionHostApprovals {
 }
 
 /// What the app asks the sandboxed fetch helper to do. The helper re-checks every URL against
-/// `allowedHosts`, refuses redirects, sends no cookies and stops reading past `maximumBytes`.
-/// `fetchCatalogFile` reads only the fixed extension catalog paths that `ExtensionCatalog.url(for:)` accepts.
+/// `allowedHosts`, refuses redirects, sends no cookies and stops reading past `maximumBytes`. `request`
+/// sends GET, or POST with a JSON body, with only the headers `ExtensionRequest.isAllowed` accepts, which
+/// are those an extension's declared secrets add. `fetchCatalogFile` reads only the fixed extension
+/// catalog paths that `ExtensionCatalog.url(for:)` accepts.
 @objc public protocol VolantFetchHostProtocol {
-    func fetch(url: String, allowedHosts: [String], maximumBytes: Int, reply: @escaping (Data?, Int, String?) -> Void)
+    func request(url: String, method: String, body: Data?, headers: [String: String], allowedHosts: [String], maximumBytes: Int,
+                 reply: @escaping (Data?, Int, String?) -> Void)
     func fetchCatalogFile(path: String, maximumBytes: Int, reply: @escaping (Data?, Int, String?) -> Void)
 }
