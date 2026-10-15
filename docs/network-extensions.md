@@ -59,6 +59,16 @@ at 16 MiB. In the production host a 730 KB render request parses in about 60 ms.
 Items are trimmed before display: at most 100 rows, titles and subtitles cut to 300 characters, and
 any link that is not http, https or a declared app link dropped.
 
+**Location.** A list extension may declare `"permissions": ["location"]`. The first-run prompt
+then also asks to share the owner's approximate location (about 11 km) with that extension and the
+sites it reads; the grant is that extension's alone, kept as `extensionLocation` in config.json, never
+shared, not synced through iCloud, removed by Settings → Extensions → Location → Stop Sharing or by
+uninstalling, and dropped when a backup is restored onto a Mac. Location Services is asked only on
+that extension's first run after the grant. Each fix is rounded to 0.1° before the extension sees it
+as `"location": {"latitude", "longitude"}` in `plan` and every `render`, kept in memory for at most
+15 minutes, and never written or logged. If macOS refuses or no fix arrives within ten seconds, the
+run goes on without `location`.
+
 **App links.** A list extension may declare up to four app URL schemes, `"appLinks": ["todoist"]`, so
 a row can open its item in that app (`todoist://task?id=…`). The schemes are part of the approval
 fingerprint and appear in the prompt and Settings as "Opens todoist: links". Files, scripts, inline

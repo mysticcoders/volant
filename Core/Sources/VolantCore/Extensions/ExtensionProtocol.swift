@@ -27,9 +27,15 @@ public struct ExtensionManifest: Codable, Hashable {
     /// URL schemes of apps a row may open, such as `todoist`, so Return can open a task in its app. Part of
     /// the approval fingerprint when present; system and file schemes are never allowed.
     public var appLinks: [String]?
+    /// Owner data the extension asks for, beyond its hosts: today only `"location"` (see
+    /// `ExtensionLocation`). Part of the approval fingerprint when present.
+    public var permissions: [String]?
 
     public var declaredSecrets: [ExtensionSecret] { secrets ?? [] }
     public var declaredAppLinks: [String] { appLinks ?? [] }
+    public var declaredPermissions: [String] { permissions ?? [] }
+    public var wantsLocation: Bool { declaredPermissions.contains(ExtensionLocation.permission) }
+    public static let knownPermissions: Set<String> = [ExtensionLocation.permission]
     public var declaredHosts: [String] { hosts ?? [] }
     public var listsItems: Bool { output == "items" }
     public var usesStorage: Bool { storage == true }
@@ -47,7 +53,9 @@ public struct ExtensionManifest: Codable, Hashable {
               declaredSecrets.count <= ExtensionSecret.maximumPerExtension, Set(declaredSecrets.map(\.id)).count == declaredSecrets.count,
               Set(declaredSecrets.map(\.host)).count == declaredSecrets.count, declaredSecrets.allSatisfy({ $0.isValid(hosts: declaredHosts) }),
               declaredAppLinks.count <= Self.maximumAppLinks, Set(declaredAppLinks).count == declaredAppLinks.count,
-              declaredAppLinks.allSatisfy(Self.isAllowedAppLink), declaredAppLinks.isEmpty || listsItems else {
+              declaredAppLinks.allSatisfy(Self.isAllowedAppLink), declaredAppLinks.isEmpty || listsItems,
+              Set(declaredPermissions).isSubset(of: Self.knownPermissions), Set(declaredPermissions).count == declaredPermissions.count,
+              declaredPermissions.isEmpty || listsItems else {
             throw ExtensionValidationError.invalidManifest
         }
     }
@@ -87,7 +95,7 @@ public struct ExtensionManifest: Codable, Hashable {
 
     public init(abiVersion: Int? = 1, id: String, name: String, version: String, module: String, capabilities: [String], timeoutSeconds: Double? = nil, sha256: String? = nil,
                 hosts: [String]? = nil, output: String? = nil, icon: String? = nil, iconSha256: String? = nil, storage: Bool? = nil,
-                secrets: [ExtensionSecret]? = nil, appLinks: [String]? = nil) {
+                secrets: [ExtensionSecret]? = nil, appLinks: [String]? = nil, permissions: [String]? = nil) {
         self.abiVersion = abiVersion
         self.id = id
         self.name = name
@@ -103,6 +111,7 @@ public struct ExtensionManifest: Codable, Hashable {
         self.storage = storage
         self.secrets = secrets
         self.appLinks = appLinks
+        self.permissions = permissions
     }
 }
 

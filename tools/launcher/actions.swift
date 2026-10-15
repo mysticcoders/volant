@@ -488,7 +488,7 @@ let tokenDirectory = root.appendingPathComponent("token-tasks-" + UUID().uuidStr
 try FileManager.default.copyItem(at: bundledExtension, to: tokenDirectory)
 var tokenManifest = try JSONDecoder().decode(ExtensionManifest.self, from: Data(contentsOf: tokenDirectory.appendingPathComponent("manifest.json")))
 tokenManifest.id = "fixture.tasks"; tokenManifest.name = "Fixture Tasks"; tokenManifest.output = "items"; tokenManifest.storage = true
-tokenManifest.hosts = ["api.tasks.example.com"]
+tokenManifest.hosts = ["api.tasks.example.com"]; tokenManifest.permissions = ["location"]
 tokenManifest.secrets = [ExtensionSecret(id: "token", title: "Fictional API token", host: "api.tasks.example.com", header: "Authorization", prefix: "Bearer ")]
 try JSONEncoder().encode(tokenManifest).write(to: tokenDirectory.appendingPathComponent("manifest.json"))
 let tokenSecrets = ExtensionSecretStore.memory()
@@ -497,13 +497,19 @@ tokenManager.secretStore = tokenSecrets; tokenManager.reload()
 try tokenManager.setEnabled(tokenManager.extensions.first!, true)
 try tokenManager.saveSecrets(tokenManager.extensions.first!, ["token": "fictional-token-123"])
 try tokenManager.dataStore.save(.object(["seen": .array([.string("1")])]), for: "fixture.tasks")
+let locationPrompt = NSHostingView(rootView: ExtensionPermissionView(
+    request: ExtensionPermissionRequest(extensionItem: tokenManager.extensions.first!, input: "", hosts: ["api.tasks.example.com"],
+                                        secrets: tokenManifest.secrets ?? [], location: true), enable: { _ in }, cancel: {}))
+locationPrompt.frame = NSRect(x: 0, y: 0, width: 390, height: 520); locationPrompt.layoutSubtreeIfNeeded(); settle()
+try render("extension-location-prompt", view: locationPrompt)
+try tokenManager.allowLocation(tokenManager.extensions.first!)
 verify(tokenManager.hasSecrets(tokenManager.extensions.first!) && tokenManager.hasStoredData(tokenManager.extensions.first!),
        "The token fixture has a saved token and saved data")
 let tokenSettings = NSHostingView(rootView: ExtensionSettingsView(configURL: panel.model.actionConfigURL, onChange: {}, roots: [tokenDirectory],
                                                                   dataDirectory: storageData, catalogClient: ExtensionCatalogClient(fetchFile: { _, _, _ in }),
                                                                   secretStore: tokenSecrets)
     .background(Color(nsColor: .windowBackgroundColor)))
-let tokenWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 680, height: 440), styleMask: [.titled], backing: .buffered, defer: false)
+let tokenWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 680, height: 1100), styleMask: [.titled], backing: .buffered, defer: false)
 tokenWindow.contentView = tokenSettings; tokenWindow.makeKeyAndOrderFront(nil); settle()
 tokenSettings.layoutSubtreeIfNeeded(); settle()
 try render("extension-token-settings", view: tokenSettings)
