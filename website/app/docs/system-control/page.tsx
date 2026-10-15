@@ -173,8 +173,8 @@ export default function SystemControl() {
       <p>
         Bluetooth uses its own sandbox entitlement and system consent. Reading
         Wi-Fi network <em>names</em> requires Location authorization on macOS —
-        Volant requests that authorization but never requests coordinates and
-        never starts location updates. Both are asked for on first use, and
+        connectivity commands request that authorization but never request
+        coordinates. Both are asked for on first use, and
         denying either produces guidance plus a System Settings action rather
         than a broken screen.
       </p>

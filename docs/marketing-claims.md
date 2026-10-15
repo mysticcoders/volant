@@ -65,14 +65,19 @@ Added in 0.3.3 (built once as 0.3.2, never published; see release-quality.md):
 | Redesigned Settings: searchable sidebar, theme colors, sections for Keyboard Shortcuts, Dictation, File Search and About | Yes | #236; VM renders in light, dark and palette themes, the launcher fixture's Settings checks, the owner's look at a development-signed install on October 14, 2026 | Settings paths in the docs updated (Dictation, File Search, Import from Raycast); no screenshots of Settings on the website |
 | What's New in the app (bundled release notes) | Yes | #240; Core parser tests, launcher menu test, VM renders in light and dark | Release notes only; no website change |
 
-Merged after 0.3.3, not in the current download:
+Added in 0.3.4:
+
+| Story | In 0.3.4 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| Extensions the owner allows get their approximate location (about 11 km), shared with the sites they read; the Location prompt and Settings say so | Yes | Core tests for rounding, grants and validation, app tests that location goes only to allowed extensions and never into config; not yet run with real Location Services in a signed build | Privacy, System control and Extensions docs: "an extension you allow can receive your approximate location (about 11 km), and so can the sites it reads"; Wi-Fi names still never request coordinates |
+| Extension rows open declared app links, such as a Todoist task in Todoist.app, falling back to the web link | Yes | Core tests for scheme validation and declared-only links, an app test of the fallback; not yet opened through an installed Todoist.app | Extensions doc updated on main: an extension may open its own app if it says so first; live with the next release |
+| Extension tokens kept in the Keychain and added only for their host; actions may POST, confirm, and run from Return (for the Todoist extension) | Yes | Core validation tests, app tests that the token reaches only its host and never the module or config, that only actions may POST, and the opened phase cannot; no live Todoist account test yet | Privacy and Extensions docs: tokens stay in the Keychain and go only to their host; changes only from an action you choose |
+| List extensions fetch in up to three rounds with state, every request says US or metric units, and limits rise to 1 MiB in, 256 KiB out, 512 KB per fetched page and 256 KB of storage | Yes | #242; Core and app tests (rounds, round limit, a host removed mid-run), `tools/check-extensions.sh` with exact-boundary probes, VM extensions acceptance 44/44 | Extensions and Privacy docs updated on main (rounds, units, 512 KB pages, 256 KB storage); live with the next release, which includes #242 |
+
+Merged after 0.3.4, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
-| Extensions the owner allows get their approximate location (about 11 km), shared with the sites they read; the Location prompt and Settings say so | No | Core tests for rounding, grants and validation, app tests that location goes only to allowed extensions and never into config; not yet run with real Location Services in a signed build | None until the release that ships it: the Privacy line "never requests coordinates" then changes to say extensions you allow get a rounded location |
-| Extension rows open declared app links, such as a Todoist task in Todoist.app, falling back to the web link | No | Core tests for scheme validation and declared-only links, an app test of the fallback; not yet opened through an installed Todoist.app | Extensions doc updated on main: an extension may open its own app if it says so first; live with the next release |
-| Extension tokens kept in the Keychain and added only for their host; actions may POST, confirm, and run from Return (for the Todoist extension) | No | Core validation tests, app tests that the token reaches only its host and never the module or config, that only actions may POST, and the opened phase cannot; no live Todoist account test yet | Privacy doc updated on main: extension tokens stay in the Keychain on this Mac and go only to the host they are for; live with the next release |
-| List extensions fetch in up to three rounds with state, every request says US or metric units, and limits rise to 1 MiB in, 256 KiB out, 512 KB per fetched page and 256 KB of storage | No | #242; Core and app tests (rounds, round limit, a host removed mid-run), `tools/check-extensions.sh` with exact-boundary probes, VM extensions acceptance 44/44 | Extensions and Privacy docs updated on main (rounds, units, 512 KB pages, 256 KB storage); live with the next release, which includes #242 |
 
 ## Privacy language
 

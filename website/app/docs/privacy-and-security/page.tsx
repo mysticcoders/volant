@@ -142,8 +142,13 @@ export default function PrivacyAndSecurity() {
             <tr>
               <td>Location</td>
               <td>
-                macOS requires it to read Wi-Fi network <em>names</em>. Volant
-                never requests coordinates and never starts location updates.
+                macOS requires it to read Wi-Fi network <em>names</em>, which
+                never requests coordinates. An extension you allow can receive
+                your approximate location, rounded to about 11&nbsp;km, and so
+                can the sites it reads. You allow each extension separately;
+                Volant asks macOS for the location only when that extension
+                runs and never saves it. Settings → Extensions → Location lists
+                and removes these.
               </td>
             </tr>
           </tbody>
