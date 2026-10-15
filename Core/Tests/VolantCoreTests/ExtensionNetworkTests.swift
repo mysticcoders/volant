@@ -69,11 +69,36 @@ final class ExtensionNetworkTests: XCTestCase {
     }
 
     func testRequestsCarryPhaseQueryTimeAndResponses() throws {
-        let plan = try ExtensionNetwork.request(phase: "plan", query: "new", now: Date(timeIntervalSince1970: 1_791_000_000))
-        XCTAssertEqual(plan, #"{"now":1791000000,"phase":"plan","query":"new"}"#)
+        let plan = try ExtensionNetwork.request(phase: "plan", query: "new", now: Date(timeIntervalSince1970: 1_791_000_000), units: "metric")
+        XCTAssertEqual(plan, #"{"now":1791000000,"phase":"plan","query":"new","units":"metric"}"#)
         let render = try ExtensionNetwork.request(phase: "render", query: "", now: Date(timeIntervalSince1970: 5),
                                                   responses: [.init(url: "https://lobste.rs/hottest.json", status: 200, body: "[]")])
         XCTAssertTrue(render.contains(#""responses":[{"body":"[]","status":200,"url":"https:\/\/lobste.rs\/hottest.json"}]"#), render)
+    }
+
+    func testRendersReceiveTheStateTheirPlanReturned() throws {
+        let render = try ExtensionNetwork.request(phase: "render", query: "paris", now: Date(timeIntervalSince1970: 0),
+                                                  responses: [], state: "geocode", units: "us")
+        XCTAssertTrue(render.contains(#""state":"geocode""#), render)
+        XCTAssertTrue(render.contains(#""units":"us""#), render)
+    }
+
+    func testRoundsCarryStateAndRejectOversizedState() throws {
+        let hosts: Set = ["api.open-meteo.com"]
+        let round = try ExtensionNetwork.plannedFetch(from: #"{"fetch":["https://api.open-meteo.com/v1/forecast"],"state":"forecast:Paris"}"#, hosts: hosts)
+        XCTAssertEqual(round.urls.map(\.host), ["api.open-meteo.com"])
+        XCTAssertEqual(round.state, "forecast:Paris")
+        XCTAssertNil(try ExtensionNetwork.plannedFetch(from: #"{"fetch":[]}"#, hosts: hosts).state)
+        let huge = String(repeating: "x", count: ExtensionNetwork.maximumStateBytes + 1)
+        XCTAssertThrowsError(try ExtensionNetwork.plannedFetch(from: "{\"fetch\":[],\"state\":\"\(huge)\"}", hosts: hosts)) {
+            XCTAssertEqual($0 as? ExtensionNetworkError, .malformedPlan)
+        }
+    }
+
+    func testUnitsFollowTheMeasurementSystem() {
+        XCTAssertEqual(ExtensionNetwork.units(for: Locale(identifier: "en_US")), "us")
+        XCTAssertEqual(ExtensionNetwork.units(for: Locale(identifier: "en_GB")), "metric")
+        XCTAssertEqual(ExtensionNetwork.units(for: Locale(identifier: "fr_FR")), "metric")
     }
 
     func testItemsDropUnsafeLinksAndBlankTitlesAndAreCapped() throws {

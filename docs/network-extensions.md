@@ -10,9 +10,12 @@ only the host side and a dependency-free fixture, `tools/extensions/list-fixture
 ## The boundary
 
 The WebAssembly module never touches the network, and neither do Volant or the extension helper.
-A run has two phases, each an ordinary ABI 1 or ABI 2 invocation whose input is JSON:
+A run has two phases, each an ordinary ABI 1 or ABI 2 invocation whose input is JSON. Every request
+carries `"units"`: `"us"` when the system uses US customary units, otherwise `"metric"` (the United
+Kingdom's mixed system reads as metric).
 
-1. **Plan.** `{"phase":"plan","query":"new","now":1791000000}` → `{"fetch":["https://lobste.rs/newest.json"]}`.
+1. **Plan.** `{"phase":"plan","query":"new","now":1791000000,"units":"us"}` → `{"fetch":["https://lobste.rs/newest.json"]}`,
+   optionally with `"state"`: a string of at most 4 KB that the render after this fetch receives.
    A plan may return `{"items":[…]}` instead, for example one row explaining an unusable query; Volant
    shows it without fetching.
 2. **Fetch.** Volant checks every planned URL with `ExtensionNetwork.permittedURL`: https on the
@@ -21,12 +24,17 @@ A run has two phases, each an ordinary ABI 1 or ABI 2 invocation whose input is 
 3. **Render.** `{"phase":"render","query":…,"now":…,"responses":[{"url","status","body"}]}` →
    `{"items":[{"title","subtitle","url","secondaryURL","secondaryTitle"}]}`. A failed fetch arrives
    as status 0 with an empty body so the module can explain it.
+4. **Another round.** A render may instead return `{"fetch":[…],"state":"…"}` when it needs one answer
+   before it can ask the next question, such as looking up a place and then its forecast. Volant checks
+   approval and hosts again, fetches, and renders with the new responses and that `state`. A run fetches
+   at most 3 rounds; a fourth request fails the run with "Extension kept asking for more pages".
 
 `VolantFetchHost` is the only process with network access for this. It is a sandboxed XPC service
 with just `network.client`, built like `VolantRatesHost`: it re-checks each URL against the hosts it
 was given, refuses redirects, uses an ephemeral session with no cookies or cache, and stops reading a
-response past 48 KB. The JavaScriptCore runtime, its imports and its 64 KiB input and output limits
-are unchanged; plans, responses and rows all pass through them.
+response past 512 KB. Requests to the module are limited to 1 MiB and its replies to 256 KiB
+(`ExtensionLimits`); plans, responses and rows all pass through them. The module's memory stays capped
+at 16 MiB. In the production host a 730 KB render request parses in about 60 ms.
 
 Items are trimmed before display: at most 100 rows, titles and subtitles cut to 300 characters, and
 any link that is not http or https dropped, so a row can only open a web page.
@@ -65,14 +73,15 @@ The launcher keyword is the extension's name or the last part of its ID: `hn`, `
   use it. Remove takes the host away from all of them at once; their next run asks again.
 - **Uninstall** (community extensions only) moves the folder to the Trash, forgets its approval, and
   removes every host it declared that no other installed extension declares.
-- Hosts are checked again after the plan and again after fetching, so a host removed mid-run stops it.
+- Hosts are checked again after the plan, after every fetch and before every further round, so a host
+  removed mid-run stops it.
 
 ## Not yet
 
 - A catalog of approved extensions that installs from a repository (see #63). Today extensions are
   installed by copying their folder into Settings → Extensions → Open Folder.
 - Per-extension storage for pins, hidden stories or read state, and preferences such as blocked domains.
-- POST requests, authentication, streaming, or responses over 48 KB.
+- POST requests, authentication, streaming, or responses over 512 KB.
 - A signed-delivery check of `VolantFetchHost` through the release build, like `tools/check-rates-xpc.sh`.
 
 ## Checks

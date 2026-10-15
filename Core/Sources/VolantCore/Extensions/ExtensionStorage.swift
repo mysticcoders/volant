@@ -42,11 +42,11 @@ public indirect enum JSONValue: Codable, Hashable {
     }
 }
 
-/// The rules for what a list extension may save on this Mac: one JSON object of at most 16 KB, nested
+/// The rules for what a list extension may save on this Mac: one JSON object of at most 256 KB, nested
 /// at most 8 levels. Volant keeps it per extension, sends it with every request, and replaces it when a
 /// reply includes `storage`. Stored values are never logged; errors describe only size or shape.
 public enum ExtensionStorage {
-    public static let maximumBytes = 16 * 1024
+    public static let maximumBytes = 256 * 1024
     public static let maximumDepth = 8
     public static let empty = JSONValue.object([:])
 

@@ -1,4 +1,5 @@
 import Foundation
+import VolantCore
 
 /// A deliberately small WASI Preview 1 command profile, not a general WASI runtime.
 /// Descriptors are in-memory streams, never OS descriptors. No environment, paths,
@@ -59,7 +60,7 @@ enum WASICommand {
           if ((fd !== 1 && fd !== 2) || !valid(fd)) return 8;
           const list = vectors(pointer, count, result);
           const size = list.reduce((total, bytes) => total + bytes.length, 0);
-          if (fd === 1 && size > 65536 - output.length) throw new Error('Command output exceeds 64 KiB');
+          if (fd === 1 && size > \#(ExtensionLimits.maximumOutputBytes) - output.length) throw new Error('Command output exceeds \#(ExtensionLimits.outputDescription)');
           if (fd === 2 && size > 4096 - stderrBytes) throw new Error('Command diagnostic limit exceeded');
           if (fd === 1) for (const bytes of list) for (const byte of bytes) output.push(byte);
           else stderrBytes += size; // Do not log or display extension stderr.

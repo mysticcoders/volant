@@ -3,17 +3,22 @@ import Foundation
 /// Network extensions never touch the network themselves. A run has two phases, each a separate,
 /// ordinary invocation of the module with a JSON request as its input:
 ///
-/// 1. `plan`: the module receives the query and returns `{"fetch": [url, …]}`.
+/// 1. `plan`: the module receives the query and returns `{"fetch": [url, …]}`, optionally with a
+///    `state` string for the render that follows.
 /// 2. `render`: Volant fetches the permitted URLs through its fetch helper and runs the module again
-///    with the responses and the current time; the module returns `{"items": […]}`.
+///    with the responses, the current time and that `state`; the module returns `{"items": […]}`. A
+///    render may instead return another `{"fetch", "state"}`, for a lookup that needs one answer before
+///    it can ask the next question, up to `maximumRounds` fetches in one run.
 ///
 /// A URL is permitted only when it is https on the default port, carries no credentials, and its host
-/// is one the manifest declares and the owner approved. The JavaScriptCore runtime and its limits are
-/// unchanged; the plan, responses and items all pass through the existing 64 KiB input and output.
+/// is one the manifest declares and the owner approved. Every request also says which measurement
+/// system the owner uses. The plan, responses and items pass through `ExtensionLimits`.
 public enum ExtensionNetwork {
     public static let maximumHosts = 8
     public static let maximumFetches = 4
-    public static let maximumResponseBytes = 48 * 1024
+    public static let maximumResponseBytes = 512 * 1024
+    public static let maximumRounds = 3
+    public static let maximumStateBytes = 4096
     public static let maximumItems = 100
     public static let maximumURLLength = 2048
 
@@ -41,23 +46,44 @@ public enum ExtensionNetwork {
     /// The URLs from a plan's output, in order. Throws when the plan is malformed, asks for too many
     /// URLs, or names any URL outside `hosts`, rather than silently dropping it.
     public static func plannedURLs(from output: String, hosts: Set<String>) throws -> [URL] {
-        guard let data = output.data(using: .utf8), let plan = try? JSONDecoder().decode(Plan.self, from: data) else {
+        try plannedFetch(from: output, hosts: hosts).urls
+    }
+
+    /// One round of fetching: the permitted URLs and the state to hand the render that follows.
+    public struct Fetch: Equatable {
+        public let urls: [URL]
+        public let state: String?
+    }
+
+    /// The URLs and state from a plan, or from a render that asks for another round. A state longer
+    /// than `maximumStateBytes` makes the whole plan malformed.
+    public static func plannedFetch(from output: String, hosts: Set<String>) throws -> Fetch {
+        guard let data = output.data(using: .utf8), let plan = try? JSONDecoder().decode(Plan.self, from: data),
+              (plan.state?.utf8.count ?? 0) <= maximumStateBytes else {
             throw ExtensionNetworkError.malformedPlan
         }
         guard plan.fetch.count <= maximumFetches else { throw ExtensionNetworkError.tooManyFetches }
-        return try plan.fetch.map { requested in
+        let urls = try plan.fetch.map { requested in
             guard let url = permittedURL(requested, hosts: hosts) else { throw ExtensionNetworkError.hostNotAllowed(requested) }
             return url
         }
+        return Fetch(urls: urls, state: plan.state)
+    }
+
+    /// "us" when the owner's system uses US customary units, otherwise "metric". The United Kingdom's
+    /// mixed system reads as metric, since its weather and most measures are.
+    public static func units(for locale: Locale = .current) -> String {
+        locale.measurementSystem == .us ? "us" : "metric"
     }
 
     /// The JSON a module receives. `responses` is absent in the plan phase. Extensions that use
     /// storage also get their saved object, and the `action` and `opened` phases name the row and action.
     public static func request(phase: String, query: String, now: Date, responses: [Response]? = nil,
-                               storage: JSONValue? = nil, action: String? = nil, item: ExtensionItem? = nil) throws -> String {
+                               storage: JSONValue? = nil, action: String? = nil, item: ExtensionItem? = nil,
+                               state: String? = nil, units: String = units()) throws -> String {
         let encoder = JSONEncoder(); encoder.outputFormatting = .sortedKeys
         let body = Request(phase: phase, query: query, now: Int(now.timeIntervalSince1970), responses: responses,
-                           storage: storage, action: action, item: item)
+                           storage: storage, action: action, item: item, state: state, units: units)
         return String(decoding: try encoder.encode(body), as: UTF8.self)
     }
 
@@ -83,7 +109,7 @@ public enum ExtensionNetwork {
         return list.items.prefix(maximumItems).compactMap { $0.sanitized() }
     }
 
-    private struct Plan: Decodable { let fetch: [String] }
+    private struct Plan: Decodable { let fetch: [String]; let state: String? }
     private struct ItemList: Decodable { let items: [ExtensionItem] }
     private struct RawReply: Decodable { let items: [ExtensionItem]?; let storage: JSONValue? }
     private struct Request: Encodable {
@@ -94,6 +120,8 @@ public enum ExtensionNetwork {
         let storage: JSONValue?
         let action: String?
         let item: ExtensionItem?
+        let state: String?
+        let units: String
     }
 
     /// One fetched URL as the module sees it. A failed fetch has status 0 and an empty body.
@@ -159,11 +187,12 @@ public struct ExtensionItemAction: Codable, Hashable {
 }
 
 public enum ExtensionNetworkError: Error, LocalizedError, Equatable {
-    case malformedPlan, tooManyFetches, hostNotAllowed(String), malformedItems, hostsNotApproved([String])
+    case malformedPlan, tooManyFetches, tooManyRounds, hostNotAllowed(String), malformedItems, hostsNotApproved([String])
     public var errorDescription: String? {
         switch self {
         case .malformedPlan: return "Extension returned an invalid fetch plan."
         case .tooManyFetches: return "Extension asked for more than \(ExtensionNetwork.maximumFetches) URLs."
+        case .tooManyRounds: return "Extension kept asking for more pages after \(ExtensionNetwork.maximumRounds) rounds."
         case .hostNotAllowed(let url): return "Extension asked for a URL it is not allowed to reach: \(url)"
         case .malformedItems: return "Extension returned an invalid list."
         case .hostsNotApproved(let hosts): return "Allow access to \(hosts.joined(separator: ", ")) to use this extension."

@@ -23,8 +23,9 @@ let hello = evaluate(module, input: "Andrew")
 check(hello.0 == "Hello, Andrew!" && hello.1 == nil, "WASM returns real greeting: \(String(describing: hello))")
 check(evaluate(module).0 == "Hello, world!", "Empty input")
 check(evaluate(module, input: "世界 👋").0 == "Hello, 世界 👋!", "UTF-8 round trip")
-check(evaluate(module, input: String(repeating: "x", count: 65_537)).1 != nil, "Input limit")
-check(evaluate(module, input: String(repeating: "x", count: 65_530)).1 != nil, "Output limit")
+check(evaluate(module, input: String(repeating: "x", count: ExtensionLimits.maximumInputBytes + 1)).1 != nil, "Input limit")
+check(evaluate(module, input: String(repeating: "x", count: ExtensionLimits.maximumOutputBytes - 9)).1 == nil, "Output just under the limit succeeds")
+check(evaluate(module, input: String(repeating: "x", count: ExtensionLimits.maximumOutputBytes)).1 != nil, "Output limit")
 check(evaluate(module, timeout: .infinity).1 != nil, "Finite watchdog")
 check(evaluate(Data([0])).1 != nil, "Malformed module")
 // Valid bounded module importing vey.log; denied before any missing-export checks.
@@ -41,9 +42,9 @@ for input in ["", "Hello, Volant!", "café ☕ 日本語", String(repeating: "a"
 var overLimit = false
 var exactLimit = false
 engine.runCommand(module: base64, input: String(repeating: "a", count: 49152), timeout: 2) { exactLimit = $0?.utf8.count == 65536 && $1 == nil }
-check(exactLimit, "Exactly 64 KiB of Base64 output succeeds")
-engine.runCommand(module: base64, input: String(repeating: "a", count: 49153), timeout: 2) { overLimit = $0 == nil && $1 != nil }
-check(overLimit, "Command input/output boundary does not return truncated success")
+check(exactLimit, "The Base64 sample encodes the most its 64 KiB input buffer holds")
+engine.runCommand(module: base64, input: String(repeating: "a", count: 65536), timeout: 2) { overLimit = $0 == nil && $1 != nil }
+check(overLimit, "Input past the sample's own buffer fails without truncated success")
 func commandProbe(_ name: String, input: String = "OK") throws -> (String?, String?) {
     let bytes = try Data(contentsOf: root.appendingPathComponent("tools/extensions/wasi-fixtures/\(name).wasm"))
     var result: (String?, String?) = (nil, "No reply")
@@ -52,6 +53,7 @@ func commandProbe(_ name: String, input: String = "OK") throws -> (String?, Stri
 }
 check(try commandProbe("streams").0 == "OK", "Bounded streams, partial reads, EOF, fd rights, closed fds, empty environment and frozen clock")
 check(try commandProbe("zeroExit").0 == "OK", "proc_exit(0) terminates only this command")
+check(try commandProbe("exactOutput").0?.utf8.count == ExtensionLimits.maximumOutputBytes, "Exactly \(ExtensionLimits.outputDescription) of command output succeeds")
 check(try commandProbe("caughtExit").0 == "OK", "Caught exit cannot resume command I/O")
 for name in ["failedExit", "bounds", "vectorLimit", "outputLimit", "stderrLimit", "invalidUTF8", "callLimit", "filesystem", "network", "prototype"] {
     let result = try commandProbe(name)
