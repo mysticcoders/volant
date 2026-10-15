@@ -69,7 +69,7 @@ Merged after 0.3.3, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
-| List extensions fetch in up to three rounds with state, every request says US or metric units, and limits rise to 1 MiB in, 256 KiB out, 512 KB per fetched page and 256 KB of storage | No | #242; Core and app tests (rounds, round limit, a host removed mid-run), `tools/check-extensions.sh` with exact-boundary probes, VM extensions acceptance 44/44 | None until released. Then the Privacy and Extensions docs change 16 KB to 256 KB and the Privacy doc says requests include US or metric units |
+| List extensions fetch in up to three rounds with state, every request says US or metric units, and limits rise to 1 MiB in, 256 KiB out, 512 KB per fetched page and 256 KB of storage | No | #242; Core and app tests (rounds, round limit, a host removed mid-run), `tools/check-extensions.sh` with exact-boundary probes, VM extensions acceptance 44/44 | Extensions and Privacy docs updated on main (rounds, units, 512 KB pages, 256 KB storage); live with the next release, which includes #242 |
 
 ## Privacy language
 
