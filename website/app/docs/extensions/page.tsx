@@ -199,7 +199,7 @@ export default function Extensions() {
       </p>
       <ul>
         <li>
-          <strong>Small and local.</strong> At most 256&nbsp;KB per extension,
+          <strong>Small and local.</strong> At most 16&nbsp;KB per extension,
           kept only on this Mac: never synced through iCloud and never part of
           Volant&rsquo;s backups.
         </li>

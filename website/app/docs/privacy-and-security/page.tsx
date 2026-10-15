@@ -68,11 +68,8 @@ export default function PrivacyAndSecurity() {
           Settings → Extensions → Network Access. The same helper downloads
           the signed extension catalog from one fixed address, only when you
           check the catalog or choose Refresh. An extension can keep up to
-          256&nbsp;KB of its own data on this Mac, only if it asks first; it is
+          16&nbsp;KB of its own data on this Mac, only if it asks first; it is
           never synced or backed up, and Clear Data or uninstalling removes it.
-          Every extension request says whether your Mac uses US or metric
-          units, so results can show the right ones; nothing else about your
-          settings is sent.
           See{' '}
           <a href="/docs/extensions">Extensions</a>.
         </li>
