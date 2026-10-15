@@ -431,4 +431,12 @@ final class ExtensionTests: XCTestCase {
         XCTAssertNil((object["extensions"] as? [String: Any])?["fixture.news"])
         XCTAssertNotNil((object["extensions"] as? [String: Any])?["fixture.feed"])
     }
+
+    /// Every row symbol an extension may name must exist on the oldest supported macOS, or the row
+    /// would draw nothing instead of falling back to the extension's icon.
+    func testEveryRowSymbolExistsInSFSymbols() {
+        for symbol in ExtensionItemSymbol.allCases {
+            XCTAssertNotNil(NSImage(systemSymbolName: symbol.systemName, accessibilityDescription: nil), symbol.systemName)
+        }
+    }
 }

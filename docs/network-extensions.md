@@ -48,6 +48,11 @@ Kingdom's mixed system reads as metric).
   launcher. An action reply without rows runs the list again, so a completed task disappears.
 - **Return runs an action.** A row's `"primaryAction":"<action id>"` makes Return run that action
   instead of opening the row's link, such as adding the typed text as a task.
+- **Row symbols.** A row's `"symbol"` names one of Volant's row icons: `sun`, `moon`, `cloud-sun`,
+  `cloud-moon`, `cloud`, `fog`, `drizzle`, `rain`, `heavy-rain`, `sleet`, `snow`, `thunderstorm`,
+  `wind`, `hot` and `cold` (`ExtensionItemSymbol`). Volant draws the matching SF Symbol in color in
+  place of the extension's icon. Extensions never supply row images; an unknown name is dropped and
+  the row shows the extension's icon. Older Volant versions ignore the field.
 
 `VolantFetchHost` is the only process with network access for this. It is a sandboxed XPC service
 with just `network.client`, built like `VolantRatesHost`: it re-checks each URL against the hosts it

@@ -78,6 +78,7 @@ Merged after 0.3.4, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
+| Extension rows can show one of Volant's weather icons (sun, rain, snow and 12 more), drawn by Volant | No | Core tests that known names survive and unknown ones are dropped, an app test that every symbol exists in SF Symbols, VM renders in light and dark | Extensions doc updated on main: rows can show Volant's weather icons; live with the next release |
 
 ## Privacy language
 

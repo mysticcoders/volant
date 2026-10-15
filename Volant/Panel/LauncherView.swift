@@ -586,8 +586,10 @@ private struct RowView: View {
             if let icon = ExtensionIcon.image(for: ext) { Image(nsImage: icon).resizable().clipShape(RoundedRectangle(cornerRadius: 5)) }
             else { Image(systemName: "puzzlepiece.extension").font(.system(size: 20)).foregroundStyle(.secondary) }
         case .extensionResult: Image(systemName: "checkmark.circle").font(.system(size: 20)).foregroundStyle(.secondary)
-        case .extensionItem(_, let source):
-            if let icon = ExtensionIcon.image(for: source) { Image(nsImage: icon).resizable().clipShape(RoundedRectangle(cornerRadius: 5)) }
+        case .extensionItem(let item, let source):
+            if let symbol = item.symbol.flatMap(ExtensionItemSymbol.init(rawValue:)) {
+                ExtensionRowSymbol(symbol: symbol)
+            } else if let icon = ExtensionIcon.image(for: source) { Image(nsImage: icon).resizable().clipShape(RoundedRectangle(cornerRadius: 5)) }
             else { Image(systemName: "newspaper").font(.system(size: 20)).foregroundStyle(.secondary) }
         }
     }
@@ -667,5 +669,20 @@ struct WithinWindowBlur: NSViewRepresentable {
 
     func updateNSView(_ view: NSVisualEffectView, context: Context) {
         view.material = material
+    }
+}
+
+/// A row icon an extension chose from `ExtensionItemSymbol`, in full color. Multicolor clouds are
+/// white, so in light appearance a soft edge keeps them visible against the launcher.
+struct ExtensionRowSymbol: View {
+    let symbol: ExtensionItemSymbol
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        Image(systemName: symbol.systemName)
+            .symbolRenderingMode(.multicolor)
+            .font(.system(size: 18))
+            .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.45), radius: 1, y: 0.5)
+            .accessibilityLabel(symbol.rawValue.replacingOccurrences(of: "-", with: " "))
     }
 }
