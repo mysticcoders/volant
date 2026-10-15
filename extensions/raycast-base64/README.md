@@ -8,7 +8,7 @@ From the repository root:
 bash tools/build-raycast-example.sh
 ```
 
-The build uses pinned npm dependencies and Javy 9.1.0, verifies the downloaded compiler checksum, adds a 16 MiB memory maximum and generates `encode.wasm` plus a hash-pinned `manifest.json` in this folder. You can set `JAVY=/path/to/javy` to use your own compiler. Generated runtime bytes are local build outputs, not checked-in binaries or bundled app resources.
+The build uses pinned npm dependencies and Javy 9.1.0, verifies the downloaded compiler checksum, adds a 16 MiB memory maximum and generates `encode.wasm`, a copy of its icon and a hash-pinned `manifest.json` in this folder. The icon is the upstream Raycast Base64 extension's `assets/command-icon.png` (MIT, like its code), converted to the 128-pixel lossless `tools/raycast-wasm/icon.webp`. You can set `JAVY=/path/to/javy` to use your own compiler. Generated runtime bytes are local build outputs, not checked-in binaries or bundled app resources.
 
 1. Open Volant Settings → Extensions → Open Extensions Folder.
 2. Copy this folder into that directory and click Refresh.
