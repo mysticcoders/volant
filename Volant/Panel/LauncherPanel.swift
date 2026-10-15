@@ -217,10 +217,21 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         return true
     }
 
+    /// Delete in an empty search field inside an extension goes back to the launcher, unless an input
+    /// method is composing.
+    private func leavesScope(_ event: NSEvent) -> Bool {
+        guard event.type == .keyDown, event.keyCode == 51, model.scopedExtension != nil, model.query.isEmpty,
+              event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
+              let editor = searchInput(in: contentView)?.currentEditor() as? NSTextView, firstResponder === editor,
+              !editor.hasMarkedText() else { return false }
+        return true
+    }
+
     private func searchInput(in view: NSView?) -> NSTextField? {
         guard !model.showingACP else { return nil }
         guard let view else { return nil }
-        if let field = view as? NSTextField, ["Search for apps, files, contacts, or calculate…", "Search emoji…"].contains(field.placeholderString ?? "") { return field }
+        if let field = view as? NSTextField,
+           ["Search for apps, files, contacts, or calculate…", "Search emoji…", model.searchPlaceholder].contains(field.placeholderString ?? "") { return field }
         return view.subviews.lazy.compactMap { self.searchInput(in: $0) }.first
     }
 
@@ -336,6 +347,10 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
             if !event.isARepeat { model.cancelEntryForm() }
             return
         }
+        if leavesScope(event) {
+            if !event.isARepeat { model.exitScope() }
+            return
+        }
         // Own Tab only in the main search editor, never in a form, menu, or chat.
         if event.type == .keyDown, event.keyCode == 48,
            event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
@@ -367,6 +382,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         if model.actionTarget != nil { model.actionTarget = nil; model.searchFocusRequest = UUID() }
         else if model.entryForm != nil { model.cancelEntryForm() }
         else if model.dictation.isListening { model.cancelDictation() }
+        else if model.backOutOfScope() { model.searchFocusRequest = UUID() }
         else { orderOut(nil) }
     }
 }

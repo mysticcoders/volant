@@ -959,6 +959,59 @@ func renderCore(_ name: String) throws {
     try bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "/tmp/volant-core-\(name)-\(dark ? "dark" : "light").png"))
 }
 try renderCore("commands")
+// Entering a list extension: the field clears behind a Back chip, typing runs it, and Escape then
+// Delete on an empty field return to the launcher, through the panel's real key dispatch.
+let scopeFolder = root.appendingPathComponent("scope-reader", isDirectory: true)
+try FileManager.default.createDirectory(at: scopeFolder, withIntermediateDirectories: true)
+let scopeModule = Data([0, 97, 115, 109, 1, 0, 0, 0, 5, 4, 1, 1, 1, 1])
+try scopeModule.write(to: scopeFolder.appendingPathComponent("reader.wasm"))
+try JSONEncoder().encode(ExtensionManifest(id: "community.fictional.reader", name: "Fictional Reader", version: "1", module: "reader.wasm",
+    capabilities: [], timeoutSeconds: 2, sha256: Integrity.sha256(scopeModule), output: "items",
+    mode: "search", placeholder: "Search fictional articles")).write(to: scopeFolder.appendingPathComponent("manifest.json"))
+let scopeConfig = root.appendingPathComponent("scope-config.json")
+try Data(#"{"extensions":{},"communityExtensionsAllowed":true}"#.utf8).write(to: scopeConfig)
+corePanel.model.actionConfigURL = scopeConfig
+corePanel.model.extensions = ExtensionManager(configURL: scopeConfig, roots: [scopeFolder], dataDirectory: root.appendingPathComponent("ScopeData"))
+corePanel.model.extensions.reload()
+try corePanel.model.extensions.setEnabled(corePanel.model.extensions.extensions[0], true)
+var scopeQueries: [String] = []
+corePanel.model.extensions.invokeOverride = { _, input, completion in
+    let query = (try? JSONSerialization.jsonObject(with: Data(input.utf8)) as? [String: Any])?["query"] as? String ?? ""
+    scopeQueries.append(query)
+    completion(.success(#"{"items":[{"title":"Fictional article about \#(query)","subtitle":"An invented summary","url":"https://example.com/a"},{"title":"Another fictional article","url":"https://example.com/b"}]}"#))
+}
+corePanel.model.query = "Fictional Reader"
+verify(waitUntil { corePanel.model.rows.first?.id.hasPrefix("ext:") == true }, "The extension is offered by name")
+corePanel.model.activate(rowID: corePanel.model.rows[0].id)
+func scopeField(in view: NSView) -> NSTextField? {
+    if let field = view as? NSTextField, field.placeholderString == "Search fictional articles" { return field }
+    return view.subviews.lazy.compactMap { scopeField(in: $0) }.first
+}
+verify(waitUntil { scopeField(in: corePanel.contentView!) != nil }, "The field shows the extension's prompt")
+verify(corePanel.model.query.isEmpty && corePanel.model.scopedExtension != nil, "Entering clears the field")
+try renderCore("extension-scope-empty")
+corePanel.model.query = "moons"
+verify(waitUntil(timeout: 3) { corePanel.model.rows.count == 2 }, "Typing runs the extension once typing pauses")
+verify(scopeQueries == ["moons"], "A search extension runs only for typed text")
+try renderCore("extension-scope")
+verify(corePanel.makeFirstResponder(scopeField(in: corePanel.contentView!)!), "Focus the extension's field")
+sendCoreKey(String(UnicodeScalar(27)!), code: 53)
+verify(waitUntil { corePanel.model.query.isEmpty }, "Escape clears the extension's text first")
+verify(corePanel.model.scopedExtension != nil && corePanel.isVisible, "Escape with text neither leaves nor closes")
+verify(corePanel.makeFirstResponder(scopeField(in: corePanel.contentView!)!), "Refocus the extension's field")
+sendCoreKey("\u{7F}", code: 51)
+verify(waitUntil { corePanel.model.scopedExtension == nil }, "Delete in an empty field goes back")
+verify(waitUntil { coreSearchField(in: corePanel.contentView!) != nil }, "The launcher's own field returns")
+corePanel.model.query = "Fictional Reader"
+verify(waitUntil { corePanel.model.rows.first?.id.hasPrefix("ext:") == true })
+corePanel.model.activate(rowID: corePanel.model.rows[0].id)
+verify(waitUntil { scopeField(in: corePanel.contentView!) != nil })
+verify(corePanel.makeFirstResponder(scopeField(in: corePanel.contentView!)!))
+sendCoreKey(String(UnicodeScalar(27)!), code: 53)
+verify(waitUntil { corePanel.model.scopedExtension == nil }, "Escape in an empty field goes back")
+verify(corePanel.isVisible, "Going back keeps the launcher open")
+corePanel.model.query = ""
+print("PASS: list extensions open in their own scope and Escape or Delete returns to the launcher")
 // System actions are only requested from the app delegate on Return; searching never performs one.
 corePanel.model.query = "restart"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
