@@ -117,6 +117,15 @@ export default function Extensions() {
 
       <h2>Extensions that read the web</h2>
       <p>
+        Choose a list extension, or type its keyword and press Return, to
+        enter it: a chip with its name sits at the start of the field, and
+        what you type goes to the extension instead of the launcher&rsquo;s
+        search. Text after the keyword comes with you, so{' '}
+        <code>hn ask</code> enters Hacker News searching for{' '}
+        <code>ask</code>. Escape clears the text, and a second Escape, Delete
+        in an empty field or clicking the chip goes back.
+      </p>
+      <p>
         A list extension can show live data, such as the{' '}
         <a href="https://github.com/mysticcoders/volant-extensions">
           Hacker News and Lobsters readers
