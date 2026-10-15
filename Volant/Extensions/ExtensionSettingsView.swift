@@ -23,13 +23,18 @@ struct ExtensionSettingsView: View {
     @State private var catalogLoading = false
     @State private var catalogError: String?
     @State private var installing: String?
+    private let secretStore: ExtensionSecretStore
     init(configURL: URL, onChange: @escaping () -> Void, roots: [URL]? = nil, directory: URL? = nil, dataDirectory: URL? = nil,
-         catalogClient: ExtensionCatalogClient = .live, catalog: ExtensionCatalog? = nil) {
+         catalogClient: ExtensionCatalogClient = .live, catalog: ExtensionCatalog? = nil, secretStore: ExtensionSecretStore = .keychain) {
         self.configURL = configURL; self.onChange = onChange; self.roots = roots; self.directory = directory; self.dataDirectory = dataDirectory
-        self.catalogClient = catalogClient
+        self.catalogClient = catalogClient; self.secretStore = secretStore
         _catalog = State(initialValue: catalog)
     }
-    private var manager: ExtensionManager { ExtensionManager(configURL: configURL, roots: roots, directory: directory, dataDirectory: dataDirectory) }
+    private var manager: ExtensionManager {
+        let manager = ExtensionManager(configURL: configURL, roots: roots, directory: directory, dataDirectory: dataDirectory)
+        manager.secretStore = secretStore
+        return manager
+    }
     private func reload() {
         let manager = manager; manager.reload()
         installed = manager.extensions; problems = manager.loadErrors; communityAllowed = manager.communityAllowed

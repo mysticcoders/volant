@@ -481,6 +481,33 @@ func renderStorageSettings(_ name: String) throws {
     window.orderOut(nil)
 }
 try renderStorageSettings("extension-storage-settings")
+
+// An extension with a saved token, saved data and community origin shows all three row buttons at
+// Settings' 680-point minimum width without squeezing its subtitle.
+let tokenDirectory = root.appendingPathComponent("token-tasks-" + UUID().uuidString)
+try FileManager.default.copyItem(at: bundledExtension, to: tokenDirectory)
+var tokenManifest = try JSONDecoder().decode(ExtensionManifest.self, from: Data(contentsOf: tokenDirectory.appendingPathComponent("manifest.json")))
+tokenManifest.id = "fixture.tasks"; tokenManifest.name = "Fixture Tasks"; tokenManifest.output = "items"; tokenManifest.storage = true
+tokenManifest.hosts = ["api.tasks.example.com"]
+tokenManifest.secrets = [ExtensionSecret(id: "token", title: "Fictional API token", host: "api.tasks.example.com", header: "Authorization", prefix: "Bearer ")]
+try JSONEncoder().encode(tokenManifest).write(to: tokenDirectory.appendingPathComponent("manifest.json"))
+let tokenSecrets = ExtensionSecretStore.memory()
+let tokenManager = ExtensionManager(configURL: panel.model.actionConfigURL, roots: [tokenDirectory], dataDirectory: storageData)
+tokenManager.secretStore = tokenSecrets; tokenManager.reload()
+try tokenManager.setEnabled(tokenManager.extensions.first!, true)
+try tokenManager.saveSecrets(tokenManager.extensions.first!, ["token": "fictional-token-123"])
+try tokenManager.dataStore.save(.object(["seen": .array([.string("1")])]), for: "fixture.tasks")
+verify(tokenManager.hasSecrets(tokenManager.extensions.first!) && tokenManager.hasStoredData(tokenManager.extensions.first!),
+       "The token fixture has a saved token and saved data")
+let tokenSettings = NSHostingView(rootView: ExtensionSettingsView(configURL: panel.model.actionConfigURL, onChange: {}, roots: [tokenDirectory],
+                                                                  dataDirectory: storageData, catalogClient: ExtensionCatalogClient(fetchFile: { _, _, _ in }),
+                                                                  secretStore: tokenSecrets)
+    .background(Color(nsColor: .windowBackgroundColor)))
+let tokenWindow = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 680, height: 440), styleMask: [.titled], backing: .buffered, defer: false)
+tokenWindow.contentView = tokenSettings; tokenWindow.makeKeyAndOrderFront(nil); settle()
+tokenSettings.layoutSubtreeIfNeeded(); settle()
+try render("extension-token-settings", view: tokenSettings)
+tokenWindow.orderOut(nil)
 panel.model.extensions = communityManager
 try storageManager.setCommunityAllowed(false, expected: true)
 print("PASS: storage list extension receives and saves data, row actions run from Actions, Settings offers Clear Data")
