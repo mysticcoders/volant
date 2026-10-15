@@ -338,7 +338,7 @@ key("\r", 36)
 verify(panel.model.pendingExtension?.input == "Andrew", "First invocation requests consent without executing")
 verify(panel.keepsVisibleOnBlur, "Extension consent keeps its parent panel visible")
 let permission = panel.model.pendingExtension!
-let consentView = NSHostingView(rootView: ExtensionPermissionView(request: permission, enable: {}, cancel: {}))
+let consentView = NSHostingView(rootView: ExtensionPermissionView(request: permission, enable: { _ in }, cancel: {}))
 consentView.frame = NSRect(x: 0, y: 0, width: 438, height: 240)
 try render("extension-consent", view: consentView)
 panel.model.pendingExtension = nil

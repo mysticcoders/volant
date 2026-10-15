@@ -21,7 +21,11 @@ public struct ExtensionManifest: Codable, Hashable {
     /// A list extension that keeps a small JSON object on this Mac (see `ExtensionStorage`). Part of the
     /// approval fingerprint when present, so adding it needs the owner to enable the extension again.
     public var storage: Bool?
+    /// Tokens the owner gives once for some of the declared hosts (see `ExtensionSecret`). Part of the
+    /// approval fingerprint when present.
+    public var secrets: [ExtensionSecret]?
 
+    public var declaredSecrets: [ExtensionSecret] { secrets ?? [] }
     public var declaredHosts: [String] { hosts ?? [] }
     public var listsItems: Bool { output == "items" }
     public var usesStorage: Bool { storage == true }
@@ -35,7 +39,9 @@ public struct ExtensionManifest: Codable, Hashable {
               (timeoutSeconds ?? 2).isFinite, (0.5...10).contains(timeoutSeconds ?? 2),
               [nil, "text", "items"].contains(output), declaredHosts.count <= ExtensionNetwork.maximumHosts,
               Set(declaredHosts).count == declaredHosts.count, declaredHosts.allSatisfy(ExtensionNetwork.isValidHost),
-              declaredHosts.isEmpty || listsItems, Self.isValidIcon(icon, sha256: iconSha256), !usesStorage || listsItems else {
+              declaredHosts.isEmpty || listsItems, Self.isValidIcon(icon, sha256: iconSha256), !usesStorage || listsItems,
+              declaredSecrets.count <= ExtensionSecret.maximumPerExtension, Set(declaredSecrets.map(\.id)).count == declaredSecrets.count,
+              Set(declaredSecrets.map(\.host)).count == declaredSecrets.count, declaredSecrets.allSatisfy({ $0.isValid(hosts: declaredHosts) }) else {
             throw ExtensionValidationError.invalidManifest
         }
     }
@@ -61,7 +67,8 @@ public struct ExtensionManifest: Codable, Hashable {
     }
 
     public init(abiVersion: Int? = 1, id: String, name: String, version: String, module: String, capabilities: [String], timeoutSeconds: Double? = nil, sha256: String? = nil,
-                hosts: [String]? = nil, output: String? = nil, icon: String? = nil, iconSha256: String? = nil, storage: Bool? = nil) {
+                hosts: [String]? = nil, output: String? = nil, icon: String? = nil, iconSha256: String? = nil, storage: Bool? = nil,
+                secrets: [ExtensionSecret]? = nil) {
         self.abiVersion = abiVersion
         self.id = id
         self.name = name
@@ -75,6 +82,7 @@ public struct ExtensionManifest: Codable, Hashable {
         self.icon = icon
         self.iconSha256 = iconSha256
         self.storage = storage
+        self.secrets = secrets
     }
 }
 

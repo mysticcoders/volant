@@ -499,11 +499,13 @@ final class LauncherModel: ObservableObject {
         }
     }
 
-    func enablePendingExtension() {
+    /// Enables the extension the owner just approved, saving any tokens they typed first, and runs it.
+    func enablePendingExtension(secrets: [String: String] = [:]) {
         guard let request = pendingExtension else { return }
         pendingExtension = nil
         guard !extensionRunning else { notice = "An extension is already running."; return }
         do {
+            try extensions.saveSecrets(request.extensionItem, secrets)
             try extensions.setEnabled(request.extensionItem, true)
             guard let enabled = extensions.extensions.first(where: { $0.id == request.extensionItem.id }) else { throw ExtensionManager.ExtensionError.changed }
             sections = [ResultSection(title: "Extensions", rows: [.extensionRun(enabled, input: request.input)])]
@@ -743,7 +745,8 @@ final class LauncherModel: ObservableObject {
             catalog.turnOn = { [weak self] ext in
                 guard let self else { return }
                 self.query = ""
-                self.pendingExtension = ExtensionPermissionRequest(extensionItem: ext, input: "", hosts: self.extensions.missingHosts(ext))
+                self.pendingExtension = ExtensionPermissionRequest(extensionItem: ext, input: "", hosts: self.extensions.missingHosts(ext),
+                                                                   secrets: self.extensions.missingSecrets(ext))
             }
             catalog.input = term; sections = []; return
         }
@@ -1376,11 +1379,13 @@ final class LauncherModel: ObservableObject {
             guard !extensionRunning else { notice = "An extension is already running."; return }
             if extensions.isBlocked(ext) { dismiss(); onNote(.extensionSettings); return }
             if !extensions.isReady(ext) {
-                pendingExtension = ExtensionPermissionRequest(extensionItem: ext, input: input, hosts: extensions.missingHosts(ext))
+                pendingExtension = ExtensionPermissionRequest(extensionItem: ext, input: input, hosts: extensions.missingHosts(ext),
+                                                              secrets: extensions.missingSecrets(ext))
             } else { runExtension(ext, input: input) }
             return
         case .extensionResult(let text): copy(text)
         case .extensionItem(let item, let source):
+            if let primary = item.primaryAction { runItemAction(source, item: item, action: primary); return }
             guard let link = item.url, let url = URL(string: link) else { copy(item.title); return }
             _ = QuicklinkResolver.open(url)
             if item.onOpen == true { runItemAction(source, item: item, action: nil) }
@@ -1549,9 +1554,9 @@ final class LauncherModel: ObservableObject {
     }
 
     /// Runs a list extension's row action, or tells it a row was opened when `action` is nil, and shows
-    /// the rows it returns. An action that only saves data runs the list again, keeping the selected row
-    /// where it still exists, so a hidden story disappears and a pinned one moves up. Errors appear as
-    /// feedback.
+    /// the rows it returns. An action that returns no rows runs the list again, keeping the selected row
+    /// where it still exists, so a hidden story disappears and a completed task goes. A confirmation such
+    /// as "Completed “Ship 0.3.3”" and errors appear as feedback.
     func runItemAction(_ ext: InstalledExtension, item: ExtensionItem, action: String?) {
         guard !extensionRunning else { notice = "An extension is already running."; return }
         extensionRunning = true
@@ -1560,9 +1565,10 @@ final class LauncherModel: ObservableObject {
             guard let self else { return }
             self.extensionRunning = false
             switch result {
-            case .success(let items):
+            case .success(let outcome):
                 guard !opened, gen == self.generation else { return }
-                guard let items else { self.runExtension(ext, input: self.extensionItemsQuery, keepingSelection: true); return }
+                if let notice = outcome.notice { self.actionFeedback = notice }
+                guard let items = outcome.items else { self.runExtension(ext, input: self.extensionItemsQuery, keepingSelection: true); return }
                 let selectedID = self.selectedRow?.id
                 self.sections = [ResultSection(title: ext.name, rows: items.map { .extensionItem($0, source: ext) })]
                 self.notice = items.isEmpty ? "\(ext.name) returned nothing." : nil

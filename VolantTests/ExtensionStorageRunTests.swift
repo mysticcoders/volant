@@ -113,12 +113,12 @@ final class ExtensionStorageRunTests: XCTestCase {
         let requests = script(manager, [#"{"items":[{"title":"Pinned"}],"storage":{"pinned":["s1"]}}"#, #"{"storage":{"pinned":["s1"],"read":["s1"]}}"#])
         let item = ExtensionItem(title: "Story", url: "https://news.example.com/s1", actions: [.init(id: "pin", title: "Pin Story")])
         var redraw: [ExtensionItem]?
-        manager.runAction(ext, item: item, action: "pin", query: "new") { redraw = try? $0.get() }
+        manager.runAction(ext, item: item, action: "pin", query: "new") { redraw = try? $0.get().items }
         XCTAssertEqual(redraw?.map(\.title), ["Pinned"])
         XCTAssertTrue(requests()[0].contains(#""action":"pin""#) && requests()[0].contains(#""phase":"action""#) && requests()[0].contains(#""query":"new""#))
         XCTAssertTrue(requests()[0].contains(#""url":"https:\/\/news.example.com\/s1""#))
         var opened: [ExtensionItem]? = [ExtensionItem(title: "placeholder")]
-        manager.runAction(ext, item: item, action: nil, query: "new") { opened = try? $0.get() }
+        manager.runAction(ext, item: item, action: nil, query: "new") { opened = try? $0.get().items }
         XCTAssertNil(opened, "A storage-only reply leaves the rows alone")
         XCTAssertTrue(requests()[1].contains(#""phase":"opened""#) && !requests()[1].contains(#""action""#))
         XCTAssertEqual(manager.storedData(ext), try json(#"{"pinned":["s1"],"read":["s1"]}"#))

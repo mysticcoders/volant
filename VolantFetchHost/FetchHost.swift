@@ -26,12 +26,23 @@ final class FetchHost: NSObject, VolantFetchHostProtocol, URLSessionDataDelegate
         return URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
     }()
 
-    func fetch(url: String, allowedHosts: [String], maximumBytes: Int, reply: @escaping (Data?, Int, String?) -> Void) {
+    func request(url: String, method: String, body: Data?, headers: [String: String], allowedHosts: [String], maximumBytes: Int,
+                 reply: @escaping (Data?, Int, String?) -> Void) {
         let hosts = Set(allowedHosts.filter(ExtensionNetwork.isValidHost))
         guard let target = ExtensionNetwork.permittedURL(url, hosts: hosts) else {
             reply(nil, 0, "This URL is not on a host the extension may reach."); return
         }
-        start(target, limit: min(max(maximumBytes, 0), ExtensionNetwork.maximumResponseBytes), reply: reply)
+        guard ExtensionRequest.isAllowed(method: method, body: body, headers: headers) else {
+            reply(nil, 0, "This request is not one an extension may send."); return
+        }
+        var request = URLRequest(url: target)
+        request.httpMethod = method
+        for (name, value) in headers { request.setValue(value, forHTTPHeaderField: name) }
+        if let body {
+            request.httpBody = body
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
+        start(request, limit: min(max(maximumBytes, 0), ExtensionNetwork.maximumResponseBytes), reply: reply)
     }
 
     /// Reads one file of the signed extension catalog. Only the index, its signature and package paths
@@ -39,11 +50,11 @@ final class FetchHost: NSObject, VolantFetchHostProtocol, URLSessionDataDelegate
     /// Volant verifies the signature and hashes; this helper only bounds the download.
     func fetchCatalogFile(path: String, maximumBytes: Int, reply: @escaping (Data?, Int, String?) -> Void) {
         guard let target = ExtensionCatalog.url(for: path) else { reply(nil, 0, "This is not an extension catalog file."); return }
-        start(target, limit: min(max(maximumBytes, 0), ExtensionCatalog.maximumModuleBytes), reply: reply)
+        start(URLRequest(url: target), limit: min(max(maximumBytes, 0), ExtensionCatalog.maximumModuleBytes), reply: reply)
     }
 
-    private func start(_ target: URL, limit: Int, reply: @escaping (Data?, Int, String?) -> Void) {
-        let task = session.dataTask(with: URLRequest(url: target))
+    private func start(_ request: URLRequest, limit: Int, reply: @escaping (Data?, Int, String?) -> Void) {
+        let task = session.dataTask(with: request)
         lock.lock(); pending[task.taskIdentifier] = Pending(limit: limit, reply: reply); lock.unlock()
         task.resume()
     }

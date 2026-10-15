@@ -36,6 +36,7 @@ final class ExtensionNetworkTests: XCTestCase {
         let json = String(decoding: try encoder.encode(manifest()), as: UTF8.self)
         XCTAssertFalse(json.contains("hosts"))
         XCTAssertFalse(json.contains("output"))
+        XCTAssertFalse(json.contains("secrets"))
     }
 
     func testOnlyHttpsURLsOnApprovedHostsArePermitted() {
@@ -99,6 +100,36 @@ final class ExtensionNetworkTests: XCTestCase {
         XCTAssertEqual(ExtensionNetwork.units(for: Locale(identifier: "en_US")), "us")
         XCTAssertEqual(ExtensionNetwork.units(for: Locale(identifier: "en_GB")), "metric")
         XCTAssertEqual(ExtensionNetwork.units(for: Locale(identifier: "fr_FR")), "metric")
+    }
+
+    func testSecretsMustNameADeclaredHostAndASafeHeader() {
+        func withSecret(_ secret: ExtensionSecret) -> ExtensionManifest {
+            var manifest = manifest(hosts: ["api.tasks.example.com"], output: "items"); manifest.secrets = [secret]; return manifest
+        }
+        let token = ExtensionSecret(id: "token", title: "Fictional API token", host: "api.tasks.example.com", header: "Authorization", prefix: "Bearer ")
+        XCTAssertNoThrow(try withSecret(token).validate())
+        var other = token; other.host = "elsewhere.example.com"
+        XCTAssertThrowsError(try withSecret(other).validate(), "a secret's host must be declared")
+        var cookie = token; cookie.header = "Cookie"
+        XCTAssertThrowsError(try withSecret(cookie).validate(), "only Authorization and X-API-Key")
+        var newline = token; newline.prefix = "Bearer\n"
+        XCTAssertThrowsError(try withSecret(newline).validate())
+        var shouty = token; shouty.id = "Token"
+        XCTAssertThrowsError(try withSecret(shouty).validate())
+        XCTAssertEqual(token.headerValue("abc"), "Bearer abc")
+        XCTAssertTrue(ExtensionSecret.isValidValue("fictional-token-123"))
+        for bad in ["", "has space", "line\nbreak", String(repeating: "a", count: ExtensionSecret.maximumValueBytes + 1)] {
+            XCTAssertFalse(ExtensionSecret.isValidValue(bad), bad)
+        }
+    }
+
+    func testNoticesAndPrimaryActionsAreBounded() throws {
+        let reply = try ExtensionNetwork.reply(from: "{\"notice\":\"  " + String(repeating: "n", count: 200) + "  \"}")
+        XCTAssertEqual(reply.notice?.count, ExtensionNetwork.maximumNoticeLength)
+        XCTAssertNil(reply.items)
+        XCTAssertThrowsError(try ExtensionNetwork.reply(from: #"{"notice":"   "}"#), "a blank notice alone is malformed")
+        let items = try ExtensionNetwork.items(from: #"{"items":[{"title":"Add","primaryAction":"add"},{"title":"Bad","primaryAction":"Not An Id"}]}"#)
+        XCTAssertEqual(items.map(\.primaryAction), ["add", nil])
     }
 
     func testItemsDropUnsafeLinksAndBlankTitlesAndAreCapped() throws {

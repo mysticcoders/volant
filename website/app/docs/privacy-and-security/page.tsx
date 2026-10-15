@@ -71,7 +71,12 @@ export default function PrivacyAndSecurity() {
           whether you use US or metric units, and nothing else about you. An
           extension can keep up to 256&nbsp;KB of its own data on this Mac,
           only if it asks first; it is never synced or backed up, and Clear
-          Data or uninstalling removes it.
+          Data or uninstalling removes it. If an extension needs a token,
+          such as a personal API token, you type it once; Volant keeps it in
+          your Keychain on this Mac, and the fetch helper adds it only to
+          requests to the one host it is for. The extension never sees it, and
+          it is never synced, backed up or logged. An extension can send a
+          change, such as adding a task, only when you choose that action.
           See{' '}
           <a href="/docs/extensions">Extensions</a>.
         </li>

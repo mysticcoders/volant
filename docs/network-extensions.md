@@ -29,6 +29,26 @@ Kingdom's mixed system reads as metric).
    approval and hosts again, fetches, and renders with the new responses and that `state`. A run fetches
    at most 3 rounds; a fourth request fails the run with "Extension kept asking for more pages".
 
+## Tokens, changes and confirmations
+
+- **Tokens.** A manifest may declare up to four `secrets`, one per host it also declares:
+  `{"id":"token","title":"Todoist API token","help":"…","host":"api.todoist.com","header":"Authorization","prefix":"Bearer "}`.
+  The header must be `Authorization` or `X-API-Key`. The first-run prompt asks for each missing token
+  with a secure field. Volant keeps it in the Keychain (service `com.mysticcoders.volant.extensions`,
+  account `<extension id>/<secret id>`, this device only), never in config.json, backups, iCloud
+  sync, logs or any request to the module. The fetch helper adds it as that header only to requests
+  for that exact host. Secrets are part of the approval fingerprint. Settings → Extensions → Remove
+  Tokens deletes them, and so does uninstalling.
+- **Changes.** Only the `action` phase, which the owner starts by choosing a row or an action, may
+  reply `{"fetch":[{"url","method":"POST","json":{…}}],"state":"…"}`. Each URL must be https on a
+  declared, approved host, at most 4 requests, each JSON body at most 64 KiB. Volant checks approval,
+  hosts and tokens again, sends them, and runs `render` with the responses, the row, the action and the
+  state. `plan`, `render` and `opened` cannot send anything but GET.
+- **Confirmations.** Any reply may carry `"notice"` (at most 120 characters), shown briefly in the
+  launcher. An action reply without rows runs the list again, so a completed task disappears.
+- **Return runs an action.** A row's `"primaryAction":"<action id>"` makes Return run that action
+  instead of opening the row's link, such as adding the typed text as a task.
+
 `VolantFetchHost` is the only process with network access for this. It is a sandboxed XPC service
 with just `network.client`, built like `VolantRatesHost`: it re-checks each URL against the hosts it
 was given, refuses redirects, uses an ephemeral session with no cookies or cache, and stops reading a
@@ -81,7 +101,8 @@ The launcher keyword is the extension's name or the last part of its ID: `hn`, `
 - A catalog of approved extensions that installs from a repository (see #63). Today extensions are
   installed by copying their folder into Settings → Extensions → Open Folder.
 - Per-extension storage for pins, hidden stories or read state, and preferences such as blocked domains.
-- POST requests, authentication, streaming, or responses over 512 KB.
+- Methods other than GET and POST, OAuth, streaming, or responses over 512 KB.
+- Secrets in catalog listings: the catalog does not list them yet, so Settings shows them only after install.
 - A signed-delivery check of `VolantFetchHost` through the release build, like `tools/check-rates-xpc.sh`.
 
 ## Checks
