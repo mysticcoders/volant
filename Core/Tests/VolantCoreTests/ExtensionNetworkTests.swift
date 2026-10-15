@@ -38,6 +38,7 @@ final class ExtensionNetworkTests: XCTestCase {
         XCTAssertFalse(json.contains("output"))
         XCTAssertFalse(json.contains("secrets"))
         XCTAssertFalse(json.contains("appLinks"))
+        XCTAssertFalse(json.contains("permissions"))
     }
 
     func testOnlyHttpsURLsOnApprovedHostsArePermitted() {
@@ -141,6 +142,39 @@ final class ExtensionNetworkTests: XCTestCase {
         XCTAssertNil(try ExtensionNetwork.items(from: output)[0].url, "without the declaration the app link is dropped")
         XCTAssertNil(try ExtensionNetwork.items(from: #"{"items":[{"title":"x","url":"file:///etc/hosts"}]}"#, appLinks: ["file"])[0].url,
                      "a refused scheme stays refused even if a reply claims it")
+    }
+
+    func testLocationIsRoundedPerExtensionAndOnlyForListExtensions() throws {
+        let here = try XCTUnwrap(ExtensionLocation(latitude: 37.8734, longitude: -122.2711))
+        XCTAssertEqual(here, ExtensionLocation(latitude: 37.9, longitude: -122.3))
+        XCTAssertNil(ExtensionLocation(latitude: 91, longitude: 0))
+        XCTAssertNil(ExtensionLocation(latitude: .nan, longitude: 0))
+        var weather = manifest(hosts: ["api.open-meteo.com"], output: "items", id: "community.fictional.weather"); weather.permissions = ["location"]
+        XCTAssertNoThrow(try weather.validate())
+        XCTAssertTrue(weather.wantsLocation)
+        var unknown = weather; unknown.permissions = ["contacts"]
+        XCTAssertThrowsError(try unknown.validate())
+        var text = manifest(); text.permissions = ["location"]
+        XCTAssertThrowsError(try text.validate(), "only list extensions may ask for location")
+        let request = try ExtensionNetwork.request(phase: "plan", query: "", now: Date(timeIntervalSince1970: 0), units: "us", location: here)
+        XCTAssertTrue(request.contains(#""location":{"latitude":37.9,"longitude":-122.3}"#), request)
+
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("volant-location-\(UUID().uuidString).json")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try Data(#"{"future":{"kept":true},"extensionHosts":["api.open-meteo.com"]}"#.utf8).write(to: url)
+        XCTAssertTrue(ExtensionLocationApprovals.missing(weather, at: url))
+        try ExtensionLocationApprovals.approve(weather.id, at: url)
+        XCTAssertFalse(ExtensionLocationApprovals.missing(weather, at: url))
+        var other = weather; other.id = "community.fictional.other"
+        XCTAssertTrue(ExtensionLocationApprovals.missing(other, at: url), "a grant is never shared with another extension")
+        let restored = BackupFolder.withoutPerMacGrants(try Data(contentsOf: url))
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: restored) as? [String: Any])
+        XCTAssertNil(object[ExtensionLocationApprovals.key], "a restored backup asks again for location")
+        XCTAssertNotNil(object["future"]); XCTAssertNotNil(object["extensionHosts"])
+        let plain = Data(#"{"a":1}"#.utf8)
+        XCTAssertEqual(BackupFolder.withoutPerMacGrants(plain), plain, "config without a grant is restored byte for byte")
+        try ExtensionLocationApprovals.remove(weather.id, at: url)
+        XCTAssertTrue(ExtensionLocationApprovals.missing(weather, at: url))
     }
 
     func testNoticesAndPrimaryActionsAreBounded() throws {

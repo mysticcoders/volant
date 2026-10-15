@@ -80,10 +80,10 @@ public enum ExtensionNetwork {
     /// storage also get their saved object, and the `action` and `opened` phases name the row and action.
     public static func request(phase: String, query: String, now: Date, responses: [Response]? = nil,
                                storage: JSONValue? = nil, action: String? = nil, item: ExtensionItem? = nil,
-                               state: String? = nil, units: String = units()) throws -> String {
+                               state: String? = nil, units: String = units(), location: ExtensionLocation? = nil) throws -> String {
         let encoder = JSONEncoder(); encoder.outputFormatting = .sortedKeys
         let body = Request(phase: phase, query: query, now: Int(now.timeIntervalSince1970), responses: responses,
-                           storage: storage, action: action, item: item, state: state, units: units)
+                           storage: storage, action: action, item: item, state: state, units: units, location: location)
         return String(decoding: try encoder.encode(body), as: UTF8.self)
     }
 
@@ -129,6 +129,7 @@ public enum ExtensionNetwork {
         let item: ExtensionItem?
         let state: String?
         let units: String
+        let location: ExtensionLocation?
     }
 
     /// One fetched URL as the module sees it. A failed fetch has status 0 and an empty body.

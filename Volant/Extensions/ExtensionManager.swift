@@ -18,14 +18,16 @@ struct InstalledExtension: Identifiable, Hashable {
     }
     var accessDescription: String {
         Self.accessDescription(capabilities: manifest.capabilities, hosts: manifest.declaredHosts, storage: manifest.usesStorage, secrets: manifest.declaredSecrets,
-                               appLinks: manifest.declaredAppLinks)
+                               appLinks: manifest.declaredAppLinks, location: manifest.wantsLocation)
     }
     static func accessDescription(capabilities: [String], hosts: [String], storage: Bool = false, secrets: [ExtensionSecret] = [],
-                                  appLinks: [String] = []) -> String {
-        let access = capabilities.sorted().map { $0 == "clipboard.write" ? "Write to clipboard" : "Send diagnostic messages" } +
-            (hosts.isEmpty ? [] : ["Read " + hosts.joined(separator: ", ")]) + (storage ? ["Remember settings and lists on this Mac"] : []) +
-            secrets.map { "Uses your \($0.title)" } +
-            appLinks.map { "Opens \($0): links" }
+                                  appLinks: [String] = [], location: Bool = false) -> String {
+        var access: [String] = capabilities.sorted().map { $0 == "clipboard.write" ? "Write to clipboard" : "Send diagnostic messages" }
+        if !hosts.isEmpty { access.append("Read " + hosts.joined(separator: ", ")) }
+        if storage { access.append("Remember settings and lists on this Mac") }
+        access += secrets.map { "Uses your \($0.title)" }
+        access += appLinks.map { "Opens \($0): links" }
+        if location { access.append("Share your approximate location with the sites it reads") }
         return access.isEmpty ? "No permissions required" : access.joined(separator: ", ")
     }
 }
@@ -41,6 +43,10 @@ final class ExtensionManager {
     let dataStore: ExtensionDataStore
     /// Where declared tokens live; tests replace the Keychain with `ExtensionSecretStore.memory()`.
     var secretStore: ExtensionSecretStore = .keychain
+    /// Finds the owner's rounded location for extensions allowed to receive it; tests replace it.
+    var locate: (@escaping (ExtensionLocation?) -> Void) -> Void = { completion in
+        MainActor.assumeIsolated { ExtensionLocationProvider.shared.locate(completion) }
+    }
     /// Replaces the extension helper in tests: given the extension and its request, returns its output.
     var invokeOverride: ((InstalledExtension, String, @escaping (Result<String, Error>) -> Void) -> Void)?
     private var execution: ExtensionExecution?
@@ -142,7 +148,30 @@ final class ExtensionManager {
     /// shows up here again, so the next run asks before fetching.
     func missingHosts(_ ext: InstalledExtension) -> [String] { ExtensionHostApprovals.missing(ext.manifest, at: configURL) }
     /// Ready to run without asking: enabled, every declared host allowed and every declared token saved.
-    func isReady(_ ext: InstalledExtension) -> Bool { ext.enabled && missingHosts(ext).isEmpty && missingSecrets(ext).isEmpty }
+    func isReady(_ ext: InstalledExtension) -> Bool {
+        ext.enabled && missingHosts(ext).isEmpty && missingSecrets(ext).isEmpty && !missingLocation(ext)
+    }
+
+    /// Whether this extension asks for the owner's location and has not been allowed it yet.
+    func missingLocation(_ ext: InstalledExtension) -> Bool { ExtensionLocationApprovals.missing(ext.manifest, at: configURL) }
+    /// Extensions allowed to receive the owner's location, for Settings.
+    func locationApproved(_ ext: InstalledExtension) -> Bool {
+        ext.manifest.wantsLocation && ExtensionLocationApprovals.approved(at: configURL).contains(ext.id)
+    }
+    /// The first-run prompt's grant, for this one extension only.
+    func allowLocation(_ ext: InstalledExtension) throws {
+        guard ext.manifest.wantsLocation else { return }
+        try ExtensionLocationApprovals.approve(ext.id, at: configURL)
+    }
+    /// Settings → Location → Stop Sharing; the next run asks again.
+    func stopSharingLocation(_ ext: InstalledExtension) throws { try ExtensionLocationApprovals.remove(ext.id, at: configURL) }
+
+    /// The location this run may send: looked up only for an extension that declares the permission and
+    /// is allowed it, otherwise nil without asking Location Services.
+    private func runLocation(_ ext: InstalledExtension, _ completion: @escaping (ExtensionLocation?) -> Void) {
+        guard locationApproved(ext) else { completion(nil); return }
+        locate(completion)
+    }
 
     /// Declared tokens the owner has not given yet, or that the Keychain cannot read now.
     func missingSecrets(_ ext: InstalledExtension) -> [ExtensionSecret] {
@@ -199,6 +228,7 @@ final class ExtensionManager {
         try ExtensionApproval.forget(ext.manifest.id, at: configURL)
         try? dataStore.clear(ext.id)
         try? forgetSecrets(ext)
+        try? stopSharingLocation(ext)
         reload()
         return try ExtensionHostApprovals.pruneAfterRemoving(ext.manifest, remaining: extensions.map(\.manifest), at: configURL)
     }
@@ -295,6 +325,16 @@ final class ExtensionManager {
     func runItems(_ ext: InstalledExtension, query: String, now: Date = Date(),
                   fetch: @escaping ([ExtensionRequest], [String], @escaping ([ExtensionNetwork.Response]) -> Void) -> Void = ExtensionFetcher.fetch,
                   completion: @escaping (Result<[ExtensionItem], Error>) -> Void) {
+        guard !missingLocation(ext) else { completion(.failure(ExtensionError.locationNotAllowed)); return }
+        runLocation(ext) { [self] location in
+            runItems(ext, query: query, now: now, location: location, fetch: fetch, completion: completion)
+        }
+    }
+
+    /// One list run with the location this run may send, which plan and every render receive.
+    private func runItems(_ ext: InstalledExtension, query: String, now: Date, location: ExtensionLocation?,
+                          fetch: @escaping ([ExtensionRequest], [String], @escaping ([ExtensionNetwork.Response]) -> Void) -> Void,
+                          completion: @escaping (Result<[ExtensionItem], Error>) -> Void) {
         let hosts = ext.manifest.declaredHosts
         let sequence = beginRun(ext)
         let storage = ext.manifest.usesStorage ? dataStore.load(ext.id) : nil
@@ -309,7 +349,7 @@ final class ExtensionManager {
         func render(_ responses: [ExtensionNetwork.Response], state: String?, round: Int) {
             do {
                 let input = try ExtensionNetwork.request(phase: "render", query: query, now: now, responses: hosts.isEmpty ? nil : responses,
-                                                         storage: storage, state: state)
+                                                         storage: storage, state: state, location: location)
                 invoke(ext, input) { [self] result in
                     do {
                         let output = try result.get()
@@ -335,7 +375,7 @@ final class ExtensionManager {
         let secrets = missingSecrets(ext)
         guard secrets.isEmpty else { completion(.failure(ExtensionError.secretsMissing(secrets.map(\.title)))); return }
         do {
-            invoke(ext, try ExtensionNetwork.request(phase: "plan", query: query, now: now, storage: storage)) { [self] result in
+            invoke(ext, try ExtensionNetwork.request(phase: "plan", query: query, now: now, storage: storage, location: location)) { [self] result in
                 do {
                     let output = try result.get()
                     if let reply = try? ExtensionNetwork.reply(from: output, appLinks: Set(ext.manifest.declaredAppLinks)), let items = reply.items {
@@ -443,7 +483,7 @@ final class ExtensionManager {
         } catch { completion(.failure(error)) }
     }
     enum ExtensionError: Error, LocalizedError {
-        case missingModule, hashMismatch, changed, disabled, communityDisabled, secretsMissing([String]), runtime(String)
+        case missingModule, hashMismatch, changed, disabled, communityDisabled, secretsMissing([String]), locationNotAllowed, runtime(String)
         var errorDescription: String? {
             switch self {
             case .missingModule: return "Extension module is missing, too large, or outside its folder."
@@ -451,6 +491,7 @@ final class ExtensionManager {
             case .changed: return "Extension changed. Refresh and review it before enabling."
             case .disabled: return "Extension is disabled. Enable it before running."
             case .communityDisabled: return "Community extensions are off. Allow them in Settings → Extensions."
+            case .locationNotAllowed: return "Allow this extension to use your approximate location to run it."
             case .secretsMissing(let titles): return "Add your \(titles.joined(separator: " and ")) to use this extension."
             case .runtime(let message): return message
             }

@@ -506,6 +506,7 @@ final class LauncherModel: ObservableObject {
         guard !extensionRunning else { notice = "An extension is already running."; return }
         do {
             try extensions.saveSecrets(request.extensionItem, secrets)
+            if request.location { try extensions.allowLocation(request.extensionItem) }
             try extensions.setEnabled(request.extensionItem, true)
             guard let enabled = extensions.extensions.first(where: { $0.id == request.extensionItem.id }) else { throw ExtensionManager.ExtensionError.changed }
             sections = [ResultSection(title: "Extensions", rows: [.extensionRun(enabled, input: request.input)])]
@@ -746,7 +747,8 @@ final class LauncherModel: ObservableObject {
                 guard let self else { return }
                 self.query = ""
                 self.pendingExtension = ExtensionPermissionRequest(extensionItem: ext, input: "", hosts: self.extensions.missingHosts(ext),
-                                                                   secrets: self.extensions.missingSecrets(ext))
+                                                                   secrets: self.extensions.missingSecrets(ext),
+                                                                   location: self.extensions.missingLocation(ext))
             }
             catalog.input = term; sections = []; return
         }
@@ -1380,7 +1382,8 @@ final class LauncherModel: ObservableObject {
             if extensions.isBlocked(ext) { dismiss(); onNote(.extensionSettings); return }
             if !extensions.isReady(ext) {
                 pendingExtension = ExtensionPermissionRequest(extensionItem: ext, input: input, hosts: extensions.missingHosts(ext),
-                                                              secrets: extensions.missingSecrets(ext))
+                                                              secrets: extensions.missingSecrets(ext),
+                                                              location: extensions.missingLocation(ext))
             } else { runExtension(ext, input: input) }
             return
         case .extensionResult(let text): copy(text)

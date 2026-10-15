@@ -37,9 +37,9 @@
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright 2026 Mystic Coders, LLC</string>
 	<key>NSLocationUsageDescription</key>
-	<string>macOS requires Location access to show Wi-Fi network names. Volant does not request your coordinates.</string>
+	<string>macOS requires Location access to show Wi-Fi network names. Volant also uses your approximate location (about 11 km) only for extensions you allow, which share it with the sites they read; it is never saved.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>macOS requires Location access to show Wi-Fi network names. Volant does not request your coordinates.</string>
+	<string>macOS requires Location access to show Wi-Fi network names. Volant also uses your approximate location (about 11 km) only for extensions you allow, which share it with the sites they read; it is never saved.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Volant transcribes dictation on this Mac. Audio is never sent anywhere and is not saved.</string>
 	<key>NSPrincipalClass</key>

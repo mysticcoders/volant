@@ -79,13 +79,23 @@ public enum BackupFolder {
         return BackupPlan(configData: data, preferences: preferences, notes: copies, report: report)
     }
 
+    /// The config to restore without grants that belong to the Mac they were given on: an extension's
+    /// permission to receive the owner's location must be asked for again on a new Mac. Config without
+    /// such a grant is written back byte for byte.
+    public static func withoutPerMacGrants(_ data: Data) -> Data {
+        guard var object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              object[ExtensionLocationApprovals.key] != nil else { return data }
+        object.removeValue(forKey: ExtensionLocationApprovals.key)
+        return (try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])) ?? data
+    }
+
     /// Writes the planned config and notes. Existing notes are never replaced.
     public static func apply(_ plan: BackupPlan,
                              source: URL,
                              configURL: URL,
                              notesDestination: URL,
                              fileManager: FileManager = .default) throws {
-        try plan.configData.write(to: configURL, options: .atomic)
+        try withoutPerMacGrants(plan.configData).write(to: configURL, options: .atomic)
         guard !plan.notes.isEmpty else { return }
         let notesURL = source.appendingPathComponent("Notes")
         try fileManager.createDirectory(at: notesDestination, withIntermediateDirectories: true)

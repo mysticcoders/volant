@@ -359,6 +359,61 @@ final class ExtensionTests: XCTestCase {
         XCTAssertFalse(LauncherModel.openExtensionLink(app, fallback: nil) { _ in false })
     }
 
+    func testOnlyAnAllowedExtensionLooksUpOrReceivesTheLocation() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let config = root.appendingPathComponent("config.json")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try Data(#"{"extensions":{},"communityExtensionsAllowed":true}"#.utf8).write(to: config)
+        let module = Data([0,97,115,109,1,0,0,0,5,4,1,1,1,1])
+        let folders = try [("fixture.weather", ["location"]), ("fixture.news", nil)].map { id, permissions -> URL in
+            let folder = root.appendingPathComponent(id, isDirectory: true)
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            try module.write(to: folder.appendingPathComponent("m.wasm"))
+            let manifest = VolantCore.ExtensionManifest(id: id, name: id, version: "1", module: "m.wasm", capabilities: [], sha256: Volant.Integrity.sha256(module),
+                                                        hosts: ["\(id.split(separator: ".")[1]).example.com"], output: "items", permissions: permissions)
+            try JSONEncoder().encode(manifest).write(to: folder.appendingPathComponent("manifest.json"))
+            return folder
+        }
+        let manager = ExtensionManager(configURL: config, roots: folders); manager.reload()
+        var lookups = 0, requests: [String] = []
+        manager.locate = { lookups += 1; $0(ExtensionLocation(latitude: 37.8734, longitude: -122.2711)) }
+        manager.invokeOverride = { _, input, completion in
+            requests.append(input)
+            completion(.success(#"{"items":[{"title":"Row"}]}"#))
+        }
+        for ext in manager.extensions { try manager.setEnabled(ext, true) }
+        let weather = try XCTUnwrap(manager.extensions.first { $0.id == "fixture.weather" })
+        let news = try XCTUnwrap(manager.extensions.first { $0.id == "fixture.news" })
+        XCTAssertTrue(manager.missingLocation(weather))
+        XCTAssertFalse(manager.isReady(weather), "location must be allowed before the first run")
+        var refused: Result<[ExtensionItem], Error>?
+        manager.runItems(weather, query: "", fetch: { _, _, _ in XCTFail("no fetch before the grant") }) { refused = $0 }
+        guard case .failure = try XCTUnwrap(refused) else { return XCTFail("a missing grant must stop the run") }
+        XCTAssertEqual(lookups, 0, "Location Services is not asked before the grant")
+
+        manager.invokeOverride = { _, input, completion in
+            requests.append(input)
+            completion(.success(input.contains(#""phase":"plan""#) ? #"{"items":[{"title":"Planned"}]}"# : #"{"items":[]}"#))
+        }
+        try manager.allowLocation(weather)
+        XCTAssertTrue(manager.isReady(weather))
+        XCTAssertFalse(manager.missingLocation(news), "an extension that does not ask needs no grant")
+        manager.runItems(weather, query: "", fetch: { _, _, _ in }) { _ in }
+        XCTAssertEqual(lookups, 1)
+        XCTAssertTrue(requests.last?.contains(#""location":{"latitude":37.9,"longitude":-122.3}"#) == true, requests.last ?? "")
+        manager.runItems(news, query: "", fetch: { _, _, _ in }) { _ in }
+        XCTAssertEqual(lookups, 1, "another extension never triggers a lookup")
+        XCTAssertFalse(requests.last?.contains("location") == true, "and never receives a location")
+        XCTAssertFalse(String(decoding: try Data(contentsOf: config), as: UTF8.self).contains("37.9"), "coordinates never reach config")
+
+        try manager.stopSharingLocation(weather)
+        XCTAssertTrue(manager.missingLocation(weather))
+        try manager.allowLocation(weather)
+        try manager.uninstall(weather) { try FileManager.default.removeItem(at: $0) }
+        XCTAssertFalse(ExtensionLocationApprovals.approved(at: config).contains("fixture.weather"), "uninstall removes the grant")
+    }
+
     func testUninstallForgetsApprovalAndOnlyOrphanedHosts() async throws {
         let (root, config, folders) = try networkFixture()
         defer { try? FileManager.default.removeItem(at: root) }

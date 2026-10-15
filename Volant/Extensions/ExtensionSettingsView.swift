@@ -168,6 +168,28 @@ struct ExtensionSettingsView: View {
             } footer: {
                 SettingsFooter("Volant fetches from these hosts for network extensions, which have no network access themselves. Removing a host stops every extension that uses it until you allow it again.")
             }
+            Section {
+                let sharing = installed.filter { manager.locationApproved($0) }
+                if sharing.isEmpty { Text("No extensions use your location.").foregroundStyle(.secondary) }
+                ForEach(sharing) { ext in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(ext.name)
+                            Text("Approximate location, about 11 km, shared with " + ext.manifest.declaredHosts.joined(separator: ", "))
+                                .font(.callout).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button("Stop Sharing") {
+                            do { try manager.stopSharingLocation(ext); reload(); onChange() }
+                            catch { self.error = error.localizedDescription }
+                        }.controlSize(.small).accessibilityIdentifier("extension-stop-location-" + ext.id)
+                    }
+                }
+            } header: {
+                Text("Location")
+            } footer: {
+                SettingsFooter("Each extension here was allowed your location separately. Volant asks macOS for it only when the extension runs, rounds it to about 11 km, and never saves it. Stopping makes the extension ask again on its next run.")
+            }
         }
         .formStyle(.settings)
         .onAppear(perform: reload)
@@ -254,6 +276,9 @@ struct ExtensionPermissionRequest: Identifiable {
     var hosts: [String] = []
     /// Declared tokens not saved yet; the prompt asks for each before it can run.
     var secrets: [ExtensionSecret] = []
+    /// The extension asks for the owner's location and has not been allowed it; Allow grants it to this
+    /// extension only.
+    var location = false
 }
 
 struct ExtensionPermissionView: View {
@@ -271,6 +296,11 @@ struct ExtensionPermissionView: View {
             } else {
                 ExtensionHostList(hosts: request.hosts)
             }
+            if request.location {
+                Label("Share your approximate location (about 11 km) with \(request.extensionItem.name) and the sites it reads. Volant asks macOS for it only when the extension runs, and never saves it.",
+                      systemImage: "location").fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("extension-location-grant")
+            }
             ForEach(request.secrets, id: \.id) { secret in
                 ExtensionSecretField(secret: secret, value: Binding(get: { values[secret.id, default: ""] }, set: { values[secret.id] = $0 }))
             }
@@ -279,7 +309,7 @@ struct ExtensionPermissionView: View {
             HStack {
                 Spacer()
                 Button("Cancel", action: cancel).keyboardShortcut(.cancelAction)
-                Button(request.hosts.isEmpty ? "Enable and Run" : "Allow and Run") { enable(values) }
+                Button(request.hosts.isEmpty && !request.location ? "Enable and Run" : "Allow and Run") { enable(values) }
                     .keyboardShortcut(.defaultAction).disabled(!complete)
             }
         }.padding(24).frame(width: 390)

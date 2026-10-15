@@ -76,7 +76,7 @@ final class ConnectivityService: NSObject, ConnectivityAccess, CLLocationManager
             guard let location else { return }
             switch location.authorizationStatus {
             case .notDetermined:
-                completion(ConnectivitySnapshot(items: [.settings("wifi")], message: "Allow Location access to show Wi-Fi network names. Volant does not request your coordinates."))
+                completion(ConnectivitySnapshot(items: [.settings("wifi")], message: "Allow Location access to show Wi-Fi network names. Showing Wi-Fi never reads your coordinates."))
                 location.requestWhenInUseAuthorization()
             case .authorizedAlways, .authorizedWhenInUse: scanWiFi()
             default: completion(ConnectivitySnapshot(items: [.settings("wifi")], message: "Wi-Fi names need Location access. Enable Volant in System Settings → Privacy & Security → Location Services."))
