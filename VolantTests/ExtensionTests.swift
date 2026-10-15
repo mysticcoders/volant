@@ -348,6 +348,17 @@ final class ExtensionTests: XCTestCase {
         XCTAssertFalse(ExtensionRequest.isAllowed(method: "POST", body: nil, headers: ["Authorization": "Bearer a\r\nX: y"]))
     }
 
+    func testAppLinksFallBackToTheWebWhenNoAppHandlesThem() {
+        let app = URL(string: "todoist://task?id=6Xa")!, web = URL(string: "https://app.todoist.com/app/task/6Xa")!
+        var opened: [URL] = []
+        XCTAssertTrue(LauncherModel.openExtensionLink(app, fallback: web) { opened.append($0); return $0.scheme == "https" })
+        XCTAssertEqual(opened, [app, web], "no app for the scheme: the web link opens instead")
+        opened = []
+        XCTAssertTrue(LauncherModel.openExtensionLink(app, fallback: web) { opened.append($0); return true })
+        XCTAssertEqual(opened, [app], "the app handles it: the web link is not opened")
+        XCTAssertFalse(LauncherModel.openExtensionLink(app, fallback: nil) { _ in false })
+    }
+
     func testUninstallForgetsApprovalAndOnlyOrphanedHosts() async throws {
         let (root, config, folders) = try networkFixture()
         defer { try? FileManager.default.removeItem(at: root) }

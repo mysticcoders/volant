@@ -37,6 +37,7 @@ final class ExtensionNetworkTests: XCTestCase {
         XCTAssertFalse(json.contains("hosts"))
         XCTAssertFalse(json.contains("output"))
         XCTAssertFalse(json.contains("secrets"))
+        XCTAssertFalse(json.contains("appLinks"))
     }
 
     func testOnlyHttpsURLsOnApprovedHostsArePermitted() {
@@ -121,6 +122,25 @@ final class ExtensionNetworkTests: XCTestCase {
         for bad in ["", "has space", "line\nbreak", String(repeating: "a", count: ExtensionSecret.maximumValueBytes + 1)] {
             XCTAssertFalse(ExtensionSecret.isValidValue(bad), bad)
         }
+    }
+
+    func testAppLinksAreDeclaredSchemesThatAreNeverSystemOrFileLinks() throws {
+        var todoist = manifest(hosts: ["api.todoist.com"], output: "items"); todoist.appLinks = ["todoist"]
+        XCTAssertNoThrow(try todoist.validate())
+        for refused in ["file", "javascript", "https", "x-apple.systempreferences", "x-apple-reminderkit", "ssh", "Todoist", "t", "1abc", "to do"] {
+            var bad = todoist; bad.appLinks = [refused]
+            XCTAssertThrowsError(try bad.validate(), refused)
+        }
+        var text = manifest(); text.appLinks = ["todoist"]
+        XCTAssertThrowsError(try text.validate(), "app links belong to list extensions")
+        let output = #"{"items":[{"title":"Task","url":"todoist://task?id=6Xa","secondaryURL":"https://app.todoist.com/app/task/6Xa"},{"title":"Sneaky","url":"file:///etc/hosts","secondaryURL":"slack://open"}]}"#
+        let declared = try ExtensionNetwork.items(from: output, appLinks: ["todoist"])
+        XCTAssertEqual(declared[0].url, "todoist://task?id=6Xa")
+        XCTAssertNil(declared[1].url)
+        XCTAssertNil(declared[1].secondaryURL, "an undeclared app's link is dropped")
+        XCTAssertNil(try ExtensionNetwork.items(from: output)[0].url, "without the declaration the app link is dropped")
+        XCTAssertNil(try ExtensionNetwork.items(from: #"{"items":[{"title":"x","url":"file:///etc/hosts"}]}"#, appLinks: ["file"])[0].url,
+                     "a refused scheme stays refused even if a reply claims it")
     }
 
     func testNoticesAndPrimaryActionsAreBounded() throws {
