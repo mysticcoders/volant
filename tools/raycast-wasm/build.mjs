@@ -4,6 +4,8 @@ import { createHash } from "node:crypto";
 import { boundMemory } from "./bound-memory.mjs";
 import { resolve } from "node:path";
 import { execFileSync } from "node:child_process";
+const EXTENSION = "../../extensions/raycast-base64";
+const ICON = "icon.webp";
 mkdirSync("out", { recursive: true });
 await build({
   entryPoints: ["entry.ts"], bundle: true, format: "esm", platform: "neutral",
@@ -15,10 +17,13 @@ await build({
 execFileSync(process.env.JAVY ?? "javy", ["build", "out/encode.js", "-C", "dynamic=n", "-C", "source=omitted", "-J", "event-loop=y", "-J", "text-encoding=y", "-J", "javy-stream-io=y", "-o", "out/encode.wasm"], { stdio: "inherit" });
 const module = boundMemory(readFileSync("out/encode.wasm"));
 writeFileSync("out/encode.wasm", module);
-mkdirSync("../../extensions/raycast-base64", { recursive: true });
-writeFileSync("../../extensions/raycast-base64/encode.wasm", module);
-writeFileSync("../../extensions/raycast-base64/manifest.json", JSON.stringify({
-  abiVersion: 2, id: "community.raycast.base64", name: "Base64 Encode", version: "1.0.0",
+const icon = readFileSync(ICON);
+mkdirSync(EXTENSION, { recursive: true });
+writeFileSync(`${EXTENSION}/encode.wasm`, module);
+writeFileSync(`${EXTENSION}/${ICON}`, icon);
+writeFileSync(`${EXTENSION}/manifest.json`, JSON.stringify({
+  abiVersion: 2, id: "community.raycast.base64", name: "Base64 Encode", version: "1.0.1",
   module: "encode.wasm", capabilities: [], timeoutSeconds: 2,
   sha256: createHash("sha256").update(module).digest("hex"),
+  icon: ICON, iconSha256: createHash("sha256").update(icon).digest("hex"),
 }, null, 2) + "\n");
