@@ -86,7 +86,13 @@ Added in 0.3.6:
 | --- | --- | --- | --- |
 | Settings explains community extensions before they are turned on, and hides the catalog and community rows until then | Yes | #252; VM renders of the off and on states in light and dark; the installed-acceptance script presses the new Turn On button but has not run against it yet | None; Settings only |
 
-Merged after 0.3.6, not in the current download:
+Added in 0.3.7:
+
+| Story | In 0.3.7 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| List extensions get their own scope in the launcher: Return enters, a Back chip shows the extension, typing goes only to it, Escape clears then leaves | Yes | #256; Core and app tests, a launcher fixture driving real key dispatch, VM renders in light and dark; not yet checked in the signed installed app with the real extensions | Extensions doc: how to enter and leave an extension |
+
+Merged after 0.3.7, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
