@@ -197,6 +197,69 @@ final class ExtensionTests: XCTestCase {
         XCTAssertNotNil(object["future"])
     }
 
+    /// The news fixture, enabled with its hosts allowed, answering each request with the next reply
+    /// in turn; `requests` records what the module received and `fetched` what Volant fetched.
+    private func scriptedNews(_ replies: [String]) throws -> (URL, URL, ExtensionManager, InstalledExtension, () -> [String]) {
+        let (root, config, folders) = try networkFixture()
+        let manager = ExtensionManager(configURL: config, roots: folders); manager.reload()
+        try manager.setCommunityAllowed(true, expected: false)
+        try manager.setEnabled(try XCTUnwrap(manager.extensions.first { $0.id == "fixture.news" }), true)
+        var queue = replies, requests: [String] = []
+        manager.invokeOverride = { _, input, completion in
+            requests.append(input)
+            completion(.success(queue.isEmpty ? #"{"items":[]}"# : queue.removeFirst()))
+        }
+        return (root, config, manager, try XCTUnwrap(manager.extensions.first { $0.id == "fixture.news" }), { requests })
+    }
+
+    func testRendersCanFetchAgainWithStateUpToTheRoundLimit() async throws {
+        let (root, _, manager, news, requests) = try scriptedNews([
+            #"{"fetch":["https://news.example.com/find?q=paris"],"state":"find"}"#,
+            #"{"fetch":["https://news.example.com/forecast?at=1"],"state":"forecast:Paris"}"#,
+            #"{"items":[{"title":"Paris"}]}"#,
+        ])
+        defer { try? FileManager.default.removeItem(at: root) }
+        var fetched: [String] = [], outcome: Result<[ExtensionItem], Error>?
+        manager.runItems(news, query: "paris", fetch: { urls, _, reply in
+            fetched += urls.map(\.absoluteString); reply(urls.map { .init(url: $0.absoluteString, status: 200, body: "{}") })
+        }) { outcome = $0 }
+        XCTAssertEqual(try XCTUnwrap(outcome).get().map(\.title), ["Paris"])
+        XCTAssertEqual(fetched, ["https://news.example.com/find?q=paris", "https://news.example.com/forecast?at=1"])
+        XCTAssertTrue(requests()[1].contains(#""state":"find""#), requests()[1])
+        XCTAssertTrue(requests()[2].contains(#""state":"forecast:Paris""#), requests()[2])
+        XCTAssertTrue(requests().allSatisfy { $0.contains(#""units":"#) })
+    }
+
+    func testAFourthRoundIsRefused() async throws {
+        let again = #"{"fetch":["https://news.example.com/more"],"state":"more"}"#
+        let (root, _, manager, news, _) = try scriptedNews([again, again, again, again])
+        defer { try? FileManager.default.removeItem(at: root) }
+        var rounds = 0, outcome: Result<[ExtensionItem], Error>?
+        manager.runItems(news, query: "", fetch: { urls, _, reply in
+            rounds += 1; reply(urls.map { .init(url: $0.absoluteString, status: 200, body: "") })
+        }) { outcome = $0 }
+        XCTAssertEqual(rounds, ExtensionNetwork.maximumRounds)
+        guard case .failure(let error) = try XCTUnwrap(outcome) else { return XCTFail("a fourth round must fail") }
+        XCTAssertEqual(error as? ExtensionNetworkError, .tooManyRounds)
+    }
+
+    func testRemovingAHostMidRunStopsTheNextRound() async throws {
+        let (root, config, manager, news, _) = try scriptedNews([
+            #"{"fetch":["https://news.example.com/a"]}"#,
+            #"{"fetch":["https://news.example.com/b"],"state":"b"}"#,
+        ])
+        defer { try? FileManager.default.removeItem(at: root) }
+        var rounds = 0, outcome: Result<[ExtensionItem], Error>?
+        manager.runItems(news, query: "", fetch: { urls, _, reply in
+            rounds += 1
+            try? ExtensionHostApprovals.remove("news.example.com", at: config)
+            reply(urls.map { .init(url: $0.absoluteString, status: 200, body: "") })
+        }) { outcome = $0 }
+        XCTAssertEqual(rounds, 1, "the second round must not fetch")
+        guard case .failure(let error) = try XCTUnwrap(outcome) else { return XCTFail("a removed host must stop the run") }
+        XCTAssertEqual(error as? ExtensionNetworkError, .hostsNotApproved(["news.example.com"]))
+    }
+
     func testUninstallForgetsApprovalAndOnlyOrphanedHosts() async throws {
         let (root, config, folders) = try networkFixture()
         defer { try? FileManager.default.removeItem(at: root) }

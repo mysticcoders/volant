@@ -20,7 +20,7 @@ final class ExtensionHost: NSObject, VolantExtensionHostProtocol {
     private func execute(module: Data, capabilities: [String], input: String, timeout: Double, command: Bool, reply: @escaping (String?, String?) -> Void) {
         do { try ExtensionMemory.validate(module) }
         catch { reply(nil, error.localizedDescription); return }
-        guard input.utf8.count <= 65_536, timeout.isFinite, (0.5...10).contains(timeout),
+        guard input.utf8.count <= ExtensionLimits.maximumInputBytes, timeout.isFinite, (0.5...10).contains(timeout),
               Set(capabilities).isSubset(of: ExtensionManifest.knownCapabilities) else { reply(nil, "Invalid extension request."); return }
         let client = connection?.remoteObjectProxy as? VolantCapabilityClientProtocol
         let watchdog = DispatchWorkItem { exit(3) }
@@ -54,6 +54,7 @@ final class ExtensionHost: NSObject, VolantExtensionHostProtocol {
         ctx.setObject([UInt8](module), forKeyedSubscript: "moduleBytes" as NSString)
         ctx.setObject([UInt8](input.utf8), forKeyedSubscript: "inputBytes" as NSString)
 
+        let outputLimit = ExtensionLimits.maximumOutputBytes
         let script = """
         (function () {
           const mod = new WebAssembly.Module(new Uint8Array(moduleBytes));
@@ -72,7 +73,7 @@ final class ExtensionHost: NSObject, VolantExtensionHostProtocol {
           const out = inst.exports.run(ptr, bytes.length);
           const view = new DataView(mem.buffer);
           const len = view.getUint32(out, true);
-          if (len > 65536) throw new Error('Extension output exceeds 64 KiB');
+          if (len > \(outputLimit)) throw new Error('Extension output exceeds \(ExtensionLimits.outputDescription)');
           return Array.from(new Uint8Array(mem.buffer, out + 4, len));
         })()
         """

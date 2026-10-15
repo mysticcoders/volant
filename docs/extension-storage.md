@@ -42,9 +42,9 @@ That run happens after the link has opened, so a slow or failing extension never
   fingerprint, so adding it to an existing extension needs enabling again; manifests without it keep
   their fingerprint. The consent and Settings text reads "Remember settings and lists on this Mac",
   and catalog listings carry the same flag, checked against the manifest.
-- **Bounded.** At most 16 KB of JSON per extension, a top-level object, nesting depth 8. An
+- **Bounded.** At most 256 KB of JSON per extension, a top-level object, nesting depth 8. An
   oversized or invalid reply is rejected with a readable error, and the previous state is kept.
-  16 KB leaves room in the 64 KiB request for fetched pages.
+  256 KB leaves room in the 1 MiB request for fetched pages.
 - **Where it lives.** `Application Support/Vey/ExtensionData/<SHA-256 of the ID>.json`, written atomically. It is
   per Mac: never synced through iCloud, never included in backups or exports.
 - **Lifetime.** Kept across updates of the same ID. Removed on Uninstall. Settings shows **Clear
@@ -66,7 +66,7 @@ That run happens after the link has opened, so a slow or failing extension never
 
 ## Evidence
 
-- `ExtensionStorageTests` (Core): canonical encoding, objects only, the 16 KB and depth limits,
+- `ExtensionStorageTests` (Core): canonical encoding, objects only, the 256 KB and depth limits,
   errors that never repeat stored values, unreadable data as `{}`, storage requiring a list
   extension with fingerprints unchanged otherwise, request fields only when given, replies with
   items, storage or both, and row actions trimmed, deduplicated and capped at six.

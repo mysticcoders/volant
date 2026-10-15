@@ -248,46 +248,60 @@ final class ExtensionManager {
 
     /// Runs a list extension. With declared hosts it plans, fetches the permitted URLs through the fetch
     /// helper, then renders; without hosts it renders straight away. A plan may instead return items, for
-    /// example a row explaining an unusable query, and those are shown without fetching. Approval and hosts are checked again
-    /// between phases, so a change made mid-run stops it. An extension that uses storage receives its saved
-    /// object with every request, and any reply's `storage` replaces it (see `save(_:for:run:)`).
+    /// example a row explaining an unusable query, and those are shown without fetching. A render may ask
+    /// for another round of URLs with a `state` for the next render, up to `ExtensionNetwork.maximumRounds`
+    /// fetches in one run. Approval and hosts are checked again before every fetch and render, so a change
+    /// made mid-run stops it. An extension that uses storage receives its saved object with every request,
+    /// and any reply's `storage` replaces it (see `save(_:for:run:)`).
     func runItems(_ ext: InstalledExtension, query: String, now: Date = Date(),
                   fetch: @escaping ([URL], [String], @escaping ([ExtensionNetwork.Response]) -> Void) -> Void = ExtensionFetcher.fetch,
                   completion: @escaping (Result<[ExtensionItem], Error>) -> Void) {
         let hosts = ext.manifest.declaredHosts
         let sequence = beginRun(ext)
         let storage = ext.manifest.usesStorage ? dataStore.load(ext.id) : nil
-        func render(_ responses: [ExtensionNetwork.Response]) {
+        func approvedHosts() -> Set<String> { Set(hosts).intersection(ExtensionHostApprovals.approved(at: configURL)) }
+        func fetchRound(_ planned: ExtensionNetwork.Fetch, round: Int) {
+            fetch(planned.urls, Array(approvedHosts()).sorted()) { responses in
+                let missing = self.missingHosts(ext)
+                guard missing.isEmpty else { completion(.failure(ExtensionNetworkError.hostsNotApproved(missing))); return }
+                render(responses, state: planned.state, round: round)
+            }
+        }
+        func render(_ responses: [ExtensionNetwork.Response], state: String?, round: Int) {
             do {
-                let input = try ExtensionNetwork.request(phase: "render", query: query, now: now, responses: hosts.isEmpty ? nil : responses, storage: storage)
+                let input = try ExtensionNetwork.request(phase: "render", query: query, now: now, responses: hosts.isEmpty ? nil : responses,
+                                                         storage: storage, state: state)
                 invoke(ext, input) { [self] result in
-                    completion(result.flatMap { output in Result {
-                        let reply = try ExtensionNetwork.reply(from: output)
-                        try self.save(reply.storage, for: ext, run: sequence)
-                        guard let items = reply.items else { throw ExtensionNetworkError.malformedItems }
-                        return items
-                    } })
+                    do {
+                        let output = try result.get()
+                        if let reply = try? ExtensionNetwork.reply(from: output) {
+                            try self.save(reply.storage, for: ext, run: sequence)
+                            guard let items = reply.items else { throw ExtensionNetworkError.malformedItems }
+                            completion(.success(items)); return
+                        }
+                        guard !hosts.isEmpty, let planned = try? ExtensionNetwork.plannedFetch(from: output, hosts: approvedHosts()) else {
+                            throw ExtensionNetworkError.malformedItems
+                        }
+                        guard round < ExtensionNetwork.maximumRounds else { throw ExtensionNetworkError.tooManyRounds }
+                        let missing = self.missingHosts(ext)
+                        guard missing.isEmpty else { throw ExtensionNetworkError.hostsNotApproved(missing) }
+                        fetchRound(planned, round: round + 1)
+                    } catch { completion(.failure(error)) }
                 }
             } catch { completion(.failure(error)) }
         }
-        guard !hosts.isEmpty else { render([]); return }
+        guard !hosts.isEmpty else { render([], state: nil, round: 0); return }
         let missing = missingHosts(ext)
         guard missing.isEmpty else { completion(.failure(ExtensionNetworkError.hostsNotApproved(missing))); return }
         do {
             invoke(ext, try ExtensionNetwork.request(phase: "plan", query: query, now: now, storage: storage)) { [self] result in
                 do {
-                    let approved = Set(hosts).intersection(ExtensionHostApprovals.approved(at: configURL))
                     let output = try result.get()
                     if let reply = try? ExtensionNetwork.reply(from: output), let items = reply.items {
                         try self.save(reply.storage, for: ext, run: sequence)
                         completion(.success(items)); return
                     }
-                    let urls = try ExtensionNetwork.plannedURLs(from: output, hosts: approved)
-                    fetch(urls, Array(approved).sorted()) { responses in
-                        let missing = self.missingHosts(ext)
-                        guard missing.isEmpty else { completion(.failure(ExtensionNetworkError.hostsNotApproved(missing))); return }
-                        render(responses)
-                    }
+                    fetchRound(try ExtensionNetwork.plannedFetch(from: output, hosts: approvedHosts()), round: 1)
                 } catch { completion(.failure(error)) }
             }
         } catch { completion(.failure(error)) }
@@ -347,7 +361,7 @@ final class ExtensionManager {
             guard !isBlocked(ext) else { throw ExtensionError.communityDisabled }
             guard ExtensionApproval.enabled(ext.manifest, at: configURL) else { throw ExtensionError.disabled }
             guard !Self.running else { throw ExtensionError.runtime("An extension is already running.") }
-            guard input.utf8.count <= 65_536 else { throw ExtensionError.runtime("Extension input exceeds 64 KiB.") }
+            guard input.utf8.count <= ExtensionLimits.maximumInputBytes else { throw ExtensionError.runtime("Extension input exceeds \(ExtensionLimits.inputDescription).") }
             let module = try verifiedModule(ext)
             Self.running = true
             let execution = ExtensionExecution(manifest: ext.manifest, configURL: configURL, isCommunity: ext.isCommunity, onLog: onLog) { [self] result in
@@ -438,7 +452,7 @@ private final class ExtensionExecution: NSObject, VolantCapabilityClientProtocol
                     guard let self, self.attempt == token else { return }
                     guard self.approved else { self.finish(.failure(ExtensionManager.ExtensionError.disabled)); return }
                     if let error { self.finish(.failure(ExtensionManager.ExtensionError.runtime(error))) }
-                    else if let output, output.utf8.count <= 65_536 { self.finish(.success(output)) }
+                    else if let output, output.utf8.count <= ExtensionLimits.maximumOutputBytes { self.finish(.success(output)) }
                     else { self.finish(.failure(ExtensionManager.ExtensionError.runtime("Invalid extension output."))) }
                 }
             }

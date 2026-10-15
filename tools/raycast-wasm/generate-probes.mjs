@@ -16,6 +16,8 @@ const imports = `
 (import "wasi_snapshot_preview1" "proc_exit" (func $exit (param i32)))`;
 const setup = `(i32.store (i32.const 0) (i32.const 128)) (i32.store (i32.const 4) (i32.const 2))`;
 const write = `(drop (call $write (i32.const 1) (i32.const 0) (i32.const 1) (i32.const 8)))`;
+// Volant's command output limit (ExtensionLimits.maximumOutputBytes), written a 64 KiB page at a time.
+const outputLimit = 262144;
 const cases = {
   streams: `
     (call $assert (i32.eqz (call $envsize (i32.const 16) (i32.const 20))))
@@ -44,7 +46,8 @@ const cases = {
   failedExit: `${setup} ${write} (call $exit (i32.const 1))`,
   bounds: `(drop (call $read (i32.const 0) (i32.const -1) (i32.const 1) (i32.const 8)))`,
   vectorLimit: `(drop (call $read (i32.const 0) (i32.const 0) (i32.const 1025) (i32.const 8)))`,
-  outputLimit: `(i32.store (i32.const 0) (i32.const 0)) (i32.store (i32.const 4) (i32.const 65536)) ${write} ${setup} ${write}`,
+  outputLimit: `(i32.store (i32.const 0) (i32.const 0)) (i32.store (i32.const 4) (i32.const 65536)) ${write.repeat(outputLimit / 65536)} ${setup} ${write}`,
+  exactOutput: `(i32.store (i32.const 0) (i32.const 0)) (i32.store (i32.const 4) (i32.const 65536)) ${write.repeat(outputLimit / 65536)}`,
   stderrLimit: `(i32.store (i32.const 0) (i32.const 128)) (i32.store (i32.const 4) (i32.const 4097)) (drop (call $write (i32.const 2) (i32.const 0) (i32.const 1) (i32.const 8)))`,
   invalidUTF8: `${setup} (i32.store8 (i32.const 128) (i32.const 255)) ${write}`,
   callLimit: `(loop $again (drop (call $envsize (i32.const 16) (i32.const 20))) (br $again))`,

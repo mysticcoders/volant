@@ -21,14 +21,14 @@ Build instructions are repeatable, but Javy 9.1.0 did not produce byte-identical
 
 ## Runtime contract
 
-ABI 2 manifests use `abiVersion: 2`, a `.wasm` module, its SHA-256, and **empty capabilities**. Both ABI versions require one defined non-shared wasm32 memory with an explicit maximum ≤16 MiB, module size ≤2 MiB, input/output ≤64 KiB and a 0.5–10 second execution deadline. The separate XPC readiness deadline and no-replay behavior are unchanged.
+ABI 2 manifests use `abiVersion: 2`, a `.wasm` module, its SHA-256, and **empty capabilities**. Both ABI versions require one defined non-shared wasm32 memory with an explicit maximum ≤16 MiB, module size ≤2 MiB, input ≤1 MiB, output ≤256 KiB and a 0.5–10 second execution deadline. The separate XPC readiness deadline and no-replay behavior are unchanged.
 
 An ABI 2 module exports `memory` and `_start`. Only these function imports from `wasi_snapshot_preview1` are accepted:
 
 | Import | Volant behavior |
 |---|---|
 | `fd_read` | Descriptor 0 reads only the user-supplied UTF-8 command input, with EOF and partial-read support. |
-| `fd_write` | Descriptor 1 accumulates at most 64 KiB of result bytes. Descriptor 2 discards at most 4 KiB of diagnostics; they are never logged or surfaced. |
+| `fd_write` | Descriptor 1 accumulates at most 256 KiB of result bytes. Descriptor 2 discards at most 4 KiB of diagnostics; they are never logged or surfaced. |
 | `fd_close` | Closes only the invocation's virtual descriptors 0–2. |
 | `fd_fdstat_get` | Reports stream type and read/write rights for those virtual descriptors. |
 | `fd_seek` | Returns ESPIPE for open streams and EBADF otherwise. |
