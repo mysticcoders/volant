@@ -103,6 +103,26 @@ changing them needs a fresh enablement. Older manifests without them keep the sa
 The launcher keyword is the extension's name or the last part of its ID: `hn`, `hn new`, `hn ask`,
 `hn show`, `hn <search>`; `lobsters`, `lobsters new`, `lobsters <tag>`.
 
+## Inside an extension
+
+Return on a list extension's row enters it. The search field clears, or keeps the text typed after the
+keyword (`hn ask` enters Hacker News with `ask`), and a Back chip with the extension's icon and name
+sits at its start. From then on the field is the extension's query: no launcher source sees it, and each
+edit runs the extension again once typing pauses for 0.3 seconds. The rows on screen stay until the new
+ones arrive; a run started while another is going waits for it, and only the newest text runs.
+
+Two optional manifest fields shape this. Neither is part of the approval fingerprint, so changing them
+never asks the owner to enable the extension again, and older Volant versions ignore them.
+
+- `"mode"`: `"list"` (the default) runs as soon as the extension is entered and whenever the field is
+  cleared; `"search"` shows only its prompt until something is typed.
+- `"placeholder"`: the field's prompt, at most 80 characters, such as `"Search Wikipedia"`. Without it
+  the field reads "Search <name>…".
+
+Escape clears typed text, and Escape again goes back to the launcher; so does Delete in an empty field
+or clicking the chip. Closing the launcher also leaves the extension. Text extensions still run once
+from their row, without a scope.
+
 ## Host approval
 
 - **Prompt.** The first run, or enabling the extension in Settings, shows the hosts it needs: "To use

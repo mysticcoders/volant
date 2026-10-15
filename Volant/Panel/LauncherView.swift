@@ -122,6 +122,7 @@ struct LauncherView: View {
             if model.actionTarget != nil { closeActions(); return .handled }
             if model.dictation.isListening { model.cancelDictation(); return .handled }
             if model.entryForm != nil { model.cancelEntryForm(); return .handled }
+            if model.backOutOfScope() { return .handled }
             if model.wifiJoin != nil { guard !model.connectivityBusy else { return .handled }; model.wifiJoin = nil; model.searchFocusRequest = UUID() }
             else { model.dismiss() }
             return .handled
@@ -160,7 +161,8 @@ struct LauncherView: View {
                 .overlay(LauncherDragHandle())
                 .help("Drag to align Volant. Hold Option to move freely.")
             if model.showingACP || model.wifiJoin != nil { CaffeinateStatusView(service: model.caffeinate) }
-            TextField(model.showingEmoji ? "Search emoji…" : "Search for apps, files, contacts, or calculate…", text: Binding(get: { model.searchText }, set: { model.searchText = $0 }))
+            if let ext = model.scopedExtension { ExtensionScopeChip(ext: ext, running: model.extensionRunning, back: model.exitScope) }
+            TextField(model.searchPlaceholder, text: Binding(get: { model.searchText }, set: { model.searchText = $0 }))
                 .textFieldStyle(.plain)
                 .font(.system(size: 22, weight: .regular))
                 .focused($focused)
@@ -684,5 +686,33 @@ struct ExtensionRowSymbol: View {
             .font(.system(size: 18))
             .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.45), radius: 1, y: 0.5)
             .accessibilityLabel(symbol.rawValue.replacingOccurrences(of: "-", with: " "))
+    }
+}
+
+/// The Back chip at the start of the search field while the launcher is inside a list extension: its
+/// icon and name, with a spinner while it runs. Clicking it, or Escape or Delete on an empty field, goes back.
+private struct ExtensionScopeChip: View {
+    let ext: InstalledExtension
+    let running: Bool
+    let back: () -> Void
+
+    var body: some View {
+        Button(action: back) {
+            HStack(spacing: 6) {
+                Image(systemName: "chevron.left").font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
+                if let icon = ExtensionIcon.image(for: ext) {
+                    Image(nsImage: icon).resizable().interpolation(.high).frame(width: 16, height: 16)
+                }
+                Text(ext.name).lineLimit(1)
+                if running { ProgressView().controlSize(.mini) }
+            }
+            .font(.system(size: 13, weight: .medium))
+            .padding(.horizontal, 8).padding(.vertical, 4)
+            .background(Color.secondary.opacity(0.15), in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .help("Back to Volant (Esc)")
+        .accessibilityLabel("Back from \(ext.name)")
+        .accessibilityIdentifier("launcher-extension-back")
     }
 }

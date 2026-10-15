@@ -30,6 +30,11 @@ public struct ExtensionManifest: Codable, Hashable {
     /// Owner data the extension asks for, beyond its hosts: today only `"location"` (see
     /// `ExtensionLocation`). Part of the approval fingerprint when present.
     public var permissions: [String]?
+    /// How a list extension behaves once the owner enters it: `"list"` (the default) runs at once and
+    /// shows rows, `"search"` waits for typed input. Presentation only, so not part of the fingerprint.
+    public var mode: String?
+    /// The search field's prompt inside a list extension, such as "Search Wikipedia". Presentation only.
+    public var placeholder: String?
 
     public var declaredSecrets: [ExtensionSecret] { secrets ?? [] }
     public var declaredAppLinks: [String] { appLinks ?? [] }
@@ -39,6 +44,8 @@ public struct ExtensionManifest: Codable, Hashable {
     public var declaredHosts: [String] { hosts ?? [] }
     public var listsItems: Bool { output == "items" }
     public var usesStorage: Bool { storage == true }
+    public var waitsForInput: Bool { mode == "search" }
+    public static let maximumPlaceholderLength = 80
 
     public func validate() throws {
         guard [1, 2].contains(abiVersion ?? 0), abiVersion != 2 || capabilities.isEmpty,
@@ -55,7 +62,8 @@ public struct ExtensionManifest: Codable, Hashable {
               declaredAppLinks.count <= Self.maximumAppLinks, Set(declaredAppLinks).count == declaredAppLinks.count,
               declaredAppLinks.allSatisfy(Self.isAllowedAppLink), declaredAppLinks.isEmpty || listsItems,
               Set(declaredPermissions).isSubset(of: Self.knownPermissions), Set(declaredPermissions).count == declaredPermissions.count,
-              declaredPermissions.isEmpty || listsItems else {
+              declaredPermissions.isEmpty || listsItems, [nil, "list", "search"].contains(mode), mode == nil || listsItems,
+              placeholder.map({ (1...Self.maximumPlaceholderLength).contains($0.count) && listsItems }) ?? true else {
             throw ExtensionValidationError.invalidManifest
         }
     }
@@ -95,7 +103,8 @@ public struct ExtensionManifest: Codable, Hashable {
 
     public init(abiVersion: Int? = 1, id: String, name: String, version: String, module: String, capabilities: [String], timeoutSeconds: Double? = nil, sha256: String? = nil,
                 hosts: [String]? = nil, output: String? = nil, icon: String? = nil, iconSha256: String? = nil, storage: Bool? = nil,
-                secrets: [ExtensionSecret]? = nil, appLinks: [String]? = nil, permissions: [String]? = nil) {
+                secrets: [ExtensionSecret]? = nil, appLinks: [String]? = nil, permissions: [String]? = nil,
+                mode: String? = nil, placeholder: String? = nil) {
         self.abiVersion = abiVersion
         self.id = id
         self.name = name
@@ -112,6 +121,8 @@ public struct ExtensionManifest: Codable, Hashable {
         self.secrets = secrets
         self.appLinks = appLinks
         self.permissions = permissions
+        self.mode = mode
+        self.placeholder = placeholder
     }
 }
 

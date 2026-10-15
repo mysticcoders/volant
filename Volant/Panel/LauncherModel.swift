@@ -272,13 +272,13 @@ final class LauncherModel: ObservableObject {
     var actionConfigURL: URL = Preferences.configURL
     @Published var actionFeedback: String?
     let dictionary = DictionaryModel()
-    var showingDictionary: Bool { DictionaryQuery.term(query) != nil }
-    var showingCatalog: Bool { CatalogQuery.term(query) != nil }
+    var showingDictionary: Bool { DictionaryQuery.term(routedQuery) != nil }
+    var showingCatalog: Bool { CatalogQuery.term(routedQuery) != nil }
     let translation = TranslationModel()
-    var showingTranslation: Bool { ["translate", "translation", "translator"].contains(query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()) }
+    var showingTranslation: Bool { ["translate", "translation", "translator"].contains(routedQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()) }
     let caffeinate: CaffeinateService
     private var caffeinateSubscription: AnyCancellable?
-    var showingEmoji: Bool { query.trimmingCharacters(in: .whitespaces).hasPrefix(":") }
+    var showingEmoji: Bool { routedQuery.trimmingCharacters(in: .whitespaces).hasPrefix(":") }
     var emojiSearch: (String) -> [EmojiEntry] = { EmojiIndex.search($0, limit: Int.max) }
     var searchText: String {
         get { showingEmoji ? String(query.dropFirst()) : query }
@@ -297,7 +297,7 @@ final class LauncherModel: ObservableObject {
     let appleShortcuts = AppleShortcutsModel()
     private var shortcutsSubscription: AnyCancellable?
     private var shortcutRunQuery: String?
-    var showingAppleShortcuts: Bool { AppleShortcut.queryTerm(query) != nil }
+    var showingAppleShortcuts: Bool { AppleShortcut.queryTerm(routedQuery) != nil }
     let agents: AgentsModel
     let conversations = ACPConversations()
     /// The conversation AI Chat shows; everything that acts on "the" conversation acts on this one.
@@ -315,13 +315,13 @@ final class LauncherModel: ObservableObject {
     private var agentSubscription: AnyCancellable?
     private var indexSubscription: AnyCancellable?
     var showingAgents: Bool {
-        let q = query.trimmingCharacters(in: .whitespaces).lowercased()
+        let q = routedQuery.trimmingCharacters(in: .whitespaces).lowercased()
         return q == "agents" || q == "herdr" || q.hasPrefix("agents ") || q.hasPrefix("herdr ")
     }
     /// `herdr machine` lists saved destinations instead of panes, so enabling one is reachable
     /// without leaving the launcher. A trailing term filters by label.
     var showingMachines: Bool {
-        let q = query.trimmingCharacters(in: .whitespaces).lowercased()
+        let q = routedQuery.trimmingCharacters(in: .whitespaces).lowercased()
         return ["agents machine", "herdr machine", "agents machines", "herdr machines"].contains(q)
             || ["agents machine ", "herdr machine ", "agents machines ", "herdr machines "].contains(where: q.hasPrefix)
     }
@@ -392,6 +392,24 @@ final class LauncherModel: ObservableObject {
     let catalog = ExtensionCatalogModel()
     /// The input of the list run whose rows are showing, sent with their actions.
     private var extensionItemsQuery = ""
+    /// The list extension the launcher is inside, if any. While set, the search field's text is that
+    /// extension's query: every edit runs it again, and no other source sees the text.
+    @Published private(set) var scopedExtension: InstalledExtension?
+    /// The scoped run waiting for typing to pause.
+    private var scopeRun: DispatchWorkItem?
+    /// Set when the scoped query changed while the extension was still running, so it runs again after.
+    private var scopeRerun = false
+    /// Set on entering a scope, so its first run starts without waiting for typing to pause.
+    private var scopeRunsNow = false
+    /// How long typing must pause before a scoped extension runs again; each run may fetch.
+    static let scopeDelay: TimeInterval = 0.3
+    /// The query the launcher's own sources route on: empty inside an extension, whose text is its own.
+    private var routedQuery: String { scopedExtension == nil ? query : "" }
+    /// The search field's prompt: the scoped extension's own, emoji search, or the launcher's.
+    var searchPlaceholder: String {
+        if let ext = scopedExtension { return ext.manifest.placeholder ?? "Search \(ext.name)…" }
+        return showingEmoji ? "Search emoji…" : "Search for apps, files, contacts, or calculate…"
+    }
     let usage: UsageStore
     var config: Preferences { didSet { promotedHarness = config.promotedHarness; extensions.invalidateCatalog(); useFSearch() } }
     /// Points file search at fsearch while Use fsearch is on; Spotlight otherwise.
@@ -509,6 +527,7 @@ final class LauncherModel: ObservableObject {
             if request.location { try extensions.allowLocation(request.extensionItem) }
             try extensions.setEnabled(request.extensionItem, true)
             guard let enabled = extensions.extensions.first(where: { $0.id == request.extensionItem.id }) else { throw ExtensionManager.ExtensionError.changed }
+            if enabled.manifest.listsItems { enterScope(enabled, input: request.input); return }
             sections = [ResultSection(title: "Extensions", rows: [.extensionRun(enabled, input: request.input)])]
             runExtension(enabled, input: request.input)
         } catch { notice = error.localizedDescription }
@@ -525,14 +544,15 @@ final class LauncherModel: ObservableObject {
         if ext.manifest.listsItems {
             extensions.runItems(ext, query: input) { [weak self] result in
                 guard let self else { return }
-                self.extensionRunning = false
-                guard gen == self.generation else { return }
+                guard !self.finishExtensionRun(), gen == self.generation else { return }
                 switch result {
                 case .success(let items):
                     self.notice = items.isEmpty ? "\(ext.name) returned nothing." : nil
                     self.sections = [ResultSection(title: ext.name, rows: items.map { .extensionItem($0, source: ext) })]
                     self.selection = selectedID.flatMap { id in self.rows.firstIndex { $0.id == id } } ?? 0
-                case .failure(let error): self.notice = "Extension failed: \(error.localizedDescription)"
+                case .failure(let error):
+                    if self.scopedExtension != nil { self.sections = [] }
+                    self.notice = "Extension failed: \(error.localizedDescription)"
                 }
             }
             return
@@ -549,7 +569,72 @@ final class LauncherModel: ObservableObject {
             }
         }
     }
+    /// Marks the running extension finished. When the scoped query changed while it ran, runs it again
+    /// for the new text and returns true, so the caller drops its now stale result.
+    private func finishExtensionRun() -> Bool {
+        extensionRunning = false
+        guard scopeRerun else { return false }
+        scopeRerun = false
+        runScoped()
+        return true
+    }
+
+    /// Enters a list extension. The field holds only the text typed after its keyword, a Back chip names
+    /// the extension, and from then on every edit runs it, until Back, or Escape or Delete on an empty field.
+    func enterScope(_ ext: InstalledExtension, input: String) {
+        scopeRun?.cancel()
+        scopedExtension = ext
+        scopeRunsNow = true
+        if query == input { refresh() } else { query = input }
+        searchFocusRequest = UUID()
+    }
+
+    /// Leaves the scoped extension for the launcher's own search, with an empty field.
+    func exitScope() {
+        guard scopedExtension != nil else { return }
+        scopeRun?.cancel()
+        scopeRerun = false
+        scopedExtension = nil
+        if query.isEmpty { refresh() } else { query = "" }
+        searchFocusRequest = UUID()
+    }
+
+    /// Escape inside an extension: clears typed text first, then leaves. False outside an extension.
+    func backOutOfScope() -> Bool {
+        guard scopedExtension != nil else { return false }
+        if query.isEmpty { exitScope() } else { query = "" }
+        return true
+    }
+
+    /// Shows the scoped extension's rows for `input`: at once on entering it or clearing the field,
+    /// otherwise once typing pauses. A search extension shows its prompt until something is typed.
+    private func refreshScope(_ ext: InstalledExtension, input: String, generation gen: Int) {
+        let now = scopeRunsNow || input.isEmpty
+        scopeRunsNow = false
+        if input.isEmpty && ext.manifest.waitsForInput {
+            sections = []
+            notice = ext.manifest.placeholder ?? "Type to search \(ext.name)"
+            return
+        }
+        let work = DispatchWorkItem { [weak self] in
+            guard let self, gen == self.generation else { return }
+            self.runScoped()
+        }
+        scopeRun = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + (now ? 0 : Self.scopeDelay), execute: work)
+    }
+
+    /// Runs the scoped extension for the field's text, or, while a run is still going, after it.
+    private func runScoped() {
+        guard let ext = scopedExtension else { return }
+        guard !extensionRunning else { scopeRerun = true; return }
+        runExtension(ext, input: query.trimmingCharacters(in: .whitespaces))
+    }
+
     func reset() {
+        scopeRun?.cancel()
+        scopeRerun = false
+        scopedExtension = nil
         pendingExtension = nil
         showingACP = false
         actionTarget = nil
@@ -581,7 +666,7 @@ final class LauncherModel: ObservableObject {
 
     func refreshForAppIndex() {
         rowState.clearIcons()
-        guard isPresented, query.isEmpty || searchesAppIndex else { return }
+        guard isPresented, scopedExtension == nil, query.isEmpty || searchesAppIndex else { return }
         if query.isEmpty {
             let selectedID = selectedRow?.id
             showSuggestions()
@@ -624,7 +709,7 @@ final class LauncherModel: ObservableObject {
     }
 
     var showingNotes: Bool {
-        let q = query.trimmingCharacters(in: .whitespaces).lowercased()
+        let q = routedQuery.trimmingCharacters(in: .whitespaces).lowercased()
         return q == "notes" || q == "note" || q.hasPrefix("note ")
     }
     var searchRecoveryMessage: String? {
@@ -655,7 +740,7 @@ final class LauncherModel: ObservableObject {
     }
 
     var showingClipboard: Bool {
-        let q = query.trimmingCharacters(in: .whitespaces).lowercased()
+        let q = routedQuery.trimmingCharacters(in: .whitespaces).lowercased()
         return q == "clip" || q.hasPrefix("clip ")
     }
     /// What the chat's @ picker offers: recent clipboard text and notes, snapshotted when chosen.
@@ -726,8 +811,10 @@ final class LauncherModel: ObservableObject {
         files.cancel()
         notesSearch?.cancel()
         notesSearch = nil
+        scopeRun?.cancel()
         let q = query.trimmingCharacters(in: .whitespaces)
         if !showingDictionary { dictionary.clear() }
+        if let ext = scopedExtension { refreshScope(ext, input: q, generation: gen); return }
         if showingAppleShortcuts {
             sections = []
             if searchesSecondarySources { appleShortcuts.refresh() }
@@ -1187,7 +1274,7 @@ final class LauncherModel: ObservableObject {
     }
 
     private var connectivitySource: String? {
-        let head = query.lowercased().split(whereSeparator: \.isWhitespace).first ?? ""
+        let head = routedQuery.lowercased().split(whereSeparator: \.isWhitespace).first ?? ""
         if head == "wifi" || head == "wi-fi" { return "wifi" }
         if head == "bluetooth" || head == "bt" { return "bluetooth" }
         return nil
@@ -1384,7 +1471,7 @@ final class LauncherModel: ObservableObject {
                 pendingExtension = ExtensionPermissionRequest(extensionItem: ext, input: input, hosts: extensions.missingHosts(ext),
                                                               secrets: extensions.missingSecrets(ext),
                                                               location: extensions.missingLocation(ext))
-            } else { runExtension(ext, input: input) }
+            } else if ext.manifest.listsItems { enterScope(ext, input: input) } else { runExtension(ext, input: input) }
             return
         case .extensionResult(let text): copy(text)
         case .extensionItem(let item, let source):
@@ -1415,7 +1502,7 @@ final class LauncherModel: ObservableObject {
     }
 
     var canTabToAIChat: Bool {
-        !showingACP && !showingDictionary && !showingCatalog && !showingTranslation && !showingEmoji &&
+        scopedExtension == nil && !showingACP && !showingDictionary && !showingCatalog && !showingTranslation && !showingEmoji &&
         !showingAppleShortcuts && !showingAgents && wifiJoin == nil && entryForm == nil && actionTarget == nil
     }
 
@@ -1573,7 +1660,7 @@ final class LauncherModel: ObservableObject {
         let gen = generation, opened = action == nil
         extensions.runAction(ext, item: item, action: action, query: extensionItemsQuery) { [weak self] result in
             guard let self else { return }
-            self.extensionRunning = false
+            if self.finishExtensionRun() { return }
             switch result {
             case .success(let outcome):
                 guard !opened, gen == self.generation else { return }

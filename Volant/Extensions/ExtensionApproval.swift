@@ -13,9 +13,14 @@ enum ExtensionApproval {
         object["communityExtensionsAllowed"] = allowed
         try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys]).write(to: url, options: .atomic)
     }
+    /// The manifest's hash without its presentation fields (`mode`, `placeholder`), so changing how an
+    /// extension's scope looks never asks the owner to enable it again.
     static func fingerprint(_ manifest: ExtensionManifest) throws -> String {
+        var approved = manifest
+        approved.mode = nil
+        approved.placeholder = nil
         let encoder = JSONEncoder(); encoder.outputFormatting = .sortedKeys
-        return Integrity.sha256(try encoder.encode(manifest))
+        return Integrity.sha256(try encoder.encode(approved))
     }
     static func enabled(_ manifest: ExtensionManifest, at url: URL) -> Bool {
         guard let object = try? read(url), let grants = object["extensions"] as? [String: Any],
