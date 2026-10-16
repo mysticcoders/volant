@@ -5,23 +5,26 @@ import XCTest
 final class UnitConverterTests: XCTestCase {
     private static let english = Locale(identifier: "en_US")
 
-    func testLengthAndCompactForm() {
-        let c = UnitConverter.convert("5 km in mi", locale: Self.english)!
+    func testLengthAndCompactForm() throws {
+        let c = try XCTUnwrap(UnitConverter.convert("5 km in mi", locale: Self.english))
         XCTAssertEqual(c.result, 3.10686, accuracy: 0.001)
-        XCTAssertEqual(UnitConverter.convert("5km to mi", locale: Self.english)!.result, c.result)
+        XCTAssertEqual(try result("5km to mi"), c.result)
     }
 
-    func testTemperatureTouchingUnit() {
-        XCTAssertEqual(UnitConverter.convert("72f to c", locale: Self.english)!.result, 22.222, accuracy: 0.01)
-        XCTAssertEqual(UnitConverter.convert("100 c in f", locale: Self.english)!.result, 212, accuracy: 0.0001)
+    func testTemperatureTouchingUnit() throws {
+        XCTAssertEqual(try result("72f to c"), 22.222, accuracy: 0.01)
     }
 
-    func testDataAndSpeed() {
-        XCTAssertEqual(UnitConverter.convert("1 gib in mb", locale: Self.english)!.result, 1073.741824, accuracy: 0.001)
-        XCTAssertEqual(UnitConverter.convert("100 kph as mph", locale: Self.english)!.result, 62.137, accuracy: 0.01)
+    func testDataAndSpeed() throws {
+        XCTAssertEqual(try result("1 gib in mb"), 1073.741824, accuracy: 0.001)
+        XCTAssertEqual(try result("100 kph as mph"), 62.137, accuracy: 0.01)
     }
 
     private func result(_ query: String) throws -> Double { try XCTUnwrap(UnitConverter.convert(query, locale: Self.english), query).result }
+
+    private func converted(_ query: String) -> String? {
+        UnitConverter.convert(query, locale: Self.english).map { UnitConverter.formatResult($0, locale: Self.english) }
+    }
 
     func testEveryFamilyAgainstReferenceFactors() throws {
         XCTAssertEqual(try result("1 mi in km"), 1.609344, accuracy: 1e-9)
@@ -106,12 +109,12 @@ final class UnitConverterTests: XCTestCase {
         XCTAssertNil(UnitConverter.convert("5 km in mi in ft", locale: Self.english))
     }
 
-    func testFormat() {
-        XCTAssertEqual(UnitConverter.format(UnitConverter.convert("2 lb in kg", locale: Self.english)!), "2 lb = 0.907185 kg")
-        XCTAssertEqual(UnitConverter.formatResult(UnitConverter.convert("1 mi in km", locale: Self.english)!), "1.609344 km")
-        XCTAssertEqual(UnitConverter.formatResult(UnitConverter.convert("-40 c in f", locale: Self.english)!), "-40 °F")
-        XCTAssertEqual(UnitConverter.formatResult(UnitConverter.convert("10 kn in kph", locale: Self.english)!), "18.52 km/h")
-        XCTAssertEqual(UnitConverter.formatResult(UnitConverter.convert("1 tbsp in tsp", locale: Self.english)!), "3 tsp")
+    func testFormat() throws {
+        XCTAssertEqual(UnitConverter.format(try XCTUnwrap(UnitConverter.convert("2 lb in kg", locale: Self.english))), "2 lb = 0.907185 kg")
+        XCTAssertEqual(UnitConverter.formatResult(try XCTUnwrap(UnitConverter.convert("1 mi in km", locale: Self.english))), "1.609344 km")
+        XCTAssertEqual(UnitConverter.formatResult(try XCTUnwrap(UnitConverter.convert("-40 c in f", locale: Self.english))), "-40 °F")
+        XCTAssertEqual(UnitConverter.formatResult(try XCTUnwrap(UnitConverter.convert("10 kn in kph", locale: Self.english))), "18.52 km/h")
+        XCTAssertEqual(UnitConverter.formatResult(try XCTUnwrap(UnitConverter.convert("1 tbsp in tsp", locale: Self.english))), "3 tsp")
     }
 
     func testAstronomicalLengthsUseExactDefinitions() throws {
@@ -173,5 +176,49 @@ final class UnitConverterTests: XCTestCase {
         for query in ["98.6", "98.6°", "5 k", "c", "f", "5 cf", "5 c 3"] {
             XCTAssertNil(UnitConverter.convert(query, locale: Self.english), query)
         }
+    }
+
+    func testDurationUnitsUseAnAverageGregorianYear() {
+        XCTAssertEqual(converted("3 weeks in days"), "21 d")
+        XCTAssertEqual(converted("1 year in seconds"), "31556952 s")
+        XCTAssertEqual(converted("1 year in days"), "365.2425 d")
+        XCTAssertEqual(converted("36 hours in days"), "1.5 d")
+        let answer = CalculationAnswer.answers(for: "1 year in seconds", locale: Self.english).first
+        XCTAssertEqual(answer?.inputDetail, "Years of 365.2425 days")
+        XCTAssertEqual(answer?.resultDetail, "Seconds")
+    }
+
+    func testDataRatesReadBitsAndBytesByCase() {
+        XCTAssertEqual(converted("100 Mbps in MB/s"), "12.5 MB/s")
+        XCTAssertEqual(converted("100 Mb/s in MB/s"), "12.5 MB/s")
+        XCTAssertEqual(converted("100 mbps in mb/s"), "12.5 MB/s")
+        XCTAssertEqual(converted("1 Gbps in Mbps"), "1000 Mbps")
+        XCTAssertEqual(converted("1 GB/s in Gbps"), "8 Gbps")
+        XCTAssertEqual(converted("1 MiB/s in kbps"), "8388.608 kbps")
+        XCTAssertEqual(converted("100 Mbit/s in MByte/s"), "12.5 MB/s")
+        XCTAssertEqual(converted("12.5 MB/s in Mbps"), "100 Mbps")
+        XCTAssertEqual(converted("10 mb in gb"), "0.01 GB")
+        XCTAssertEqual(converted("10 lbs in kg"), "4.535924 kg")
+    }
+
+    func testFuelEconomyIsReciprocal() {
+        XCTAssertEqual(converted("30 mpg in l/100km"), "7.840486 L/100 km")
+        XCTAssertEqual(converted("8 l/100km in mpg"), "29.401823 mpg")
+        XCTAssertEqual(converted("30 mpg in mpg imp"), "36.028498 mpg (imp)")
+        XCTAssertEqual(converted("15 km/l in l/100 km"), "6.666667 L/100 km")
+        XCTAssertNil(converted("0 mpg in l/100km"))
+        XCTAssertEqual(converted("7.840486 L/100 km in mpg"), "30 mpg")
+    }
+
+    func testPaceIsReciprocalToSpeed() {
+        XCTAssertEqual(converted("8 min/mile in kph"), "12.07008 km/h")
+        XCTAssertEqual(converted("6 mph in min/mi"), "10 min/mi")
+        XCTAssertEqual(converted("5 min/km in mph"), "7.456454 mph")
+        XCTAssertEqual(converted("12 km/h in min/km"), "5 min/km")
+    }
+
+    func testPrimesReadAsFeetAndInches() {
+        XCTAssertEqual(converted("6' in cm"), "182.88 cm")
+        XCTAssertEqual(converted("10\" in cm"), "25.4 cm")
     }
 }

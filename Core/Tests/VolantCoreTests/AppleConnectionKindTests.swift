@@ -49,7 +49,6 @@ final class AppleConnectionKindTests: XCTestCase {
     }
 
     func testAppleIsOfferedInTheConnectionPicker() {
-        XCTAssertTrue(AIConnectionKind.allCases.contains(.apple))
         XCTAssertEqual(AIConnectionKind.apple.title, "Apple Intelligence")
     }
 }

@@ -17,24 +17,35 @@ final class FSearchTests: XCTestCase {
 
     override func tearDown() { unlink(socketPath) }
 
-    /// Serves one connection: records the request line, then sends `reply` (or nothing).
-    private func serve(_ reply: Data?, received: @escaping (Data) -> Void = { _ in }) {
+    /// Serves one connection: records the request line, then sends `reply`, or with no reply keeps the
+    /// connection silent until `release` is signaled. The socket is listening when this returns, and the
+    /// returned semaphore is signaled once the server has closed both ends.
+    @discardableResult
+    private func serve(_ reply: Data?, release: DispatchSemaphore? = nil,
+                       received: @escaping (Data) -> Void = { _ in }) throws -> DispatchSemaphore {
         let server = socket(AF_UNIX, SOCK_STREAM, 0)
         var address = sockaddr_un()
         address.sun_family = sa_family_t(AF_UNIX)
         let bytes = Array(socketPath.utf8)
         withUnsafeMutableBytes(of: &address.sun_path) { $0.copyBytes(from: bytes); $0[bytes.count] = 0 }
-        _ = withUnsafePointer(to: &address) { $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { Darwin.bind(server, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) } }
-        Darwin.listen(server, 1)
+        let bound = withUnsafePointer(to: &address) { $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { Darwin.bind(server, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) } }
+        guard server >= 0, bound == 0, Darwin.listen(server, 1) == 0 else {
+            let code = POSIXErrorCode(rawValue: errno) ?? .EIO
+            close(server)
+            throw POSIXError(code)
+        }
+        let closed = DispatchSemaphore(value: 0)
         Thread.detachNewThread {
             let client = accept(server, nil, nil)
             var buffer = [UInt8](repeating: 0, count: 4096)
             let count = recv(client, &buffer, buffer.count, 0)
             received(Data(buffer[0..<max(0, count)]))
             if let reply { _ = reply.withUnsafeBytes { send(client, $0.baseAddress, reply.count, 0) } }
-            else { Thread.sleep(forTimeInterval: 1.5) }
+            else { _ = release?.wait(timeout: .now() + 5) }
             close(client); close(server)
+            closed.signal()
         }
+        return closed
     }
 
     func testRequestsAreSingleBoundedLines() throws {
@@ -67,7 +78,7 @@ final class FSearchTests: XCTestCase {
     func testExchangeSendsOneLineAndReadsOneReply() throws {
         var sent = Data()
         let done = expectation(description: "request received")
-        serve(Data(#"{"hits":[{"kind":"file","path":"/x/y.swift"}],"ok":true}"#.utf8) + Data([0x0A]) + Data("ignored".utf8)) { sent = $0; done.fulfill() }
+        try serve(Data(#"{"hits":[{"kind":"file","path":"/x/y.swift"}],"ok":true}"#.utf8) + Data([0x0A]) + Data("ignored".utf8)) { sent = $0; done.fulfill() }
         let reply = try FSearch.exchange(socket: socketPath, request: try XCTUnwrap(FSearch.searchRequest("y", limit: 5)))
         wait(for: [done], timeout: 2)
         XCTAssertEqual(String(decoding: sent, as: UTF8.self), #"{"limit":5,"op":"search","q":"y"}"# + "\n")
@@ -76,12 +87,14 @@ final class FSearchTests: XCTestCase {
 
     func testMissingDaemonSilenceAndOversizedRepliesAreErrors() throws {
         XCTAssertThrowsError(try FSearch.exchange(socket: socketPath, request: FSearch.statusRequest)) { XCTAssertEqual($0 as? FSearchError, .notRunning) }
-        serve(nil)
-        Thread.sleep(forTimeInterval: 0.1)
+        let release = DispatchSemaphore(value: 0)
+        let silent = try serve(nil, release: release)
         XCTAssertThrowsError(try FSearch.exchange(socket: socketPath, request: FSearch.statusRequest, timeout: 0.3)) { XCTAssertEqual($0 as? FSearchError, .timedOut) }
+        release.signal()
+        XCTAssertEqual(silent.wait(timeout: .now() + 2), .success)
         unlink(socketPath)
-        serve(Data(repeating: 0x41, count: 4096))
-        Thread.sleep(forTimeInterval: 0.1)
+        let oversized = try serve(Data(repeating: 0x41, count: 4096))
         XCTAssertThrowsError(try FSearch.exchange(socket: socketPath, request: FSearch.statusRequest, maximumBytes: 1024)) { XCTAssertEqual($0 as? FSearchError, .tooLarge) }
+        XCTAssertEqual(oversized.wait(timeout: .now() + 2), .success)
     }
 }

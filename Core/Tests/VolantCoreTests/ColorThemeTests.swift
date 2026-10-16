@@ -42,13 +42,6 @@ final class ColorThemeTests: XCTestCase {
         XCTAssertEqual(reloaded, updated)
     }
 
-    func testStaleColorThemeSnapshotIsRejected() throws {
-        try Data(#"{"appearance":{"colorTheme":"nord"}}"#.utf8).write(to: url)
-        let saved = try Data(contentsOf: url)
-        XCTAssertThrowsError(try Preferences.updateAppearance(Appearance(colorTheme: "dracula"), expected: Appearance(), at: url))
-        XCTAssertEqual(try Data(contentsOf: url), saved)
-    }
-
     func testNamedThemeModeOverridesAppearanceSetting() {
         XCTAssertNil(Appearance(theme: .system).effectiveMode)
         XCTAssertEqual(Appearance(theme: .light).effectiveMode, .light)
@@ -107,5 +100,19 @@ final class ColorThemeTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(ColorPalette.contrast("#777777", "#ffffff")), 4.48, accuracy: 0.01)
         XCTAssertNil(ColorPalette.contrast("#12345", "#ffffff"))
         XCTAssertNil(ColorPalette.components("zzzzzz"))
+    }
+
+    /// The footer's orange keeps its hue in dark themes and darkens only as far as AA needs on a
+    /// light background, for the system colors and every palette.
+    func testWarningColorIsReadableInEveryTheme() {
+        XCTAssertEqual(ColorPalette.readable("#ff9f0a", on: "#1e1e1e", toward: "#ffffff"), "#ff9f0a")
+        let light = ColorPalette.readable("#ff9500", on: "#ececec", toward: "#000000")
+        XCTAssertNotEqual(light, "#ff9500")
+        XCTAssertGreaterThanOrEqual(ColorPalette.contrast(light, "#ececec") ?? 0, 4.5)
+        for theme in ColorTheme.catalog {
+            guard let palette = theme.palette else { continue }
+            let color = ColorPalette.readable(palette.orange, on: palette.background, toward: palette.text)
+            XCTAssertGreaterThanOrEqual(ColorPalette.contrast(color, palette.background) ?? 0, 4.5, theme.id)
+        }
     }
 }

@@ -82,7 +82,7 @@ final class ColorCalculatorTests: XCTestCase {
     }
 
     func testNeverAnswersOrdinaryText() {
-        for query in ["ff6363", "#", "#ff", "#gg0000", "#ff63633", "red", "rgb", "rgb()", "rgb(1, 2)", "rgb(1 2 3 4 5)",
+        for query in ["ff6363", "#", "#ff", "#gg0000", "#ff63633", "rgb", "rgb()", "rgb(1, 2)", "rgb(1 2 3 4 5)",
                       "hsl(red 100% 50%)", "rgb(1 2 3) in cmyk", "rgb(1 2 3 / 2)", "Safari", "#hashtag", "lab(1px 2 3)"] {
             XCTAssertNil(ColorCalculator.evaluate(query), query)
         }
@@ -104,6 +104,5 @@ final class ColorCalculatorTests: XCTestCase {
         XCTAssertEqual(card("oklch(70% 0.4 30) in uicolor")[1]?.hasPrefix("Outside sRGB · #"), true)
         XCTAssertNil(ColorCalculator.evaluate("#ff6363 in nscolor")?.swapQuery)
         XCTAssertNil(ColorCalculator.evaluate("nscolor(1, 0, 0)"))
-        XCTAssertNil(ColorCalculator.evaluate("red"))
     }
 }

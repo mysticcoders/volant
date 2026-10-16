@@ -68,10 +68,10 @@ final class InputSessionControllerTests: XCTestCase {
         XCTAssertEqual(system.prompts, [false, true])
     }
 
-    func testAccessibilityInsertionVerifiedByCount() {
+    func testAccessibilityInsertionVerifiedByCount() throws {
         let system = FakeSystem()
         let host = controller(system)
-        let token = try! XCTUnwrap(host.begin().token)
+        let token = try XCTUnwrap(host.begin().token)
         XCTAssertEqual(host.insert("Hello there.", token: token), .typed(12))
         XCTAssertEqual(host.insert(" Café 👍", token: token), .typed(7))
         XCTAssertEqual(system.field?.sets, ["Hello there.", " Café 👍"])
@@ -79,11 +79,11 @@ final class InputSessionControllerTests: XCTestCase {
         XCTAssertTrue(system.waits.isEmpty, "A count that changes at once needs no recheck")
     }
 
-    func testUnchangedCountRechecksOnceThenPastesAndSticks() {
+    func testUnchangedCountRechecksOnceThenPastesAndSticks() throws {
         let system = FakeSystem()
         system.field?.applies = false
         let host = controller(system)
-        let token = try! XCTUnwrap(host.begin().token)
+        let token = try XCTUnwrap(host.begin().token)
         XCTAssertEqual(host.insert("One.", token: token), .pasted(4))
         XCTAssertEqual(system.waits, [InputSessionController.recheckDelay])
         XCTAssertEqual(system.field?.sets, ["One."])
@@ -91,49 +91,49 @@ final class InputSessionControllerTests: XCTestCase {
         XCTAssertEqual(system.field?.sets, ["One."], "Paste sticks for the rest of the session")
         XCTAssertEqual(system.pasted, ["One.", " Two."])
         system.field?.applies = true
-        let next = try! XCTUnwrap(host.begin().token)
+        let next = try XCTUnwrap(host.begin().token)
         XCTAssertEqual(host.insert("Three.", token: next), .typed(6), "A new session tries Accessibility again")
     }
 
-    func testLateCountChangeWithinRecheckIsTyped() {
+    func testLateCountChangeWithinRecheckIsTyped() throws {
         let system = FakeSystem()
         system.field?.applies = false
         system.field?.appliesLate = true
         let host = controller(system)
-        let token = try! XCTUnwrap(host.begin().token)
+        let token = try XCTUnwrap(host.begin().token)
         XCTAssertEqual(host.insert("Later.", token: token), .typed(6))
         XCTAssertTrue(system.pasted.isEmpty, "A late but in-time update is not pasted twice")
     }
 
-    func testNoFocusedElementOrNoCountPastes() {
+    func testNoFocusedElementOrNoCountPastes() throws {
         let system = FakeSystem()
         system.field = nil
         let host = controller(system)
-        let token = try! XCTUnwrap(host.begin().token)
+        let token = try XCTUnwrap(host.begin().token)
         XCTAssertEqual(host.insert("Chrome.", token: token), .pasted(7), "Chrome and Electron expose no element; paste")
         let counted = FakeSystem()
         counted.field?.count = nil
         let other = controller(counted)
-        let second = try! XCTUnwrap(other.begin().token)
+        let second = try XCTUnwrap(other.begin().token)
         XCTAssertEqual(other.insert("x", token: second), .pasted(1))
         XCTAssertEqual(counted.field?.sets, [], "Without a count Accessibility cannot be verified, so it is not tried")
     }
 
-    func testSelectionIsReplacedByPasteNotAccessibility() {
+    func testSelectionIsReplacedByPasteNotAccessibility() throws {
         let system = FakeSystem()
         system.field?.selection = 5
         let host = controller(system)
-        let token = try! XCTUnwrap(host.begin().token)
+        let token = try XCTUnwrap(host.begin().token)
         XCTAssertEqual(host.insert("hello", token: token), .pasted(5))
         XCTAssertEqual(system.field?.sets, [])
         system.field?.selection = 0
         XCTAssertEqual(host.insert(" again", token: token), .typed(6), "A selection does not make paste sticky")
     }
 
-    func testRefusals() {
+    func testRefusals() throws {
         let system = FakeSystem()
         let host = controller(system)
-        let token = try! XCTUnwrap(host.begin().token)
+        let token = try XCTUnwrap(host.begin().token)
         system.secureInput = true
         XCTAssertEqual(host.insert("pw", token: token), .refused(.secureInput))
         system.secureInput = false
@@ -159,10 +159,10 @@ final class InputSessionControllerTests: XCTestCase {
 
     /// Even when the frontmost app still reads as the target, a focused element owned by another
     /// process is not typed into.
-    func testFocusedElementFromAnotherAppIsRefused() {
+    func testFocusedElementFromAnotherAppIsRefused() throws {
         let system = FakeSystem()
         let host = controller(system)
-        let token = try! XCTUnwrap(host.begin().token)
+        let token = try XCTUnwrap(host.begin().token)
         system.field?.pid = 99
         XCTAssertEqual(host.insert("x", token: token), .refused(.appChanged))
         XCTAssertEqual(system.field?.sets, [])
@@ -181,11 +181,11 @@ final class InputSessionControllerTests: XCTestCase {
         XCTAssertEqual(controller(system, caller: 7).begin(), InputSessionStart(refusal: .noTarget), "Volant never types into itself")
     }
 
-    func testStaleTokens() {
+    func testStaleTokens() throws {
         let system = FakeSystem()
         let host = controller(system)
-        let first = try! XCTUnwrap(host.begin().token)
-        let second = try! XCTUnwrap(host.begin().token)
+        let first = try XCTUnwrap(host.begin().token)
+        let second = try XCTUnwrap(host.begin().token)
         XCTAssertEqual(host.insert("x", token: first), .refused(.staleSession), "A new session replaces the old one")
         XCTAssertEqual(host.insert("x", token: Data([9])), .refused(.staleSession))
         host.end(token: first)
@@ -194,23 +194,23 @@ final class InputSessionControllerTests: XCTestCase {
         clock += InputSessionController.idleLimit + 1
         XCTAssertEqual(host.insert("x", token: second), .refused(.staleSession), "An idle session expires")
         XCTAssertFalse(host.hasSession)
-        let third = try! XCTUnwrap(host.begin().token)
+        let third = try XCTUnwrap(host.begin().token)
         for _ in 0..<13 {
             clock += InputSessionController.idleLimit - 1
             _ = host.insert("x", token: third)
         }
         XCTAssertEqual(host.insert("x", token: third), .refused(.staleSession), "Sessions have a fixed lifetime")
-        let fourth = try! XCTUnwrap(host.begin().token)
+        let fourth = try XCTUnwrap(host.begin().token)
         host.end(token: fourth)
         XCTAssertEqual(host.insert("x", token: fourth), .refused(.staleSession), "An ended token cannot be reused")
     }
 
-    func testFailedPasteIsReported() {
+    func testFailedPasteIsReported() throws {
         let system = FakeSystem()
         system.field = nil
         system.pasteWorks = false
         let host = controller(system)
-        let token = try! XCTUnwrap(host.begin().token)
+        let token = try XCTUnwrap(host.begin().token)
         XCTAssertEqual(host.insert("x", token: token), .failed)
     }
 

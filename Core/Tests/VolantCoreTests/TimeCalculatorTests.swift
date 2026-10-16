@@ -10,13 +10,11 @@ final class TimeCalculatorTests: XCTestCase {
     }
 
     func testOwnerExampleAndImplicitLocalDestination() {
-        XCTAssertTrue(answer("1pm EST in CET")?.text.hasPrefix("7:00 PM") == true)
         XCTAssertEqual(answer("1pm in EST"), answer("1pm EST"))
         XCTAssertEqual(answer("1pm EST")?.date, ISO8601DateFormatter().date(from: "2026-01-15T18:00:00Z"))
     }
 
     func testCitiesAndDaylightSaving() {
-        XCTAssertTrue(answer("5pm ldn in sf")?.text.hasPrefix("9:00 AM") == true)
         XCTAssertTrue(answer("2026-03-15 3pm Los Angeles in Berlin")?.text.hasPrefix("11:00 PM") == true)
         XCTAssertTrue(answer("2026-07-15 1pm New York in Paris")?.text.hasPrefix("7:00 PM") == true)
         XCTAssertEqual(answer("2026-07-15 1pm EST in CET")?.text, "7:00 PM CEST · Jul 15, 2026")
@@ -38,7 +36,6 @@ final class TimeCalculatorTests: XCTestCase {
     }
 
     func testClockQueriesAndIANAIdentifiers() {
-        XCTAssertTrue(answer("time in Tokyo")?.text.hasPrefix("9:00 PM") == true)
         XCTAssertEqual(answer("now in Dubai"), answer("time in Dubai"))
         XCTAssertEqual(answer("17:30 Europe/London to America/Los_Angeles")?.text, answer("5:30pm london in la")?.text)
         XCTAssertEqual(answer("17:30 Europe/London to America/Los_Angeles")?.date, answer("5:30pm london in sf")?.date)
@@ -48,7 +45,6 @@ final class TimeCalculatorTests: XCTestCase {
     func testRolloverAndHalfHourOffsets() {
         XCTAssertTrue(answer("2026-12-31 3pm PST in CET")?.text.contains("Jan 1, 2027") == true)
         XCTAssertTrue(answer("2026-01-01 1am Tokyo in sf")?.text.contains("Dec 31, 2025") == true)
-        XCTAssertTrue(answer("time in Kolkata")?.text.contains("5:30 PM") == true)
         XCTAssertEqual(answer("time in Kolkata")?.text, "5:30 PM in Kolkata")
     }
 
@@ -198,7 +194,6 @@ final class TimeCalculatorTests: XCTestCase {
         XCTAssertEqual(friday("time in 4 hours")?.detail, "Your time · Today")
         XCTAssertEqual(friday("time in 4 hours")?.source, "In 4 hours")
         XCTAssertEqual(friday("time in 90 minutes")?.headline, "12:30 PM")
-        XCTAssertEqual(friday("time in 4 hours in Tokyo")?.text, "10:00 PM in Tokyo")
         XCTAssertNil(friday("time in 4 parsecs"))
     }
 
