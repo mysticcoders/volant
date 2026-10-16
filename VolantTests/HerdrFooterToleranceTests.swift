@@ -82,19 +82,17 @@ final class HerdrFooterToleranceTests: XCTestCase {
                      "Herdr requires a navigation hint alongside a select hint")
     }
 
+    /// The approval path decides whether a screen is a file or command approval rather than an
+    /// ordinary question, so its footer must keep matching, in either case and independently of the
+    /// select footer, for the safety checks below it to run.
     func testTheFooterPredicatesThemselves() {
         XCTAssertTrue(Volant.HerdrQuestion.isClaudeApprovalFooter("Esc to cancel · Tab to amend"))
+        XCTAssertTrue(Volant.HerdrQuestion.isClaudeApprovalFooter("esc to cancel · tab to amend"))
+        XCTAssertFalse(Volant.HerdrQuestion.isClaudeSelectFooter("esc to cancel · tab to amend"))
         XCTAssertFalse(Volant.HerdrQuestion.isClaudeApprovalFooter("Esc to cancel"))
         XCTAssertTrue(Volant.HerdrQuestion.isClaudeSelectFooter("Enter to confirm · Esc to cancel"))
         XCTAssertFalse(Volant.HerdrQuestion.isClaudeSelectFooter("Enter to confirm"))
         XCTAssertTrue(Volant.HerdrQuestion.isCodexFooter("enter to submit all"))
         XCTAssertFalse(Volant.HerdrQuestion.isCodexFooter("esc to interrupt"))
-    }
-
-    /// The approval path decides whether a screen is a file or command approval rather than an
-    /// ordinary question, so its footer must keep matching for the safety checks below it to run.
-    func testApprovalFooterIsRecognizedIndependentlyOfTheSelectFooter() {
-        XCTAssertTrue(Volant.HerdrQuestion.isClaudeApprovalFooter("esc to cancel · tab to amend"))
-        XCTAssertFalse(Volant.HerdrQuestion.isClaudeSelectFooter("esc to cancel · tab to amend"))
     }
 }

@@ -138,9 +138,10 @@ enum NotesShortcut: CaseIterable {
 final class NotesModel: ObservableObject {
     enum Overlay { case browse, actions }
     let store: NotesStore
+    private let defaults: UserDefaults
     @Published var selectedID: String? {
         didSet {
-            UserDefaults.standard.set(selectedID, forKey: preferenceKey + ".selected")
+            defaults.set(selectedID, forKey: preferenceKey + ".selected")
             store.open(selectedID)
         }
     }
@@ -161,11 +162,13 @@ final class NotesModel: ObservableObject {
     @Published private(set) var pinned: Set<String>
     private var preferenceKey: String { "notes." + store.directory.path }
 
-    init(store: NotesStore) {
+    /// `defaults` holds the remembered selection and pins; tests pass an isolated suite.
+    init(store: NotesStore, defaults: UserDefaults = .standard) {
         self.store = store
+        self.defaults = defaults
         let key = "notes." + store.directory.path
-        selectedID = UserDefaults.standard.string(forKey: key + ".selected")
-        pinned = Set(UserDefaults.standard.stringArray(forKey: key + ".pinned") ?? [])
+        selectedID = defaults.string(forKey: key + ".selected")
+        pinned = Set(defaults.stringArray(forKey: key + ".pinned") ?? [])
         selectIfNeeded()
         store.open(selectedID)
     }
@@ -241,7 +244,7 @@ final class NotesModel: ObservableObject {
     }
 
     private func persistPins() {
-        UserDefaults.standard.set(Array(pinned), forKey: preferenceKey + ".pinned")
+        defaults.set(Array(pinned), forKey: preferenceKey + ".pinned")
     }
 
     func show(_ overlay: Overlay) {

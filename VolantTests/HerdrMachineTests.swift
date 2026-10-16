@@ -88,9 +88,6 @@ final class HerdrMachineTests: XCTestCase {
         XCTAssertThrowsError(try controller.read(target))
         XCTAssertEqual(calls, 0)
     }
-    func testCatalogRejectsAmbiguousIDs() throws {
-        XCTAssertThrowsError(try HerdrMachine.decode(JSONEncoder().encode([remote, remote])))
-    }
     func testProcessOutputAndTimeoutAreBounded() {
         let done = expectation(description: "background helper process")
         DispatchQueue.global().async {

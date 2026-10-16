@@ -35,11 +35,16 @@ final class NotesShortcutTests: XCTestCase {
         XCTAssertEqual(NotesShortcut.allCases.filter(\.hasTextEditingMeaning), [.trash])
     }
 
-    func testNoteCommandsAreUnavailableWithoutSelectionOrUnderOverlay() {
+    func testNoteCommandsAreUnavailableWithoutSelectionOrUnderOverlay() throws {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("volant-shortcuts-\(UUID().uuidString)")
-        defer { try? FileManager.default.removeItem(at: dir) }
+        let suite = "volant.tests.notes-shortcuts." + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer {
+            try? FileManager.default.removeItem(at: dir)
+            defaults.removePersistentDomain(forName: suite)
+        }
         let store = NotesStore(directory: dir)
-        let model = NotesModel(store: store)
+        let model = NotesModel(store: store, defaults: defaults)
         XCTAssertNil(model.selected)
         XCTAssertFalse(model.noteCommandsAvailable)
         for shortcut in NotesShortcut.allCases {

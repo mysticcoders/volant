@@ -134,6 +134,9 @@ final class LauncherTypingTests: XCTestCase {
         XCTAssertTrue(model.rows.contains { $0.id == "note:fresh.md" }, "Entering notes again rereads the folder")
     }
 
+    /// The abandoned query's scan is queued on the notes search queue before the current one, and
+    /// scans report on the main queue in that order, so once the current matches arrive the abandoned
+    /// scan has already reported if it ever will; no extra wait is needed to prove it was dropped.
     @MainActor
     func testNoteBodyMatchesArriveForTheCurrentQueryAndKeepTheSelection() async throws {
         let directory = root.appendingPathComponent("Notes")
@@ -158,7 +161,6 @@ final class LauncherTypingTests: XCTestCase {
         for _ in 0..<100 where model.rows.count < 3 { try await Task.sleep(for: .milliseconds(20)) }
         XCTAssertEqual(model.rows.map(\.id), ["note:body.md", "note:title.md", "newnote:plan"])
         XCTAssertEqual(model.selectedRow?.id, "newnote:plan", "A same-query update keeps the selected row")
-        try await Task.sleep(for: .milliseconds(300))
         XCTAssertFalse(model.rows.contains { $0.id == "note:other.md" }, "The abandoned query's matches never arrive")
     }
 

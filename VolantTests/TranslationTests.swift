@@ -76,14 +76,21 @@ import XCTest
         XCTAssertNil(model.message)
     }
 
+    /// Changing the language while availability is checked makes that answer stale. The test waits
+    /// until the check has actually run, then yields so its task can finish, before asserting that
+    /// no request was started from the stale answer.
     func testStaleAvailabilityAndCatalogRetry() async {
         let model = TranslationModel()
         model.text = "Hello"
+        var checked = false
         model.availability = { _ in
             model.target = "fr"
+            checked = true
             return .installed
         }
         model.start()
+        for _ in 0..<200 where !checked { await Task.yield() }
+        XCTAssertTrue(checked, "The availability check must run before its stale answer can be judged")
         for _ in 0..<20 { await Task.yield() }
         XCTAssertNil(model.request)
         XCTAssertFalse(model.busy)

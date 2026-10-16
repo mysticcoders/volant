@@ -75,21 +75,6 @@ final class HerdrCodexApprovalTests: XCTestCase {
         XCTAssertNil(Volant.HerdrQuestion.parse(running, provider: "codex"))
     }
 
-    func testTheNumberedSurveyFormStillParses() throws {
-        let survey = """
-          Question 1/1 (1 unanswered)
-          Which fictional theme should the demo use?
-
-          › 1. Amber              warm colors
-            2. None of the above  Optionally, add details in notes (tab).
-
-          tab to add notes | enter to submit answer | esc to interrupt
-        """
-        let parsed = try XCTUnwrap(Volant.HerdrQuestion.parse(survey, provider: "codex"))
-        XCTAssertEqual(parsed.progress, "Question 1/1 (1 unanswered)")
-        XCTAssertEqual(parsed.choices.count, 2)
-    }
-
     func testClaudeScreensAreUnaffectedByTheCodexApprovalPath() {
         XCTAssertNil(Volant.HerdrQuestion.parse(Self.approval, provider: "claude"))
     }

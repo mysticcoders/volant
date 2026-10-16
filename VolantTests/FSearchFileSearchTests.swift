@@ -46,6 +46,8 @@ final class FSearchFileSearchTests: XCTestCase {
         XCTAssertTrue(spotlightStarted, "The same term went to Spotlight")
     }
 
+    /// Each search waits for its debounce until the fake daemon receives the request. The fake's
+    /// replies complete synchronously, so the answers are final as soon as both replies are sent.
     func testOnlyTheNewestQueryIsAnswered() async {
         var pending: [(Data?, String?) -> Void] = []
         let files = FileSearch(startQuery: { _ in false })
@@ -54,13 +56,12 @@ final class FSearchFileSearchTests: XCTestCase {
         files.fsearch = fake
         var answers: [String] = []
         files.search("old") { if case .success(let e) = $0 { answers.append("old:\(e.count)") } }
-        try? await Task.sleep(nanoseconds: 120_000_000)
+        for _ in 0..<100 where pending.count < 1 { try? await Task.sleep(nanoseconds: 10_000_000) }
         files.search("new") { if case .success(let e) = $0 { answers.append("new:\(e.count)") } }
-        try? await Task.sleep(nanoseconds: 120_000_000)
+        for _ in 0..<100 where pending.count < 2 { try? await Task.sleep(nanoseconds: 10_000_000) }
         XCTAssertEqual(pending.count, 2)
         pending[1](hits(["/Users/me/new.txt"]), nil)
         pending[0](hits(["/Users/me/old.txt"]), nil)
-        try? await Task.sleep(nanoseconds: 50_000_000)
         XCTAssertEqual(answers, ["new:1"], "A late answer to an old query is dropped")
     }
 

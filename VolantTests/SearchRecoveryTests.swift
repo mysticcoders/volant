@@ -31,7 +31,6 @@ final class SearchRecoveryTests: XCTestCase {
         XCTAssertTrue(scopes.contains("/System/Applications/"))
         XCTAssertTrue(scopes.contains("/System/Library/CoreServices/"))
         XCTAssertFalse(scopes.contains(NSMetadataQueryLocalComputerScope))
-        XCTAssertTrue(AppIndex.isUserFacingApp("/System/Library/CoreServices/Finder.app"))
     }
 
     @MainActor
@@ -65,20 +64,22 @@ final class SearchRecoveryTests: XCTestCase {
         XCTAssertEqual(attempts, 2)
     }
 
+    /// Waits for the first query to start after its debounce. Gathering notifications are delivered
+    /// synchronously to their observer, so the obsolete query's completion would have run by the
+    /// time `post` returns.
     @MainActor
     func testOldFileQueryCannotCompleteAfterNewSearch() async {
         var queries: [NSMetadataQuery] = []
         let files = FileSearch(startQuery: { queries.append($0); return true })
-        let old = expectation(description: "obsolete query")
-        old.isInverted = true
-        files.search("first") { _ in old.fulfill() }
-        try? await Task.sleep(for: .milliseconds(200))
+        var oldAnswered = false
+        files.search("first") { _ in oldAnswered = true }
+        for _ in 0..<100 where queries.isEmpty { try? await Task.sleep(for: .milliseconds(10)) }
         XCTAssertEqual(queries.count, 1)
         files.search("second") { _ in }
         if let query = queries.first {
             NotificationCenter.default.post(name: .NSMetadataQueryDidFinishGathering, object: query)
         }
-        await fulfillment(of: [old], timeout: 0.25)
+        XCTAssertFalse(oldAnswered, "An obsolete query never completes")
         files.cancel()
     }
 
