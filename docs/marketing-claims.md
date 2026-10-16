@@ -102,7 +102,7 @@ Added in 0.3.9:
 
 | Story | In 0.3.9 | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
-| Extensions can add a dropdown at the end of the search field (Command-P picks the next entry), sent to the extension as its filter | Yes | #260; Core validation and fingerprint tests, launcher tests of the default, choosing, Command-P, wrapping and the remembered choice, a VM fixture driving Command-P through the panel, renders in light and dark; Hacker News's Top, New, Ask HN and Show HN are volant-extensions hn-filters, held until this ships; not yet checked in the signed installed app | Extensions doc: the dropdown and Command-P |
+| Extensions can add a dropdown at the end of the search field (Command-P picks the next entry), sent to the extension as its filter | Yes | #260; Core validation and fingerprint tests, launcher tests of the default, choosing, Command-P, wrapping and the remembered choice, a VM fixture driving Command-P through the panel, renders in light and dark; Hacker News's Top, New, Ask HN and Show HN are volant-extensions hn-filters, held until this ships; not yet checked in the signed installed app; the owner used the updated Hacker News filters in the installed 0.3.9 on October 16, 2026 | Extensions doc: the dropdown and Command-P |
 
 Merged after 0.3.9, not in the current download:
 

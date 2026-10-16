@@ -437,3 +437,5 @@ Later the same day the owner installed a reader from Settings → Catalog in the
 - **Feed:** the signed build-26 appcast generated with this DMG passes `sign_update --verify`.
 
 **Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
+
+**Owner verification (October 16, 2026).** Check for Updates upgraded the owner's installed 0.3.8 to 0.3.9 through Sparkle, and the updated Hacker News extension from the catalog worked in it, including its new filters. This is the first owner-confirmed Sparkle upgrade since 0.3.0; releases 0.3.3 through 0.3.8 listed the upgrade as unverified.
