@@ -978,7 +978,7 @@ var scopeQueries: [String] = []
 corePanel.model.extensions.invokeOverride = { _, input, completion in
     let query = (try? JSONSerialization.jsonObject(with: Data(input.utf8)) as? [String: Any])?["query"] as? String ?? ""
     scopeQueries.append(query)
-    completion(.success(#"{"items":[{"title":"Fictional article about \#(query)","subtitle":"An invented summary","url":"https://example.com/a"},{"title":"Another fictional article","url":"https://example.com/b"}]}"#))
+    completion(.success(#"{"items":[{"title":"Fictional article about \#(query)","subtitle":"3h ago · by fictional","url":"https://example.com/a","secondaryURL":"https://forum.example.com/a","secondaryTitle":"Open Comments","actions":[{"id":"pin","title":"Pin Story"}],"badges":[{"symbol":"points","text":"312"},{"symbol":"comments","text":"88"},{"symbol":"site","text":"example.com"}]},{"title":"Another fictional article","url":"https://example.com/b"}]}"#))
 }
 corePanel.model.query = "Fictional Reader"
 verify(waitUntil { corePanel.model.rows.first?.id.hasPrefix("ext:") == true }, "The extension is offered by name")
@@ -994,6 +994,10 @@ corePanel.model.query = "moons"
 verify(waitUntil(timeout: 3) { corePanel.model.rows.count == 2 }, "Typing runs the extension once typing pauses")
 verify(scopeQueries == ["moons"], "A search extension runs only for typed text")
 try renderCore("extension-scope")
+corePanel.model.toggleActions()
+verify(waitUntil { corePanel.model.actionTarget != nil }, "A story row opens its Actions")
+try renderCore("extension-actions")
+corePanel.model.actionTarget = nil
 verify(corePanel.makeFirstResponder(scopeField(in: corePanel.contentView!)!), "Focus the extension's field")
 sendCoreKey(String(UnicodeScalar(27)!), code: 53)
 verify(waitUntil { corePanel.model.query.isEmpty }, "Escape clears the extension's text first")

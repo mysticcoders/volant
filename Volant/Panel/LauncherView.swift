@@ -468,7 +468,11 @@ private struct RowView: View {
                     .frame(width: 14, height: 14).foregroundStyle(.tint)
                     .help("Built into Volant").accessibilityLabel("Volant built-in command")
             }
-            Text(row.kind).font(.system(size: 14)).foregroundStyle(.secondary)
+            if case .extensionItem(let item, _) = row, let badges = item.badges {
+                ExtensionRowBadges(badges: badges)
+            } else {
+                Text(row.kind).font(.system(size: 14)).foregroundStyle(.secondary)
+            }
         }
         .padding(.horizontal, 12)
         .frame(height: 40)
@@ -716,3 +720,27 @@ private struct ExtensionScopeChip: View {
         .accessibilityIdentifier("launcher-extension-back")
     }
 }
+
+/// The short facts a list extension shows at a row's end, such as points, comments and the linked
+/// site, each with its symbol. They take the place of the extension's name.
+private struct ExtensionRowBadges: View {
+    let badges: [ExtensionItemBadge]
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ForEach(Array(badges.enumerated()), id: \.offset) { _, badge in
+                let symbol = badge.symbol.flatMap(ExtensionItemBadge.Symbol.init(rawValue:))
+                HStack(spacing: 4) {
+                    if let symbol { Image(systemName: symbol.systemName).font(.system(size: 11, weight: .medium)) }
+                    Text(badge.text).monospacedDigit().lineLimit(1)
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(symbol.map { "\($0.spokenName): \(badge.text)" } ?? badge.text)
+            }
+        }
+        .font(.system(size: 13))
+        .foregroundStyle(.secondary)
+        .fixedSize()
+    }
+}
+

@@ -71,7 +71,7 @@ extension ResultRow {
         }
     }
     var supportsActions: Bool {
-        if case .extensionItem(let item, _) = self { return !(item.actions ?? []).isEmpty }
+        if case .extensionItem(let item, _) = self { return !(item.actions ?? []).isEmpty || item.url != nil || item.secondaryURL != nil }
         return actionURL != nil
     }
     var actionTitle: String {
@@ -84,7 +84,10 @@ extension ResultRow {
     }
     /// What the Actions menu lists for this row: built-in actions, then an extension row's own.
     var menuEntries: [LauncherMenuEntry] {
-        if case .extensionItem(let item, _) = self { return [.item(.open)] + (item.actions ?? []).map { .custom($0) } }
+        if case .extensionItem(let item, _) = self {
+            let links: [LauncherMenuEntry] = (item.secondaryURL == nil ? [] : [.item(.reveal)]) + (item.url == nil ? [] : [.item(.copyPath)])
+            return [.item(.open)] + links + (item.actions ?? []).map { .custom($0) }
+        }
         return itemActions.map { .item($0) }
     }
     var itemActions: [LauncherItemAction] {
@@ -108,8 +111,22 @@ struct LauncherActionsView: View {
     private func title(_ entry: LauncherMenuEntry) -> String {
         guard case .item(let action) = entry else { if case .custom(let custom) = entry { return custom.title }; return "" }
         if action == .open { return target.primaryAction }
+        if case .extensionItem = target {
+            if action == .reveal { return target.secondaryAction ?? action.title }
+            if action == .copyPath { return "Copy Link" }
+        }
         if action == .favorite, case .app(let app) = target, model.config.favoriteApps.contains(app.id) { return "Remove from Favorites" }
         return action.title
+    }
+    /// An extension row's built-in entries are about links, not files, so they get link symbols.
+    private func symbol(_ entry: LauncherMenuEntry) -> String {
+        guard case .extensionItem = target, case .item(let action) = entry else { return entry.symbol }
+        switch action {
+        case .open: return "arrow.up.right.square"
+        case .reveal: return "bubble.left.and.bubble.right"
+        case .copyPath: return "link"
+        default: return entry.symbol
+        }
     }
     private var actions: [LauncherMenuEntry] {
         target.menuEntries.filter { query.isEmpty || title($0).localizedCaseInsensitiveContains(query) }
@@ -137,7 +154,7 @@ struct LauncherActionsView: View {
                             }
                             Button { model.performMenuEntry(action, target: target) } label: {
                                 HStack(spacing: 10) {
-                                    Image(systemName: action.symbol).frame(width: 20)
+                                    Image(systemName: symbol(action)).frame(width: 20)
                                     Text(title(action)).lineLimit(1)
                                     Spacer(minLength: 4)
                                     if action == .item(.open) { KeyCap("↩") }

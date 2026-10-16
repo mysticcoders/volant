@@ -138,11 +138,12 @@ export default function Extensions() {
         pages, up to three rounds. Each request also says whether you use US
         or metric units. Return opens a
         row&rsquo;s link and Command-Return opens its second link, typically
-        the discussion. An extension may also open its own app, such as a
+        the discussion; Command-K lists both, and Copy Link. An extension may also open its own app, such as a
         task in Todoist, if it says so before you approve it; if that app
         is not installed, the web link opens instead. Rows can show one of
-        Volant&rsquo;s weather icons, such as sun, rain or snow, which
-        Volant draws itself.
+        Volant&rsquo;s weather icons, such as sun, rain or snow, and up to
+        three short badges at the end, such as a story&rsquo;s points,
+        comments and site, which Volant draws itself.
       </p>
       <ul>
         <li>

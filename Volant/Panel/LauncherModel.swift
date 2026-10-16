@@ -1641,6 +1641,7 @@ final class LauncherModel: ObservableObject {
             actionTarget = nil
             switch entry {
             case .item(.reveal): activateSecondary()
+            case .item(.copyPath): if let link = item.url { copy(link) }
             case .item: activate(rowID: target.id)
             case .custom(let action): runItemAction(source, item: item, action: action.id)
             }
