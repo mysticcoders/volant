@@ -18,3 +18,4 @@ key 53; sleep 0.5
 quit_volant
 forget_relaunch
 expect_eq "Volant is not running before the reboot" no "$(running Volant)"
+phase_finished
