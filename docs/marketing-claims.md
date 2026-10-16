@@ -92,11 +92,16 @@ Added in 0.3.7:
 | --- | --- | --- | --- |
 | List extensions get their own scope in the launcher: Return enters, a Back chip shows the extension, typing goes only to it, Escape clears then leaves | Yes | #256; Core and app tests, a launcher fixture driving real key dispatch, VM renders in light and dark; not yet checked in the signed installed app with the real extensions | Extensions doc: how to enter and leave an extension |
 
-Merged after 0.3.7, not in the current download:
+Added in 0.3.8:
+
+| Story | In 0.3.8 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| Extension rows show up to three badges (points, comments, site, author, time) drawn by Volant, and Command-K on a row lists Open Link, its second link (such as Open Comments) and Copy Link | Yes | #258; Core tests for trimming, the three-badge cap and unknown symbols, app tests that every badge symbol exists in SF Symbols and of the menu entries, VM renders of badges and the story Actions menu in light and dark; Hacker News badges are volant-extensions #12, held until this ships; not yet checked in the signed installed app | Extensions doc: badges and the link actions in Command-K |
+
+Merged after 0.3.8, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
-| Extension rows show up to three badges (points, comments, site, author, time) drawn by Volant, and Command-K on a row lists Open Link, its second link (such as Open Comments) and Copy Link | No | #258; Core tests for trimming, the three-badge cap and unknown symbols, app tests that every badge symbol exists in SF Symbols and of the menu entries, VM renders of badges and the story Actions menu in light and dark; Hacker News badges are volant-extensions #12, held until this ships; not yet checked in the signed installed app | Extensions doc: badges and the link actions in Command-K |
 
 ## Privacy language
 
