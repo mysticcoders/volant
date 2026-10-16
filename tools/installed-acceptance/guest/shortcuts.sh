@@ -159,3 +159,4 @@ windows=$(onscreen TextEdit | grep -c '^0 ')
 if [ "$windows" -ge 1 ]; then record PASS "the shortcut reopens a window" "$windows window(s)"; else record FAIL "the shortcut reopens a window" "TextEdit has no window"; fi
 shot reopen
 cp "$CONFIG" "$W/config-shortcuts.json"
+phase_finished

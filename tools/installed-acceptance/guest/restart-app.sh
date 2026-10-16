@@ -17,3 +17,4 @@ expect_eq "the shortcut works after a restart" $TE "$(wait_front $TE 8)"
 expect_eq "Option-Space works after a restart" 1 "$(key 49 '{option down}' >/dev/null; sleep 1.5; onscreen Volant | grep -c '^3 ')"
 key 53; sleep 0.5
 quit_app $TE
+phase_finished

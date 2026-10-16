@@ -10,3 +10,4 @@ if [ -n "$reports" ]; then
 else
   record PASS "no Volant crash reports"
 fi
+phase_finished

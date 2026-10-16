@@ -52,3 +52,4 @@ defaults write "$CONTAINER/Library/Preferences/$ID" SUEnableAutomaticChecks -boo
 defaults write "$CONTAINER/Library/Preferences/$ID" SUHasLaunchedBefore -bool true
 cp "$CONFIG" "$W/config-initial.json"
 echo "summonHotKey: $(config_get summonHotKey)"
+phase_finished

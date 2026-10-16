@@ -22,26 +22,33 @@ elif [[ "$ui_mode" != never ]]; then
     run_ui=true
 fi
 printf 'UI verification: %s (mode: %s)\n' "$run_ui" "$ui_mode"
-python3 tools/test-scope-tests.py
-python3 tools/check-input-confinement.py --self-test
-python3 tools/check-input-confinement.py
-python3 tools/interaction-speed/check.py
-python3 tools/ui-vm-dispatch-tests.py
-xcodegen generate --quiet
-python3 tools/check-dev-entitlements.py
+# Runs one step and reports how long it took, so slow steps show up in CI logs.
+timed() {
+    local start=$SECONDS
+    "$@"
+    printf 'step time: %4ss  %s\n' "$((SECONDS - start))" "$*"
+}
+timed python3 tools/test-scope-tests.py
+timed python3 tools/check-input-confinement.py --self-test
+timed python3 tools/check-input-confinement.py
+timed python3 tools/interaction-speed/check.py
+timed python3 tools/ui-vm-dispatch-tests.py
+timed xcodegen generate --quiet
+timed python3 tools/check-dev-entitlements.py
 build_options=(-project Volant.xcodeproj -scheme Volant -derivedDataPath build -destination 'platform=macOS')
 if [[ "$ci" == true ]]; then
     build_options+=(CODE_SIGNING_ALLOWED=NO ENABLE_APP_SANDBOX=NO)
 fi
 if [[ "$ui_mode" != only ]]; then
-    python3 tools/check-bundle-migration.py
-    swiftlint lint --strict --quiet --config .swiftlint.yml
-    ./tools/check-raycast.sh
-    ./tools/check-volume.sh
-    ./tools/check-acp.sh
-    ./tools/check-ai-http.sh
-    ./tools/check-extensions.sh
-    xcodebuild "${build_options[@]}" test -skip-testing:VolantTests/NotesRenderTests \
+    timed python3 tools/check-bundle-migration.py
+    timed swiftlint lint --strict --quiet --config .swiftlint.yml
+    timed ./tools/check-raycast.sh
+    timed ./tools/check-volume.sh
+    timed ./tools/check-acp.sh
+    timed ./tools/check-ai-http.sh
+    timed ./tools/check-extensions.sh
+    timed swift test --package-path Core
+    timed xcodebuild "${build_options[@]}" test -skip-testing:VolantTests/NotesRenderTests \
         -skip-testing:VolantTests/LiveMarkdownTests/testLanguageChangePreservesContentSelectionAndUndo \
         -skip-testing:VolantTests/LiveMarkdownTests/testTypingFenceAndChangingModesDoNotRewriteSource
 fi
@@ -50,10 +57,10 @@ if [[ "$run_ui" == true ]]; then
         python3 tools/test-ui-vm.py
         exit 0
     fi
-    ./tools/check-launcher.sh
-    ./tools/check-launcher-actions.sh
-    ./tools/check-dictation-hud.sh
-    xcodebuild "${build_options[@]}" test -only-testing:VolantTests/NotesRenderTests \
+    timed ./tools/check-launcher.sh
+    timed ./tools/check-launcher-actions.sh
+    timed ./tools/check-dictation-hud.sh
+    timed xcodebuild "${build_options[@]}" test -only-testing:VolantTests/NotesRenderTests \
         -only-testing:VolantTests/LiveMarkdownTests/testLanguageChangePreservesContentSelectionAndUndo \
         -only-testing:VolantTests/LiveMarkdownTests/testTypingFenceAndChangingModesDoNotRewriteSource
 else
