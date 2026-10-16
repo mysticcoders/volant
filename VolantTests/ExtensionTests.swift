@@ -439,4 +439,28 @@ final class ExtensionTests: XCTestCase {
             XCTAssertNotNil(NSImage(systemSymbolName: symbol.systemName, accessibilityDescription: nil), symbol.systemName)
         }
     }
+
+    /// Badge symbols must exist too, or a badge would show its text beside an empty space.
+    func testEveryBadgeSymbolExistsInSFSymbols() {
+        for symbol in ExtensionItemBadge.Symbol.allCases {
+            XCTAssertNotNil(NSImage(systemSymbolName: symbol.systemName, accessibilityDescription: nil), symbol.systemName)
+        }
+    }
+
+    /// An extension row's Actions menu offers its links before its own actions: Open Link, the second
+    /// link under the extension's title for it, and Copy Link, each only when the row has that link.
+    func testExtensionRowsOfferTheirLinksInActions() throws {
+        let ext = InstalledExtension(id: "fixture.news", manifest: ExtensionManifest(id: "fixture.news", name: "Fixture News", version: "1", module: "news.wasm", capabilities: [],
+                                                                 sha256: String(repeating: "a", count: 64), output: "items"),
+                                     directory: URL(fileURLWithPath: "/tmp/fixture-news"), enabled: true)
+        let story = ExtensionItem(title: "A fictional story", url: "https://news.example.com/1", secondaryURL: "https://forum.example.com/1",
+                                  secondaryTitle: "Open Comments", actions: [ExtensionItemAction(id: "pin", title: "Pin Story")])
+        let row = ResultRow.extensionItem(story, source: ext)
+        XCTAssertEqual(row.menuEntries, [.item(.open), .item(.reveal), .item(.copyPath), .custom(ExtensionItemAction(id: "pin", title: "Pin Story"))])
+        XCTAssertEqual(row.secondaryAction, "Open Comments")
+        let bare = ResultRow.extensionItem(ExtensionItem(title: "Just a title"), source: ext)
+        XCTAssertEqual(bare.menuEntries, [.item(.open)])
+        XCTAssertFalse(bare.supportsActions, "A row with no links or actions has no menu")
+        XCTAssertTrue(ResultRow.extensionItem(ExtensionItem(title: "Linked", url: "https://news.example.com/2"), source: ext).supportsActions)
+    }
 }

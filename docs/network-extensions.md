@@ -53,6 +53,14 @@ Kingdom's mixed system reads as metric).
   `wind`, `hot` and `cold` (`ExtensionItemSymbol`). Volant draws the matching SF Symbol in color in
   place of the extension's icon. Extensions never supply row images; an unknown name is dropped and
   the row shows the extension's icon. Older Volant versions ignore the field.
+- **Row badges.** A row's `"badges"`, up to three `{"symbol","text"}` pairs, show at its end in place of
+  the extension's name, such as a story's points, comments and site. `symbol` is one of `points`,
+  `comments`, `site`, `author` and `time` (`ExtensionItemBadge.Symbol`), drawn by Volant; an unknown
+  name keeps the text without a symbol. Text is one line of at most 32 characters, and a blank badge is
+  dropped. Older Volant versions ignore the field.
+- **Link actions.** A row's Actions menu (Command-K) lists Open Link, its second link under the row's
+  `secondaryTitle` (Command-Return), and Copy Link, each only when the row has that link, before the
+  row's own `actions`.
 
 `VolantFetchHost` is the only process with network access for this. It is a sandboxed XPC service
 with just `network.client`, built like `VolantRatesHost`: it re-checks each URL against the hosts it

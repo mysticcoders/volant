@@ -463,7 +463,10 @@ verify(storageRequests.first?.contains(#""storage":{}"#) == true, "The first run
 key("k", 40, .command); settle()
 verify(panel.model.actionTarget != nil, "Command K opens a row's Actions")
 try render("extension-row-actions")
-key("\u{F701}", 125); key("\r", 36); settle()
+verify(panel.model.actionTarget?.menuEntries == [.item(.open), .item(.copyPath), .custom(ExtensionItemAction(id: "pin", title: "Pin Story")),
+                                                  .custom(ExtensionItemAction(id: "hide", title: "Hide Story"))],
+       "A linked row offers Open Link and Copy Link before its own actions")
+key("\u{F701}", 125); key("\u{F701}", 125); key("\r", 36); settle()
 verify(storageManager.storedData(storageManager.extensions.first!) == .object(["pinned": .array([.string("1")])]), "Pin saves the extension's data")
 verify(storageRequests.count == 3 && storageRequests[1].contains(#""action":"pin""#) && storageRequests[2].contains(#""phase":"render""#),
        "A storage-only action reply runs the list again")
