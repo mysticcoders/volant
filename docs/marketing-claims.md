@@ -98,11 +98,16 @@ Added in 0.3.8:
 | --- | --- | --- | --- |
 | Extension rows show up to three badges (points, comments, site, author, time) drawn by Volant, and Command-K on a row lists Open Link, its second link (such as Open Comments) and Copy Link | Yes | #258; Core tests for trimming, the three-badge cap and unknown symbols, app tests that every badge symbol exists in SF Symbols and of the menu entries, VM renders of badges and the story Actions menu in light and dark; Hacker News badges are volant-extensions #12, held until this ships; not yet checked in the signed installed app | Extensions doc: badges and the link actions in Command-K |
 
-Merged after 0.3.8, not in the current download:
+Added in 0.3.9:
+
+| Story | In 0.3.9 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| Extensions can add a dropdown at the end of the search field (Command-P picks the next entry), sent to the extension as its filter | Yes | #260; Core validation and fingerprint tests, launcher tests of the default, choosing, Command-P, wrapping and the remembered choice, a VM fixture driving Command-P through the panel, renders in light and dark; Hacker News's Top, New, Ask HN and Show HN are volant-extensions hn-filters, held until this ships; not yet checked in the signed installed app | Extensions doc: the dropdown and Command-P |
+
+Merged after 0.3.9, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
-| Extensions can add a dropdown at the end of the search field (Command-P picks the next entry), sent to the extension as its filter | No | #260; Core validation and fingerprint tests, launcher tests of the default, choosing, Command-P, wrapping and the remembered choice, a VM fixture driving Command-P through the panel, renders in light and dark; Hacker News's Top, New, Ask HN and Show HN are volant-extensions hn-filters, held until this ships; not yet checked in the signed installed app | Extensions doc: the dropdown and Command-P |
 
 ## Privacy language
 
