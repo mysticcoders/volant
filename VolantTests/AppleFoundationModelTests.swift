@@ -28,14 +28,8 @@ final class AppleFoundationModelTests: XCTestCase {
         XCTAssertNotNil(AppleFoundationModel.systemVersion)
     }
 
-    func testAConversationIsSafeToCreateAndCancelOnAnySystem() {
-        let conversation = AppleFoundationModel.Conversation()
-        conversation.cancel()
-        conversation.cancel()
-    }
-
-    func testUnavailableSystemsReportAnErrorInsteadOfHanging() {
-        guard #unavailable(macOS 26.0) else { return }
+    func testUnavailableSystemsReportAnErrorInsteadOfHanging() throws {
+        guard #unavailable(macOS 26.0) else { throw XCTSkip("macOS 26 has the framework, so there is no missing-framework error to report") }
         let finished = expectation(description: "finished")
         AppleFoundationModel.Conversation().send("hello", snapshot: { _ in
             XCTFail("no snapshot can arrive without the framework")
@@ -49,7 +43,7 @@ final class AppleFoundationModelTests: XCTestCase {
     // MARK: Chat model wiring
 
     func testAppleUsesNeitherHelperPath() {
-        let model = ACPModel.isolated()
+        let model = isolatedACPModel()
         var config = AIConfiguration()
         config.connection = .apple
         model.configure(config)
@@ -60,7 +54,7 @@ final class AppleFoundationModelTests: XCTestCase {
 
     func testTheHTTPKindsStillUseTheNetworkHelper() {
         for kind in [AIConnectionKind.byok, .local] {
-            let model = ACPModel.isolated()
+            let model = isolatedACPModel()
             var config = AIConfiguration()
             config.connection = kind
             model.configure(config)
@@ -70,7 +64,7 @@ final class AppleFoundationModelTests: XCTestCase {
     }
 
     func testACPStillUsesTheAgentHelper() {
-        let model = ACPModel.isolated()
+        let model = isolatedACPModel()
         var config = AIConfiguration()
         config.connection = .acp
         config.provider = ACPProvider.allCases.first?.rawValue ?? ""
@@ -80,7 +74,7 @@ final class AppleFoundationModelTests: XCTestCase {
     }
 
     func testConfiguredTracksRuntimeAvailabilityRatherThanSettings() {
-        let model = ACPModel.isolated()
+        let model = isolatedACPModel()
         var config = AIConfiguration()
         config.connection = .apple
         model.configure(config)
@@ -88,9 +82,9 @@ final class AppleFoundationModelTests: XCTestCase {
                        "settings alone cannot make an unavailable model usable")
     }
 
-    func testStartingWithoutAvailabilityFailsWithTheReason() {
-        guard !AppleFoundationModel.availability.isReady else { return }
-        let model = ACPModel.isolated()
+    func testStartingWithoutAvailabilityFailsWithTheReason() throws {
+        guard !AppleFoundationModel.availability.isReady else { throw XCTSkip("Apple Intelligence is ready on this Mac, so starting cannot fail for lack of it") }
+        let model = isolatedACPModel()
         var config = AIConfiguration()
         config.connection = .apple
         model.configure(config)

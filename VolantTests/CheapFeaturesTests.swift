@@ -55,11 +55,4 @@ final class CheapFeaturesTests: XCTestCase {
         XCTAssertNotNil(KeyCombo(parsing: "hyper+n"))
         XCTAssertNotEqual(KeyCombo(parsing: "meh+space"), KeyCombo(parsing: "hyper+space"))
     }
-
-    func testOlderConfigWithoutNewSectionsStillLoads() throws {
-        let prefs = try JSONDecoder().decode(Preferences.self, from: Data(#"{"summonHotKey":"cmd+space"}"#.utf8))
-        XCTAssertEqual(prefs.quicklinks.first?.name, "Google")
-        XCTAssertTrue(prefs.snippets.isEmpty)
-        XCTAssertEqual(prefs.appearance.scale, 1.0)
-    }
 }

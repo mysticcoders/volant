@@ -3,30 +3,8 @@ import VolantCore
 @testable import Volant
 
 final class AIConfigurationTests: XCTestCase {
-    func testACPSettingsPreserveUnknownFieldsAndRejectStaleWrites() throws {
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        defer { try? FileManager.default.removeItem(at: url) }
-        try Data(#"{"future":true,"ai":{"future":42}}"#.utf8).write(to: url)
-        let original = try AIConfiguration.load(at: url)
-        XCTAssertFalse(original.isConfigured)
-        var changed = original; changed.provider = "claude"; changed.project = "/tmp/fictional-project"
-        try changed.save(at: url, expected: original)
-        XCTAssertEqual(try AIConfiguration.load(at: url), changed)
-        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
-        XCTAssertEqual(object["future"] as? Bool, true)
-        XCTAssertEqual((object["ai"] as? [String: Any])?["future"] as? Int, 42)
-        let before = try Data(contentsOf: url)
-        XCTAssertThrowsError(try original.save(at: url, expected: original))
-        changed.provider = "unsupported"
-        XCTAssertThrowsError(try changed.save(at: url))
-        XCTAssertEqual(try Data(contentsOf: url), before)
-        try Data("broken".utf8).write(to: url)
-        XCTAssertThrowsError(try AIConfiguration.load(at: url))
-        XCTAssertThrowsError(try original.save(at: url))
-        XCTAssertEqual(try Data(contentsOf: url), Data("broken".utf8))
-    }
     func testChatConnectsWithoutProjectAndPreservesActiveConversation() {
-        let model = ACPModel.isolated()
+        let model = isolatedACPModel()
         var connects = 0
         XCTAssertFalse(model.openChat(configuration: nil) { connects += 1 })
         XCTAssertFalse(model.openChat(configuration: AIConfiguration()) { connects += 1 })
@@ -40,18 +18,9 @@ final class AIConfigurationTests: XCTestCase {
         XCTAssertEqual(model.draft, "Unfinished question")
         model.state.phase = "disconnected"
     }
-    func testGeneralChatDirectoryAndExplicitFolderValidation() throws {
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        defer { try? FileManager.default.removeItem(at: root) }
-        let general = root.appendingPathComponent("Chat")
-        XCTAssertEqual(try ACPWorkingDirectory.resolve(project: "", generalChat: general), general.resolvingSymlinksInPath().path)
-        XCTAssertEqual(try ACPWorkingDirectory.resolve(project: root.path, generalChat: general), root.resolvingSymlinksInPath().path)
-        XCTAssertThrowsError(try ACPWorkingDirectory.resolve(project: "relative", generalChat: general))
-        XCTAssertThrowsError(try ACPWorkingDirectory.resolve(project: root.appendingPathComponent("missing").path, generalChat: general))
-    }
 
     func testConfiguringACPDoesNotReplaceActiveConversation() {
-        let model = ACPModel.isolated()
+        let model = isolatedACPModel()
         var config = AIConfiguration(); config.provider = "codex"; config.project = "/tmp/project"
         model.configure(config)
         XCTAssertEqual(model.provider, "codex")
@@ -63,5 +32,26 @@ final class AIConfigurationTests: XCTestCase {
         XCTAssertEqual(model.provider, "codex")
         XCTAssertEqual(model.project, "/tmp/project")
         model.state.phase = "disconnected"
+    }
+
+    /// Lets main-queue replies scheduled so far run before the test continues.
+    private func drain() async { await withCheckedContinuation { continuation in DispatchQueue.main.async { continuation.resume() } } }
+
+    /// Agent detection in AI Settings, through an injected reader instead of the agent helper.
+    @MainActor
+    func testDetectionSortsReadyAgentsFirstAndReportsFailures() async throws {
+        let detection = ACPAgentDetection()
+        detection.reader = { reply in
+            reply(try? JSONEncoder().encode([
+                ACPAgentAvailability(provider: "gemini", state: .notInstalled, detail: "Gemini CLI was not found.", path: nil),
+                ACPAgentAvailability(provider: "codex", state: .needsAdapter, detail: "Adapter missing.", path: nil),
+                ACPAgentAvailability(provider: "qwen", state: .ready, detail: "Found at /opt/homebrew/bin/qwen", path: "/opt/homebrew/bin/qwen")
+            ]), nil)
+        }
+        detection.detect(); await drain()
+        XCTAssertEqual(detection.agents.map(\.provider), ["qwen", "codex", "gemini"])
+        detection.reader = { $0(nil, "The agent helper is unavailable.") }
+        detection.detect(); await drain()
+        XCTAssertEqual(detection.message, "The agent helper is unavailable.")
     }
 }

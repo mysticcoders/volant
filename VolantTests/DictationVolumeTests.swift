@@ -177,6 +177,19 @@ final class DictationVolumeTests: XCTestCase {
         XCTAssertFalse(outputs.writes.contains { $0.device == 2 })
     }
 
+    /// Ending dictation after the lowered output vanished, with no change notification seen first,
+    /// reports it and leaves the output that replaced it alone.
+    func testRestoreAfterTheOriginalDisappearedReportsAndNeverTouchesTheReplacement() {
+        duck.lower()
+        outputs.devices[1] = nil
+        outputs.current = 2
+        let problem = duck.restore()
+        XCTAssertTrue(problem?.contains("Fixture Speakers") == true)
+        XCTAssertFalse(duck.isLowered)
+        XCTAssertFalse(outputs.writes.contains { $0.device == 2 })
+        assertLevels(outputs.levels(2), [0.6])
+    }
+
     func testRecycledDeviceIDIsNotRestored() {
         duck.lower()
         outputs.devices[1] = .init(uid: "other", name: "Other Output", volumes: [(1, 0.16), (2, 0.08)])

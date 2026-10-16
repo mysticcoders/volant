@@ -4,12 +4,14 @@ import VolantCore
 
 /// Resume is offered only for the stored provider and folder, and the record lives in an
 /// isolated defaults suite here, never the owner's.
-extension ACPModel {
-    /// A model whose resume record lives in a cleared test suite, never the owner's defaults.
-    static func isolated() -> ACPModel {
-        let suite = "volant.tests.acp"
-        UserDefaults().removePersistentDomain(forName: suite)
-        return ACPModel(resumeStore: UserDefaults(suiteName: suite)!)
+extension XCTestCase {
+    /// A model whose resume record lives in a defaults suite unique to this test, never the owner's
+    /// defaults; the suite is removed when the test ends.
+    func isolatedACPModel() -> ACPModel {
+        let suite = "volant.tests.acp." + UUID().uuidString
+        let store = UserDefaults(suiteName: suite)!
+        addTeardownBlock { store.removePersistentDomain(forName: suite) }
+        return ACPModel(resumeStore: store)
     }
 }
 

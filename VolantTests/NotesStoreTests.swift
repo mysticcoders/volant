@@ -133,16 +133,17 @@ final class NotesStoreTests: XCTestCase {
             Thread.sleep(forTimeInterval: 0.05)
             return try? String(contentsOf: url, encoding: .utf8)
         })
-        let started = Date()
         XCTAssertEqual(store.search("hidden phrase", limit: Int.max).map(\.id), [])
         XCTAssertEqual(store.search("note 1", limit: Int.max).map(\.id), ["n1.md", "n10.md", "n11.md"], "Titles match at once")
-        XCTAssertLessThan(Date().timeIntervalSince(started), 0.3, "The immediate search does not wait for a reader")
-        XCTAssertTrue(reads.withLock { readThreads.isEmpty })
+        XCTAssertTrue(reads.withLock { readThreads.isEmpty }, "The immediate search does not wait for a reader")
         XCTAssertEqual(fullSearch(store, "hidden phrase", limit: Int.max), reference(store, "hidden phrase"))
         XCTAssertEqual(fullSearch(store, "hidden phrase"), ["n0.md", "n3.md", "n6.md", "n9.md"])
         XCTAssertFalse(reads.withLock { readThreads.contains(true) }, "Files are read only on the background queue")
     }
 
+    /// Scans run in order on one serial queue and report on the main queue in that order, so the
+    /// cancelled scan, queued first, has reported (or been dropped) before the current scan answers.
+    /// Waiting for the answer first lets the cancelled-scan check use a short timeout.
     func testCancelledOrStaleScansDeliverNothingAndListChangesRedoTheScan() throws {
         let dir = try bodyFixture(count: 6)
         let gate = DispatchSemaphore(value: 0)
@@ -162,7 +163,8 @@ final class NotesStoreTests: XCTestCase {
         try touch(dir.appendingPathComponent("z.md"), 20_000)
         store.reload()
         gate.signal()
-        wait(for: [answered, stale], timeout: 2)
+        wait(for: [answered], timeout: 5)
+        wait(for: [stale], timeout: 0.05)
         XCTAssertEqual(latest, reference(store, "nothing here"))
         XCTAssertEqual(latest.first, "z.md", "A scan planned on the old list is redone for the new one")
     }

@@ -46,10 +46,9 @@ final class HerdrPublishTests: XCTestCase {
 
     func testRefreshTicksPublishOnlyRealChanges() async throws {
         let emissions = try await runScenario(AgentsModel())
-        print("HerdrPublishTests: agents model emissions over 10 ticks with a slow remote: \(emissions)")
         // Before only real changes were assigned, this scenario announced 197 changes; now only the
-        // first tick and the remote's late answer change anything (14 changes).
-        XCTAssertLessThanOrEqual(emissions, 16)
+        // first tick and the remote's late answer change anything (about 14), with headroom to 16.
+        XCTAssertLessThanOrEqual(emissions, 16, "agents model emissions over 10 ticks with a slow remote")
     }
 
     /// Clicking the footer status opens the `herdr` list, narrowed to the agent chosen in Settings,
@@ -92,8 +91,7 @@ final class HerdrPublishTests: XCTestCase {
         let counter = model.objectWillChange.sink { _ in launcherEmissions += 1 }
         defer { counter.cancel() }
         _ = try await runScenario(agents)
-        print("HerdrPublishTests: launcher model emissions during Herdr refreshes: \(launcherEmissions)")
-        XCTAssertEqual(launcherEmissions, 0)
+        XCTAssertEqual(launcherEmissions, 0, "launcher model emissions during Herdr refreshes")
         let view = LauncherView(model: model, agents: agents)
         XCTAssertFalse(Mirror(reflecting: view).children.contains { String(describing: type(of: $0.value)).contains("ObservedObject<AgentsModel>") },
                        "The launcher view must not observe the agents model; only Herdr's own views do.")

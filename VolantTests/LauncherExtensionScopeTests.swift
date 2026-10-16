@@ -220,33 +220,17 @@ final class LauncherExtensionScopeTests: XCTestCase {
         XCTAssertNil(model.scopedExtension)
     }
 
-    func testModeAndPlaceholderAreValidatedAndLeaveApprovalAlone() throws {
+    /// Look-only manifest fields are validated in VolantCore; here they must not change the approval
+    /// fingerprint, so restyling an extension never asks to enable it again.
+    func testModePlaceholderAndFiltersLeaveApprovalAlone() throws {
         let base = ExtensionManifest(id: "community.fictional.reader", name: "Fictional Reader", version: "1", module: "reader.wasm",
                                      capabilities: [], sha256: String(repeating: "a", count: 64), output: "items")
         var scoped = base
         scoped.mode = "search"
         scoped.placeholder = "Search fictional articles"
-        XCTAssertNoThrow(try scoped.validate())
         XCTAssertEqual(try ExtensionApproval.fingerprint(scoped), try ExtensionApproval.fingerprint(base),
                        "Changing how an extension looks never asks to enable it again")
-        var unknown = base; unknown.mode = "grid"
-        XCTAssertThrowsError(try unknown.validate())
-        var text = base; text.output = nil; text.mode = "search"
-        XCTAssertThrowsError(try text.validate(), "Only list extensions have a scope")
-        var empty = base; empty.placeholder = ""
-        XCTAssertThrowsError(try empty.validate())
-        var long = base; long.placeholder = String(repeating: "x", count: ExtensionManifest.maximumPlaceholderLength + 1)
-        XCTAssertThrowsError(try long.validate())
         var filtered = base; filtered.filters = [ExtensionFilter(id: "top", title: "Top"), ExtensionFilter(id: "new", title: "New")]
-        XCTAssertNoThrow(try filtered.validate())
         XCTAssertEqual(try ExtensionApproval.fingerprint(filtered), try ExtensionApproval.fingerprint(base), "Filters never ask to enable again")
-        var single = base; single.filters = [ExtensionFilter(id: "top", title: "Top")]
-        XCTAssertThrowsError(try single.validate(), "A dropdown needs at least two choices")
-        var duplicate = base; duplicate.filters = [ExtensionFilter(id: "top", title: "Top"), ExtensionFilter(id: "top", title: "Again")]
-        XCTAssertThrowsError(try duplicate.validate())
-        var badID = base; badID.filters = [ExtensionFilter(id: "Top Stories", title: "Top"), ExtensionFilter(id: "new", title: "New")]
-        XCTAssertThrowsError(try badID.validate())
-        var textFilters = filtered; textFilters.output = nil
-        XCTAssertThrowsError(try textFilters.validate(), "Only list extensions have a dropdown")
     }
 }

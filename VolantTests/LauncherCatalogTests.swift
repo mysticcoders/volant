@@ -57,7 +57,7 @@ final class LauncherCatalogTests: XCTestCase {
         model.searchesSecondarySources = false
         model.appleShortcuts.loadOverride = { $0([], nil) }
         model.actionConfigURL = config
-        model.extensions = ExtensionManager(configURL: config, directory: root.appendingPathComponent("Extensions"))
+        model.extensions = ExtensionManager(configURL: config, directory: root.appendingPathComponent("Extensions"), dataDirectory: root.appendingPathComponent("ExtensionData"))
         model.dismiss = {}
         return model
     }

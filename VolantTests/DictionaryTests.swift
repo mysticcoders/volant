@@ -82,19 +82,29 @@ import VolantCore
         XCTAssertTrue(model.input.isEmpty); XCTAssertFalse(model.searched); XCTAssertNil(model.message)
     }
 
+    /// A lookup answered after the text changed or was cleared must not replace what is shown. The
+    /// test waits until the stale lookup has actually returned to the model, then gives the model's
+    /// main-actor task a short moment to (wrongly) apply it before checking nothing changed.
     func testStaleCompletionAndClearCannotRestoreText() async throws {
         let model = DictionaryModel(); model.debounce = .zero
         var pending: CheckedContinuation<DictionaryEntry?, Error>?
+        var staleReturned = false
         model.lookup = { term in
-            if term == "old" { return try await withCheckedThrowingContinuation { pending = $0 } }
+            if term == "old" {
+                let entry = try await withCheckedThrowingContinuation { pending = $0 }
+                staleReturned = true
+                return entry
+            }
             return DictionaryEntry(term: term, definition: "Current")
         }
         for clear in [false, true] {
             model.input = "old"
             for _ in 0..<100 where pending == nil { try await Task.sleep(for: .milliseconds(5)) }
-            let continuation = try XCTUnwrap(pending); pending = nil
+            let continuation = try XCTUnwrap(pending); pending = nil; staleReturned = false
             if clear { model.clear() } else { model.input = "new"; try await settle(model) }
             continuation.resume(returning: DictionaryEntry(term: "old", definition: "Stale"))
+            for _ in 0..<100 where !staleReturned { try await Task.sleep(for: .milliseconds(5)) }
+            XCTAssertTrue(staleReturned)
             try await Task.sleep(for: .milliseconds(20))
             XCTAssertEqual(model.entry?.term, clear ? nil : "new")
             XCTAssertEqual(model.input, clear ? "" : "new")

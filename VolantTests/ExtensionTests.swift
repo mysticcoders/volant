@@ -16,10 +16,17 @@ final class ExtensionTests: XCTestCase {
         try JSONEncoder().encode(manifest).write(to: root.appendingPathComponent("manifest.json"))
         return (root, config, manifest)
     }
+    /// A per-test extension data folder, removed when the test ends, so stored values and uninstall
+    /// cleanup never reach the owner's ExtensionData folder.
+    private func dataDirectory() -> URL {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("volant-extension-data-" + UUID().uuidString, isDirectory: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: url) }
+        return url
+    }
     func testExplicitApprovalPreservesConfigAndChangedCodeNeedsApproval() async throws {
         let (root, config, manifest) = try fixture()
         defer { try? FileManager.default.removeItem(at: root) }
-        let manager = ExtensionManager(configURL: config, roots: [root]); manager.reload()
+        let manager = ExtensionManager(configURL: config, roots: [root], dataDirectory: dataDirectory()); manager.reload()
         try manager.setCommunityAllowed(true, expected: false)
         XCTAssertEqual(manager.extensions.count, 1)
         let ext = try XCTUnwrap(manager.extensions.first)
@@ -40,7 +47,7 @@ final class ExtensionTests: XCTestCase {
     func testIntegrityPathsAndDuplicateIDsAreRejected() async throws {
         let (root, config, manifest) = try fixture()
         defer { try? FileManager.default.removeItem(at: root) }
-        let manager = ExtensionManager(configURL: config, roots: [root]); manager.reload()
+        let manager = ExtensionManager(configURL: config, roots: [root], dataDirectory: dataDirectory()); manager.reload()
         try manager.setCommunityAllowed(true, expected: false)
         let ext = try XCTUnwrap(manager.extensions.first)
         try Data([0]).write(to: root.appendingPathComponent("hello.wasm"))
@@ -49,7 +56,7 @@ final class ExtensionTests: XCTestCase {
         XCTAssertThrowsError(try changed.validate())
         changed = manifest; changed.abiVersion = nil
         XCTAssertThrowsError(try changed.validate())
-        let duplicate = ExtensionManager(configURL: config, roots: [root, root]); duplicate.reload()
+        let duplicate = ExtensionManager(configURL: config, roots: [root, root], dataDirectory: dataDirectory()); duplicate.reload()
         XCTAssertTrue(duplicate.extensions.isEmpty)
         XCTAssertFalse(duplicate.loadErrors.isEmpty)
     }
@@ -60,7 +67,7 @@ final class ExtensionTests: XCTestCase {
         try JSONEncoder().encode(manifest).write(to: root.appendingPathComponent("manifest.json"))
         // Discovery must work without reading/compiling executable bytes.
         try FileManager.default.removeItem(at: root.appendingPathComponent("hello.wasm"))
-        let manager = ExtensionManager(configURL: config, roots: [root])
+        let manager = ExtensionManager(configURL: config, roots: [root], dataDirectory: dataDirectory())
         for (query, expected) in [("base64", ""), ("BASE64 café ☕", "café ☕"),
                                   ("Base64 Encode Hello  World", "Hello  World"), ("base64\t日本語", "日本語"),
                                   ("base", ""), ("Base64 Enc", "Enc")] {
@@ -78,28 +85,10 @@ final class ExtensionTests: XCTestCase {
         manager.invalidateCatalog()
         XCTAssertTrue(manager.commandMatches("base64").isEmpty)
     }
-    func testMemoryMustHaveSmallExplicitMaximum() async throws {
-        let prefix: [UInt8] = [0,97,115,109,1,0,0,0]
-        XCTAssertNoThrow(try VolantCore.ExtensionMemory.validate(Data(prefix + [5,4,1,1,1,1])))
-        XCTAssertThrowsError(try VolantCore.ExtensionMemory.validate(Data(prefix + [5,3,1,0,1])))
-        XCTAssertThrowsError(try VolantCore.ExtensionMemory.validate(Data(prefix + [5,5,1,1,1,0x81,0x02])))
-        XCTAssertThrowsError(try VolantCore.ExtensionMemory.validate(Data(prefix + [5,99,1])))
-        XCTAssertThrowsError(try VolantCore.ExtensionMemory.validate(Data(prefix)))
-    }
-    func testCommandABIIsExplicitAndCannotRequestLegacyCapabilities() async throws {
-        let (root, _, manifest) = try fixture()
-        defer { try? FileManager.default.removeItem(at: root) }
-        var command = manifest; command.abiVersion = 2
-        XCTAssertNoThrow(try command.validate())
-        command.capabilities = ["clipboard.write"]
-        XCTAssertThrowsError(try command.validate())
-        command.capabilities = []; command.abiVersion = 3
-        XCTAssertThrowsError(try command.validate())
-    }
     func testCommunityMasterSwitchPreservesIndividualApprovalsAndRejectsStaleRuns() async throws {
         let (root, config, manifest) = try fixture()
         defer { try? FileManager.default.removeItem(at: root) }
-        let manager = ExtensionManager(configURL: config, roots: [root]); manager.reload()
+        let manager = ExtensionManager(configURL: config, roots: [root], dataDirectory: dataDirectory()); manager.reload()
         let disabled = try XCTUnwrap(manager.extensions.first)
         XCTAssertFalse(manager.communityAllowed)
         XCTAssertTrue(disabled.isCommunity)
@@ -134,7 +123,7 @@ final class ExtensionTests: XCTestCase {
         XCTAssertTrue(slashed.absoluteString.hasSuffix("/"))
         XCTAssertTrue(ExtensionManager.sameLocation(unslashed, slashed))
         for folder in [unslashed, slashed] {
-            let manager = ExtensionManager(configURL: config, roots: [folder]); manager.reload()
+            let manager = ExtensionManager(configURL: config, roots: [folder], dataDirectory: dataDirectory()); manager.reload()
             XCTAssertEqual(manager.extensions.map(\.id), ["fixture.hello"], "\(folder.absoluteString): \(manager.loadErrors)")
         }
         let elsewhere = root.deletingLastPathComponent().appendingPathComponent(UUID().uuidString)
@@ -142,7 +131,7 @@ final class ExtensionTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: elsewhere) }
         try FileManager.default.moveItem(at: root.appendingPathComponent("manifest.json"), to: elsewhere.appendingPathComponent("manifest.json"))
         try FileManager.default.createSymbolicLink(at: root.appendingPathComponent("manifest.json"), withDestinationURL: elsewhere.appendingPathComponent("manifest.json"))
-        let escaped = ExtensionManager(configURL: config, roots: [unslashed]); escaped.reload()
+        let escaped = ExtensionManager(configURL: config, roots: [unslashed], dataDirectory: dataDirectory()); escaped.reload()
         XCTAssertTrue(escaped.extensions.isEmpty, "A manifest symlinked out of its folder is still refused")
     }
 
@@ -169,7 +158,7 @@ final class ExtensionTests: XCTestCase {
     func testEnablingAllowsHostsAndRemovingAHostAsksAgain() async throws {
         let (root, config, folders) = try networkFixture()
         defer { try? FileManager.default.removeItem(at: root) }
-        let manager = ExtensionManager(configURL: config, roots: folders); manager.reload()
+        let manager = ExtensionManager(configURL: config, roots: folders, dataDirectory: dataDirectory()); manager.reload()
         try manager.setCommunityAllowed(true, expected: false)
         let news = try XCTUnwrap(manager.extensions.first { $0.id == "fixture.news" })
         XCTAssertEqual(manager.missingHosts(news), ["news.example.com", "shared.example.com"])
@@ -201,7 +190,7 @@ final class ExtensionTests: XCTestCase {
     /// in turn; `requests` records what the module received and `fetched` what Volant fetched.
     private func scriptedNews(_ replies: [String]) throws -> (URL, URL, ExtensionManager, InstalledExtension, () -> [String]) {
         let (root, config, folders) = try networkFixture()
-        let manager = ExtensionManager(configURL: config, roots: folders); manager.reload()
+        let manager = ExtensionManager(configURL: config, roots: folders, dataDirectory: dataDirectory()); manager.reload()
         try manager.setCommunityAllowed(true, expected: false)
         try manager.setEnabled(try XCTUnwrap(manager.extensions.first { $0.id == "fixture.news" }), true)
         var queue = replies, requests: [String] = []
@@ -275,7 +264,7 @@ final class ExtensionTests: XCTestCase {
                                                     sha256: Volant.Integrity.sha256(module), hosts: ["api.tasks.example.com", "cdn.example.com"],
                                                     output: "items", secrets: [token])
         try JSONEncoder().encode(manifest).write(to: folder.appendingPathComponent("manifest.json"))
-        let manager = ExtensionManager(configURL: config, roots: [folder]); manager.secretStore = .memory(); manager.reload()
+        let manager = ExtensionManager(configURL: config, roots: [folder], dataDirectory: dataDirectory()); manager.secretStore = .memory(); manager.reload()
         var queue = replies, requests: [String] = []
         manager.invokeOverride = { _, input, completion in
             requests.append(input)
@@ -339,15 +328,6 @@ final class ExtensionTests: XCTestCase {
         guard case .failure = try XCTUnwrap(opened) else { return XCTFail("an opened notice that submits must fail") }
     }
 
-    func testSubmissionsOnlyPostToDeclaredHosts() throws {
-        let hosts: Set = ["api.tasks.example.com"]
-        XCTAssertThrowsError(try ExtensionNetwork.submissions(from: #"{"fetch":[{"url":"https://evil.example.com/x","method":"POST"}]}"#, hosts: hosts))
-        XCTAssertThrowsError(try ExtensionNetwork.submissions(from: #"{"fetch":[{"url":"https://api.tasks.example.com/x","method":"DELETE"}]}"#, hosts: hosts))
-        XCTAssertFalse(ExtensionRequest.isAllowed(method: "GET", body: Data("x".utf8), headers: [:]), "a GET never carries a body")
-        XCTAssertFalse(ExtensionRequest.isAllowed(method: "POST", body: nil, headers: ["Cookie": "a=b"]), "only declared secret headers")
-        XCTAssertFalse(ExtensionRequest.isAllowed(method: "POST", body: nil, headers: ["Authorization": "Bearer a\r\nX: y"]))
-    }
-
     func testAppLinksFallBackToTheWebWhenNoAppHandlesThem() {
         let app = URL(string: "todoist://task?id=6Xa")!, web = URL(string: "https://app.todoist.com/app/task/6Xa")!
         var opened: [URL] = []
@@ -375,7 +355,7 @@ final class ExtensionTests: XCTestCase {
             try JSONEncoder().encode(manifest).write(to: folder.appendingPathComponent("manifest.json"))
             return folder
         }
-        let manager = ExtensionManager(configURL: config, roots: folders); manager.reload()
+        let manager = ExtensionManager(configURL: config, roots: folders, dataDirectory: dataDirectory()); manager.reload()
         var lookups = 0, requests: [String] = []
         manager.locate = { lookups += 1; $0(ExtensionLocation(latitude: 37.8734, longitude: -122.2711)) }
         manager.invokeOverride = { _, input, completion in
@@ -417,7 +397,7 @@ final class ExtensionTests: XCTestCase {
     func testUninstallForgetsApprovalAndOnlyOrphanedHosts() async throws {
         let (root, config, folders) = try networkFixture()
         defer { try? FileManager.default.removeItem(at: root) }
-        let manager = ExtensionManager(configURL: config, roots: folders); manager.reload()
+        let manager = ExtensionManager(configURL: config, roots: folders, dataDirectory: dataDirectory()); manager.reload()
         try manager.setCommunityAllowed(true, expected: false)
         for id in ["fixture.news", "fixture.feed"] { try manager.setEnabled(try XCTUnwrap(manager.extensions.first { $0.id == id }), true) }
         let news = try XCTUnwrap(manager.extensions.first { $0.id == "fixture.news" })

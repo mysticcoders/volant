@@ -41,7 +41,7 @@ final class ExtensionCatalogInstallTests: XCTestCase {
     }
 
     private func manager() -> ExtensionManager {
-        let manager = ExtensionManager(configURL: config, directory: directory); manager.reload(); return manager
+        let manager = ExtensionManager(configURL: config, directory: directory, dataDirectory: root.appendingPathComponent("ExtensionData")); manager.reload(); return manager
     }
 
     private func hidden() throws -> [String] {
@@ -171,7 +171,7 @@ final class ExtensionCatalogInstallTests: XCTestCase {
         }
         XCTAssertEqual(try String(contentsOf: squatter.appendingPathComponent("notes.txt"), encoding: .utf8), "keep")
 
-        guard let bundled = manager.extensions.first(where: { !$0.isCommunity }) else { return }
+        let bundled = try XCTUnwrap(manager.extensions.first(where: { !$0.isCommunity }), "the test host ships the bundled Hello World extension")
         let (impostor, impostorManifest) = try package(id: bundled.id, module: moduleV1)
         XCTAssertEqual(ExtensionManager.catalogStatus(impostor, installed: manager.extensions), .bundled)
         XCTAssertThrowsError(try manager.install(impostor, manifest: impostorManifest, module: moduleV1, from: catalog([impostor])))

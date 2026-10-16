@@ -17,25 +17,20 @@ final class SpeechDictationTests: XCTestCase {
         }
     }
 
-    func testOlderSystemsNameTheRequirement() {
-        guard #unavailable(macOS 26.0) else { return }
+    func testOlderSystemsNameTheRequirement() throws {
+        guard #unavailable(macOS 26.0) else { throw XCTSkip("macOS 26 meets the system requirement, so there is none to name") }
         let reason = SpeechDictation.availability.reason ?? ""
         XCTAssertTrue(reason.contains("macOS"))
         XCTAssertFalse(SpeechDictation.availability.isReady)
     }
 
-    func testANewSessionIsIdleAndEmpty() {
+    func testCancellingASessionThatNeverStartedLeavesItIdleAndEmpty() {
         let dictation = SpeechDictation()
+        dictation.cancel()
+        dictation.cancel()
         XCTAssertEqual(dictation.phase, .idle)
         XCTAssertTrue(dictation.transcript.isEmpty)
         XCTAssertFalse(dictation.isListening)
-    }
-
-    func testCancelIsSafeWhenNothingIsRunning() {
-        let dictation = SpeechDictation()
-        dictation.cancel()
-        dictation.cancel()
-        XCTAssertEqual(dictation.phase, .idle)
     }
 
     func testStoppingWhenNotListeningReportsNothing() {
@@ -47,8 +42,8 @@ final class SpeechDictationTests: XCTestCase {
         wait(for: [stopped], timeout: 2)
     }
 
-    func testAnUnavailableSystemFailsWithAReasonRatherThanHanging() {
-        guard !SpeechDictation.availability.isReady else { return }
+    func testAnUnavailableSystemFailsWithAReasonRatherThanHanging() throws {
+        guard !SpeechDictation.availability.isReady else { throw XCTSkip("Dictation is ready on this Mac, so starting cannot fail for lack of it") }
         let dictation = SpeechDictation()
         let finished = expectation(description: "finished")
         dictation.start { transcript in

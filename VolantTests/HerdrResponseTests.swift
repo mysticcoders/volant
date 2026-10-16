@@ -55,6 +55,7 @@ final class HerdrResponseTests: XCTestCase {
     }
     func testObservedCodexQuestionAndUnsupportedScreens() throws {
         let parsed = try XCTUnwrap(Volant.HerdrQuestion.parse(Self.question, provider: "codex"))
+        XCTAssertEqual(parsed.progress, "Question 1/1 (1 unanswered)")
         XCTAssertEqual(parsed.answerChoices.map(\.label), ["Amber", "Violet"])
         XCTAssertEqual(parsed.selected, 1)
         XCTAssertNil(Volant.HerdrQuestion.parse(Self.question, provider: "claude"))

@@ -74,20 +74,4 @@ final class AgentChangeStateTests: XCTestCase {
         pending?(try JSONEncoder().encode(["/fictional/app": RepositoryState(branch: "main")]), nil); await drain()
         XCTAssertTrue(model.repositories.isEmpty)
     }
-
-    func testDetectionSortsReadyAgentsFirstAndReportsFailures() async throws {
-        let detection = ACPAgentDetection()
-        detection.reader = { reply in
-            reply(try? JSONEncoder().encode([
-                ACPAgentAvailability(provider: "gemini", state: .notInstalled, detail: "Gemini CLI was not found.", path: nil),
-                ACPAgentAvailability(provider: "codex", state: .needsAdapter, detail: "Adapter missing.", path: nil),
-                ACPAgentAvailability(provider: "qwen", state: .ready, detail: "Found at /opt/homebrew/bin/qwen", path: "/opt/homebrew/bin/qwen")
-            ]), nil)
-        }
-        detection.detect(); await drain()
-        XCTAssertEqual(detection.agents.map(\.provider), ["qwen", "codex", "gemini"])
-        detection.reader = { $0(nil, "The agent helper is unavailable.") }
-        detection.detect(); await drain()
-        XCTAssertEqual(detection.message, "The agent helper is unavailable.")
-    }
 }
