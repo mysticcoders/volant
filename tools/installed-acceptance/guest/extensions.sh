@@ -191,3 +191,4 @@ key 53; sleep 0.5
 open_settings Extensions; shot dark-settings
 key 53; sleep 0.5
 osascript -e 'tell application "System Events" to tell appearance preferences to set dark mode to false'
+phase_finished

@@ -166,3 +166,4 @@ if printf '%s' "$english" | grep -q '[A-Za-z]'; then record PASS "Arabic to Engl
 shot rtl-source
 key 33 "{command down}"; sleep 1
 key 53; sleep 0.5
+phase_finished

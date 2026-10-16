@@ -38,7 +38,7 @@ record NOTE "status menu items" "$(cat "$W/menu.txt")"
 open_settings
 expect_eq "Settings… opens Settings in front" "$ID" "$(front)"
 
-SECTIONS="General|Appearance|Status Bar|AI|Extensions|App Shortcuts|Data & Configuration"
+SECTIONS="General|Appearance|Keyboard Shortcuts|App Shortcuts|Data & Configuration|What’s New|About|AI|Dictation|Extensions|File Search|Status Bar"
 
 # Moves focus back to the sidebar with Shift-Tab; fails if it never gets there.
 to_sidebar() {
@@ -59,12 +59,15 @@ for appearance in light dark; do
   key 126; sleep 1
   trapped=""
   IFS='|' read -ra names <<< "$SECTIONS"
+  # Each section is selected by name rather than by arrowing down: the sidebar groups Features under a
+  # heading, so a fixed number of Down presses no longer lands on every section.
   for name in "${names[@]}"; do
+    AX Volant select "$S" "$name" >/dev/null; sleep 1.5
+    [ "$(selected_section)" = "$name" ] || { trapped="$trapped $name (could not select it)"; continue; }
     to_sidebar || { trapped="$trapped $name (no way back to the sidebar)"; break; }
     key 48; sleep 0.6
     ax_focused | grep -q '^AXOutline' && trapped="$trapped $name;"
     to_sidebar || { trapped="$trapped $name (Shift-Tab did not return)"; break; }
-    key 125; sleep 1.5
   done
   if [ -z "$trapped" ]; then
     record PASS "Tab leaves the sidebar into every section after changing section, Shift-Tab returns ($appearance)"
@@ -172,3 +175,4 @@ target=$(osascript -e 'tell application "System Events" to tell process "Finder"
 expect_eq "the Finder window shows config.json's folder" Vey "$target"
 shot reveal
 key 13 "{command down}"; sleep 0.5
+phase_finished

@@ -13,11 +13,14 @@ UI_PATTERNS = (
     "Volant/Notes/LiveMarkdown*.swift", "Volant/Agents/*Model.swift", "Volant/Agents/HerdrFooterStatus.swift", "Volant/Agents/HerdrQueryHeader.swift", "Volant/Agents/ChatContextPicker.swift", "Volant/Agents/ACPConversations.swift",
     "Volant/App/main.swift", "Volant/App/AppDelegate.swift", "Volant/Resources/*", "Volant/Appearance/*",
     "Volant/Settings/AIModelDiscovery.swift", "Volant/Settings/ACPAgentDetection.swift", "Volant/Settings/AICredentials.swift", "Core/Sources/VolantCore/Clipboard/*", "Core/Sources/VolantCore/Emoji/*", "Core/Sources/VolantCore/Launcher/*", "Core/Sources/VolantCore/Agents/*", "Core/Sources/VolantCore/Herdr/*", "Shared/HerdrQuestion.swift", "Shared/HerdrClaudeQuestion.swift", "Shared/HerdrResponseController.swift", "Volant/SystemControl/SystemSettingsDestination.swift",
-    "tools/interaction-speed/*.swift", "tools/profile-interaction.sh", "tools/launcher/*", "tools/settings/*", "tools/themes/*", "tools/marketing/*", "tools/raycast/render.swift", "Volant/Settings/SettingsSection.swift",
-    "tools/check-launcher.sh", "tools/check-launcher-actions.sh", "tools/check-dictation-hud.sh", "tools/run-bounded-check.py", "tools/test-ui-vm.py", "tools/preview-settings.sh", "tools/render-*.sh",
+    "tools/launcher/*", "Volant/Settings/SettingsSection.swift",
+    "tools/check-launcher.sh", "tools/check-launcher-actions.sh", "tools/check-dictation-hud.sh", "tools/run-bounded-check.py",
+    # Launcher fixtures drive these directly: volume and audio routes, Wi-Fi and Bluetooth, system actions,
+    # Caffeinate, snippet and quicklink forms, and app shortcut bindings.
+    "Volant/SystemControl/*", "Volant/Snippets/*", "Volant/Quicklinks/*", "Volant/Settings/AppBindingStore.swift",
     "VolantTests/LiveMarkdownTests.swift", "VolantTests/NotesStoreTests.swift",
 )
-NATIVE_PATTERNS = ("Volant/*", "VolantTests/*", "VolantAgentHost/*", "VolantExtensionHost/*", "VolantAIHost/*", "VolantInputHost/*", "VolantFetchHost/*",
+NATIVE_PATTERNS = ("Volant/*", "VolantTests/*", "VolantAgentHost/*", "VolantExtensionHost/*", "VolantAIHost/*", "VolantInputHost/*", "VolantFetchHost/*", "VolantRatesHost/*", "Integrations/*",
                    "Shared/*", "Core/*", "extensions/*", "docs/releases/*", "Scripts/*", "tools/*", "project.yml", ".swiftlint.yml", ".github/workflows/*")
 
 

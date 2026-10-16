@@ -18,3 +18,4 @@ if [ "$want" = on ]; then
 else
   expect_eq "Volant does not start at login once turned off" no "$started"
 fi
+phase_finished

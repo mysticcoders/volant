@@ -23,6 +23,10 @@ build_tools
 
 step() { echo; echo "##### $*"; }
 
+# Marks that a phase script reached its last line. A phase's exit status is only its last command's, so
+# run-vm.py treats a phase that never calls this as stopped part way.
+phase_finished() { basename "$0" .sh >> "$A/phases-finished"; }
+
 # Records one check in results.tsv as PASS, FAIL or NOTE (evidence that is not a pass/fail).
 record() {
   local status=$1 name=$2 detail=${3:-}
