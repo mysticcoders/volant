@@ -35,6 +35,10 @@ public struct ExtensionManifest: Codable, Hashable {
     public var mode: String?
     /// The search field's prompt inside a list extension, such as "Search Wikipedia". Presentation only.
     public var placeholder: String?
+    /// Choices for a dropdown at the end of the search field inside a list extension, such as Top, New
+    /// and Ask; the first is the default, and the chosen one's `id` is sent as `filter`. Presentation
+    /// only, so not part of the fingerprint.
+    public var filters: [ExtensionFilter]?
 
     public var declaredSecrets: [ExtensionSecret] { secrets ?? [] }
     public var declaredAppLinks: [String] { appLinks ?? [] }
@@ -46,6 +50,7 @@ public struct ExtensionManifest: Codable, Hashable {
     public var usesStorage: Bool { storage == true }
     public var waitsForInput: Bool { mode == "search" }
     public static let maximumPlaceholderLength = 80
+    public var declaredFilters: [ExtensionFilter] { filters ?? [] }
 
     public func validate() throws {
         guard [1, 2].contains(abiVersion ?? 0), abiVersion != 2 || capabilities.isEmpty,
@@ -63,7 +68,9 @@ public struct ExtensionManifest: Codable, Hashable {
               declaredAppLinks.allSatisfy(Self.isAllowedAppLink), declaredAppLinks.isEmpty || listsItems,
               Set(declaredPermissions).isSubset(of: Self.knownPermissions), Set(declaredPermissions).count == declaredPermissions.count,
               declaredPermissions.isEmpty || listsItems, [nil, "list", "search"].contains(mode), mode == nil || listsItems,
-              placeholder.map({ (1...Self.maximumPlaceholderLength).contains($0.count) && listsItems }) ?? true else {
+              placeholder.map({ (1...Self.maximumPlaceholderLength).contains($0.count) && listsItems }) ?? true,
+              filters == nil || (listsItems && (2...ExtensionFilter.maximumCount).contains(declaredFilters.count)),
+              declaredFilters.allSatisfy(\.isValid), Set(declaredFilters.map(\.id)).count == declaredFilters.count else {
             throw ExtensionValidationError.invalidManifest
         }
     }
@@ -104,7 +111,7 @@ public struct ExtensionManifest: Codable, Hashable {
     public init(abiVersion: Int? = 1, id: String, name: String, version: String, module: String, capabilities: [String], timeoutSeconds: Double? = nil, sha256: String? = nil,
                 hosts: [String]? = nil, output: String? = nil, icon: String? = nil, iconSha256: String? = nil, storage: Bool? = nil,
                 secrets: [ExtensionSecret]? = nil, appLinks: [String]? = nil, permissions: [String]? = nil,
-                mode: String? = nil, placeholder: String? = nil) {
+                mode: String? = nil, placeholder: String? = nil, filters: [ExtensionFilter]? = nil) {
         self.abiVersion = abiVersion
         self.id = id
         self.name = name
@@ -123,6 +130,24 @@ public struct ExtensionManifest: Codable, Hashable {
         self.permissions = permissions
         self.mode = mode
         self.placeholder = placeholder
+        self.filters = filters
+    }
+}
+
+/// One choice in a list extension's dropdown, such as `{"id": "new", "title": "New"}`.
+public struct ExtensionFilter: Codable, Hashable, Sendable {
+    public static let maximumCount = 8
+    public static let maximumTitleLength = 24
+    public var id: String
+    public var title: String
+    public init(id: String, title: String) { self.id = id; self.title = title }
+
+    /// A lowercase ASCII id of at most 32 characters (letters, digits, `-`, `_`, `.`) and a one-line title
+    /// of at most 24 characters.
+    public var isValid: Bool {
+        (1...32).contains(id.count) && id.allSatisfy({ $0.isASCII && ($0.isLowercase || $0.isNumber || "-_.".contains($0)) }) &&
+            (1...Self.maximumTitleLength).contains(title.count) && !title.contains(where: \.isNewline) &&
+            title.trimmingCharacters(in: .whitespaces) == title
     }
 }
 

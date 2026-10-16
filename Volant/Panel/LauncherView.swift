@@ -166,6 +166,9 @@ struct LauncherView: View {
                 .textFieldStyle(.plain)
                 .font(.system(size: 22, weight: .regular))
                 .focused($focused)
+            if let ext = model.scopedExtension, !ext.manifest.declaredFilters.isEmpty {
+                ExtensionFilterMenu(filters: ext.manifest.declaredFilters, selected: model.scopeFilter, choose: model.chooseScopeFilter)
+            }
             if model.canTabToAIChat {
                 Button(action: model.chatFromSearch) {
                     HStack(spacing: 6) { Text("AI Chat"); Text("⇥") }
@@ -741,6 +744,33 @@ private struct ExtensionRowBadges: View {
         .font(.system(size: 13))
         .foregroundStyle(.secondary)
         .fixedSize()
+    }
+}
+
+/// The dropdown at the end of the search field inside a list extension that declares `filters`, such
+/// as Top, New and Ask. Choosing an entry runs the extension at once; Command-P chooses the next one.
+private struct ExtensionFilterMenu: View {
+    let filters: [ExtensionFilter]
+    let selected: String?
+    let choose: (String) -> Void
+
+    var body: some View {
+        Menu {
+            ForEach(filters, id: \.id) { filter in
+                Button { choose(filter.id) } label: {
+                    if filter.id == selected { Label(filter.title, systemImage: "checkmark") } else { Text(filter.title) }
+                }
+            }
+        } label: {
+            Text(filters.first { $0.id == selected }?.title ?? filters[0].title)
+        }
+        .menuStyle(.button)
+        .buttonStyle(.bordered)
+        .controlSize(.regular)
+        .fixedSize()
+        .help("Filter (⌘P for the next one)")
+        .accessibilityLabel("Filter")
+        .accessibilityIdentifier("launcher-extension-filter")
     }
 }
 

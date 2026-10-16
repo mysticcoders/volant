@@ -322,17 +322,17 @@ final class ExtensionManager {
     /// fetches in one run. Approval and hosts are checked again before every fetch and render, so a change
     /// made mid-run stops it. An extension that uses storage receives its saved object with every request,
     /// and any reply's `storage` replaces it (see `save(_:for:run:)`).
-    func runItems(_ ext: InstalledExtension, query: String, now: Date = Date(),
+    func runItems(_ ext: InstalledExtension, query: String, filter: String? = nil, now: Date = Date(),
                   fetch: @escaping ([ExtensionRequest], [String], @escaping ([ExtensionNetwork.Response]) -> Void) -> Void = ExtensionFetcher.fetch,
                   completion: @escaping (Result<[ExtensionItem], Error>) -> Void) {
         guard !missingLocation(ext) else { completion(.failure(ExtensionError.locationNotAllowed)); return }
         runLocation(ext) { [self] location in
-            runItems(ext, query: query, now: now, location: location, fetch: fetch, completion: completion)
+            runItems(ext, query: query, filter: filter, now: now, location: location, fetch: fetch, completion: completion)
         }
     }
 
     /// One list run with the location this run may send, which plan and every render receive.
-    private func runItems(_ ext: InstalledExtension, query: String, now: Date, location: ExtensionLocation?,
+    private func runItems(_ ext: InstalledExtension, query: String, filter: String?, now: Date, location: ExtensionLocation?,
                           fetch: @escaping ([ExtensionRequest], [String], @escaping ([ExtensionNetwork.Response]) -> Void) -> Void,
                           completion: @escaping (Result<[ExtensionItem], Error>) -> Void) {
         let hosts = ext.manifest.declaredHosts
@@ -349,7 +349,7 @@ final class ExtensionManager {
         func render(_ responses: [ExtensionNetwork.Response], state: String?, round: Int) {
             do {
                 let input = try ExtensionNetwork.request(phase: "render", query: query, now: now, responses: hosts.isEmpty ? nil : responses,
-                                                         storage: storage, state: state, location: location)
+                                                         storage: storage, state: state, location: location, filter: filter)
                 invoke(ext, input) { [self] result in
                     do {
                         let output = try result.get()
@@ -375,7 +375,7 @@ final class ExtensionManager {
         let secrets = missingSecrets(ext)
         guard secrets.isEmpty else { completion(.failure(ExtensionError.secretsMissing(secrets.map(\.title)))); return }
         do {
-            invoke(ext, try ExtensionNetwork.request(phase: "plan", query: query, now: now, storage: storage, location: location)) { [self] result in
+            invoke(ext, try ExtensionNetwork.request(phase: "plan", query: query, now: now, storage: storage, location: location, filter: filter)) { [self] result in
                 do {
                     let output = try result.get()
                     if let reply = try? ExtensionNetwork.reply(from: output, appLinks: Set(ext.manifest.declaredAppLinks)), let items = reply.items {
@@ -400,7 +400,7 @@ final class ExtensionManager {
     /// may reply `{"fetch": [{"url", "method": "POST", "json"}], "state"}`: Volant checks approval, hosts
     /// and tokens again, sends those requests with the declared tokens as headers, and renders with the
     /// responses and that state. A reply's `storage` is saved under the same rules as a list run.
-    func runAction(_ ext: InstalledExtension, item: ExtensionItem, action: String?, query: String, now: Date = Date(),
+    func runAction(_ ext: InstalledExtension, item: ExtensionItem, action: String?, query: String, filter: String? = nil, now: Date = Date(),
                    fetch: @escaping ([ExtensionRequest], [String], @escaping ([ExtensionNetwork.Response]) -> Void) -> Void = ExtensionFetcher.fetch,
                    completion: @escaping (Result<ActionOutcome, Error>) -> Void) {
         let sequence = beginRun(ext)
@@ -412,7 +412,7 @@ final class ExtensionManager {
         }
         do {
             let input = try ExtensionNetwork.request(phase: action == nil ? "opened" : "action", query: query, now: now,
-                                                     storage: storage, action: action, item: item)
+                                                     storage: storage, action: action, item: item, filter: filter)
             invoke(ext, input) { [self] result in
                 do {
                     let output = try result.get()
@@ -427,7 +427,8 @@ final class ExtensionManager {
                     fetch(submitted.requests.map { self.authorized($0, for: ext) }, Array(approved).sorted()) { responses in
                         do {
                             let render = try ExtensionNetwork.request(phase: "render", query: query, now: now, responses: responses,
-                                                                      storage: storage, action: action, item: item, state: submitted.state)
+                                                                      storage: storage, action: action, item: item, state: submitted.state,
+                                                                      filter: filter)
                             self.invoke(ext, render) { result in completion(result.flatMap { output in Result { try outcome(output) } }) }
                         } catch { completion(.failure(error)) }
                     }

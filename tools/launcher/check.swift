@@ -967,7 +967,8 @@ let scopeModule = Data([0, 97, 115, 109, 1, 0, 0, 0, 5, 4, 1, 1, 1, 1])
 try scopeModule.write(to: scopeFolder.appendingPathComponent("reader.wasm"))
 try JSONEncoder().encode(ExtensionManifest(id: "community.fictional.reader", name: "Fictional Reader", version: "1", module: "reader.wasm",
     capabilities: [], timeoutSeconds: 2, sha256: Integrity.sha256(scopeModule), output: "items",
-    mode: "search", placeholder: "Search fictional articles")).write(to: scopeFolder.appendingPathComponent("manifest.json"))
+    mode: "search", placeholder: "Search fictional articles",
+    filters: [ExtensionFilter(id: "top", title: "Top"), ExtensionFilter(id: "new", title: "New"), ExtensionFilter(id: "ask", title: "Ask")])).write(to: scopeFolder.appendingPathComponent("manifest.json"))
 let scopeConfig = root.appendingPathComponent("scope-config.json")
 try Data(#"{"extensions":{},"communityExtensionsAllowed":true}"#.utf8).write(to: scopeConfig)
 corePanel.model.actionConfigURL = scopeConfig
@@ -994,6 +995,12 @@ corePanel.model.query = "moons"
 verify(waitUntil(timeout: 3) { corePanel.model.rows.count == 2 }, "Typing runs the extension once typing pauses")
 verify(scopeQueries == ["moons"], "A search extension runs only for typed text")
 try renderCore("extension-scope")
+verify(corePanel.model.scopeFilter == "top", "The dropdown starts on its first choice")
+let nextFilter = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: .command, timestamp: ProcessInfo.processInfo.systemUptime,
+    windowNumber: corePanel.windowNumber, context: nil, characters: "p", charactersIgnoringModifiers: "p", isARepeat: false, keyCode: 35)!
+verify(corePanel.performKeyEquivalent(with: nextFilter), "Command-P is claimed inside an extension with a dropdown")
+verify(waitUntil { corePanel.model.scopeFilter == "new" && scopeQueries.count == 2 }, "Command-P chooses the next filter and runs at once")
+try renderCore("extension-filter")
 corePanel.model.toggleActions()
 verify(waitUntil { corePanel.model.actionTarget != nil }, "A story row opens its Actions")
 try renderCore("extension-actions")

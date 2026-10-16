@@ -369,6 +369,10 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
             model.openSettings()
             return true
         }
+        if modifiers == .command, event.charactersIgnoringModifiers?.lowercased() == "p", model.actionTarget == nil,
+           model.cycleScopeFilter() {
+            return true
+        }
         if modifiers == .command, event.charactersIgnoringModifiers?.lowercased() == "k",
            model.entryForm == nil, model.selectedRow?.supportsActions == true {
             model.toggleActions()
