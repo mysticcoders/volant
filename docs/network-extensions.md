@@ -119,13 +119,19 @@ sits at its start. From then on the field is the extension's query: no launcher 
 edit runs the extension again once typing pauses for 0.3 seconds. The rows on screen stay until the new
 ones arrive; a run started while another is going waits for it, and only the newest text runs.
 
-Two optional manifest fields shape this. Neither is part of the approval fingerprint, so changing them
+Three optional manifest fields shape this. Neither is part of the approval fingerprint, so changing them
 never asks the owner to enable the extension again, and older Volant versions ignore them.
 
 - `"mode"`: `"list"` (the default) runs as soon as the extension is entered and whenever the field is
   cleared; `"search"` shows only its prompt until something is typed.
 - `"placeholder"`: the field's prompt, at most 80 characters, such as `"Search Wikipedia"`. Without it
   the field reads "Search <name>…".
+- `"filters"`: two to eight `{"id","title"}` choices for a dropdown at the end of the field, such as
+  Hacker News's Top, New, Ask HN and Show HN. Ids are lowercase ASCII of at most 32 characters, titles
+  one line of at most 24. The first is the default; every request while inside the extension carries
+  the chosen one as `"filter"`, including actions. Choosing an entry, or Command-P for the next one,
+  runs the extension at once with the field's text. Volant remembers each extension's choice until it
+  quits.
 
 Escape clears typed text, and Escape again goes back to the launcher; so does Delete in an empty field
 or clicking the chip. Closing the launcher also leaves the extension. Text extensions still run once

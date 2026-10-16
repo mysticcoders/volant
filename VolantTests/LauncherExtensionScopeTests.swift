@@ -22,12 +22,12 @@ final class LauncherExtensionScopeTests: XCTestCase {
     override func tearDownWithError() throws { try? FileManager.default.removeItem(at: root) }
 
     /// A launcher with one enabled list extension, Fictional Reader, in the given mode.
-    private func model(mode: String? = nil, placeholder: String? = nil) throws -> LauncherModel {
+    private func model(mode: String? = nil, placeholder: String? = nil, filters: [ExtensionFilter]? = nil) throws -> LauncherModel {
         let module = Data([0, 97, 115, 109, 1, 0, 0, 0, 5, 4, 1, 1, 1, 1])
         try module.write(to: folder.appendingPathComponent("reader.wasm"))
         let manifest = ExtensionManifest(id: "community.fictional.reader", name: "Fictional Reader", version: "1", module: "reader.wasm",
                                          capabilities: [], timeoutSeconds: 2, sha256: Integrity.sha256(module), output: "items",
-                                         mode: mode, placeholder: placeholder)
+                                         mode: mode, placeholder: placeholder, filters: filters)
         try JSONEncoder().encode(manifest).write(to: folder.appendingPathComponent("manifest.json"))
         let model = LauncherModel(index: AppIndex(entries: []),
             clipboard: ClipboardStore(retention: 10, storageURL: root.appendingPathComponent("clips.sqlite"), encryptionKey: SymmetricKey(size: .bits256)),
@@ -52,6 +52,11 @@ final class LauncherExtensionScopeTests: XCTestCase {
             completion(.success(#"{"items":[{"title":"Row for \#(query)","url":"https://example.com/\#(queries.count)"}]}"#))
         }
         return { queries }
+    }
+
+    private static func filter(in request: String) -> String? {
+        let object = try? JSONSerialization.jsonObject(with: Data(request.utf8)) as? [String: Any]
+        return object?["filter"] as? String
     }
 
     private static func query(in request: String) -> String {
@@ -161,6 +166,52 @@ final class LauncherExtensionScopeTests: XCTestCase {
         XCTAssertEqual(titles(model), ["Ask rows"])
     }
 
+    func testTheDropdownSendsItsFilterAndRemembersTheChoice() async throws {
+        let pages = [ExtensionFilter(id: "top", title: "Top"), ExtensionFilter(id: "new", title: "New"), ExtensionFilter(id: "ask", title: "Ask")]
+        let model = try model(filters: pages)
+        var requests: [(query: String, filter: String?)] = []
+        model.extensions.invokeOverride = { _, input, completion in
+            requests.append((Self.query(in: input), Self.filter(in: input)))
+            completion(.success(#"{"items":[{"title":"Row","url":"https://example.com/\#(requests.count)"}]}"#))
+        }
+        try enter(model, typing: "Fictional Reader")
+        XCTAssertEqual(model.scopeFilter, "top", "The first filter is the default")
+        await wait(0.1)
+        XCTAssertEqual(requests.last?.filter, "top")
+        model.query = "rust"
+        await wait(LauncherModel.scopeDelay + 0.1)
+        model.chooseScopeFilter("new")
+        await wait(0.1)
+        XCTAssertEqual(requests.last?.query, "rust", "Choosing a filter keeps the typed text")
+        XCTAssertEqual(requests.last?.filter, "new", "and runs at once with the new filter")
+        XCTAssertTrue(model.cycleScopeFilter())
+        XCTAssertEqual(model.scopeFilter, "ask")
+        XCTAssertTrue(model.cycleScopeFilter())
+        XCTAssertEqual(model.scopeFilter, "top", "Command-P wraps to the first filter")
+        model.chooseScopeFilter("missing")
+        XCTAssertEqual(model.scopeFilter, "top", "Only declared filters can be chosen")
+        model.chooseScopeFilter("ask")
+        model.exitScope()
+        XCTAssertNil(model.scopeFilter)
+        XCTAssertFalse(model.cycleScopeFilter(), "Outside an extension Command-P is not claimed")
+        try enter(model, typing: "Fictional Reader")
+        XCTAssertEqual(model.scopeFilter, "ask", "Entering again keeps the last choice")
+    }
+
+    func testExtensionsWithoutFiltersSendNone() async throws {
+        let model = try model()
+        var filters: [String?] = []
+        model.extensions.invokeOverride = { _, input, completion in
+            filters.append(Self.filter(in: input))
+            completion(.success(#"{"items":[]}"#))
+        }
+        try enter(model, typing: "Fictional Reader")
+        await wait(0.1)
+        XCTAssertEqual(filters, [nil])
+        XCTAssertNil(model.scopeFilter)
+        XCTAssertFalse(model.cycleScopeFilter())
+    }
+
     func testResetLeavesTheExtension() throws {
         let model = try model()
         _ = echo(model)
@@ -186,5 +237,16 @@ final class LauncherExtensionScopeTests: XCTestCase {
         XCTAssertThrowsError(try empty.validate())
         var long = base; long.placeholder = String(repeating: "x", count: ExtensionManifest.maximumPlaceholderLength + 1)
         XCTAssertThrowsError(try long.validate())
+        var filtered = base; filtered.filters = [ExtensionFilter(id: "top", title: "Top"), ExtensionFilter(id: "new", title: "New")]
+        XCTAssertNoThrow(try filtered.validate())
+        XCTAssertEqual(try ExtensionApproval.fingerprint(filtered), try ExtensionApproval.fingerprint(base), "Filters never ask to enable again")
+        var single = base; single.filters = [ExtensionFilter(id: "top", title: "Top")]
+        XCTAssertThrowsError(try single.validate(), "A dropdown needs at least two choices")
+        var duplicate = base; duplicate.filters = [ExtensionFilter(id: "top", title: "Top"), ExtensionFilter(id: "top", title: "Again")]
+        XCTAssertThrowsError(try duplicate.validate())
+        var badID = base; badID.filters = [ExtensionFilter(id: "Top Stories", title: "Top"), ExtensionFilter(id: "new", title: "New")]
+        XCTAssertThrowsError(try badID.validate())
+        var textFilters = filtered; textFilters.output = nil
+        XCTAssertThrowsError(try textFilters.validate(), "Only list extensions have a dropdown")
     }
 }

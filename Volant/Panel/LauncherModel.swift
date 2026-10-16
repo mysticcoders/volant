@@ -392,6 +392,12 @@ final class LauncherModel: ObservableObject {
     let catalog = ExtensionCatalogModel()
     /// The input of the list run whose rows are showing, sent with their actions.
     private var extensionItemsQuery = ""
+    /// The dropdown filter of the list run whose rows are showing, sent with their actions.
+    private var extensionItemsFilter: String?
+    /// The chosen entry of the scoped extension's dropdown, when its manifest declares `filters`.
+    @Published private(set) var scopeFilter: String?
+    /// Each extension's last chosen filter while Volant runs, so entering it again keeps the choice.
+    private var chosenFilters: [String: String] = [:]
     /// The list extension the launcher is inside, if any. While set, the search field's text is that
     /// extension's query: every edit runs it again, and no other source sees the text.
     @Published private(set) var scopedExtension: InstalledExtension?
@@ -537,12 +543,13 @@ final class LauncherModel: ObservableObject {
     private func runExtension(_ ext: InstalledExtension, input: String, keepingSelection: Bool = false) {
         guard !extensionRunning else { return }
         extensionItemsQuery = input
+        extensionItemsFilter = scopedExtension?.id == ext.id ? scopeFilter : nil
         extensionRunning = true
         let gen = generation
         let selectedID = keepingSelection ? selectedRow?.id : nil
         notice = keepingSelection ? nil : "Running \(ext.name)…"
         if ext.manifest.listsItems {
-            extensions.runItems(ext, query: input) { [weak self] result in
+            extensions.runItems(ext, query: input, filter: extensionItemsFilter) { [weak self] result in
                 guard let self else { return }
                 guard !self.finishExtensionRun(), gen == self.generation else { return }
                 switch result {
@@ -584,6 +591,8 @@ final class LauncherModel: ObservableObject {
     func enterScope(_ ext: InstalledExtension, input: String) {
         scopeRun?.cancel()
         scopedExtension = ext
+        let filters = ext.manifest.declaredFilters
+        scopeFilter = chosenFilters[ext.id].flatMap { id in filters.contains { $0.id == id } ? id : nil } ?? filters.first?.id
         scopeRunsNow = true
         if query == input { refresh() } else { query = input }
         searchFocusRequest = UUID()
@@ -595,8 +604,27 @@ final class LauncherModel: ObservableObject {
         scopeRun?.cancel()
         scopeRerun = false
         scopedExtension = nil
+        scopeFilter = nil
         if query.isEmpty { refresh() } else { query = "" }
         searchFocusRequest = UUID()
+    }
+
+    /// Chooses an entry in the scoped extension's dropdown and runs it at once for the field's text.
+    func chooseScopeFilter(_ id: String) {
+        guard let ext = scopedExtension, id != scopeFilter, ext.manifest.declaredFilters.contains(where: { $0.id == id }) else { return }
+        scopeFilter = id
+        chosenFilters[ext.id] = id
+        scopeRunsNow = true
+        refresh()
+    }
+
+    /// Command-P inside an extension with a dropdown: chooses its next entry, wrapping to the first.
+    /// False when there is no dropdown.
+    func cycleScopeFilter() -> Bool {
+        guard let filters = scopedExtension?.manifest.declaredFilters, !filters.isEmpty else { return false }
+        let current = filters.firstIndex { $0.id == scopeFilter } ?? -1
+        chooseScopeFilter(filters[(current + 1) % filters.count].id)
+        return true
     }
 
     /// Escape inside an extension: clears typed text first, then leaves. False outside an extension.
@@ -635,6 +663,7 @@ final class LauncherModel: ObservableObject {
         scopeRun?.cancel()
         scopeRerun = false
         scopedExtension = nil
+        scopeFilter = nil
         pendingExtension = nil
         showingACP = false
         actionTarget = nil
@@ -1659,7 +1688,7 @@ final class LauncherModel: ObservableObject {
         guard !extensionRunning else { notice = "An extension is already running."; return }
         extensionRunning = true
         let gen = generation, opened = action == nil
-        extensions.runAction(ext, item: item, action: action, query: extensionItemsQuery) { [weak self] result in
+        extensions.runAction(ext, item: item, action: action, query: extensionItemsQuery, filter: extensionItemsFilter) { [weak self] result in
             guard let self else { return }
             if self.finishExtensionRun() { return }
             switch result {

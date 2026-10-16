@@ -123,7 +123,9 @@ export default function Extensions() {
         search. Text after the keyword comes with you, so{' '}
         <code>hn ask</code> enters Hacker News searching for{' '}
         <code>ask</code>. Escape clears the text, and a second Escape, Delete
-        in an empty field or clicking the chip goes back.
+        in an empty field or clicking the chip goes back. Some extensions add
+        a dropdown at the end of the field, such as Hacker News&rsquo;s Top,
+        New, Ask HN and Show HN; Command-P picks the next entry.
       </p>
       <p>
         A list extension can show live data, such as the{' '}
