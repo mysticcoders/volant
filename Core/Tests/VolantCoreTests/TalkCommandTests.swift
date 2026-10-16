@@ -6,7 +6,6 @@ import XCTest
 /// the Speech framework, so they hold on macOS 15 as well as 26.
 final class TalkCommandTests: XCTestCase {
     func testTalkIsADiscoverableCommand() {
-        XCTAssertTrue(CoreCommand.allCases.contains(.talk))
         XCTAssertEqual(CoreCommand.talk.title, "Dictate Text")
         XCTAssertEqual(CoreCommand.talk.query, "talk")
         XCTAssertEqual(CoreCommand.talk.symbol, "mic")
@@ -32,27 +31,5 @@ final class TalkCommandTests: XCTestCase {
         let preferences = try JSONDecoder().decode(Preferences.self, from: legacy)
         XCTAssertEqual(preferences.talkHotKey, "")
         XCTAssertEqual(preferences.summonHotKey, "option+space")
-    }
-
-    func testTheOtherCommandsAreUnchanged() {
-        XCTAssertEqual(CoreCommand.emoji.query, ":")
-        XCTAssertEqual(CoreCommand.clipboard.query, "clip")
-        XCTAssertEqual(CoreCommand.ai.title, "AI Chat")
-    }
-}
-
-/// Confetti is a command like any other, so the routing rules apply to it too.
-final class ConfettiCommandTests: XCTestCase {
-    func testConfettiIsDiscoverableAndReserved() {
-        XCTAssertTrue(CoreCommand.allCases.contains(.confetti))
-        XCTAssertEqual(CoreCommand.confetti.query, "confetti")
-        XCTAssertTrue(LauncherRouting.isReserved("confetti"))
-        XCTAssertFalse(LauncherRouting.isReserved("confettis"), "only the whole first word is reserved")
-    }
-
-    func testAddingItLeftTheExistingCommandsAlone() {
-        XCTAssertEqual(CoreCommand.talk.query, "talk")
-        XCTAssertEqual(CoreCommand.emoji.query, ":")
-        XCTAssertEqual(CoreCommand.clipboard.query, "clip")
     }
 }

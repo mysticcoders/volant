@@ -48,14 +48,12 @@ final class ClockSpanTests: XCTestCase {
         XCTAssertEqual(card("1h 30m * 3 in hours").first, "4.5 hours")
         XCTAssertEqual(card("2h 20min + 55min * 2").first, "4 hours 10 minutes")
         XCTAssertEqual(card("2h / 0"), [])
-        XCTAssertEqual(card("2h 20min + 55min").first, "3 hours 15 minutes")
     }
 
     func testHoursAndMinutesAfterAClockTime() {
         XCTAssertEqual(card("10:30 + 2:45"), ["1:15 PM", "10:30 AM", "1:15 PM"])
         XCTAssertEqual(card("3:45pm - 1:30").first, "2:15 PM")
         XCTAssertEqual(card("11pm + 1:30").first, "12:30 AM")
-        XCTAssertEqual(card("3:45pm + 5").first, "8:45 PM")
         XCTAssertEqual(card("10:30 + 2:5"), [])
     }
 

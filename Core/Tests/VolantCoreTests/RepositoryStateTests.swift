@@ -61,7 +61,9 @@ final class RepositoryStatusCommandTests: XCTestCase {
     }
 
     func testRealRepositoryCountsChangesAndUntrackedFiles() throws {
-        let executable = try XCTUnwrap(RepositoryStatusCommand.git(), "No git outside the installer stub on this machine")
+        guard let executable = RepositoryStatusCommand.git() else {
+            throw XCTSkip("No git outside the installer stub on this machine")
+        }
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }

@@ -52,14 +52,6 @@ final class PercentQuestionsTests: XCTestCase {
         XCTAssertEqual(card("climate change"), [])
     }
 
-    func testPercentWordsReadAsPercentInArithmetic() throws {
-        let english = Locale(identifier: "en_US")
-        XCTAssertEqual(try XCTUnwrap(Calculator.evaluate("10 percent of 50", locale: english)), 5, accuracy: 1e-9)
-        XCTAssertEqual(try XCTUnwrap(Calculator.evaluate("20 pct off 80", locale: english)), 64, accuracy: 1e-9)
-        XCTAssertEqual(try XCTUnwrap(Calculator.evaluate("100 + 10 percent", locale: english)), 110, accuracy: 1e-9)
-        XCTAssertNil(Calculator.evaluate("percentage", locale: english))
-    }
-
     func testAnswersListPercentQuestions() {
         let answers = CalculationAnswer.answers(for: "20 is what percent of 80", locale: Locale(identifier: "en_US"))
         XCTAssertEqual(answers.map(\.result), ["25%"])

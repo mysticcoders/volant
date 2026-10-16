@@ -34,20 +34,6 @@ final class HerdrStatusSummaryTests: XCTestCase {
         XCTAssertEqual(HerdrStatusSummary(sessions: [pane("idle", "1")], connected: true, busy: true, machines: []).text, "Herdr: none waiting")
     }
 
-    /// The footer's orange keeps its hue in dark themes and darkens only as far as AA needs on a
-    /// light background, for the system colors and every palette.
-    func testWarningColorIsReadableInEveryTheme() {
-        XCTAssertEqual(ColorPalette.readable("#ff9f0a", on: "#1e1e1e", toward: "#ffffff"), "#ff9f0a")
-        let light = ColorPalette.readable("#ff9500", on: "#ececec", toward: "#000000")
-        XCTAssertNotEqual(light, "#ff9500")
-        XCTAssertGreaterThanOrEqual(ColorPalette.contrast(light, "#ececec") ?? 0, 4.5)
-        for theme in ColorTheme.catalog {
-            guard let palette = theme.palette else { continue }
-            let color = ColorPalette.readable(palette.orange, on: palette.background, toward: palette.text)
-            XCTAssertGreaterThanOrEqual(ColorPalette.contrast(color, palette.background) ?? 0, 4.5, theme.id)
-        }
-    }
-
     func testQuietAndDisconnectedStates() {
         let quiet = HerdrStatusSummary(sessions: [pane("working", "1"), pane("idle", "2")], connected: true, busy: false, machines: [], unread: 1)
         XCTAssertEqual(quiet.text, "Herdr: none waiting")

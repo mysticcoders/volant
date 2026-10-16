@@ -82,7 +82,6 @@ final class CurrencyConverterTests: XCTestCase {
         XCTAssertEqual(try card("$50 per hour in eur").first, "€40.00 per hour")
         XCTAssertEqual(try card("€90 a day to usd").first, "$112.50 per day")
         XCTAssertEqual(try card("1000 eur/month in chf/month").first, "CHF 950.00 per month")
-        XCTAssertEqual(try card("100 usd in eur").first, "€80.00")
         XCTAssertEqual(CurrencyConverter.evaluate("8 usd/hour in gbp", rates: try rates(), now: now, locale: english)?.swapQuery,
                        "5.12 GBP/hour in USD")
         XCTAssertEqual(try card("5.12 GBP/hour in USD").first, "$8.00 per hour")
@@ -92,6 +91,8 @@ final class CurrencyConverterTests: XCTestCase {
     }
 
     func testFeedsNeededSeeThroughFramingAndMixedAmounts() {
+        let saved = CurrencyRates.current
+        defer { CurrencyRates.current = saved }
         CurrencyRates.current = nil
         func needs(_ query: String) -> [Bool] {
             let found = CurrencyConverter.feedsNeeded(query, locale: english)

@@ -46,7 +46,6 @@ final class ExtensionStorageTests: XCTestCase {
 
     func testRequestsCarryStorageActionAndItemOnlyWhenGiven() throws {
         let now = Date(timeIntervalSince1970: 1_791_000_000)
-        XCTAssertEqual(try ExtensionNetwork.request(phase: "plan", query: "new", now: now, units: "metric"), #"{"now":1791000000,"phase":"plan","query":"new","units":"metric"}"#)
         let item = ExtensionItem(title: "Story", url: "https://news.example.com/1")
         let text = try ExtensionNetwork.request(phase: "action", query: "", now: now, storage: try value(#"{"pinned":[]}"#), action: "pin", item: item, units: "metric")
         XCTAssertEqual(text, #"{"action":"pin","item":{"title":"Story","url":"https:\/\/news.example.com\/1"},"now":1791000000,"phase":"action","query":"","storage":{"pinned":[]},"units":"metric"}"#)

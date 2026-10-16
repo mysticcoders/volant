@@ -31,7 +31,9 @@ final class RatioCalculatorTests: XCTestCase {
         let paris = TimeZone(identifier: "Europe/Paris")!
         let ratio = CalculationAnswer.answers(for: "ratio of 3 to 5", localZone: paris, locale: english)
         XCTAssertEqual(ratio.map(\.result), ["0.6"])
-        let clock = CalculationAnswer.answers(for: "16:9 ratio", localZone: paris, locale: english)
-        XCTAssertEqual(clock.map(\.result), ["1.7777777778"])
+        let aspect = CalculationAnswer.answers(for: "16:9 ratio", localZone: paris, locale: english)
+        XCTAssertEqual(aspect.map(\.result), ["1.7777777778"])
+        XCTAssertEqual(CalculationAnswer.answers(for: "3:45", localZone: paris, locale: english).map(\.result), [],
+                       "a bare clock time is not read as a ratio")
     }
 }

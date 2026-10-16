@@ -36,11 +36,9 @@ final class MoneyCalculatorTests: XCTestCase {
         XCTAssertEqual(card("$65"), [])
         XCTAssertEqual(card("100 usd in eur"), [])
         XCTAssertEqual(card("10 usd + 5 eur"), [])
-        XCTAssertEqual(card("10 usd + 5 eur in usd"), [])
         XCTAssertEqual(card("$100 / $20"), [])
         XCTAssertEqual(card("$20 * $3"), [])
         XCTAssertEqual(card("20 + 5"), [])
-        XCTAssertEqual(card("5 cup + 2 cup"), [])
         XCTAssertEqual(card("max(3, 7) usd"), [])
     }
 

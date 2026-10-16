@@ -36,18 +36,38 @@ final class ACPConversationSlotsTests: XCTestCase {
         XCTAssertFalse(slots.acquire(), "an extra release must not create a second slot")
     }
 
+    /// Each round starts more callers than there are slots. Winners keep their slot until every caller
+    /// has tried, so the attempts really overlap held slots before anyone releases.
     func testConcurrentAcquireAndReleaseNeverExceedTheLimit() {
         let slots = ACPConversationSlots(limit: 3)
         let holders = Holders()
-        DispatchQueue.concurrentPerform(iterations: 200) { _ in
-            guard slots.acquire() else { return }
-            holders.enter()
-            holders.leave()
-            slots.release()
+        let callers = 8
+        for round in 0..<20 {
+            let attempted = DispatchGroup()
+            let finished = DispatchGroup()
+            let gate = DispatchSemaphore(value: 0)
+            for _ in 0..<callers {
+                attempted.enter()
+                finished.enter()
+                Thread.detachNewThread {
+                    let held = slots.acquire()
+                    if held { holders.enter() }
+                    attempted.leave()
+                    if held {
+                        gate.wait()
+                        holders.leave()
+                        slots.release()
+                    }
+                    finished.leave()
+                }
+            }
+            XCTAssertEqual(attempted.wait(timeout: .now() + 5), .success, "round \(round)")
+            XCTAssertEqual(slots.inUse, 3, "round \(round)")
+            for _ in 0..<callers { gate.signal() }
+            XCTAssertEqual(finished.wait(timeout: .now() + 5), .success, "round \(round)")
+            XCTAssertEqual(slots.inUse, 0, "round \(round)")
         }
-        XCTAssertLessThanOrEqual(holders.peak, 3)
-        XCTAssertGreaterThan(holders.peak, 0)
-        XCTAssertEqual(slots.inUse, 0)
+        XCTAssertEqual(holders.peak, 3)
     }
 
     func testTheHelperSharesOneCountAtTheLiveLimit() {

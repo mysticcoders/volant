@@ -120,7 +120,6 @@ final class BackupPlanTests: XCTestCase {
 
     func testExportFolderNameIsDatedAndSortable() {
         let date = Date(timeIntervalSince1970: 1_789_000_000)
-        XCTAssertEqual(BackupFolder.exportName(on: date), "Volant-Backup-" + date.formatted(.iso8601.year().month().day()))
-        XCTAssertTrue(BackupFolder.exportName(on: date).hasPrefix("Volant-Backup-20"))
+        XCTAssertEqual(BackupFolder.exportName(on: date), "Volant-Backup-2026-09-10")
     }
 }
