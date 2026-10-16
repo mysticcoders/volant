@@ -67,6 +67,8 @@ jobs:
           path: |
             /tmp/volant-ui.log
             /tmp/volant-launcher-*.jpg
+            /tmp/volant-home-*.jpg
+            /tmp/volant-volume-*.jpg
             /tmp/volant-destinations-*.png
             /tmp/volant-snap-*.png
             /tmp/volant-core-*.png

@@ -47,3 +47,7 @@ The list fades at edges with more results beyond them (`EdgeFadeMask`, driven by
 ## Recurring lesson
 
 Symptom: the newer host compiler accepted the expanded LauncherView while Xcode 16.4 in Tart failed its expression type-checking budget. Cause: one large SwiftUI body combined content, overlay, and keyboard modifiers. Prevention: split content from interaction modifiers; keep the VM/compiler CI check. A host build alone is not compatibility evidence.
+
+## Fixture runs — October 16, 2026
+
+`tools/check-launcher-actions.sh` runs the Actions fixture four times: light and dark at the default size, compact in light and large in dark. Size changes layout and appearance changes color independently, so the other two combinations added about 1.8 minutes without new coverage. At compact and large the fixture skips standalone Settings, AI and chat views, which do not follow the launcher size. It uses a fresh launcher-position defaults suite each run, so a saved position no longer carries between runs.
