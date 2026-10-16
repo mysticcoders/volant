@@ -716,7 +716,7 @@ verify(!keyNotes.performKeyEquivalent(with: deleteKey), "Command-Delete stays av
 verify(!keyNotes.performKeyEquivalent(with: notesKey("j", .command, keyCode: 38, in: keyNotes)), "Unrelated combinations are not claimed")
 verify(shortcutNotes.notes.contains { $0.id == keyNote.id }, "Command-Delete under an overlay never trashes the note")
 keyNotes.model.overlay = nil
-RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+verify(waitUntil(stable: 0.1) { keyNotes.model.overlay == nil && keyNotes.model.editing }, "Notes is back in the editor")
 // The same key pressed before SwiftUI re-renders the newly opened overlay: the controls' disabled state
 // has not caught up yet, so the commands themselves must refuse.
 verify(keyNotes.model.editing, "Notes is editing before the overlay race check")
@@ -724,8 +724,9 @@ keyNotes.model.show(.browse)
 _ = keyNotes.performKeyEquivalent(with: previewKey)
 verify(keyNotes.model.editing, "Command-E pressed as an overlay opens keeps editing")
 keyNotes.model.overlay = nil
-RunLoop.main.run(until: Date().addingTimeInterval(0.1))
-verify(keyNotes.performKeyEquivalent(with: previewKey) && waitUntil { !keyNotes.model.editing }, "Available Command-E still toggles preview")
+// SwiftUI re-enables the Preview shortcut on its next render; until then the press is not claimed, so
+// it is retried until the panel takes it, which toggles preview exactly once.
+verify(waitUntil { keyNotes.performKeyEquivalent(with: previewKey) } && waitUntil { !keyNotes.model.editing }, "Available Command-E still toggles preview")
 keyNotes.model.editing = true
 keyNotes.close()
 verify(!keyNotes.isVisible, "Notes closes after the shortcut checks")

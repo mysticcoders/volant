@@ -19,7 +19,7 @@ while IFS= read -r source; do sources+=("$source"); done < <(find Volant Shared 
 python3 tools/run-bounded-check.py 300 'Compile Actions fixture' swiftc -target "$(uname -m)-apple-macosx15.0" "${VOLANT_CORE_FLAGS[@]}" "${sources[@]}" "$fixture_dir/main.swift" -o "$bundle/MacOS/VolantActionsFixture"
 python3 tools/run-bounded-check.py 120 'Light Actions fixture' "$bundle/MacOS/VolantActionsFixture" "$fixture_dir"
 python3 tools/run-bounded-check.py 120 'Dark Actions fixture' "$bundle/MacOS/VolantActionsFixture" "$fixture_dir" dark
-for scale in compact large; do
-    python3 tools/run-bounded-check.py 120 "Light Actions $scale" "$bundle/MacOS/VolantActionsFixture" "$fixture_dir" "$scale"
-    python3 tools/run-bounded-check.py 120 "Dark Actions $scale" "$bundle/MacOS/VolantActionsFixture" "$fixture_dir" dark "$scale"
-done
+# Size changes layout and appearance changes color, independently, so each non-default size runs once,
+# one in each appearance, instead of every size in both.
+python3 tools/run-bounded-check.py 120 "Light Actions compact" "$bundle/MacOS/VolantActionsFixture" "$fixture_dir" compact
+python3 tools/run-bounded-check.py 120 "Dark Actions large" "$bundle/MacOS/VolantActionsFixture" "$fixture_dir" dark large
