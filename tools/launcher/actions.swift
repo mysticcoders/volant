@@ -555,14 +555,14 @@ func communitySettingsScenario() throws {
     browseView.layoutSubtreeIfNeeded(); settle()
     try render("community-browse", view: browseView)
     browseWindow.orderOut(nil)
+    try? FileManager.default.removeItem(at: communityManager.catalogStateURL)
     var revoking = catalog
     revoking.sequence = 2
     revoking.revoked = [.init(id: catalog.extensions[0].id, sha256: catalog.extensions[0].moduleFile.sha256, reason: "Fictional reason for withdrawing it.")]
     verify(communityManager.applyRevocations(from: revoking).map(\.id) == [catalog.extensions[0].id], "A revocation turns off the installed copy")
     try renderCommunitySettings("community-revoked", catalog: revoking, height: 760)
-    var lifted = catalog
-    lifted.sequence = 3
-    communityManager.applyRevocations(from: lifted)
+    try FileManager.default.removeItem(at: communityManager.catalogStateURL)
+    communityManager.reload()
     try communityManager.setCommunityAllowed(false, expected: true)
     try renderCommunitySettings("community-paused")
     try renderCommunitySettings("community-catalog-paused", catalog: catalog, height: 760)
