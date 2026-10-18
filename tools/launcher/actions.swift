@@ -544,10 +544,29 @@ func communitySettingsScenario() throws {
     let catalog = fictionalCatalog(installed: communityManager.search("community").first!.manifest)
     verify(ExtensionManager.catalogStatus(catalog.extensions[0], installed: communityManager.extensions) == .installed, "Matching catalog listing reads as installed")
     try renderCommunitySettings("community-catalog", catalog: catalog, height: 760)
+    var newer = catalog
+    newer.extensions[0].version = "1.1.0"; newer.extensions[0].moduleFile.sha256 = String(repeating: "4", count: 64)
+    verify(ExtensionManager.catalogStatus(newer.extensions[0], installed: communityManager.extensions) == .update(from: catalog.extensions[0].version),
+           "A newer catalog version offers an update on the Extensions page")
+    try renderCommunitySettings("community-updates", catalog: newer, height: 760)
+    let (browseWindow, browseView) = hostWindow(ExtensionBrowseView(catalog: newer, loading: false, error: nil, installing: nil, installed: communityManager.extensions,
+                                                                    communityAllowed: true, load: {}, install: { _ in }, done: {}),
+                                                width: 620, height: 520)
+    browseView.layoutSubtreeIfNeeded(); settle()
+    try render("community-browse", view: browseView)
+    browseWindow.orderOut(nil)
+    try? FileManager.default.removeItem(at: communityManager.catalogStateURL)
+    var revoking = catalog
+    revoking.sequence = 2
+    revoking.revoked = [.init(id: catalog.extensions[0].id, sha256: catalog.extensions[0].moduleFile.sha256, reason: "Fictional reason for withdrawing it.")]
+    verify(communityManager.applyRevocations(from: revoking).map(\.id) == [catalog.extensions[0].id], "A revocation turns off the installed copy")
+    try renderCommunitySettings("community-revoked", catalog: revoking, height: 760)
+    try FileManager.default.removeItem(at: communityManager.catalogStateURL)
+    communityManager.reload()
     try communityManager.setCommunityAllowed(false, expected: true)
     try renderCommunitySettings("community-paused")
     try renderCommunitySettings("community-catalog-paused", catalog: catalog, height: 760)
-    print("PASS: community extension Settings render off, on, beside the catalog, and paused")
+    print("PASS: community extension Settings render off, on, up to date, with an update, browsing, revoked, and paused")
 }
 
 /// A list extension with storage: its rows offer actions in Actions and Pin saves data; then a

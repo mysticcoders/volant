@@ -190,4 +190,53 @@ final class ExtensionCatalogTests: XCTestCase {
         listing.moduleFile = .init(sha256: hash(unbounded), size: unbounded.count)
         XCTAssertThrowsError(try listing.verify(manifest: manifest, module: unbounded, sha256: hash))
     }
+
+    func testRevocationsMatchByIDOrModuleHashAndAreBounded() throws {
+        let good = try listing()
+        let byHash = ExtensionCatalog.Revocation(id: good.id, sha256: good.moduleFile.sha256, reason: "Sends more than it says.")
+        let data = try JSONEncoder().encode(ExtensionCatalog(format: 1, sequence: 5, generated: "2026-10-12T00:00:00Z",
+                                                             revision: String(repeating: "a", count: 40), extensions: [good], revoked: [byHash]))
+        let catalog = try decode(data)
+        XCTAssertEqual(catalog.revoked, [byHash])
+        XCTAssertTrue(catalog.installable.isEmpty, "A revoked listing is not offered")
+        XCTAssertEqual(ExtensionCatalog.revocation(in: [byHash], id: good.id, sha256: good.moduleFile.sha256.uppercased()), byHash)
+        XCTAssertNil(ExtensionCatalog.revocation(in: [byHash], id: good.id, sha256: String(repeating: "b", count: 64)), "Another version is not revoked")
+        XCTAssertNotNil(ExtensionCatalog.revocation(in: [.init(id: good.id)], id: good.id, sha256: nil), "Without a hash every version is revoked")
+        XCTAssertNil(try decode(try index(listings: [good])).revoked, "Catalogs without the field still decode")
+
+        let unsafe: [ExtensionCatalog.Revocation] = [.init(id: "../escape"), .init(id: good.id, sha256: "ABC"),
+                                                     .init(id: good.id, reason: String(repeating: "x", count: 301))]
+        for bad in unsafe {
+            let data = try JSONEncoder().encode(ExtensionCatalog(format: 1, sequence: 5, generated: "g", revision: String(repeating: "a", count: 40),
+                                                                 extensions: [], revoked: [bad]))
+            XCTAssertThrowsError(try decode(data)) { XCTAssertEqual($0 as? ExtensionCatalogError, .invalidIndex) }
+        }
+        let tooMany = (0...ExtensionCatalog.maximumRevocations).map { ExtensionCatalog.Revocation(id: "community.r\($0)") }
+        XCTAssertThrowsError(try decode(try JSONEncoder().encode(ExtensionCatalog(format: 1, sequence: 5, generated: "g", revision: String(repeating: "a", count: 40),
+                                                                                  extensions: [], revoked: tooMany))))
+    }
+
+    func testUpdateKeepsApprovalOnlyWithoutNewPermissions() throws {
+        let secret = ExtensionSecret(id: "token", title: "Token", host: "news.example.com", header: "Authorization")
+        let old = ExtensionManifest(id: "community.fictional.reader", name: "Reader", version: "1.0.0", module: "reader.wasm",
+                                    capabilities: ["log"], sha256: hash(module), hosts: ["news.example.com", "api.example.com"], output: "items",
+                                    storage: true, secrets: [secret], appLinks: ["reader"], permissions: [ExtensionLocation.permission])
+        var same = old; same.version = "1.1.0"; same.sha256 = String(repeating: "b", count: 64); same.timeoutSeconds = 5
+        XCTAssertTrue(same.requestsNoMoreThan(old), "Changed code with the same permissions keeps approval")
+        var fewer = same; fewer.hosts = ["news.example.com"]; fewer.capabilities = []; fewer.storage = nil; fewer.appLinks = nil; fewer.permissions = nil
+        XCTAssertTrue(fewer.requestsNoMoreThan(old), "Dropping permissions keeps approval")
+        let more: [(inout ExtensionManifest) -> Void] = [
+            { $0.hosts = ["news.example.com", "tracker.example.com"] }, { $0.capabilities = ["log", "clipboard.write"] },
+            { $0.secrets = [ExtensionSecret(id: "token", title: "Token", host: "api.example.com", header: "Authorization")] },
+            { $0.appLinks = ["reader", "other"] }, { $0.abiVersion = 2; $0.capabilities = [] },
+        ]
+        for (offset, change) in more.enumerated() {
+            var asking = same; change(&asking)
+            XCTAssertFalse(asking.requestsNoMoreThan(old), "case \(offset)")
+        }
+        var withoutStorage = old; withoutStorage.storage = nil
+        XCTAssertFalse(old.requestsNoMoreThan(withoutStorage), "Adding storage needs approval")
+        var withoutLocation = old; withoutLocation.permissions = nil
+        XCTAssertFalse(old.requestsNoMoreThan(withoutLocation), "Adding location needs approval")
+    }
 }

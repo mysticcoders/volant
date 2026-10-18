@@ -1,9 +1,11 @@
 import SwiftUI
 import VolantCore
 
-/// Reloads whenever a window becomes key as well as on appear, so enabling an extension or allowing
-/// hosts from the launcher shows here when Settings comes back, even if this pane never left the screen.
-/// The catalog is fetched only when the owner chooses Refresh; fixtures pass `catalog` to start loaded.
+/// Installed extensions, with updates from the signed catalog applied here; Browse opens the catalog in
+/// its own sheet for finding new ones. Reloads whenever a window becomes key as well as on appear, so
+/// enabling an extension or allowing hosts from the launcher shows here when Settings comes back, even if
+/// this pane never left the screen. The catalog is fetched only when the owner chooses Check for Updates
+/// or Browse; fixtures pass `catalog` to start loaded.
 struct ExtensionSettingsView: View {
     let configURL: URL
     let onChange: () -> Void
@@ -23,6 +25,9 @@ struct ExtensionSettingsView: View {
     @State private var catalogLoading = false
     @State private var catalogError: String?
     @State private var installing: String?
+    @State private var updatingAll = false
+    @State private var notices: [String] = []
+    @State private var browsing = false
     private let secretStore: ExtensionSecretStore
     init(configURL: URL, onChange: @escaping () -> Void, roots: [URL]? = nil, directory: URL? = nil, dataDirectory: URL? = nil,
          catalogClient: ExtensionCatalogClient = .live, catalog: ExtensionCatalog? = nil, secretStore: ExtensionSecretStore = .keychain) {
@@ -44,27 +49,70 @@ struct ExtensionSettingsView: View {
         do { try manager.setEnabled(ext, enabled); reload(); onChange() }
         catch { self.error = error.localizedDescription; reload() }
     }
+    /// Fetches the signed catalog and turns off any installed extension it revokes.
     private func loadCatalog() {
-        catalogLoading = true; catalogError = nil
+        catalogLoading = true; catalogError = nil; notices = []
         catalogClient.load { result in
             catalogLoading = false
             switch result {
-            case .success(let loaded): catalog = loaded
+            case .success(let loaded):
+                let withdrawn = manager.applyRevocations(from: loaded)
+                catalog = loaded
+                notices = withdrawn.map { "Turned off \($0.name): it was withdrawn from the catalog." }
+                reload(); if !withdrawn.isEmpty { onChange() }
             case .failure(let failure): catalogError = failure.localizedDescription
             }
         }
     }
-    private func install(_ listing: ExtensionCatalog.Listing, from catalog: ExtensionCatalog) {
+    private func checkForUpdates() { reload(); onChange(); loadCatalog() }
+    /// Downloads and installs one listing, then reports a failure message, or nil on success. An update
+    /// that asks for new access leaves the extension off, and says so.
+    private func install(_ listing: ExtensionCatalog.Listing, from catalog: ExtensionCatalog, completion: @escaping (String?) -> Void = { _ in }) {
         installing = listing.id
+        let wasEnabled = installed.first { $0.id == listing.id }?.enabled == true
         catalogClient.download(listing) { result in
             installing = nil
             do {
                 let manager = manager
                 guard manager.communityAllowed else { throw ExtensionManager.ExtensionError.communityDisabled }
                 let files = try result.get()
-                try manager.install(listing, manifest: files.manifest, module: files.module, icon: files.icon, from: catalog)
-                reload(); onChange()
-            } catch { self.error = error.localizedDescription; reload() }
+                let updated = try manager.install(listing, manifest: files.manifest, module: files.module, icon: files.icon, from: catalog)
+                if wasEnabled && !updated.enabled { notices.append("\(updated.name) \(updated.manifest.version) asks for new access, so it is off. Turn it on to review it.") }
+                reload(); onChange(); completion(nil)
+            } catch { reload(); completion(error.localizedDescription) }
+        }
+    }
+    private func update(_ listing: ExtensionCatalog.Listing) {
+        guard let catalog else { return }
+        notices = []
+        install(listing, from: catalog) { failure in if let failure { error = failure } }
+    }
+    /// Installs every available update one at a time, then shows any failures together.
+    private func updateAll() {
+        guard let catalog else { return }
+        var queue = updates.map(\.listing)
+        var failures: [String] = []
+        updatingAll = true; notices = []
+        func next() {
+            guard !queue.isEmpty else {
+                updatingAll = false
+                if !failures.isEmpty { error = failures.joined(separator: "\n") }
+                return
+            }
+            install(queue.removeFirst(), from: catalog) { failure in
+                if let failure { failures.append(failure) }
+                next()
+            }
+        }
+        next()
+    }
+    /// Installed community extensions with a newer version in the loaded catalog.
+    private var updates: [(ext: InstalledExtension, listing: ExtensionCatalog.Listing)] {
+        guard let catalog else { return [] }
+        return installed.compactMap { ext in
+            guard let listing = catalog.installable.first(where: { $0.id == ext.id }),
+                  case .update = ExtensionManager.catalogStatus(listing, installed: installed) else { return nil }
+            return (ext, listing)
         }
     }
     private func users(of host: String) -> [String] {
@@ -85,6 +133,7 @@ struct ExtensionSettingsView: View {
             } else {
                 communityIntro
             }
+            if communityAllowed { updatesSection }
             Section {
                 if visibleExtensions.isEmpty { Text("No extensions installed.").foregroundStyle(.secondary) }
                 ForEach(visibleExtensions) { ext in extensionRow(ext) }
@@ -95,21 +144,28 @@ struct ExtensionSettingsView: View {
                     Spacer()
                     if communityAllowed {
                         Button("Open Folder") { NSWorkspace.shared.open(ExtensionManager.directory) }.controlSize(.small).font(.callout)
-                        Button("Refresh") { reload(); onChange(); loadCatalog() }.controlSize(.small).font(.callout)
-                            .disabled(catalogLoading || installing != nil)
-                            .accessibilityIdentifier("extension-refresh")
+                        Button("Browse Extensions…") { browsing = true }.controlSize(.small).font(.callout)
+                            .accessibilityIdentifier("extension-browse")
                     }
                 }
             } footer: {
-                SettingsFooter("Extensions start off and run only when you invoke them; changed code or permissions need enabling again. Turned-off extensions stay out of search; type ext and a name to find one. Uninstalling moves an extension to the Trash with its data and unused host access. Try Hello World: turn it on, then type hello Andrew")
+                SettingsFooter("Extensions start off and run only when you invoke them. An update keeps an extension on unless it asks for new access; other changed code needs enabling again. Turned-off extensions stay out of search; type ext and a name to find one. Uninstalling moves an extension to the Trash with its data and unused host access. Try Hello World: turn it on, then type hello Andrew")
             }
-            if communityAllowed { catalogSection }
             if communityAllowed || !approvedHosts.isEmpty { networkAccessSection }
             if communityAllowed || !locationSharing.isEmpty { locationSection }
         }
         .formStyle(.settings)
         .onAppear(perform: reload)
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in reload() }
+        .sheet(isPresented: $browsing) {
+            ExtensionBrowseView(catalog: catalog, loading: catalogLoading, error: catalogError, installing: installing, installed: installed,
+                                communityAllowed: communityAllowed, load: loadCatalog,
+                                install: { listing in
+                                    guard let catalog else { return }
+                                    install(listing, from: catalog) { failure in if let failure { error = failure } }
+                                },
+                                done: { browsing = false })
+        }
         .sheet(item: $confirmingHosts) { ext in
             VStack(alignment: .leading, spacing: 16) {
                 Text("Enable \(ext.name)?").font(.title2.bold())
@@ -152,6 +208,7 @@ struct ExtensionSettingsView: View {
     /// on a line of their own so the details keep their width at Settings' minimum size.
     private func extensionRow(_ ext: InstalledExtension) -> some View {
         let manager = manager
+        let update = updates.first { $0.ext.id == ext.id }?.listing
         let hasData = ext.manifest.usesStorage && manager.hasStoredData(ext)
         let hasSecrets = manager.hasSecrets(ext)
         return VStack(alignment: .leading, spacing: 8) {
@@ -172,10 +229,24 @@ struct ExtensionSettingsView: View {
                          + (ext.catalogOrigin == nil ? "" : " · From catalog")
                          + " · Version \(ext.manifest.version) · " + ext.accessDescription
                          + (ext.enabled && !ExtensionHostApprovals.missing(ext.manifest, at: configURL).isEmpty ? " · Asks for host access on next use" : ""))
-                }.disabled(ext.communityBlocked).accessibilityIdentifier("extension-toggle-" + ext.id)
+                }.disabled(ext.communityBlocked || (ext.revocation != nil && !ext.enabled)).accessibilityIdentifier("extension-toggle-" + ext.id)
+            }
+            if let revocation = ext.revocation {
+                Label("Withdrawn from the catalog" + (revocation.reason.map { ": " + $0 } ?? ". Update or uninstall it."), systemImage: "exclamationmark.triangle.fill")
+                    .font(.callout).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
+                    .padding(.leading, 34).accessibilityIdentifier("extension-revoked-" + ext.id)
             }
             if hasData || hasSecrets || ext.isCommunity {
                 HStack(spacing: 8) {
+                    if let update {
+                        if installing == update.id {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Button("Update to \(update.version)") { self.update(update) }.controlSize(.small)
+                                .disabled(installing != nil || updatingAll || ext.communityBlocked)
+                                .accessibilityIdentifier("extension-update-" + ext.id)
+                        }
+                    }
                     if hasData {
                         Button("Clear Data…") { confirmingClear = ext }.controlSize(.small)
                             .accessibilityIdentifier("extension-clear-data-" + ext.id)
@@ -245,22 +316,44 @@ struct ExtensionSettingsView: View {
         }
     }
 
-    @ViewBuilder private var catalogSection: some View {
-            Section {
-                if let catalog {
-                    if catalog.extensions.isEmpty { Text("The catalog has no extensions yet.").foregroundStyle(.secondary) }
-                    // Installed rows already use extension IDs; sharing them in one Form misplaces rows.
-                    ForEach(catalog.extensions, id: \.catalogRowID) { listing in catalogRow(listing, from: catalog) }
-                } else if catalogLoading {
-                    HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Checking the catalog…").foregroundStyle(.secondary) }
+    /// Whether installed catalog extensions are current: check the signed catalog, then update one or all.
+    @ViewBuilder private var updatesSection: some View {
+        Section {
+            LabeledContent {
+                if catalogLoading || updatingAll {
+                    ProgressView().controlSize(.small)
+                } else if !updates.isEmpty {
+                    Button("Update All") { updateAll() }.buttonStyle(.borderedProminent)
+                        .disabled(installing != nil).accessibilityIdentifier("extension-update-all")
                 } else {
-                    Text(catalogError ?? "Choose Refresh to check the catalog. Volant contacts it only then.").foregroundStyle(.secondary)
+                    Button("Check for Updates") { checkForUpdates() }
+                        .disabled(installing != nil).accessibilityIdentifier("extension-refresh")
                 }
-            } header: {
-                Text("Catalog")
-            } footer: {
-                SettingsFooter("Reviewed and signed for Volant, and each download is checked against the signed catalog. Installing never turns an extension on or runs it. Volant checks the catalog only when you choose Refresh; you can also type catalog in the launcher.")
+            } label: {
+                Text(updatesTitle)
+                Text(updatesDetail)
             }
+            ForEach(notices, id: \.self) { Text($0).font(.callout).foregroundStyle(.secondary) }
+        }
+    }
+
+    private var updatesTitle: String {
+        if updatingAll { return "Updating extensions…" }
+        if catalogLoading { return "Checking the catalog…" }
+        if catalogError != nil { return "Couldn’t check for updates" }
+        guard catalog != nil else { return "Updates" }
+        let count = updates.count
+        if count > 0 { return "\(count) \(count == 1 ? "update" : "updates") available" }
+        let withdrawn = installed.filter { $0.revocation != nil }.count
+        return withdrawn == 0 ? "Your extensions are up to date" : "\(withdrawn) \(withdrawn == 1 ? "extension was" : "extensions were") withdrawn"
+    }
+
+    private var updatesDetail: String {
+        if let catalogError, !catalogLoading { return catalogError }
+        guard catalog != nil else { return "Volant checks the signed catalog only when you ask." }
+        let names = updates.map { "\($0.ext.name) \($0.listing.version)" }
+        if !names.isEmpty { return names.joined(separator: ", ") }
+        return installed.contains { $0.revocation != nil } ? "Uninstall below, or update when a fixed version is listed." : "Checked the signed catalog."
     }
 
     @ViewBuilder private var networkAccessSection: some View {
@@ -311,42 +404,6 @@ struct ExtensionSettingsView: View {
             } footer: {
                 SettingsFooter("Each extension here was allowed your location separately. Volant asks macOS for it only when the extension runs, rounds it to about 11 km, and never saves it. Stopping makes the extension ask again on its next run.")
             }
-    }
-}
-
-private extension ExtensionCatalog.Listing {
-    var catalogRowID: String { "catalog:" + id }
-}
-
-extension ExtensionSettingsView {
-    @ViewBuilder
-    private func catalogRow(_ listing: ExtensionCatalog.Listing, from catalog: ExtensionCatalog) -> some View {
-        let status = ExtensionManager.catalogStatus(listing, installed: installed)
-        HStack(alignment: .top, spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(listing.name) + Text("  " + listing.version).foregroundColor(.secondary)
-                Text(listing.summary).font(.callout)
-                Text([listing.publisher, listing.license, InstalledExtension.accessDescription(capabilities: listing.capabilities, hosts: listing.hosts, storage: listing.storage == true)]
-                    .joined(separator: " · ")).font(.callout).foregroundStyle(.secondary)
-            }
-            Spacer()
-            if let source = listing.sourceURL {
-                Button("Source") { NSWorkspace.shared.open(source) }.controlSize(.small)
-                    .accessibilityIdentifier("extension-catalog-source-" + listing.id)
-            }
-            if installing == listing.id {
-                ProgressView().controlSize(.small)
-            } else {
-                switch status {
-                case .available, .update:
-                    Button(status == .available ? "Install" : "Update") { install(listing, from: catalog) }
-                        .controlSize(.small).disabled(!communityAllowed || installing != nil)
-                        .accessibilityIdentifier("extension-catalog-install-" + listing.id)
-                case .installed: Text("Installed").font(.callout).foregroundStyle(.secondary)
-                case .bundled: Text("Bundled").font(.callout).foregroundStyle(.secondary)
-                }
-            }
-        }
     }
 }
 
