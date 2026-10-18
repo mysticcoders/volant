@@ -2,7 +2,8 @@ import Foundation
 import VolantCore
 
 /// Grants are bound to the complete manifest, including code hash and capabilities.
-/// A changed extension is disabled again; edits preserve unrelated config fields.
+/// A changed extension is disabled again, except a catalog update that asks for no new permissions,
+/// which `ExtensionManager.install` re-grants; edits preserve unrelated config fields.
 enum ExtensionApproval {
     static func communityAllowed(at url: URL) -> Bool {
         (try? read(url)["communityExtensionsAllowed"] as? Bool) == true

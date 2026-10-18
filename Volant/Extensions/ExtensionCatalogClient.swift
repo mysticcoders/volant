@@ -14,18 +14,49 @@ enum ExtensionCatalogKey {
 }
 
 /// The highest catalog sequence this Mac accepted, kept in its own file beside config.json so an older,
-/// validly signed catalog cannot be replayed to offer superseded versions. It is per Mac and not synced.
+/// validly signed catalog cannot be replayed to offer superseded versions, and the revocations from the
+/// newest catalog applied, so withdrawn extensions stay off without checking the catalog again. It is per
+/// Mac and not synced. Each write keeps the other fields.
 enum ExtensionCatalogState {
     static var defaultURL: URL { Preferences.supportDirectory.appendingPathComponent("extension-catalog.json") }
 
-    static func sequence(at url: URL) -> Int {
-        guard let data = try? Data(contentsOf: url), let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return 0 }
-        return object["sequence"] as? Int ?? 0
+    /// The state file that belongs beside a config file.
+    static func url(besideConfig configURL: URL) -> URL {
+        configURL.deletingLastPathComponent().appendingPathComponent("extension-catalog.json")
     }
 
+    static func sequence(at url: URL) -> Int { read(url)["sequence"] as? Int ?? 0 }
+
     static func record(_ sequence: Int, at url: URL) throws {
-        guard sequence > self.sequence(at: url) else { return }
-        try JSONSerialization.data(withJSONObject: ["sequence": sequence], options: [.sortedKeys]).write(to: url, options: .atomic)
+        var object = read(url)
+        guard sequence > object["sequence"] as? Int ?? 0 else { return }
+        object["sequence"] = sequence
+        try write(object, to: url)
+    }
+
+    /// The revocations last applied, or none when the file is missing or unreadable.
+    static func revoked(at url: URL) -> [ExtensionCatalog.Revocation] {
+        guard let list = read(url)["revoked"],
+              let data = try? JSONSerialization.data(withJSONObject: list) else { return [] }
+        return (try? JSONDecoder().decode([ExtensionCatalog.Revocation].self, from: data)) ?? []
+    }
+
+    /// Replaces the stored revocations with a catalog's, unless a newer catalog's are already stored.
+    static func recordRevocations(_ revoked: [ExtensionCatalog.Revocation], sequence: Int, at url: URL) throws {
+        var object = read(url)
+        guard sequence >= object["revokedSequence"] as? Int ?? 0 else { return }
+        object["revoked"] = try JSONSerialization.jsonObject(with: JSONEncoder().encode(revoked))
+        object["revokedSequence"] = sequence
+        try write(object, to: url)
+    }
+
+    private static func read(_ url: URL) -> [String: Any] {
+        guard let data = try? Data(contentsOf: url), let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return [:] }
+        return object
+    }
+
+    private static func write(_ object: [String: Any], to url: URL) throws {
+        try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys]).write(to: url, options: .atomic)
     }
 }
 

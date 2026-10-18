@@ -18,15 +18,50 @@ public struct ExtensionCatalog: Codable, Equatable {
     public static let maximumManifestBytes = 32_768
     public static let maximumModuleBytes = 2_097_152
     public static let maximumListings = 64
+    public static let maximumRevocations = 256
 
     public var format: Int
     public var sequence: Int
     public var generated: String
     public var revision: String
     public var extensions: [Listing]
+    /// Extensions withdrawn from the catalog. Volant turns off installed copies that match and refuses to
+    /// enable them again. Older Volant versions ignore the field.
+    public var revoked: [Revocation]?
 
-    public init(format: Int, sequence: Int, generated: String, revision: String, extensions: [Listing]) {
+    public init(format: Int, sequence: Int, generated: String, revision: String, extensions: [Listing], revoked: [Revocation]? = nil) {
         self.format = format; self.sequence = sequence; self.generated = generated; self.revision = revision; self.extensions = extensions
+        self.revoked = revoked
+    }
+
+    /// One withdrawn extension: every version of `id`, or with `sha256` only the module with that hash.
+    /// `reason` is shown to the owner beside the installed copy.
+    public struct Revocation: Codable, Hashable {
+        public var id: String
+        public var sha256: String?
+        public var reason: String?
+        public init(id: String, sha256: String? = nil, reason: String? = nil) { self.id = id; self.sha256 = sha256; self.reason = reason }
+
+        public func matches(id: String, sha256 moduleHash: String?) -> Bool {
+            self.id == id && (sha256 == nil || sha256 == moduleHash?.lowercased())
+        }
+
+        func validate() throws {
+            guard ExtensionCatalog.isSafeID(id), (reason?.count ?? 0) <= 300,
+                  sha256.map(ExtensionCatalog.isHash) ?? true else {
+                throw ExtensionCatalogError.invalidIndex
+            }
+        }
+    }
+
+    /// The revocation covering an extension with this ID and module hash, if any.
+    public static func revocation(in revoked: [Revocation], id: String, sha256: String?) -> Revocation? {
+        revoked.first { $0.matches(id: id, sha256: sha256) }
+    }
+
+    /// Listings that are not revoked, the ones Volant offers to install.
+    public var installable: [Listing] {
+        extensions.filter { Self.revocation(in: revoked ?? [], id: $0.id, sha256: $0.moduleFile.sha256) == nil }
     }
 
     /// One downloadable file's expected size and lowercase SHA-256.
@@ -138,6 +173,8 @@ public struct ExtensionCatalog: Codable, Equatable {
         }
         guard catalog.sequence >= minimumSequence else { throw ExtensionCatalogError.rollback }
         for listing in catalog.extensions { try listing.validate() }
+        guard (catalog.revoked?.count ?? 0) <= maximumRevocations else { throw ExtensionCatalogError.invalidIndex }
+        for revocation in catalog.revoked ?? [] { try revocation.validate() }
         return catalog
     }
 
@@ -171,8 +208,12 @@ public struct ExtensionCatalog: Codable, Equatable {
     }
 
     static func isValid(_ file: File, maximum: Int) -> Bool {
-        (1...maximum).contains(file.size) && file.sha256.count == 64 &&
-            file.sha256.allSatisfy { $0.isASCII && $0.isHexDigit && !$0.isUppercase }
+        (1...maximum).contains(file.size) && isHash(file.sha256)
+    }
+
+    /// A lowercase 64-character hex SHA-256.
+    static func isHash(_ value: String) -> Bool {
+        value.count == 64 && value.allSatisfy { $0.isASCII && $0.isHexDigit && !$0.isUppercase }
     }
 }
 

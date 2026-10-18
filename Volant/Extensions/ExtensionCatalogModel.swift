@@ -34,10 +34,10 @@ final class ExtensionCatalogModel: ObservableObject {
     var turnOn: (InstalledExtension) -> Void = { _ in }
     var openURL: (URL) -> Void = { NSWorkspace.shared.open($0) }
 
-    /// Listings matching the search text by name, ID, summary, publisher or host.
+    /// Listings that are not revoked and match the search text by name, ID, summary, publisher or host.
     var listings: [ExtensionCatalog.Listing] {
         let term = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        return (catalog?.extensions ?? []).filter { listing in
+        return (catalog?.installable ?? []).filter { listing in
             term.isEmpty || ([listing.name, listing.id, listing.summary, listing.publisher] + listing.hosts)
                 .contains { $0.localizedCaseInsensitiveContains(term) }
         }
@@ -78,7 +78,9 @@ final class ExtensionCatalogModel: ObservableObject {
             guard let self else { return }
             self.loading = false
             switch result {
-            case .success(let loaded): self.catalog = loaded; self.keepSelectionVisible()
+            case .success(let loaded):
+                self.manager().applyRevocations(from: loaded)
+                self.catalog = loaded; self.keepSelectionVisible()
             case .failure(let failure): self.error = failure.localizedDescription
             }
         }

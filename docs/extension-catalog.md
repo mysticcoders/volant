@@ -2,12 +2,19 @@
 
 ## Current behavior
 
-Settings → Extensions has a **Catalog** section. Choosing **Refresh** reloads installed extensions and fetches the signed index from
-`https://mysticcoders.github.io/volant-extensions/`; Volant contacts it at no other time. Refresh is the page's
-only reload button. Each listing
-shows its name, version, summary, publisher, license and the permissions and hosts it declares, a
-**Source** link to the exact reviewed revision, and **Install**, **Update**, **Installed** or **Bundled**.
-Install and Update need **Allow Community Extensions** on.
+Settings → Extensions lists only installed extensions. Above them, **Check for Updates** reloads
+installed extensions and fetches the signed index from `https://mysticcoders.github.io/volant-extensions/`;
+Volant contacts it at no other time except **Browse Extensions…**. Once checked, the row says the
+extensions are up to date or lists the available updates with **Update All**, and each installed
+extension with a newer version gets its own **Update to <version>** button. Updates happen only on
+this page.
+
+**Browse Extensions…** opens the catalog in its own sheet, checking it first if this page has not.
+It has a search field (name, ID, summary, publisher and hosts), and each listing shows its name,
+version, summary, publisher, license and the permissions and hosts it declares, a **Source** link to
+the exact reviewed revision, and **Install**, **Installed**, **Bundled**, or **Update in Extensions**
+for an installed extension with a newer version. Install and Update need **Allow Community
+Extensions** on.
 
 The launcher has the same catalog as its own view, like Dictionary: choose **Extension Catalog**
 (or type `catalog`, `store` or `marketplace` to find it), or type `catalog` directly. The view has its
@@ -20,8 +27,7 @@ updates or uses the selected extension (it puts the name in the launcher's searc
 installed extension that is off, **Turn On…** shows the hosts it needs and enables and runs it;
 Command-Return opens its source; ⌘[ goes back. With community extensions off, Return opens
 Extension Settings.
-In Settings a single Refresh reloads installed extensions and, once the catalog has been checked,
-checks it again.
+The launcher's catalog still offers Update on Return for an installed extension with a newer version.
 
 Installing never turns an extension on, allows a host or runs code. The installed extension appears
 under Installed, off, marked "From catalog", and its first use asks as usual. Removing it is the
@@ -85,22 +91,41 @@ step. An update moves the old folder to `.previous-<uuid>` first, puts it back i
 deletes it after success. The catalog never replaces a bundled extension or an unrelated folder that
 already uses the ID's name, and an update keeps the folder name of a manually installed copy.
 
-Approval stays bound to the full manifest, so an update with changed code, permissions or hosts is
-off until the owner enables it again; reinstalling identical bytes keeps their choice. Hosts only the
-old version declared are pruned as for an uninstall. A run of that extension in progress is ended.
+Approval stays bound to the full manifest, but a catalog update keeps an enabled extension enabled when
+its new manifest asks for nothing the old one did not (`ExtensionManifest.requestsNoMoreThan`): the
+same ABI, and capabilities, hosts, tokens, app link schemes and permissions that are each a subset of
+the old ones, with storage only if the old version had it. Volant then grants the new manifest. An
+update that asks for more is off until the owner enables it again, and Settings says so. An update
+never turns on an extension the owner had off. Code changed any other way, such as editing a folder by
+hand, still needs enabling again. Hosts only the old version declared are pruned as for an uninstall.
+A run of that extension in progress is ended.
+
+## Revocation
+
+The index may carry `"revoked": [{"id": "…", "sha256": "<module hash>", "reason": "…"}]`, at most 256
+entries. Without `sha256` every version of the ID is revoked; with it, only that module. Older Volant
+versions ignore the field. When Volant accepts a catalog (Check for Updates, Browse or the launcher's
+catalog), it stores the revocations in `extension-catalog.json` beside the accepted sequence, unless a
+newer catalog's are already stored, then turns off every installed community extension whose ID and
+module hash match and ends its run if one is in progress. A revoked extension shows the reason in red,
+cannot be turned on or run, and is not offered for install; updating past the revoked code or
+uninstalling clears it. Bundled extensions are never revoked. A catalog without the entry lifts the
+revocation, but the extension stays off until the owner turns it on.
 
 ## Evidence
 
-- `ExtensionCatalogTests` (Core): signature failure, rollback, unknown format, duplicate IDs, 25
+- `ExtensionCatalogTests` (Core): revocations by ID or module hash and their bounds, which manifest
+  changes ask for new permissions, signature failure, rollback, unknown format, duplicate IDs, 25
   unsafe listing shapes, fixed paths only, size/hash mismatches, manifests that disagree with their
   listing, and unbounded memory.
 - `ExtensionCatalogInstallTests` (app): a throwaway CryptoKit key and in-memory files cover signed
   loading, tampered and foreign signatures, the production key rejecting test signatures, derived
-  download paths, atomic install without enabling, re-approval after a changed update, retained
-  choice for identical reinstall, host pruning, a failed update restoring the previous version, and
+  download paths, atomic install without enabling, re-approval after an update that asks for more,
+  retained choice for an update that does not and for identical reinstall, revocation turning off,
+  refusing, persisting and clearing, host pruning, a failed update restoring the previous version, and
   refusing tampered bytes, unrelated folders and bundled IDs.
-- The native Actions fixture renders the catalog section with fictional listings, master switch on
-  and off, in light and dark.
+- The native Actions fixture renders the Extensions page up to date, with an update, with a revoked
+  extension and paused, and the Browse sheet, with fictional listings in light and dark.
 
 - The first published catalog (sequence 5, revision `6f2542f`) was fetched from GitHub Pages without
   redirects and decoded by `ExtensionCatalog.decode` with the production public key; both packages
@@ -119,9 +144,9 @@ extension.
 ## Remaining work
 
 - Update discovery happens only when the owner checks the catalog; there is no background check or
-  badge.
-- No revocation list yet. Removing a listing stops new installs but does not flag installed copies.
-  A future index field can mark revoked IDs or hashes for Settings to warn about and disable.
+  badge, so a revocation reaches a Mac only when its owner checks.
+- volant-extensions' `tools/catalog.py` must publish the `revoked` list before a revocation can ship.
+- Catalog rows show icons only after an extension is installed.
 - Curate beyond the first two readers: text utilities such as Base64, URL encoding, UUIDs and JSON
   formatting, after reviewing source, license and maintenance. Native and adapted upstream
   extensions should be identified as such.

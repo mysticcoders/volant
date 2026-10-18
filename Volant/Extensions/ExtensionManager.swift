@@ -7,6 +7,8 @@ struct InstalledExtension: Identifiable, Hashable {
     let directory: URL
     var enabled = false
     var communityBlocked = false
+    /// Set when the catalog withdrew this extension's code; it stays off and cannot be enabled.
+    var revocation: ExtensionCatalog.Revocation?
     var isCommunity: Bool { !ExtensionManager.isBundled(directory) }
     var name: String { manifest.name }
     /// The catalog record beside this extension, if the catalog installed it.
@@ -82,6 +84,13 @@ final class ExtensionManager {
         }
         reload()
     }
+    /// Where the accepted catalog sequence and the applied revocations are kept, beside the config file.
+    var catalogStateURL: URL { ExtensionCatalogState.url(besideConfig: configURL) }
+    /// The applied revocation covering this community extension's code, read fresh from disk.
+    func revocation(for manifest: ExtensionManifest, in directory: URL) -> ExtensionCatalog.Revocation? {
+        guard !Self.isBundled(directory) else { return nil }
+        return ExtensionCatalog.revocation(in: ExtensionCatalogState.revoked(at: catalogStateURL), id: manifest.id, sha256: manifest.sha256)
+    }
     func invalidateCatalog() { catalogLoaded = false }
     func loadIfNeeded() { if !catalogLoaded { reload() } }
     func reload() {
@@ -89,12 +98,14 @@ final class ExtensionManager {
         let folders = roots ?? ((Bundle.main.url(forResource: "HelloWorld", withExtension: nil).map { [$0] } ?? []) +
             ((try? FileManager.default.contentsOfDirectory(at: installDirectory, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])) ?? []))
         loadErrors = []
+        let revoked = ExtensionCatalogState.revoked(at: catalogStateURL)
         let candidates = folders.compactMap { dir -> InstalledExtension? in
             do {
                 let manifest = try readManifest(dir)
                 return InstalledExtension(id: manifest.id, manifest: manifest, directory: dir,
                     enabled: ExtensionApproval.enabled(manifest, at: configURL),
-                    communityBlocked: !Self.isBundled(dir) && !communityAllowed)
+                    communityBlocked: !Self.isBundled(dir) && !communityAllowed,
+                    revocation: Self.isBundled(dir) ? nil : ExtensionCatalog.revocation(in: revoked, id: manifest.id, sha256: manifest.sha256))
             } catch { loadErrors.append("\(dir.lastPathComponent): \(error.localizedDescription)"); return nil }
         }
         let counts = Dictionary(grouping: candidates, by: \.id)
@@ -207,6 +218,7 @@ final class ExtensionManager {
     /// Disabling leaves host approvals alone, because other extensions may share them.
     func setEnabled(_ ext: InstalledExtension, _ enabled: Bool) throws {
         if enabled && isBlocked(ext) { throw ExtensionError.communityDisabled }
+        if enabled, let revocation = revocation(for: ext.manifest, in: ext.directory) { throw ExtensionError.revoked(ext.name, revocation.reason) }
         if enabled { _ = try verifiedModule(ext) }
         if enabled && ext.enabled { try ExtensionHostApprovals.approve(ext.manifest.declaredHosts, at: configURL); reload(); return }
         try ExtensionApproval.update(ext.manifest, enabled: enabled, expected: ext.enabled, at: configURL)
@@ -233,6 +245,23 @@ final class ExtensionManager {
         return try ExtensionHostApprovals.pruneAfterRemoving(ext.manifest, remaining: extensions.map(\.manifest), at: configURL)
     }
 
+    /// Records a newly loaded catalog's revocations and turns off every installed community extension
+    /// whose code they cover, ending its run if one is in progress. Returns the extensions turned off.
+    @discardableResult
+    func applyRevocations(from catalog: ExtensionCatalog) -> [InstalledExtension] {
+        try? ExtensionCatalogState.recordRevocations(catalog.revoked ?? [], sequence: catalog.sequence, at: catalogStateURL)
+        reload()
+        let affected = extensions.filter { $0.revocation != nil && $0.enabled }
+        for ext in affected {
+            try? ExtensionApproval.update(ext.manifest, enabled: false, expected: true, at: configURL)
+            if Self.activeExecution?.extensionID == ext.id, Self.activeExecution?.configURL == configURL {
+                Self.activeExecution?.finish(.failure(ExtensionError.revoked(ext.name, ext.revocation?.reason)))
+            }
+        }
+        if !affected.isEmpty { reload() }
+        return affected
+    }
+
     /// How a catalog listing relates to what is installed. A listing is current only when its version,
     /// module hash, permissions and hosts all match the installed manifest.
     enum CatalogStatus: Hashable {
@@ -254,20 +283,26 @@ final class ExtensionManager {
     /// name is left alone. Files are written to a hidden staging folder and moved into place in one
     /// step; an update moves the old folder aside first and puts it back if the move fails.
     ///
-    /// Installing never enables or runs the extension. Approval stays bound to the manifest, so an
-    /// update with changed code or permissions needs enabling again, while reinstalling identical bytes
-    /// keeps the owner's choice. Hosts only the old version declared are pruned like an uninstall.
+    /// Installing never enables or runs the extension. An update keeps an enabled extension enabled when
+    /// its manifest asks for nothing the old one did not (`requestsNoMoreThan`); one that asks for more
+    /// is off until the owner enables it again. Hosts only the old version declared are pruned like an
+    /// uninstall. Revoked code is never installed.
     /// Tests pass `move` to fail a step deliberately.
     @discardableResult
     func install(_ listing: ExtensionCatalog.Listing, manifest manifestData: Data, module moduleData: Data, icon iconData: Data? = nil,
                  from catalog: ExtensionCatalog,
                  move: (URL, URL) throws -> Void = { try FileManager.default.moveItem(at: $0, to: $1) }) throws -> InstalledExtension {
-        _ = try listing.verify(manifest: manifestData, module: moduleData, icon: iconData, sha256: Integrity.sha256)
+        let manifest = try listing.verify(manifest: manifestData, module: moduleData, icon: iconData, sha256: Integrity.sha256)
+        if ExtensionCatalog.revocation(in: (catalog.revoked ?? []) + ExtensionCatalogState.revoked(at: catalogStateURL),
+                                       id: listing.id, sha256: listing.moduleFile.sha256) != nil {
+            throw ExtensionCatalogError.conflict("\(listing.name) \(listing.version) was withdrawn from the catalog and can’t be installed.")
+        }
         reload()
         let existing = extensions.first { $0.id == listing.id }
         if let existing, !existing.isCommunity {
             throw ExtensionCatalogError.conflict("\(listing.name) is bundled with Volant and can’t be replaced.")
         }
+        let keepEnabled = existing.map { $0.enabled && manifest.requestsNoMoreThan($0.manifest) } ?? false
         let files = FileManager.default
         let root = installDirectory
         let target = existing?.directory ?? root.appendingPathComponent(listing.id, isDirectory: true)
@@ -309,8 +344,13 @@ final class ExtensionManager {
         if let existing {
             _ = try? ExtensionHostApprovals.pruneAfterRemoving(existing.manifest, remaining: extensions.map(\.manifest), at: configURL)
         }
-        guard let installed = extensions.first(where: { $0.id == listing.id }) else {
+        guard var installed = extensions.first(where: { $0.id == listing.id }) else {
             throw ExtensionCatalogError.conflict("\(listing.name) was installed but couldn’t be loaded. Check the Extensions folder.")
+        }
+        if keepEnabled && !installed.enabled {
+            try ExtensionApproval.update(installed.manifest, enabled: true, expected: false, at: configURL)
+            reload()
+            installed = extensions.first { $0.id == listing.id } ?? installed
         }
         return installed
     }
@@ -471,6 +511,7 @@ final class ExtensionManager {
         do {
             guard !isBlocked(ext) else { throw ExtensionError.communityDisabled }
             guard ExtensionApproval.enabled(ext.manifest, at: configURL) else { throw ExtensionError.disabled }
+            if let revocation = revocation(for: ext.manifest, in: ext.directory) { throw ExtensionError.revoked(ext.name, revocation.reason) }
             guard !Self.running else { throw ExtensionError.runtime("An extension is already running.") }
             guard input.utf8.count <= ExtensionLimits.maximumInputBytes else { throw ExtensionError.runtime("Extension input exceeds \(ExtensionLimits.inputDescription).") }
             let module = try verifiedModule(ext)
@@ -484,7 +525,7 @@ final class ExtensionManager {
         } catch { completion(.failure(error)) }
     }
     enum ExtensionError: Error, LocalizedError {
-        case missingModule, hashMismatch, changed, disabled, communityDisabled, secretsMissing([String]), locationNotAllowed, runtime(String)
+        case missingModule, hashMismatch, changed, disabled, communityDisabled, secretsMissing([String]), locationNotAllowed, revoked(String, String?), runtime(String)
         var errorDescription: String? {
             switch self {
             case .missingModule: return "Extension module is missing, too large, or outside its folder."
@@ -494,6 +535,8 @@ final class ExtensionManager {
             case .communityDisabled: return "Community extensions are off. Allow them in Settings → Extensions."
             case .locationNotAllowed: return "Allow this extension to use your approximate location to run it."
             case .secretsMissing(let titles): return "Add your \(titles.joined(separator: " and ")) to use this extension."
+            case .revoked(let name, let reason):
+                return "\(name) was withdrawn from the extension catalog" + (reason.map { ": \($0)" } ?? ".") + " Update or uninstall it."
             case .runtime(let message): return message
             }
         }

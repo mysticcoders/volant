@@ -138,6 +138,57 @@ final class ExtensionCatalogInstallTests: XCTestCase {
         XCTAssertEqual(try hidden(), [])
     }
 
+    func testUpdateWithoutNewPermissionsStaysEnabled() throws {
+        let (v1, manifest1) = try package(module: moduleV1, hosts: ["news.example.com", "api.example.com"])
+        let manager = manager()
+        try manager.install(v1, manifest: manifest1, module: moduleV1, from: catalog([v1]))
+        try manager.setEnabled(try XCTUnwrap(manager.extensions.first { $0.id == v1.id }), true)
+        let (v2, manifest2) = try package(version: "2.0.0", module: moduleV2)
+        let updated = try manager.install(v2, manifest: manifest2, module: moduleV2, from: catalog([v2], sequence: 4))
+        XCTAssertEqual(updated.manifest.version, "2.0.0")
+        XCTAssertTrue(updated.enabled, "Changed code that asks for no new access keeps the owner's choice")
+        XCTAssertTrue(ExtensionApproval.enabled(updated.manifest, at: config))
+        XCTAssertEqual(ExtensionHostApprovals.approved(at: config), ["news.example.com"], "The host only the old version used is pruned")
+
+        let (v3, manifest3) = try package(version: "3.0.0", module: moduleV1)
+        let off = manager.extensions.first { $0.id == v1.id }!
+        try manager.setEnabled(off, false)
+        XCTAssertFalse(try manager.install(v3, manifest: manifest3, module: moduleV1, from: catalog([v3], sequence: 5)).enabled,
+                       "An update never turns on an extension the owner turned off")
+    }
+
+    func testRevokedCodeIsTurnedOffRefusedAndRemembered() throws {
+        let (v1, manifest1) = try package(module: moduleV1)
+        let manager = manager()
+        try manager.install(v1, manifest: manifest1, module: moduleV1, from: catalog([v1]))
+        try manager.setEnabled(try XCTUnwrap(manager.extensions.first), true)
+        let revocation = ExtensionCatalog.Revocation(id: v1.id, sha256: v1.moduleFile.sha256, reason: "Sends more than it says.")
+        var revoking = catalog([v1], sequence: 4); revoking.revoked = [revocation]
+
+        XCTAssertEqual(manager.applyRevocations(from: revoking).map(\.id), [v1.id])
+        let revoked = try XCTUnwrap(manager.extensions.first)
+        XCTAssertFalse(revoked.enabled)
+        XCTAssertEqual(revoked.revocation, revocation)
+        XCTAssertThrowsError(try manager.setEnabled(revoked, true)) { XCTAssertTrue($0.localizedDescription.contains("Sends more than it says.")) }
+        XCTAssertEqual(self.manager().extensions.first?.revocation, revocation, "A new manager reads the stored revocation")
+        XCTAssertThrowsError(try manager.install(v1, manifest: manifest1, module: moduleV1, from: revoking), "Revoked bytes are not reinstalled")
+
+        var older = catalog([v1], sequence: 3); older.revoked = []
+        manager.applyRevocations(from: older)
+        XCTAssertNotNil(manager.extensions.first?.revocation, "An older catalog does not lift a revocation")
+
+        try ExtensionCatalogState.record(9, at: manager.catalogStateURL)
+        XCTAssertEqual(ExtensionCatalogState.revoked(at: manager.catalogStateURL), [revocation], "Recording a sequence keeps the revocations")
+
+        let (v2, manifest2) = try package(version: "2.0.0", module: moduleV2)
+        var fixed = catalog([v2], sequence: 5); fixed.revoked = [revocation]
+        manager.applyRevocations(from: fixed)
+        let updated = try manager.install(v2, manifest: manifest2, module: moduleV2, from: fixed)
+        XCTAssertNil(updated.revocation, "Updating past revoked code clears the warning")
+        XCTAssertFalse(updated.enabled, "The revoked version was off, so the update stays off")
+        XCTAssertNoThrow(try manager.setEnabled(updated, true))
+    }
+
     func testFailedUpdateRestoresThePreviousVersion() throws {
         let (v1, manifest1) = try package(module: moduleV1)
         let manager = manager()
