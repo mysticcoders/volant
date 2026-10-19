@@ -133,7 +133,8 @@ export default function PrivacyAndSecurity() {
                 For on-device dictation with <code>talk</code>, on macOS 26 or
                 later. Audio stays on the Mac; the transcript is copied for you
                 to paste. Filler words such as &ldquo;um&rdquo; are removed on the
-                Mac as you speak. The Dictate Text shortcut shows a small indicator
+                Mac as you speak, and words from your Vocabulary in Settings →
+                Dictation are written your way. The Dictate Text shortcut shows a small indicator
                 instead of the launcher, so the app you are typing in keeps
                 focus. You can also choose to have dictation typed at the cursor
                 instead (see Accessibility below).
