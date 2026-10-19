@@ -1,3 +1,4 @@
+import AppKit
 import AVFoundation
 import Foundation
 import VolantCore
@@ -49,6 +50,8 @@ final class SpeechDictation: ObservableObject {
     var removesFillers = true
     /// The owner's words: offered to the recognizer as hints, then corrected in every phrase.
     var vocabulary: [DictationVocabularyEntry] = []
+    /// Also replaces words the spell checker doesn't know that sound like a vocabulary word.
+    var fixesCloseMatches = true
 
     nonisolated static var availability: Availability {
         #if canImport(Speech) && canImport(FoundationModels)
@@ -175,8 +178,17 @@ final class SpeechDictation: ObservableObject {
                     // Each phrase is cleaned and corrected before it is shown or typed, so a filler or
                     // a known mishearing never appears.
                     var settled = ""
+                    let closeMatches = self.fixesCloseMatches && DictationCleanup.supports(locale) && !vocabulary.isEmpty
+                    var knownWords: [String: Bool] = [:]
+                    let isKnown = { (word: String) -> Bool in
+                        if let known = knownWords[word] { return known }
+                        let known = SpeechDictation.spellCheckerKnows(word, locale: locale)
+                        knownWords[word] = known
+                        return known
+                    }
                     let clean = { (text: String) in
-                        DictationVocabulary.applying(vocabulary, to: self.removesFillers ? DictationCleanup.removingFillers(text, locale: locale) : text)
+                        let exact = DictationVocabulary.applying(vocabulary, to: self.removesFillers ? DictationCleanup.removingFillers(text, locale: locale) : text)
+                        return closeMatches ? DictationCloseMatch.correcting(vocabulary, in: exact, isKnownWord: isKnown) : exact
                     }
                     do {
                         for try await result in transcriber.results {
@@ -204,6 +216,14 @@ final class SpeechDictation: ObservableObject {
     }
     #endif
 
+
+    /// Whether the system spell checker accepts a word in the dictation language, including words the
+    /// owner taught it. Close matches only ever replace words it does not know.
+    static func spellCheckerKnows(_ word: String, locale: Locale) -> Bool {
+        let language = locale.language.languageCode?.identifier ?? "en"
+        return NSSpellChecker.shared.checkSpelling(of: word, startingAt: 0, language: language, wrap: false,
+                                                   inSpellDocumentWithTag: 0, wordCount: nil).location == NSNotFound
+    }
 
     /// Resamples a microphone buffer into the analyzer's format. `AnalyzerInput` traps on a buffer
     /// whose format does not match, and the caller is the realtime audio thread, so this returns

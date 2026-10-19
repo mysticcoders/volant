@@ -84,6 +84,12 @@ struct DictationSettingsView: View {
     /// The owner's words, each with what dictation tends to hear instead, and how to add or import them.
     @ViewBuilder private var vocabularySection: some View {
         Section {
+            Toggle(isOn: Binding(get: { config.dictationFixesCloseMatches }, set: { value in
+                apply { try Preferences.updateBoolean("dictationFixesCloseMatches", value: value, at: configURL) }
+            })) {
+                Text("Also fix close matches")
+                Text("Replaces a word the spell checker doesn’t know when it sounds like one of yours, such as Kubernitz for Kubernetes. Real words, such as herder for Herdr, still need Also heard as.")
+            }.accessibilityIdentifier("dictation-vocabulary-close-matches")
             if config.dictationVocabulary.isEmpty {
                 Text("No words yet. Add names and technical terms dictation gets wrong, such as Kubernetes.")
                     .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
