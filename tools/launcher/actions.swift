@@ -631,6 +631,30 @@ func extensionRowsScenario() throws {
     print("PASS: storage list extension receives and saves data, and row actions run from Actions")
 }
 
+/// Dictation Settings with a fictional vocabulary, and the sheet that adds a word. Output stays on
+/// Copy, so the input helper is never started.
+func dictationVocabularyScenario() throws {
+    let vocabulary = [DictationVocabularyEntry(term: "Kubernetes", soundsLike: ["Kubernitz", "cooper netties"]),
+                      DictationVocabularyEntry(term: "PostgreSQL", soundsLike: ["post-Ger SQL"]),
+                      DictationVocabularyEntry(term: "Tailscale", soundsLike: ["tail scale"]),
+                      DictationVocabularyEntry(term: "Sparkle")]
+    try Preferences.updateDictationVocabulary(vocabulary, expected: [], at: panel.model.actionConfigURL)
+    let settings = SettingsWindowController(configURL: panel.model.actionConfigURL, conversations: panel.model.conversations) {}
+    settings.refresh(try JSONDecoder().decode(Preferences.self, from: Data(contentsOf: panel.model.actionConfigURL)))
+    verify(settings.state.config.dictationVocabulary == vocabulary && settings.state.config.dictationOutput == .copy, "Dictation Settings reads the saved vocabulary")
+    settings.state.section = .dictation
+    settings.window!.setContentSize(NSSize(width: 680, height: 760))
+    settings.showWindow(nil); settle()
+    try render("dictation-vocabulary-settings", view: settings.window!.contentView!)
+    settings.window!.orderOut(nil)
+    let (editorWindow, editorView) = hostWindow(VocabularyEntryEditor(edit: VocabularyEdit(original: vocabulary[0]), cancel: {}, save: { _ in }),
+                                                width: 400, height: 300)
+    editorView.layoutSubtreeIfNeeded(); settle()
+    try render("dictation-vocabulary-editor", view: editorView)
+    editorWindow.orderOut(nil)
+    print("PASS: Dictation Settings lists the vocabulary with its mishearings, and the word editor renders")
+}
+
 /// Extension Settings offers Clear Data for a storage extension's saved data, and an extension with a
 /// saved token, saved data, a location grant and community origin shows all three row buttons at
 /// Settings' 680-point minimum width without squeezing its subtitle; its location prompt is drawn first.
@@ -1164,6 +1188,7 @@ struct Scenario {
 /// - clipboard-recovery, spotlight-recovery: error, progress and Retry states drawn in the panel.
 /// Default size only, because they draw standalone windows that ignore the launcher size:
 /// - community-settings, extension-settings: Extension Settings states and the location prompt.
+/// - dictation-vocabulary: Dictation Settings with a vocabulary, and the word editor.
 /// - api-settings, acp-detection, acp-resume, acp-several, acp-accounts: AI Settings and the
 ///   standalone chat view and activity strip.
 /// - notes-recovery: the notes panel, which has its own size.
@@ -1175,6 +1200,7 @@ let scenarios: [Scenario] = [
     Scenario(name: "community-settings", sizeSensitive: false, run: communitySettingsScenario),
     Scenario(name: "extension-rows", sizeSensitive: true, run: extensionRowsScenario),
     Scenario(name: "extension-settings", sizeSensitive: false, run: extensionSettingsScenario),
+    Scenario(name: "dictation-vocabulary", sizeSensitive: false, run: dictationVocabularyScenario),
     Scenario(name: "catalog", sizeSensitive: true, run: catalogScenario),
     Scenario(name: "herdr", sizeSensitive: true, run: herdrScenario),
     Scenario(name: "api-settings", sizeSensitive: false, run: apiSettingsScenario),

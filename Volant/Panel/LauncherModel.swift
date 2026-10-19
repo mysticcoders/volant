@@ -1118,6 +1118,7 @@ final class LauncherModel: ObservableObject {
             return
         }
         dictation.removesFillers = config.dictationRemovesFillers
+        dictation.vocabulary = config.dictationVocabulary
         if surface == .indicator, config.dictationOutput == .type, let inputHost {
             let typing = DictationTypingSession(client: inputHost,
                                                 timing: config.dictationTypesWhileSpeaking ? .whileSpeaking : .whenFinished)
