@@ -62,7 +62,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .whatsNew: ["changelog", "release notes", "new", "changes", "version", "update"]
         case .about: ["version", "acknowledgements", "license", "geonames", "website"]
         case .ai: ["chat", "acp", "claude", "codex", "api key", "model", "apple intelligence", "ollama"]
-        case .dictation: ["microphone", "speech", "voice", "type", "filler", "accessibility", "sound", "volume"]
+        case .dictation: ["microphone", "speech", "voice", "type", "filler", "accessibility", "sound", "volume", "vocabulary", "words", "dictionary"]
         case .extensions: ["catalog", "community", "network", "hosts", "install", "wasm"]
         case .fileSearch: ["fsearch", "spotlight", "files", "disk"]
         case .statusBar: ["herdr", "agents", "footer", "ai chat", "activity"]

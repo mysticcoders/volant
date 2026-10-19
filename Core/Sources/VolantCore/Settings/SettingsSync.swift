@@ -8,7 +8,7 @@ public enum SettingsSync {
     /// Settings that mean the same thing on every Mac. App shortcuts and favorites name installed
     /// bundles, and Dock, status bar, AI and extension choices belong to one machine.
     public static let keys = ["summonHotKey", "notesHotKey", "emojiHotKey", "talkHotKey", "clipboardRetention",
-                              "snippets", "quicklinks", "aliases", "appearance"]
+                              "snippets", "quicklinks", "aliases", "appearance", "dictationVocabulary"]
 
     /// iCloud key-value storage allows 1 MB per app; the margin covers key names and envelopes.
     public static let byteBudget = 960_000

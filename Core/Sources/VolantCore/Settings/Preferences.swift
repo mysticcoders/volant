@@ -25,6 +25,8 @@ public struct Preferences: Codable {
     public var dictationRemovesFillers: Bool = true
     /// Play a short sound when dictation starts listening and another when it stops.
     public var dictationPlaysSounds: Bool = true
+    /// Words dictation should write a particular way, with what it tends to hear instead.
+    public var dictationVocabulary: [DictationVocabularyEntry] = []
     /// Ask a running fsearch daemon for file results before Spotlight. Off unless the owner turns it on.
     public var fileSearchUsesFSearch: Bool = false
     /// Per-Mac switch for mirroring the settings in SettingsSync.keys through iCloud.
@@ -47,7 +49,7 @@ public struct Preferences: Codable {
     public var help: String = "Edit and choose Reload Configuration in Settings. Hotkeys: cmd|ctrl|option|shift|meh|hyper + key. App hotkeys use the bundle identifier. Snippets: {date} {isodate} {time} {datetime} {clipboard} {uuid}. Quicklinks: {query}. Aliases map a word to an app name or query. Appearance: theme system|light|dark, colorTheme system|volant|catppuccin-mocha|nord|…|custom-<name> (named themes set their own light or dark; customThemes holds imported Raycast themes), scale 0.8–1.4, opacity 0.5–1.0."
 
     public enum CodingKeys: String, CodingKey {
-        case favoriteApps, summonHotKey, notesHotKey, emojiHotKey, talkHotKey, lockScreenHotKey, sleepDisplaysHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, caffeinateKeepsDisplayAwake, dictationLowersVolume, dictationOutput, dictationTypesWhileSpeaking, dictationRemovesFillers, dictationPlaysSounds, fileSearchUsesFSearch, syncSettingsWithICloud, statusBar, snippets, quicklinks, aliases, appearance
+        case favoriteApps, summonHotKey, notesHotKey, emojiHotKey, talkHotKey, lockScreenHotKey, sleepDisplaysHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, caffeinateKeepsDisplayAwake, dictationLowersVolume, dictationOutput, dictationTypesWhileSpeaking, dictationRemovesFillers, dictationPlaysSounds, dictationVocabulary, fileSearchUsesFSearch, syncSettingsWithICloud, statusBar, snippets, quicklinks, aliases, appearance
         case help = "_help"
     }
 
@@ -82,6 +84,7 @@ public struct Preferences: Codable {
         dictationTypesWhileSpeaking = try c.decodeIfPresent(Bool.self, forKey: .dictationTypesWhileSpeaking) ?? d.dictationTypesWhileSpeaking
         dictationRemovesFillers = try c.decodeIfPresent(Bool.self, forKey: .dictationRemovesFillers) ?? d.dictationRemovesFillers
         dictationPlaysSounds = try c.decodeIfPresent(Bool.self, forKey: .dictationPlaysSounds) ?? d.dictationPlaysSounds
+        dictationVocabulary = DictationVocabulary.normalized(try c.decodeIfPresent([DictationVocabularyEntry].self, forKey: .dictationVocabulary) ?? [])
         fileSearchUsesFSearch = try c.decodeIfPresent(Bool.self, forKey: .fileSearchUsesFSearch) ?? d.fileSearchUsesFSearch
         syncSettingsWithICloud = try c.decodeIfPresent(Bool.self, forKey: .syncSettingsWithICloud) ?? d.syncSettingsWithICloud
         statusBar = try c.decodeIfPresent(StatusBarConfiguration.self, forKey: .statusBar) ?? StatusBarConfiguration()
@@ -121,6 +124,23 @@ public struct Preferences: Codable {
             throw CocoaError(.fileReadCorruptFile)
         }
         object["dictationOutput"] = output.rawValue
+        let updated = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
+        _ = try JSONDecoder().decode(Preferences.self, from: updated)
+        try updated.write(to: url, options: .atomic)
+    }
+
+    /// Replace the dictation vocabulary against an expected snapshot, so an edit made from a stale
+    /// list (another window, or a sync that landed meanwhile) is refused. Other fields are kept.
+    public static func updateDictationVocabulary(_ entries: [DictationVocabularyEntry], expected: [DictationVocabularyEntry],
+                                                 at url: URL = configURL) throws {
+        let data = try Data(contentsOf: url)
+        guard var object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        guard try JSONDecoder().decode(Preferences.self, from: data).dictationVocabulary == DictationVocabulary.normalized(expected) else {
+            throw CocoaError(.fileWriteFileExists)
+        }
+        object["dictationVocabulary"] = try JSONSerialization.jsonObject(with: JSONEncoder().encode(DictationVocabulary.normalized(entries)))
         let updated = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
         _ = try JSONDecoder().decode(Preferences.self, from: updated)
         try updated.write(to: url, options: .atomic)

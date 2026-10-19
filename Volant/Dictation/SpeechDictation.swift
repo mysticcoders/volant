@@ -47,6 +47,8 @@ final class SpeechDictation: ObservableObject {
     var onFinalPhrase: ((String) -> Void)?
     /// Removes filler sounds from English phrases before they are shown, typed or copied.
     var removesFillers = true
+    /// The owner's words: offered to the recognizer as hints, then corrected in every phrase.
+    var vocabulary: [DictationVocabularyEntry] = []
 
     nonisolated static var availability: Availability {
         #if canImport(Speech) && canImport(FoundationModels)
@@ -129,6 +131,17 @@ final class SpeechDictation: ObservableObject {
                 }
                 let analyzer = SpeechAnalyzer(modules: [transcriber])
                 session.analyzer = analyzer
+                // The terms go to the analyzer as contextual strings too. On macOS 27.0.1 SpeechTranscriber
+                // ignored them in every measured clip (docs/dictation-vocabulary.md), so the
+                // corrections below are what the owner relies on; the hints cost nothing if a later
+                // system honors them.
+                let vocabulary = self.vocabulary
+                let hints = DictationVocabulary.hints(vocabulary)
+                if !hints.isEmpty {
+                    let context = AnalysisContext()
+                    context.contextualStrings[.general] = hints
+                    try? await analyzer.setContext(context)
+                }
 
                 // The microphone runs at the hardware rate, typically 48 kHz, while the analyzer
                 // wants its own format, typically 16 kHz. AnalyzerInput traps on a mismatched
@@ -159,9 +172,12 @@ final class SpeechDictation: ObservableObject {
 
                 session.collector = Task { @MainActor in
                     // Volatile results refine as you speak, so the newest value replaces the last.
-                    // Each phrase is cleaned before it is shown or typed, so a filler never appears.
+                    // Each phrase is cleaned and corrected before it is shown or typed, so a filler or
+                    // a known mishearing never appears.
                     var settled = ""
-                    let clean = { (text: String) in self.removesFillers ? DictationCleanup.removingFillers(text, locale: locale) : text }
+                    let clean = { (text: String) in
+                        DictationVocabulary.applying(vocabulary, to: self.removesFillers ? DictationCleanup.removingFillers(text, locale: locale) : text)
+                    }
                     do {
                         for try await result in transcriber.results {
                             let text = clean(String(result.text.characters))
