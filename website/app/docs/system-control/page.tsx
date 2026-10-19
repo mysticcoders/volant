@@ -92,6 +92,18 @@ export default function SystemControl() {
         None of this needs Accessibility; only the separate, opt-in Type at the
         cursor dictation output does.
       </p>
+      <p>
+        <strong>Vocabulary</strong> in Settings → Dictation teaches dictation
+        the names and technical terms it gets wrong. Add a word such as
+        Kubernetes, with anything it&rsquo;s heard as instead, and every
+        phrase is corrected as you speak. Import a text file with one word per
+        line, or heard and written pairs. <strong>Also fix close
+        matches</strong> catches words that sound like one of yours, such as
+        &ldquo;Kubernitz&rdquo;, but only words the spell checker doesn&rsquo;t
+        know; a mishearing made of real words still needs to be listed. The
+        list stays in Volant&rsquo;s settings, syncs with iCloud when settings
+        sync is on, and is never logged.
+      </p>
       <div className="docs-note">
         <p>
           <code>vol</code>, <code>volume</code>, <code>mute</code>, and{' '}

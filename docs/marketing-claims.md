@@ -112,7 +112,14 @@ Added in 0.3.10:
 | A catalog update keeps an enabled extension on unless it asks for new access | Yes | #270; Core tests of which manifest changes count as new access, app tests that an equal-access update stays on, a wider one turns off and an owner-disabled one stays off | Extensions doc |
 | Extensions withdrawn from the signed catalog are turned off, show why, and can't be enabled, run or reinstalled | Yes | #270 and volant-extensions #15; Core and app tests of matching, persistence and rollback, a VM render of the withdrawn row; no extension has been revoked in the live catalog, and a revocation reaches a Mac only when its owner checks for updates | Extensions and Privacy docs; never "remote kill switch" or background protection |
 
-Merged after 0.3.10, not in the current download:
+Added in 0.3.11:
+
+| Story | In 0.3.11 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| Dictation vocabulary: words written your way, with mishearings, import and iCloud settings sync | Yes | #272; Core tests including the recognizer's actual mishearings, VM renders of Settings and the editor; recognizer hints measured and ignored by SpeechTranscriber; live dictation with a vocabulary and real exports unverified | Privacy and System Control docs; corrections, never "trains the recognizer" or "learns your words" |
+| Close matches by sound for words the spell checker doesn't know | Yes | #273; Core tests and a false-positive scan over 5,103 lines of Markdown with the system spell checker; the owner's own speech unverified | Docs: only unknown words change, real-word mishearings need Also heard as |
+
+Merged after 0.3.11, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
