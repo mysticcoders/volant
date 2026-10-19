@@ -189,9 +189,10 @@ export default function Extensions() {
         publisher, license, the hosts it reads and a link to the exact source
         it was built from. In the launcher, type <code>catalog</code> (or
         choose Extension Catalog) to search it and read about an extension
-        before you install it; in Settings → Extensions, choose Refresh. Turn
-        on Allow Community Extensions, then Install, then Turn On. Volant
-        contacts the catalog only when you check it or choose Refresh.
+        before you install it; in Settings → Extensions, choose Browse
+        Extensions. Turn on Allow Community Extensions, then Install, then Turn
+        On. Volant contacts the catalog only when you check it, browse it or
+        choose Check for Updates.
       </p>
       <ul>
         <li>
@@ -205,17 +206,26 @@ export default function Extensions() {
           starts off. Its first use asks as usual, including for any hosts.
         </li>
         <li>
-          <strong>Updates ask again when they change.</strong> Update replaces
-          the extension in one step and puts the old version back if that
-          fails. An update with changed code, permissions or hosts stays off
-          until you turn it on again.
+          <strong>Updates ask again only for new access.</strong> In Settings
+          → Extensions, choose Check for Updates, then Update All or update one
+          extension. Update replaces the extension in one step and puts the old
+          version back if that fails. An extension that was on stays on, unless
+          the new version asks for access the old one didn&rsquo;t have, such
+          as a new host; then it stays off until you turn it on again.
+        </li>
+        <li>
+          <strong>Withdrawn extensions are turned off.</strong> The signed
+          catalog can withdraw an extension. When you next check for updates,
+          Volant turns off an installed copy that was withdrawn, shows why, and
+          won&rsquo;t run or reinstall that version until a fixed one is
+          listed.
         </li>
       </ul>
       <p>
         Extensions that are off stay out of everyday search; type{' '}
         <code>ext</code> and a name to find one. You can still install an
-        extension by hand: choose Open Folder, copy its folder in, and choose
-        Refresh. An extension can include its own icon, which Volant shows in
+        extension by hand: choose Open Folder, copy its folder in, and return to
+        Settings. An extension can include its own icon, which Volant shows in
         the launcher and Settings.
       </p>
 
@@ -247,7 +257,7 @@ export default function Extensions() {
 
       <h2>Not yet</h2>
       <p>
-        Background update checks, revoking a published extension, preferences
+        Background update checks, preferences
         forms, storage for text commands, async or streaming results, and a
         stable ABI. Each will be added deliberately.
       </p>

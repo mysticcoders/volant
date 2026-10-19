@@ -104,7 +104,15 @@ Added in 0.3.9:
 | --- | --- | --- | --- |
 | Extensions can add a dropdown at the end of the search field (Command-P picks the next entry), sent to the extension as its filter | Yes | #260; Core validation and fingerprint tests, launcher tests of the default, choosing, Command-P, wrapping and the remembered choice, a VM fixture driving Command-P through the panel, renders in light and dark; Hacker News's Top, New, Ask HN and Show HN are volant-extensions hn-filters, held until this ships; not yet checked in the signed installed app; the owner used the updated Hacker News filters in the installed 0.3.9 on October 16, 2026 | Extensions doc: the dropdown and Command-P |
 
-Merged after 0.3.9, not in the current download:
+Added in 0.3.10:
+
+| Story | In 0.3.10 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| Settings → Extensions lists installed extensions with Check for Updates, Update All and per-extension Update; Browse Extensions is its own sheet | Yes | #270; app tests of the installer and VM renders of the up-to-date, update, Browse and paused states; Update in the signed installed app needs a second published version of a listed extension and is unverified | Extensions doc: Check for Updates, Update All, Browse Extensions; never automatic or background updates |
+| A catalog update keeps an enabled extension on unless it asks for new access | Yes | #270; Core tests of which manifest changes count as new access, app tests that an equal-access update stays on, a wider one turns off and an owner-disabled one stays off | Extensions doc |
+| Extensions withdrawn from the signed catalog are turned off, show why, and can't be enabled, run or reinstalled | Yes | #270 and volant-extensions #15; Core and app tests of matching, persistence and rollback, a VM render of the withdrawn row; no extension has been revoked in the live catalog, and a revocation reaches a Mac only when its owner checks for updates | Extensions and Privacy docs; never "remote kill switch" or background protection |
+
+Merged after 0.3.10, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |

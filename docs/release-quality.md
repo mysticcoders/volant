@@ -439,3 +439,16 @@ Later the same day the owner installed a reader from Settings → Catalog in the
 **Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
 
 **Owner verification (October 16, 2026).** Check for Updates upgraded the owner's installed 0.3.8 to 0.3.9 through Sparkle, and the updated Hacker News extension from the catalog worked in it, including its new filters. This is the first owner-confirmed Sparkle upgrade since 0.3.0; releases 0.3.3 through 0.3.8 listed the upgrade as unverified.
+
+## 0.3.10 build 27 — October 18, 2026
+
+**What's in it.** See the [release notes](releases/0.3.10.md).
+
+**Build.** Built from `b7ee285` on `release/0.3.10` by `Scripts/ship.sh`.
+
+- **Notarization:** Apple accepted app submission `bb5f9888-ec3a-4b6c-b7b3-5d0d1a0fc18d` and DMG submission `1fbe9936-10eb-4b68-a98f-2974b3b8046c`. Both were stapled and passed Gatekeeper as Notarized Developer ID.
+- **Mounted DMG:** `Volant.app` 0.3.10, build 27, `x86_64 arm64`, valid deep strict signature, stapled, Applications link present.
+- **DMG SHA-256:** `713ae94603934844a01bbdbf16f8373ee665724d314dcfd8f41e7835a86413f6` (18700875 bytes).
+- **Feed:** the signed build-27 appcast generated with this DMG passes `sign_update --verify`.
+
+**Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
