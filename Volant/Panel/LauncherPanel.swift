@@ -128,6 +128,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         observeOutsideInteraction()
         if model.showingACP || !keepsVisibleOnBlur { model.reset() }
         model.resumeAgentsIfNeeded()
+        model.resumeRexIfNeeded()
         restorePositionOrCenter()
         os_signpost(.end, log: Self.openingLog, name: "Prepare launcher", signpostID: openingID)
         os_signpost(.begin, log: Self.openingLog, name: "Present and focus", signpostID: openingID)
@@ -272,6 +273,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         model.actionTarget = nil
         model.isPresented = false
         model.agents.disconnect()
+        model.rex.disconnect()
         super.orderOut(sender)
         guard preparesWhenHidden, !keepsVisibleOnBlur else { return }
         let generation = presentationGeneration

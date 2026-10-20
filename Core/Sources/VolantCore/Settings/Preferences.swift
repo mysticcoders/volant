@@ -247,7 +247,7 @@ public struct Preferences: Codable {
     }
 
     public static func updateStatusBar(source: String = "herdr", enabled: Bool? = nil, filter: String? = nil, at url: URL = configURL) throws {
-        guard ["herdr", "ai-chat"].contains(source) else { throw CocoaError(.fileReadCorruptFile) }
+        guard ["herdr", "ai-chat", "rex"].contains(source) else { throw CocoaError(.fileReadCorruptFile) }
         if let filter, !harnessOptions.contains(where: { $0.id == filter }) { throw CocoaError(.fileReadCorruptFile) }
         let data = try Data(contentsOf: url)
         let current = try JSONDecoder().decode(Preferences.self, from: data)

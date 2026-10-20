@@ -59,6 +59,8 @@
 
 - Herdr Local discovery must never queue behind catalog or remote discovery. Publish each destination independently, bound remote concurrency, and reject stale per-machine replies after profile changes or disconnect. Test delayed replies without real SSH hosts.
 
+- Rex panes come only through `VolantAgentHost`'s two Rex methods running the fixed `RexScript` Lua with `--autostart=false` against this Mac's socket, and only a `rex` signed by team AG92C3PT77. Never read a pane's screen, scrollback or clipboard, never type into one, and never start Rex. Revalidate the pane in the script before focusing; identity is session plus block ID, never a label. Keep `rex` separate from `herdr`/`agents`. Run `RexInventoryTests` and `RexModelTests`; fixtures do not verify live focus or the signed helper. See docs/rex-integration.md.
+
 - Extension enablement is opt-in and bound to the manifest/code hash. Do not reuse a mutable capability grant across invocations or allow stale results after query changes. Validate actual WASM execution separately from signed XPC delivery; keep Hello World permission-free and preserve user configuration on toggle edits. Run `tools/check-extensions.sh` for runtime/ABI changes.
 
 - The community master gate is separate from per-extension approval; derive bundled origin from the app resource path, never an extension's manifest. Recheck the master gate before XPC submission, callbacks and result delivery. Revocation must preserve individual choices and must not restart commands. A compiled Raycast module is not API compatibility; record adapters and unsupported APIs explicitly.

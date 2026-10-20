@@ -65,7 +65,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .dictation: ["microphone", "speech", "voice", "type", "filler", "accessibility", "sound", "volume", "vocabulary", "words", "dictionary"]
         case .extensions: ["catalog", "community", "network", "hosts", "install", "wasm"]
         case .fileSearch: ["fsearch", "spotlight", "files", "disk"]
-        case .statusBar: ["herdr", "agents", "footer", "ai chat", "activity"]
+        case .statusBar: ["herdr", "rex", "agents", "footer", "ai chat", "activity"]
         }
     }
 

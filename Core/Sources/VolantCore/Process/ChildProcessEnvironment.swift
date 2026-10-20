@@ -37,6 +37,12 @@ public enum ChildProcessEnvironment {
         return environment
     }
 
+    /// The Rex CLI, which reaches its local server through a socket in the owner's home: system
+    /// folders only, since it runs no other tools.
+    public static func rex(home: String, user: String) -> [String: String] {
+        base(home: home, user: user, path: systemPath)
+    }
+
     /// A fixed Apple executable such as `/usr/bin/shortcuts` or `/usr/bin/pmset`: system folders only.
     public static func appleTool(home: String, user: String) -> [String: String] {
         base(home: home, user: user, path: systemPath)

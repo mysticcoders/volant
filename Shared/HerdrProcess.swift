@@ -4,6 +4,9 @@ import VolantCore
 
 /// Bounded in-memory output. A stalled SSH child cannot hold the helper's pipe read open forever.
 enum HerdrProcess {
+    /// The child's exit status in a failure's user info, so a caller can tell a known exit apart.
+    static let terminationStatusKey = "terminationStatus"
+
     static func run(executable: URL, arguments: [String], home: String, timeout: TimeInterval = 8,
                     directory: String? = nil, environment: [String: String]? = nil) throws -> Data {
         let task = Process(), output = Pipe(), capture = HerdrOutput()
@@ -38,7 +41,8 @@ enum HerdrProcess {
         guard capture.finished.wait(timeout: .now() + 1) == .success,
               task.terminationStatus == 0, let data = capture.result() else {
             throw NSError(domain: "VolantHerdrProcess", code: 1,
-                          userInfo: [NSLocalizedDescriptionKey: "Herdr is unavailable or the connection timed out."])
+                          userInfo: [NSLocalizedDescriptionKey: "Herdr is unavailable or the connection timed out.",
+                                     terminationStatusKey: task.isRunning ? -1 : task.terminationStatus])
         }
         return data
     }

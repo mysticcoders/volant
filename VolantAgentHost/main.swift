@@ -2,8 +2,8 @@ import Foundation
 import Security
 import VolantCore
 
-/// Local Herdr discovery and typed ACP conversations. No shell or arbitrary-command API.
-/// This service intentionally runs outside App Sandbox to reach the user's Herdr socket.
+/// Local Herdr and Rex discovery and typed ACP conversations. No shell or arbitrary-command API.
+/// This service intentionally runs outside App Sandbox to reach the user's Herdr and Rex sockets.
 final class AgentHost: NSObject, VolantAgentHostProtocol {
     private let shortcutsHost = AppleShortcutsHost()
     private let shortcutsQueue = DispatchQueue(label: "com.mysticcoders.volant.shortcuts")
@@ -182,6 +182,19 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
         }
     }
 
+    private let rex = RexHost()
+    func listRexPanes(reply: @escaping (Data?, String?) -> Void) {
+        rex.queue.async {
+            do { reply(try self.rex.inventory(), nil) }
+            catch { reply(nil, error.localizedDescription) }
+        }
+    }
+    func focusRexPane(session: String, block: String, reply: @escaping (String?) -> Void) {
+        rex.queue.async {
+            do { try self.rex.focus(session: session, block: block); reply(nil) }
+            catch { reply(error.localizedDescription) }
+        }
+    }
 }
 
 final class ListenerDelegate: NSObject, NSXPCListenerDelegate {

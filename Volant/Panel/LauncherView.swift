@@ -335,6 +335,9 @@ struct LauncherView: View {
                 HerdrFooterStatus(agents: agents, filter: filter, onOpen: { model.showPromotedAgents() },
                                   onConfigure: { model.promoteHarness($0) })
             }
+            if model.showsRexStatus {
+                RexFooterStatus(rex: model.rex, onOpen: { model.query = "rex" }, onHide: { model.setRexStatusShown(false) })
+            }
             Spacer(minLength: 8)
             if let row = model.selectedRow {
                 HStack(spacing: 8) {
@@ -491,6 +494,7 @@ private struct RowView: View {
         case .caffeinate(let command): return command.title
         case .agentSession(let session): return session.project
         case .herdrMachine(let machine, _, _): return machine?.label ?? "Local"
+        case .rexPane(let pane): return pane.project
         case .connectivity(let item): return item.title
         case .audioRoute(let route): return route.name
         case .volume(let command, _): return command.title
@@ -526,6 +530,8 @@ private struct RowView: View {
         case .agentSession(let session):
             return session.machineLabel + " · " + session.provider + " · " + (agentSummary ?? session.paneID)
         case .herdrMachine(let machine, _, _): return machine.map { $0.target + " · " + $0.session } ?? "This Mac"
+        case .rexPane(let pane):
+            return ([pane.sessionLabel, pane.program] + [pane.status?.message ?? pane.label]).compactMap { $0 }.joined(separator: " · ")
         case .connectivity(let item): return item.detail
         case .audioRoute(let route): return route.direction.rawValue.capitalized
         case .volume(_, let detail): return detail.isEmpty ? nil : detail
@@ -547,6 +553,16 @@ private struct RowView: View {
         }
     }
 
+    /// A Rex pane's icon follows what its program last reported.
+    private static func rexSymbol(_ state: RexState) -> String {
+        switch state {
+        case .blocked: return "exclamationmark.bubble"
+        case .error: return "xmark.octagon"
+        case .done: return "checkmark.circle"
+        case .working, .idle: return "terminal"
+        }
+    }
+
     @ViewBuilder private var icon: some View {
         switch row {
         case .appleShortcut: CommandTile(symbol: "square.stack.3d.up", tint: CoreCommand.shortcuts.tint)
@@ -562,6 +578,9 @@ private struct RowView: View {
                             .accessibilityLabel("Changed since you last looked")
                     }
                 }
+        case .rexPane(let pane):
+            Image(systemName: Self.rexSymbol(pane.state)).font(.system(size: 20))
+                .foregroundStyle(pane.state == .blocked || pane.state == .error ? Color.orange : Color.secondary)
         case .herdrMachine(let machine, let enabled, _):
             Image(systemName: machine == nil ? "desktopcomputer" : (enabled ? "network" : "network.slash"))
                 .font(.system(size: 20)).foregroundStyle(enabled ? Color.secondary : Color.secondary.opacity(0.5))

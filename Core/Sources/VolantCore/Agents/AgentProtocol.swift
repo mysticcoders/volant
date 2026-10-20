@@ -30,6 +30,13 @@ import Foundation
     func setHerdrMachine(machine: Data, enabled: Bool, reply: @escaping (Data?, String?) -> Void)
     func listAgents(machine: Data?, reply: @escaping (Data?, String?) -> Void)
     func focusAgent(target: Data, reply: @escaping (String?) -> Void)
+    /// Rex panes and the status their programs reported, as JSON `RexInventory`. Reads only the
+    /// layout, status records and reported directories of this Mac's Rex server, never a pane's
+    /// screen, and never starts Rex.
+    func listRexPanes(reply: @escaping (Data?, String?) -> Void)
+    /// Focuses a Rex pane after checking it is still a terminal in that session, then asks the Rex
+    /// app to show the session. The reply is nil on success or a message to show.
+    func focusRexPane(session: String, block: String, reply: @escaping (String?) -> Void)
     /// Every known ACP provider and whether its executable is present. Starts nothing.
     func detectACPAgents(reply: @escaping (Data?, String?) -> Void)
     /// Change counts for up to 32 local working folders, as a JSON map from path to state.

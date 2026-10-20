@@ -1,16 +1,19 @@
-# Rex integration (design)
+# Rex integration
 
-Status: proposed, not implemented. Checked against Rex `0.0.1792519967-gd05acf`, server API revision 4,
-on October 20, 2026. Rex is in beta; its API documents itself (`rex api describe <method>`), and that
-output, not this page, is the authority for field names.
+Checked against Rex `0.0.1792519967-gd05acf`, server API revision 4, on October 20, 2026. Rex is in
+beta; its API documents itself (`rex api describe <method>`), and that output, not this page, is the
+authority for field names.
 
-## Goal
+## What it does
 
-Show what programs running in [Rex](https://www.superlogical.com/rex/docs) panes are doing, and
-which of them are waiting on the owner, without leaving the launcher. A `rex` keyword lists panes
-with blocked ones first, Return focuses the selected pane in Rex, and an optional footer item counts
-waiting panes. Rex panes are deliberately not merged into the `herdr` / `agents` list: they come from
-a different tool with different identity, status and delivery rules.
+Type `rex` to list the terminal panes of this Mac's [Rex](https://www.superlogical.com/rex/docs)
+server with the ones that need the owner first. Return focuses the selected pane in Rex, switches the
+Rex app to its session and brings Rex forward. A trailing term filters by project, session, program,
+state or message (`rex deploy`). The optional footer status ("Rex: 2 waiting", off by default, under
+Settings › Status Bar) counts waiting panes and opens the same list.
+
+Rex panes are deliberately not merged into the `herdr` / `agents` list: they come from a different
+tool with different identity, status and delivery rules.
 
 ## What Rex provides
 
@@ -29,79 +32,98 @@ its own state. Rex keeps a set of records per pane and returns them through the 
 | `owner` | Foreground `pid` and process `name` when the report arrived. |
 | `updated_at` | Timestamp of the report. |
 
-Claude Code already reports it: during this design the pane running it returned
-`state=working, app=claude-code` with its current activity as `msg`. `working` and `blocked` records
-are dropped by Rex when the process exits or a new shell prompt starts; `done` and `error` survive
-until the owner returns to the pane.
+Claude Code already reports it. `working` and `blocked` records are dropped by Rex when the process
+exits or a new shell prompt starts; `done` and `error` survive until the owner returns to the pane.
 
-**Layout and identity.** `session.list` returns `session_id` and `label`. `session.view` returns
-windows, layers and blocks with `block_id`, `label`, `creator_name` (`com.superlogical.terminal` for
-terminals) and `host_id`. IDs are stable UUID-based strings (`session:…`, `block:…`); labels are
-display names and can change.
+**Layout and identity.** `session.list` returns `session_id` and `label`. A connection must attach
+to a session (`session.attach`, which returns the same view as `session.view`) before it can read
+its windows, layers and blocks; `session.view` from an unattached script fails with a 409. IDs are
+stable UUID-based strings (`session:…`, `block:…`); labels are display names and can change. Shells
+usually label every pane `shell`, so rows are titled by the reported working directory (`pwd`) and
+fall back to the session label.
 
-**Focus.** `session.focus_block` focuses a block and makes its window active.
+**Focus.** `session.focus_block` focuses a block within its session. The Rex app is a client that
+declares a `session.select` action; `client.perform` asks it to show a session and window.
 
 **Events.** `rex events --json` streams newline-delimited JSON. Measured on this version: the
 whole-server stream carries session-level changes but not block events; `program_status_changed`
-arrives only on a per-session stream (`rex events --json -s <session>`), wrapped as
-`session_event → block_event` with `block_id`, `name`, the new `record` and a `reason`.
+arrives only on a per-session stream (`rex events --json -s <session>`).
 
-**Remote servers.** `hosts.list` lists other Rex servers by label, and `-S <host>` targets one.
-Out of scope for the first version.
+## How it works
 
-## Design
+**One process per refresh.** `VolantAgentHost` runs `rex do -e <script>` with one of two fixed Lua
+scripts in `RexScript`. The inventory script lists sessions, attaches to each, reads every terminal
+block's `program_status` and `pwd`, detaches, and returns everything as one JSON reply, about 0.1 s
+for five panes. Calling the CLI once per method would have cost a process per pane every five
+seconds. The app never supplies script text or method names; the focus script receives only a
+session and block ID, checked by `RexIdentifier`, as JSON `--args`.
 
-**Transport.** `VolantAgentHost` runs the `rex` CLI through the same bounded process runner used for
-Herdr (`HerdrProcess`: minimal environment, stdin closed, bounded output, timeout). It looks for
-`rex` at fixed install paths and reports "Rex was not found" otherwise. The CLI is preferred over
-speaking to `~/Library/Application Support/rex/server.sock` directly because the socket's wire
-protocol is not documented and the CLI follows the server's API version. Pass `--autostart=false`
-so Volant never starts a Rex server. The main app stays without process or socket access.
+Rex encodes an empty Lua table as `{}`, so the parser accepts an empty object wherever it expects a
+list.
 
-**Narrow helper API.** New XPC methods take typed arguments, never a method name or JSON from the
-app:
+**Which `rex` runs.** The helper looks inside Rex's server bundle
+(`~/Library/Application Support/com.superlogical.rex/RexServer/Versions/Current/…`), inside the app,
+then in `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin`, resolving symlinks. It runs a
+candidate only if its signature satisfies `anchor apple generic` with Superlogical's team
+`AG92C3PT77`, because other tools are also called `rex` and the helper runs outside the sandbox. The
+check costs about 0.17 s and is cached per path while the file's modification date is unchanged, so
+a Rex update is checked again.
 
-- `listRexPanes` — `session.list`, then `session.view` and `program_status` per terminal block.
-  Returns session/block IDs, labels, app, state, kind, progress, `msg` and `updated_at`.
-- `focusRexPane(sessionID, blockID)` — revalidates that the session and block still exist and the
-  block is still a terminal, then calls `session.focus_block`.
+**Which server.** Every call passes `--autostart=false`, a 5 s request timeout and
+`-S unix://…/Library/Application%20Support/rex/server.sock`, so Volant never starts Rex and never
+follows a home server the owner pointed at another machine. Exit status 4 means no server is running
+and becomes "Rex isn’t running. Open Rex, then try again." The child gets `ChildProcessEnvironment.rex`
+(home, user, system folders, fixed locale), closed stdin and bounded output through `HerdrProcess`.
 
-The helper never calls `format`, `clipboard_read`, `write`, `send`, `client.key` or any other method
-that reads screen contents or types input. Those are not reachable from the XPC API at all.
+**Narrow helper API.** Two XPC methods, both typed:
 
-**Refresh.** Start with a five-second poll while the `rex` view or footer item is visible, matching
-the Herdr cadence, with one outstanding request at a time and stale replies rejected by request
-generation. A later step can replace polling with one `rex events --json -s` stream per session,
-supervised by the helper, with a full refresh on reconnect or session add/remove.
+- `listRexPanes` replies with a `RexInventory` the helper has already parsed and bounded: valid IDs
+  only, text flattened to one line (labels 200 characters, messages 500), absolute directories only,
+  at most 500 panes. Each pane is represented by its most urgent record, then its newest.
+- `focusRexPane(session:block:)` runs the focus script, which refuses unless the block is still a
+  terminal in a window of that session, focuses it, then asks one Rex app client to `session.select`
+  it, preferring a window that already has the session open. The app checks the pane is still in its
+  current list before asking, and activates Rex with `NSApp.yieldActivation(to:)` only on success.
 
-**Launcher.** `rex` is a reserved keyword in `Shared/LauncherRouting.swift` so imports and Settings
-agree. Rows sort `blocked` first (then `error`, `done`, `working`, `idle`), show the app, the pane or
-session label and `msg`, and activate by stable `(session_id, block_id)` identity. A pane without
-status records still appears, as idle. A trailing term filters by label or app.
+Neither script reads `format`, `clipboard_read`, `write`, `send`, `client.key` or `block.event`, and
+neither uses `rex.exec`, `io` or `os`; `RexInventoryTests` fails if one appears.
 
-**Footer.** Optional and off by default, built like `HerdrStatusSummary`: "Rex: 2 waiting",
-"Rex: none waiting", "Rex: not running". Click opens `rex`.
+**Refresh.** `RexModel` polls every five seconds while the `rex` view or footer status is showing,
+with one outstanding request; replies after a disconnect or behind a newer connection are dropped,
+and only real changes are published. The launcher disconnects Rex when it hides. Unlike Herdr there
+is no Connect button: typing `rex` starts reading, since it reads only local status and starts
+nothing. Model changes never reconnect on their own, so a failing helper is retried on the next
+keystroke rather than in a loop.
 
-## Not in the first version
+## Not in this version
 
 - **Answering prompts.** Rex can type into a pane, but AGENTS.md forbids submitting prompts through
   a generic shell-input path, Rex has no atomic check-then-send, and OSC 7501 gives a message rather
   than structured choices. Revisit only if Rex adds a conditional, structured response method.
-- **Remote hosts** (`hosts.list`, `-S`). Needs the same per-machine identity, revalidation and
+- **Remote hosts** (`hosts.list`, `-S <host>`). Needs the same per-machine identity, revalidation and
   no-fallback-to-local rules as [Herdr machines](herdr-machines.md).
+- **Event streams.** Polling stays until per-session event streams are worth a supervised helper
+  process each.
 - **Screen contents.** Volant never reads a pane's screen or scrollback from Rex.
 
 ## Privacy
 
-`msg` and `title` are program-supplied text that can include file names or commands. Keep them in
-memory only for display; never log or persist them. Do not log process names, pids or labels.
+`msg` and `title` are program-supplied text that can include file names or commands. They stay in
+memory for display only and are never logged or persisted. Process names, pids and labels are not
+logged either; the `owner` field is not decoded at all.
 
-## Evidence plan
+## Evidence
 
-- Core tests decode recorded, fictional `session.view` and `program_status` JSON, including unknown
-  states and kinds, missing `owner`, child records and a session that disappears between calls.
-- Helper tests use an injected process runner: Rex missing, server not running, timeout, malformed
-  JSON and a stale focus target that must not be focused.
-- Native fixtures render the `rex` list and footer in light and dark with fictional panes.
-- Installed-app check against a live Rex server with a disposable pane emitting OSC 7501 states.
-  Fixture and injected-runner tests do not verify the signed helper's access to the Rex socket.
+- `RexInventoryTests` (Core): fictional inventory JSON with empty Lua tables, urgency and recency
+  ordering, unknown states and kinds, malformed IDs, unreadable sessions, bounded text, focus
+  argument checks, and the forbidden-method check on both scripts.
+- `RexModelTests` (app): stale replies after reconnect, not running then recovery, focus refused for
+  an unlisted pane and Rex activated on success, and the `rex` query listing waiting panes first and
+  filtering. Injected reader and focuser only.
+- Native Actions fixture `rex` scenario: fictional panes and footer rendered in the panel at every
+  size, Return focusing through a fake, and the not-running message.
+- Live, outside the app: the helper's `RexHost` compiled on its own against the owner's running Rex
+  read five panes after the signature check passed, and refused to focus a nonexistent pane.
+- Not yet verified: focus and `session.select` against the live Rex app, the signed installed helper
+  reaching the Rex socket, and the activation handoff. Driving the owner's Rex app was out of bounds
+  for automated checks; these need a check in the installed app.
