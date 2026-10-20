@@ -1167,6 +1167,51 @@ func notesRecoveryScenario() throws {
     print("PASS: unreadable Notes recovery with native keyboard controls")
 }
 
+/// Rex in the launcher: fictional panes through an injected watcher reader, waiting ones first, a
+/// term that filters them, Return focusing through a fake and stopping the watcher, the footer count,
+/// and the not-running message. No Rex server or agent helper is reached.
+func rexScenario() throws {
+    func pane(_ block: String, session: String, label: String, folder: String, state: RexState, message: String?) -> RexPane {
+        RexPane(sessionID: "session:" + session, sessionLabel: label, blockID: "block:" + block, label: "shell", cwd: "/fictional/" + folder,
+                status: RexStatus(state: state, kind: state == .blocked ? "permission" : nil, app: "claude-code", message: message))
+    }
+    let panes = RexInventory.sorted([
+        pane("b1", session: "fixture-web", label: "web", folder: "comet", state: .working, message: "Running the test suite"),
+        pane("b2", session: "fixture-api", label: "api", folder: "orbit", state: .blocked, message: "Allow running the migration?"),
+        pane("b3", session: "fixture-api", label: "api", folder: "orbit-docs", state: .done, message: "Updated three pages"),
+        pane("b4", session: "fixture-ops", label: "ops", folder: "deploy", state: .error, message: "Build failed"),
+    ])
+    var reply: ((Data?, Int, String?) -> Void)?
+    var focused: [String] = []
+    var stops = 0
+    panel.model.rex.reader = { _, next in reply = next }
+    panel.model.rex.stopper = { stops += 1 }
+    panel.model.rex.focuser = { pane, done in focused.append(pane.id); done(nil) }
+    panel.model.rex.activateRex = {}
+    panel.model.config.statusBar.sources = ["rex"]
+    summon()
+    panel.model.query = "rex"
+    verify(waitUntil { panel.model.rex.connected && reply != nil }, "The rex view starts reading without a Connect step")
+    reply?(try JSONEncoder().encode(RexInventory(panes: panes)), 1, nil); settle()
+    verify(waitUntil { panel.model.rows.count == 4 }, "Every fictional Rex pane is listed")
+    verify(panel.model.rows.first?.id == "rex:session:fixture-api/block:b2", "The waiting pane is first")
+    try render("rex-panes")
+    panel.model.query = "rex build"; settle()
+    verify(panel.model.rows.map(\.id) == ["rex:session:fixture-ops/block:b4"], "A trailing term filters by message")
+    key("\r", 36)
+    verify(waitUntil { focused == ["session:fixture-ops/block:b4"] }, "Return focuses the selected pane by its stable identity")
+    verify(stops == 1, "Dismissing the launcher stops the Rex watcher")
+    reply = nil
+    summon()
+    panel.model.query = "rex"
+    verify(waitUntil { reply != nil }, "Showing the rex view again reads again")
+    reply?(nil, 1, "Rex isn’t running. Open Rex, then try again."); settle()
+    verify(waitUntil { panel.model.rows.isEmpty && panel.model.notice == "Rex isn’t running. Open Rex, then try again." }, "A stopped Rex says so")
+    try render("rex-not-running")
+    panel.model.config.statusBar.sources = []
+    print("PASS: rex lists fictional panes waiting first, filters, focuses by identity and reports a stopped server")
+}
+
 /// A scenario runs against a fresh hidden launcher. Size-sensitive scenarios render or click inside
 /// the `LauncherPanel`, whose layout follows the launcher size, and run at every size; the rest run
 /// only at the default size.
@@ -1185,6 +1230,7 @@ struct Scenario {
 /// - extension-rows: row Actions and colored symbol rows in the panel.
 /// - catalog: the catalog list, detail and filter inside the panel.
 /// - herdr: question cards clicked at fixed offsets from the panel height, machine rows and the footer.
+/// - rex: Rex pane rows and the footer status drawn in the panel.
 /// - clipboard-recovery, spotlight-recovery: error, progress and Retry states drawn in the panel.
 /// Default size only, because they draw standalone windows that ignore the launcher size:
 /// - community-settings, extension-settings: Extension Settings states and the location prompt.
@@ -1203,6 +1249,7 @@ let scenarios: [Scenario] = [
     Scenario(name: "dictation-vocabulary", sizeSensitive: false, run: dictationVocabularyScenario),
     Scenario(name: "catalog", sizeSensitive: true, run: catalogScenario),
     Scenario(name: "herdr", sizeSensitive: true, run: herdrScenario),
+    Scenario(name: "rex", sizeSensitive: true, run: rexScenario),
     Scenario(name: "api-settings", sizeSensitive: false, run: apiSettingsScenario),
     Scenario(name: "acp-detection", sizeSensitive: false, run: acpDetectionScenario),
     Scenario(name: "acp-resume", sizeSensitive: false, run: acpResumeScenario),

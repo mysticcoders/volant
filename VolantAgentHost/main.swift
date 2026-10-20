@@ -2,8 +2,8 @@ import Foundation
 import Security
 import VolantCore
 
-/// Local Herdr discovery and typed ACP conversations. No shell or arbitrary-command API.
-/// This service intentionally runs outside App Sandbox to reach the user's Herdr socket.
+/// Local Herdr and Rex discovery and typed ACP conversations. No shell or arbitrary-command API.
+/// This service intentionally runs outside App Sandbox to reach the user's Herdr and Rex sockets.
 final class AgentHost: NSObject, VolantAgentHostProtocol {
     private let shortcutsHost = AppleShortcutsHost()
     private let shortcutsQueue = DispatchQueue(label: "com.mysticcoders.volant.shortcuts")
@@ -48,7 +48,10 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
         acp.queue.async { do { try self.acp.choose(request: request, option: option); reply(nil) } catch { reply(error.localizedDescription) } }
     }
     func acpStop(reply: @escaping () -> Void) { acp.queue.async { self.acp.stop(); reply() } }
-    func invalidate() { acp.queue.async { self.acp.stop() } }
+    func invalidate() {
+        acp.queue.async { self.acp.stop() }
+        rex.queue.async { self.rex.stop() }
+    }
     private let inspectionQueue = DispatchQueue(label: "com.mysticcoders.volant.inspection")
     func detectACPAgents(reply: @escaping (Data?, String?) -> Void) {
         inspectionQueue.async {
@@ -182,6 +185,22 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
         }
     }
 
+    private let rex = RexHost()
+    func readRexPanes(after revision: Int, reply: @escaping (Data?, Int, String?) -> Void) {
+        rex.queue.async {
+            let (data, current, message) = self.rex.read(after: revision)
+            reply(data, current, message)
+        }
+    }
+    func stopRexPanes(reply: @escaping () -> Void) {
+        rex.queue.async { self.rex.stop(); reply() }
+    }
+    func focusRexPane(session: String, block: String, reply: @escaping (String?) -> Void) {
+        rex.queue.async {
+            do { try self.rex.focus(session: session, block: block); reply(nil) }
+            catch { reply(error.localizedDescription) }
+        }
+    }
 }
 
 final class ListenerDelegate: NSObject, NSXPCListenerDelegate {

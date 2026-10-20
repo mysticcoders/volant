@@ -275,6 +275,15 @@ private struct SettingsView: View {
                 SettingsFooter("Shows “Herdr: 3 waiting” in the launcher footer when agents need you. Click it, or type herdr, to see waiting panes first and answer their questions. Includes Local and the machines enabled in Herdr.")
             }
             Section {
+                Toggle("Rex pane activity", isOn: Binding(get: { state.config.statusBar.sources.contains("rex") }, set: { value in
+                    apply { try Preferences.updateStatusBar(source: "rex", enabled: value, at: configURL) }
+                }))
+            } header: {
+                Text("Rex")
+            } footer: {
+                SettingsFooter("Shows “Rex: 2 waiting” in the launcher footer when a program in a Rex pane is waiting for you. Click it, or type rex, to see those panes first and focus one. Reads only what programs report to Rex on this Mac, never a pane’s contents.")
+            }
+            Section {
                 Toggle("AI Chat activity", isOn: Binding(get: { state.config.statusBar.sources.contains("ai-chat") }, set: { value in
                     apply { try Preferences.updateStatusBar(source: "ai-chat", enabled: value, at: configURL) }
                 }))

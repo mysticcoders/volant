@@ -32,6 +32,7 @@ enum ResultRow: Identifiable, Hashable {
     case agents
     case agentSession(AgentSession)
     case herdrMachine(HerdrMachine?, enabled: Bool, busy: Bool)
+    case rexPane(RexPane)
     case snippet(Snippet)
     case emoji(EmojiEntry)
     case quicklink(Quicklink, query: String)
@@ -55,6 +56,7 @@ enum ResultRow: Identifiable, Hashable {
         case .caffeinate(let command): return "caffeinate:" + command.id
         case .agentSession(let session): return "agent:" + session.id
         case .herdrMachine(let machine, _, _): return "herdr-machine:" + (machine?.id ?? "local")
+        case .rexPane(let pane): return "rex:" + pane.id
         case .connectivity(let item): return item.id
         case .audioRoute(let route): return "audio:" + route.id
         case .volume(let command, _): return "volume:" + command.id
@@ -86,6 +88,7 @@ enum ResultRow: Identifiable, Hashable {
         case .core, .caffeinate, .systemAction: return "Command"
         case .agentSession(let session): return session.status
         case .herdrMachine(_, let enabled, _): return enabled ? "Enabled" : "Disabled"
+        case .rexPane(let pane): return pane.state.title
         case .connectivity: return "Connectivity"
         case .audioRoute(let route): return route.current ? "Current" : "Device"
         case .volume: return "System"
@@ -127,6 +130,7 @@ enum ResultRow: Identifiable, Hashable {
             if busy { return "Working…" }
             guard machine != nil else { return "Always on" }
             return enabled ? "Disable Machine" : "Enable Machine"
+        case .rexPane: return "Focus in Rex"
         case .connectivity(let item):
             if case .wifi(let network) = item { return network.current ? "Connected" : "Join Network" }
             if case .refresh = item { return "Refresh" }
@@ -313,6 +317,42 @@ final class LauncherModel: ObservableObject {
         }
     }
     private var agentSubscription: AnyCancellable?
+    let rex: RexModel
+    private var rexSubscription: AnyCancellable?
+    /// `rex` lists the panes of this Mac's Rex server, kept apart from Herdr's `agents` list.
+    var showingRex: Bool {
+        let q = routedQuery.trimmingCharacters(in: .whitespaces).lowercased()
+        return q == "rex" || q.hasPrefix("rex ")
+    }
+    var showsRexStatus: Bool { config.statusBar.sources.contains("rex") }
+    func resumeRexIfNeeded() {
+        if showsRexStatus && !rex.connected { rex.connect() }
+    }
+    func setRexStatusShown(_ shown: Bool) {
+        do {
+            try Preferences.updateStatusBar(source: "rex", enabled: shown)
+            config.statusBar.sources.removeAll { $0 == "rex" }
+            if shown { config.statusBar.sources.append("rex") }
+            if shown && isPresented { rex.connect() }
+        } catch { notice = "Couldn’t save status bar: " + error.localizedDescription }
+    }
+    /// A trailing term filters by project, session, program, state or message. Model changes call
+    /// this too, so it never connects: only a query change does, which keeps a failing helper from
+    /// being retried in a loop.
+    private func refreshRexResults() {
+        guard showingRex else { return }
+        let selectedID = selectedRow?.id
+        let parts = query.trimmingCharacters(in: .whitespaces).split(separator: " ", maxSplits: 1)
+        let term = parts.count > 1 ? String(parts[1]) : ""
+        let panes = rex.panes.filter {
+            term.isEmpty || [$0.project, $0.sessionLabel, $0.label, $0.program ?? "", $0.state.title, $0.status?.message ?? ""]
+                .joined(separator: " ").localizedCaseInsensitiveContains(term)
+        }
+        sections = panes.isEmpty ? [] : [ResultSection(title: "Rex panes", rows: panes.map(ResultRow.rexPane))]
+        notice = panes.isEmpty && !rex.panes.isEmpty ? "No matching panes" : rex.message
+        if let selectedID, let index = rows.firstIndex(where: { $0.id == selectedID }) { selection = index }
+        else { selection = min(selection, max(0, rows.count - 1)) }
+    }
     private var indexSubscription: AnyCancellable?
     var showingAgents: Bool {
         let q = routedQuery.trimmingCharacters(in: .whitespaces).lowercased()
@@ -467,8 +507,9 @@ final class LauncherModel: ObservableObject {
     @Published private(set) var heldCalculation: CalculationAnswer?
     var calculationHoldDuration: TimeInterval = 0.6
 
-    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), caffeinate: CaffeinateService = CaffeinateService(), files: FileSearch = FileSearch(), agents: AgentsModel = AgentsModel(), onNote: @escaping (LauncherAction) -> Void) {
+    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), caffeinate: CaffeinateService = CaffeinateService(), files: FileSearch = FileSearch(), agents: AgentsModel = AgentsModel(), rex: RexModel = RexModel(), onNote: @escaping (LauncherAction) -> Void) {
         self.agents = agents
+        self.rex = rex
         self.files = files
         self.caffeinate = caffeinate
         self.usage = usage
@@ -515,6 +556,9 @@ final class LauncherModel: ObservableObject {
         }
         agentSubscription = agents.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.refreshAgentResults() }
+        }
+        rexSubscription = rex.objectWillChange.sink { [weak self] _ in
+            DispatchQueue.main.async { self?.refreshRexResults() }
         }
         // Switching conversations redraws the launcher. Changes inside a conversation reach only the
         // views that observe it, so a streamed reply never redraws the whole launcher.
@@ -903,6 +947,11 @@ final class LauncherModel: ObservableObject {
             return
         }
         if showingACP { sections = []; return }
+        if showingRex {
+            if !rex.connected { rex.connect() }
+            refreshRexResults()
+            return
+        }
         if showingAgents {
             refreshAgentResults()
             return
@@ -1477,6 +1526,12 @@ final class LauncherModel: ObservableObject {
         case .settings: dismiss(); onNote(.settings); return
         case .reloadConfig: dismiss(); onNote(.reloadConfig); return
         case .agentSession(let session): agents.focus(session); return
+        case .rexPane(let pane):
+            rex.focus(pane) { [weak self] error in
+                guard let self else { return }
+                if let error { self.actionFeedback = error } else { self.dismiss() }
+            }
+            return
         case .agents: query = "agents"; return
         case .calculation(let answer, _): copy(answer.copyText)
         case .clip(let clip):
@@ -1534,7 +1589,7 @@ final class LauncherModel: ObservableObject {
 
     var canTabToAIChat: Bool {
         scopedExtension == nil && !showingACP && !showingDictionary && !showingCatalog && !showingTranslation && !showingEmoji &&
-        !showingAppleShortcuts && !showingAgents && wifiJoin == nil && entryForm == nil && actionTarget == nil
+        !showingAppleShortcuts && !showingAgents && !showingRex && wifiJoin == nil && entryForm == nil && actionTarget == nil
     }
 
     /// Opens the form for a new snippet or quicklink over the results, validated against the

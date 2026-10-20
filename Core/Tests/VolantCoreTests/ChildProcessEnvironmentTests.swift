@@ -10,7 +10,8 @@ final class ChildProcessEnvironmentTests: XCTestCase {
         let built = [
             ChildProcessEnvironment.acpProvider(home: home, user: user, executable: "/opt/fictional/bin/agent", launch: [:]),
             ChildProcessEnvironment.herdr(home: home, user: user, sshAuthSocket: nil),
-            ChildProcessEnvironment.appleTool(home: home, user: user)
+            ChildProcessEnvironment.appleTool(home: home, user: user),
+            ChildProcessEnvironment.rex(home: home, user: user)
         ]
         for environment in built {
             XCTAssertEqual(Set(environment.keys), ["HOME", "USER", "PATH", "LANG"])
@@ -43,6 +44,11 @@ final class ChildProcessEnvironmentTests: XCTestCase {
     func testAppleToolUsesSystemFoldersOnly() {
         let environment = ChildProcessEnvironment.appleTool(home: home, user: user)
         XCTAssertEqual(environment["PATH"], "/usr/bin:/bin:/usr/sbin:/sbin")
+    }
+
+    /// Rex reaches its server by socket and runs no other tools, so it gets system folders only.
+    func testRexUsesSystemFoldersOnly() {
+        XCTAssertEqual(ChildProcessEnvironment.rex(home: home, user: user)["PATH"], "/usr/bin:/bin:/usr/sbin:/sbin")
     }
 
     /// git status keeps its separate C locale for byte-stable parsing.
