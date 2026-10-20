@@ -48,7 +48,10 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
         acp.queue.async { do { try self.acp.choose(request: request, option: option); reply(nil) } catch { reply(error.localizedDescription) } }
     }
     func acpStop(reply: @escaping () -> Void) { acp.queue.async { self.acp.stop(); reply() } }
-    func invalidate() { acp.queue.async { self.acp.stop() } }
+    func invalidate() {
+        acp.queue.async { self.acp.stop() }
+        rex.queue.async { self.rex.stop() }
+    }
     private let inspectionQueue = DispatchQueue(label: "com.mysticcoders.volant.inspection")
     func detectACPAgents(reply: @escaping (Data?, String?) -> Void) {
         inspectionQueue.async {
@@ -183,11 +186,14 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
     }
 
     private let rex = RexHost()
-    func listRexPanes(reply: @escaping (Data?, String?) -> Void) {
+    func readRexPanes(after revision: Int, reply: @escaping (Data?, Int, String?) -> Void) {
         rex.queue.async {
-            do { reply(try self.rex.inventory(), nil) }
-            catch { reply(nil, error.localizedDescription) }
+            let (data, current, message) = self.rex.read(after: revision)
+            reply(data, current, message)
         }
+    }
+    func stopRexPanes(reply: @escaping () -> Void) {
+        rex.queue.async { self.rex.stop(); reply() }
     }
     func focusRexPane(session: String, block: String, reply: @escaping (String?) -> Void) {
         rex.queue.async {

@@ -1,7 +1,8 @@
 import Foundation
 
-/// The two fixed Lua scripts the agent helper runs with `rex do -e`, and the arguments they take.
-/// The app never supplies script text or a method name: only a session and block ID, checked by
+/// The two fixed Lua scripts the agent helper runs with `rex do -e`, and the arguments they take:
+/// a long-lived watcher that prints the panes whenever they change, and a one-shot focus. The app
+/// never supplies script text or a method name: only a session and block ID, checked by
 /// `RexIdentifier`, reach `focus` as JSON arguments. Neither script reads a terminal's screen,
 /// scrollback or clipboard, or types into a pane.
 public enum RexScript {
@@ -23,9 +24,13 @@ public enum RexScript {
     /// The exit status `rex` uses when no server is running and autostart is off.
     public static let notRunningStatus: Int32 = 4
 
-    /// Arguments for the inventory script.
-    public static func inventoryArguments(home: String) -> [String] {
-        globalArguments(home: home) + ["do", "-e", inventory]
+    /// How long one watcher runs before it exits and the helper starts a fresh one, so a watcher
+    /// can never outlive its purpose by more than this.
+    public static let watchLifetime = "30m"
+
+    /// Arguments for the watcher, which hears every session's events until stopped.
+    public static func watchArguments(home: String) -> [String] {
+        globalArguments(home: home) + ["do", "--all", "--for", watchLifetime, "-e", watch]
     }
 
     /// Arguments for the focus script, or nil when either ID is malformed.
@@ -36,41 +41,56 @@ public enum RexScript {
         return globalArguments(home: home) + ["do", "-e", focus, "--args", json]
     }
 
-    /// Every session's terminal panes with their status records and reported directory. Attaching
-    /// is how a connection may read a session's view; the script detaches again before moving on.
-    public static let inventory = """
+    /// Prints every session's terminal panes, with their status records and reported directory, as
+    /// one JSON line: once on start, about a quarter second after any burst of relevant events, and
+    /// every 30 seconds in case an event was missed. A script run with `--all` is attached to every
+    /// session once it is listening, so it reads each view directly, from timers only.
+    public static let watch = """
     local terminal = "com.superlogical.terminal"
-    local out = {}
-    local list, err = rex.call("session.list", {})
-    if err ~= nil then error(err, 0) end
-    for _, s in ipairs(list.sessions or {}) do
-      local entry = { session_id = s.session_id, label = s.label, panes = {} }
-      local attached, aerr = rex.call("session.attach", { session_id = s.session_id })
-      if aerr ~= nil or attached == nil or attached.view == nil then
-        entry.error = "unreadable"
-      else
-        for _, w in ipairs(attached.view.windows or {}) do
-          for _, layer in ipairs(w.layers or {}) do
-            for _, b in ipairs(layer.blocks or {}) do
-              if b.creator_name == terminal then
-                local ids = { session_id = s.session_id, block_id = b.block_id }
-                local status = rex.call("block.method", { session_id = s.session_id, block_id = b.block_id, method = "program_status" })
-                local dir = rex.call("block.method", { session_id = s.session_id, block_id = b.block_id, method = "pwd" })
-                table.insert(entry.panes, {
-                  block_id = b.block_id,
-                  label = b.label,
-                  cwd = dir and dir.pwd,
-                  records = status and status.records,
-                })
+    local function snapshot()
+      local out = {}
+      local list, err = rex.call("session.list", {})
+      if err ~= nil then return end
+      for _, s in ipairs(list.sessions or {}) do
+        local entry = { session_id = s.session_id, label = s.label, panes = {} }
+        local view, verr = rex.call("session.view", { session_id = s.session_id })
+        if verr ~= nil or view == nil then
+          entry.error = "unreadable"
+        else
+          for _, w in ipairs(view.windows or {}) do
+            for _, layer in ipairs(w.layers or {}) do
+              for _, b in ipairs(layer.blocks or {}) do
+                if b.creator_name == terminal then
+                  local status = rex.call("block.method", { session_id = s.session_id, block_id = b.block_id, method = "program_status" })
+                  local dir = rex.call("block.method", { session_id = s.session_id, block_id = b.block_id, method = "pwd" })
+                  table.insert(entry.panes, {
+                    block_id = b.block_id,
+                    label = b.label,
+                    cwd = dir and dir.pwd,
+                    records = status and status.records,
+                  })
+                end
               end
             end
           end
         end
-        rex.call("session.detach", { session_id = s.session_id })
+        table.insert(out, entry)
       end
-      table.insert(out, entry)
+      print(rex.json.encode({ sessions = out }))
     end
-    return { sessions = out }
+    local pending
+    local function soon()
+      if pending then pending:cancel() end
+      pending = rex.after(0.25, function() pending = nil; snapshot() end)
+    end
+    for _, name in ipairs({
+      "terminal.program_status_changed", "terminal.pwd_changed", "block_created", "block_closed",
+      "session_created", "session_destroyed", "session_view_changed",
+    }) do
+      rex.on(name, function() soon() end)
+    end
+    rex.after(0, snapshot)
+    rex.every(30, snapshot)
     """
 
     /// Focuses a pane only if it is still a terminal in a window of that session, then asks the Rex

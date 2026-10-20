@@ -45,18 +45,42 @@ fall back to the session label.
 **Focus.** `session.focus_block` focuses a block within its session. The Rex app is a client that
 declares a `session.select` action; `client.perform` asks it to show a session and window.
 
-**Events.** `rex events --json` streams newline-delimited JSON. Measured on this version: the
-whole-server stream carries session-level changes but not block events; `program_status_changed`
-arrives only on a per-session stream (`rex events --json -s <session>`).
+**Events.** `rex do --all` runs a [Lua script](https://www.superlogical.com/rex/docs/automate/lua-scripts)
+that hears [events](https://www.superlogical.com/rex/docs/automate/lua-events) from every session,
+including ones created later, and keeps running while it has handlers. Measured on this version:
+`program_status_changed` reaches a `--all` handler, which can read that pane's status, and `print`
+reaches a pipe line by line as events arrive. The script is attached to every session only once it
+is listening: `session.view` from its top level fails with a 409, but from a timer it succeeds for
+every session without attaching. (The CLI's `rex events` differs: its whole-server stream carries
+no block events.) The same stream also carries `desktop_notification`, which Claude Code sends.
 
 ## How it works
 
-**One process per refresh.** `VolantAgentHost` runs `rex do -e <script>` with one of two fixed Lua
-scripts in `RexScript`. The inventory script lists sessions, attaches to each, reads every terminal
-block's `program_status` and `pwd`, detaches, and returns everything as one JSON reply, about 0.1 s
-for five panes. Calling the CLI once per method would have cost a process per pane every five
-seconds. The app never supplies script text or method names; the focus script receives only a
-session and block ID, checked by `RexIdentifier`, as JSON `--args`.
+**One long-lived watcher.** `VolantAgentHost` runs `rex do --all --for 30m -e <watch>`, the fixed
+watch script in `RexScript`. It registers handlers for `program_status_changed`, `pwd_changed`,
+pane, session and view changes, and prints every session's terminal panes (status records and
+reported directory) as one JSON line: on start, about 0.25 s after the last event of a burst, and
+every 30 s in case an event was missed. It never attaches or detaches, since detaching would stop
+that session's events. The first snapshot arrives about 0.3 s after start.
+
+`RexWatch` in the helper supervises it:
+
+- Reads stdout line by line, skips lines that are not inventories, parses and bounds each one, and
+  keeps the latest with a revision number that advances on every change of panes or message. A line
+  over 4 MB stops the watcher.
+- Starts on the first read. The app asks once a second with the revision it holds, as
+  `readRexPanes(after:)`, and an unchanged revision replies with nothing, so idle reads cost one XPC
+  round trip and no process.
+- Restarts at once when the watcher reaches its 30-minute lifetime. After a failure it restarts with
+  backoff from 1 s to 10 s, reporting "Rex isn’t running" for exit status 4, but only while reads keep
+  arriving: with no read for 20 s it stops instead.
+- Stops on `stopRexPanes` (sent when the launcher hides), when the helper's connection ends, and
+  when idle. It sends SIGTERM, then SIGKILL after a second if needed.
+
+This replaced polling, which spawned a `rex` process every five seconds while the view was open.
+
+The focus script is still a one-shot `rex do -e` and receives only a session and block ID, checked by
+`RexIdentifier`, as JSON `--args`. The app never supplies script text or method names.
 
 Rex encodes an empty Lua table as `{}`, so the parser accepts an empty object wherever it expects a
 list.
@@ -77,9 +101,10 @@ and becomes "Rex isn’t running. Open Rex, then try again." The child gets `Chi
 
 **Narrow helper API.** Two XPC methods, both typed:
 
-- `listRexPanes` replies with a `RexInventory` the helper has already parsed and bounded: valid IDs
-  only, text flattened to one line (labels 200 characters, messages 500), absolute directories only,
-  at most 500 panes. Each pane is represented by its most urgent record, then its newest.
+- `readRexPanes(after:)` replies with the watcher's revision and, when newer, a `RexInventory` the
+  helper has already parsed and bounded: valid IDs only, text flattened to one line (labels 200
+  characters, messages 500), absolute directories only, at most 500 panes. Each pane is represented
+  by its most urgent record, then its newest. `stopRexPanes` stops the watcher.
 - `focusRexPane(session:block:)` runs the focus script, which refuses unless the block is still a
   terminal in a window of that session, focuses it, then asks one Rex app client to `session.select`
   it, preferring a window that already has the session open. The app checks the pane is still in its
@@ -88,9 +113,10 @@ and becomes "Rex isn’t running. Open Rex, then try again." The child gets `Chi
 Neither script reads `format`, `clipboard_read`, `write`, `send`, `client.key` or `block.event`, and
 neither uses `rex.exec`, `io` or `os`; `RexInventoryTests` fails if one appears.
 
-**Refresh.** `RexModel` polls every five seconds while the `rex` view or footer status is showing,
-with one outstanding request; replies after a disconnect or behind a newer connection are dropped,
-and only real changes are published. The launcher disconnects Rex when it hides. Unlike Herdr there
+**In the app.** `RexModel` reads the helper's revision once a second while the `rex` view or footer
+status is showing, with one outstanding request; replies after a disconnect or behind a newer
+connection are dropped, and only real changes are published. The launcher disconnects Rex, which
+stops the watcher, when it hides. Unlike Herdr there
 is no Connect button: typing `rex` starts reading, since it reads only local status and starts
 nothing. Model changes never reconnect on their own, so a failing helper is retried on the next
 keystroke rather than in a loop.
@@ -102,8 +128,8 @@ keystroke rather than in a loop.
   than structured choices. Revisit only if Rex adds a conditional, structured response method.
 - **Remote hosts** (`hosts.list`, `-S <host>`). Needs the same per-machine identity, revalidation and
   no-fallback-to-local rules as [Herdr machines](herdr-machines.md).
-- **Event streams.** Polling stays until per-session event streams are worth a supervised helper
-  process each.
+- **Push to the app.** The helper hears events immediately, but the app still asks it once a second;
+  a reverse XPC callback could remove that last second.
 - **Screen contents.** Volant never reads a pane's screen or scrollback from Rex.
 
 ## Privacy
@@ -117,13 +143,21 @@ logged either; the `owner` field is not decoded at all.
 - `RexInventoryTests` (Core): fictional inventory JSON with empty Lua tables, urgency and recency
   ordering, unknown states and kinds, malformed IDs, unreadable sessions, bounded text, focus
   argument checks, and the forbidden-method check on both scripts.
-- `RexModelTests` (app): stale replies after reconnect, not running then recovery, focus refused for
-  an unlisted pane and Rex activated on success, and the `rex` query listing waiting panes first and
-  filtering. Injected reader and focuser only.
+- `RexModelTests` (app): stale replies after reconnect, disconnect stopping the watcher, unchanged
+  revisions, the starting state, not running then recovery, focus refused for an unlisted pane and Rex
+  activated on success, and the `rex` query listing waiting panes first and filtering. Injected
+  reader, stopper and focuser only.
+- `tools/check-rex.sh` (run by `Scripts/test.sh`): the helper's real `RexWatch` against fake `rex`
+  shell scripts, never a real Rex: inventory lines replacing each other with a non-inventory line
+  skipped, unchanged reads, stop ending the process, exit status 4 as not running, an oversized line,
+  and lifetime restart.
 - Native Actions fixture `rex` scenario: fictional panes and footer rendered in the panel at every
   size, Return focusing through a fake, and the not-running message.
 - Live, outside the app: the helper's `RexHost` compiled on its own against the owner's running Rex
-  read five panes after the signature check passed, and refused to focus a nonexistent pane.
+  passed the signature check, delivered the watcher's first snapshot of six panes in 0.29 s, left no
+  watcher process behind after stop, and refused to focus a nonexistent pane. A separate `--all`
+  Lua watcher received live `program_status_changed` events. No status changed during the
+  `RexWatch` probe itself, so an event-driven snapshot through `RexWatch` was not observed end to end.
 - Not yet verified: focus and `session.select` against the live Rex app, the signed installed helper
   reaching the Rex socket, and the activation handoff. Driving the owner's Rex app was out of bounds
   for automated checks; these need a check in the installed app.

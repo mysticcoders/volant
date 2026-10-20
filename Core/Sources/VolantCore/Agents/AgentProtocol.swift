@@ -30,10 +30,15 @@ import Foundation
     func setHerdrMachine(machine: Data, enabled: Bool, reply: @escaping (Data?, String?) -> Void)
     func listAgents(machine: Data?, reply: @escaping (Data?, String?) -> Void)
     func focusAgent(target: Data, reply: @escaping (String?) -> Void)
-    /// Rex panes and the status their programs reported, as JSON `RexInventory`. Reads only the
-    /// layout, status records and reported directories of this Mac's Rex server, never a pane's
-    /// screen, and never starts Rex.
-    func listRexPanes(reply: @escaping (Data?, String?) -> Void)
+    /// Rex panes and the status their programs reported, as JSON `RexInventory`, from a watcher the
+    /// helper starts on the first read and keeps running while reads continue. The reply carries the
+    /// watcher's revision; when `after` is already current it carries no data and no message:
+    /// nothing changed. Otherwise it carries the latest panes, or none and a message such as Rex not
+    /// running. Reads only layout, status records and reported directories, never a pane's screen,
+    /// and never starts Rex.
+    func readRexPanes(after revision: Int, reply: @escaping (Data?, Int, String?) -> Void)
+    /// Stops the watcher. The next read starts a new one.
+    func stopRexPanes(reply: @escaping () -> Void)
     /// Focuses a Rex pane after checking it is still a terminal in that session, then asks the Rex
     /// app to show the session. The reply is nil on success or a message to show.
     func focusRexPane(session: String, block: String, reply: @escaping (String?) -> Void)

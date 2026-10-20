@@ -1167,9 +1167,9 @@ func notesRecoveryScenario() throws {
     print("PASS: unreadable Notes recovery with native keyboard controls")
 }
 
-/// Rex in the launcher: fictional panes through an injected reader, waiting ones first, a term that
-/// filters them, Return focusing through a fake, the footer count, and the not-running message. No
-/// Rex server or agent helper is reached.
+/// Rex in the launcher: fictional panes through an injected watcher reader, waiting ones first, a
+/// term that filters them, Return focusing through a fake and stopping the watcher, the footer count,
+/// and the not-running message. No Rex server or agent helper is reached.
 func rexScenario() throws {
     func pane(_ block: String, session: String, label: String, folder: String, state: RexState, message: String?) -> RexPane {
         RexPane(sessionID: "session:" + session, sessionLabel: label, blockID: "block:" + block, label: "shell", cwd: "/fictional/" + folder,
@@ -1181,16 +1181,18 @@ func rexScenario() throws {
         pane("b3", session: "fixture-api", label: "api", folder: "orbit-docs", state: .done, message: "Updated three pages"),
         pane("b4", session: "fixture-ops", label: "ops", folder: "deploy", state: .error, message: "Build failed"),
     ])
-    var reply: ((Data?, String?) -> Void)?
+    var reply: ((Data?, Int, String?) -> Void)?
     var focused: [String] = []
-    panel.model.rex.reader = { reply = $0 }
+    var stops = 0
+    panel.model.rex.reader = { _, next in reply = next }
+    panel.model.rex.stopper = { stops += 1 }
     panel.model.rex.focuser = { pane, done in focused.append(pane.id); done(nil) }
     panel.model.rex.activateRex = {}
     panel.model.config.statusBar.sources = ["rex"]
     summon()
     panel.model.query = "rex"
     verify(waitUntil { panel.model.rex.connected && reply != nil }, "The rex view starts reading without a Connect step")
-    reply?(try JSONEncoder().encode(RexInventory(panes: panes)), nil); settle()
+    reply?(try JSONEncoder().encode(RexInventory(panes: panes)), 1, nil); settle()
     verify(waitUntil { panel.model.rows.count == 4 }, "Every fictional Rex pane is listed")
     verify(panel.model.rows.first?.id == "rex:session:fixture-api/block:b2", "The waiting pane is first")
     try render("rex-panes")
@@ -1198,11 +1200,12 @@ func rexScenario() throws {
     verify(panel.model.rows.map(\.id) == ["rex:session:fixture-ops/block:b4"], "A trailing term filters by message")
     key("\r", 36)
     verify(waitUntil { focused == ["session:fixture-ops/block:b4"] }, "Return focuses the selected pane by its stable identity")
+    verify(stops == 1, "Dismissing the launcher stops the Rex watcher")
     reply = nil
     summon()
     panel.model.query = "rex"
     verify(waitUntil { reply != nil }, "Showing the rex view again reads again")
-    reply?(nil, "Rex isn’t running. Open Rex, then try again."); settle()
+    reply?(nil, 1, "Rex isn’t running. Open Rex, then try again."); settle()
     verify(waitUntil { panel.model.rows.isEmpty && panel.model.notice == "Rex isn’t running. Open Rex, then try again." }, "A stopped Rex says so")
     try render("rex-not-running")
     panel.model.config.statusBar.sources = []

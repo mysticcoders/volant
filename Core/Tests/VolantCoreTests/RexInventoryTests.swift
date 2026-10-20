@@ -99,11 +99,19 @@ final class RexInventoryTests: XCTestCase {
     }
 
     func testScriptsNeverReadScreensOrTypeInput() {
-        for script in [RexScript.inventory, RexScript.focus] {
+        for script in [RexScript.watch, RexScript.focus] {
             for forbidden in ["format", "clipboard_read", "write", "send", "client.key", "block.event", "rex.exec", "io.", "os."] {
                 XCTAssertFalse(script.contains(forbidden), "\(forbidden) must not appear in a Rex script")
             }
         }
+    }
+
+    func testWatcherHearsEverySessionForABoundedTime() {
+        let arguments = RexScript.watchArguments(home: "/Users/fictional")
+        XCTAssertEqual(Array(arguments.dropFirst(5).prefix(4)), ["do", "--all", "--for", RexScript.watchLifetime])
+        XCTAssertTrue(arguments.contains("--autostart=false"))
+        XCTAssertFalse(RexScript.watch.contains("session.attach"), "a watcher is attached to every session already")
+        XCTAssertFalse(RexScript.watch.contains("session.detach"), "detaching would stop that session's events")
     }
 
     func testFooterSummary() {
