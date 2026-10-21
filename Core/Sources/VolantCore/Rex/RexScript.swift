@@ -3,8 +3,9 @@ import Foundation
 /// The two fixed Lua scripts the agent helper runs with `rex do -e`, and the arguments they take:
 /// a long-lived watcher that prints the panes whenever they change, and a one-shot focus. The app
 /// never supplies script text or a method name: only a session and block ID, checked by
-/// `RexIdentifier`, reach `focus` as JSON arguments. Neither script reads a terminal's screen,
-/// scrollback or clipboard, or types into a pane.
+/// `RexIdentifier`, reach `focus` as JSON arguments. Neither script types into a pane or reads its
+/// clipboard. Only the watcher started with `preview` reads screen text, and it keeps just the last
+/// `previewLines` lines of each pane.
 public enum RexScript {
     /// The Rex app's bundle identifier, activated after a pane is focused.
     public static let appBundleIdentifier = "com.superlogical.rex"
@@ -28,10 +29,16 @@ public enum RexScript {
     /// can never outlive its purpose by more than this.
     public static let watchLifetime = "30m"
 
-    /// Arguments for the watcher, which hears every session's events until stopped.
-    public static func watchArguments(home: String) -> [String] {
-        globalArguments(home: home) + ["do", "--all", "--for", watchLifetime, "-e", watch]
+    /// Arguments for the watcher, which hears every session's events until stopped. With `preview`
+    /// it also prints the last lines of each pane's screen text, which only an owner who turned on
+    /// pane previews asks for.
+    public static func watchArguments(home: String, preview: Bool = false) -> [String] {
+        globalArguments(home: home) + ["do", "--all", "--for", watchLifetime, "-e", watch] + (preview ? ["--args", #"{"preview":true}"#] : [])
     }
+
+    /// The most screen lines a pane preview keeps, and the longest line, cut inside the script.
+    public static let previewLines = 12
+    public static let previewColumns = 160
 
     /// What the focus script reports after focusing the pane inside its session.
     public enum FocusOutcome: Equatable {
@@ -74,28 +81,60 @@ public enum RexScript {
     /// session once it is listening, so it reads each view directly, from timers only.
     public static let watch = """
     local terminal = "com.superlogical.terminal"
+    local preview = rex.args.preview == true
+    local function tail(text)
+      local lines = {}
+      for line in string.gmatch(text or "", "([^\\n]*)\\n?") do
+        if string.find(line, "%S") then table.insert(lines, string.sub(line, 1, \(previewColumns))) end
+      end
+      local kept = {}
+      for i = math.max(1, #lines - \(previewLines) + 1), #lines do table.insert(kept, lines[i]) end
+      return kept
+    end
+    local function leaves(node, rects)
+      if node == nil then return end
+      if node.block_id then rects[node.block_id] = node.rect end
+      if node.split then leaves(node.split.before, rects); leaves(node.split.after, rects) end
+    end
     local function snapshot()
       local out = {}
       local list, err = rex.call("session.list", {})
       if err ~= nil then return end
       for _, s in ipairs(list.sessions or {}) do
-        local entry = { session_id = s.session_id, label = s.label, panes = {} }
+        local entry = { session_id = s.session_id, label = s.label, panes = {}, windows = {} }
         local view, verr = rex.call("session.view", { session_id = s.session_id })
         if verr ~= nil or view == nil then
           entry.error = "unreadable"
         else
           for _, w in ipairs(view.windows or {}) do
-            for _, layer in ipairs(w.layers or {}) do
+            table.insert(entry.windows, {
+              window_id = w.window_id, label = w.label,
+              active = w.window_id == view.active_window_id, focused_block_id = w.focused_block_id,
+            })
+            for index, layer in ipairs(w.layers or {}) do
+              local rects = {}
+              if index == 1 then leaves(layer.layout, rects) end
               for _, b in ipairs(layer.blocks or {}) do
                 if b.creator_name == terminal then
                   local status = rex.call("block.method", { session_id = s.session_id, block_id = b.block_id, method = "program_status" })
                   local dir = rex.call("block.method", { session_id = s.session_id, block_id = b.block_id, method = "pwd" })
-                  table.insert(entry.panes, {
+                  local title = rex.call("block.method", { session_id = s.session_id, block_id = b.block_id, method = "title" })
+                  local process = rex.call("block.method", { session_id = s.session_id, block_id = b.block_id, method = "process" })
+                  local pane = {
                     block_id = b.block_id,
                     label = b.label,
                     cwd = dir and dir.pwd,
                     records = status and status.records,
-                  })
+                    window_id = w.window_id,
+                    rect = rects[b.block_id],
+                    title = title and title.title,
+                    program = process and process.foreground and (process.foreground.script or process.foreground.argv0 or process.foreground.name),
+                  }
+                  if preview then
+                    local screen = rex.call("block.method", { session_id = s.session_id, block_id = b.block_id, method = "format", args = { format = "text", trim = true } })
+                    pane.preview = tail(screen and screen.content)
+                  end
+                  table.insert(entry.panes, pane)
                 end
               end
             end
@@ -123,7 +162,7 @@ public enum RexScript {
       rex.on(name, function() soon() end)
     end
     rex.after(0, snapshot)
-    rex.every(30, snapshot)
+    rex.every(preview and 2 or 30, snapshot)
     """
 
     /// Focuses a pane only if it is still a terminal in a window of that session, then asks the Rex

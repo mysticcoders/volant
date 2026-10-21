@@ -11,6 +11,7 @@ enum LauncherAction {
     case reloadConfig
     case editApp(AppEntry)
     case agents
+    case rexOverview
     case open(String)
     case create(String)
     case confetti
@@ -33,6 +34,7 @@ enum ResultRow: Identifiable, Hashable {
     case agentSession(AgentSession)
     case herdrMachine(HerdrMachine?, enabled: Bool, busy: Bool)
     case rexPane(RexPane)
+    case rexOverview
     case snippet(Snippet)
     case emoji(EmojiEntry)
     case quicklink(Quicklink, query: String)
@@ -57,6 +59,7 @@ enum ResultRow: Identifiable, Hashable {
         case .agentSession(let session): return "agent:" + session.id
         case .herdrMachine(let machine, _, _): return "herdr-machine:" + (machine?.id ?? "local")
         case .rexPane(let pane): return "rex:" + pane.id
+        case .rexOverview: return "command:rex-overview"
         case .connectivity(let item): return item.id
         case .audioRoute(let route): return "audio:" + route.id
         case .volume(let command, _): return "volume:" + command.id
@@ -89,6 +92,7 @@ enum ResultRow: Identifiable, Hashable {
         case .agentSession(let session): return session.status
         case .herdrMachine(_, let enabled, _): return enabled ? "Enabled" : "Disabled"
         case .rexPane(let pane): return pane.state.title
+        case .rexOverview: return "Command"
         case .connectivity: return "Connectivity"
         case .audioRoute(let route): return route.current ? "Current" : "Device"
         case .volume: return "System"
@@ -131,6 +135,7 @@ enum ResultRow: Identifiable, Hashable {
             guard machine != nil else { return "Always on" }
             return enabled ? "Disable Machine" : "Enable Machine"
         case .rexPane: return "Focus in Rex"
+        case .rexOverview: return "Open Overview"
         case .connectivity(let item):
             if case .wifi(let network) = item { return network.current ? "Connected" : "Join Network" }
             if case .refresh = item { return "Refresh" }
@@ -336,7 +341,9 @@ final class LauncherModel: ObservableObject {
             if shown && isPresented { rex.connect() }
         } catch { notice = "Couldn’t save status bar: " + error.localizedDescription }
     }
-    /// A trailing term filters by project, session, program, state or message. Model changes call
+    /// A trailing term filters by project, session, program, state or message. Open Rex Overview
+    /// follows the panes, and appears with none only when asked for by name, so a loading or
+    /// stopped Rex still shows its message. Model changes call
     /// this too, so it never connects: only a query change does, which keeps a failing helper from
     /// being retried in a loop.
     private func refreshRexResults() {
@@ -348,9 +355,14 @@ final class LauncherModel: ObservableObject {
             term.isEmpty || [$0.project, $0.sessionLabel, $0.label, $0.program ?? "", $0.state.title, $0.status?.message ?? ""]
                 .joined(separator: " ").localizedCaseInsensitiveContains(term)
         }
-        sections = panes.isEmpty ? [] : [ResultSection(title: "Rex panes", rows: panes.map(ResultRow.rexPane))]
+        let hadPanes = rows.contains { if case .rexPane = $0 { return true } else { return false } }
+        let asksForOverview = !term.isEmpty && ("overview".hasPrefix(term.lowercased()) || "grid".hasPrefix(term.lowercased()))
+        let overviewMatches = asksForOverview || (term.isEmpty && !rex.panes.isEmpty)
+        sections = (panes.isEmpty ? [] : [ResultSection(title: "Rex panes", rows: panes.map(ResultRow.rexPane))])
+            + (overviewMatches ? [ResultSection(title: "Rex", rows: [.rexOverview])] : [])
         notice = panes.isEmpty && !rex.panes.isEmpty ? "No matching panes" : rex.message
-        if let selectedID, let index = rows.firstIndex(where: { $0.id == selectedID }) { selection = index }
+        if !hadPanes && !panes.isEmpty { selection = 0 }
+        else if let selectedID, let index = rows.firstIndex(where: { $0.id == selectedID }) { selection = index }
         else { selection = min(selection, max(0, rows.count - 1)) }
     }
     private var indexSubscription: AnyCancellable?
@@ -1533,6 +1545,7 @@ final class LauncherModel: ObservableObject {
             }
             return
         case .agents: query = "agents"; return
+        case .rexOverview: dismiss(); onNote(.rexOverview); return
         case .calculation(let answer, _): copy(answer.copyText)
         case .clip(let clip):
             if clip.kind == .image, let data = clip.imageData {

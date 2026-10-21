@@ -98,5 +98,21 @@ check(((try? String(contentsOf: launches, encoding: .utf8)) ?? "").count >= 6 &&
       "a watcher that reaches its lifetime restarts and keeps its panes")
 queue.sync { renewing.stop() }
 
+let started = folder.appendingPathComponent("started")
+let recorder = try fake("rex-recorder", "last=\"\"\nfor argument in \"$@\"; do last=\"$argument\"; done\nif [ \"$last\" = '{\"preview\":true}' ]; then echo preview >> '\(started.path)'; else echo plain >> '\(started.path)'; fi\necho '\(inventory("idle"))'\nexec sleep 30 # rex-recorder-marker")
+let modes = RexWatch(queue: queue, home: folder.path, executable: { recorder })
+func startedRuns() -> [String] { ((try? String(contentsOf: started, encoding: .utf8)) ?? "").split(separator: "\n").map(String.init) }
+func waitForLaunches(_ count: Int) { let deadline = Date().addingTimeInterval(5); while startedRuns().count < count && Date() < deadline { Thread.sleep(forTimeInterval: 0.05) } }
+_ = read(modes, after: -1)
+waitForLaunches(1)
+check(startedRuns() == ["plain"], "a panes read starts the watcher without previews")
+queue.async { modes.read(after: -1, view: .overviewWithPreview) { _, _, _ in } }
+waitForLaunches(2)
+check(startedRuns() == ["plain", "preview"] && queue.sync { modes.previewing }, "an overview read with previews restarts the watcher reading screens")
+queue.async { modes.read(after: -1, view: .overview) { _, _, _ in } }
+waitForLaunches(3)
+check(startedRuns() == ["plain", "preview", "plain"] && !queue.sync { modes.previewing }, "an overview read without previews stops reading screens at once")
+queue.sync { modes.stop() }
+
 if failures > 0 { print("FAIL: \(failures) Rex watcher checks failed"); exit(1) }
 print("PASS: Rex watcher supervision")

@@ -54,6 +54,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var clipboardStore = ClipboardStore(retention: config.clipboardRetention)
     private lazy var clipboardMonitor = ClipboardMonitor(store: clipboardStore)
     private let notesStore = NotesStore()
+    private lazy var rexOverview = RexOverviewWindowController()
     private lazy var notesPanel: NotesPanel = {
         let notes = NotesPanel(store: notesStore)
         notes.floatingPeer = panel
@@ -73,6 +74,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.showSettings()
             self?.settingsPanel.edit(app)
         case .agents: self?.showAgents()
+        case .rexOverview: self?.rexOverview.show()
         case .open(let id): self?.notesPanel.open(noteID: id)
         case .create(let text): self?.notesPanel.openNew(text: text)
         case .confetti: ConfettiWindow.celebrate()

@@ -1193,7 +1193,8 @@ func rexScenario() throws {
     panel.model.query = "rex"
     verify(waitUntil { panel.model.rex.connected && reply != nil }, "The rex view starts reading without a Connect step")
     reply?(try JSONEncoder().encode(RexInventory(panes: panes)), 1, nil); settle()
-    verify(waitUntil { panel.model.rows.count == 4 }, "Every fictional Rex pane is listed")
+    verify(waitUntil { panel.model.rows.filter { if case .rexPane = $0 { return true } else { return false } }.count == 4 }, "Every fictional Rex pane is listed")
+    verify(panel.model.rows.last?.id == "command:rex-overview", "Open Rex Overview follows the panes")
     verify(panel.model.rows.first?.id == "rex:session:fixture-api/block:b2", "The waiting pane is first")
     try render("rex-panes")
     panel.model.query = "rex build"; settle()
@@ -1210,6 +1211,68 @@ func rexScenario() throws {
     try render("rex-not-running")
     panel.model.config.statusBar.sources = []
     print("PASS: rex lists fictional panes waiting first, filters, focuses by identity and reports a stopped server")
+}
+
+/// The Rex Overview window with fictional sessions: status tiles, the preview consent card, and
+/// pane previews from invented screen text. A fixture defaults suite holds the preview choice, and
+/// no Rex server or agent helper is reached.
+func rexOverviewScenario() throws {
+    func status(_ state: RexState, _ message: String?) -> RexStatus { RexStatus(state: state, app: "claude-code", message: message) }
+    let overview = RexOverview(sessions: [
+        .init(sessionID: "session:fixture-orbit", label: "orbit", tabs: [
+            .init(windowID: "window:orbit-api", label: "api", active: true, focusedBlockID: "block:orbit-agent", panes: [
+                .init(blockID: "block:orbit-agent", label: "shell", title: "orbit-api", program: "claude", status: status(.blocked, "Allow running the migration?"), rect: [0, 0, 0.6, 1],
+                      preview: ["  Edited db/migrate/0042_add_flights.sql", "", "  Run the migration against the dev database?", "", "  › 1. Yes", "    2. Yes, and don’t ask again for psql", "    3. No, tell Claude what to do differently"]),
+                .init(blockID: "block:orbit-logs", label: "logs", title: "server log", program: "tail", status: RexStatus(state: .working), rect: [0.6, 0, 0.4, 0.5],
+                      preview: ["GET /flights 200 12ms", "GET /flights/OR42 200 4ms", "POST /bookings 201 31ms", "GET /health 200 1ms"]),
+                .init(blockID: "block:orbit-shell", label: "shell", title: "~/orbit", program: "zsh", rect: [0.6, 0.5, 0.4, 0.5],
+                      preview: ["~/orbit main ✓", "$ git status --short", " M db/migrate/0042_add_flights.sql", "~/orbit main ✗ $"]),
+            ]),
+            .init(windowID: "window:orbit-web", label: "web", focusedBlockID: "block:orbit-web", panes: [
+                .init(blockID: "block:orbit-web", label: "shell", title: "orbit-web", program: "claude", status: status(.done, "Updated the booking form and its tests"), rect: [0, 0, 1, 1],
+                      preview: ["  ✓ Updated src/booking/Form.tsx", "  ✓ Added 6 tests in Form.test.tsx", "", "  All 214 tests pass.", "", "  >"]),
+            ]),
+        ]),
+        .init(sessionID: "session:fixture-comet", label: "comet", tabs: [
+            .init(windowID: "window:comet-build", label: "build", active: true, focusedBlockID: "block:comet-cargo", panes: [
+                .init(blockID: "block:comet-cargo", label: "shell", title: "cargo build", program: "cargo", status: RexStatus(state: .working, app: "cargo", message: "Compiling comet-core", progress: 64), rect: [0, 0, 1, 0.55],
+                      preview: ["   Compiling serde v1.0.219", "   Compiling tokio v1.45.0", "   Compiling comet-net v0.4.2", "   Compiling comet-core v0.9.0", "    Building [=======>    ] 118/184"]),
+                .init(blockID: "block:comet-test", label: "shell", title: "~/comet", program: "zsh", rect: [0, 0.55, 1, 0.45],
+                      preview: ["~/comet $ just test-watch", "watching 41 files…"]),
+            ]),
+        ]),
+        .init(sessionID: "session:fixture-ops", label: "ops", tabs: [
+            .init(windowID: "window:ops-deploy", label: "deploy", active: true, focusedBlockID: "block:ops-deploy", panes: [
+                .init(blockID: "block:ops-deploy", label: "shell", title: "deploy staging", program: "terraform", status: RexStatus(state: .error, app: "terraform", message: "Apply failed: quota exceeded"), rect: [0, 0, 1, 1],
+                      preview: ["module.cache.aws_elasticache_cluster.main: Creating...", "", "Error: creating ElastiCache Cluster: quota exceeded", "", "  with module.cache.aws_elasticache_cluster.main,", "  on cache/main.tf line 12"]),
+            ]),
+            .init(windowID: "window:ops-notes", label: "Window 3f2a91c0", focusedBlockID: "block:ops-shell", panes: [
+                .init(blockID: "block:ops-shell", label: "shell", title: "~/ops", program: "zsh", rect: [0, 0, 1, 1], preview: ["~/ops $"]),
+            ]),
+        ]),
+    ])
+    let defaults = UserDefaults(suiteName: "com.mysticcoders.volant.actionsfixture.rex-overview")!
+    defaults.removePersistentDomain(forName: "com.mysticcoders.volant.actionsfixture.rex-overview")
+    let model = RexOverviewModel(defaults: defaults)
+    model.show(overview)
+    let controller = RexOverviewWindowController(model: model)
+    let window = controller.window!
+    window.setFrame(NSWindow.frameRect(forContentRect: NSRect(x: 0, y: 0, width: 980, height: 640), styleMask: window.styleMask), display: false)
+    window.orderFront(nil); settle()
+    verify(model.overview.sessions.count == 3 && !model.readsPreviews, "The overview starts in Status mode with fictional sessions")
+    try render("rex-overview-status", view: window.contentView!)
+    model.mode = .preview; settle()
+    verify(!model.readsPreviews && !model.previewsAllowed, "Preview mode asks before reading screens")
+    try render("rex-overview-consent", view: window.contentView!)
+    model.allowPreviews(true)
+    model.show(overview); settle()
+    verify(model.readsPreviews, "Turning on previews shows them")
+    try render("rex-overview-preview", view: window.contentView!)
+    model.allowPreviews(false); model.mode = .status; settle()
+    verify(!defaults.bool(forKey: RexOverviewModel.previewsKey), "Turning previews off is remembered")
+    window.orderOut(nil)
+    defaults.removePersistentDomain(forName: "com.mysticcoders.volant.actionsfixture.rex-overview")
+    print("PASS: Rex Overview renders status, the preview consent and previews from fictional sessions")
 }
 
 /// A scenario runs against a fresh hidden launcher. Size-sensitive scenarios render or click inside
@@ -1238,6 +1301,7 @@ struct Scenario {
 /// - api-settings, acp-detection, acp-resume, acp-several, acp-accounts: AI Settings and the
 ///   standalone chat view and activity strip.
 /// - notes-recovery: the notes panel, which has its own size.
+/// - rex-overview: the Rex Overview window, which has its own size.
 let scenarios: [Scenario] = [
     Scenario(name: "actions", sizeSensitive: true, run: actionsMenuScenario),
     Scenario(name: "volant-menu", sizeSensitive: true, run: volantMenuScenario),
@@ -1250,6 +1314,7 @@ let scenarios: [Scenario] = [
     Scenario(name: "catalog", sizeSensitive: true, run: catalogScenario),
     Scenario(name: "herdr", sizeSensitive: true, run: herdrScenario),
     Scenario(name: "rex", sizeSensitive: true, run: rexScenario),
+    Scenario(name: "rex-overview", sizeSensitive: false, run: rexOverviewScenario),
     Scenario(name: "api-settings", sizeSensitive: false, run: apiSettingsScenario),
     Scenario(name: "acp-detection", sizeSensitive: false, run: acpDetectionScenario),
     Scenario(name: "acp-resume", sizeSensitive: false, run: acpResumeScenario),
