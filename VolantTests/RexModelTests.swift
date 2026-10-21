@@ -33,7 +33,7 @@ final class RexModelTests: XCTestCase {
         replies[1](try encode([pane("block:new", state: .working)]), 1, nil)
         await drain()
         XCTAssertEqual(rex.panes.map(\.blockID), ["block:new"])
-        XCTAssertEqual(asked, [-1, -1], "each connection starts from no revision")
+        XCTAssertEqual(asked, [-1, -1, 1], "each connection starts from no revision, and a reply starts the next read")
         rex.disconnect()
     }
 
@@ -48,14 +48,14 @@ final class RexModelTests: XCTestCase {
         XCTAssertTrue(rex.loading)
         XCTAssertEqual(rex.message, "Loading Rex panes…")
         rex.refresh()
+        XCTAssertEqual(asked, [-1, 0], "the next read starts with the reply, and a tick adds none while it is outstanding")
         reply?(try encode([pane("block:a", state: .blocked)]), 1, nil)
         await drain()
-        rex.refresh()
         reply?(nil, 1, nil)
         await drain()
         XCTAssertEqual(rex.panes.count, 1, "a reply at the held revision changes nothing")
         XCTAssertFalse(rex.loading)
-        XCTAssertEqual(asked, [-1, 0, 1])
+        XCTAssertEqual(asked, [-1, 0, 1, 1])
         rex.disconnect()
     }
 
@@ -69,7 +69,6 @@ final class RexModelTests: XCTestCase {
         await drain()
         XCTAssertTrue(rex.connected)
         XCTAssertEqual(rex.message, "Rex isn’t running. Open Rex, then try again.")
-        rex.refresh()
         reply?(try encode([pane("block:a", state: .idle)]), 2, nil)
         await drain()
         XCTAssertNil(rex.problem)

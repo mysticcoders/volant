@@ -25,15 +25,25 @@ func fake(_ name: String, _ body: String) throws -> URL {
     return url
 }
 
+/// One read, waiting for its reply, which the watcher may hold until a change.
+func read(_ watch: RexWatch, after known: Int) -> (reply: (Data?, Int, String?), seconds: TimeInterval) {
+    let started = Date(), done = DispatchSemaphore(value: 0)
+    var reply: (Data?, Int, String?) = (nil, known, nil)
+    queue.async { watch.read(after: known) { reply = ($0, $1, $2); done.signal() } }
+    done.wait()
+    return (reply, Date().timeIntervalSince(started))
+}
+
 /// Reads until `condition` holds for the latest reply or the deadline passes.
 func poll(_ watch: RexWatch, after known: Int, seconds: TimeInterval = 5,
           until condition: (Data?, Int, String?) -> Bool) -> (Data?, Int, String?) {
     let deadline = Date().addingTimeInterval(seconds)
     var reply: (Data?, Int, String?) = (nil, known, nil)
+    var current = known
     while Date() < deadline {
-        reply = queue.sync { watch.read(after: known) }
+        reply = read(watch, after: current).reply
         if condition(reply.0, reply.1, reply.2) { return reply }
-        Thread.sleep(forTimeInterval: 0.05)
+        current = reply.1
     }
     return reply
 }
@@ -53,11 +63,16 @@ func running(_ marker: String) -> Bool {
 
 let lines = try fake("rex-lines", "echo 'listening: not an inventory'\necho '\(inventory("working"))'\nsleep 0.3\necho '\(inventory("blocked"))'\nexec sleep 30 # rex-lines-marker")
 let watch = RexWatch(queue: queue, home: folder.path, executable: { lines })
-var reply = poll(watch, after: -1) { data, _, _ in states(data) == ["blocked"] }
+var reply = poll(watch, after: -1) { data, _, _ in states(data) == ["working"] }
+let working = reply.1
+let change = read(watch, after: working)
+check(states(change.reply.0) == ["blocked"] && change.seconds < 1, "a read at the current revision is answered by the next line, without waiting out the hold")
+reply = poll(watch, after: -1) { data, _, _ in states(data) == ["blocked"] }
 check(states(reply.0) == ["blocked"], "inventory lines replace each other and a non-inventory line is skipped")
 let held = reply.1
-reply = queue.sync { watch.read(after: held) }
-check(reply.0 == nil && reply.1 == held && reply.2 == nil, "a read at the current revision carries nothing")
+let idle = read(watch, after: held)
+check(idle.reply.0 == nil && idle.reply.1 == held && idle.reply.2 == nil && idle.seconds >= RexWatch.holdLimit - 0.1,
+      "a read at the current revision with no change waits out the hold and carries nothing")
 queue.sync { watch.stop() }
 Thread.sleep(forTimeInterval: 1.5)
 check(!running("rex-lines-marker"), "stop ends the watcher process")
@@ -77,8 +92,10 @@ queue.sync { oversized.stop() }
 let launches = folder.appendingPathComponent("launches")
 let lifetime = try fake("rex-lifetime", "echo x >> '\(launches.path)'\necho '\(inventory("done"))'\nsleep 0.2\nexit 0")
 let renewing = RexWatch(queue: queue, home: folder.path, executable: { lifetime })
-reply = poll(renewing, after: -1) { _, _, _ in ((try? String(contentsOf: launches, encoding: .utf8)) ?? "").count >= 6 }
-check(states(reply.0) == ["done"] && reply.2 == nil, "a watcher that reaches its lifetime restarts and keeps its panes")
+_ = poll(renewing, after: -1, seconds: 8) { _, _, _ in ((try? String(contentsOf: launches, encoding: .utf8)) ?? "").count >= 6 }
+reply = read(renewing, after: -1).reply
+check(((try? String(contentsOf: launches, encoding: .utf8)) ?? "").count >= 6 && states(reply.0) == ["done"] && reply.2 == nil,
+      "a watcher that reaches its lifetime restarts and keeps its panes")
 queue.sync { renewing.stop() }
 
 if failures > 0 { print("FAIL: \(failures) Rex watcher checks failed"); exit(1) }

@@ -3,9 +3,11 @@ import SwiftUI
 import VolantCore
 
 /// Rex panes for the `rex` view and footer status. UI-owned; callbacks are delivered on the main
-/// queue. While connected it asks the agent helper's Rex watcher once a second for anything newer
-/// than the revision it has, which costs nothing when nothing changed; the watcher itself hears
-/// Rex's events. A reply that arrives after a disconnect, or behind a newer request, is dropped.
+/// queue. While connected it keeps one read outstanding with the agent helper's Rex watcher, which
+/// holds it until something newer than the revision it names, so a change arrives as soon as the
+/// watcher prints it; each reply starts the next read. A one-second timer only restarts reading if
+/// a read fails to come back. A reply that arrives after a disconnect, or behind a newer request,
+/// is dropped.
 final class RexModel: ObservableObject {
     @Published private(set) var panes: [RexPane] = []
     @Published private(set) var connected = false
@@ -48,7 +50,9 @@ final class RexModel: ObservableObject {
         connected = true
         loading = true
         refresh()
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in Task { @MainActor in self?.refresh() } }
+        let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in Task { @MainActor in self?.refresh() } }
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
     }
 
     /// Stops the helper's watcher before letting the connection go; the helper also stops it when
@@ -72,8 +76,8 @@ final class RexModel: ObservableObject {
         problem = message
     }
 
-    /// One read at a time; a tick that finds a read outstanding waits for the next tick. A reply at
-    /// the revision already held changes nothing. A newer one with no panes and no message means the
+    /// One read at a time; a tick that finds a read outstanding does nothing. A reply at the
+    /// revision already held changes nothing. A newer one with no panes and no message means the
     /// watcher is still starting.
     func refresh() {
         guard connected, request == nil else { return }
@@ -84,6 +88,7 @@ final class RexModel: ObservableObject {
             DispatchQueue.main.async {
                 guard let self, self.connected, current == self.generation, self.request == token else { return }
                 self.request = nil
+                defer { self.refresh() }
                 guard latest != known else { return }
                 self.revision = latest
                 if let inventory {
@@ -131,10 +136,17 @@ final class RexModel: ObservableObject {
         if self[keyPath: keyPath] != value { self[keyPath: keyPath] = value }
     }
 
-    /// Hands activation to Rex, which macOS requires before another app can come forward.
+    /// Hands activation to Rex, which macOS requires before another app can come forward. The
+    /// launcher panel does not make Volant the active app, so when Rex refuses the handoff, opening
+    /// Rex through Launch Services brings it forward instead.
     private static func activateRexApp() {
-        guard let app = NSRunningApplication.runningApplications(withBundleIdentifier: RexScript.appBundleIdentifier).first else { return }
-        NSApp.yieldActivation(to: app)
-        app.activate()
+        if let app = NSRunningApplication.runningApplications(withBundleIdentifier: RexScript.appBundleIdentifier).first {
+            NSApp.yieldActivation(to: app)
+            if app.activate() { return }
+        }
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: RexScript.appBundleIdentifier) else { return }
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.activates = true
+        NSWorkspace.shared.openApplication(at: url, configuration: configuration)
     }
 }

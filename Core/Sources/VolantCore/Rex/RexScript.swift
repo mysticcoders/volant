@@ -33,6 +33,32 @@ public enum RexScript {
         globalArguments(home: home) + ["do", "--all", "--for", watchLifetime, "-e", watch]
     }
 
+    /// What the focus script reports after focusing the pane inside its session.
+    public enum FocusOutcome: Equatable {
+        case shown, refused, noApp, failed
+
+        /// Reads the script's JSON result. Anything unrecognized counts as `failed`, never as shown.
+        public init(output: Data) {
+            let object = (try? JSONSerialization.jsonObject(with: output)) as? [String: Any]
+            if object?["shown"] as? Bool == true { self = .shown; return }
+            switch object?["reason"] as? String {
+            case "refused": self = .refused
+            case "noApp": self = .noApp
+            default: self = .failed
+            }
+        }
+
+        /// The message shown when the Rex app did not switch to the pane's session, or nil when it did.
+        public var message: String? {
+            switch self {
+            case .shown: return nil
+            case .refused: return "Rex focused the pane but can’t switch to its session until Remote Control is on in Rex Settings › Rex Server."
+            case .noApp: return "Rex focused the pane. Open the Rex app to see it."
+            case .failed: return "Rex focused the pane but couldn’t switch to its session."
+            }
+        }
+    }
+
     /// Arguments for the focus script, or nil when either ID is malformed.
     public static func focusArguments(home: String, session: String, block: String) -> [String]? {
         guard RexIdentifier.isValid(session, kind: .session), RexIdentifier.isValid(block, kind: .block),
@@ -42,8 +68,9 @@ public enum RexScript {
     }
 
     /// Prints every session's terminal panes, with their status records and reported directory, as
-    /// one JSON line: once on start, about a quarter second after any burst of relevant events, and
-    /// every 30 seconds in case an event was missed. A script run with `--all` is attached to every
+    /// one JSON line: once on start, 0.1 s after a burst of relevant events goes quiet (or 0.5 s
+    /// after its first event, so a steady stream cannot hold a snapshot back), and every 30 seconds
+    /// in case an event was missed. A script run with `--all` is attached to every
     /// session once it is listening, so it reads each view directly, from timers only.
     public static let watch = """
     local terminal = "com.superlogical.terminal"
@@ -78,10 +105,16 @@ public enum RexScript {
       end
       print(rex.json.encode({ sessions = out }))
     end
-    local pending
+    local quiet, cap
+    local function flush()
+      if quiet then quiet:cancel(); quiet = nil end
+      if cap then cap:cancel(); cap = nil end
+      snapshot()
+    end
     local function soon()
-      if pending then pending:cancel() end
-      pending = rex.after(0.25, function() pending = nil; snapshot() end)
+      if quiet then quiet:cancel() end
+      quiet = rex.after(0.1, flush)
+      if cap == nil then cap = rex.after(0.5, flush) end
     end
     for _, name in ipairs({
       "terminal.program_status_changed", "terminal.pwd_changed", "block_created", "block_closed",
@@ -94,7 +127,9 @@ public enum RexScript {
     """
 
     /// Focuses a pane only if it is still a terminal in a window of that session, then asks the Rex
-    /// app to show the session, preferring an app window that already has it open.
+    /// app to show the session, preferring an app window that already has it open. Returns `shown`,
+    /// or why the app did not switch: `refused` when the app has Remote Control off, `noApp` when no
+    /// app window is connected, `failed` otherwise. Rex's own error text is never passed on.
     public static let focus = """
     local terminal = "com.superlogical.terminal"
     local sid, bid = rex.args.session_id, rex.args.block_id
@@ -132,13 +167,16 @@ public enum RexScript {
       end
     end
     for _, id in ipairs(others) do table.insert(preferred, id) end
+    if #preferred == 0 then return { shown = false, reason = "noApp" } end
+    local reason = "failed"
     for _, id in ipairs(preferred) do
       local _, perr = rex.call("client.perform", {
         client_id = id, action = "session.select", origin = "api",
         args = { session_id = sid, window_id = window }, timeout_ms = 3000,
       })
       if perr == nil then return { shown = true } end
+      if string.find(perr, "code=refused", 1, true) then reason = "refused" end
     end
-    return { shown = false }
+    return { shown = false, reason = reason }
     """
 }

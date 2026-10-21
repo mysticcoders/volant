@@ -114,6 +114,19 @@ final class RexInventoryTests: XCTestCase {
         XCTAssertFalse(RexScript.watch.contains("session.detach"), "detaching would stop that session's events")
     }
 
+    func testFocusOutcomeNeverReadsAFailureAsShown() {
+        func outcome(_ json: String) -> RexScript.FocusOutcome { RexScript.FocusOutcome(output: Data(json.utf8)) }
+        XCTAssertEqual(outcome(#"{"shown":true}"#), .shown)
+        XCTAssertNil(outcome(#"{"shown":true}"#).message)
+        XCTAssertEqual(outcome(#"{"shown":false,"reason":"refused"}"#), .refused)
+        XCTAssertTrue(outcome(#"{"shown":false,"reason":"refused"}"#).message?.contains("Remote Control") == true)
+        XCTAssertEqual(outcome(#"{"shown":false,"reason":"noApp"}"#), .noApp)
+        XCTAssertEqual(outcome(#"{"shown":false}"#), .failed)
+        XCTAssertEqual(outcome("not json"), .failed)
+        XCTAssertEqual(outcome(""), .failed)
+        XCTAssertTrue(RexScript.focus.contains("code=refused"), "the script tells a Remote Control refusal apart")
+    }
+
     func testFooterSummary() {
         let blocked = RexPane(sessionID: "session:a", sessionLabel: "a", blockID: "block:1", label: "shell", status: RexStatus(state: .blocked))
         let idle = RexPane(sessionID: "session:a", sessionLabel: "a", blockID: "block:2", label: "shell")

@@ -43,7 +43,18 @@ usually label every pane `shell`, so rows are titled by the reported working dir
 fall back to the session label.
 
 **Focus.** `session.focus_block` focuses a block within its session. The Rex app is a client that
-declares a `session.select` action; `client.perform` asks it to show a session and window.
+declares a `session.select` action; `client.perform` asks it to show a session and window. The app
+accepts that only with **Remote Control** turned on in Rex Settings › Rex Server; otherwise it
+refuses with a 403 (`code=refused`), and the pane is focused inside a session the app may not be
+showing. Measured on October 21, 2026: refused with Remote Control off, performed once it was on.
+The Rex Settings footer in Volant says so up front, and a refused switch keeps the launcher open with
+the same instruction.
+
+The app registers a `rex://` URL scheme (`RexURLRouter`), but it is undocumented and the only route
+found in the app is `rex://settings/server`. With Remote Control on, the owner opened
+`rex://session/<id>`, `rex://sessions/<id>` and `rex://session?id=<id>` for another session; none
+switched it. Volant does not use the scheme. A documented session deep link would allow switching
+without Remote Control; worth asking Superlogical about.
 
 **Events.** `rex do --all` runs a [Lua script](https://www.superlogical.com/rex/docs/automate/lua-scripts)
 that hears [events](https://www.superlogical.com/rex/docs/automate/lua-events) from every session,
@@ -59,8 +70,9 @@ no block events.) The same stream also carries `desktop_notification`, which Cla
 **One long-lived watcher.** `VolantAgentHost` runs `rex do --all --for 30m -e <watch>`, the fixed
 watch script in `RexScript`. It registers handlers for `program_status_changed`, `pwd_changed`,
 pane, session and view changes, and prints every session's terminal panes (status records and
-reported directory) as one JSON line: on start, about 0.25 s after the last event of a burst, and
-every 30 s in case an event was missed. It never attaches or detaches, since detaching would stop
+reported directory) as one JSON line: on start, 0.1 s after a burst of events goes quiet (or 0.5 s
+after the burst's first event, so a steady stream cannot hold a snapshot back), and every 30 s in
+case an event was missed. It never attaches or detaches, since detaching would stop
 that session's events. The first snapshot arrives about 0.3 s after start.
 
 `RexWatch` in the helper supervises it:
@@ -68,9 +80,11 @@ that session's events. The first snapshot arrives about 0.3 s after start.
 - Reads stdout line by line, skips lines that are not inventories, parses and bounds each one, and
   keeps the latest with a revision number that advances on every change of panes or message. A line
   over 4 MB stops the watcher.
-- Starts on the first read. The app asks once a second with the revision it holds, as
-  `readRexPanes(after:)`, and an unchanged revision replies with nothing, so idle reads cost one XPC
-  round trip and no process.
+- Starts on the first read. The app keeps one `readRexPanes(after:)` outstanding with the revision
+  it holds. A read at the current revision is held until the next change, or 2 s, then answered
+  with nothing; the app starts the next read as each reply arrives. A change therefore reaches the
+  app as soon as the watcher prints it, and idle reads cost one XPC round trip every 2 s and no
+  process. At most four reads are held; stop answers them at once.
 - Restarts at once when the watcher reaches its 30-minute lifetime. After a failure it restarts with
   backoff from 1 s to 10 s, reporting "Rex isn’t running" for exit status 4, but only while reads keep
   arriving: with no read for 20 s it stops instead.
@@ -107,15 +121,21 @@ and becomes "Rex isn’t running. Open Rex, then try again." The child gets `Chi
   by its most urgent record, then its newest. `stopRexPanes` stops the watcher.
 - `focusRexPane(session:block:)` runs the focus script, which refuses unless the block is still a
   terminal in a window of that session, focuses it, then asks one Rex app client to `session.select`
-  it, preferring a window that already has the session open. The app checks the pane is still in its
-  current list before asking, and activates Rex with `NSApp.yieldActivation(to:)` only on success.
+  it, preferring a window that already has the session open. The reply is nil only when the app
+  switched; a Remote Control refusal, no connected app window, or another failure each return a
+  fixed message (`RexScript.FocusOutcome`), never Rex's own error text, and the launcher stays open
+  to show it. The app checks the pane is still in its current list before asking. Only on success it
+  brings Rex forward: `NSApp.yieldActivation(to:)` and `activate()`, falling back to opening Rex
+  through Launch Services, because the non-activating launcher panel may leave Volant with no
+  activation to hand over.
 
 Neither script reads `format`, `clipboard_read`, `write`, `send`, `client.key` or `block.event`, and
 neither uses `rex.exec`, `io` or `os`; `RexInventoryTests` fails if one appears.
 
-**In the app.** `RexModel` reads the helper's revision once a second while the `rex` view or footer
-status is showing, with one outstanding request; replies after a disconnect or behind a newer
-connection are dropped, and only real changes are published. The launcher disconnects Rex, which
+**In the app.** `RexModel` keeps one read outstanding while the `rex` view or footer status is
+showing and starts the next as each reply arrives. A one-second timer, in the common run-loop mode
+so scrolling does not pause it, only restarts reading if a read never comes back. Replies after a
+disconnect or behind a newer connection are dropped, and only real changes are published. The launcher disconnects Rex, which
 stops the watcher, when it hides. Unlike Herdr there
 is no Connect button: typing `rex` starts reading, since it reads only local status and starts
 nothing. Model changes never reconnect on their own, so a failing helper is retried on the next
@@ -128,8 +148,6 @@ keystroke rather than in a loop.
   than structured choices. Revisit only if Rex adds a conditional, structured response method.
 - **Remote hosts** (`hosts.list`, `-S <host>`). Needs the same per-machine identity, revalidation and
   no-fallback-to-local rules as [Herdr machines](herdr-machines.md).
-- **Push to the app.** The helper hears events immediately, but the app still asks it once a second;
-  a reverse XPC callback could remove that last second.
 - **Screen contents.** Volant never reads a pane's screen or scrollback from Rex.
 
 ## Privacy
@@ -158,6 +176,14 @@ logged either; the `owner` field is not decoded at all.
   watcher process behind after stop, and refused to focus a nonexistent pane. A separate `--all`
   Lua watcher received live `program_status_changed` events. No status changed during the
   `RexWatch` probe itself, so an event-driven snapshot through `RexWatch` was not observed end to end.
-- Not yet verified: focus and `session.select` against the live Rex app, the signed installed helper
-  reaching the Rex socket, and the activation handoff. Driving the owner's Rex app was out of bounds
-  for automated checks; these need a check in the installed app.
+- Live, October 21, 2026: the owner's Volant Dev focused panes but stayed on the current session.
+  A step-by-step copy of the focus script showed `focus_block` succeeding and `session.select`
+  refused with Remote Control off; with it on, the same request was performed. The script had
+  reported the refusal as `shown = false`, which the helper treated as success.
+- Latency, October 21, 2026: the first version showed panes about a second after typing `rex`,
+  because the first read returned before the watcher's snapshot and the app asked again only on its
+  next one-second tick. With held reads, the real `RexWatch` against the owner's Rex (15 panes in
+  6 sessions) delivered them 45–54 ms after the first read, three runs. The watcher's own start to
+  first snapshot was 25–28 ms. A program's status can still lag on its side: Claude Code appears
+  to report mainly at turn boundaries.
+- Not yet verified: the activation fallback in the installed app.
