@@ -158,8 +158,7 @@ export default function Home() {
           <div className="features-heading">
             <div>
               <p className="eyebrow">
-                01 / ANSWERS AS YOU TYPE{' '}
-                <span className="release-badge">New in 0.2.0</span>
+                01 / ANSWERS AS YOU TYPE
               </p>
               <h2 id="answers-title">
                 Ask it.
@@ -218,7 +217,10 @@ export default function Home() {
           aria-labelledby="agents-title"
         >
           <div className="section-intro">
-            <p className="eyebrow">02 / KEEP YOUR AGENTS MOVING</p>
+            <p className="eyebrow">
+              02 / KEEP YOUR AGENTS MOVING{' '}
+              <span className="release-badge">New in 0.3.13</span>
+            </p>
             <h2 id="agents-title">
               When they need you.
               <br />
@@ -597,7 +599,7 @@ export default function Home() {
           aria-labelledby="next-title"
         >
           <p className="eyebrow">
-            NEW IN 0.2.0
+            MORE TO EXPLORE
           </p>
           <h2 id="next-title">More ways to make it yours.</h2>
           <div className="feature-grid">
@@ -627,8 +629,8 @@ export default function Home() {
             </article>
           </div>
           <p className="section-footnote">
-            The expanded calculator above is new in 0.2.0 too. Download{' '}
-            {appVersion} today, or{' '}
+            Download {appVersion} today, see{' '}
+            <a href={`${repositoryURL}/releases`}>what changed in each release</a>, or{' '}
             <a href={`${repositoryURL}/pulls?q=is%3Apr+is%3Amerged`}>
               follow development on GitHub <ArrowUpRight size={14} />
             </a>
@@ -716,8 +718,9 @@ export default function Home() {
             Version {appVersion} · macOS 15+ · Apple silicon &amp; Intel
           </span>
           <p className="download-scope">
-            <a href="#next">New in 0.2.0</a>: the expanded calculator, color
-            themes, system commands, and iCloud settings sync.
+            <a href="#agents">New in 0.3.13</a>: the Rex Overview, with pane
+            previews you can turn on. See{' '}
+            <a href={`${repositoryURL}/releases`}>every release</a>.
           </p>
         </section>
       </main>
