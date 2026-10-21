@@ -75,7 +75,7 @@ export const docGroups: DocGroup[] = [
         slug: 'agents',
         title: 'Agents',
         summary:
-          'Herdr questions, coding agents, API and local models, and context you choose.',
+          'Herdr questions, Rex panes, coding agents, API and local models, and context you choose.',
       },
       {
         slug: 'importing-from-raycast',

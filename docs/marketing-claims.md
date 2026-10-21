@@ -119,7 +119,15 @@ Added in 0.3.11:
 | Dictation vocabulary: words written your way, with mishearings, import and iCloud settings sync | Yes | #272; Core tests including the recognizer's actual mishearings, VM renders of Settings and the editor; recognizer hints measured and ignored by SpeechTranscriber; live dictation with a vocabulary and real exports unverified | Privacy and System Control docs; corrections, never "trains the recognizer" or "learns your words" |
 | Close matches by sound for words the spell checker doesn't know | Yes | #273; Core tests and a false-positive scan over 5,103 lines of Markdown with the system spell checker; the owner's own speech unverified | Docs: only unknown words change, real-word mishearings need Also heard as |
 
-Merged after 0.3.11, not in the current download:
+Added in 0.3.12:
+
+| Story | In 0.3.12 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| `rex` lists Rex panes with waiting ones first, filters them and focuses one | Yes | #276, #277; Core and app tests, `tools/check-rex.sh` against fake `rex` scripts, VM renders in light, dark, compact and large; the owner focused panes across sessions in an installed Volant Dev build with Remote Control on; the Release-signed helper and the activation fallback are unverified | Agents doc; "reads what programs report to Rex", never "monitors your terminals" or "reads pane output" |
+| Switching sessions needs Rex's Remote Control, and Volant says so when it's off | Yes | #277; the refusal measured live with Remote Control off and the switch with it on; three `rex://` URL forms tried by the owner did nothing, so Volant doesn't use the scheme | Agents doc names the Rex setting |
+| Rex footer status ("Rex: 2 waiting"), off by default | Yes | #276; VM renders and app tests; changes arrive about 50 ms after Rex's watcher prints them, measured outside the app; a program's own reports can lag | Agents doc |
+
+Merged after 0.3.12, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |

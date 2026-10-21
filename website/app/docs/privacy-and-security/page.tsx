@@ -100,7 +100,11 @@ export default function PrivacyAndSecurity() {
         If you turn on fsearch file search, the local agent helper sends file
         queries to the fsearch daemon you run on this Mac, and tells it which
         result you opened; nothing is sent over the network. See{' '}
-        <a href="/docs/launcher">The launcher</a>.
+        <a href="/docs/launcher">The launcher</a>. When you type{' '}
+        <code>rex</code> or turn on its footer status, the helper reads the
+        status programs report to Rex on this Mac, only through a{' '}
+        <code>rex</code> command signed by Rex&rsquo;s developer, and never a
+        pane&rsquo;s contents. See <a href="/docs/agents">Agents</a>.
       </p>
 
       <h2>Permissions Volant asks for</h2>
