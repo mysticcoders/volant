@@ -36,7 +36,13 @@ final class RexHost {
 
     /// The watcher's latest panes, starting it if needed; waits for a change when there is none yet.
     /// Call on `queue`.
-    func read(after revision: Int, reply: @escaping (Data?, Int, String?) -> Void) { watcher.read(after: revision, reply: reply) }
+    func read(after revision: Int, reply: @escaping (Data?, Int, String?) -> Void) { watcher.read(after: revision, view: .panes, reply: reply) }
+
+    /// The watcher's latest overview of sessions, tabs and panes, with screen previews only when
+    /// `preview` is set. Call on `queue`.
+    func readOverview(after revision: Int, preview: Bool, reply: @escaping (Data?, Int, String?) -> Void) {
+        watcher.read(after: revision, view: preview ? .overviewWithPreview : .overview, reply: reply)
+    }
 
     /// Stops the watcher. Call on `queue`.
     func stop() { watcher.stop() }
@@ -84,7 +90,15 @@ final class RexHost {
 /// Each change to the panes or the message advances `revision`. A read at the current revision is
 /// held until the next change or `holdLimit`, so a change reaches the app as soon as it is printed
 /// and an idle read costs nothing.
+///
+/// The watcher reads screen text only while overview reads with previews keep arriving: within
+/// `previewLinger` of the last one. Otherwise it restarts without previews and the cached overview,
+/// with its screen text, is dropped at once.
 final class RexWatch {
+    /// What a read is for: the `rex` list, or the overview with or without pane previews.
+    enum View { case panes, overview, overviewWithPreview }
+    /// How long previews stay on after the last overview read that asked for them.
+    static let previewLinger: TimeInterval = 5
     /// The longest line the watcher may print before it is stopped as misbehaving.
     static let maximumLine = 4_000_000
     /// A watcher with no read for this long is stopped rather than restarted.
@@ -107,20 +121,31 @@ final class RexWatch {
     private var lastRead = Date.distantPast
     private(set) var revision = 0
     private var latest: Data?
+    private var latestOverview: Data?
     private var problem: String?
-    private var held: [(id: UUID, reply: (Data?, Int, String?) -> Void)] = []
+    private var held: [(id: UUID, view: View, reply: (Data?, Int, String?) -> Void)] = []
+    /// Whether the running watcher reads screen text, and when an overview last asked for it.
+    private(set) var previewing = false
+    private var previewWanted = Date.distantPast
 
     init(queue: DispatchQueue, home: String, executable: @escaping () throws -> URL) {
         self.queue = queue; self.home = home; self.executable = executable
     }
 
-    func read(after known: Int, reply: @escaping (Data?, Int, String?) -> Void) {
+    func read(after known: Int, view: View = .panes, reply: @escaping (Data?, Int, String?) -> Void) {
         lastRead = Date()
-        if process == nil && restart == nil { launch() }
-        guard known == revision else { reply(latest, revision, problem); return }
+        if view == .overviewWithPreview { previewWanted = lastRead }
+        if view == .overview { previewWanted = .distantPast }
+        let wantsPreview = lastRead.timeIntervalSince(previewWanted) < Self.previewLinger
+        if wantsPreview != previewing && (process != nil || restart != nil) {
+            stop()
+            lastRead = Date()
+        }
+        if process == nil && restart == nil { previewing = wantsPreview; launch() }
+        guard known == revision else { reply(answer(for: view), revision, problem); return }
         if held.count >= Self.maximumHeld { let oldest = held.removeFirst(); oldest.reply(nil, revision, nil) }
         let id = UUID()
-        held.append((id, reply))
+        held.append((id, view, reply))
         queue.asyncAfter(deadline: .now() + Self.holdLimit) { [weak self] in
             guard let self, let index = self.held.firstIndex(where: { $0.id == id }) else { return }
             let expired = self.held.remove(at: index)
@@ -134,7 +159,7 @@ final class RexWatch {
         restart?.cancel(); restart = nil
         terminate()
         backoff = 1
-        publish(nil, problem: nil)
+        publish(nil, overview: nil, problem: nil)
         let waiting = held
         held = []
         for entry in waiting { entry.reply(nil, revision, nil) }
@@ -146,11 +171,11 @@ final class RexWatch {
         let task = Process(), pipe = Pipe()
         do { task.executableURL = try executable() }
         catch {
-            publish(nil, problem: (error as? LocalizedError)?.errorDescription ?? RexHost.Failure.notFound.errorDescription)
+            publish(nil, overview: nil, problem: (error as? LocalizedError)?.errorDescription ?? RexHost.Failure.notFound.errorDescription)
             scheduleRestart()
             return
         }
-        task.arguments = RexScript.watchArguments(home: home)
+        task.arguments = RexScript.watchArguments(home: home, preview: previewing)
         task.environment = ChildProcessEnvironment.rex(home: home, user: NSUserName())
         task.currentDirectoryURL = URL(fileURLWithPath: home)
         task.standardInput = FileHandle.nullDevice
@@ -168,7 +193,7 @@ final class RexWatch {
         do { try task.run() }
         catch {
             pipe.fileHandleForReading.readabilityHandler = nil
-            publish(nil, problem: RexHost.Failure.unreadable.errorDescription)
+            publish(nil, overview: nil, problem: RexHost.Failure.unreadable.errorDescription)
             scheduleRestart()
             return
         }
@@ -184,14 +209,15 @@ final class RexWatch {
             let line = buffer[buffer.startIndex..<newline]
             buffer.removeSubrange(buffer.startIndex...newline)
             guard line.first == UInt8(ascii: "{"), let inventory = try? RexInventory.parse(Data(line)),
-                  let encoded = try? JSONEncoder().encode(inventory) else { continue }
+                  let encoded = try? JSONEncoder().encode(inventory),
+                  let overview = (try? RexOverview.parse(Data(line))).flatMap({ try? JSONEncoder().encode($0) }) else { continue }
             backoff = 1
-            publish(encoded, problem: nil)
+            publish(encoded, overview: overview, problem: nil)
         }
         if buffer.count > Self.maximumLine {
             buffer = Data()
             terminate()
-            publish(nil, problem: RexHost.Failure.unreadable.errorDescription)
+            publish(nil, overview: nil, problem: RexHost.Failure.unreadable.errorDescription)
         }
     }
 
@@ -205,7 +231,7 @@ final class RexWatch {
         if status == 0 {
             backoff = 1
         } else {
-            publish(nil, problem: (status == RexScript.notRunningStatus ? RexHost.Failure.notRunning : .unreadable).errorDescription)
+            publish(nil, overview: nil, problem: (status == RexScript.notRunningStatus ? RexHost.Failure.notRunning : .unreadable).errorDescription)
         }
         scheduleRestart(immediately: status == 0)
     }
@@ -234,13 +260,16 @@ final class RexWatch {
         queue.asyncAfter(deadline: .now() + 1) { if task.isRunning { kill(pid, SIGKILL) } }
     }
 
+    /// The cached encoding a read of this view receives.
+    private func answer(for view: View) -> Data? { view == .panes ? latest : latestOverview }
+
     /// Records a change and answers every held read with it.
-    private func publish(_ data: Data?, problem message: String?) {
-        guard data != latest || message != problem else { return }
-        latest = data; problem = message
+    private func publish(_ data: Data?, overview: Data?, problem message: String?) {
+        guard data != latest || overview != latestOverview || message != problem else { return }
+        latest = data; latestOverview = overview; problem = message
         revision += 1
         let waiting = held
         held = []
-        for entry in waiting { entry.reply(latest, revision, problem) }
+        for entry in waiting { entry.reply(answer(for: entry.view), revision, problem) }
     }
 }

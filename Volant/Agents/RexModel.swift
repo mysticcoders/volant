@@ -139,7 +139,7 @@ final class RexModel: ObservableObject {
     /// Hands activation to Rex, which macOS requires before another app can come forward. The
     /// launcher panel does not make Volant the active app, so when Rex refuses the handoff, opening
     /// Rex through Launch Services brings it forward instead.
-    private static func activateRexApp() {
+    static func activateRexApp() {
         if let app = NSRunningApplication.runningApplications(withBundleIdentifier: RexScript.appBundleIdentifier).first {
             NSApp.yieldActivation(to: app)
             if app.activate() { return }

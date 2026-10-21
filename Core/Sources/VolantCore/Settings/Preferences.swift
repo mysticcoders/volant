@@ -33,6 +33,9 @@ public struct Preferences: Codable {
     public var fileSearchUsesFSearch: Bool = false
     /// Per-Mac switch for mirroring the settings in SettingsSync.keys through iCloud.
     public var syncSettingsWithICloud: Bool = false
+    /// Let the Rex Overview read the last lines of each Rex pane's screen. Off until the owner turns
+    /// it on, in Settings or in the overview itself, and never synced, because it reads screens.
+    public var rexPanePreviews: Bool = false
     public var statusBar = StatusBarConfiguration()
     // Compatibility for existing callers and older configuration files.
     public var promotedHarness: String? {
@@ -51,7 +54,7 @@ public struct Preferences: Codable {
     public var help: String = "Edit and choose Reload Configuration in Settings. Hotkeys: cmd|ctrl|option|shift|meh|hyper + key. App hotkeys use the bundle identifier. Snippets: {date} {isodate} {time} {datetime} {clipboard} {uuid}. Quicklinks: {query}. Aliases map a word to an app name or query. Appearance: theme system|light|dark, colorTheme system|volant|catppuccin-mocha|nord|…|custom-<name> (named themes set their own light or dark; customThemes holds imported Raycast themes), scale 0.8–1.4, opacity 0.5–1.0."
 
     public enum CodingKeys: String, CodingKey {
-        case favoriteApps, summonHotKey, notesHotKey, emojiHotKey, talkHotKey, lockScreenHotKey, sleepDisplaysHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, caffeinateKeepsDisplayAwake, dictationLowersVolume, dictationOutput, dictationTypesWhileSpeaking, dictationRemovesFillers, dictationPlaysSounds, dictationVocabulary, dictationFixesCloseMatches, fileSearchUsesFSearch, syncSettingsWithICloud, statusBar, snippets, quicklinks, aliases, appearance
+        case favoriteApps, summonHotKey, notesHotKey, emojiHotKey, talkHotKey, lockScreenHotKey, sleepDisplaysHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, caffeinateKeepsDisplayAwake, dictationLowersVolume, dictationOutput, dictationTypesWhileSpeaking, dictationRemovesFillers, dictationPlaysSounds, dictationVocabulary, dictationFixesCloseMatches, fileSearchUsesFSearch, syncSettingsWithICloud, rexPanePreviews, statusBar, snippets, quicklinks, aliases, appearance
         case help = "_help"
     }
 
@@ -90,6 +93,7 @@ public struct Preferences: Codable {
         dictationVocabulary = DictationVocabulary.normalized(try c.decodeIfPresent([DictationVocabularyEntry].self, forKey: .dictationVocabulary) ?? [])
         fileSearchUsesFSearch = try c.decodeIfPresent(Bool.self, forKey: .fileSearchUsesFSearch) ?? d.fileSearchUsesFSearch
         syncSettingsWithICloud = try c.decodeIfPresent(Bool.self, forKey: .syncSettingsWithICloud) ?? d.syncSettingsWithICloud
+        rexPanePreviews = try c.decodeIfPresent(Bool.self, forKey: .rexPanePreviews) ?? d.rexPanePreviews
         statusBar = try c.decodeIfPresent(StatusBarConfiguration.self, forKey: .statusBar) ?? StatusBarConfiguration()
         if !c.contains(.statusBar) {
             let legacy = try decoder.container(keyedBy: LegacyKeys.self)
@@ -108,7 +112,7 @@ public struct Preferences: Codable {
 
     /// Patch a single setting, preserving externally edited and unknown configuration fields.
     public static func updateBoolean(_ key: String, value: Bool, at url: URL = configURL) throws {
-        precondition(["showInDock", "showOnLaunch", "caffeinateKeepsDisplayAwake", "dictationLowersVolume", "dictationTypesWhileSpeaking", "dictationRemovesFillers", "dictationPlaysSounds", "dictationFixesCloseMatches", "fileSearchUsesFSearch", "syncSettingsWithICloud"].contains(key))
+        precondition(["showInDock", "showOnLaunch", "caffeinateKeepsDisplayAwake", "dictationLowersVolume", "dictationTypesWhileSpeaking", "dictationRemovesFillers", "dictationPlaysSounds", "dictationFixesCloseMatches", "fileSearchUsesFSearch", "syncSettingsWithICloud", "rexPanePreviews"].contains(key))
         let data = try Data(contentsOf: url)
         guard var object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw CocoaError(.fileReadCorruptFile)

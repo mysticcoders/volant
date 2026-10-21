@@ -119,10 +119,12 @@ final class RexModelTests: XCTestCase {
         XCTAssertTrue(rex.connected)
         reply?(try encode([pane("block:a", label: "comet", state: .working), pane("block:b", label: "orbit", state: .blocked, message: "Approve the deploy?")]), 1, nil)
         await drain(); await drain()
-        XCTAssertEqual(model.rows.map(\.id), ["rex:session:fictional/block:b", "rex:session:fictional/block:a"])
-        XCTAssertEqual(model.selectedRow?.primaryAction, "Focus in Rex")
+        XCTAssertEqual(model.rows.map(\.id), ["command:rex-overview", "rex:session:fictional/block:b", "rex:session:fictional/block:a"])
+        XCTAssertEqual(model.selectedRow?.primaryAction, "Open Overview", "the overview comes first, then waiting panes")
         model.query = "rex deploy"
         XCTAssertEqual(model.rows.map(\.id), ["rex:session:fictional/block:b"])
+        model.query = "rex overview"
+        XCTAssertEqual(model.rows.map(\.id), ["command:rex-overview"])
         XCTAssertTrue(LauncherRouting.isReserved("rex"))
         rex.disconnect()
     }

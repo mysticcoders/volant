@@ -189,6 +189,9 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
     func readRexPanes(after revision: Int, reply: @escaping (Data?, Int, String?) -> Void) {
         rex.queue.async { self.rex.read(after: revision, reply: reply) }
     }
+    func readRexOverview(after revision: Int, preview: Bool, reply: @escaping (Data?, Int, String?) -> Void) {
+        rex.queue.async { self.rex.readOverview(after: revision, preview: preview, reply: reply) }
+    }
     func stopRexPanes(reply: @escaping () -> Void) {
         rex.queue.async { self.rex.stop(); reply() }
     }

@@ -37,6 +37,11 @@ import Foundation
     /// running. Reads only layout, status records and reported directories, never a pane's screen,
     /// and never starts Rex.
     func readRexPanes(after revision: Int, reply: @escaping (Data?, Int, String?) -> Void)
+    /// The same watcher's sessions, tabs and positioned panes, as JSON `RexOverview`, with the same
+    /// revision and holding rules as `readRexPanes`. With `preview`, which the app sends only after
+    /// the owner turned on pane previews, panes carry the last lines of their screen text; the helper
+    /// stops reading screens a few seconds after reads stop asking for them.
+    func readRexOverview(after revision: Int, preview: Bool, reply: @escaping (Data?, Int, String?) -> Void)
     /// Stops the watcher. The next read starts a new one.
     func stopRexPanes(reply: @escaping () -> Void)
     /// Focuses a Rex pane after checking it is still a terminal in that session, then asks the Rex

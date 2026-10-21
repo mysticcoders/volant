@@ -54,6 +54,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var clipboardStore = ClipboardStore(retention: config.clipboardRetention)
     private lazy var clipboardMonitor = ClipboardMonitor(store: clipboardStore)
     private let notesStore = NotesStore()
+    /// Created on first use. Pane previews follow `config.rexPanePreviews`; turning them on or off
+    /// in the window writes the configuration and reloads it, so Settings shows the same choice.
+    private lazy var rexOverview = RexOverviewWindowController(model: RexOverviewModel(previewsAllowed: config.rexPanePreviews, save: { [weak self] allowed in
+        try Preferences.updateBoolean("rexPanePreviews", value: allowed)
+        self?.reloadConfig()
+    }))
+    private var rexOverviewCreated = false
     private lazy var notesPanel: NotesPanel = {
         let notes = NotesPanel(store: notesStore)
         notes.floatingPeer = panel
@@ -73,6 +80,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.showSettings()
             self?.settingsPanel.edit(app)
         case .agents: self?.showAgents()
+        case .rexOverview:
+            self?.rexOverviewCreated = true
+            self?.rexOverview.show()
         case .open(let id): self?.notesPanel.open(noteID: id)
         case .create(let text): self?.notesPanel.openNew(text: text)
         case .confetti: ConfettiWindow.celebrate()
@@ -402,6 +412,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settingsPanel.refresh(config, apps: index.apps)
         registerHotKeys()
         panel.apply(config: config)
+        if rexOverviewCreated { rexOverview.model.updateAllowed(config.rexPanePreviews) }
         if let ai = try? AIConfiguration.load() { panel.model.conversations.apply(ai) }
         clipboardStore.retention = config.clipboardRetention
         settingsSync.update(enabled: config.syncSettingsWithICloud)

@@ -495,6 +495,7 @@ private struct RowView: View {
         case .agentSession(let session): return session.project
         case .herdrMachine(let machine, _, _): return machine?.label ?? "Local"
         case .rexPane(let pane): return pane.project
+        case .rexOverview: return "Open Rex Overview"
         case .connectivity(let item): return item.title
         case .audioRoute(let route): return route.name
         case .volume(let command, _): return command.title
@@ -532,6 +533,7 @@ private struct RowView: View {
         case .herdrMachine(let machine, _, _): return machine.map { $0.target + " · " + $0.session } ?? "This Mac"
         case .rexPane(let pane):
             return ([pane.sessionLabel, pane.program] + [pane.status?.message ?? pane.label]).compactMap { $0 }.joined(separator: " · ")
+        case .rexOverview: return "Every session and tab in a window"
         case .connectivity(let item): return item.detail
         case .audioRoute(let route): return route.direction.rawValue.capitalized
         case .volume(_, let detail): return detail.isEmpty ? nil : detail
@@ -578,6 +580,7 @@ private struct RowView: View {
                             .accessibilityLabel("Changed since you last looked")
                     }
                 }
+        case .rexOverview: CommandTile(symbol: "square.grid.2x2", tint: CoreCommand.agents.tint)
         case .rexPane(let pane):
             Image(systemName: Self.rexSymbol(pane.state)).font(.system(size: 20))
                 .foregroundStyle(pane.state == .blocked || pane.state == .error ? Color.orange : Color.secondary)

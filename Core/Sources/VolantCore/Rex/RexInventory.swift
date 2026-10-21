@@ -184,7 +184,7 @@ public struct RexInventory: Codable, Equatable {
 
 /// Rex session and block IDs, checked before they reach a script argument or a focus request.
 public enum RexIdentifier {
-    public enum Kind: String { case session, block }
+    public enum Kind: String { case session, block, window }
 
     public static func isValid(_ value: String, kind: Kind) -> Bool {
         let prefix = kind.rawValue + ":"

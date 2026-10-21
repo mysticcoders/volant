@@ -98,12 +98,21 @@ final class RexInventoryTests: XCTestCase {
         XCTAssertNil(RexScript.focusArguments(home: "/Users/fictional", session: "session:", block: "block:b"))
     }
 
-    func testScriptsNeverReadScreensOrTypeInput() {
+    func testScriptsNeverTypeInputAndReadScreensOnlyForPreviews() {
         for script in [RexScript.watch, RexScript.focus] {
-            for forbidden in ["format", "clipboard_read", "write", "send", "client.key", "block.event", "rex.exec", "io.", "os."] {
+            for forbidden in ["clipboard_read", "write", "send", "client.key", "block.event", "rex.exec", "io.", "os."] {
                 XCTAssertFalse(script.contains(forbidden), "\(forbidden) must not appear in a Rex script")
             }
         }
+        XCTAssertFalse(RexScript.focus.contains("format"))
+        let screenRead = try? XCTUnwrap(RexScript.watch.range(of: #"method = "format""#))
+        let previewGuard = try? XCTUnwrap(RexScript.watch.range(of: "if preview then"))
+        XCTAssertNotNil(screenRead)
+        XCTAssertTrue(previewGuard.map { guardRange in screenRead.map { guardRange.upperBound <= $0.lowerBound } ?? false } ?? false,
+                      "the watcher reads screen text only inside its preview branch")
+        XCTAssertEqual(RexScript.watch.components(separatedBy: #"method = "format""#).count, 2, "one screen read, in the preview branch")
+        XCTAssertTrue(RexScript.watch.contains(#"format = "text""#), "previews read plain text, never colors or escape sequences")
+        XCTAssertFalse(RexScript.watchArguments(home: "/Users/fictional").contains("--args"), "previews are off unless asked for")
     }
 
     func testWatcherHearsEverySessionForABoundedTime() {
