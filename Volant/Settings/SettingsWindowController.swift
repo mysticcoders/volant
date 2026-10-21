@@ -281,7 +281,7 @@ private struct SettingsView: View {
             } header: {
                 Text("Rex")
             } footer: {
-                SettingsFooter("Shows “Rex: 2 waiting” in the launcher footer when a program in a Rex pane is waiting for you. Click it, or type rex, to see those panes first and focus one. Reads only what programs report to Rex on this Mac, never a pane’s contents.")
+                SettingsFooter("Shows “Rex: 2 waiting” in the launcher footer when a program in a Rex pane is waiting for you. Click it, or type rex, to see those panes first and focus one. To switch Rex to a pane in another session, turn on Remote Control in Rex Settings › Rex Server. Reads only what programs report to Rex on this Mac, never a pane’s contents.")
             }
             Section {
                 Toggle("AI Chat activity", isOn: Binding(get: { state.config.statusBar.sources.contains("ai-chat") }, set: { value in

@@ -187,17 +187,14 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
 
     private let rex = RexHost()
     func readRexPanes(after revision: Int, reply: @escaping (Data?, Int, String?) -> Void) {
-        rex.queue.async {
-            let (data, current, message) = self.rex.read(after: revision)
-            reply(data, current, message)
-        }
+        rex.queue.async { self.rex.read(after: revision, reply: reply) }
     }
     func stopRexPanes(reply: @escaping () -> Void) {
         rex.queue.async { self.rex.stop(); reply() }
     }
     func focusRexPane(session: String, block: String, reply: @escaping (String?) -> Void) {
         rex.queue.async {
-            do { try self.rex.focus(session: session, block: block); reply(nil) }
+            do { reply(try self.rex.focus(session: session, block: block).message) }
             catch { reply(error.localizedDescription) }
         }
     }

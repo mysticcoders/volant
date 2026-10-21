@@ -34,19 +34,21 @@ final class RexHost {
          home + "/.local/bin/rex", "/opt/homebrew/bin/rex", "/usr/local/bin/rex"]
     }
 
-    /// The watcher's latest panes, starting it if needed. Call on `queue`.
-    func read(after revision: Int) -> (Data?, Int, String?) { watcher.read(after: revision) }
+    /// The watcher's latest panes, starting it if needed; waits for a change when there is none yet.
+    /// Call on `queue`.
+    func read(after revision: Int, reply: @escaping (Data?, Int, String?) -> Void) { watcher.read(after: revision, reply: reply) }
 
     /// Stops the watcher. Call on `queue`.
     func stop() { watcher.stop() }
 
-    /// Focuses the pane if the script still finds it as a terminal in that session. Call on `queue`.
-    func focus(session: String, block: String) throws {
+    /// Focuses the pane if the script still finds it as a terminal in that session, and reports
+    /// whether the Rex app switched to it. Call on `queue`.
+    func focus(session: String, block: String) throws -> RexScript.FocusOutcome {
         guard let arguments = RexScript.focusArguments(home: home, session: session, block: block) else { throw Failure.changed }
         let executable = try self.executable()
         do {
-            _ = try HerdrProcess.run(executable: executable, arguments: arguments, home: home, timeout: 8,
-                                     environment: ChildProcessEnvironment.rex(home: home, user: NSUserName()))
+            return RexScript.FocusOutcome(output: try HerdrProcess.run(executable: executable, arguments: arguments, home: home, timeout: 8,
+                                                                        environment: ChildProcessEnvironment.rex(home: home, user: NSUserName())))
         } catch {
             let status = (error as NSError).userInfo[HerdrProcess.terminationStatusKey] as? Int32
             throw status == RexScript.notRunningStatus ? Failure.notRunning : Failure.changed
@@ -79,13 +81,19 @@ final class RexHost {
 /// One long-lived `rex do --all` watcher and the latest panes it printed. Every method and callback
 /// runs on `queue`. The watcher starts on the first read, restarts with backoff while reads
 /// continue, and stops when told to, when reads stop arriving, or when the helper's connection ends.
-/// Each change to the panes or the message advances `revision`, so an unchanged read costs nothing.
+/// Each change to the panes or the message advances `revision`. A read at the current revision is
+/// held until the next change or `holdLimit`, so a change reaches the app as soon as it is printed
+/// and an idle read costs nothing.
 final class RexWatch {
     /// The longest line the watcher may print before it is stopped as misbehaving.
     static let maximumLine = 4_000_000
     /// A watcher with no read for this long is stopped rather than restarted.
     static let idleLimit: TimeInterval = 20
     static let maximumBackoff: TimeInterval = 10
+    /// How long a read at the current revision waits for a change before answering "unchanged".
+    static let holdLimit: TimeInterval = 2
+    /// Reads held at once; the app keeps one outstanding, so more means a misbehaving caller.
+    static let maximumHeld = 4
 
     private let queue: DispatchQueue
     private let home: String
@@ -100,15 +108,25 @@ final class RexWatch {
     private(set) var revision = 0
     private var latest: Data?
     private var problem: String?
+    private var held: [(id: UUID, reply: (Data?, Int, String?) -> Void)] = []
 
     init(queue: DispatchQueue, home: String, executable: @escaping () throws -> URL) {
         self.queue = queue; self.home = home; self.executable = executable
     }
 
-    func read(after known: Int) -> (Data?, Int, String?) {
+    func read(after known: Int, reply: @escaping (Data?, Int, String?) -> Void) {
         lastRead = Date()
         if process == nil && restart == nil { launch() }
-        return known == revision ? (nil, revision, nil) : (latest, revision, problem)
+        guard known == revision else { reply(latest, revision, problem); return }
+        if held.count >= Self.maximumHeld { let oldest = held.removeFirst(); oldest.reply(nil, revision, nil) }
+        let id = UUID()
+        held.append((id, reply))
+        queue.asyncAfter(deadline: .now() + Self.holdLimit) { [weak self] in
+            guard let self, let index = self.held.firstIndex(where: { $0.id == id }) else { return }
+            let expired = self.held.remove(at: index)
+            self.lastRead = Date()
+            expired.reply(nil, self.revision, nil)
+        }
     }
 
     func stop() {
@@ -117,6 +135,9 @@ final class RexWatch {
         terminate()
         backoff = 1
         publish(nil, problem: nil)
+        let waiting = held
+        held = []
+        for entry in waiting { entry.reply(nil, revision, nil) }
     }
 
     private func launch() {
@@ -213,9 +234,13 @@ final class RexWatch {
         queue.asyncAfter(deadline: .now() + 1) { if task.isRunning { kill(pid, SIGKILL) } }
     }
 
+    /// Records a change and answers every held read with it.
     private func publish(_ data: Data?, problem message: String?) {
         guard data != latest || message != problem else { return }
         latest = data; problem = message
         revision += 1
+        let waiting = held
+        held = []
+        for entry in waiting { entry.reply(latest, revision, problem) }
     }
 }
