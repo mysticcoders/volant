@@ -103,8 +103,11 @@ export default function PrivacyAndSecurity() {
         <a href="/docs/launcher">The launcher</a>. When you type{' '}
         <code>rex</code> or turn on its footer status, the helper reads the
         status programs report to Rex on this Mac, only through a{' '}
-        <code>rex</code> command signed by Rex&rsquo;s developer, and never a
-        pane&rsquo;s contents. See <a href="/docs/agents">Agents</a>.
+        <code>rex</code> command signed by Rex&rsquo;s developer. It reads
+        pane screens only for the Rex Overview, and only if you turn on pane
+        previews: then, while that window is open, it keeps the last 12 lines
+        of each pane in memory and never saves, logs, or sends them. See{' '}
+        <a href="/docs/agents">Agents</a>.
       </p>
 
       <h2>Permissions Volant asks for</h2>
