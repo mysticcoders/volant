@@ -30,6 +30,7 @@ timed() {
 }
 timed python3 tools/test-scope-tests.py
 timed python3 tools/check-input-confinement.py --self-test
+timed python3 tools/check-release-copy.py --self-test
 timed python3 tools/check-input-confinement.py
 timed python3 tools/interaction-speed/check.py
 timed python3 tools/ui-vm-dispatch-tests.py
