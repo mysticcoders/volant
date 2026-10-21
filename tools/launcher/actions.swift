@@ -1194,8 +1194,8 @@ func rexScenario() throws {
     verify(waitUntil { panel.model.rex.connected && reply != nil }, "The rex view starts reading without a Connect step")
     reply?(try JSONEncoder().encode(RexInventory(panes: panes)), 1, nil); settle()
     verify(waitUntil { panel.model.rows.filter { if case .rexPane = $0 { return true } else { return false } }.count == 4 }, "Every fictional Rex pane is listed")
-    verify(panel.model.rows.last?.id == "command:rex-overview", "Open Rex Overview follows the panes")
-    verify(panel.model.rows.first?.id == "rex:session:fixture-api/block:b2", "The waiting pane is first")
+    verify(panel.model.rows.first?.id == "command:rex-overview", "Open Rex Overview is first")
+    verify(panel.model.rows.dropFirst().first?.id == "rex:session:fixture-api/block:b2", "The waiting pane leads the panes")
     try render("rex-panes")
     panel.model.query = "rex build"; settle()
     verify(panel.model.rows.map(\.id) == ["rex:session:fixture-ops/block:b4"], "A trailing term filters by message")
@@ -1213,9 +1213,8 @@ func rexScenario() throws {
     print("PASS: rex lists fictional panes waiting first, filters, focuses by identity and reports a stopped server")
 }
 
-/// The Rex Overview window with fictional sessions: status tiles, the preview consent card, and
-/// pane previews from invented screen text. A fixture defaults suite holds the preview choice, and
-/// no Rex server or agent helper is reached.
+/// The Rex Overview window with fictional sessions: the approval card, then pane previews from
+/// invented screen text. The choice is saved to a fake, and no Rex server or agent helper is reached.
 func rexOverviewScenario() throws {
     func status(_ state: RexState, _ message: String?) -> RexStatus { RexStatus(state: state, app: "claude-code", message: message) }
     let overview = RexOverview(sessions: [
@@ -1251,28 +1250,23 @@ func rexOverviewScenario() throws {
             ]),
         ]),
     ])
-    let defaults = UserDefaults(suiteName: "com.mysticcoders.volant.actionsfixture.rex-overview")!
-    defaults.removePersistentDomain(forName: "com.mysticcoders.volant.actionsfixture.rex-overview")
-    let model = RexOverviewModel(defaults: defaults)
+    var saved: [Bool] = []
+    let model = RexOverviewModel(previewsAllowed: false, save: { saved.append($0) })
     model.show(overview)
     let controller = RexOverviewWindowController(model: model)
     let window = controller.window!
     window.setFrame(NSWindow.frameRect(forContentRect: NSRect(x: 0, y: 0, width: 980, height: 640), styleMask: window.styleMask), display: false)
     window.orderFront(nil); settle()
-    verify(model.overview.sessions.count == 3 && !model.readsPreviews, "The overview starts in Status mode with fictional sessions")
-    try render("rex-overview-status", view: window.contentView!)
-    model.mode = .preview; settle()
-    verify(!model.readsPreviews && !model.previewsAllowed, "Preview mode asks before reading screens")
+    verify(!model.previewsAllowed, "The overview asks before reading screens")
     try render("rex-overview-consent", view: window.contentView!)
     model.allowPreviews(true)
     model.show(overview); settle()
-    verify(model.readsPreviews, "Turning on previews shows them")
+    verify(model.previewsAllowed && saved == [true], "Approving inline saves the choice")
     try render("rex-overview-preview", view: window.contentView!)
-    model.allowPreviews(false); model.mode = .status; settle()
-    verify(!defaults.bool(forKey: RexOverviewModel.previewsKey), "Turning previews off is remembered")
+    model.allowPreviews(false); settle()
+    verify(saved == [true, false] && model.overview.sessions.isEmpty, "Turning previews off saves the choice and forgets the screen text")
     window.orderOut(nil)
-    defaults.removePersistentDomain(forName: "com.mysticcoders.volant.actionsfixture.rex-overview")
-    print("PASS: Rex Overview renders status, the preview consent and previews from fictional sessions")
+    print("PASS: Rex Overview asks first, then renders previews from fictional sessions, and forgets them when turned off")
 }
 
 /// A scenario runs against a fresh hidden launcher. Size-sensitive scenarios render or click inside

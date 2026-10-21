@@ -342,8 +342,8 @@ final class LauncherModel: ObservableObject {
         } catch { notice = "Couldn’t save status bar: " + error.localizedDescription }
     }
     /// A trailing term filters by project, session, program, state or message. Open Rex Overview
-    /// follows the panes, and appears with none only when asked for by name, so a loading or
-    /// stopped Rex still shows its message. Model changes call
+    /// comes first, and appears with no panes only when asked for by name, so a loading or stopped
+    /// Rex still shows its message. Model changes call
     /// this too, so it never connects: only a query change does, which keeps a failing helper from
     /// being retried in a loop.
     private func refreshRexResults() {
@@ -355,14 +355,12 @@ final class LauncherModel: ObservableObject {
             term.isEmpty || [$0.project, $0.sessionLabel, $0.label, $0.program ?? "", $0.state.title, $0.status?.message ?? ""]
                 .joined(separator: " ").localizedCaseInsensitiveContains(term)
         }
-        let hadPanes = rows.contains { if case .rexPane = $0 { return true } else { return false } }
         let asksForOverview = !term.isEmpty && ("overview".hasPrefix(term.lowercased()) || "grid".hasPrefix(term.lowercased()))
         let overviewMatches = asksForOverview || (term.isEmpty && !rex.panes.isEmpty)
-        sections = (panes.isEmpty ? [] : [ResultSection(title: "Rex panes", rows: panes.map(ResultRow.rexPane))])
-            + (overviewMatches ? [ResultSection(title: "Rex", rows: [.rexOverview])] : [])
+        sections = (overviewMatches ? [ResultSection(title: "Rex", rows: [.rexOverview])] : [])
+            + (panes.isEmpty ? [] : [ResultSection(title: "Rex panes", rows: panes.map(ResultRow.rexPane))])
         notice = panes.isEmpty && !rex.panes.isEmpty ? "No matching panes" : rex.message
-        if !hadPanes && !panes.isEmpty { selection = 0 }
-        else if let selectedID, let index = rows.firstIndex(where: { $0.id == selectedID }) { selection = index }
+        if let selectedID, let index = rows.firstIndex(where: { $0.id == selectedID }) { selection = index }
         else { selection = min(selection, max(0, rows.count - 1)) }
     }
     private var indexSubscription: AnyCancellable?

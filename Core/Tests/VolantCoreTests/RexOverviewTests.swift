@@ -56,6 +56,20 @@ final class RexOverviewTests: XCTestCase {
         XCTAssertNil(overview.sessions[0].tabs[0].panes[0].rect, "a malformed rect draws as the whole tab")
     }
 
+    func testPanePreviewsAreOffByDefaultPatchableAndNeverSynced() throws {
+        XCTAssertFalse(Preferences().rexPanePreviews)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".json")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try Data(#"{"summonHotKey":"cmd+space","futureField":{"kept":true}}"#.utf8).write(to: url)
+        XCTAssertFalse(try JSONDecoder().decode(Preferences.self, from: Data(contentsOf: url)).rexPanePreviews)
+        try Preferences.updateBoolean("rexPanePreviews", value: true, at: url)
+        let object = try XCTUnwrap(try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        XCTAssertEqual(object["rexPanePreviews"] as? Bool, true)
+        XCTAssertEqual(object["summonHotKey"] as? String, "cmd+space")
+        XCTAssertNotNil(object["futureField"], "unknown fields survive the patch")
+        XCTAssertFalse(SettingsSync.keys.contains("rexPanePreviews"), "reading screens is a per-Mac choice")
+    }
+
     func testPreviewArgumentsAreOnlyAddedWhenAsked() {
         XCTAssertEqual(RexScript.watchArguments(home: "/Users/fictional", preview: true).suffix(2), ["--args", #"{"preview":true}"#])
         XCTAssertTrue(RexScript.watch.contains("rex.every(preview and 2 or 30"), "previews refresh every two seconds, status every thirty")

@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 /// The Rex Overview: an ordinary resizable window, opened from the `rex` view, that reads Rex only
-/// while it is open. Closing it disconnects and forgets everything read, pane previews included.
+/// while it is open and pane previews are on. Closing it disconnects and forgets everything read.
 final class RexOverviewWindowController: NSWindowController, NSWindowDelegate {
     let model: RexOverviewModel
 
@@ -17,7 +17,9 @@ final class RexOverviewWindowController: NSWindowController, NSWindowDelegate {
         window.setFrameAutosaveName("VolantRexOverview")
         super.init(window: window)
         window.delegate = self
-        window.contentView = NSHostingView(rootView: ThemedRoot(paletteText: false) { RexOverviewView(model: model) })
+        window.contentView = NSHostingView(rootView: ThemedRoot(paletteText: false) {
+            RexOverviewView(model: model, close: { [weak window] in window?.performClose(nil) })
+        })
         if !window.setFrameUsingName("VolantRexOverview") { window.center() }
     }
 
@@ -25,10 +27,10 @@ final class RexOverviewWindowController: NSWindowController, NSWindowDelegate {
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
     func show() {
-        model.connect()
+        model.windowOpened()
         showWindow(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    func windowWillClose(_ notification: Notification) { model.disconnect() }
+    func windowWillClose(_ notification: Notification) { model.windowClosed() }
 }

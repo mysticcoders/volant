@@ -278,10 +278,12 @@ private struct SettingsView: View {
                 Toggle("Rex pane activity", isOn: Binding(get: { state.config.statusBar.sources.contains("rex") }, set: { value in
                     apply { try Preferences.updateStatusBar(source: "rex", enabled: value, at: configURL) }
                 }))
+                Toggle("Pane previews in Rex Overview", isOn: boolean("rexPanePreviews", state.config.rexPanePreviews))
+                    .accessibilityIdentifier("settings-rex-pane-previews")
             } header: {
                 Text("Rex")
             } footer: {
-                SettingsFooter("Shows “Rex: 2 waiting” in the launcher footer when a program in a Rex pane is waiting for you. Click it, or type rex, to see those panes first and focus one. To switch Rex to a pane in another session, turn on Remote Control in Rex Settings › Rex Server. Reads only what programs report to Rex on this Mac, never a pane’s contents.")
+                SettingsFooter("Shows “Rex: 2 waiting” in the launcher footer when a program in a Rex pane is waiting for you. Click it, or type rex, to see those panes first and focus one. To switch Rex to a pane in another session, turn on Remote Control in Rex Settings › Rex Server. Type rex overview to see every session and tab. Pane previews let it show the last \(RexScript.previewLines) lines of each pane’s screen, read only while the overview is open and never saved or logged; without them, Volant reads only what programs report to Rex.")
             }
             Section {
                 Toggle("AI Chat activity", isOn: Binding(get: { state.config.statusBar.sources.contains("ai-chat") }, set: { value in

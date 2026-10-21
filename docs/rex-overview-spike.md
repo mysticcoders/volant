@@ -21,12 +21,29 @@ A **Status / Preview** switch changes every tile:
 
 | | Light | Dark |
 | --- | --- | --- |
-| Status | ![Status, light](rex-overview-spike/status-light.webp) | ![Status, dark](rex-overview-spike/status-dark.webp) |
-| Preview | ![Preview, light](rex-overview-spike/preview-light.webp) | ![Preview, dark](rex-overview-spike/preview-dark.webp) |
-| Consent | ![Consent, light](rex-overview-spike/consent-light.webp) | ![Consent, dark](rex-overview-spike/consent-dark.webp) |
+| Previews | ![Previews, light](rex-overview-spike/preview-light.webp) | ![Previews, dark](rex-overview-spike/preview-dark.webp) |
+| Approval | ![Approval, light](rex-overview-spike/consent-light.webp) | ![Approval, dark](rex-overview-spike/consent-dark.webp) |
+
+The first version also had a Status mode, without previews; see Decisions.
 
 Rendered by the native Actions fixture (`rex-overview` scenario) in headless Tart with fictional
 sessions and invented screen text, at 980×640.
+
+## Decisions — October 21, 2026
+
+After trying it live, the owner kept previews and dropped Status mode: status tiles without the
+screen did not earn their place. So:
+
+- **No Status / Preview switch.** The overview shows previews, with each tile still headed by its
+  program and state. Without permission, the window shows the approval card instead of a grid.
+- **One setting, two places.** `Preferences.rexPanePreviews` in `config.json`, off by default,
+  per-Mac and outside `SettingsSync.keys`. Settings › Status Bar › *Pane previews in Rex Overview*
+  and the window's inline approval both write it; a config reload passes it to an open window.
+  Turning it off anywhere stops reading and forgets the screen text at once. *Not Now* closes the
+  window.
+- **Open Rex Overview comes first** in the `rex` list. It still appears with no panes only when asked
+  for by name, so a loading or stopped Rex shows its message.
+- **Preview lines are cut at the tile's edge** rather than wrapped.
 
 ## What Rex provides for it
 

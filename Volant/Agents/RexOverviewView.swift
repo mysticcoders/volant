@@ -2,25 +2,25 @@ import SwiftUI
 import VolantCore
 
 /// Every Rex session as a grid of tab cards. Each card draws its tab's panes where they sit in Rex,
-/// colored by what their programs last reported; clicking a pane focuses it in Rex. Status mode
-/// shows each pane's program and message; Preview mode, once the owner turns it on, shows the last
-/// lines of its screen instead.
+/// colored by what their programs last reported, with the last lines of each pane's screen; clicking
+/// a pane focuses it in Rex. Until the owner turns on pane previews, the window asks for that instead.
 struct RexOverviewView: View {
     @ObservedObject var model: RexOverviewModel
+    let close: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
             header
             Divider()
-            if model.mode == .preview && !model.previewsAllowed {
-                RexPreviewConsent(allow: { model.allowPreviews(true) }, back: { model.mode = .status })
+            if !model.previewsAllowed {
+                RexPreviewConsent(allow: { model.allowPreviews(true) }, notNow: close)
             } else if let message = model.message {
                 Text(message).foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 24) {
                         ForEach(model.overview.sessions) { session in
-                            RexSessionSection(session: session, mode: model.readsPreviews ? .preview : .status) { model.focus($0, in: session) }
+                            RexSessionSection(session: session) { model.focus($0, in: session) }
                         }
                     }
                     .padding(20)
@@ -43,18 +43,11 @@ struct RexOverviewView: View {
                 Text(feedback).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(1)
             }
             Spacer()
-            if model.readsPreviews {
-                Button("Turn Off Previews") { model.allowPreviews(false); model.mode = .status }
+            if model.previewsAllowed {
+                Button("Turn Off Pane Previews") { model.allowPreviews(false) }
                     .controlSize(.small)
+                    .accessibilityIdentifier("rex-overview-previews-off")
             }
-            Picker("View", selection: $model.mode) {
-                Text("Status").tag(RexOverviewModel.Mode.status)
-                Text("Preview").tag(RexOverviewModel.Mode.preview)
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .frame(width: 180)
-            .accessibilityIdentifier("rex-overview-mode")
         }
         .padding(.horizontal, 20)
         .padding(.top, 14)
@@ -62,20 +55,20 @@ struct RexOverviewView: View {
     }
 }
 
-/// What turning on previews reads, asked before the first preview.
+/// What turning on previews reads, asked before the overview reads any screen.
 struct RexPreviewConsent: View {
     let allow: () -> Void
-    let back: () -> Void
+    let notNow: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Label("Show what’s on each pane’s screen?", systemImage: "eye").font(.system(size: 15, weight: .semibold))
-            Text("Previews read the text on every Rex pane’s screen on this Mac and show its last \(RexScript.previewLines) lines here, refreshed every two seconds while Preview is showing. That can include commands, file contents or anything else a program printed.")
-            Text("The text stays in memory while this window shows it. Volant never saves, logs or sends it anywhere, and stops reading screens when you switch back to Status or close the window.")
+            Text("The overview shows the last \(RexScript.previewLines) lines of every Rex pane’s screen on this Mac, refreshed every two seconds while this window is open. That can include commands, file contents or anything else a program printed.")
+            Text("The text stays in memory while this window shows it. Volant never saves, logs or sends it anywhere, and stops reading screens when you close the window. You can change this later in Settings › Status Bar.")
                 .foregroundStyle(.secondary)
             HStack {
                 Button("Turn On Pane Previews", action: allow).keyboardShortcut(.defaultAction)
-                Button("Not Now", action: back)
+                Button("Not Now", action: notNow)
             }
             .padding(.top, 4)
         }
@@ -90,7 +83,6 @@ struct RexPreviewConsent: View {
 /// One session: its name and waiting count, then its tabs as cards.
 struct RexSessionSection: View {
     let session: RexOverview.Session
-    let mode: RexOverviewModel.Mode
     let focus: (RexOverview.Pane) -> Void
 
     var body: some View {
@@ -103,7 +95,7 @@ struct RexSessionSection: View {
                 }
             }
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), spacing: 14)], alignment: .leading, spacing: 14) {
-                ForEach(session.tabs) { tab in RexTabCard(tab: tab, mode: mode, focus: focus) }
+                ForEach(session.tabs) { tab in RexTabCard(tab: tab, focus: focus) }
             }
         }
     }
@@ -112,7 +104,6 @@ struct RexSessionSection: View {
 /// One tab: its name, whether Rex shows it, and its panes drawn where they sit.
 struct RexTabCard: View {
     let tab: RexOverview.Tab
-    let mode: RexOverviewModel.Mode
     let focus: (RexOverview.Pane) -> Void
 
     var body: some View {
@@ -132,7 +123,7 @@ struct RexTabCard: View {
                 ZStack(alignment: .topLeading) {
                     ForEach(tab.panes) { pane in
                         let rect = pane.rect ?? [0, 0, 1, 1]
-                        RexPaneTile(pane: pane, mode: mode, focused: pane.blockID == tab.focusedBlockID) { focus(pane) }
+                        RexPaneTile(pane: pane, focused: pane.blockID == tab.focusedBlockID) { focus(pane) }
                             .frame(width: max(rect[2] * geometry.size.width - 4, 0), height: max(rect[3] * geometry.size.height - 4, 0))
                             .offset(x: rect[0] * geometry.size.width + 2, y: rect[1] * geometry.size.height + 2)
                     }
@@ -150,7 +141,6 @@ struct RexTabCard: View {
 /// One pane, a native button that focuses it in Rex.
 struct RexPaneTile: View {
     let pane: RexOverview.Pane
-    let mode: RexOverviewModel.Mode
     let focused: Bool
     let action: () -> Void
 
@@ -206,13 +196,19 @@ struct RexPaneTile: View {
         .font(.system(size: 10, weight: .medium))
     }
 
+    /// The screen's last lines, each cut at the tile's edge as a terminal would, with the newest at
+    /// the bottom; the status message stands in until the first preview arrives.
     @ViewBuilder private var content: some View {
-        if mode == .preview, let lines = pane.preview {
-            Text(lines.joined(separator: "\n"))
-                .font(.system(size: 8, design: .monospaced))
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-                .clipped()
+        if let lines = pane.preview {
+            VStack(alignment: .leading, spacing: 1) {
+                ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+                    Text(line.isEmpty ? " " : line).lineLimit(1).truncationMode(.tail)
+                }
+            }
+            .font(.system(size: 8, design: .monospaced))
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+            .clipped()
         } else {
             Text(pane.status?.message ?? pane.title ?? pane.name)
                 .font(.system(size: 11))

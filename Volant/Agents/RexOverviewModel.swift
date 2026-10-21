@@ -2,40 +2,37 @@ import AppKit
 import SwiftUI
 import VolantCore
 
-/// The Rex Overview window's sessions, tabs and panes. UI-owned; callbacks are delivered on the main
-/// queue. It keeps one read outstanding with the helper's Rex watcher, like `RexModel`, and asks for
-/// pane previews only in Preview mode after the owner turned them on. Preview text lives only in
-/// `overview`, in memory, and is cleared when previews or the window are turned off.
+/// The Rex Overview window's sessions, tabs and panes with their screen previews. UI-owned;
+/// callbacks are delivered on the main queue. It reads Rex only while the window is open and the
+/// owner has turned on pane previews (`Preferences.rexPanePreviews`, in Settings or in the window),
+/// keeping one read outstanding with the helper's watcher like `RexModel`. Preview text lives only
+/// in `overview`, in memory, and is cleared when previews are turned off or the window closes.
 final class RexOverviewModel: ObservableObject {
-    enum Mode: String { case status, preview }
-
     @Published private(set) var overview = RexOverview(sessions: [])
     @Published private(set) var connected = false
     @Published private(set) var loading = false
     @Published private(set) var problem: String?
     @Published var feedback: String?
-    @Published var mode = Mode.status { didSet { if mode != oldValue { modeChanged() } } }
-    /// The owner's choice to let the overview read screen text, kept per Mac. Off until turned on.
     @Published private(set) var previewsAllowed: Bool
-    /// Injected only by isolated fixtures; production reads and focuses through the signed helper.
+    /// Injected only by isolated tests and fixtures; production reads and focuses through the
+    /// signed helper.
     var reader: ((Int, Bool, @escaping (Data?, Int, String?) -> Void) -> Void)?
     var focuser: ((String, String, @escaping (String?) -> Void) -> Void)?
     var activateRex: () -> Void = RexModel.activateRexApp
-    private let defaults: UserDefaults
-    static let previewsKey = "rexOverviewPanePreviews"
+    /// Writes the owner's choice to the configuration; the app's reload then calls `updateAllowed`.
+    private let save: (Bool) throws -> Void
     private var connection: NSXPCConnection?
     private var timer: Timer?
     private var generation = 0
     private var request: UUID?
     private var revision = -1
     private var focusInFlight = false
+    private var open = false
 
-    init(defaults: UserDefaults = .standard) {
-        self.defaults = defaults
-        previewsAllowed = defaults.bool(forKey: Self.previewsKey)
+    init(previewsAllowed: Bool = false, save: @escaping (Bool) throws -> Void = { _ in }) {
+        self.previewsAllowed = previewsAllowed
+        self.save = save
     }
-
-    var readsPreviews: Bool { mode == .preview && previewsAllowed }
 
     var message: String? {
         if let problem { return problem }
@@ -43,15 +40,34 @@ final class RexOverviewModel: ObservableObject {
         return overview.sessions.isEmpty ? "No Rex sessions are open." : nil
     }
 
+    /// Turns previews on or off from the window. A failed save leaves the choice as it was.
     func allowPreviews(_ allowed: Bool) {
-        defaults.set(allowed, forKey: Self.previewsKey)
-        previewsAllowed = allowed
-        modeChanged()
+        do { try save(allowed) }
+        catch { feedback = "Couldn’t save pane previews: " + error.localizedDescription; return }
+        updateAllowed(allowed)
     }
 
-    /// Starts reading when the window opens.
-    func connect() {
-        guard !connected else { return }
+    /// Applies the configured choice, from the window or from Settings.
+    func updateAllowed(_ allowed: Bool) {
+        guard allowed != previewsAllowed else { return }
+        previewsAllowed = allowed
+        if allowed { if open { connect() } } else { disconnect() }
+    }
+
+    /// The window opened; reading starts once previews are allowed.
+    func windowOpened() {
+        open = true
+        if previewsAllowed { connect() }
+    }
+
+    /// The window closed: stop reading and forget everything read.
+    func windowClosed() {
+        open = false
+        disconnect()
+    }
+
+    private func connect() {
+        guard !connected, previewsAllowed else { return }
         generation += 1
         if reader == nil {
             let connection = NSXPCConnection(serviceName: "com.mysticcoders.volant.AgentHost")
@@ -70,8 +86,7 @@ final class RexOverviewModel: ObservableObject {
         self.timer = timer
     }
 
-    /// Stops reading when the window closes, and forgets everything read, previews included.
-    func disconnect() {
+    private func disconnect() {
         generation += 1
         timer?.invalidate(); timer = nil
         connection?.invalidate(); connection = nil
@@ -86,42 +101,22 @@ final class RexOverviewModel: ObservableObject {
         problem = message
     }
 
-    /// A mode change drops what was read, so screen text never outlives Preview mode, and reads
-    /// again with the new setting.
-    private func modeChanged() {
-        guard connected else { return }
-        generation += 1
-        request = nil; revision = -1
-        if !readsPreviews { overview = Self.withoutPreviews(overview) }
-        refresh()
-    }
-
-    static func withoutPreviews(_ overview: RexOverview) -> RexOverview {
-        RexOverview(sessions: overview.sessions.map { session in
-            RexOverview.Session(sessionID: session.sessionID, label: session.label, tabs: session.tabs.map { tab in
-                RexOverview.Tab(windowID: tab.windowID, label: tab.label, active: tab.active, focusedBlockID: tab.focusedBlockID, panes: tab.panes.map {
-                    RexOverview.Pane(blockID: $0.blockID, label: $0.label, title: $0.title, program: $0.program, cwd: $0.cwd, status: $0.status, rect: $0.rect)
-                })
-            })
-        })
-    }
-
-    /// One read at a time; each reply starts the next.
+    /// One read at a time; each reply starts the next. Every read asks for previews, which is why
+    /// reading needs the owner's permission.
     func refresh() {
-        guard connected, request == nil else { return }
-        let token = UUID(), current = generation, known = revision, preview = readsPreviews
+        guard connected, previewsAllowed, request == nil else { return }
+        let token = UUID(), current = generation, known = revision
         request = token
         let reply: (Data?, Int, String?) -> Void = { [weak self] data, latest, error in
             let decoded = data.flatMap { try? JSONDecoder().decode(RexOverview.self, from: $0) }
             DispatchQueue.main.async {
-                guard let self, self.connected, current == self.generation, self.request == token else { return }
+                guard let self, self.connected, self.previewsAllowed, current == self.generation, self.request == token else { return }
                 self.request = nil
                 defer { self.refresh() }
                 guard latest != known else { return }
                 self.revision = latest
                 if let decoded {
-                    let shown = preview ? decoded : Self.withoutPreviews(decoded)
-                    if shown != self.overview { self.overview = shown }
+                    if decoded != self.overview { self.overview = decoded }
                     self.problem = nil
                     self.loading = false
                 } else {
@@ -131,8 +126,8 @@ final class RexOverviewModel: ObservableObject {
                 }
             }
         }
-        if let reader { reader(known, preview, reply) }
-        else { proxy(reply: { reply(nil, known + 1, $0) })?.readRexOverview(after: known, preview: preview, reply: reply) }
+        if let reader { reader(known, true, reply) }
+        else { proxy(reply: { reply(nil, known + 1, $0) })?.readRexOverview(after: known, preview: true, reply: reply) }
     }
 
     /// Focuses a pane the overview still shows, then brings Rex forward.
@@ -157,9 +152,9 @@ final class RexOverviewModel: ObservableObject {
     }
 
     /// Replaces the overview directly, for fixtures that render fictional sessions.
-    func show(_ overview: RexOverview, connected: Bool = true) {
+    func show(_ overview: RexOverview) {
         self.overview = overview
-        self.connected = connected
+        connected = true
         loading = false
     }
 }
