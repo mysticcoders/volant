@@ -262,29 +262,30 @@ export default function Home() {
             </article>
             <figure className="product-capture">
               <a
-                href="/images/rex-panes-dark.webp"
-                aria-label="View the full-size native Rex panes list"
+                href="/images/rex-overview-dark.webp"
+                aria-label="View the full-size native Rex Overview"
               >
                 <Image
                   unoptimized
-                  src="/images/rex-panes-dark.webp"
-                  alt="Native Volant listing fictional Rex panes, with a Claude Code question waiting first, then a failed build, finished work and a running test suite, and Rex: 1 waiting in the footer."
-                  width={1500}
-                  height={960}
+                  src="/images/rex-overview-dark.webp"
+                  alt="The native Rex Overview window with fictional sessions: tabs drawn as their real split layouts, a Claude Code question waiting in one pane, a running server log, finished work and a cargo build, each showing the last lines of its screen."
+                  width={1290}
+                  height={1180}
                 />
               </a>
-              <figcaption>Native development capture · fictional Rex panes</figcaption>
+              <figcaption>Native development capture · fictional Rex sessions and screen text</figcaption>
             </figure>
             <article>
               <span className="detail-number">02</span>
               <div>
-                <h3>Watch your Rex panes.</h3>
+                <h3>Watch your Rex sessions.</h3>
                 <p>
                   Type <code>rex</code> to see which programs in Rex are waiting
-                  on you, with their last update, and press Return to jump
-                  straight to the pane. Volant reads only what programs report
-                  to Rex, never a pane&rsquo;s contents. Switching sessions needs
-                  Rex&rsquo;s Remote Control setting.
+                  on you, and press Return to jump straight to the pane. Open the
+                  Rex Overview to see every session and tab laid out as it is in
+                  Rex, with the last lines of each pane&rsquo;s screen once you
+                  turn on pane previews. Switching sessions needs Rex&rsquo;s
+                  Remote Control setting.
                 </p>
               </div>
             </article>

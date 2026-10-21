@@ -90,8 +90,9 @@ export default function Agents() {
       <p>
         Status comes from what programs report to Rex through its program
         status protocol, so a pane is only as current as its program&rsquo;s
-        last report. Volant never reads a pane&rsquo;s contents, never types
-        into one, and never starts Rex. Hiding the launcher stops reading.
+        last report. The list never reads a pane&rsquo;s screen. Volant never
+        types into a pane and never starts Rex. Hiding the launcher stops
+        reading.
       </p>
       <div className="docs-note">
         <p>
@@ -99,6 +100,31 @@ export default function Agents() {
           <strong>Remote Control</strong> in Rex Settings → Rex Server. Without
           it, Rex focuses the pane but stays on the session it is showing, and
           Volant tells you so.
+        </p>
+      </div>
+
+      <h3>Rex Overview</h3>
+      <p>
+        Choose <strong>Open Rex Overview</strong>, the first row of the{' '}
+        <code>rex</code> list, or type <code>rex overview</code>. A separate
+        window shows every session, with each tab drawn as its panes are laid
+        out in Rex, colored by status, and counts of what&rsquo;s waiting. Click
+        a pane to switch Rex to it.
+      </p>
+      <p>
+        Each pane shows the last 12 lines of its screen, so the overview needs{' '}
+        <strong>pane previews</strong>. They are off until you turn them on,
+        in the overview itself or in Settings → Status Bar → Pane previews in
+        Rex Overview. While the window is open, Volant reads every Rex
+        pane&rsquo;s screen text every two seconds and keeps only those last
+        lines, in memory. It never saves, logs, or sends them anywhere, and
+        stops reading when you close the window or turn previews off.
+      </p>
+      <div className="docs-note">
+        <p>
+          Screen text can include commands, file contents, or anything else a
+          program printed. The choice applies to this Mac only and is not
+          synced with iCloud settings sync.
         </p>
       </div>
 

@@ -127,7 +127,14 @@ Added in 0.3.12:
 | Switching sessions needs Rex's Remote Control, and Volant says so when it's off | Yes | #277; the refusal measured live with Remote Control off and the switch with it on; three `rex://` URL forms tried by the owner did nothing, so Volant doesn't use the scheme | Agents doc names the Rex setting |
 | Rex footer status ("Rex: 2 waiting"), off by default | Yes | #276; VM renders and app tests; changes arrive about 50 ms after Rex's watcher prints them, measured outside the app; a program's own reports can lag | Agents doc |
 
-Merged after 0.3.12, not in the current download:
+Added in 0.3.13:
+
+| Story | In 0.3.13 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| Rex Overview: every session and tab drawn as its real pane layout, colored by status, click to focus | Yes | #279; Core parse tests, app tests, a VM render of the fictional overview in light and dark; the owner used it in Volant Dev against live Rex; no keyboard navigation, floating or zoomed panes; Release-signed helper unverified | Home page agents item 02 with a native Actions-fixture capture (fictional sessions and screen text), Agents doc |
+| Opt-in pane previews: last 12 screen lines per pane, read only while the overview is open | Yes | #279; `rexPanePreviews` off by default, per-Mac, not synced; app tests that nothing is read without the window open and previews on, and that turning off forgets at once; `check-rex.sh` that the watcher reads screens only in preview mode; Rex returns full scrollback, about 100 KB for 15 panes | Privacy and Agents docs; "shows what's on screen once you turn it on", never "monitors" or "records" terminals; always say off by default |
+
+Merged after 0.3.13, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
