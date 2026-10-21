@@ -3,7 +3,9 @@ import VolantCore
 
 /// Every Rex session as a grid of tab cards. Each card draws its tab's panes where they sit in Rex,
 /// colored by what their programs last reported, with the last lines of each pane's screen; clicking
-/// a pane focuses it in Rex. Until the owner turns on pane previews, the window asks for that instead.
+/// a pane, or pressing Return on the selected one, focuses it in Rex. The window's keys move the
+/// selection (`RexOverviewWindow`), and the selected card is kept in view. Until the owner turns on
+/// pane previews, the window asks for that instead.
 struct RexOverviewView: View {
     @ObservedObject var model: RexOverviewModel
     let close: () -> Void
@@ -17,18 +19,31 @@ struct RexOverviewView: View {
             } else if let message = model.message {
                 Text(message).foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 24) {
-                        ForEach(model.overview.sessions) { session in
-                            RexSessionSection(session: session) { model.focus($0, in: session) }
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 24) {
+                            ForEach(model.overview.sessions) { session in
+                                RexSessionSection(session: session, selectedBlockID: selectedBlock(in: session)) { pane in
+                                    model.select(.init(sessionID: session.sessionID, blockID: pane.blockID))
+                                    model.focus(pane, in: session)
+                                }
+                            }
                         }
+                        .padding(20)
                     }
-                    .padding(20)
+                    .onChange(of: model.selection) { _, selection in
+                        guard let selection, let place = model.overview.pane(selection) else { return }
+                        withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo(RexTabCard.scrollID(place.session, place.tab)) }
+                    }
                 }
             }
         }
         .frame(minWidth: 640, minHeight: 420)
         .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    private func selectedBlock(in session: RexOverview.Session) -> String? {
+        model.selection.flatMap { $0.sessionID == session.sessionID ? $0.blockID : nil }
     }
 
     private var header: some View {
@@ -43,6 +58,11 @@ struct RexOverviewView: View {
                 Text(feedback).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(1)
             }
             Spacer()
+            if model.keyboardActive {
+                Text("← → tabs   ↑ ↓ panes   ⇥ waiting   ↩ focus")
+                    .font(.system(size: 11)).foregroundStyle(.tertiary).lineLimit(1)
+                    .accessibilityLabel("Arrow keys move between tabs and panes, Tab moves to the next waiting pane, Return focuses it in Rex")
+            }
             if model.previewsAllowed {
                 Button("Turn Off Pane Previews") { model.allowPreviews(false) }
                     .controlSize(.small)
@@ -83,6 +103,7 @@ struct RexPreviewConsent: View {
 /// One session: its name and waiting count, then its tabs as cards.
 struct RexSessionSection: View {
     let session: RexOverview.Session
+    let selectedBlockID: String?
     let focus: (RexOverview.Pane) -> Void
 
     var body: some View {
@@ -95,7 +116,10 @@ struct RexSessionSection: View {
                 }
             }
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), spacing: 14)], alignment: .leading, spacing: 14) {
-                ForEach(session.tabs) { tab in RexTabCard(tab: tab, focus: focus) }
+                ForEach(session.tabs) { tab in
+                    RexTabCard(tab: tab, selectedBlockID: selectedBlockID, focus: focus)
+                        .id(RexTabCard.scrollID(session, tab))
+                }
             }
         }
     }
@@ -104,7 +128,18 @@ struct RexSessionSection: View {
 /// One tab: its name, whether Rex shows it, and its panes drawn where they sit.
 struct RexTabCard: View {
     let tab: RexOverview.Tab
+    let selectedBlockID: String?
     let focus: (RexOverview.Pane) -> Void
+
+    /// The card's scroll identity: its session and tab, since tab IDs belong to one session.
+    static func scrollID(_ session: RexOverview.Session, _ tab: RexOverview.Tab) -> String { session.sessionID + "|" + tab.windowID }
+
+    private var holdsSelection: Bool { tab.panes.contains { $0.blockID == selectedBlockID } }
+
+    private var border: AnyShapeStyle {
+        if holdsSelection { return AnyShapeStyle(.tint) }
+        return tab.waiting > 0 ? AnyShapeStyle(Color.orange.opacity(0.7)) : AnyShapeStyle(.separator)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -123,7 +158,7 @@ struct RexTabCard: View {
                 ZStack(alignment: .topLeading) {
                     ForEach(tab.panes) { pane in
                         let rect = pane.rect ?? [0, 0, 1, 1]
-                        RexPaneTile(pane: pane, focused: pane.blockID == tab.focusedBlockID) { focus(pane) }
+                        RexPaneTile(pane: pane, focused: pane.blockID == tab.focusedBlockID, selected: pane.blockID == selectedBlockID) { focus(pane) }
                             .frame(width: max(rect[2] * geometry.size.width - 4, 0), height: max(rect[3] * geometry.size.height - 4, 0))
                             .offset(x: rect[0] * geometry.size.width + 2, y: rect[1] * geometry.size.height + 2)
                     }
@@ -134,7 +169,7 @@ struct RexTabCard: View {
         .padding(10)
         .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .strokeBorder(tab.waiting > 0 ? AnyShapeStyle(Color.orange.opacity(0.7)) : AnyShapeStyle(.separator), lineWidth: 1))
+            .strokeBorder(border, lineWidth: holdsSelection ? 2 : 1))
     }
 }
 
@@ -142,6 +177,7 @@ struct RexTabCard: View {
 struct RexPaneTile: View {
     let pane: RexOverview.Pane
     let focused: Bool
+    let selected: Bool
     let action: () -> Void
 
     private var tint: Color {
@@ -168,6 +204,7 @@ struct RexPaneTile: View {
             .buttonStyle(.plain)
             .help("Focus " + pane.name + " in Rex")
             .accessibilityLabel(accessibilityText)
+            .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     private var accessibilityText: String {
@@ -217,8 +254,10 @@ struct RexPaneTile: View {
         }
     }
 
+    /// The keyboard selection outranks the pane Rex focuses in the tab, and is drawn in the primary
+    /// text color so it never reads as a status: working panes are already tinted with the accent.
     private var outline: some View {
         RoundedRectangle(cornerRadius: 6, style: .continuous)
-            .strokeBorder(focused ? tint.opacity(0.8) : Color.clear, lineWidth: 1)
+            .strokeBorder(selected ? Color.primary : (focused ? tint.opacity(0.8) : Color.clear), lineWidth: selected ? 2 : 1)
     }
 }
