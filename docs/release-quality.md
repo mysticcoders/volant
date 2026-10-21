@@ -491,3 +491,5 @@ Later the same day the owner installed a reader from Settings → Catalog in the
 - **Feed:** the signed build-30 appcast generated with this DMG passes `sign_update --verify`.
 
 **Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
+
+**Installed check.** On October 21, 2026 the owner upgraded an installed 0.3.12 to 0.3.13 through the app's updater, and used the Rex Overview, including pane previews, in that Release-signed app against live Rex. This is the first Release-signed check of the Rex helper path and the overview; it covers the owner's Mac only.

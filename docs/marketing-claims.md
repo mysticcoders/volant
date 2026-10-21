@@ -131,7 +131,7 @@ Added in 0.3.13:
 
 | Story | In 0.3.13 | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
-| Rex Overview: every session and tab drawn as its real pane layout, colored by status, click to focus | Yes | #279; Core parse tests, app tests, a VM render of the fictional overview in light and dark; the owner used it in Volant Dev against live Rex; no keyboard navigation, floating or zoomed panes; Release-signed helper unverified | Home page agents item 02 with a native Actions-fixture capture (fictional sessions and screen text), Agents doc |
+| Rex Overview: every session and tab drawn as its real pane layout, colored by status, click to focus | Yes | #279; Core parse tests, app tests, a VM render of the fictional overview in light and dark; the owner used it in Volant Dev and then in the installed, Release-signed 0.3.13 against live Rex; no keyboard navigation, floating or zoomed panes | Home page agents item 02 with a native Actions-fixture capture (fictional sessions and screen text), Agents doc |
 | Opt-in pane previews: last 12 screen lines per pane, read only while the overview is open | Yes | #279; `rexPanePreviews` off by default, per-Mac, not synced; app tests that nothing is read without the window open and previews on, and that turning off forgets at once; `check-rex.sh` that the watcher reads screens only in preview mode; Rex returns full scrollback, about 100 KB for 15 panes | Privacy and Agents docs; "shows what's on screen once you turn it on", never "monitors" or "records" terminals; always say off by default |
 
 Merged after 0.3.13, not in the current download:
