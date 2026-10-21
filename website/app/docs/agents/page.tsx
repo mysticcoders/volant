@@ -8,7 +8,7 @@ import { DocFooterNav } from '@/components/doc-footer-nav';
 export const metadata: Metadata = {
   title: 'Agents — Volant docs',
   description:
-    'Find Herdr agents, respond to supported questions, and choose coding agents, API models, local servers, or Apple Intelligence for AI Chat.',
+    'Find Herdr agents and Rex panes, respond to supported questions, and choose coding agents, API models, local servers, or Apple Intelligence for AI Chat.',
   alternates: { canonical: 'https://usevolant.com/docs/agents' },
 };
 
@@ -76,6 +76,39 @@ export default function Agents() {
           machine remains pending.
         </p>
       </div>
+
+      <h2>Rex panes</h2>
+      <p>
+        Type <code>rex</code> to see the terminal panes of{' '}
+        <a href="https://www.superlogical.com/rex">Rex</a> on this Mac, with
+        the ones waiting on you first, then failed, done, working, and idle.
+        Each row shows the project, session, program, and the last thing it
+        reported, such as a question from Claude Code. Add a word to filter,
+        such as <code>rex deploy</code>, and press Return to switch Rex to that
+        pane and bring it forward.
+      </p>
+      <p>
+        Status comes from what programs report to Rex through its program
+        status protocol, so a pane is only as current as its program&rsquo;s
+        last report. Volant never reads a pane&rsquo;s contents, never types
+        into one, and never starts Rex. Hiding the launcher stops reading.
+      </p>
+      <div className="docs-note">
+        <p>
+          To switch Rex to a pane in another session, turn on{' '}
+          <strong>Remote Control</strong> in Rex Settings → Rex Server. Without
+          it, Rex focuses the pane but stays on the session it is showing, and
+          Volant tells you so.
+        </p>
+      </div>
+
+      <h3>Rex in the footer</h3>
+      <p>
+        Turn on Rex pane activity in Settings → Status Bar and the launcher
+        footer shows how many panes are waiting on you, such as{' '}
+        <strong>Rex: 2 waiting</strong>. Click it to open the list; its context
+        menu hides it.
+      </p>
 
       <h2>Choose your AI connection</h2>
       <p>
@@ -223,8 +256,8 @@ export default function Agents() {
       <p>
         The main Volant app stays sandboxed with no network entitlement. Agent
         support runs through a separately signed helper that is intentionally
-        <em>not</em> sandboxed, because it needs to discover Herdr and launch
-        agent processes. It authenticates the calling app against Volant&rsquo;s
+        <em>not</em> sandboxed, because it needs to discover Herdr and Rex and
+        launch agent processes. It authenticates the calling app against Volant&rsquo;s
         bundle identifier and team, and exposes a narrow interface for agent
         operations and explicitly submitted prompts and context.
       </p>

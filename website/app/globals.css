@@ -1033,6 +1033,7 @@ h1 { font-size: clamp(44px, 4.65vw, 66px); letter-spacing: -3px; }
 .release-badge { color: var(--primary); border: 1px solid var(--border); border-radius: 999px; padding: 5px 9px; letter-spacing: .3px; white-space: nowrap; }
 .answer-showcase, .ai-showcase { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 48px; align-items: start; }
 .product-capture { margin: 0 0 28px; min-width: 0; }
+.notes-details article + .product-capture { margin-top: 26px; }
 .product-capture img { display: block; width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--border); }
 .product-capture a { display: block; }
 .product-capture figcaption { margin-top: 14px; color: var(--muted-foreground); font-size: 12px; line-height: 1.6; }

@@ -260,8 +260,36 @@ export default function Home() {
                 </p>
               </div>
             </article>
+            <figure className="product-capture">
+              <a
+                href="/images/rex-panes-dark.webp"
+                aria-label="View the full-size native Rex panes list"
+              >
+                <Image
+                  unoptimized
+                  src="/images/rex-panes-dark.webp"
+                  alt="Native Volant listing fictional Rex panes, with a Claude Code question waiting first, then a failed build, finished work and a running test suite, and Rex: 1 waiting in the footer."
+                  width={1500}
+                  height={960}
+                />
+              </a>
+              <figcaption>Native development capture · fictional Rex panes</figcaption>
+            </figure>
             <article>
               <span className="detail-number">02</span>
+              <div>
+                <h3>Watch your Rex panes.</h3>
+                <p>
+                  Type <code>rex</code> to see which programs in Rex are waiting
+                  on you, with their last update, and press Return to jump
+                  straight to the pane. Volant reads only what programs report
+                  to Rex, never a pane&rsquo;s contents. Switching sessions needs
+                  Rex&rsquo;s Remote Control setting.
+                </p>
+              </div>
+            </article>
+            <article>
+              <span className="detail-number">03</span>
               <div>
                 <h3>The agents you already use.</h3>
                 <p>
@@ -273,7 +301,7 @@ export default function Home() {
               </div>
             </article>
             <article>
-              <span className="detail-number">03</span>
+              <span className="detail-number">04</span>
               <div>
                 <h3>Keep your place.</h3>
                 <p>
