@@ -102,6 +102,8 @@ if [[ -z "$MODE" ]]; then
   fi
   NOTES="docs/releases/$VERSION.md"
   [[ -s "$WT/$NOTES" ]] || fail "$NOTES is missing on $BRANCH; write the release notes first"
+  python3 "$WT/tools/check-release-copy.py" --version "$VERSION" --root "$WT/website/app" \
+    || fail "the website still announces another version as new; update its New in labels on $BRANCH"
   OUT="$LOGS/release"
   echo "Preparing $VERSION build $BUILD over $CURRENT. Logs: $LOGS"
 
