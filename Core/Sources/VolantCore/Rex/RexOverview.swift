@@ -174,3 +174,110 @@ public struct RexOverview: Codable, Equatable {
         }
     }
 }
+
+/// Keyboard selection in the Rex Overview. A selection is a pane's session and block ID, never a
+/// position, so it survives refreshes that add, remove or reorder panes.
+public extension RexOverview {
+    struct Selection: Equatable, Hashable {
+        public let sessionID: String
+        public let blockID: String
+
+        public init(sessionID: String, blockID: String) { self.sessionID = sessionID; self.blockID = blockID }
+    }
+
+    enum Move: Equatable {
+        /// The previous or next tab card, across sessions in reading order.
+        case previousTab, nextTab
+        /// The previous or next pane in the selected tab, top to bottom, then left to right.
+        case previousPane, nextPane
+        /// The previous or next waiting pane anywhere, wrapping around.
+        case previousWaiting, nextWaiting
+    }
+
+    /// A tab's panes in reading order: by their top edge, then their left edge. Panes without a
+    /// place keep their order after the placed ones.
+    static func readingOrder(_ panes: [Pane]) -> [Pane] {
+        panes.enumerated().sorted { a, b in
+            switch (a.element.rect, b.element.rect) {
+            case let (ra?, rb?):
+                if abs(ra[1] - rb[1]) > 0.001 { return ra[1] < rb[1] }
+                if abs(ra[0] - rb[0]) > 0.001 { return ra[0] < rb[0] }
+                return a.offset < b.offset
+            case (.some, nil): return true
+            case (nil, .some): return false
+            case (nil, nil): return a.offset < b.offset
+            }
+        }.map(\.element)
+    }
+
+    /// Every tab with its session, in the order the overview draws them.
+    private var tabsInOrder: [(session: Session, tab: Tab)] {
+        sessions.flatMap { session in session.tabs.map { (session, $0) } }
+    }
+
+    /// Every pane with its session, in the order Tab moves through them.
+    private var panesInOrder: [(session: Session, pane: Pane)] {
+        tabsInOrder.flatMap { entry in Self.readingOrder(entry.tab.panes).map { (entry.session, $0) } }
+    }
+
+    private func selection(_ session: Session, _ pane: Pane) -> Selection {
+        Selection(sessionID: session.sessionID, blockID: pane.blockID)
+    }
+
+    /// Where selection starts: the first waiting pane, otherwise the first tab's main pane.
+    var initialSelection: Selection? {
+        if let waiting = panesInOrder.first(where: { $0.pane.state == .blocked }) { return selection(waiting.session, waiting.pane) }
+        guard let first = tabsInOrder.first, let pane = first.tab.primaryPane else { return nil }
+        return selection(first.session, pane)
+    }
+
+    /// The selection that still applies after a refresh: the same pane if it is still shown, else
+    /// its tab's main pane, else where selection starts.
+    func resolve(_ current: Selection?) -> Selection? {
+        guard let current else { return initialSelection }
+        if pane(current) != nil { return current }
+        if let session = sessions.first(where: { $0.sessionID == current.sessionID }),
+           let tab = session.tabs.first(where: { $0.panes.contains { $0.blockID == current.blockID } }),
+           let pane = tab.primaryPane {
+            return selection(session, pane)
+        }
+        return initialSelection
+    }
+
+    /// The pane a selection names, with its session and tab, if the overview still shows it.
+    func pane(_ selection: Selection) -> (session: Session, tab: Tab, pane: Pane)? {
+        for session in sessions where session.sessionID == selection.sessionID {
+            for tab in session.tabs {
+                if let pane = tab.panes.first(where: { $0.blockID == selection.blockID }) { return (session, tab, pane) }
+            }
+        }
+        return nil
+    }
+
+    /// The selection after a key press. Tab and pane moves stop at the ends; waiting moves wrap.
+    func move(_ move: Move, from current: Selection?) -> Selection? {
+        guard let current = resolve(current), let place = pane(current) else { return initialSelection }
+        switch move {
+        case .previousTab, .nextTab:
+            let tabs = tabsInOrder
+            guard let index = tabs.firstIndex(where: { $0.session.sessionID == place.session.sessionID && $0.tab.windowID == place.tab.windowID }) else { return current }
+            let target = move == .nextTab ? index + 1 : index - 1
+            guard tabs.indices.contains(target), let pane = tabs[target].tab.primaryPane else { return current }
+            return selection(tabs[target].session, pane)
+        case .previousPane, .nextPane:
+            let panes = Self.readingOrder(place.tab.panes)
+            guard let index = panes.firstIndex(where: { $0.blockID == current.blockID }) else { return current }
+            let target = move == .nextPane ? index + 1 : index - 1
+            return panes.indices.contains(target) ? selection(place.session, panes[target]) : current
+        case .previousWaiting, .nextWaiting:
+            let all = panesInOrder
+            guard let index = all.firstIndex(where: { $0.session.sessionID == current.sessionID && $0.pane.blockID == current.blockID }) else { return current }
+            let count = all.count
+            for step in 1..<max(count, 1) {
+                let candidate = all[(index + (move == .nextWaiting ? step : -step) + count * step) % count]
+                if candidate.pane.state == .blocked { return selection(candidate.session, candidate.pane) }
+            }
+            return current
+        }
+    }
+}

@@ -91,7 +91,15 @@ screen did not earn their place. So:
 
 ## Not in the spike
 
-- Keyboard navigation between tabs and panes; tiles are clickable only.
+- ~~Keyboard navigation~~: added after 0.3.13. ← → move between tab cards across sessions, ↑ ↓
+  between panes in a tab (top to bottom, then left to right), Tab / ⇧Tab to the next or previous
+  waiting pane (wrapping), Return focuses the selected pane in Rex, Esc closes the window. Selection
+  is a session and block ID, re-resolved after every refresh (the same pane, else its tab's main
+  pane, else the first waiting pane). The window catches these keys in `sendEvent` before the scroll
+  view; anything with ⌘, ⌥ or ⌃ passes through, and while the approval card shows, only Esc is taken,
+  so Return still presses its default button. Logic in `RexOverview.move`/`resolve`
+  (`RexOverviewNavigationTests`), keys in `RexOverviewWindowController.handle` (`RexOverviewModelTests`),
+  and the real window path in the native fixture.
 - Floating panes and zoomed panes.
 - A setting in Settings for previews; the choice lives in the window and in this Mac's user defaults
   (`rexOverviewPanePreviews`) rather than `config.json`.

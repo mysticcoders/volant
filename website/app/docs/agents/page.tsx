@@ -112,6 +112,13 @@ export default function Agents() {
         a pane to switch Rex to it.
       </p>
       <p>
+        From the keyboard, <kbd>←</kbd> and <kbd>→</kbd> move between tabs,{' '}
+        <kbd>↑</kbd> and <kbd>↓</kbd> between the panes of a tab,{' '}
+        <kbd>Tab</kbd> jumps to the next pane that&rsquo;s waiting on you, and{' '}
+        <kbd>Return</kbd> switches Rex to the selected pane. <kbd>Esc</kbd>{' '}
+        closes the overview.
+      </p>
+      <p>
         Each pane shows the last 12 lines of its screen, so the overview needs{' '}
         <strong>pane previews</strong>. They are off until you turn them on,
         in the overview itself or in Settings → Status Bar → Pane previews in

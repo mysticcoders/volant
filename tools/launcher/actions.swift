@@ -1263,10 +1263,31 @@ func rexOverviewScenario() throws {
     model.show(overview); settle()
     verify(model.previewsAllowed && saved == [true], "Approving inline saves the choice")
     try render("rex-overview-preview", view: window.contentView!)
+    var focusedPanes: [String] = []
+    model.focuser = { session, block, done in focusedPanes.append(session + "/" + block); done(nil) }
+    model.activateRex = {}
+    func press(_ code: UInt16, _ characters: String, _ modifiers: NSEvent.ModifierFlags = []) {
+        let event = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: modifiers, timestamp: ProcessInfo.processInfo.systemUptime,
+                                     windowNumber: window.windowNumber, context: nil, characters: characters, charactersIgnoringModifiers: characters,
+                                     isARepeat: false, keyCode: code)!
+        window.sendEvent(event); settle()
+    }
+    verify(model.selection?.blockID == "block:orbit-agent", "Selection starts on the waiting pane")
+    press(125, "\u{F701}")
+    verify(model.selection?.blockID == "block:orbit-logs", "Down moves to the next pane in the split tab")
+    press(124, "\u{F703}")
+    verify(model.selection?.blockID == "block:orbit-web", "Right moves to the next tab card")
+    press(123, "\u{F702}"); press(125, "\u{F701}"); press(125, "\u{F701}")
+    verify(model.selection?.blockID == "block:orbit-shell", "Left returns to the split tab, then down reaches its last pane")
+    try render("rex-overview-keyboard", view: window.contentView!)
+    press(48, "\t")
+    verify(model.selection?.blockID == "block:orbit-agent", "Tab wraps to the waiting pane")
+    press(36, "\r")
+    verify(focusedPanes == ["session:fixture-orbit/block:orbit-agent"], "Return focuses the selected pane through the window's keys")
     model.allowPreviews(false); settle()
     verify(saved == [true, false] && model.overview.sessions.isEmpty, "Turning previews off saves the choice and forgets the screen text")
     window.orderOut(nil)
-    print("PASS: Rex Overview asks first, then renders previews from fictional sessions, and forgets them when turned off")
+    print("PASS: Rex Overview asks first, renders previews from fictional sessions, moves and focuses by keyboard, and forgets them when turned off")
 }
 
 /// A scenario runs against a fresh hidden launcher. Size-sensitive scenarios render or click inside

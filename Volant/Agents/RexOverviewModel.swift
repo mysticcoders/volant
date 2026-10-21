@@ -14,6 +14,8 @@ final class RexOverviewModel: ObservableObject {
     @Published private(set) var problem: String?
     @Published var feedback: String?
     @Published private(set) var previewsAllowed: Bool
+    /// The pane the keyboard acts on, by session and block ID; re-resolved after every refresh.
+    @Published private(set) var selection: RexOverview.Selection?
     /// Injected only by isolated tests and fixtures; production reads and focuses through the
     /// signed helper.
     var reader: ((Int, Bool, @escaping (Data?, Int, String?) -> Void) -> Void)?
@@ -32,6 +34,31 @@ final class RexOverviewModel: ObservableObject {
     init(previewsAllowed: Bool = false, save: @escaping (Bool) throws -> Void = { _ in }) {
         self.previewsAllowed = previewsAllowed
         self.save = save
+    }
+
+    /// Whether the grid is showing, so the window's arrow, Tab and Return keys move the selection.
+    var keyboardActive: Bool { previewsAllowed && message == nil }
+
+    func move(_ move: RexOverview.Move) {
+        let next = overview.move(move, from: selection)
+        if next != selection { selection = next }
+    }
+
+    func select(_ selection: RexOverview.Selection) {
+        if overview.pane(selection) != nil { self.selection = selection }
+    }
+
+    /// Focuses the selected pane in Rex, as clicking it would.
+    func focusSelection() {
+        guard let selection, let place = overview.pane(selection) else { return }
+        focus(place.pane, in: place.session)
+    }
+
+    /// Replaces the overview and keeps the selection on the same pane, or its nearest stand-in.
+    private func present(_ next: RexOverview) {
+        if next != overview { overview = next }
+        let resolved = next.resolve(selection)
+        if resolved != selection { selection = resolved }
     }
 
     var message: String? {
@@ -93,6 +120,7 @@ final class RexOverviewModel: ObservableObject {
         request = nil; revision = -1; focusInFlight = false
         connected = false; loading = false; problem = nil
         overview = RexOverview(sessions: [])
+        selection = nil
     }
 
     private func failed(_ message: String, generation current: Int) {
@@ -116,11 +144,11 @@ final class RexOverviewModel: ObservableObject {
                 guard latest != known else { return }
                 self.revision = latest
                 if let decoded {
-                    if decoded != self.overview { self.overview = decoded }
+                    self.present(decoded)
                     self.problem = nil
                     self.loading = false
                 } else {
-                    self.overview = RexOverview(sessions: [])
+                    self.present(RexOverview(sessions: []))
                     self.problem = error
                     self.loading = error == nil
                 }
@@ -153,7 +181,7 @@ final class RexOverviewModel: ObservableObject {
 
     /// Replaces the overview directly, for fixtures that render fictional sessions.
     func show(_ overview: RexOverview) {
-        self.overview = overview
+        present(overview)
         connected = true
         loading = false
     }

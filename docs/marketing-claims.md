@@ -138,6 +138,7 @@ Merged after 0.3.13, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
+| Rex Overview keyboard navigation: arrows between tabs and panes, Tab to waiting panes, Return to focus, Esc to close | Not yet | Core tests of every move and identity-based selection across refreshes, app tests of the key handler, the native fixture driving the real window's keys; VM renders of the selection in light and dark | Agents doc lists the keys; claim only once released |
 
 ## Privacy language
 
