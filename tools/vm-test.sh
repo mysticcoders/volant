@@ -95,7 +95,7 @@ install_volant() {
 # handed to the console session through launchctl, which needs root to switch audit sessions.
 launch_volant() {
   guest "echo admin | sudo -S launchctl asuser \$(id -u) /usr/bin/open -a /Applications/Volant.app 2>/dev/null || true
-    for i in \$(seq 1 30); do [ -f $CONTAINER/Data/Library/Application\\ Support/Vey/config.json ] && break; sleep 1; done
+    for i in \$(seq 1 30); do [ -f $CONTAINER/Data/Library/Application\\ Support/Volant/config.json ] && break; sleep 1; done
     echo \"process: \$(ps -o pid,command -p \$(pgrep -x Volant) 2>/dev/null | tail -1 | cut -c1-80)\"
     echo \"container: \$([ -d $CONTAINER ] && echo created || echo missing)\"
     echo \"config: \$(find $CONTAINER -name config.json 2>/dev/null | head -1)\"

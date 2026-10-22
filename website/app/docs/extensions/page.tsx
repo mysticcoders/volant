@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 const manifest = `{
-  "id": "com.mysticcoders.vey.hello-rust",
+  "id": "com.mysticcoders.volant.hello-rust",
   "name": "Hello (Rust)",
   "version": "0.1.0",
   "module": "hello.wasm",
@@ -102,8 +102,8 @@ export default function Extensions() {
         and <code>run(ptr, len) -&gt; ptr</code>. The host writes UTF-8 input
         into allocated memory, calls <code>run</code>, and reads a record at the
         returned pointer: a little-endian <code>u32</code> length followed by
-        UTF-8 bytes. Host imports live in a module namespace still named{' '}
-        <code>vey</code>, offering <code>log(ptr, len)</code> and{' '}
+        UTF-8 bytes. Host imports live in a module namespace named{' '}
+        <code>volant</code>, offering <code>log(ptr, len)</code> and{' '}
         <code>clipboard_write(ptr, len)</code>.
       </p>
 

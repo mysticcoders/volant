@@ -50,7 +50,7 @@ final class ExtensionHost: NSObject, VolantExtensionHostProtocol {
             }
             imports["clipboard_write"] = f
         }
-        ctx.setObject(imports, forKeyedSubscript: "veyImports" as NSString)
+        ctx.setObject(imports, forKeyedSubscript: "volantImports" as NSString)
         ctx.setObject([UInt8](module), forKeyedSubscript: "moduleBytes" as NSString)
         ctx.setObject([UInt8](input.utf8), forKeyedSubscript: "inputBytes" as NSString)
 
@@ -60,11 +60,11 @@ final class ExtensionHost: NSObject, VolantExtensionHostProtocol {
           const mod = new WebAssembly.Module(new Uint8Array(moduleBytes));
           const declared = WebAssembly.Module.imports(mod);
           for (const imp of declared) {
-            if (imp.kind !== 'function' || imp.module !== 'vey' || !(imp.name in veyImports)) {
+            if (imp.kind !== 'function' || imp.module !== 'volant' || !(imp.name in volantImports)) {
               throw new Error('module wants import ' + imp.module + '.' + imp.name + ' which is not granted');
             }
           }
-          const inst = new WebAssembly.Instance(mod, { vey: veyImports });
+          const inst = new WebAssembly.Instance(mod, { volant: volantImports });
           const mem = inst.exports.memory;
           globalThis.__mem = mem;
           const bytes = inputBytes;

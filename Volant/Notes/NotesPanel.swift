@@ -23,7 +23,7 @@ final class NotesPanel: NSPanel {
         isReleasedWhenClosed = false
         hidesOnDeactivate = false
         minSize = NSSize(width: 380, height: 300)
-        setFrameAutosaveName("VeyNotes")
+        setFrameAutosaveName("VolantNotes")
         contentView = NSHostingView(rootView: ThemedRoot { NotesView(model: model).ignoresSafeArea(.container, edges: .top) })
     }
 

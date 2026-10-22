@@ -99,6 +99,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        Preferences.resolvedSupportDirectory.moveLegacyDefaults(in: .standard)
         if CommandLine.arguments.contains("--acp-check") {
             // The smoke check keeps its resume record in its own suite, apart from the owner's.
             let model = ACPModel(resumeStore: UserDefaults(suiteName: "volant.acp-check")!)

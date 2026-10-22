@@ -2,9 +2,25 @@
 
 The app, Xcode project, scheme, module, tests, extension host, source folders and wing asset are named Volant. The GitHub repository is mysticcoders/volant. The checkout directory is volant. Marketing copy uses Volant.
 
-The app bundle identifier is now `com.mysticcoders.volant`, with `.ExtensionHost`, `.AgentHost`, and `.tests` identities. The agent helper authenticates the new app identifier and signing team. The Keychain service (`com.mysticcoders.vey.clipboard-key`), HKDF context, Application Support/Vey directory, VeyNotes frame key, and WASM `vey` imports remain storage/ABI compatibility contracts, not application identity. Old backups remain importable.
+The app bundle identifier is now `com.mysticcoders.volant`, with `.ExtensionHost`, `.AgentHost`, and `.tests` identities. The agent helper authenticates the new app identifier and signing team.
 
-For the private pre-release installation, stop both app identities and run `python3 tools/migrate-bundle-data.py` before launching the new identity. It copies app-owned data and remaps path-based note preferences to the new sandbox container, keeps the old container intact, and refuses to overwrite existing destination data. It does not copy container metadata, secrets, or symlinks. A partial migration requires manual review; a completed migration is idempotent. macOS permission grants and login-item approval are separate OS state and may need renewing under the new identity. The `--storage-check` diagnostic prints only the number of readable clipboard entries.
+## Remaining Vey names, removed after 0.3.14
+
+Releases up to 0.3.14 kept the old name in storage and the extension ABI. 0.3.15 renames them, and moves what each installed copy holds once:
+
+| What | Up to 0.3.14 | From 0.3.15 | Carried over by |
+| --- | --- | --- | --- |
+| Data folder | `Application Support/Vey` | `Application Support/Volant` | `SupportDirectory.resolve`: renames `Vey` to `Volant` when only `Vey` exists. A failed rename keeps using `Vey` for that launch and retries on the next; an existing `Volant` folder is never merged or replaced. |
+| Notes pins and other path-keyed Notes settings | `notes.<…/Vey/…>` | `notes.<…/Volant/…>` | `SupportDirectory.moveLegacyDefaults`, after a successful move. |
+| Notes window frame | `VeyNotes` | `VolantNotes` | `moveLegacyDefaults`, on every launch until the old key is gone. |
+| Clipboard key Keychain item | `com.mysticcoders.vey.clipboard-key` | `com.mysticcoders.volant.clipboard-key` | `KeychainKey.load`: copies the key, then deletes the old item only once the new one reads back with the same bytes. A denied read of the old item is reported, never replaced by a new key. |
+| Clipboard duplicate fingerprint context | `vey-clip-dedupe` | `volant-clip-dedupe` | `ClipboardStore` recomputes stored fingerprints once in one transaction (SQLite `user_version` 1). |
+| WASM ABI 1 import namespace | `vey` | `volant` | Nothing: no catalog module imports it. Modules still importing `vey` are refused and must be rebuilt. |
+| Sample IDs | `com.mysticcoders.vey.*` | `com.mysticcoders.volant.*` | Not needed; Spin isn't bundled. |
+
+The old bundle-ID migration script (`tools/migrate-bundle-data.py`) and its check are removed: no install still uses the `com.mysticcoders.vey` bundle. Old Vey backups remain importable.
+
+Fake-file-manager, injected-Keychain and isolated-SQLite tests cover each step; moving a real installed copy's data, and its Keychain item under the signed app, is separate installed-app evidence.
 
 The repository is private. Marketing must not promise public source access until the owner explicitly changes visibility. No public binary download exists yet. Domain registration and Cloudflare DNS setup are pending with the owner.
 

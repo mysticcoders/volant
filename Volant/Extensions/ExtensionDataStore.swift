@@ -2,7 +2,7 @@ import Foundation
 import VolantCore
 
 /// The JSON object each storage-using extension keeps on this Mac, one file per extension in
-/// `Application Support/Vey/ExtensionData`. File names are a hash of the extension ID, so no ID can
+/// `Application Support/Volant/ExtensionData`. File names are a hash of the extension ID, so no ID can
 /// choose a path. Writes are atomic. The data is per Mac: it is not synced through iCloud and not part
 /// of Volant's backups or exports. Stored values are never logged.
 struct ExtensionDataStore {

@@ -41,7 +41,6 @@ if [[ "$ci" == true ]]; then
     build_options+=(CODE_SIGNING_ALLOWED=NO ENABLE_APP_SANDBOX=NO)
 fi
 if [[ "$ui_mode" != only ]]; then
-    timed python3 tools/check-bundle-migration.py
     timed swiftlint lint --strict --quiet --config .swiftlint.yml
     timed ./tools/check-raycast.sh
     timed ./tools/check-volume.sh

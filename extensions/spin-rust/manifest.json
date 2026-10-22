@@ -1,5 +1,5 @@
 {
-  "id": "com.mysticcoders.vey.spin",
+  "id": "com.mysticcoders.volant.spin",
   "name": "Spin",
   "version": "0.1.0",
   "module": "spin.wasm",

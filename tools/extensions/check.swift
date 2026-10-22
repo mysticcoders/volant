@@ -28,13 +28,17 @@ check(evaluate(module, input: String(repeating: "x", count: ExtensionLimits.maxi
 check(evaluate(module, input: String(repeating: "x", count: ExtensionLimits.maximumOutputBytes)).1 != nil, "Output limit")
 check(evaluate(module, timeout: .infinity).1 != nil, "Finite watchdog")
 check(evaluate(Data([0])).1 != nil, "Malformed module")
-// Valid bounded module importing vey.log; denied before any missing-export checks.
-let imported = Data([0,97,115,109,1,0,0,0, 1,6,1,96,2,127,127,0, 2,11,1,3,118,101,121,3,108,111,103,0,0, 5,4,1,1,1,1])
+// Valid bounded module importing volant.log; denied before any missing-export checks.
+let imported = Data([0,97,115,109,1,0,0,0, 1,6,1,96,2,127,127,0, 2,14,1,6,118,111,108,97,110,116,3,108,111,103,0,0, 5,4,1,1,1,1])
 check(evaluate(imported).1?.contains("not granted") == true, "Undeclared capability denied")
 let clipboard = try Data(contentsOf: root.appendingPathComponent("extensions/clipboard-test/clipboard.wasm"))
 let granted = evaluate(clipboard, input: "note", capabilities: ["clipboard.write"])
 check(granted.0 == "Copied “Volant clipboard test v1: note”" && granted.1 == nil, "Clipboard test runs with clipboard.write: \(granted)")
 check(evaluate(clipboard, capabilities: ["log"]).1?.contains("not granted") == true, "Clipboard test refused without clipboard.write")
+// The ABI 1 namespace is volant; a module still importing the pre-rename vey namespace is refused.
+let legacyNamespace = Data([0,97,115,109,1,0,0,0, 1,6,1,96,2,127,127,0, 2,11,1,3,118,101,121,3,108,111,103,0,0, 5,4,1,1,1,1])
+check(evaluate(legacyNamespace, capabilities: ["log"]).1?.contains("not granted") == true, "Legacy vey namespace refused")
+check(evaluate(imported, capabilities: ["log"]).1?.contains("not granted") != true, "volant.log accepted when granted")
 let base64 = try Data(contentsOf: root.appendingPathComponent("extensions/raycast-base64/encode.wasm"))
 let legacyRejection = evaluate(base64)
 check(legacyRejection.0 == nil && legacyRejection.1?.contains("not granted") == true, "ABI 1 never silently accepts WASI imports: \(legacyRejection.1 ?? "no error")")

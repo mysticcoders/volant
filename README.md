@@ -60,7 +60,7 @@ Paste-in-place, window management, window and menu-bar search (all need Accessib
 
 Volant was previously named Vey. Build with the Volant scheme in Volant.xcodeproj (generated from project.yml). App, source folders, tests, and release artifacts use Volant. Repository: https://github.com/mysticcoders/volant (MIT licensed, public source).
 
-Historical bundle/storage/Keychain identifiers and the WASM import namespace are preserved for existing users. Old Vey backups remain importable. See [rename decisions](docs/volant-rename.md).
+Storage, the clipboard Keychain item and the WASM import namespace use Volant too; releases up to 0.3.14 used Vey, and the app moves that data once on launch. Old Vey backups remain importable. See [rename decisions](docs/volant-rename.md).
 
 
 ### Agent status in the launcher

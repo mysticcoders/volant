@@ -47,6 +47,60 @@ final class ClipboardRecoveryTests: XCTestCase {
         XCTAssertEqual(key.withUnsafeBytes { Data($0) }, winner)
         XCTAssertThrowsError(try KeychainKey.load(createIfMissing: true, access: .init(read: { (errSecItemNotFound, nil) }, add: { _ in errSecAuthFailed })))
     }
+    func testLegacyKeyIsCopiedThenRemovedOnlyAfterReadBack() throws {
+        let legacy = Data(repeating: 3, count: 32)
+        var stored: Data?, deletes = 0
+        let access = KeychainKey.Access(read: { stored.map { (errSecSuccess, $0) } ?? (errSecItemNotFound, nil) },
+                                        add: { stored = $0; return errSecSuccess },
+                                        readLegacy: { (errSecSuccess, legacy) }, deleteLegacy: { deletes += 1; return errSecSuccess })
+        let key = try KeychainKey.load(createIfMissing: true, access: access)
+        XCTAssertEqual(key.withUnsafeBytes { Data($0) }, legacy)
+        XCTAssertEqual(stored, legacy)
+        XCTAssertEqual(deletes, 1)
+    }
+    func testLegacyKeyFailuresNeverCreateReplaceOrDelete() throws {
+        var adds = 0, deletes = 0
+        XCTAssertThrowsError(try KeychainKey.load(createIfMissing: true, access: .init(
+            read: { (errSecItemNotFound, nil) }, add: { _ in adds += 1; return errSecSuccess },
+            readLegacy: { (errSecInteractionNotAllowed, nil) }, deleteLegacy: { deletes += 1; return errSecSuccess }))) {
+            XCTAssertEqual($0 as? KeychainKey.Failure, .access(errSecInteractionNotAllowed))
+        }
+        XCTAssertEqual(adds, 0)
+        let legacy = Data(repeating: 4, count: 32)
+        let failedCopy = try KeychainKey.load(createIfMissing: true, access: .init(
+            read: { (errSecItemNotFound, nil) }, add: { _ in errSecAuthFailed },
+            readLegacy: { (errSecSuccess, legacy) }, deleteLegacy: { deletes += 1; return errSecSuccess }))
+        XCTAssertEqual(failedCopy.withUnsafeBytes { Data($0) }, legacy)
+        var reads = 0
+        let mismatched = try KeychainKey.load(createIfMissing: true, access: .init(
+            read: { reads += 1; return reads == 1 ? (errSecItemNotFound, nil) : (errSecSuccess, Data(repeating: 9, count: 32)) },
+            add: { _ in errSecDuplicateItem },
+            readLegacy: { (errSecSuccess, legacy) }, deleteLegacy: { deletes += 1; return errSecSuccess }))
+        XCTAssertEqual(mismatched.withUnsafeBytes { Data($0) }, legacy)
+        XCTAssertEqual(deletes, 0)
+    }
+    func testLegacyFingerprintsAreRecomputedOnce() throws {
+        let root = try temporary(), url = root.appendingPathComponent("clipboard.sqlite")
+        let key = SymmetricKey(size: .bits256)
+        do {
+            let store = ClipboardStore(retention: 10, storageURL: url, encryptionKey: key)
+            store.record("fictional repeated copy"); XCTAssertEqual(store.recent().count, 1)
+        }
+        var db: OpaquePointer?
+        XCTAssertEqual(sqlite3_open(url.path, &db), SQLITE_OK)
+        XCTAssertEqual(sqlite3_exec(db, "UPDATE clips SET hash = 'legacy'; PRAGMA user_version = 0", nil, nil, nil), SQLITE_OK)
+        sqlite3_close(db)
+        let store = ClipboardStore(retention: 10, storageURL: url, encryptionKey: key)
+        store.record("fictional repeated copy")
+        XCTAssertEqual(store.recent().map(\.text), ["fictional repeated copy"])
+        XCTAssertEqual(sqlite3_open(url.path, &db), SQLITE_OK)
+        defer { sqlite3_close(db) }
+        var stmt: OpaquePointer?
+        XCTAssertEqual(sqlite3_prepare_v2(db, "PRAGMA user_version", -1, &stmt, nil), SQLITE_OK)
+        XCTAssertEqual(sqlite3_step(stmt), SQLITE_ROW)
+        XCTAssertEqual(sqlite3_column_int(stmt, 0), 1)
+        sqlite3_finalize(stmt)
+    }
     func testUnavailableKeyRecoversAndPreservesEncryptedHistory() throws {
         let root = try temporary(), url = root.appendingPathComponent("clipboard.sqlite")
         let key = SymmetricKey(size: .bits256)
