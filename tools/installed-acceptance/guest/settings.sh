@@ -172,7 +172,7 @@ open_settings "Data & Configuration"
 click_element "$S" "role=AXButton:config.json" 90; sleep 3
 expect_eq "Reveal in Finder brings Finder forward" com.apple.finder "$(wait_front com.apple.finder 5)"
 target=$(osascript -e 'tell application "System Events" to tell process "Finder" to get name of window 1' 2>&1)
-expect_eq "the Finder window shows config.json's folder" Vey "$target"
+expect_eq "the Finder window shows config.json's folder" Volant "$target"
 shot reveal
 key 13 "{command down}"; sleep 0.5
 phase_finished

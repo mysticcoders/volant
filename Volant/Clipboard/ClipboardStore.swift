@@ -117,6 +117,7 @@ final class ClipboardStore {
             defer { sqlite3_finalize(count) }
             guard sqlite3_step(count) == SQLITE_ROW else { throw FailureError.database }
             key = try loadKey(sqlite3_column_int(count, 0) == 0)
+            if let key { rehashLegacyFingerprints(key: key) }
             excludeFromBackup(storageURL)
             setState(.ready)
         } catch let error as KeychainKey.Failure {
@@ -156,7 +157,7 @@ final class ClipboardStore {
 
     /// Deduplication key: a keyed HMAC, so the database alone reveals nothing about the plaintext, not even by guessing.
     static func fingerprint(_ payload: Data, key: SymmetricKey) -> String {
-        let dedupeKey = HKDF<SHA256>.deriveKey(inputKeyMaterial: key, info: Data("vey-clip-dedupe".utf8), outputByteCount: 32)
+        let dedupeKey = HKDF<SHA256>.deriveKey(inputKeyMaterial: key, info: Data("volant-clip-dedupe".utf8), outputByteCount: 32)
         return HMAC<SHA256>.authenticationCode(for: payload, using: dedupeKey).map { String(format: "%02x", $0) }.joined()
     }
 
@@ -302,6 +303,36 @@ final class ClipboardStore {
         invalidateSearch()
         guard failure == nil else { return }
         if !execute("DELETE FROM clips WHERE id NOT IN (SELECT id FROM clips ORDER BY copied_at DESC LIMIT \(max(10, retention)))") { fail(.database) }
+    }
+
+    /// Databases from releases up to 0.3.14 hold fingerprints derived under the app's former name,
+    /// Vey. Recomputes them once, in one transaction, and records schema version 1. Rows that can't
+    /// be decrypted keep their old fingerprint; a failure rolls back and is retried on a later open.
+    private func rehashLegacyFingerprints(key: SymmetricKey) {
+        guard let db else { return }
+        var version: OpaquePointer?
+        guard sqlite3_prepare_v2(db, "PRAGMA user_version", -1, &version, nil) == SQLITE_OK,
+              sqlite3_step(version) == SQLITE_ROW else { sqlite3_finalize(version); return }
+        let current = sqlite3_column_int(version, 0)
+        sqlite3_finalize(version)
+        guard current < 1, execute("BEGIN IMMEDIATE") else { return }
+        var select: OpaquePointer?, update: OpaquePointer?
+        defer { sqlite3_finalize(select); sqlite3_finalize(update) }
+        guard sqlite3_prepare_v2(db, "SELECT id, blob FROM clips", -1, &select, nil) == SQLITE_OK,
+              sqlite3_prepare_v2(db, "UPDATE OR IGNORE clips SET hash = ? WHERE id = ?", -1, &update, nil) == SQLITE_OK
+        else { _ = execute("ROLLBACK"); return }
+        var step = sqlite3_step(select)
+        while step == SQLITE_ROW {
+            defer { step = sqlite3_step(select) }
+            guard let ptr = sqlite3_column_blob(select, 1) else { continue }
+            let data = Data(bytes: ptr, count: Int(sqlite3_column_bytes(select, 1)))
+            guard let box = try? AES.GCM.SealedBox(combined: data), let plain = try? AES.GCM.open(box, using: key) else { continue }
+            sqlite3_reset(update)
+            sqlite3_bind_text(update, 1, Self.fingerprint(plain, key: key), -1, Self.transient)
+            sqlite3_bind_int64(update, 2, sqlite3_column_int64(select, 0))
+            guard sqlite3_step(update) == SQLITE_DONE else { _ = execute("ROLLBACK"); return }
+        }
+        guard step == SQLITE_DONE, execute("PRAGMA user_version = 1"), execute("COMMIT") else { _ = execute("ROLLBACK"); return }
     }
 
     private func execute(_ sql: String) -> Bool {

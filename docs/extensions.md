@@ -13,7 +13,7 @@ Turning the master gate off preserves individual approvals but revokes the pendi
 3. The real WASM module returns `Hello, Andrew!`. Return on the result copies it; merely running Hello World does not change the clipboard.
 4. Settings → Extensions can disable it again. No extension code runs during search or Settings browsing.
 
-Installed folders live in Volant's preserved storage location: `~/Library/Containers/com.mysticcoders.volant/Data/Library/Application Support/Vey/Extensions/`. Use **Open Extensions Folder** and **Refresh** in Settings. Each folder contains `manifest.json` and its module. Duplicate IDs, invalid manifests and unsupported ABI versions are reported and excluded. Settings → Extensions → Catalog installs and updates signed, reviewed extensions into this folder; see [extension catalog](extension-catalog.md).
+Installed folders live in `~/Library/Containers/com.mysticcoders.volant/Data/Library/Application Support/Volant/Extensions/`. Use **Open Extensions Folder** and **Refresh** in Settings. Each folder contains `manifest.json` and its module. Duplicate IDs, invalid manifests and unsupported ABI versions are reported and excluded. Settings → Extensions → Catalog installs and updates signed, reviewed extensions into this folder; see [extension catalog](extension-catalog.md).
 
 ## Direct command discovery
 
@@ -42,7 +42,7 @@ Source: `extensions/hello-rust/src/lib.rs`. Build with `bash extensions/hello-ru
 
 An optional `"icon": "icon.webp"` with `"iconSha256"` gives the extension an icon in launcher rows and Settings. It must be a square WebP of 16–512 pixels and at most 32 KB in the extension's folder, matching its hash; ImageIO in the app decodes it, and anything else falls back to the generic symbol. Both fields are part of the approval fingerprint, so a changed icon needs enabling again; manifests without them keep their existing fingerprint.
 
-ABI 1 exports `memory`, `alloc(byteCount) -> i32`, and `run(ptr, byteCount) -> i32`. Inputs are UTF-8. The returned pointer addresses a little-endian u32 length followed by UTF-8 output. Memory belongs to a single invocation; the instance is discarded afterward. Supported capability imports retain the original namespace `vey`: `log(ptr,len)` and `clipboard_write(ptr,len)`. No other import types or namespaces are accepted. Hello World imports neither.
+ABI 1 exports `memory`, `alloc(byteCount) -> i32`, and `run(ptr, byteCount) -> i32`. Inputs are UTF-8. The returned pointer addresses a little-endian u32 length followed by UTF-8 output. Memory belongs to a single invocation; the instance is discarded afterward. Supported capability imports live in the namespace `volant`: `log(ptr,len)` and `clipboard_write(ptr,len)`. No other import types or namespaces are accepted, including the `vey` namespace used before 0.3.15. Hello World imports neither.
 
 ## Enablement and isolation
 

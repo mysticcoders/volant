@@ -1,7 +1,7 @@
 //! Volant Clipboard Test: an owner-verification fixture for the ABI 1 `clipboard.write` capability.
 //! It copies one line of fictional text and says what it copied. The `v2` feature changes the
 //! text, so the same manifest ID gets new code and must be approved again.
-#[link(wasm_import_module = "vey")]
+#[link(wasm_import_module = "volant")]
 extern "C" {
     fn clipboard_write(ptr: *const u8, len: usize);
 }

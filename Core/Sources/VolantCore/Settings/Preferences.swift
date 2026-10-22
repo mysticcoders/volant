@@ -59,12 +59,14 @@ public struct Preferences: Codable {
     }
 
     public static var supportDirectory: URL {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        // Preserve the original storage location across the Volant rebrand.
-        let dir = base.appendingPathComponent("Vey", isDirectory: true)
+        let dir = resolvedSupportDirectory.url
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }
+
+    /// Resolved once per process, so a failed move never splits one launch across two folders.
+    public static let resolvedSupportDirectory = SupportDirectory.resolve(
+        in: FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0])
 
     public static var configURL: URL { supportDirectory.appendingPathComponent("config.json") }
 

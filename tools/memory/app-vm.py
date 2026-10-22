@@ -93,10 +93,10 @@ sample() {
 }
 
 seed() {
-    mkdir -p "$container/Library/Application Support/Vey/Notes"
+    mkdir -p "$container/Library/Application Support/Volant/Notes"
     for index in $(seq 1 200); do
         { echo "# Fictional note $index"; echo; for line in $(seq 1 60); do echo "Line $line of a made-up note about project $index, with some words to search."; done; } \
-            > "$container/Library/Application Support/Vey/Notes/fictional-$index.md"
+            > "$container/Library/Application Support/Volant/Notes/fictional-$index.md"
     done
     for index in $(seq 1 25); do
         echo "Fictional clipboard text $index: the quick brown fox jumps over the lazy dog." | pbcopy
@@ -112,7 +112,7 @@ seed() {
 : > "$output/summary.txt"
 pkill -x Volant 2>/dev/null
 rm -rf "$HOME/Library/Containers/com.mysticcoders.volant"
-while security delete-generic-password -s com.mysticcoders.vey.clipboard-key >/dev/null 2>&1; do :; done
+while security delete-generic-password -s com.mysticcoders.volant.clipboard-key >/dev/null 2>&1; do :; done
 helpers > "$output/before-launch-helpers.txt" 2>&1
 open -n --stdout "$output/app.log" --stderr "$output/app.err" "$root/Volant.app" --args --memory-check
 for phase in launch summon typed settings closed relieved; do

@@ -7,11 +7,9 @@ xcodegen generate --quiet
 xcodebuild -project Volant.xcodeproj -scheme Volant -configuration Release -derivedDataPath build-release -allowProvisioningUpdates build 2>&1 | grep -E "error:|BUILD (SUCCEEDED|FAILED)" | sort -u
 SRC="$ROOT/build-release/Build/Products/Release/Volant.app"
 DEST="/Applications/Volant.app"
-osascript -e 'if application id "com.mysticcoders.vey" is running then tell application id "com.mysticcoders.vey" to quit'
 osascript -e 'if application id "com.mysticcoders.volant" is running then tell application id "com.mysticcoders.volant" to quit'
-python3 "$ROOT/tools/migrate-bundle-data.py"
-# Stage a fresh bundle: overwriting the existing directory can retain the old
-# bundle identity in macOS privacy services after the Vey → Volant migration.
+# Stage a fresh bundle: overwriting the existing directory can retain an old
+# bundle identity in macOS privacy services.
 STAGING="$(mktemp -d /Applications/.volant-install.XXXXXX)"
 cleanup() {
   if [[ ! -e "$DEST" && -d "$STAGING/Previous.app" ]]; then

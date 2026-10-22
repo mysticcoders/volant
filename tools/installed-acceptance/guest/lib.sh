@@ -8,7 +8,7 @@ mkdir -p "$W" "$A/shots"
 APP=/Applications/Volant.app
 ID=com.mysticcoders.volant
 CONTAINER="$HOME/Library/Containers/$ID/Data"
-SUPPORT="$CONTAINER/Library/Application Support/Vey"
+SUPPORT="$CONTAINER/Library/Application Support/Volant"
 CONFIG="$SUPPORT/config.json"
 SECTION=${SECTION:-general}
 

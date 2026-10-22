@@ -31,7 +31,7 @@ enum Backup {
     static func importBackup() -> Bool {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true; panel.canChooseFiles = false
-        panel.prompt = "Import"; panel.message = "Choose a Volant-Backup or Vey-Backup folder."
+        panel.prompt = "Import"; panel.message = "Choose a Volant-Backup folder."
         guard panel.runModal() == .OK, let src = panel.url else { return false }
         let notesDestination = Preferences.supportDirectory.appendingPathComponent("Notes", isDirectory: true)
         let plan: BackupPlan

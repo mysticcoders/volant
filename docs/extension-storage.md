@@ -45,7 +45,7 @@ That run happens after the link has opened, so a slow or failing extension never
 - **Bounded.** At most 256 KB of JSON per extension, a top-level object, nesting depth 8. An
   oversized or invalid reply is rejected with a readable error, and the previous state is kept.
   256 KB leaves room in the 1 MiB request for fetched pages.
-- **Where it lives.** `Application Support/Vey/ExtensionData/<SHA-256 of the ID>.json`, written atomically. It is
+- **Where it lives.** `Application Support/Volant/ExtensionData/<SHA-256 of the ID>.json`, written atomically. It is
   per Mac: never synced through iCloud, never included in backups or exports.
 - **Lifetime.** Kept across updates of the same ID. Removed on Uninstall. Settings shows **Clear
   Data…** for an extension with saved data, after a confirmation. Turning an extension off keeps its
