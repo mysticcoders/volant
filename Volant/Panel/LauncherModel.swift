@@ -592,8 +592,9 @@ final class LauncherModel: ObservableObject {
             runExtension(enabled, input: request.input)
         } catch { notice = error.localizedDescription }
     }
-    /// Runs an extension and shows its result. `keepingSelection` redraws a list after an action
-    /// without moving the selection back to the top.
+    /// Runs an extension and shows its result, or its failure in place of the rows, since the
+    /// launcher shows a notice only when there are none. `keepingSelection` redraws a list after an
+    /// action without moving the selection back to the top.
     private func runExtension(_ ext: InstalledExtension, input: String, keepingSelection: Bool = false) {
         guard !extensionRunning else { return }
         extensionItemsQuery = input
@@ -626,7 +627,9 @@ final class LauncherModel: ObservableObject {
             case .success(let output):
                 self.notice = nil
                 self.sections = [ResultSection(title: ext.name, rows: [.extensionResult(output)])]
-            case .failure(let error): self.notice = "Extension failed: \(error.localizedDescription)"
+            case .failure(let error):
+                self.sections = []
+                self.notice = "Extension failed: \(error.localizedDescription)"
             }
         }
     }
