@@ -134,11 +134,18 @@ Added in 0.3.13:
 | Rex Overview: every session and tab drawn as its real pane layout, colored by status, click to focus | Yes | #279; Core parse tests, app tests, a VM render of the fictional overview in light and dark; the owner used it in Volant Dev and then in the installed, Release-signed 0.3.13 against live Rex; no keyboard navigation, floating or zoomed panes | Home page agents item 02 with a native Actions-fixture capture (fictional sessions and screen text), Agents doc |
 | Opt-in pane previews: last 12 screen lines per pane, read only while the overview is open | Yes | #279; `rexPanePreviews` off by default, per-Mac, not synced; app tests that nothing is read without the window open and previews on, and that turning off forgets at once; `check-rex.sh` that the watcher reads screens only in preview mode; Rex returns full scrollback, about 100 KB for 15 panes | Privacy and Agents docs; "shows what's on screen once you turn it on", never "monitors" or "records" terminals; always say off by default |
 
-Merged after 0.3.13, not in the current download:
+Added in 0.3.14:
+
+| Story | In 0.3.14 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| Rex Overview keyboard navigation: arrows between tabs and panes, Tab to waiting panes, Return to focus, Esc to close | Yes | #284; Core tests of every move and identity-based selection across refreshes, app tests of the key handler, the native fixture driving the real window's keys; VM renders of the selection in light and dark | Agents doc lists the keys; home download line |
+| Floating and zoomed panes drawn as Rex shows them, with chips for panes a zoom hides | Yes | #285; floating coordinates checked against a temporary Rex session; Core parse and navigation tests; VM renders; the owner used it in Volant Dev against live Rex; floating panes can only be created through Rex's API | Agents doc; never claim Volant creates or arranges panes |
+| Minimize sessions in the Rex Overview, remembered per Mac | Yes | #285; Core and app tests, the fixture minimizing through the window's keys, VM renders; kept by session ID, the 200 most recent | Agents doc |
+
+Merged after 0.3.14, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
-| Rex Overview keyboard navigation: arrows between tabs and panes, Tab to waiting panes, Return to focus, Esc to close | Not yet | Core tests of every move and identity-based selection across refreshes, app tests of the key handler, the native fixture driving the real window's keys; VM renders of the selection in light and dark | Agents doc lists the keys; claim only once released |
 
 ## Privacy language
 
