@@ -5,7 +5,7 @@ import Image from 'next/image';
 
 export const repositoryURL = 'https://github.com/mysticcoders/volant';
 export const socialURL = 'https://x.com/mysticcoders';
-export const appVersion = '0.3.14';
+export const appVersion = '0.3.15';
 export const downloadURL = `/updates/Volant-${appVersion}.dmg`;
 
 export function Brand() {
