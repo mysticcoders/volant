@@ -1284,6 +1284,38 @@ func rexOverviewScenario() throws {
     verify(model.selection?.blockID == "block:orbit-agent", "Tab wraps to the waiting pane")
     press(36, "\r")
     verify(focusedPanes == ["session:fixture-orbit/block:orbit-agent"], "Return focuses the selected pane through the window's keys")
+    let layers = RexOverview(sessions: [
+        .init(sessionID: "session:fixture-lab", label: "lab", tabs: [
+            .init(windowID: "window:lab-float", label: "monitor", active: true, focusedBlockID: "block:lab-top", panes: [
+                .init(blockID: "block:lab-editor", label: "shell", title: "notes.md", program: "nvim", rect: [0, 0, 0.55, 1],
+                      preview: ["## Launch checklist", "- [x] staging smoke test", "- [ ] DNS cutover", "- [ ] tell support"]),
+                .init(blockID: "block:lab-server", label: "shell", title: "dev server", program: "node", status: RexStatus(state: .working, app: "vite", message: "Serving on :5173"), rect: [0.55, 0, 0.45, 1],
+                      preview: ["VITE v6.3.1  ready in 412 ms", "➜  Local:   http://localhost:5173/", "page reload src/App.tsx"]),
+                .init(blockID: "block:lab-top", label: "shell", title: "htop", program: "htop", rect: [0.35, 0.45, 0.4, 0.5], preview: ["CPU [||||      28%]", "Mem [|||||  6.1G/16G]", "  PID USER  %CPU COMMAND", "41201 dev   22.0 node"], layer: 1),
+                .init(blockID: "block:lab-clock", label: "shell", title: "timer", program: "watch", rect: [0.78, 0.06, 0.18, 0.22], preview: ["00:14:32"], layer: 2),
+            ]),
+            .init(windowID: "window:lab-zoom", label: "release", focusedBlockID: "block:lab-zoomed", panes: [
+                .init(blockID: "block:lab-zoomed", label: "shell", title: "release notes", program: "claude", status: RexStatus(state: .working, app: "claude-code", message: "Drafting the notes"), rect: [0, 0, 0.5, 1],
+                      preview: ["  Reading docs/releases/", "  Drafting 0.4.0 notes…"]),
+                .init(blockID: "block:lab-tests", label: "shell", title: "tests", program: "cargo", status: RexStatus(state: .error, app: "cargo", message: "2 tests failed"), rect: [0.5, 0, 0.5, 0.5]),
+                .init(blockID: "block:lab-logs", label: "shell", title: "logs", program: "tail", status: RexStatus(state: .working), rect: [0.5, 0.5, 0.25, 0.5]),
+                .init(blockID: "block:lab-shell", label: "shell", title: "~/lab", program: "zsh", rect: [0.75, 0.5, 0.25, 0.5]),
+            ], zoomedBlockID: "block:lab-zoomed"),
+        ]),
+    ])
+    model.show(layers); settle()
+    model.select(.init(sessionID: "session:fixture-lab", blockID: "block:lab-zoomed"))
+    press(125, "\u{F701}"); settle()
+    verify(model.selection?.blockID == "block:lab-tests", "Down from the zoomed pane reaches the first hidden pane")
+    press(123, "\u{F702}")
+    verify(model.selection?.blockID == "block:lab-top", "Entering a tab lands on the pane Rex focuses, here a floating one")
+    press(125, "\u{F701}")
+    verify(model.selection?.blockID == "block:lab-clock", "Down moves from the back floating layer to the front one")
+    press(126, "\u{F700}"); press(126, "\u{F700}")
+    verify(model.selection?.blockID == "block:lab-server", "Up moves from the floating layers back to the tiles")
+    press(124, "\u{F703}"); press(125, "\u{F701}")
+    verify(model.selection?.blockID == "block:lab-tests", "Selection can rest on a hidden pane")
+    try render("rex-overview-layers", view: window.contentView!)
     model.allowPreviews(false); settle()
     verify(saved == [true, false] && model.overview.sessions.isEmpty, "Turning previews off saves the choice and forgets the screen text")
     window.orderOut(nil)

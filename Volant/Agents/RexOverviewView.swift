@@ -115,7 +115,7 @@ struct RexSessionSection: View {
                     Text("\(session.waiting) waiting").font(.system(size: 12, weight: .medium)).foregroundStyle(.orange)
                 }
             }
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), spacing: 14)], alignment: .leading, spacing: 14) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), spacing: 14, alignment: .top)], alignment: .leading, spacing: 14) {
                 ForEach(session.tabs) { tab in
                     RexTabCard(tab: tab, selectedBlockID: selectedBlockID, focus: focus)
                         .id(RexTabCard.scrollID(session, tab))
@@ -136,6 +136,28 @@ struct RexTabCard: View {
 
     private var holdsSelection: Bool { tab.panes.contains { $0.blockID == selectedBlockID } }
 
+    /// What Rex shows in the tab: the zoomed pane alone, or the tiled layout with floating layers
+    /// drawn over it, back to front.
+    private var drawnPanes: [RexOverview.Pane] {
+        if let zoomed = tab.zoomedPane { return [zoomed] }
+        return tab.panes.sorted { $0.layer < $1.layer }
+    }
+
+    private var hasFloating: Bool { tab.zoomedPane == nil && tab.panes.contains(where: \.floating) }
+
+    /// A floating tile sits on an opaque base, so the tiles it covers never show through its tint.
+    private func tile(_ pane: RexOverview.Pane) -> some View {
+        RexPaneTile(pane: pane, focused: pane.blockID == tab.focusedBlockID, selected: pane.blockID == selectedBlockID) { focus(pane) }
+            .background(pane.floating ? Color(nsColor: .controlBackgroundColor) : Color.clear, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+    }
+
+    /// Places a view at a rect given as fractions of the tab, inset so neighbours keep a gap.
+    private func place<Content: View>(_ content: Content, at rect: [Double], in size: CGSize) -> some View {
+        content
+            .frame(width: max(rect[2] * size.width - 4, 0), height: max(rect[3] * size.height - 4, 0))
+            .offset(x: rect[0] * size.width + 2, y: rect[1] * size.height + 2)
+    }
+
     private var border: AnyShapeStyle {
         if holdsSelection { return AnyShapeStyle(.tint) }
         return tab.waiting > 0 ? AnyShapeStyle(Color.orange.opacity(0.7)) : AnyShapeStyle(.separator)
@@ -147,6 +169,12 @@ struct RexTabCard: View {
                 Circle().fill(tab.active ? AnyShapeStyle(.tint) : AnyShapeStyle(.quaternary)).frame(width: 6, height: 6)
                     .accessibilityLabel(tab.active ? "Shown in Rex" : "")
                 Text(tab.name).font(.system(size: 12, weight: .medium)).lineLimit(1)
+                if tab.zoomedPane != nil {
+                    Label("Zoomed", systemImage: "arrow.up.left.and.arrow.down.right")
+                        .font(.system(size: 10, weight: .medium)).foregroundStyle(.secondary)
+                        .padding(.horizontal, 5).padding(.vertical, 1)
+                        .background(.quaternary, in: Capsule())
+                }
                 Spacer(minLength: 4)
                 if tab.waiting > 0 {
                     Text("\(tab.waiting)").font(.system(size: 11, weight: .semibold)).foregroundStyle(.white)
@@ -156,20 +184,84 @@ struct RexTabCard: View {
             }
             GeometryReader { geometry in
                 ZStack(alignment: .topLeading) {
-                    ForEach(tab.panes) { pane in
-                        let rect = pane.rect ?? [0, 0, 1, 1]
-                        RexPaneTile(pane: pane, focused: pane.blockID == tab.focusedBlockID, selected: pane.blockID == selectedBlockID) { focus(pane) }
-                            .frame(width: max(rect[2] * geometry.size.width - 4, 0), height: max(rect[3] * geometry.size.height - 4, 0))
-                            .offset(x: rect[0] * geometry.size.width + 2, y: rect[1] * geometry.size.height + 2)
+                    ForEach(drawnPanes) { pane in
+                        place(tile(pane), at: tab.zoomedPane == nil ? (pane.rect ?? [0, 0, 1, 1]) : [0, 0, 1, 1], in: geometry.size)
+                            .opacity(!pane.floating && hasFloating ? 0.75 : 1)
+                            .shadow(color: .black.opacity(pane.floating ? 0.35 : 0), radius: pane.floating ? 6 : 0, y: pane.floating ? 2 : 0)
                     }
                 }
             }
             .aspectRatio(16 / 10, contentMode: .fit)
+            if !tab.hiddenPanes.isEmpty {
+                RexHiddenPanes(panes: tab.hiddenPanes, selectedBlockID: selectedBlockID, focus: focus)
+            }
         }
         .padding(10)
         .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
             .strokeBorder(border, lineWidth: holdsSelection ? 2 : 1))
+    }
+}
+
+/// The panes a zoom hides, as chips under the zoomed pane, so nothing waiting is out of sight.
+/// Each chip is a native button that focuses its pane, like a tile.
+struct RexHiddenPanes: View {
+    let panes: [RexOverview.Pane]
+    let selectedBlockID: String?
+    let focus: (RexOverview.Pane) -> Void
+    static let maximumChips = 3
+
+    /// Up to three chips, waiting ones first; a selected pane beyond them takes the last place.
+    private var shown: [RexOverview.Pane] {
+        let ordered = panes.filter { $0.state == .blocked } + panes.filter { $0.state != .blocked }
+        var chips = Array(ordered.prefix(Self.maximumChips))
+        if let selected = panes.first(where: { $0.blockID == selectedBlockID }), !chips.contains(where: { $0.blockID == selected.blockID }) {
+            chips[chips.count - 1] = selected
+        }
+        return chips
+    }
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text("Hidden").font(.system(size: 10)).foregroundStyle(.tertiary)
+            ForEach(shown) { pane in
+                Button { focus(pane) } label: { chip(pane) }
+                    .buttonStyle(.plain)
+                    .help("Focus " + pane.name + " in Rex")
+                    .accessibilityLabel(pane.name + ", hidden behind the zoomed pane, " + pane.state.title)
+                    .accessibilityAddTraits(pane.blockID == selectedBlockID ? .isSelected : [])
+            }
+            if panes.count > shown.count {
+                Text("+\(panes.count - shown.count)").font(.system(size: 10)).foregroundStyle(.secondary)
+                    .accessibilityLabel("\(panes.count - shown.count) more hidden")
+            }
+            Spacer(minLength: 0)
+        }
+        .lineLimit(1)
+    }
+
+    private func chip(_ pane: RexOverview.Pane) -> some View {
+        HStack(spacing: 4) {
+            Circle().fill(pane.state.overviewTint).frame(width: 6, height: 6)
+            Text(pane.program ?? pane.name).font(.system(size: 10, weight: .medium))
+            Text(pane.state.title).font(.system(size: 10)).foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 6).padding(.vertical, 2)
+        .background(pane.state.overviewTint.opacity(pane.state == .idle ? 0.06 : 0.14), in: Capsule())
+        .overlay(Capsule().strokeBorder(pane.blockID == selectedBlockID ? Color.primary : Color.clear, lineWidth: 2))
+    }
+}
+
+extension RexState {
+    /// The overview's color for a state, shared by tiles and hidden-pane chips.
+    var overviewTint: Color {
+        switch self {
+        case .blocked: return .orange
+        case .error: return .red
+        case .done: return .green
+        case .working: return .accentColor
+        case .idle: return .secondary
+        }
     }
 }
 
@@ -180,15 +272,7 @@ struct RexPaneTile: View {
     let selected: Bool
     let action: () -> Void
 
-    private var tint: Color {
-        switch pane.state {
-        case .blocked: return .orange
-        case .error: return .red
-        case .done: return .green
-        case .working: return .accentColor
-        case .idle: return .secondary
-        }
-    }
+    private var tint: Color { pane.state.overviewTint }
 
     private var symbol: String {
         switch pane.state {
@@ -223,12 +307,25 @@ struct RexPaneTile: View {
         .contentShape(Rectangle())
     }
 
+    /// The full heading where it fits; a narrower tile drops the state, then truncates the name.
     private var heading: some View {
-        HStack(spacing: 4) {
-            Image(systemName: symbol).foregroundStyle(tint)
-            Text(pane.program ?? pane.name).lineLimit(1)
-            Spacer(minLength: 2)
-            Text(pane.state.title).foregroundStyle(.secondary).lineLimit(1)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 4) {
+                Image(systemName: symbol).foregroundStyle(tint)
+                Text(pane.program ?? pane.name).lineLimit(1).fixedSize()
+                Spacer(minLength: 2)
+                Text(pane.state.title).foregroundStyle(.secondary).lineLimit(1).fixedSize()
+            }
+            HStack(spacing: 4) {
+                Image(systemName: symbol).foregroundStyle(tint)
+                Text(pane.program ?? pane.name).lineLimit(1).fixedSize()
+                Spacer(minLength: 0)
+            }
+            HStack(spacing: 4) {
+                Image(systemName: symbol).foregroundStyle(tint)
+                Text(pane.program ?? pane.name).lineLimit(1).truncationMode(.tail)
+                Spacer(minLength: 0)
+            }
         }
         .font(.system(size: 10, weight: .medium))
     }

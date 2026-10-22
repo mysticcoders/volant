@@ -56,6 +56,33 @@ final class RexOverviewTests: XCTestCase {
         XCTAssertNil(overview.sessions[0].tabs[0].panes[0].rect, "a malformed rect draws as the whole tab")
     }
 
+    func testFloatingLayersAndZoomAreParsed() throws {
+        let overview = try parse("""
+        {"sessions":[{"session_id":"session:a","label":"orbit",
+          "windows":[{"window_id":"window:float","label":"float"},
+                     {"window_id":"window:zoom","label":"zoom","zoomed_block_id":"block:z2"},
+                     {"window_id":"window:stale","label":"stale","zoomed_block_id":"block:elsewhere"}],
+          "panes":[
+            {"block_id":"block:t1","window_id":"window:float","rect":[0,0,1,1],"layer":0},
+            {"block_id":"block:f2","window_id":"window:float","rect":[0.7,0.5,0.2,0.4],"layer":2},
+            {"block_id":"block:f1","window_id":"window:float","rect":[0.5,0.5,0.2,0.4],"layer":1},
+            {"block_id":"block:z1","window_id":"window:zoom","rect":[0,0,0.5,1],"records":[{"state":"blocked"}]},
+            {"block_id":"block:z2","window_id":"window:zoom","rect":[0.5,0,0.5,1]},
+            {"block_id":"block:s1","window_id":"window:stale","rect":[0,0,1,1],"layer":900}
+          ]}]}
+        """)
+        let tabs = try XCTUnwrap(overview.sessions.first?.tabs)
+        XCTAssertEqual(tabs[0].panes.map(\.layer), [0, 2, 1])
+        XCTAssertEqual(tabs[0].panes.first { $0.blockID == "block:f1" }?.rect, [0.5, 0.5, 0.2, 0.4], "floating rects are fractions of the whole tab")
+        XCTAssertEqual(RexOverview.readingOrder(tabs[0].panes).map(\.blockID), ["block:t1", "block:f1", "block:f2"], "tiled first, then floating back to front")
+        XCTAssertNil(tabs[0].zoomedPane)
+        XCTAssertEqual(tabs[1].zoomedPane?.blockID, "block:z2")
+        XCTAssertEqual(tabs[1].hiddenPanes.map(\.blockID), ["block:z1"])
+        XCTAssertEqual(tabs[1].waiting, 1, "a waiting pane behind a zoom still counts")
+        XCTAssertNil(tabs[2].zoomedBlockID, "a zoom naming a pane the tab does not show is ignored")
+        XCTAssertEqual(tabs[2].panes.first?.layer, 64, "layer numbers are clamped")
+    }
+
     func testPanePreviewsAreOffByDefaultPatchableAndNeverSynced() throws {
         XCTAssertFalse(Preferences().rexPanePreviews)
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".json")

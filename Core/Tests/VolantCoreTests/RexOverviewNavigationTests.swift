@@ -61,6 +61,22 @@ final class RexOverviewNavigationTests: XCTestCase {
         XCTAssertEqual(twoWaiting.move(.nextWaiting, from: at("b", "two")), at("a", "one"), "wraps forwards")
     }
 
+    func testPaneMovesReachFloatingAndHiddenPanes() {
+        let floating = RexOverview(sessions: [.init(sessionID: "session:s", label: "s", tabs: [
+            .init(windowID: "window:w", label: "w", panes: [
+                .init(blockID: "block:float", label: "f", rect: [0.6, 0.6, 0.3, 0.3], layer: 1),
+                .init(blockID: "block:tile", label: "t", rect: [0, 0, 1, 1]),
+            ]),
+            .init(windowID: "window:z", label: "z", panes: [
+                .init(blockID: "block:behind", label: "b", status: RexStatus(state: .blocked), rect: [0, 0, 0.5, 1]),
+                .init(blockID: "block:front", label: "f", rect: [0.5, 0, 0.5, 1]),
+            ], zoomedBlockID: "block:front"),
+        ])])
+        XCTAssertEqual(floating.move(.nextPane, from: at("s", "tile")), at("s", "float"), "down reaches a floating pane after the tiles")
+        XCTAssertEqual(floating.initialSelection, at("s", "behind"), "a waiting pane behind a zoom is where selection starts")
+        XCTAssertEqual(floating.move(.nextPane, from: at("s", "behind")), at("s", "front"))
+    }
+
     func testSelectionSurvivesRefreshesByIdentity() {
         XCTAssertEqual(overview.resolve(at("orbit", "shell")), at("orbit", "shell"))
         let shellClosed = RexOverview(sessions: [

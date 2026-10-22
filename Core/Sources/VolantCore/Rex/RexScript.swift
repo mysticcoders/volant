@@ -74,6 +74,8 @@ public enum RexScript {
         return globalArguments(home: home) + ["do", "-e", focus, "--args", json]
     }
 
+    /// Floating layers come after the tiled one, back to front, and their panes' rects are fractions
+    /// of the whole tab like the tiled panes', so `layer` alone says how to stack them.
     /// Prints every session's terminal panes, with their status records and reported directory, as
     /// one JSON line: once on start, 0.1 s after a burst of relevant events goes quiet (or 0.5 s
     /// after its first event, so a steady stream cannot hold a snapshot back), and every 30 seconds
@@ -110,10 +112,11 @@ public enum RexScript {
             table.insert(entry.windows, {
               window_id = w.window_id, label = w.label,
               active = w.window_id == view.active_window_id, focused_block_id = w.focused_block_id,
+              zoomed_block_id = w.zoomed_block_id,
             })
             for index, layer in ipairs(w.layers or {}) do
               local rects = {}
-              if index == 1 then leaves(layer.layout, rects) end
+              leaves(layer.layout, rects)
               for _, b in ipairs(layer.blocks or {}) do
                 if b.creator_name == terminal then
                   local status = rex.call("block.method", { session_id = s.session_id, block_id = b.block_id, method = "program_status" })
@@ -127,6 +130,7 @@ public enum RexScript {
                     records = status and status.records,
                     window_id = w.window_id,
                     rect = rects[b.block_id],
+                    layer = index - 1,
                     title = title and title.title,
                     program = process and process.foreground and (process.foreground.script or process.foreground.argv0 or process.foreground.name),
                   }
