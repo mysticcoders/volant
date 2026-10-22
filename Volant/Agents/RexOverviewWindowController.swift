@@ -39,7 +39,8 @@ final class RexOverviewWindowController: NSWindowController, NSWindowDelegate {
         }
     }
 
-    /// Plain arrows, Tab, Return and Escape drive the overview; anything with Command, Option or
+    /// Plain arrows, Tab, Return, Space (minimize or expand the session) and Escape drive the overview;
+    /// anything with Command, Option or
     /// Control passes through, so menus and Command-W still work. Moves and Return apply only while
     /// the grid shows, so Return on the approval card still presses its default button.
     static func handle(_ event: NSEvent, model: RexOverviewModel, close: () -> Void) -> Bool {
@@ -56,6 +57,7 @@ final class RexOverviewWindowController: NSWindowController, NSWindowDelegate {
         case 125 where !shift: move = .nextPane
         case 48: move = shift ? .previousWaiting : .nextWaiting
         case 36 where !shift, 76 where !shift: model.focusSelection(); return true
+        case 49 where !shift: model.toggleSelectedSession(); return true
         default: move = nil
         }
         guard let move else { return false }

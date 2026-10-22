@@ -276,17 +276,37 @@ public extension RexOverview {
         return nil
     }
 
+    /// Where selection lands in a minimized session: its first waiting pane, else its first tab's
+    /// main pane.
+    func sessionTarget(_ session: Session) -> Selection? {
+        let panes = session.tabs.flatMap { Self.readingOrder($0.panes) }
+        if let waiting = panes.first(where: { $0.state == .blocked }) { return selection(session, waiting) }
+        return session.tabs.first?.primaryPane.map { selection(session, $0) }
+    }
+
     /// The selection after a key press. Tab and pane moves stop at the ends; waiting moves wrap.
-    func move(_ move: Move, from current: Selection?) -> Selection? {
+    /// A session in `minimized` is one stop for Left and Right, and Up and Down stay put inside it.
+    func move(_ move: Move, from current: Selection?, minimized: Set<String> = []) -> Selection? {
         guard let current = resolve(current), let place = pane(current) else { return initialSelection }
+        let inMinimized = minimized.contains(place.session.sessionID)
         switch move {
         case .previousTab, .nextTab:
-            let tabs = tabsInOrder
-            guard let index = tabs.firstIndex(where: { $0.session.sessionID == place.session.sessionID && $0.tab.windowID == place.tab.windowID }) else { return current }
+            var stops: [(id: String, target: Selection)] = []
+            for session in sessions {
+                if minimized.contains(session.sessionID) {
+                    if let target = sessionTarget(session) { stops.append((session.sessionID, target)) }
+                } else {
+                    for tab in session.tabs {
+                        if let pane = tab.primaryPane { stops.append((session.sessionID + "|" + tab.windowID, selection(session, pane))) }
+                    }
+                }
+            }
+            let here = inMinimized ? place.session.sessionID : place.session.sessionID + "|" + place.tab.windowID
+            guard let index = stops.firstIndex(where: { $0.id == here }) else { return current }
             let target = move == .nextTab ? index + 1 : index - 1
-            guard tabs.indices.contains(target), let pane = tabs[target].tab.primaryPane else { return current }
-            return selection(tabs[target].session, pane)
+            return stops.indices.contains(target) ? stops[target].target : current
         case .previousPane, .nextPane:
+            if inMinimized { return current }
             let panes = Self.readingOrder(place.tab.panes)
             guard let index = panes.firstIndex(where: { $0.blockID == current.blockID }) else { return current }
             let target = move == .nextPane ? index + 1 : index - 1

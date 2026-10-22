@@ -16,6 +16,14 @@ final class RexOverviewModel: ObservableObject {
     @Published private(set) var previewsAllowed: Bool
     /// The pane the keyboard acts on, by session and block ID; re-resolved after every refresh.
     @Published private(set) var selection: RexOverview.Selection?
+    /// Sessions the owner minimized, by session ID, most recent last, kept for this Mac. Minimizing
+    /// changes only what the window draws; the watcher still reads every pane, so waiting counts
+    /// stay right. Entries are never guessed stale, since an unreadable session looks like a closed
+    /// one; only the most recent `maximumMinimized` are kept.
+    @Published private(set) var minimizedSessions: [String]
+    private let defaults: UserDefaults
+    static let minimizedKey = "rexOverviewMinimizedSessions"
+    static let maximumMinimized = 200
     /// Injected only by isolated tests and fixtures; production reads and focuses through the
     /// signed helper.
     var reader: ((Int, Bool, @escaping (Data?, Int, String?) -> Void) -> Void)?
@@ -31,16 +39,38 @@ final class RexOverviewModel: ObservableObject {
     private var focusInFlight = false
     private var open = false
 
-    init(previewsAllowed: Bool = false, save: @escaping (Bool) throws -> Void = { _ in }) {
+    init(previewsAllowed: Bool = false, save: @escaping (Bool) throws -> Void = { _ in }, defaults: UserDefaults = .standard) {
         self.previewsAllowed = previewsAllowed
         self.save = save
+        self.defaults = defaults
+        minimizedSessions = defaults.stringArray(forKey: Self.minimizedKey) ?? []
+        defaults.removeObject(forKey: "rexOverviewMinimizedTabs")
+    }
+
+    var minimized: Set<String> { Set(minimizedSessions) }
+
+    func isMinimized(_ session: RexOverview.Session) -> Bool { minimizedSessions.contains(session.sessionID) }
+
+    func toggleMinimized(_ session: RexOverview.Session) {
+        var next = minimizedSessions.filter { $0 != session.sessionID }
+        if !isMinimized(session) { next.append(session.sessionID) }
+        next = Array(next.suffix(Self.maximumMinimized))
+        minimizedSessions = next
+        defaults.set(next, forKey: Self.minimizedKey)
+    }
+
+    /// Minimizes or expands the session holding the selection.
+    func toggleSelectedSession() {
+        guard let selection, let place = overview.pane(selection) else { return }
+        toggleMinimized(place.session)
     }
 
     /// Whether the grid is showing, so the window's arrow, Tab and Return keys move the selection.
     var keyboardActive: Bool { previewsAllowed && message == nil }
 
+    /// A minimized session is one stop for Left and Right, and Up and Down stay put inside it.
     func move(_ move: RexOverview.Move) {
-        let next = overview.move(move, from: selection)
+        let next = overview.move(move, from: selection, minimized: minimized)
         if next != selection { selection = next }
     }
 

@@ -23,7 +23,9 @@ struct RexOverviewView: View {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 24) {
                             ForEach(model.overview.sessions) { session in
-                                RexSessionSection(session: session, selectedBlockID: selectedBlock(in: session)) { pane in
+                                RexSessionSection(session: session, selectedBlockID: selectedBlock(in: session),
+                                                  minimized: model.isMinimized(session),
+                                                  toggleMinimized: { model.toggleMinimized(session) }) { pane in
                                     model.select(.init(sessionID: session.sessionID, blockID: pane.blockID))
                                     model.focus(pane, in: session)
                                 }
@@ -33,7 +35,8 @@ struct RexOverviewView: View {
                     }
                     .onChange(of: model.selection) { _, selection in
                         guard let selection, let place = model.overview.pane(selection) else { return }
-                        withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo(RexTabCard.scrollID(place.session, place.tab)) }
+                        let target = model.isMinimized(place.session) ? RexSessionSection.scrollID(place.session) : RexTabCard.scrollID(place.session, place.tab)
+                        withAnimation(.easeOut(duration: 0.15)) { proxy.scrollTo(target) }
                     }
                 }
             }
@@ -59,9 +62,9 @@ struct RexOverviewView: View {
             }
             Spacer()
             if model.keyboardActive {
-                Text("← → tabs   ↑ ↓ panes   ⇥ waiting   ↩ focus")
+                Text("← → tabs   ↑ ↓ panes   ⇥ waiting   ␣ minimize session   ↩ focus")
                     .font(.system(size: 11)).foregroundStyle(.tertiary).lineLimit(1)
-                    .accessibilityLabel("Arrow keys move between tabs and panes, Tab moves to the next waiting pane, Return focuses it in Rex")
+                    .accessibilityLabel("Arrow keys move between tabs and panes, Tab moves to the next waiting pane, Space minimizes or expands the session, Return focuses it in Rex")
             }
             if model.previewsAllowed {
                 Button("Turn Off Pane Previews") { model.allowPreviews(false) }
@@ -100,28 +103,83 @@ struct RexPreviewConsent: View {
     }
 }
 
-/// One session: its name and waiting count, then its tabs as cards.
+/// One session: its name and waiting count, then its tabs as cards. A minimized session shows only
+/// its heading and a pill per tab with a dot per pane, so a pane that starts waiting is still in
+/// sight; it is outlined while it holds the keyboard selection.
 struct RexSessionSection: View {
     let session: RexOverview.Session
     let selectedBlockID: String?
+    let minimized: Bool
+    let toggleMinimized: () -> Void
     let focus: (RexOverview.Pane) -> Void
+
+    /// The section's scroll identity, used while it is minimized and has no cards to scroll to.
+    static func scrollID(_ session: RexOverview.Session) -> String { "session|" + session.sessionID }
+
+    private var holdsSelection: Bool { minimized && session.tabs.contains { $0.panes.contains { $0.blockID == selectedBlockID } } }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Text(session.label).font(.system(size: 13, weight: .semibold))
-                Text("\(session.tabs.count) \(session.tabs.count == 1 ? "tab" : "tabs")").font(.system(size: 12)).foregroundStyle(.secondary)
-                if session.waiting > 0 {
-                    Text("\(session.waiting) waiting").font(.system(size: 12, weight: .medium)).foregroundStyle(.orange)
-                }
-            }
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), spacing: 14, alignment: .top)], alignment: .leading, spacing: 14) {
-                ForEach(session.tabs) { tab in
-                    RexTabCard(tab: tab, selectedBlockID: selectedBlockID, focus: focus)
-                        .id(RexTabCard.scrollID(session, tab))
+            heading
+            if minimized {
+                tabPills
+            } else {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), spacing: 14, alignment: .top)], alignment: .leading, spacing: 14) {
+                    ForEach(session.tabs) { tab in
+                        RexTabCard(tab: tab, selectedBlockID: selectedBlockID, focus: focus)
+                            .id(RexTabCard.scrollID(session, tab))
+                    }
                 }
             }
         }
+        .padding(minimized ? 8 : 0)
+        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .strokeBorder(holdsSelection ? AnyShapeStyle(.tint) : AnyShapeStyle(Color.clear), lineWidth: 2))
+        .id(Self.scrollID(session))
+    }
+
+    private var heading: some View {
+        HStack(spacing: 8) {
+            Button(action: toggleMinimized) {
+                Image(systemName: minimized ? "chevron.right" : "chevron.down")
+                    .font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
+                    .frame(width: 14, height: 14).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help(minimized ? "Expand this session" : "Minimize this session")
+            .accessibilityLabel(minimized ? "Expand " + session.label : "Minimize " + session.label)
+            Text(session.label).font(.system(size: 13, weight: .semibold))
+            Text("\(session.tabs.count) \(session.tabs.count == 1 ? "tab" : "tabs")").font(.system(size: 12)).foregroundStyle(.secondary)
+            if session.waiting > 0 {
+                Text("\(session.waiting) waiting").font(.system(size: 12, weight: .medium)).foregroundStyle(.orange)
+            }
+        }
+    }
+
+    /// A minimized session's tabs as pills: the tab's name and a dot per pane in reading order,
+    /// the selected one ringed.
+    private var tabPills: some View {
+        HStack(spacing: 8) {
+            ForEach(session.tabs) { tab in
+                HStack(spacing: 4) {
+                    Text(tab.name).font(.system(size: 11, weight: .medium)).lineLimit(1)
+                    ForEach(RexOverview.readingOrder(tab.panes).prefix(8)) { pane in
+                        Circle().fill(pane.state.overviewTint).frame(width: 7, height: 7)
+                            .overlay(Circle().strokeBorder(pane.blockID == selectedBlockID ? Color.primary : Color.clear, lineWidth: 1.5).padding(-2))
+                            .help(pane.name + ", " + pane.state.title)
+                            .accessibilityLabel(pane.name + ", " + pane.state.title)
+                    }
+                    if tab.panes.count > 8 {
+                        Text("+\(tab.panes.count - 8)").font(.system(size: 10)).foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.horizontal, 8).padding(.vertical, 3)
+                .background(Color(nsColor: .controlBackgroundColor), in: Capsule())
+                .overlay(Capsule().strokeBorder(tab.waiting > 0 ? AnyShapeStyle(Color.orange.opacity(0.7)) : AnyShapeStyle(.separator), lineWidth: 1))
+            }
+            Spacer(minLength: 0)
+        }
+        .lineLimit(1)
     }
 }
 
@@ -165,33 +223,8 @@ struct RexTabCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Circle().fill(tab.active ? AnyShapeStyle(.tint) : AnyShapeStyle(.quaternary)).frame(width: 6, height: 6)
-                    .accessibilityLabel(tab.active ? "Shown in Rex" : "")
-                Text(tab.name).font(.system(size: 12, weight: .medium)).lineLimit(1)
-                if tab.zoomedPane != nil {
-                    Label("Zoomed", systemImage: "arrow.up.left.and.arrow.down.right")
-                        .font(.system(size: 10, weight: .medium)).foregroundStyle(.secondary)
-                        .padding(.horizontal, 5).padding(.vertical, 1)
-                        .background(.quaternary, in: Capsule())
-                }
-                Spacer(minLength: 4)
-                if tab.waiting > 0 {
-                    Text("\(tab.waiting)").font(.system(size: 11, weight: .semibold)).foregroundStyle(.white)
-                        .padding(.horizontal, 6).padding(.vertical, 1).background(.orange, in: Capsule())
-                        .accessibilityLabel("\(tab.waiting) waiting")
-                }
-            }
-            GeometryReader { geometry in
-                ZStack(alignment: .topLeading) {
-                    ForEach(drawnPanes) { pane in
-                        place(tile(pane), at: tab.zoomedPane == nil ? (pane.rect ?? [0, 0, 1, 1]) : [0, 0, 1, 1], in: geometry.size)
-                            .opacity(!pane.floating && hasFloating ? 0.75 : 1)
-                            .shadow(color: .black.opacity(pane.floating ? 0.35 : 0), radius: pane.floating ? 6 : 0, y: pane.floating ? 2 : 0)
-                    }
-                }
-            }
-            .aspectRatio(16 / 10, contentMode: .fit)
+            heading
+            paneMap
             if !tab.hiddenPanes.isEmpty {
                 RexHiddenPanes(panes: tab.hiddenPanes, selectedBlockID: selectedBlockID, focus: focus)
             }
@@ -200,6 +233,39 @@ struct RexTabCard: View {
         .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
             .strokeBorder(border, lineWidth: holdsSelection ? 2 : 1))
+    }
+
+    private var heading: some View {
+        HStack(spacing: 6) {
+            Circle().fill(tab.active ? AnyShapeStyle(.tint) : AnyShapeStyle(.quaternary)).frame(width: 6, height: 6)
+                .accessibilityLabel(tab.active ? "Shown in Rex" : "")
+            Text(tab.name).font(.system(size: 12, weight: .medium)).lineLimit(1)
+            if tab.zoomedPane != nil {
+                Label("Zoomed", systemImage: "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 10, weight: .medium)).foregroundStyle(.secondary)
+                    .padding(.horizontal, 5).padding(.vertical, 1)
+                    .background(.quaternary, in: Capsule())
+            }
+            Spacer(minLength: 4)
+            if tab.waiting > 0 {
+                Text("\(tab.waiting)").font(.system(size: 11, weight: .semibold)).foregroundStyle(.white)
+                    .padding(.horizontal, 6).padding(.vertical, 1).background(.orange, in: Capsule())
+                    .accessibilityLabel("\(tab.waiting) waiting")
+            }
+        }
+    }
+
+    private var paneMap: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .topLeading) {
+                ForEach(drawnPanes) { pane in
+                    place(tile(pane), at: tab.zoomedPane == nil ? (pane.rect ?? [0, 0, 1, 1]) : [0, 0, 1, 1], in: geometry.size)
+                        .opacity(!pane.floating && hasFloating ? 0.75 : 1)
+                        .shadow(color: .black.opacity(pane.floating ? 0.35 : 0), radius: pane.floating ? 6 : 0, y: pane.floating ? 2 : 0)
+                }
+            }
+        }
+        .aspectRatio(16 / 10, contentMode: .fit)
     }
 }
 

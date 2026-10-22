@@ -1251,7 +1251,11 @@ func rexOverviewScenario() throws {
         ]),
     ])
     var saved: [Bool] = []
-    let model = RexOverviewModel(previewsAllowed: false, save: { saved.append($0) })
+    let minimizedSuite = "com.mysticcoders.volant.actionsfixture.rex-overview"
+    let minimizedDefaults = UserDefaults(suiteName: minimizedSuite)!
+    minimizedDefaults.removePersistentDomain(forName: minimizedSuite)
+    defer { minimizedDefaults.removePersistentDomain(forName: minimizedSuite) }
+    let model = RexOverviewModel(previewsAllowed: false, save: { saved.append($0) }, defaults: minimizedDefaults)
     model.show(overview)
     let controller = RexOverviewWindowController(model: model)
     let window = controller.window!
@@ -1316,6 +1320,15 @@ func rexOverviewScenario() throws {
     press(124, "\u{F703}"); press(125, "\u{F701}")
     verify(model.selection?.blockID == "block:lab-tests", "Selection can rest on a hidden pane")
     try render("rex-overview-layers", view: window.contentView!)
+    model.show(overview); settle()
+    model.select(.init(sessionID: "session:fixture-orbit", blockID: "block:orbit-web"))
+    press(49, " ")
+    verify(model.minimizedSessions == ["session:fixture-orbit"], "Space minimizes the selected session through the window's keys")
+    try render("rex-overview-minimized", view: window.contentView!)
+    press(124, "\u{F703}")
+    verify(model.selection?.sessionID == "session:fixture-comet", "Right leaves a minimized session in one step")
+    press(123, "\u{F702}"); press(49, " ")
+    verify(model.minimizedSessions.isEmpty, "Space expands it again")
     model.allowPreviews(false); settle()
     verify(saved == [true, false] && model.overview.sessions.isEmpty, "Turning previews off saves the choice and forgets the screen text")
     window.orderOut(nil)
