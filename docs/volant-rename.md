@@ -20,7 +20,7 @@ Releases up to 0.3.14 kept the old name in storage and the extension ABI. 0.3.15
 
 The old bundle-ID migration script (`tools/migrate-bundle-data.py`) and its check are removed: no install still uses the `com.mysticcoders.vey` bundle. Old Vey backups remain importable.
 
-Fake-file-manager, injected-Keychain and isolated-SQLite tests cover each step; moving a real installed copy's data, and its Keychain item under the signed app, is separate installed-app evidence.
+Fake-file-manager, injected-Keychain and isolated-SQLite tests cover each step. On October 22, 2026 the owner upgraded an installed 0.3.14 to 0.3.15 and found settings, notes, pins, clipboard history, extensions and approvals intact, so the move and the Keychain copy have worked under the signed app on one Mac; see [release quality](release-quality.md).
 
 The repository is private. Marketing must not promise public source access until the owner explicitly changes visibility. No public binary download exists yet. Domain registration and Cloudflare DNS setup are pending with the owner.
 
