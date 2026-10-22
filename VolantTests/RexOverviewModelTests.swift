@@ -115,6 +115,46 @@ final class RexOverviewModelTests: XCTestCase {
         XCTAssertEqual(model.selection?.blockID, "block:deploy", "a pane the overview doesn't show can't be selected")
     }
 
+    private func suite() -> UserDefaults {
+        let name = "volant.tests.rex-overview." + UUID().uuidString
+        let defaults = UserDefaults(suiteName: name)!
+        defaults.removePersistentDomain(forName: name)
+        return defaults
+    }
+
+    func testMinimizingASessionPersistsAndMakesItOneStop() {
+        let defaults = suite()
+        defaults.set(["session:old|window:tab"], forKey: "rexOverviewMinimizedTabs")
+        let model = RexOverviewModel(previewsAllowed: true, defaults: defaults)
+        XCTAssertNil(defaults.object(forKey: "rexOverviewMinimizedTabs"), "the earlier per-tab setting is cleared")
+        model.show(grid)
+        model.select(.init(sessionID: "session:orbit", blockID: "block:logs"))
+        XCTAssertTrue(RexOverviewWindowController.handle(key(49, " "), model: model, close: {}), "Space minimizes the selected session")
+        let orbit = model.overview.sessions[0]
+        XCTAssertTrue(model.isMinimized(orbit))
+        model.move(.previousPane)
+        XCTAssertEqual(model.selection?.blockID, "block:logs", "Up does nothing inside a minimized session")
+        model.move(.nextTab)
+        XCTAssertEqual(model.selection?.blockID, "block:deploy")
+        model.move(.previousTab)
+        XCTAssertEqual(model.selection?.sessionID, "session:orbit", "Left lands on the minimized session as one stop")
+        XCTAssertEqual(RexOverviewModel(previewsAllowed: true, defaults: defaults).minimizedSessions, ["session:orbit"], "remembered for this Mac")
+        model.toggleMinimized(orbit)
+        XCTAssertFalse(model.isMinimized(orbit), "the chevron expands it again")
+        XCTAssertEqual(defaults.stringArray(forKey: RexOverviewModel.minimizedKey), [])
+    }
+
+    func testOnlyTheMostRecentMinimizedSessionsAreKept() {
+        let defaults = suite()
+        defaults.set((0..<RexOverviewModel.maximumMinimized).map { "session:old\($0)" }, forKey: RexOverviewModel.minimizedKey)
+        let model = RexOverviewModel(previewsAllowed: true, defaults: defaults)
+        model.show(grid)
+        model.toggleMinimized(model.overview.sessions[0])
+        XCTAssertEqual(model.minimizedSessions.count, RexOverviewModel.maximumMinimized)
+        XCTAssertEqual(model.minimizedSessions.last, "session:orbit")
+        XCTAssertFalse(model.minimizedSessions.contains("session:old0"), "the oldest entry makes room")
+    }
+
     func testAFailedSaveLeavesTheChoiceAsItWas() {
         let model = RexOverviewModel(previewsAllowed: false, save: { _ in throw CocoaError(.fileWriteNoPermission) })
         model.allowPreviews(true)

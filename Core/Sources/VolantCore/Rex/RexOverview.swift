@@ -12,16 +12,20 @@ public struct RexOverview: Codable, Equatable {
         public let program: String?
         public let cwd: String?
         public let status: RexStatus?
-        /// Where the pane sits in its tab as `[x, y, width, height]` fractions; nil for a pane
-        /// outside the tiled layout, such as a floating one.
+        /// Where the pane sits in its tab as `[x, y, width, height]` fractions of the whole tab, for
+        /// tiled and floating panes alike; nil when Rex gave no place.
         public let rect: [Double]?
         public let preview: [String]?
+        /// 0 for the tiled layout, then 1, 2… for floating layers from back to front.
+        public let layer: Int
 
         public init(blockID: String, label: String, title: String? = nil, program: String? = nil, cwd: String? = nil,
-                    status: RexStatus? = nil, rect: [Double]? = nil, preview: [String]? = nil) {
+                    status: RexStatus? = nil, rect: [Double]? = nil, preview: [String]? = nil, layer: Int = 0) {
             self.blockID = blockID; self.label = label; self.title = title; self.program = program; self.cwd = cwd
-            self.status = status; self.rect = rect; self.preview = preview
+            self.status = status; self.rect = rect; self.preview = preview; self.layer = layer
         }
+
+        public var floating: Bool { layer > 0 }
 
         public var id: String { blockID }
         public var state: RexState { status?.state ?? .idle }
@@ -37,9 +41,20 @@ public struct RexOverview: Codable, Equatable {
         public let active: Bool
         public let focusedBlockID: String?
         public let panes: [Pane]
+        /// The pane zoomed to fill the tab in Rex, if any; the others keep their places behind it.
+        public let zoomedBlockID: String?
 
-        public init(windowID: String, label: String, active: Bool = false, focusedBlockID: String? = nil, panes: [Pane]) {
+        public init(windowID: String, label: String, active: Bool = false, focusedBlockID: String? = nil, panes: [Pane], zoomedBlockID: String? = nil) {
             self.windowID = windowID; self.label = label; self.active = active; self.focusedBlockID = focusedBlockID; self.panes = panes
+            self.zoomedBlockID = zoomedBlockID
+        }
+
+        /// The zoomed pane, when the tab has one the overview shows.
+        public var zoomedPane: Pane? { zoomedBlockID.flatMap { id in panes.first { $0.blockID == id } } }
+        /// The panes a zoom hides, in reading order, so a waiting one behind it is still shown.
+        public var hiddenPanes: [Pane] {
+            guard let zoomed = zoomedPane else { return [] }
+            return RexOverview.readingOrder(panes).filter { $0.blockID != zoomed.blockID }
         }
 
         public var id: String { windowID }
@@ -96,7 +111,8 @@ public struct RexOverview: Codable, Equatable {
                     rect: rect(pane.rect),
                     preview: pane.preview.map { lines in
                         Array(lines.values.suffix(RexScript.previewLines).map { RexInventory.line($0, limit: RexScript.previewColumns) ?? "" })
-                    }))
+                    },
+                    layer: min(max(pane.layer ?? 0, 0), 64)))
             }
             var tabs: [Tab] = []
             for window in session.windows?.values ?? [] where tabCount < maximumTabs && RexIdentifier.isValid(window.window_id, kind: .window) {
@@ -104,7 +120,8 @@ public struct RexOverview: Codable, Equatable {
                 tabs.append(Tab(windowID: window.window_id, label: RexInventory.line(window.label, limit: RexInventory.maximumLabel) ?? "Tab",
                                 active: window.active ?? false,
                                 focusedBlockID: window.focused_block_id.flatMap { RexIdentifier.isValid($0, kind: .block) ? $0 : nil },
-                                panes: panes))
+                                panes: panes,
+                                zoomedBlockID: window.zoomed_block_id.flatMap { id in panes.contains { $0.blockID == id } ? id : nil }))
                 tabCount += 1
             }
             if !tabs.isEmpty {
@@ -144,6 +161,7 @@ public struct RexOverview: Codable, Equatable {
         let label: String?
         let active: Bool?
         let focused_block_id: String?
+        let zoomed_block_id: String?
     }
     /// One pane as the script printed it. A malformed rect reads as none, so one odd pane draws
     /// as the whole tab instead of failing the overview.
@@ -157,8 +175,9 @@ public struct RexOverview: Codable, Equatable {
         let rect: [Double]?
         let records: RexInventory.LuaList<RexInventory.RawRecord>?
         let preview: RexInventory.LuaList<String>?
+        let layer: Int?
 
-        private enum CodingKeys: String, CodingKey { case block_id, label, cwd, title, program, window_id, rect, records, preview }
+        private enum CodingKeys: String, CodingKey { case block_id, label, cwd, title, program, window_id, rect, records, preview, layer }
 
         init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -171,6 +190,7 @@ public struct RexOverview: Codable, Equatable {
             rect = try? c.decodeIfPresent([Double].self, forKey: .rect)
             records = try? c.decodeIfPresent(RexInventory.LuaList<RexInventory.RawRecord>.self, forKey: .records)
             preview = try? c.decodeIfPresent(RexInventory.LuaList<String>.self, forKey: .preview)
+            layer = try? c.decodeIfPresent(Int.self, forKey: .layer)
         }
     }
 }
@@ -194,10 +214,12 @@ public extension RexOverview {
         case previousWaiting, nextWaiting
     }
 
-    /// A tab's panes in reading order: by their top edge, then their left edge. Panes without a
-    /// place keep their order after the placed ones.
+    /// A tab's panes in reading order: the tiled layout first, then each floating layer from back to
+    /// front; within a layer by top edge, then left edge. Panes without a place keep their order
+    /// after the placed ones of their layer.
     static func readingOrder(_ panes: [Pane]) -> [Pane] {
         panes.enumerated().sorted { a, b in
+            if a.element.layer != b.element.layer { return a.element.layer < b.element.layer }
             switch (a.element.rect, b.element.rect) {
             case let (ra?, rb?):
                 if abs(ra[1] - rb[1]) > 0.001 { return ra[1] < rb[1] }
@@ -254,17 +276,37 @@ public extension RexOverview {
         return nil
     }
 
+    /// Where selection lands in a minimized session: its first waiting pane, else its first tab's
+    /// main pane.
+    func sessionTarget(_ session: Session) -> Selection? {
+        let panes = session.tabs.flatMap { Self.readingOrder($0.panes) }
+        if let waiting = panes.first(where: { $0.state == .blocked }) { return selection(session, waiting) }
+        return session.tabs.first?.primaryPane.map { selection(session, $0) }
+    }
+
     /// The selection after a key press. Tab and pane moves stop at the ends; waiting moves wrap.
-    func move(_ move: Move, from current: Selection?) -> Selection? {
+    /// A session in `minimized` is one stop for Left and Right, and Up and Down stay put inside it.
+    func move(_ move: Move, from current: Selection?, minimized: Set<String> = []) -> Selection? {
         guard let current = resolve(current), let place = pane(current) else { return initialSelection }
+        let inMinimized = minimized.contains(place.session.sessionID)
         switch move {
         case .previousTab, .nextTab:
-            let tabs = tabsInOrder
-            guard let index = tabs.firstIndex(where: { $0.session.sessionID == place.session.sessionID && $0.tab.windowID == place.tab.windowID }) else { return current }
+            var stops: [(id: String, target: Selection)] = []
+            for session in sessions {
+                if minimized.contains(session.sessionID) {
+                    if let target = sessionTarget(session) { stops.append((session.sessionID, target)) }
+                } else {
+                    for tab in session.tabs {
+                        if let pane = tab.primaryPane { stops.append((session.sessionID + "|" + tab.windowID, selection(session, pane))) }
+                    }
+                }
+            }
+            let here = inMinimized ? place.session.sessionID : place.session.sessionID + "|" + place.tab.windowID
+            guard let index = stops.firstIndex(where: { $0.id == here }) else { return current }
             let target = move == .nextTab ? index + 1 : index - 1
-            guard tabs.indices.contains(target), let pane = tabs[target].tab.primaryPane else { return current }
-            return selection(tabs[target].session, pane)
+            return stops.indices.contains(target) ? stops[target].target : current
         case .previousPane, .nextPane:
+            if inMinimized { return current }
             let panes = Self.readingOrder(place.tab.panes)
             guard let index = panes.firstIndex(where: { $0.blockID == current.blockID }) else { return current }
             let target = move == .nextPane ? index + 1 : index - 1

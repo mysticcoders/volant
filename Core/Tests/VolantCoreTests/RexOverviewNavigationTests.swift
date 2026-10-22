@@ -61,6 +61,37 @@ final class RexOverviewNavigationTests: XCTestCase {
         XCTAssertEqual(twoWaiting.move(.nextWaiting, from: at("b", "two")), at("a", "one"), "wraps forwards")
     }
 
+    func testPaneMovesReachFloatingAndHiddenPanes() {
+        let floating = RexOverview(sessions: [.init(sessionID: "session:s", label: "s", tabs: [
+            .init(windowID: "window:w", label: "w", panes: [
+                .init(blockID: "block:float", label: "f", rect: [0.6, 0.6, 0.3, 0.3], layer: 1),
+                .init(blockID: "block:tile", label: "t", rect: [0, 0, 1, 1]),
+            ]),
+            .init(windowID: "window:z", label: "z", panes: [
+                .init(blockID: "block:behind", label: "b", status: RexStatus(state: .blocked), rect: [0, 0, 0.5, 1]),
+                .init(blockID: "block:front", label: "f", rect: [0.5, 0, 0.5, 1]),
+            ], zoomedBlockID: "block:front"),
+        ])])
+        XCTAssertEqual(floating.move(.nextPane, from: at("s", "tile")), at("s", "float"), "down reaches a floating pane after the tiles")
+        XCTAssertEqual(floating.initialSelection, at("s", "behind"), "a waiting pane behind a zoom is where selection starts")
+        XCTAssertEqual(floating.move(.nextPane, from: at("s", "behind")), at("s", "front"))
+    }
+
+    func testAMinimizedSessionIsOneStop() {
+        let minimized: Set<String> = ["session:orbit"]
+        XCTAssertEqual(overview.move(.previousTab, from: at("ops", "deploy"), minimized: minimized), at("orbit", "logs"),
+                       "Left lands on the minimized session's first tab's main pane when nothing in it waits")
+        XCTAssertEqual(overview.move(.nextTab, from: at("orbit", "logs"), minimized: minimized), at("ops", "deploy"),
+                       "Right leaves the whole minimized session in one step, past its second tab")
+        XCTAssertEqual(overview.move(.nextPane, from: at("orbit", "agent"), minimized: minimized), at("orbit", "agent"), "Down stays put inside it")
+        XCTAssertEqual(overview.move(.nextWaiting, from: at("orbit", "web"), minimized: minimized), at("ops", "deploy"))
+        let waitingInside: Set<String> = ["session:ops"]
+        XCTAssertEqual(overview.move(.nextTab, from: at("orbit", "web"), minimized: waitingInside), at("ops", "deploy"),
+                       "a minimized session with a waiting pane is entered at that pane")
+        XCTAssertEqual(overview.move(.nextWaiting, from: at("orbit", "agent"), minimized: waitingInside), at("ops", "deploy"),
+                       "Tab still reaches a waiting pane in a minimized session")
+    }
+
     func testSelectionSurvivesRefreshesByIdentity() {
         XCTAssertEqual(overview.resolve(at("orbit", "shell")), at("orbit", "shell"))
         let shellClosed = RexOverview(sessions: [
