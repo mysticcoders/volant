@@ -142,7 +142,14 @@ Added in 0.3.14:
 | Floating and zoomed panes drawn as Rex shows them, with chips for panes a zoom hides | Yes | #285; floating coordinates checked against a temporary Rex session; Core parse and navigation tests; VM renders; the owner used it in Volant Dev against live Rex; floating panes can only be created through Rex's API | Agents doc; never claim Volant creates or arranges panes |
 | Minimize sessions in the Rex Overview, remembered per Mac | Yes | #285; Core and app tests, the fixture minimizing through the window's keys, VM renders; kept by session ID, the 200 most recent | Agents doc |
 
-Merged after 0.3.14, not in the current download:
+Added in 0.3.15:
+
+| Story | In 0.3.15 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| Data, the clipboard Keychain item and the extension ABI renamed from Vey to Volant, moved once on first launch | Yes | #288; Core tests of the folder move (only-old, both, fresh, failed move) and defaults, injected-Keychain tests of the key copy and read-back, isolated-SQLite fingerprint rehash; the move on a real installed copy and the Keychain item under the signed app need installed-app evidence; going back to 0.3.14 doesn't see the moved data | Home download line; release notes say a downgrade starts without the data. Never claim it was tested on every Mac |
+| Command extension failures shown in the launcher | Yes | #289; app test that a failed run replaces the rows with its notice, failing without the fix; found by the owner's Clipboard Test check on 0.3.14 | Home download line |
+
+Merged after 0.3.15, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
