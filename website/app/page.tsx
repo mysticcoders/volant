@@ -218,8 +218,7 @@ export default function Home() {
         >
           <div className="section-intro">
             <p className="eyebrow">
-              02 / KEEP YOUR AGENTS MOVING{' '}
-              <span className="release-badge">New in 0.3.14</span>
+              02 / KEEP YOUR AGENTS MOVING
             </p>
             <h2 id="agents-title">
               When they need you.
@@ -718,8 +717,8 @@ export default function Home() {
             Version {appVersion} · macOS 15+ · Apple silicon &amp; Intel
           </span>
           <p className="download-scope">
-            <a href="#agents">New in 0.3.14</a>: the Rex Overview works from the
-            keyboard, shows floating and zoomed panes, and minimizes sessions. See{' '}
+            New in 0.3.15: Volant keeps its data under its own name, and
+            extension errors show in the launcher. See{' '}
             <a href={`${repositoryURL}/releases`}>every release</a>.
           </p>
         </section>
