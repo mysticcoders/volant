@@ -114,9 +114,18 @@ export default function Agents() {
       <p>
         From the keyboard, <kbd>←</kbd> and <kbd>→</kbd> move between tabs,{' '}
         <kbd>↑</kbd> and <kbd>↓</kbd> between the panes of a tab,{' '}
-        <kbd>Tab</kbd> jumps to the next pane that&rsquo;s waiting on you, and{' '}
+        <kbd>Tab</kbd> jumps to the next pane that&rsquo;s waiting on you,{' '}
+        <kbd>Space</kbd> minimizes or expands the session, and{' '}
         <kbd>Return</kbd> switches Rex to the selected pane. <kbd>Esc</kbd>{' '}
         closes the overview.
+      </p>
+      <p>
+        Floating panes are drawn where they sit, over the tiles. A zoomed tab
+        shows the zoomed pane, as Rex does, with chips below it for the panes
+        it hides, so a pane waiting behind the zoom is still in sight. Click
+        the chevron beside a session&rsquo;s name to minimize it to a line of
+        tabs with a dot per pane; it stays minimized on this Mac until you
+        expand it.
       </p>
       <p>
         Each pane shows the last 12 lines of its screen, so the overview needs{' '}

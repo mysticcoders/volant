@@ -493,3 +493,16 @@ Later the same day the owner installed a reader from Settings → Catalog in the
 **Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
 
 **Installed check.** On October 21, 2026 the owner upgraded an installed 0.3.12 to 0.3.13 through the app's updater, and used the Rex Overview, including pane previews, in that Release-signed app against live Rex. This is the first Release-signed check of the Rex helper path and the overview; it covers the owner's Mac only.
+
+## 0.3.14 build 31 — October 21, 2026
+
+**What's in it.** See the [release notes](releases/0.3.14.md).
+
+**Build.** Built from `e6d205c` on `release/0.3.14` by `Scripts/ship.sh`.
+
+- **Notarization:** Apple accepted app submission `845a8ae1-17ab-4fac-98fb-7bbb59bb1cc6` and DMG submission `f7c3383e-c472-4377-9297-f9ee445dee5f`. Both were stapled and passed Gatekeeper as Notarized Developer ID.
+- **Mounted DMG:** `Volant.app` 0.3.14, build 31, `x86_64 arm64`, valid deep strict signature, stapled, Applications link present.
+- **DMG SHA-256:** `3e1942110f1018fb91129dc515699b8ab825e3f4b855bc86a7d3f7d8941dd9b6` (20274065 bytes).
+- **Feed:** the signed build-31 appcast generated with this DMG passes `sign_update --verify`.
+
+**Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
