@@ -149,11 +149,16 @@ Added in 0.3.15:
 | Data, the clipboard Keychain item and the extension ABI renamed from Vey to Volant, moved once on first launch | Yes | #288; Core tests of the folder move (only-old, both, fresh, failed move) and defaults, injected-Keychain tests of the key copy and read-back, isolated-SQLite fingerprint rehash; the move on a real installed copy and the Keychain item under the signed app need installed-app evidence; going back to 0.3.14 doesn't see the moved data | Home download line; release notes say a downgrade starts without the data. Never claim it was tested on every Mac |
 | Command extension failures shown in the launcher | Yes | #289; app test that a failed run replaces the rows with its notice, failing without the fix; found by the owner's Clipboard Test check on 0.3.14 | Home download line |
 
-Merged after 0.3.15, not in the current download:
+Added in 0.3.16:
+
+| Story | In 0.3.16 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| Listening servers: `servers`/`ports` lists the owner's listening TCP ports by runtime, folder and age; Return opens localhost, Actions copy | Yes | #292; Core tests including a real-socket scan (loopback vs all interfaces, closed socket gone), launcher tests with a scripted helper, native fixture renders; live scan matched `lsof` on the owner's Mac; signed-helper delivery in the installed app needs installed evidence; runtime logos from Simple Icons are their owners' trademarks, licenses in About. Read-only: never stops a process | System control and Privacy docs; home download line; never say Volant stops or manages servers |
+
+Merged after 0.3.16, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
-| Listening servers: `servers`/`ports` lists the owner's listening TCP ports by runtime, folder and age; Return opens localhost, Actions copy | Not yet | Core tests including a real-socket scan (loopback vs all interfaces, closed socket gone), launcher tests with a scripted helper, native fixture renders; live scan matched `lsof` on the owner's Mac; signed-helper delivery in the installed app needs installed evidence. Read-only: never stops a process | System control and Privacy docs; claim only once released; never say Volant stops or manages servers |
 
 ## Privacy language
 
