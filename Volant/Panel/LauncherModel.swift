@@ -23,6 +23,7 @@ enum ResultRow: Identifiable, Hashable {
     case core(CoreCommand)
     case systemAction(SystemAction)
     case appleShortcut(AppleShortcut)
+    case server(ListeningServer)
     case caffeinate(CaffeinateCommand)
     case systemSettings(SystemSettingsDestination)
     case settings
@@ -53,6 +54,7 @@ enum ResultRow: Identifiable, Hashable {
     var id: String {
         switch self {
         case .appleShortcut(let shortcut): return "apple-shortcut:" + shortcut.id
+        case .server(let server): return "server:" + server.id
         case .core(let command): return "core:" + command.rawValue
         case .systemAction(let action): return "system-action:" + action.rawValue
         case .caffeinate(let command): return "caffeinate:" + command.id
@@ -88,6 +90,7 @@ enum ResultRow: Identifiable, Hashable {
     var kind: String {
         switch self {
         case .appleShortcut: return "Apple Shortcut"
+        case .server(let server): return server.exposed ? "Network" : "Local"
         case .core, .caffeinate, .systemAction: return "Command"
         case .agentSession(let session): return session.status
         case .herdrMachine(_, let enabled, _): return enabled ? "Enabled" : "Disabled"
@@ -126,6 +129,7 @@ enum ResultRow: Identifiable, Hashable {
     var primaryAction: String {
         switch self {
         case .appleShortcut: return "Run Shortcut"
+        case .server: return "Open in Browser"
         case .core: return "Open Command"
         case .systemAction(let action): return action.title.replacingOccurrences(of: "…", with: "")
         case .caffeinate(let command): return command.stop ? "Stop" : "Start"
@@ -167,6 +171,7 @@ enum ResultRow: Identifiable, Hashable {
         switch self {
         case .file: return "Reveal in Finder"
         case .app: return "Reveal in Finder"
+        case .server: return "Copy URL"
         case .contact(let c): return c.secondaryField?.copyTitle
         case .calculation: return "Use Answer"
         case .extensionItem(let item, _): return item.secondaryURL == nil ? nil : (item.secondaryTitle ?? "Open Second Link")
@@ -307,6 +312,9 @@ final class LauncherModel: ObservableObject {
     private var shortcutsSubscription: AnyCancellable?
     private var shortcutRunQuery: String?
     var showingAppleShortcuts: Bool { AppleShortcut.queryTerm(routedQuery) != nil }
+    let servers = ServersModel()
+    private var serversSubscription: AnyCancellable?
+    var showingServers: Bool { ListeningServers.queryTerm(routedQuery) != nil }
     let agents: AgentsModel
     let conversations = ACPConversations()
     /// The conversation AI Chat shows; everything that acts on "the" conversation acts on this one.
@@ -564,6 +572,9 @@ final class LauncherModel: ObservableObject {
                 if self.shortcutRunQuery == self.query, let message = self.appleShortcuts.runMessage { self.actionFeedback = message }
             }
         }
+        serversSubscription = servers.objectWillChange.sink { [weak self] _ in
+            DispatchQueue.main.async { self?.refreshServerResults() }
+        }
         agentSubscription = agents.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.refreshAgentResults() }
         }
@@ -788,6 +799,25 @@ final class LauncherModel: ObservableObject {
         }
     }
 
+    /// Shows the Servers command: dev runtimes, then other processes, then macOS services after
+    /// `all`, keeping the selected server by identity as reads arrive.
+    private func refreshServerResults() {
+        guard showingServers else { return }
+        let selectedID = selectedRow?.id
+        let matches = servers.matches(routedQuery)
+        let groups: [(title: String, servers: [ListeningServer])] = [
+            ("Dev Servers", matches.filter { if case .runtime = $0.kind { return true }; return false }),
+            ("Other Processes", matches.filter { $0.kind == .other }),
+            ("macOS Services", matches.filter { $0.kind == .system }),
+        ]
+        sections = groups.filter { !$0.servers.isEmpty }.map { ResultSection(title: $0.title, rows: $0.servers.map(ResultRow.server)) }
+        let showsAll = ListeningServers.queryTerm(routedQuery)?.all ?? false
+        notice = servers.loading && servers.servers.isEmpty ? "Reading listening servers…" : servers.message
+            ?? (rows.isEmpty ? (showsAll ? "Nothing is listening." : "No servers are listening. Type servers all to include macOS services.") : nil)
+        if !rows.isEmpty { actionFeedback = servers.message }
+        selection = selectedID.flatMap { id in rows.firstIndex { $0.id == id } } ?? 0
+    }
+
     private func showSuggestions() {
         let favorites = config.favoriteApps.compactMap { id in index.apps.first { $0.id == id } }.map(ResultRow.app)
         let apps = index.suggestions(usage: usage).filter { !config.favoriteApps.contains($0.id) }.map(ResultRow.app)
@@ -901,6 +931,12 @@ final class LauncherModel: ObservableObject {
         let q = query.trimmingCharacters(in: .whitespaces)
         if !showingDictionary { dictionary.clear() }
         if let ext = scopedExtension { refreshScope(ext, input: q, generation: gen); return }
+        if showingServers {
+            sections = []
+            servers.refresh()
+            refreshServerResults()
+            return
+        }
         if showingAppleShortcuts {
             sections = []
             if searchesSecondarySources { appleShortcuts.refresh() }
@@ -1479,11 +1515,12 @@ final class LauncherModel: ObservableObject {
     func activateSelection() {
         guard let row = selectedRow else { return }
         switch row {
-        case .appleShortcut, .connectivity, .audioRoute, .volume, .extensionResult, .extensionItem, .newNote, .calculation: break
+        case .appleShortcut, .server, .connectivity, .audioRoute, .volume, .extensionResult, .extensionItem, .newNote, .calculation: break
         default: usage.record(key: row.id, query: query)
         }
         switch row {
         case .appleShortcut(let shortcut): shortcutRunQuery = query; appleShortcuts.run(shortcut); return
+        case .server(let server): openURL(server.url)
         case .systemAction(let action): onNote(.systemAction(action)); return
         case .core(let command):
             if command == .catalog { query = command.query + " "; catalog.load(); return }
@@ -1603,7 +1640,7 @@ final class LauncherModel: ObservableObject {
 
     var canTabToAIChat: Bool {
         scopedExtension == nil && !showingACP && !showingDictionary && !showingCatalog && !showingTranslation && !showingEmoji &&
-        !showingAppleShortcuts && !showingAgents && !showingRex && wifiJoin == nil && entryForm == nil && actionTarget == nil
+        !showingAppleShortcuts && !showingServers && !showingAgents && !showingRex && wifiJoin == nil && entryForm == nil && actionTarget == nil
     }
 
     /// Opens the form for a new snippet or quicklink over the results, validated against the
@@ -1785,7 +1822,18 @@ final class LauncherModel: ObservableObject {
         actionTarget = nil
         switch action {
         case .open: activate(rowID: target.id)
-        case .reveal: activateSecondary()
+        case .reveal:
+            guard case .server(let server) = target else { activateSecondary(); return }
+            guard let executable = server.executable else { actionFeedback = "The executable’s location is unavailable."; return }
+            NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: executable)])
+            dismiss()
+        case .copyURL: copyText(url.absoluteString); actionFeedback = "URL copied."
+        case .copyPort:
+            guard case .server(let server) = target else { return }
+            copyText(String(server.port)); actionFeedback = "Port copied."
+        case .copyPID:
+            guard case .server(let server) = target else { return }
+            copyText(String(server.pid)); actionFeedback = "Process ID copied."
         case .contents:
             guard case .app = target else { return }
             if NSWorkspace.shared.open(url.appendingPathComponent("Contents", isDirectory: true)) { dismiss() }
@@ -1835,6 +1883,7 @@ final class LauncherModel: ObservableObject {
             return
         case .file(let file): FileSearch.reveal(file)
         case .app(let app): NSWorkspace.shared.activateFileViewerSelecting([app.url])
+        case .server(let server): copy(server.url.absoluteString)
         case .contact(let contact): if let field = contact.secondaryField { copy(field.value) }
         case .extensionItem(let item, _):
             guard let link = item.secondaryURL, let url = URL(string: link) else { activateSelection(); return }

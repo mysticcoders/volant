@@ -2,7 +2,7 @@ import Foundation
 
 /// Discoverable entry points. Data rows keep their own identity and aren't branded as apps.
 public enum CoreCommand: String, CaseIterable, Hashable {
-    case define, translate, caffeinate, emoji, notes, clipboard, shortcuts, agents, ai, talk, confetti, wifi, bluetooth, audio, newSnippet, newQuicklink, catalog
+    case define, translate, caffeinate, emoji, notes, clipboard, shortcuts, agents, servers, ai, talk, confetti, wifi, bluetooth, audio, newSnippet, newQuicklink, catalog
     public var title: String {
         switch self {
         case .ai: return "AI Chat"
@@ -16,6 +16,7 @@ public enum CoreCommand: String, CaseIterable, Hashable {
         case .notes: return "Open Notes"
         case .clipboard: return "Clipboard History"
         case .agents: return "Open Agents"
+        case .servers: return "Listening Servers"
         case .wifi: return "Wi-Fi Networks"
         case .bluetooth: return "Bluetooth Devices"
         case .audio: return "Audio Devices"
@@ -46,6 +47,7 @@ public enum CoreCommand: String, CaseIterable, Hashable {
         case .notes: return "note.text"
         case .clipboard: return "doc.on.clipboard"
         case .agents: return "terminal"
+        case .servers: return "server.rack"
         case .wifi: return "wifi"
         case .bluetooth: return "antenna.radiowaves.left.and.right"
         case .audio: return "speaker.wave.2"
@@ -61,6 +63,7 @@ public enum CoreCommand: String, CaseIterable, Hashable {
         case .translate: return "Translate between languages on your Mac"
         case .caffeinate: return "Keep your Mac awake"
         case .emoji: return "Browse emoji and copy one"
+        case .servers: return "See which local servers are listening, and open one"
         case .newSnippet: return "Save text to copy by keyword"
         case .newQuicklink: return "Save a link to open by name"
         case .catalog: return "Browse and install reviewed extensions"
@@ -72,6 +75,7 @@ public enum CoreCommand: String, CaseIterable, Hashable {
         switch self {
         case .ai: return "acp"
         case .catalog: return "extensions | store | marketplace | install"
+        case .servers: return "ports | localhost | listening | dev server"
         case .newSnippet: return LauncherRouting.snippetCreatePhrases.sorted().joined(separator: " | ")
         case .newQuicklink: return LauncherRouting.quicklinkCreatePhrases.sorted().joined(separator: " | ") + " | new link"
         default: return ""

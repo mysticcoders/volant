@@ -153,6 +153,7 @@ Merged after 0.3.15, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
+| Listening servers: `servers`/`ports` lists the owner's listening TCP ports by runtime, folder and age; Return opens localhost, Actions copy | Not yet | Core tests including a real-socket scan (loopback vs all interfaces, closed socket gone), launcher tests with a scripted helper, native fixture renders; live scan matched `lsof` on the owner's Mac; signed-helper delivery in the installed app needs installed evidence. Read-only: never stops a process | System control and Privacy docs; claim only once released; never say Volant stops or manages servers |
 
 ## Privacy language
 

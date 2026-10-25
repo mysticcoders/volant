@@ -153,6 +153,14 @@ than it currently carries for the agent helper.
 
 ## Ports: who is listening, and can Volant stop it — October 14, 2026
 
+**Built read-only, October 25, 2026.** The owner chose the listing without Stop, in the existing
+agent helper rather than a new `VolantProcessHost`: `listListeningServers` on `VolantAgentHost`,
+backed by `ListeningServers.scan` in `VolantCore`, with the uid, 256-row and no-arguments limits
+below. Rows open and copy; nothing signals a process. If Stop is approved later, build
+`VolantProcessHost` with the stop rules below and move the listing into it. Re-measured from the
+probe on the owner's Mac (macOS 27): sandboxed, 1 of 1,386 descriptor tables readable and `lsof`
+exit 1; unsandboxed, 30 listeners, matching `lsof` exactly, in a 5 ms scan.
+
 The owner wants a `ports` view for the many localhost dev servers people run: one row per listening
 TCP port, such as "3000 · node · ~/code/my-app · 2h", where Return opens `http://localhost:3000`,
 Command-Return copies the URL and a further action stops the server. `tools/spike-ports.sh` measures

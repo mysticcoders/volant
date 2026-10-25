@@ -3,7 +3,7 @@ import VolantCore
 
 /// Only everyday actions belong here; app termination and uninstall are deliberately separate work.
 enum LauncherItemAction: String, CaseIterable, Identifiable {
-    case open, reveal, contents, favorite, copyPath, copyName, copyBundleID, configure, resetRanking
+    case open, reveal, contents, favorite, copyPath, copyName, copyBundleID, copyURL, copyPort, copyPID, configure, resetRanking
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -14,6 +14,9 @@ enum LauncherItemAction: String, CaseIterable, Identifiable {
         case .copyPath: return "Copy Path"
         case .copyName: return "Copy Name"
         case .copyBundleID: return "Copy Bundle Identifier"
+        case .copyURL: return "Copy URL"
+        case .copyPort: return "Copy Port"
+        case .copyPID: return "Copy Process ID"
         case .configure: return "Edit Shortcut & Alias…"
         case .resetRanking: return "Reset Ranking"
         }
@@ -23,7 +26,7 @@ enum LauncherItemAction: String, CaseIterable, Identifiable {
         case .open: return "arrow.up.forward.app"
         case .reveal, .contents: return "folder"
         case .favorite: return "star"
-        case .copyPath, .copyName, .copyBundleID: return "doc.on.clipboard"
+        case .copyPath, .copyName, .copyBundleID, .copyURL, .copyPort, .copyPID: return "doc.on.clipboard"
         case .configure: return "gearshape"
         case .resetRanking: return "arrow.counterclockwise"
         }
@@ -32,7 +35,7 @@ enum LauncherItemAction: String, CaseIterable, Identifiable {
         switch self {
         case .open, .reveal, .contents: return 0
         case .favorite: return 1
-        case .copyPath, .copyName, .copyBundleID: return 2
+        case .copyPath, .copyName, .copyBundleID, .copyURL, .copyPort, .copyPID: return 2
         case .configure, .resetRanking: return 3
         }
     }
@@ -67,6 +70,7 @@ extension ResultRow {
         switch self {
         case .app(let app): return app.url
         case .file(let file): return file.url
+        case .server(let server): return server.url
         default: return nil
         }
     }
@@ -78,6 +82,7 @@ extension ResultRow {
         switch self {
         case .app(let app): return app.name
         case .file(let file): return file.name
+        case .server(let server): return "localhost:\(server.port)"
         case .extensionItem(let item, _): return item.title
         default: return ""
         }
@@ -90,10 +95,16 @@ extension ResultRow {
         }
         return itemActions.map { .item($0) }
     }
+    /// The menu entry Command-Return runs, the same action Command-Return runs from the results.
+    var commandReturnEntry: LauncherMenuEntry {
+        if case .server = self { return .item(.copyURL) }
+        return .item(.reveal)
+    }
     var itemActions: [LauncherItemAction] {
         switch self {
-        case .app: return LauncherItemAction.allCases
+        case .app: return [.open, .reveal, .contents, .favorite, .copyPath, .copyName, .copyBundleID, .configure, .resetRanking]
         case .file: return [.open, .reveal, .copyPath, .copyName, .resetRanking]
+        case .server(let server): return [.open] + (server.executable == nil ? [] : [.reveal]) + [.copyURL, .copyPort, .copyPID]
         default: return []
         }
     }
@@ -158,7 +169,7 @@ struct LauncherActionsView: View {
                                     Text(title(action)).lineLimit(1)
                                     Spacer(minLength: 4)
                                     if action == .item(.open) { KeyCap("↩") }
-                                    if action == .item(.reveal) { KeyCap("⌘"); KeyCap("↩") }
+                                    if action == target.commandReturnEntry { KeyCap("⌘"); KeyCap("↩") }
                                 }.font(.system(size: 13)).padding(.horizontal, 10).padding(.vertical, 9)
                                     .contentShape(Rectangle())
                                     .background(selected == action ? theme.selection : AnyShapeStyle(Color.clear), in: RoundedRectangle(cornerRadius: 7))
@@ -183,7 +194,7 @@ struct LauncherActionsView: View {
         .onKeyPress(.downArrow) { move(1); return .handled }
         .onKeyPress(.upArrow) { move(-1); return .handled }
         .onKeyPress(.return, phases: .down) { press in
-            if press.modifiers.contains(.command) { model.performMenuEntry(.item(.reveal), target: target) } else { activate() }
+            if press.modifiers.contains(.command) { model.performMenuEntry(target.commandReturnEntry, target: target) } else { activate() }
             return .handled
         }
         .onKeyPress(.escape) { close(); return .handled }

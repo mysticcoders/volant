@@ -1362,6 +1362,36 @@ struct Scenario {
 ///   standalone chat view and activity strip.
 /// - notes-recovery: the notes panel, which has its own size.
 /// - rex-overview: the Rex Overview window, which has its own size.
+/// Listening servers from compiled release assets: runtime logos in brand color, the generic tile
+/// for a runtime without a logo and for other processes, and the row's Actions. Every server is fictional.
+func serversScenario() throws {
+    let started = Date().addingTimeInterval(-7200)
+    panel.model.servers.loadOverride = { $0([
+        ListeningServer(pid: 4101, port: 3000, process: "node", executable: "/opt/fictional/bin/node", directory: "/Users/fictional/site", exposed: false, started: started),
+        ListeningServer(pid: 4102, port: 8000, process: "python3.12", executable: "/opt/fictional/bin/python3.12", directory: "/Users/fictional/api", exposed: true, started: started),
+        ListeningServer(pid: 4105, port: 6379, process: "redis-server", executable: "/opt/fictional/bin/redis-server", directory: nil, exposed: false, started: started),
+        ListeningServer(pid: 4106, port: 5432, process: "postgres", executable: "/opt/fictional/bin/postgres", directory: nil, exposed: false, started: started),
+        ListeningServer(pid: 4107, port: 8080, process: "java", executable: "/opt/fictional/jdk/bin/java", directory: "/Users/fictional/service", exposed: false, started: started),
+        ListeningServer(pid: 4103, port: 6463, process: "Fictional Chat", executable: "/Applications/Fictional Chat.app/Contents/MacOS/Fictional Chat", directory: nil, exposed: false),
+    ], nil) }
+    summon()
+    panel.model.query = "servers"; settle()
+    verify(waitUntil { panel.model.rows.count == 6 }, "Servers shows the fictional listeners: \(panel.model.rows.map(\.id))")
+    for asset in ["nodedotjs", "python", "redis", "postgresql"] {
+        verify(NSImage(named: "Runtimes/" + asset) != nil, "Runtime logo \(asset) is in the compiled catalog")
+    }
+    try render("servers")
+    key("k", 40, .command)
+    verify(waitUntil { panel.model.actionTarget != nil }, "Command K opens a server's Actions")
+    verify(panel.model.actionTarget?.menuEntries == [.item(.open), .item(.reveal), .item(.copyURL), .item(.copyPort), .item(.copyPID)],
+           "A server offers Open, Reveal and the three copies")
+    verify(panel.model.actionTarget?.commandReturnEntry == .item(.copyURL), "Command-Return in a server's Actions copies the URL, as it does from the results")
+    try render("servers-actions")
+    copied = []
+    focusActionSearch(); key("\r", 36, .command)
+    verify(copied == ["http://localhost:3000"], "Command-Return in the menu copies the URL: \(copied)")
+}
+
 let scenarios: [Scenario] = [
     Scenario(name: "actions", sizeSensitive: true, run: actionsMenuScenario),
     Scenario(name: "volant-menu", sizeSensitive: true, run: volantMenuScenario),
@@ -1374,6 +1404,7 @@ let scenarios: [Scenario] = [
     Scenario(name: "catalog", sizeSensitive: true, run: catalogScenario),
     Scenario(name: "herdr", sizeSensitive: true, run: herdrScenario),
     Scenario(name: "rex", sizeSensitive: true, run: rexScenario),
+    Scenario(name: "servers", sizeSensitive: true, run: serversScenario),
     Scenario(name: "rex-overview", sizeSensitive: false, run: rexOverviewScenario),
     Scenario(name: "api-settings", sizeSensitive: false, run: apiSettingsScenario),
     Scenario(name: "acp-detection", sizeSensitive: false, run: acpDetectionScenario),

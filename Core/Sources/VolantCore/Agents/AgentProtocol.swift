@@ -59,6 +59,10 @@ import Foundation
     func fsearchStatus(reply: @escaping (Data?, String?) -> Void)
     /// Tells fsearch the owner opened `path`, so it ranks higher. Best effort.
     func fsearchOpened(path: String, reply: @escaping (String?) -> Void)
+    /// The TCP ports the owner's own processes are listening on, as JSON `[ListeningServer]`, read
+    /// fresh on each call and kept nowhere. Takes no input and acts on no process. Carries each
+    /// process's executable path and working folder, never its arguments or environment.
+    func listListeningServers(reply: @escaping (Data?, String?) -> Void)
 }
 
 public struct AgentSession: Codable, Identifiable, Hashable {
