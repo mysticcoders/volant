@@ -717,8 +717,8 @@ export default function Home() {
             Version {appVersion} · macOS 15+ · Apple silicon &amp; Intel
           </span>
           <p className="download-scope">
-            New in 0.3.15: Volant keeps its data under its own name, and
-            extension errors show in the launcher. See{' '}
+            New in 0.3.16: type <code>servers</code> to see the local dev
+            servers you&rsquo;re running and open one. See{' '}
             <a href={`${repositoryURL}/releases`}>every release</a>.
           </p>
         </section>

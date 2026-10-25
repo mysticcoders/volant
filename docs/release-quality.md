@@ -521,3 +521,16 @@ Later the same day the owner installed a reader from Settings → Catalog in the
 **Publishing.** The owner approved publication, and the release pull request was merged on their instruction. `Scripts/ship.sh` then deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
 
 **Installed check.** On October 22, 2026 the owner upgraded an installed 0.3.14 to 0.3.15 through the app's updater, cancelled an update while it downloaded, and saw an automatic check show the update alert rather than install. After the upgrade, settings, notes, pins, clipboard history, extensions and their approvals were all present. This is the first installed evidence of the one-time Vey → Volant move (#288), including the clipboard key's Keychain copy under the signed app. Clipboard Test's `denied` build was refused with a visible error (#289). This covers the owner's Mac only.
+
+## 0.3.16 build 33 — October 25, 2026
+
+**What's in it.** See the [release notes](releases/0.3.16.md).
+
+**Build.** Built from `8284cc9` on `release/0.3.16` by `Scripts/ship.sh`.
+
+- **Notarization:** Apple accepted app submission `f555d2c4-9a8b-4aa9-bb6d-91896653505c` and DMG submission `b37d1682-7cab-4ada-b160-999d368be825`. Both were stapled and passed Gatekeeper as Notarized Developer ID.
+- **Mounted DMG:** `Volant.app` 0.3.16, build 33, `x86_64 arm64`, valid deep strict signature, stapled, Applications link present.
+- **DMG SHA-256:** `a73d6615c2ee25aa494edbb870ae5e6c0d67c17df0e79084de007bc47ae2e17b` (20763455 bytes).
+- **Feed:** the signed build-33 appcast generated with this DMG passes `sign_update --verify`.
+
+**Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
