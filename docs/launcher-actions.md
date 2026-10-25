@@ -2,7 +2,7 @@
 
 The footer exposes Actions (⌘K); Reveal in Finder moves inside this searchable menu. ⌘↩ still reveals the selected result directly. The menu stays inside the launcher panel, with native button rows, keyboard arrows, Return, and Escape (close Actions first, then the launcher). Only displayed, implemented shortcuts have glyph hints.
 
-Applications offer Open, Reveal in Finder, Show Package Contents, Add/Remove Favorites, Copy Path/Name/Bundle Identifier, Edit Shortcut & Alias, and Reset Ranking. Files offer Open, Reveal, Copy Path/Name, and Reset Ranking. Missing bundle metadata reports an error without changing the clipboard.
+Applications offer Open, Reveal in Finder, Show Package Contents, Add/Remove Favorites, Copy Path/Name/Bundle Identifier, Edit Shortcut & Alias, and Reset Ranking. Files offer Open, Reveal, Copy Path/Name, and Reset Ranking. Listening servers offer Open in Browser, Reveal in Finder (the executable, when its path was readable), and Copy URL/Port/Process ID; ⌘↩ copies the URL. Missing bundle metadata reports an error without changing the clipboard.
 
 Favorites are stored as app paths in `favoriteApps` in configuration. The home screen shows installed favorites separately, preserving their configured order and avoiding duplicate Suggestions. Membership edits read the latest document, preserve unknown fields and other favorites, and reject stale membership. Reset Ranking drains queued usage writes and transactionally removes the app/file's Volant score and exact-query choices; Spotlight recency can still suggest the app afterward.
 

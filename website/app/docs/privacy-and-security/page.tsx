@@ -109,6 +109,18 @@ export default function PrivacyAndSecurity() {
         of each pane in memory and never saves, logs, or sends them. See{' '}
         <a href="/docs/agents">Agents</a>.
       </p>
+      <p>
+        When you type <code>servers</code> or <code>ports</code>, the same
+        helper reads which TCP ports your own processes are listening on,
+        with each one&rsquo;s program, working folder and start time. It
+        reads them fresh each time and keeps nothing. It never reads a
+        process&rsquo;s arguments, environment or traffic, reads only
+        processes your user owns, never root&rsquo;s or other users&rsquo;, and
+        can&rsquo;t stop anything.
+        The sandboxed app can&rsquo;t see other processes&rsquo; ports at all,
+        which is why the helper does this. See{' '}
+        <a href="/docs/system-control">System control</a>.
+      </p>
 
       <h2>Permissions Volant asks for</h2>
       <div className="docs-table-scroll">

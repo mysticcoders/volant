@@ -1081,6 +1081,30 @@ corePanel.model.query = "caffeinate"
 RunLoop.main.run(until: Date().addingTimeInterval(0.1))
 verify(corePanel.model.rows.allSatisfy { !$0.id.hasPrefix("apple-shortcut:") }, "Late discovery cannot replace a newer command")
 print("PASS: Apple Shortcuts discovery, Return, duplicate guard, errors, empty state and stale-query protection")
+// Fictional listening servers: runtimes first, other processes next, macOS services only after "all".
+let fictionalServers = [
+    ListeningServer(pid: 4102, port: 8000, process: "python3.12", executable: "/opt/fictional/bin/python3.12",
+                    directory: "/Users/fictional/api", exposed: true, started: Date().addingTimeInterval(-600)),
+    ListeningServer(pid: 4101, port: 3000, process: "node", executable: "/opt/fictional/bin/node",
+                    directory: "/Users/fictional/site", exposed: false, started: Date().addingTimeInterval(-7200)),
+    ListeningServer(pid: 4103, port: 6463, process: "Fictional Chat", executable: "/Applications/Fictional Chat.app/Contents/MacOS/Fictional Chat",
+                    directory: nil, exposed: false),
+    ListeningServer(pid: 4104, port: 7000, process: "ControlCenter", executable: "/System/Library/CoreServices/ControlCenter.app/Contents/MacOS/ControlCenter",
+                    directory: nil, exposed: true),
+]
+corePanel.model.servers.loadOverride = { $0(fictionalServers, nil) }
+corePanel.model.query = "servers"
+let expectedServerIDs = ["server:4101:3000", "server:4102:8000", "server:4103:6463"]
+verify(waitUntil { corePanel.model.rows.map(\.id) == expectedServerIDs }, "Servers list runtimes by port, then other processes, without macOS services: \(corePanel.model.rows.map(\.id))")
+verify(corePanel.model.selectedRow?.primaryAction == "Open in Browser" && corePanel.model.selectedRow?.secondaryAction == "Copy URL")
+try renderCore("servers")
+corePanel.model.query = "servers all"
+verify(waitUntil { corePanel.model.rows.map(\.id) == expectedServerIDs + ["server:4104:7000"] }, "servers all adds macOS services last")
+try renderCore("servers-all")
+corePanel.model.query = "servers 99"
+verify(waitUntil { corePanel.model.rows.isEmpty && corePanel.model.notice != nil }, "No match shows a notice")
+try renderCore("servers-empty")
+print("PASS: Servers lists fictional listeners by kind and port, hides macOS services until all, and renders an empty state")
 corePanel.model.query = "caffeinate 30m"
 RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 // Set up native text focus without entering AppKit's synchronous mouse tracking loop.

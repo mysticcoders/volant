@@ -166,6 +166,26 @@ export default function SystemControl() {
         session. The launcher shows the active state and offers Stop. This
         does not change your saved power settings.
       </p>
+      <h2>Listening servers</h2>
+      <p>
+        Type <code>servers</code> or <code>ports</code> to see the local
+        servers you&rsquo;re running: one row per port, with the runtime
+        (Node.js, Python, Java, Ruby, PostgreSQL and others), the folder it
+        was started in, its process ID and how long it has been running. Dev
+        servers come first, then other apps of yours that listen on a port.
+        Each row says <strong>Local</strong> when only this Mac can reach it,
+        or <strong>Network</strong> when other machines can.
+      </p>
+      <p>
+        Return opens <code>http://localhost:</code> and the port in your
+        browser, and Command-Return copies that URL. Actions (Command-K) also
+        copy the port or process ID, or show the program in Finder. Type more
+        to filter by port, runtime or folder, such as{' '}
+        <code>servers 3000</code> or <code>servers api</code>. macOS&rsquo;s own
+        services, such as AirPlay Receiver, appear only with{' '}
+        <code>servers all</code>. Volant only lists servers; it doesn&rsquo;t
+        stop them.
+      </p>
       <h2>System Settings</h2>
       <p>
         Search for a settings pane, such as Displays or Login Items, and press

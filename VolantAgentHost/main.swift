@@ -59,6 +59,12 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
             catch { reply(nil, "Couldn’t check for installed agents.") }
         }
     }
+    func listListeningServers(reply: @escaping (Data?, String?) -> Void) {
+        inspectionQueue.async {
+            do { reply(try JSONEncoder().encode(ListeningServers.scan()), nil) }
+            catch { reply(nil, "Couldn’t read listening servers.") }
+        }
+    }
     func repositoryStates(paths data: Data, reply: @escaping (Data?, String?) -> Void) {
         inspectionQueue.async {
             do {

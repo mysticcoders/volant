@@ -39,6 +39,9 @@ struct AboutSettingsView: View {
                 LabeledContent("Crypto prices") {
                     Link("Data provided by CoinGecko", destination: URL(string: "https://www.coingecko.com")!)
                 }
+                LabeledContent("Runtime logos") {
+                    Link("Simple Icons", destination: URL(string: "https://simpleicons.org")!)
+                }
                 LabeledContent("Color themes") {
                     Text("Catppuccin, Nord, Dracula, Gruvbox, Solarized, Tokyo Night, Rosé Pine, One Dark")
                         .multilineTextAlignment(.trailing)
@@ -46,7 +49,7 @@ struct AboutSettingsView: View {
             } header: {
                 Text("Acknowledgements")
             } footer: {
-                SettingsFooter("GeoNames city names are licensed under Creative Commons Attribution 4.0. Airport codes from mwgg/Airports and the color theme palettes are MIT licensed; their licenses are included with Volant.")
+                SettingsFooter("GeoNames city names are licensed under Creative Commons Attribution 4.0. Airport codes from mwgg/Airports and the color theme palettes are MIT licensed; their licenses are included with Volant. Runtime logos are trademarks of their owners, shown only to identify a server's runtime; the Ruby and PHP logos are licensed under Creative Commons Attribution-ShareAlike, and their licenses and notices are included with Volant.")
             }
         }
         .formStyle(.settings)

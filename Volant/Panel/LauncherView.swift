@@ -50,6 +50,14 @@ struct LauncherView: View {
                     Button("Open Shortcuts") { model.appleShortcuts.openApp() }
                 }.font(.system(size: 12)).padding(.horizontal, 20).padding(.vertical, 6)
             }
+            if model.showingServers {
+                HStack {
+                    Text("Listening Servers").foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Refresh") { model.servers.refresh(force: true) }
+                        .disabled(model.servers.loading)
+                }.font(.system(size: 12)).padding(.horizontal, 20).padding(.vertical, 6)
+            }
             if let network = model.wifiJoin {
                 WiFiJoinView(model: model, network: network).id(network.id)
                 Divider().opacity(0.6)
@@ -405,6 +413,33 @@ private struct CommandTile: View {
     }
 }
 
+/// A server's runtime logo, in its brand color on a white tile like an app icon, so a brand color
+/// is never altered and reads the same in light and dark appearance. Callers fall back to the
+/// generic tile when the logo isn't in the bundle, so a tile is never left blank.
+private struct RuntimeTile: View {
+    let image: NSImage
+    let hex: String
+
+    private var color: Color {
+        let value = UInt32(hex, radix: 16) ?? 0
+        return Color(red: Double(value >> 16 & 0xFF) / 255, green: Double(value >> 8 & 0xFF) / 255, blue: Double(value & 0xFF) / 255)
+    }
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 5.5, style: .continuous)
+            .fill(Color.white)
+            .frame(width: 22, height: 22)
+            .overlay {
+                Image(nsImage: image).renderingMode(.template).resizable().scaledToFit()
+                    .foregroundStyle(color)
+                    .frame(width: 14, height: 14)
+            }
+            .overlay(RoundedRectangle(cornerRadius: 5.5, style: .continuous).strokeBorder(.black.opacity(0.1), lineWidth: 0.5))
+            .shadow(color: .black.opacity(0.18), radius: 0.5, y: 0.5)
+            .accessibilityHidden(true)
+    }
+}
+
 private extension SystemAction {
     /// Actions that end the session or power off read in red, so they stand apart from locking
     /// and sleeping, which are harmless to choose by mistake.
@@ -426,6 +461,7 @@ private extension CoreCommand {
         case .notes: return Color(red: 0.93, green: 0.66, blue: 0.0)
         case .clipboard: return Color(red: 0.36, green: 0.46, blue: 0.62)
         case .agents: return Color(white: 0.22)
+        case .servers: return Color(red: 0.2, green: 0.55, blue: 0.35)
         case .wifi, .bluetooth: return .blue
         case .audio: return .mint
         case .newSnippet, .newQuicklink: return .cyan
@@ -489,6 +525,7 @@ private struct RowView: View {
     private var title: String {
         switch row {
         case .appleShortcut(let shortcut): return shortcut.name
+        case .server(let server): return "\(server.port) · " + (server.folderName.map { server.displayName + " · " + $0 } ?? server.displayName)
         case .core(let command): return command.title
         case .systemAction(let action): return action.title
         case .caffeinate(let command): return command.title
@@ -523,6 +560,7 @@ private struct RowView: View {
     private var subtitle: String? {
         switch row {
         case .core(let command): return command.detail
+        case .server(let server): return server.detail(home: ServersModel.home)
         case .systemAction(let action): return action.detail
         case .caffeinate(let command): return command.detail
         case .systemSettings: return "Open this pane in System Settings"
@@ -568,6 +606,9 @@ private struct RowView: View {
     @ViewBuilder private var icon: some View {
         switch row {
         case .appleShortcut: CommandTile(symbol: "square.stack.3d.up", tint: CoreCommand.shortcuts.tint)
+        case .server(let server):
+            if let logo = server.kind.logo, let image = NSImage(named: "Runtimes/" + logo.asset) { RuntimeTile(image: image, hex: logo.hex) }
+            else { CommandTile(symbol: CoreCommand.servers.symbol, tint: CoreCommand.servers.tint) }
         case .core(let command): CommandTile(symbol: command.symbol, tint: command.tint)
         case .systemAction(let action): CommandTile(symbol: action.symbol, tint: action.tint)
         case .caffeinate: CommandTile(symbol: "cup.and.saucer", tint: CoreCommand.caffeinate.tint)
