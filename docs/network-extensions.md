@@ -154,9 +154,9 @@ from their row, without a scope.
 
 ## Not yet
 
-- A catalog of approved extensions that installs from a repository (see #63). Today extensions are
-  installed by copying their folder into Settings → Extensions → Open Folder.
-- Per-extension storage for pins, hidden stories or read state, and preferences such as blocked domains.
+- Preferences an extension declares, such as blocked domains, with a Settings UI (#65). The signed
+  catalog ([extension catalog](extension-catalog.md)) and per-extension storage
+  ([extension storage](extension-storage.md), #226) have shipped.
 - Methods other than GET and POST, OAuth, streaming, or responses over 512 KB.
 - Secrets in catalog listings: the catalog does not list them yet, so Settings shows them only after install.
 - A signed-delivery check of `VolantFetchHost` through the release build, like `tools/check-rates-xpc.sh`.
