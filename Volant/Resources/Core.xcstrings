@@ -1,0 +1,90 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "AI Chat" : {
+      "comment" : "Launcher command name"
+    },
+    "Apple Shortcuts" : {
+      "comment" : "Launcher command name"
+    },
+    "Audio Devices" : {
+      "comment" : "Launcher command name"
+    },
+    "Bluetooth Devices" : {
+      "comment" : "Launcher command name"
+    },
+    "Browse and install reviewed extensions" : {
+      "comment" : "Launcher command description, shown under its name"
+    },
+    "Browse emoji and copy one" : {
+      "comment" : "Launcher command description, shown under its name"
+    },
+    "Built into Volant" : {
+      "comment" : "Launcher command description, shown under its name"
+    },
+    "Caffeinate" : {
+      "comment" : "Launcher command name"
+    },
+    "Clipboard History" : {
+      "comment" : "Launcher command name"
+    },
+    "Create Quicklink" : {
+      "comment" : "Launcher command name"
+    },
+    "Create Snippet" : {
+      "comment" : "Launcher command name"
+    },
+    "Define Word" : {
+      "comment" : "Launcher command name"
+    },
+    "Dictate Text" : {
+      "comment" : "Launcher command name"
+    },
+    "Extension Catalog" : {
+      "comment" : "Launcher command name"
+    },
+    "Find and run your Apple Shortcuts" : {
+      "comment" : "Launcher command description, shown under its name"
+    },
+    "Keep your Mac awake" : {
+      "comment" : "Launcher command description, shown under its name"
+    },
+    "Listening Servers" : {
+      "comment" : "Launcher command name"
+    },
+    "Look up words in your Mac’s dictionaries" : {
+      "comment" : "Launcher command description, shown under its name"
+    },
+    "Open Agents" : {
+      "comment" : "Launcher command name"
+    },
+    "Open Notes" : {
+      "comment" : "Launcher command name"
+    },
+    "Save a link to open by name" : {
+      "comment" : "Launcher command description, shown under its name"
+    },
+    "Save text to copy by keyword" : {
+      "comment" : "Launcher command description, shown under its name"
+    },
+    "Search Emoji" : {
+      "comment" : "Launcher command name"
+    },
+    "See which local servers are listening, and open one" : {
+      "comment" : "Launcher command description, shown under its name"
+    },
+    "Throw Confetti" : {
+      "comment" : "Launcher command name"
+    },
+    "Translate Text" : {
+      "comment" : "Launcher command name"
+    },
+    "Translate between languages on your Mac" : {
+      "comment" : "Launcher command description, shown under its name"
+    },
+    "Wi-Fi Networks" : {
+      "comment" : "Launcher command name"
+    }
+  },
+  "version" : "1.0"
+}

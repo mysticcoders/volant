@@ -90,7 +90,9 @@ enum ResultRow: Identifiable, Hashable {
     var kind: String {
         switch self {
         case .appleShortcut: return "Apple Shortcut"
-        case .server(let server): return server.exposed ? "Network" : "Local"
+        case .server(let server):
+            return server.exposed ? String(localized: "Network", comment: "Server row label: other machines can connect")
+                : String(localized: "Local", comment: "Server row label: only this Mac can connect")
         case .core, .caffeinate, .systemAction: return "Command"
         case .agentSession(let session): return session.status
         case .herdrMachine(_, let enabled, _): return enabled ? "Enabled" : "Disabled"
@@ -129,7 +131,7 @@ enum ResultRow: Identifiable, Hashable {
     var primaryAction: String {
         switch self {
         case .appleShortcut: return "Run Shortcut"
-        case .server: return "Open in Browser"
+        case .server: return String(localized: "Open in Browser", comment: "Footer and Actions label for Return on a server row")
         case .core: return "Open Command"
         case .systemAction(let action): return action.title.replacingOccurrences(of: "…", with: "")
         case .caffeinate(let command): return command.stop ? "Stop" : "Start"
@@ -171,7 +173,7 @@ enum ResultRow: Identifiable, Hashable {
         switch self {
         case .file: return "Reveal in Finder"
         case .app: return "Reveal in Finder"
-        case .server: return "Copy URL"
+        case .server: return String(localized: "Copy URL", comment: "Footer label for Command-Return on a server row")
         case .contact(let c): return c.secondaryField?.copyTitle
         case .calculation: return "Use Answer"
         case .extensionItem(let item, _): return item.secondaryURL == nil ? nil : (item.secondaryTitle ?? "Open Second Link")
@@ -806,14 +808,17 @@ final class LauncherModel: ObservableObject {
         let selectedID = selectedRow?.id
         let matches = servers.matches(routedQuery)
         let groups: [(title: String, servers: [ListeningServer])] = [
-            ("Dev Servers", matches.filter { if case .runtime = $0.kind { return true }; return false }),
-            ("Other Processes", matches.filter { $0.kind == .other }),
-            ("macOS Services", matches.filter { $0.kind == .system }),
+            (String(localized: "Dev Servers", comment: "Servers section: recognized runtimes such as Node.js or Python"),
+             matches.filter { if case .runtime = $0.kind { return true }; return false }),
+            (String(localized: "Other Processes", comment: "Servers section: other apps of the user's listening on a port"), matches.filter { $0.kind == .other }),
+            (String(localized: "macOS Services", comment: "Servers section: macOS's own listeners, shown with servers all"), matches.filter { $0.kind == .system }),
         ]
         sections = groups.filter { !$0.servers.isEmpty }.map { ResultSection(title: $0.title, rows: $0.servers.map(ResultRow.server)) }
         let showsAll = ListeningServers.queryTerm(routedQuery)?.all ?? false
-        notice = servers.loading && servers.servers.isEmpty ? "Reading listening servers…" : servers.message
-            ?? (rows.isEmpty ? (showsAll ? "Nothing is listening." : "No servers are listening. Type servers all to include macOS services.") : nil)
+        notice = servers.loading && servers.servers.isEmpty ? String(localized: "Reading listening servers…") : servers.message
+            ?? (rows.isEmpty ? (showsAll ? String(localized: "Nothing is listening.", comment: "Servers notice when servers all finds no listening port")
+                : String(localized: "No servers are listening. Type servers all to include macOS services.",
+                         comment: "Servers notice; servers all is a typed command and stays in English")) : nil)
         if !rows.isEmpty { actionFeedback = servers.message }
         selection = selectedID.flatMap { id in rows.firstIndex { $0.id == id } } ?? 0
     }
@@ -1824,16 +1829,16 @@ final class LauncherModel: ObservableObject {
         case .open: activate(rowID: target.id)
         case .reveal:
             guard case .server(let server) = target else { activateSecondary(); return }
-            guard let executable = server.executable else { actionFeedback = "The executable’s location is unavailable."; return }
+            guard let executable = server.executable else { actionFeedback = String(localized: "The executable’s location is unavailable."); return }
             NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: executable)])
             dismiss()
-        case .copyURL: copyText(url.absoluteString); actionFeedback = "URL copied."
+        case .copyURL: copyText(url.absoluteString); actionFeedback = String(localized: "URL copied.")
         case .copyPort:
             guard case .server(let server) = target else { return }
-            copyText(String(server.port)); actionFeedback = "Port copied."
+            copyText(String(server.port)); actionFeedback = String(localized: "Port copied.")
         case .copyPID:
             guard case .server(let server) = target else { return }
-            copyText(String(server.pid)); actionFeedback = "Process ID copied."
+            copyText(String(server.pid)); actionFeedback = String(localized: "Process ID copied.")
         case .contents:
             guard case .app = target else { return }
             if NSWorkspace.shared.open(url.appendingPathComponent("Contents", isDirectory: true)) { dismiss() }

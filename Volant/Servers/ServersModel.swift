@@ -58,7 +58,7 @@ final class ServersModel: ObservableObject {
             }
         }
         if let loadOverride { loadOverride(finish); return }
-        let failure = { finish(nil, "Couldn’t read listening servers. Try Refresh.") }
+        let failure = { finish(nil, String(localized: "Couldn’t read listening servers. Try Refresh.")) }
         guard let proxy = proxy(failure: failure) else { failure(); return }
         proxy.listListeningServers { data, error in
             guard error == nil, let data, data.count <= 2_000_000,

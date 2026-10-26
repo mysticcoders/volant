@@ -1,0 +1,102 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "NSAppleEventsUsageDescription": {
+      "comment": "Permission prompt macOS shows the first time Volant asks for this access.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volant asks macOS to show its restart, shut down and log out confirmations when you choose those commands."
+          }
+        }
+      }
+    },
+    "NSBluetoothAlwaysUsageDescription": {
+      "comment": "Permission prompt macOS shows the first time Volant asks for this access.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volant lists connected Bluetooth devices when you open the Bluetooth command."
+          }
+        }
+      }
+    },
+    "NSBluetoothPeripheralUsageDescription": {
+      "comment": "Permission prompt macOS shows the first time Volant asks for this access.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volant lists connected Bluetooth devices on request."
+          }
+        }
+      }
+    },
+    "NSCalendarsFullAccessUsageDescription": {
+      "comment": "Permission prompt macOS shows the first time Volant asks for this access.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volant shows today's events and their meeting links. Read-only."
+          }
+        }
+      }
+    },
+    "NSContactsUsageDescription": {
+      "comment": "Permission prompt macOS shows the first time Volant asks for this access.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volant searches your contacts so you can copy an email address or phone number. Read-only."
+          }
+        }
+      }
+    },
+    "NSLocationUsageDescription": {
+      "comment": "Permission prompt macOS shows the first time Volant asks for this access.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS requires Location access to show Wi-Fi network names. Volant also uses your approximate location (about 11 km) only for extensions you allow, which share it with the sites they read; it is never saved."
+          }
+        }
+      }
+    },
+    "NSLocationWhenInUseUsageDescription": {
+      "comment": "Permission prompt macOS shows the first time Volant asks for this access.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS requires Location access to show Wi-Fi network names. Volant also uses your approximate location (about 11 km) only for extensions you allow, which share it with the sites they read; it is never saved."
+          }
+        }
+      }
+    },
+    "NSMicrophoneUsageDescription": {
+      "comment": "Permission prompt macOS shows the first time Volant asks for this access.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volant transcribes dictation on this Mac. Audio is never sent anywhere and is not saved."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
