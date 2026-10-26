@@ -14,9 +14,9 @@ enum LauncherItemAction: String, CaseIterable, Identifiable {
         case .copyPath: return "Copy Path"
         case .copyName: return "Copy Name"
         case .copyBundleID: return "Copy Bundle Identifier"
-        case .copyURL: return "Copy URL"
-        case .copyPort: return "Copy Port"
-        case .copyPID: return "Copy Process ID"
+        case .copyURL: return String(localized: "Copy URL", comment: "Actions menu item")
+        case .copyPort: return String(localized: "Copy Port", comment: "Actions menu item")
+        case .copyPID: return String(localized: "Copy Process ID", comment: "Actions menu item")
         case .configure: return "Edit Shortcut & Alias…"
         case .resetRanking: return "Reset Ranking"
         }

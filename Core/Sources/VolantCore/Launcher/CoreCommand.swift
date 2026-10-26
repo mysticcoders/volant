@@ -3,26 +3,27 @@ import Foundation
 /// Discoverable entry points. Data rows keep their own identity and aren't branded as apps.
 public enum CoreCommand: String, CaseIterable, Hashable {
     case define, translate, caffeinate, emoji, notes, clipboard, shortcuts, agents, servers, ai, talk, confetti, wifi, bluetooth, audio, newSnippet, newQuicklink, catalog
-    public var title: String {
+    /// The command's name in the launcher, translated in the Core table.
+    public var titleResource: LocalizedStringResource {
         switch self {
-        case .ai: return "AI Chat"
-        case .talk: return "Dictate Text"
-        case .confetti: return "Throw Confetti"
-        case .shortcuts: return "Apple Shortcuts"
-        case .define: return "Define Word"
-        case .translate: return "Translate Text"
-        case .caffeinate: return "Caffeinate"
-        case .emoji: return "Search Emoji"
-        case .notes: return "Open Notes"
-        case .clipboard: return "Clipboard History"
-        case .agents: return "Open Agents"
-        case .servers: return "Listening Servers"
-        case .wifi: return "Wi-Fi Networks"
-        case .bluetooth: return "Bluetooth Devices"
-        case .audio: return "Audio Devices"
-        case .newSnippet: return "Create Snippet"
-        case .newQuicklink: return "Create Quicklink"
-        case .catalog: return "Extension Catalog"
+        case .ai: return LocalizedStringResource("AI Chat", table: "Core", comment: "Launcher command name")
+        case .talk: return LocalizedStringResource("Dictate Text", table: "Core", comment: "Launcher command name")
+        case .confetti: return LocalizedStringResource("Throw Confetti", table: "Core", comment: "Launcher command name")
+        case .shortcuts: return LocalizedStringResource("Apple Shortcuts", table: "Core", comment: "Launcher command name")
+        case .define: return LocalizedStringResource("Define Word", table: "Core", comment: "Launcher command name")
+        case .translate: return LocalizedStringResource("Translate Text", table: "Core", comment: "Launcher command name")
+        case .caffeinate: return LocalizedStringResource("Caffeinate", table: "Core", comment: "Launcher command name")
+        case .emoji: return LocalizedStringResource("Search Emoji", table: "Core", comment: "Launcher command name")
+        case .notes: return LocalizedStringResource("Open Notes", table: "Core", comment: "Launcher command name")
+        case .clipboard: return LocalizedStringResource("Clipboard History", table: "Core", comment: "Launcher command name")
+        case .agents: return LocalizedStringResource("Open Agents", table: "Core", comment: "Launcher command name")
+        case .servers: return LocalizedStringResource("Listening Servers", table: "Core", comment: "Launcher command name")
+        case .wifi: return LocalizedStringResource("Wi-Fi Networks", table: "Core", comment: "Launcher command name")
+        case .bluetooth: return LocalizedStringResource("Bluetooth Devices", table: "Core", comment: "Launcher command name")
+        case .audio: return LocalizedStringResource("Audio Devices", table: "Core", comment: "Launcher command name")
+        case .newSnippet: return LocalizedStringResource("Create Snippet", table: "Core", comment: "Launcher command name")
+        case .newQuicklink: return LocalizedStringResource("Create Quicklink", table: "Core", comment: "Launcher command name")
+        case .catalog: return LocalizedStringResource("Extension Catalog", table: "Core", comment: "Launcher command name")
         }
     }
     public var query: String {
@@ -56,19 +57,28 @@ public enum CoreCommand: String, CaseIterable, Hashable {
         case .catalog: return "puzzlepiece.extension"
         }
     }
-    public var detail: String {
+    /// The command's one-line description, translated in the Core table.
+    public var detailResource: LocalizedStringResource {
         switch self {
-        case .shortcuts: return "Find and run your Apple Shortcuts"
-        case .define: return "Look up words in your Mac’s dictionaries"
-        case .translate: return "Translate between languages on your Mac"
-        case .caffeinate: return "Keep your Mac awake"
-        case .emoji: return "Browse emoji and copy one"
-        case .servers: return "See which local servers are listening, and open one"
-        case .newSnippet: return "Save text to copy by keyword"
-        case .newQuicklink: return "Save a link to open by name"
-        case .catalog: return "Browse and install reviewed extensions"
-        default: return "Built into Volant"
+        case .shortcuts: return LocalizedStringResource("Find and run your Apple Shortcuts", table: "Core", comment: "Launcher command description, shown under its name")
+        case .define: return LocalizedStringResource("Look up words in your Mac’s dictionaries", table: "Core", comment: "Launcher command description, shown under its name")
+        case .translate: return LocalizedStringResource("Translate between languages on your Mac", table: "Core", comment: "Launcher command description, shown under its name")
+        case .caffeinate: return LocalizedStringResource("Keep your Mac awake", table: "Core", comment: "Launcher command description, shown under its name")
+        case .emoji: return LocalizedStringResource("Browse emoji and copy one", table: "Core", comment: "Launcher command description, shown under its name")
+        case .servers: return LocalizedStringResource("See which local servers are listening, and open one", table: "Core", comment: "Launcher command description, shown under its name")
+        case .newSnippet: return LocalizedStringResource("Save text to copy by keyword", table: "Core", comment: "Launcher command description, shown under its name")
+        case .newQuicklink: return LocalizedStringResource("Save a link to open by name", table: "Core", comment: "Launcher command description, shown under its name")
+        case .catalog: return LocalizedStringResource("Browse and install reviewed extensions", table: "Core", comment: "Launcher command description, shown under its name")
+        default: return LocalizedStringResource("Built into Volant", table: "Core", comment: "Launcher command description, shown under its name")
         }
+    }
+    public var title: String { String(localized: titleResource) }
+    public var detail: String { String(localized: detailResource) }
+    /// The English name, so a command stays findable by the name in the docs whatever the language.
+    var englishTitle: String {
+        var resource = titleResource
+        resource.locale = Locale(identifier: "en")
+        return String(localized: resource)
     }
     /// Extra words a command answers to besides its title and raw value.
     var searchTerms: String {
@@ -83,6 +93,6 @@ public enum CoreCommand: String, CaseIterable, Hashable {
     }
 
     public static func search(_ query: String) -> [Self] {
-        allCases.filter { ($0.title + " " + $0.rawValue + " " + $0.searchTerms).localizedCaseInsensitiveContains(query) }
+        allCases.filter { ($0.title + " " + $0.englishTitle + " " + $0.rawValue + " " + $0.searchTerms).localizedCaseInsensitiveContains(query) }
     }
 }

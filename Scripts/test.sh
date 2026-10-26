@@ -52,6 +52,8 @@ if [[ "$ui_mode" != only ]]; then
     timed xcodebuild "${build_options[@]}" test -skip-testing:VolantTests/NotesRenderTests \
         -skip-testing:VolantTests/LiveMarkdownTests/testLanguageChangePreservesContentSelectionAndUndo \
         -skip-testing:VolantTests/LiveMarkdownTests/testTypingFenceAndChangingModesDoNotRewriteSource
+    # Reads the .stringsdata that test build wrote, so it runs after it.
+    timed python3 tools/strings.py --check
 fi
 if [[ "$run_ui" == true ]]; then
     if [[ "$ci" != true && "${VOLANT_HOST_UI_TESTS:-0}" != 1 ]]; then

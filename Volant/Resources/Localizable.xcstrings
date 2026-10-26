@@ -1,0 +1,1291 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    "%@ · Version %@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · Version %2$@ · %3$@"
+          }
+        }
+      }
+    },
+    "%lld" : {
+
+    },
+    "%lld %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld %2$@"
+          }
+        }
+      }
+    },
+    "%lld more hidden" : {
+
+    },
+    "%lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "%lld waiting" : {
+
+    },
+    "%lld words" : {
+
+    },
+    "%lld%%" : {
+
+    },
+    "%lld." : {
+
+    },
+    "+%lld" : {
+
+    },
+    "A little space to think" : {
+
+    },
+    "ACP" : {
+
+    },
+    "AI Chat" : {
+
+    },
+    "AI Chat activity" : {
+
+    },
+    "API base URL" : {
+
+    },
+    "API key" : {
+
+    },
+    "API key (optional)" : {
+
+    },
+    "Accessibility" : {
+
+    },
+    "Account" : {
+
+    },
+    "Acknowledgements" : {
+
+    },
+    "Actions" : {
+
+    },
+    "Add Word" : {
+
+    },
+    "Add Word…" : {
+
+    },
+    "Add account" : {
+
+    },
+    "Agents" : {
+
+    },
+    "Agents on This Mac" : {
+
+    },
+    "Airport codes" : {
+
+    },
+    "Alias" : {
+
+    },
+    "Allow %@ to go online?" : {
+
+    },
+    "Allow Volant in System Settings → General → Login Items." : {
+
+    },
+    "Allow and Enable" : {
+
+    },
+    "Allow and Run" : {
+
+    },
+    "Allow community extensions" : {
+
+    },
+    "Allowed" : {
+
+    },
+    "Also fix close matches" : {
+
+    },
+    "Also heard as" : {
+
+    },
+    "Answer with keyboard" : {
+
+    },
+    "Apple Intelligence" : {
+
+    },
+    "Apple Shortcuts" : {
+
+    },
+    "Application" : {
+
+    },
+    "Apply Alias" : {
+
+    },
+    "Apply edits made outside Settings" : {
+
+    },
+    "Arrow keys move between tabs and panes, Tab moves to the next waiting pane, Space minimizes or expands the session, Return focuses it in Rex" : {
+
+    },
+    "Ask your agent…" : {
+
+    },
+    "Attach a note or clipboard item" : {
+
+    },
+    "Attach a note or clipboard item (type @)" : {
+
+    },
+    "Available models" : {
+
+    },
+    "Available on this Mac." : {
+
+    },
+    "Back from %@" : {
+
+    },
+    "Back to Volant (Esc)" : {
+
+    },
+    "Back to search" : {
+
+    },
+    "Back to search (⌘[)" : {
+
+    },
+    "Bring Your Own Key" : {
+
+    },
+    "Browse Extensions" : {
+
+    },
+    "Browse Extensions…" : {
+
+    },
+    "Browse extensions reviewed and signed for Volant. Volant contacts the catalog only when you check it." : {
+
+    },
+    "Built In" : {
+
+    },
+    "Built into Volant" : {
+
+    },
+    "Bundled" : {
+
+    },
+    "Caffeinate" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Capture a thought, a list, or something to keep handy." : {
+
+    },
+    "Catppuccin, Nord, Dracula, Gruvbox, Solarized, Tokyo Night, Rosé Pine, One Dark" : {
+
+    },
+    "Change Code Language" : {
+
+    },
+    "Changed since you last looked" : {
+
+    },
+    "Chat with your configured AI provider. A project folder is optional." : {
+
+    },
+    "Chat with your selected model." : {
+
+    },
+    "Check Again" : {
+
+    },
+    "Check Catalog" : {
+
+    },
+    "Check for Updates" : {
+
+    },
+    "Checking the catalog…" : {
+
+    },
+    "Checking…" : {
+
+    },
+    "Choose Folder…" : {
+
+    },
+    "Choose a model…" : {
+
+    },
+    "Choose a provider…" : {
+
+    },
+    "City time zones" : {
+
+    },
+    "Clear" : {
+
+    },
+    "Clear Data" : {
+
+    },
+    "Clear Data…" : {
+
+    },
+    "Clear catalog search" : {
+
+    },
+    "Clear data for %@?" : {
+
+    },
+    "Clear definition search" : {
+
+    },
+    "Clear search" : {
+
+    },
+    "Close" : {
+
+    },
+    "Close Volant menu" : {
+
+    },
+    "Close actions" : {
+
+    },
+    "Close attachment picker" : {
+
+    },
+    "Close picker" : {
+
+    },
+    "Code block language" : {
+
+    },
+    "CoinGecko key" : {
+
+    },
+    "Color Theme" : {
+
+    },
+    "Color themes" : {
+
+    },
+    "Community extensions are on" : {
+
+    },
+    "Community extensions run code written by other people. Here is how Volant keeps them in check:" : {
+
+    },
+    "Configuration" : {
+
+    },
+    "Connect" : {
+
+    },
+    "Connect ACP" : {
+
+    },
+    "Connection" : {
+
+    },
+    "Continue your last conversation with this provider, folder and account" : {
+
+    },
+    "Copies what you said; press ⌘V to paste it." : {
+
+    },
+    "Copy Code" : {
+
+    },
+    "Copy Definition ⌘↩" : {
+
+    },
+    "Copy Markdown" : {
+
+    },
+    "Copy Port" : {
+      "comment" : "Actions menu item"
+    },
+    "Copy Process ID" : {
+      "comment" : "Actions menu item"
+    },
+    "Copy Translation ⌘↩" : {
+
+    },
+    "Copy URL" : {
+      "comment" : "Actions menu item\nFooter label for Command-Return on a server row"
+    },
+    "Copy emoji" : {
+
+    },
+    "Copy to clipboard" : {
+
+    },
+    "Couldn't stop Caffeinate" : {
+
+    },
+    "Couldn’t apply change" : {
+
+    },
+    "Couldn’t change appearance" : {
+
+    },
+    "Couldn’t change extension" : {
+
+    },
+    "Couldn’t read listening servers. Try Refresh." : {
+
+    },
+    "Create a Note" : {
+
+    },
+    "Crypto prices" : {
+
+    },
+    "Data provided by CoinGecko" : {
+
+    },
+    "Default login" : {
+
+    },
+    "Define a word or phrase" : {
+
+    },
+    "Deletes this extension’s tokens from your Keychain; it asks again on next use." : {
+
+    },
+    "Detect Language" : {
+
+    },
+    "Dev Servers" : {
+      "comment" : "Servers section: recognized runtimes such as Node.js or Python"
+    },
+    "Dictation output" : {
+
+    },
+    "Dictionary" : {
+
+    },
+    "Disconnect" : {
+
+    },
+    "Dismiss" : {
+
+    },
+    "Done" : {
+
+    },
+    "Drag to align Volant. Hold Option to move freely." : {
+
+    },
+    "Drag to position Volant" : {
+
+    },
+    "Duplicate Note" : {
+
+    },
+    "Edit Word" : {
+
+    },
+    "Editor mode" : {
+
+    },
+    "Edit…" : {
+
+    },
+    "Enable %@?" : {
+
+    },
+    "Enable and Run" : {
+
+    },
+    "End" : {
+
+    },
+    "Enter text…" : {
+
+    },
+    "Enter the Wi-Fi password or use the password saved in your Keychain." : {
+
+    },
+    "Exchange rates" : {
+
+    },
+    "Expand this session" : {
+
+    },
+    "Export…" : {
+
+    },
+    "Extension Catalog" : {
+
+    },
+    "Features" : {
+
+    },
+    "Filter" : {
+
+    },
+    "Filter (⌘P for the next one)" : {
+
+    },
+    "Follow" : {
+
+    },
+    "For example: c" : {
+
+    },
+    "For notes or another answer, open Herdr." : {
+
+    },
+    "Full history and downloads" : {
+
+    },
+    "GeoNames" : {
+
+    },
+    "GitHub" : {
+
+    },
+    "Global shortcut" : {
+
+    },
+    "Herdr" : {
+
+    },
+    "Herdr agent activity" : {
+
+    },
+    "Herdr panes" : {
+
+    },
+    "Hidden" : {
+
+    },
+    "Hide Herdr status" : {
+
+    },
+    "Hide Rex status" : {
+
+    },
+    "Hotkey" : {
+
+    },
+    "Import & Backup" : {
+
+    },
+    "Import File…" : {
+
+    },
+    "Import from Raycast…" : {
+
+    },
+    "Import…" : {
+
+    },
+    "Input helper unavailable" : {
+
+    },
+    "Install" : {
+
+    },
+    "Installed" : {
+
+    },
+    "Join" : {
+
+    },
+    "Join %@" : {
+
+    },
+    "Joining…" : {
+
+    },
+    "Keep display on and unlocked" : {
+
+    },
+    "Keep the lookup to 256 characters or fewer." : {
+
+    },
+    "Kubernetes" : {
+
+    },
+    "Label, such as Work" : {
+
+    },
+    "Language for the code block at your cursor. Auto detects locally." : {
+
+    },
+    "Language list unavailable" : {
+
+    },
+    "Larger" : {
+
+    },
+    "Launch at Login" : {
+
+    },
+    "Launcher" : {
+
+    },
+    "Launcher alias" : {
+
+    },
+    "Learn more about extension security" : {
+
+    },
+    "Listening" : {
+
+    },
+    "Listening Servers" : {
+
+    },
+    "Live" : {
+
+    },
+    "Live styles Markdown while you type. ⌘E toggles preview." : {
+
+    },
+    "Local" : {
+      "comment" : "Server row label: only this Mac can connect"
+    },
+    "Local Model Servers" : {
+
+    },
+    "Location" : {
+
+    },
+    "Looking up definition…" : {
+
+    },
+    "Lookup unavailable" : {
+
+    },
+    "Lower volume while dictating" : {
+
+    },
+    "Markdown Source" : {
+
+    },
+    "Minimize this session" : {
+
+    },
+    "Mode" : {
+
+    },
+    "Model" : {
+
+    },
+    "Model ID" : {
+
+    },
+    "Model name" : {
+
+    },
+    "More transparent" : {
+
+    },
+    "Network" : {
+      "comment" : "Server row label: other machines can connect"
+    },
+    "Network Access" : {
+
+    },
+    "New" : {
+
+    },
+    "New ACP conversation" : {
+
+    },
+    "Next waiting agent" : {
+
+    },
+    "No applications indexed yet. This list updates automatically." : {
+
+    },
+    "No definition found" : {
+
+    },
+    "No extensions installed." : {
+
+    },
+    "No extensions match “%@”." : {
+
+    },
+    "No extensions use your location." : {
+
+    },
+    "No hosts allowed." : {
+
+    },
+    "No key arrived. If you pressed one, macOS or another app is using it." : {
+
+    },
+    "No matching actions" : {
+
+    },
+    "No matching applications" : {
+
+    },
+    "No matching emoji" : {
+
+    },
+    "No matching notes" : {
+
+    },
+    "No matching settings" : {
+
+    },
+    "No notes or clipboard text yet." : {
+
+    },
+    "No permissions required" : {
+
+    },
+    "No results yet." : {
+
+    },
+    "No servers are listening. Type servers all to include macOS services." : {
+      "comment" : "Servers notice; servers all is a typed command and stays in English"
+    },
+    "No servers found yet." : {
+
+    },
+    "No words yet. Add names and technical terms dictation gets wrong, such as Kubernetes." : {
+
+    },
+    "Not Now" : {
+
+    },
+    "Not allowed" : {
+
+    },
+    "Note unavailable" : {
+
+    },
+    "Nothing is listening." : {
+      "comment" : "Servers notice when servers all finds no listening port"
+    },
+    "Nothing matches “%@”." : {
+
+    },
+    "OK" : {
+
+    },
+    "Off keeps only the Mac awake. Add display or system to a caffeinate command to choose for one session." : {
+
+    },
+    "Opacity" : {
+
+    },
+    "Opaque" : {
+
+    },
+    "Open" : {
+
+    },
+    "Open AI Chat" : {
+
+    },
+    "Open AI Chat (Tab)" : {
+
+    },
+    "Open Accessibility Settings" : {
+
+    },
+    "Open Current Conversation" : {
+
+    },
+    "Open Folder" : {
+
+    },
+    "Open Login Items" : {
+
+    },
+    "Open Shortcuts" : {
+
+    },
+    "Open a running conversation, the one waiting for your permission first" : {
+
+    },
+    "Open conversation" : {
+
+    },
+    "Open in Browser" : {
+      "comment" : "Footer and Actions label for Return on a server row"
+    },
+    "Open in Dictionary ⌘O" : {
+
+    },
+    "Open in Herdr" : {
+
+    },
+    "Operation details" : {
+
+    },
+    "Optional Demo key" : {
+
+    },
+    "Optional, one word, for example sig" : {
+
+    },
+    "Optional. Separate with commas. Each is replaced with the word above, as whole words." : {
+
+    },
+    "Other Processes" : {
+      "comment" : "Servers section: other apps of the user's listening on a port"
+    },
+    "Pane previews in Rex Overview" : {
+
+    },
+    "Paste Theme" : {
+
+    },
+    "Paste a key to save it" : {
+
+    },
+    "Pin Note" : {
+
+    },
+    "Play sounds when dictation starts and stops" : {
+
+    },
+    "Plays audio at a fifth of its volume while listening, then restores it unless you changed it." : {
+
+    },
+    "Port copied." : {
+
+    },
+    "Press to launch or focus this app. Press again when it is frontmost to hide it. Use Command, Control or Option with a key." : {
+
+    },
+    "Preview" : {
+
+    },
+    "Previous waiting agent" : {
+
+    },
+    "Process ID copied." : {
+
+    },
+    "Provider" : {
+
+    },
+    "Rates By Exchange Rate API" : {
+
+    },
+    "Raycast" : {
+
+    },
+    "Raycast themes" : {
+
+    },
+    "Reading listening servers…" : {
+
+    },
+    "Reading the current question…" : {
+
+    },
+    "Record a global shortcut" : {
+
+    },
+    "Refresh" : {
+
+    },
+    "Release notes aren’t included in this build." : {
+
+    },
+    "Releases on GitHub" : {
+
+    },
+    "Reload" : {
+
+    },
+    "Reload Alias" : {
+
+    },
+    "Reload Configuration" : {
+
+    },
+    "Remember settings and lists on this Mac" : {
+
+    },
+    "Remove" : {
+
+    },
+    "Remove Key" : {
+
+    },
+    "Remove Theme" : {
+
+    },
+    "Remove Tokens" : {
+
+    },
+    "Remove filler words" : {
+
+    },
+    "Remove shortcut" : {
+
+    },
+    "Remove this account from Volant. Its folder and login stay." : {
+
+    },
+    "Replaces a word the spell checker doesn’t know when it sounds like one of yours, such as Kubernitz for Kubernetes. Real words, such as herder for Herdr, still need Also heard as." : {
+
+    },
+    "Reply in the agent’s pane" : {
+
+    },
+    "Restore Defaults" : {
+
+    },
+    "Resume" : {
+
+    },
+    "Retry" : {
+
+    },
+    "Retry Clipboard History" : {
+
+    },
+    "Retry Languages" : {
+
+    },
+    "Retry Loading Notes" : {
+
+    },
+    "Retry Save" : {
+
+    },
+    "Return to send; Shift-Return for a new line" : {
+
+    },
+    "Reveal in Finder" : {
+
+    },
+    "Review the request and exact approval scope above." : {
+
+    },
+    "Reviewed and signed for Volant; each download is checked against the signed catalog. Installing never turns an extension on or runs it." : {
+
+    },
+    "Rex" : {
+
+    },
+    "Rex Overview" : {
+
+    },
+    "Rex pane activity" : {
+
+    },
+    "Runtime logos" : {
+
+    },
+    "Save" : {
+
+    },
+    "Save Key" : {
+
+    },
+    "Saved" : {
+
+    },
+    "Saved in Keychain" : {
+
+    },
+    "Scan Again" : {
+
+    },
+    "Search" : {
+
+    },
+    "Search actions…" : {
+
+    },
+    "Search extensions…" : {
+
+    },
+    "Search for actions…" : {
+
+    },
+    "Search notes and clipboard to attach" : {
+
+    },
+    "Search notes…" : {
+
+    },
+    "Search the dictionaries enabled on your Mac. Results stay here until you leave this command." : {
+
+    },
+    "Search the extension catalog" : {
+
+    },
+    "Select this pane in Herdr, then switch to your Herdr terminal" : {
+
+    },
+    "Selected" : {
+
+    },
+    "Send" : {
+
+    },
+    "Settings" : {
+
+    },
+    "Settings apply to the next conversation." : {
+
+    },
+    "Share your approximate location (about 11 km) with %@ and the sites it reads. Volant asks macOS for it only when the extension runs, and never saves it." : {
+
+    },
+    "Show %@ in status bar" : {
+
+    },
+    "Show Volant in the Dock" : {
+
+    },
+    "Show launcher when Volant starts" : {
+
+    },
+    "Show what’s on each pane’s screen?" : {
+
+    },
+    "Showing the end of the prompt. Review the full context in Herdr." : {
+
+    },
+    "Shown in Rex" : {
+
+    },
+    "Shows Herdr panes" : {
+
+    },
+    "Shows Rex panes" : {
+
+    },
+    "Simple Icons" : {
+
+    },
+    "Size" : {
+
+    },
+    "Smaller" : {
+
+    },
+    "Snippet text" : {
+
+    },
+    "Source" : {
+
+    },
+    "Source at the reviewed revision" : {
+
+    },
+    "Start another conversation; this one keeps running" : {
+
+    },
+    "Start writing…" : {
+
+    },
+    "Status" : {
+
+    },
+    "Stop Caffeinate" : {
+
+    },
+    "Stop Sharing" : {
+
+    },
+    "Swap" : {
+
+    },
+    "Swap languages" : {
+
+    },
+    "Swap languages and use the translation as input" : {
+
+    },
+    "Sync settings with iCloud" : {
+
+    },
+    "Takes um, uh, er and hmm out of English dictation; words like “like” stay." : {
+
+    },
+    "Test Connection" : {
+
+    },
+    "Text" : {
+
+    },
+    "Text to translate" : {
+
+    },
+    "The catalog has no extensions yet." : {
+
+    },
+    "The executable’s location is unavailable." : {
+
+    },
+    "The overview shows the last %lld lines of every Rex pane’s screen on this Mac, refreshed every two seconds while this window is open. That can include commands, file contents or anything else a program printed." : {
+
+    },
+    "The text stays in memory while this window shows it. Volant never saves, logs or sends it anywhere, and stops reading screens when you close the window. You can change this later in Settings › Status Bar." : {
+
+    },
+    "This agent needs input. Review the question in Herdr." : {
+
+    },
+    "This app has no bundle identifier for a global shortcut." : {
+
+    },
+    "This extension will run now and stay enabled. You can turn it off, or remove its hosts, in Settings → Extensions." : {
+
+    },
+    "This version" : {
+
+    },
+    "To use this extension, Volant needs to allow access to the following hosts:" : {
+
+    },
+    "Toggle Preview" : {
+
+    },
+    "Transcribing" : {
+
+    },
+    "Translate" : {
+
+    },
+    "Translate ⌘T" : {
+
+    },
+    "Trash Note" : {
+
+    },
+    "Try Again" : {
+
+    },
+    "Try another spelling, or check the enabled dictionaries in Dictionary → Settings." : {
+
+    },
+    "Turn Off" : {
+
+    },
+    "Turn Off Pane Previews" : {
+
+    },
+    "Turn On" : {
+
+    },
+    "Turn On Pane Previews" : {
+
+    },
+    "Turn off to stop every community extension at once. Your choices are kept for when you turn them back on." : {
+
+    },
+    "Type" : {
+
+    },
+    "Type an alias to open the app from the launcher, or record a global hotkey. Aliases save on Return or when you leave the field." : {
+
+    },
+    "Type at the cursor" : {
+
+    },
+    "Type this alias in Volant, then press Return. Clearing it removes this alias; other aliases are preserved." : {
+
+    },
+    "Types into the app you’re using." : {
+
+    },
+    "URL copied." : {
+
+    },
+    "Uninstall" : {
+
+    },
+    "Uninstall %@?" : {
+
+    },
+    "Uninstall…" : {
+
+    },
+    "Update All" : {
+
+    },
+    "Update in Extensions" : {
+
+    },
+    "Update to %@" : {
+
+    },
+    "Use" : {
+
+    },
+    "Use General Chat" : {
+
+    },
+    "Use Saved Password" : {
+
+    },
+    "Use fsearch for file search" : {
+
+    },
+    "View Source ⌘↩" : {
+
+    },
+    "Vocabulary" : {
+
+    },
+    "Volant" : {
+
+    },
+    "Volant %@" : {
+
+    },
+    "Volant backup" : {
+
+    },
+    "Volant built-in command" : {
+
+    },
+    "Volant fetches pages from these hosts for the extension, after you allow them. The extension itself has no network access." : {
+
+    },
+    "Volant fetches pages from these hosts for the extension. The extension itself has no network access." : {
+
+    },
+    "Volant forgets what this extension saved on this Mac, such as pinned or hidden items. The extension stays installed and keeps its permissions." : {
+
+    },
+    "Volant menu" : {
+
+    },
+    "Volant moves it to the Trash and removes host access that no other extension needs." : {
+
+    },
+    "Volant no longer uses Accessibility. To remove its access, turn off Volant in Privacy & Security → Accessibility." : {
+
+    },
+    "Volant sends only what you write here and anything you attach with @. Sign in through the provider’s CLI before starting." : {
+
+    },
+    "Website" : {
+
+    },
+    "What would you like to talk about?" : {
+
+    },
+    "When finished" : {
+
+    },
+    "While Dictating" : {
+
+    },
+    "While speaking" : {
+
+    },
+    "Whole-disk results that tolerate typos, and filters such as ext:swift in / searches." : {
+
+    },
+    "Wi-Fi password" : {
+
+    },
+    "Word or phrase to define" : {
+
+    },
+    "Word or phrase…" : {
+
+    },
+    "Working folder" : {
+
+    },
+    "Write it as" : {
+
+    },
+    "You choose which ones to install and turn on." : {
+
+    },
+    "Your %lld installed community %@ back as you left %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your %1$lld installed community %2$@ back as you left %3$@."
+          }
+        }
+      }
+    },
+    "Your messages and this conversation’s completed turns are sent to the configured server. This connection has no agent tools." : {
+
+    },
+    "Zoomed" : {
+
+    },
+    "config.json" : {
+
+    },
+    "cooper netties, cuber nettis" : {
+
+    },
+    "fsearch" : {
+
+    },
+    "https://" : {
+
+    },
+    "https://example.com/search?q={query}" : {
+
+    },
+    "iCloud" : {
+
+    },
+    "macOS Services" : {
+      "comment" : "Servers section: macOS's own listeners, shown with servers all"
+    },
+    "mwgg/Airports" : {
+
+    },
+    "•" : {
+
+    },
+    "← → tabs   ↑ ↓ panes   ⇥ waiting   ␣ minimize session   ↩ focus" : {
+
+    },
+    "⇥" : {
+
+    }
+  },
+  "version" : "1.0"
+}
