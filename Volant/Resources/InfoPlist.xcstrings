@@ -34,6 +34,60 @@
             "state": "needs_review",
             "value": "Volant demande à macOS d’afficher ses confirmations de redémarrage, d’extinction et de fermeture de session lorsque vous choisissez ces commandes."
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "当你选择重新启动、关机和退出登录命令时，Volant会请求macOS显示相应的确认信息。"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant просит macOS показывать подтверждения перезагрузки, выключения и выхода из системы, когда вы выбираете эти команды."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Volant pede ao macOS para mostrar as confirmações de reiniciar, desligar e encerrar sessão quando você escolhe esses comandos."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "再起動、システム終了、ログアウトのコマンドを選択したときに、Volantはその確認を表示するようmacOSに依頼します。"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant vraagt macOS om de bevestigingen voor opnieuw opstarten, uitschakelen en afmelden te tonen wanneer je die commando's kiest."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "재시동, 시스템 종료 및 로그아웃 명령을 선택하면 Volant가 macOS에 해당 확인 창을 표시하도록 요청합니다."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant просить macOS показувати підтвердження перезавантаження, вимкнення та завершення сеансу, коли ви вибираєте ці команди."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant prosi macOS o wyświetlenie potwierdzeń ponownego uruchomienia, wyłączenia i wylogowania, gdy wybierzesz te polecenia."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant, siz yeniden başlatma, kapatma ve oturumu kapatma komutlarını seçtiğinizde macOS’ten bunların onay pencerelerini göstermesini ister."
+          }
         }
       }
     },
@@ -69,6 +123,60 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Volant affiche la liste des appareils Bluetooth connectés lorsque vous ouvrez la commande Bluetooth."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "当你打开“蓝牙”命令时，Volant会列出已连接的蓝牙设备。"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant показывает подключенные устройства Bluetooth, когда вы открываете команду Bluetooth."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Volant lista os dispositivos Bluetooth conectados quando você abre o comando Bluetooth."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bluetoothコマンドを開いたときに、Volantは接続中のBluetoothデバイスを一覧表示します。"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant toont verbonden Bluetooth-apparaten wanneer je het Bluetooth-commando opent."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bluetooth 명령을 열면 Volant가 연결된 Bluetooth 기기를 나열합니다."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant показує під’єднані пристрої Bluetooth, коли ви відкриваєте команду Bluetooth."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant wyświetla podłączone urządzenia Bluetooth po otwarciu polecenia Bluetooth."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant, Bluetooth komutunu açtığınızda bağlı Bluetooth aygıtlarını listeler."
           }
         }
       }
@@ -106,6 +214,60 @@
             "state": "needs_review",
             "value": "Volant affiche la liste des appareils Bluetooth connectés à votre demande."
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant会根据请求列出已连接的蓝牙设备。"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant показывает подключенные устройства Bluetooth по запросу."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Volant lista os dispositivos Bluetooth conectados quando solicitado."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volantは要求に応じて接続中のBluetoothデバイスを一覧表示します。"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant toont verbonden Bluetooth-apparaten op verzoek."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant는 요청 시 연결된 Bluetooth 기기를 나열합니다."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant показує під’єднані пристрої Bluetooth на запит."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant wyświetla podłączone urządzenia Bluetooth na żądanie."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant, istendiğinde bağlı Bluetooth aygıtlarını listeler."
+          }
         }
       }
     },
@@ -141,6 +303,60 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Volant affiche les événements du jour et leurs liens de réunion. Lecture seule."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant会显示今天的事件及其会议链接。只读。"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant показывает сегодняшние события и ссылки на встречи. Только чтение."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Volant mostra os eventos de hoje e os links das reuniões. Somente leitura."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volantは今日のイベントとそのミーティングリンクを表示します。読み出し専用です。"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant toont de activiteiten van vandaag en hun vergaderlinks. Alleen-lezen."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant는 오늘의 이벤트와 회의 링크를 표시합니다. 읽기 전용입니다."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant показує сьогоднішні події та посилання на їхні зустрічі. Лише читання."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant pokazuje dzisiejsze wydarzenia i linki do spotkań. Tylko do odczytu."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant bugünün etkinliklerini ve toplantı bağlantılarını gösterir. Salt okunur."
           }
         }
       }
@@ -178,6 +394,60 @@
             "state": "needs_review",
             "value": "Volant recherche dans vos contacts pour que vous puissiez copier une adresse e-mail ou un numéro de téléphone. Lecture seule."
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant会搜索你的通讯录，以便你拷贝电子邮件地址或电话号码。只读。"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant ищет в ваших контактах, чтобы вы могли скопировать адрес электронной почты или номер телефона. Только чтение."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Volant busca nos seus contatos para que você possa copiar um endereço de e-mail ou número de telefone. Somente leitura."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "メールアドレスや電話番号をコピーできるよう、Volantは連絡先を検索します。読み出し専用です。"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant doorzoekt je contacten zodat je een e-mailadres of telefoonnummer kunt kopiëren. Alleen-lezen."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant는 이메일 주소나 전화번호를 복사할 수 있도록 연락처를 검색합니다. 읽기 전용입니다."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant шукає у ваших контактах, щоб ви могли скопіювати адресу електронної пошти або номер телефону. Лише читання."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant przeszukuje kontakty, aby można było skopiować adres e-mail lub numer telefonu. Tylko do odczytu."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant, bir e-posta adresini veya telefon numarasını kopyalayabilmeniz için kişilerinizde arama yapar. Salt okunur."
+          }
         }
       }
     },
@@ -213,6 +483,60 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "macOS exige l’accès à la position pour afficher le nom des réseaux Wi-Fi. Volant utilise aussi votre position approximative (environ 11 km) uniquement pour les extensions que vous autorisez, qui la partagent avec les sites qu’elles lisent ; elle n’est jamais enregistrée."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS需要定位访问权限才能显示Wi-Fi网络名称。Volant还会使用你的大致位置（约11公里），但仅用于你允许的扩展，这些扩展会将其与它们读取的网站共享；位置永远不会被存储。"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Для показа названий сетей Wi-Fi macOS требует доступ к геопозиции. Volant также использует вашу приблизительную геопозицию (около 11 км) только для разрешенных вами расширений, которые передают ее сайтам, которые они читают; она никогда не сохраняется."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O macOS requer acesso à Localização para mostrar os nomes das redes Wi-Fi. O Volant também usa sua localização aproximada (cerca de 11 km) apenas para as extensões que você permitir, que a compartilham com os sites que leem; ela nunca é salva."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wi-Fiネットワーク名を表示するには、macOSで位置情報へのアクセスが必要です。Volantはまた、許可した機能拡張に対してのみおおよその位置情報(約11 km)を使用し、それらの機能拡張は読み取るサイトとそれを共有します。位置情報が保存されることはありません。"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS vereist toegang tot locatie om namen van wifinetwerken te tonen. Volant gebruikt je geschatte locatie (ongeveer 11 km) ook alleen voor extensies die je toestaat, die deze delen met de sites die ze lezen; je locatie wordt nooit bewaard."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS에서 Wi-Fi 네트워크 이름을 표시하려면 위치 접근 권한이 필요합니다. Volant는 또한 사용자가 허용한 확장 프로그램에 대해서만 대략적인 위치(약 11km)를 사용하며, 해당 확장 프로그램은 읽는 사이트와 위치를 공유합니다. 위치는 절대 저장되지 않습니다."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS вимагає доступу до Геолокації, щоб показувати назви мереж Wi-Fi. Volant також використовує ваше приблизне розташування (близько 11 км) лише для дозволених вами розширень, які передають його сайтам, що їх читають; воно ніколи не зберігається."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS wymaga dostępu do lokalizacji, aby pokazywać nazwy sieci Wi-Fi. Volant używa też przybliżonej lokalizacji (ok. 11 km) wyłącznie dla dozwolonych rozszerzeń, które udostępniają ją odczytywanym witrynom; nigdy nie jest ona zachowywana."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS, Wi-Fi ağ adlarını göstermek için Konum erişimi gerektirir. Volant ayrıca yaklaşık konumunuzu (yaklaşık 11 km) yalnızca izin verdiğiniz genişletmeler için kullanır; bu genişletmeler konumu okudukları sitelerle paylaşır. Konum hiçbir zaman kaydedilmez."
           }
         }
       }
@@ -250,6 +574,60 @@
             "state": "needs_review",
             "value": "macOS exige l’accès à la position pour afficher le nom des réseaux Wi-Fi. Volant utilise aussi votre position approximative (environ 11 km) uniquement pour les extensions que vous autorisez, qui la partagent avec les sites qu’elles lisent ; elle n’est jamais enregistrée."
           }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS需要定位访问权限才能显示Wi-Fi网络名称。Volant还会使用你的大致位置（约11公里），但仅用于你允许的扩展，这些扩展会将其与它们读取的网站共享；位置永远不会被存储。"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Для показа названий сетей Wi-Fi macOS требует доступ к геопозиции. Volant также использует вашу приблизительную геопозицию (около 11 км) только для разрешенных вами расширений, которые передают ее сайтам, которые они читают; она никогда не сохраняется."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O macOS requer acesso à Localização para mostrar os nomes das redes Wi-Fi. O Volant também usa sua localização aproximada (cerca de 11 km) apenas para as extensões que você permitir, que a compartilham com os sites que leem; ela nunca é salva."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wi-Fiネットワーク名を表示するには、macOSで位置情報へのアクセスが必要です。Volantはまた、許可した機能拡張に対してのみおおよその位置情報(約11 km)を使用し、それらの機能拡張は読み取るサイトとそれを共有します。位置情報が保存されることはありません。"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS vereist toegang tot locatie om namen van wifinetwerken te tonen. Volant gebruikt je geschatte locatie (ongeveer 11 km) ook alleen voor extensies die je toestaat, die deze delen met de sites die ze lezen; je locatie wordt nooit bewaard."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS에서 Wi-Fi 네트워크 이름을 표시하려면 위치 접근 권한이 필요합니다. Volant는 또한 사용자가 허용한 확장 프로그램에 대해서만 대략적인 위치(약 11km)를 사용하며, 해당 확장 프로그램은 읽는 사이트와 위치를 공유합니다. 위치는 절대 저장되지 않습니다."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS вимагає доступу до Геолокації, щоб показувати назви мереж Wi-Fi. Volant також використовує ваше приблизне розташування (близько 11 км) лише для дозволених вами розширень, які передають його сайтам, що їх читають; воно ніколи не зберігається."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS wymaga dostępu do lokalizacji, aby pokazywać nazwy sieci Wi-Fi. Volant używa też przybliżonej lokalizacji (ok. 11 km) wyłącznie dla dozwolonych rozszerzeń, które udostępniają ją odczytywanym witrynom; nigdy nie jest ona zachowywana."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS, Wi-Fi ağ adlarını göstermek için Konum erişimi gerektirir. Volant ayrıca yaklaşık konumunuzu (yaklaşık 11 km) yalnızca izin verdiğiniz genişletmeler için kullanır; bu genişletmeler konumu okudukları sitelerle paylaşır. Konum hiçbir zaman kaydedilmez."
+          }
         }
       }
     },
@@ -285,6 +663,60 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Volant transcrit la dictée sur ce Mac. L’audio n’est jamais envoyé nulle part et n’est pas enregistré."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant在这台Mac上转写听写内容。音频永远不会被发送到任何地方，也不会被存储。"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant расшифровывает диктовку на этом Mac. Аудио никуда не отправляется и не сохраняется."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Volant transcreve o ditado neste Mac. O áudio nunca é enviado a lugar algum e não é salvo."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volantは音声入力をこのMac上で文字起こしします。音声がどこかに送信されたり、保存されたりすることはありません。"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant transcribeert dictaten op deze Mac. Audio wordt nergens naartoe verstuurd en niet bewaard."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant는 이 Mac에서 받아쓰기를 변환합니다. 오디오는 어디로도 전송되지 않으며 저장되지 않습니다."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant транскрибує диктування на цьому Mac. Аудіо ніколи нікуди не надсилається й не зберігається."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant transkrybuje dyktowanie na tym Macu. Dźwięk nigdy nie jest nigdzie wysyłany ani zachowywany."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant dikteyi bu Mac’te yazıya döker. Ses hiçbir yere gönderilmez ve kaydedilmez."
           }
         }
       }

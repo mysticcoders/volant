@@ -159,7 +159,7 @@ Merged after 0.3.16, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
-| Spanish, German, French and Italian (beta): Volant's interface in those languages when macOS or the app's language is set to one | Not yet | Drafted without native speakers' review and shipped as labeled betas by the owner's choice (docs/localization.md). About 1,280 strings each, with plural variants; some messages stay English (helper-produced, compared values, about 40 interpolated Core messages); translated fixture renders cover the Servers scenario only | Always "(beta)" or "beta, unreviewed translation"; never "fully translated", "native", or "localized for <country>" |
+| 13 beta translations (Spanish, German, French, Italian, Japanese, Simplified Chinese, Brazilian Portuguese, Korean, Dutch, Polish, Russian, Ukrainian, Turkish) and a Language setting | Not yet | Drafted without native speakers' review and shipped as labeled betas by the owner's choice (docs/localization.md); about 1,280 strings each with each language's plural forms; some messages stay English (helper-produced, compared values, about 40 interpolated Core messages); translated fixture renders cover the Servers scenario only. Settings › General › Language sets Volant's per-app language | Always "(beta)" or "beta, unreviewed translations"; list languages only as betas; never "fully translated", "native", "localized for <country>" or "14 languages" without "beta" |
 
 ## Privacy language
 

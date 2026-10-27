@@ -226,6 +226,7 @@ private struct SettingsView: View {
                 Toggle("Show Volant in the Dock", isOn: boolean("showInDock", state.config.showInDock))
                 Toggle("Show launcher when Volant starts", isOn: boolean("showOnLaunch", state.config.showOnLaunch))
             }
+            LanguageSettingSection()
             Section {
                 Toggle(isOn: boolean("caffeinateKeepsDisplayAwake", state.config.caffeinateKeepsDisplayAwake)) {
                     Text("Keep display on and unlocked")

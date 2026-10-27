@@ -27,7 +27,7 @@ ROOT = Path(__file__).resolve().parent.parent
 RESOURCES = ROOT / "Volant/Resources"
 CATALOGS = ("Localizable.xcstrings", "Core.xcstrings")
 # Languages besides English that ship; every string in use needs a value in each.
-SHIPPED_LANGUAGES = ("es", "de", "fr", "it")
+SHIPPED_LANGUAGES = ("es", "de", "fr", "it", "ja", "zh-Hans", "pt-BR", "ko", "nl", "pl", "ru", "uk", "tr")
 
 
 def app_stringsdata(build_dir):
