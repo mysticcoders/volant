@@ -1,10 +1,26 @@
 # Localization
 
-Tracking issue: #294. Volant is written in English. It ships four translations, all drafted without
-a native speaker's review and labeled as betas, by the owner's choice: Spanish (`es`, neutral
-wording for Spain and Latin America, October 26, 2026), then German (`de`), French (`fr`) and
-Italian (`it`), October 27, 2026. Their style follows Apple's own macOS in each language: Spanish
-*tú*, German *du*, French *vous*, Italian *tu*, with Apple's terms for Settings and System Settings.
+Tracking issue: #294. Volant is written in English and ships 13 translations, all drafted without
+a native speaker's review and labeled as betas, by the owner's choice:
+
+- Spanish (`es`, neutral wording for Spain and Latin America), added October 26, 2026.
+- German (`de`), French (`fr`) and Italian (`it`), added October 27, 2026.
+- Japanese (`ja`), Simplified Chinese (`zh-Hans`), Brazilian Portuguese (`pt-BR`), Korean (`ko`),
+  Dutch (`nl`), Polish (`pl`), Russian (`ru`), Ukrainian (`uk`) and Turkish (`tr`), added October 27,
+  2026.
+
+Each follows Apple's own macOS style in that language, including its forms of address and its terms
+for Settings, System Settings, Finder (Apple's Simplified Chinese calls it 访达) and the Shortcuts
+app. Plural strings carry each language's CLDR categories: one form for Japanese, Chinese and Korean,
+two for most others, and four for Polish, Russian and Ukrainian. Right-to-left languages wait for the
+right-to-left layout work in #294.
+
+## Choosing the language
+
+Settings › General › Language lists System, English and each translation by its own name, marked
+beta. It writes Volant's own `AppleLanguages` preference, which is the value System Settings › General ›
+Language & Region › Applications sets for each app, so the two stay in step. It is never written to
+`config.json` or synced. The change applies after a relaunch, which the section offers.
 
 ## Unreviewed translations
 
