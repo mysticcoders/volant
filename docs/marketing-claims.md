@@ -155,11 +155,16 @@ Added in 0.3.16:
 | --- | --- | --- | --- |
 | Listening servers: `servers`/`ports` lists the owner's listening TCP ports by runtime, folder and age; Return opens localhost, Actions copy | Yes | #292; Core tests including a real-socket scan (loopback vs all interfaces, closed socket gone), launcher tests with a scripted helper, native fixture renders; live scan matched `lsof` on the owner's Mac; signed-helper delivery in the installed app needs installed evidence; runtime logos from Simple Icons are their owners' trademarks, licenses in About. Read-only: never stops a process | System control and Privacy docs; home download line; never say Volant stops or manages servers |
 
-Merged after 0.3.16, not in the current download:
+Added in 0.3.20:
+
+| Story | In 0.3.20 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| 13 beta translations (Spanish, German, French, Italian, Japanese, Simplified Chinese, Brazilian Portuguese, Korean, Dutch, Polish, Russian, Ukrainian, Turkish) and a Language setting | Yes | #296–#299; drafted without native speakers' review and shipped as labeled betas by the owner's choice (docs/localization.md); about 1,280 strings each with each language's plural forms; some messages stay English (helper-produced, compared values, about 40 interpolated Core messages); translated fixture renders cover the Servers scenario only. Settings › General › Language sets Volant's per-app language | Home download line; release notes. Always "(beta)" or "beta, unreviewed translations"; list languages only as betas; never "fully translated", "native", "localized for <country>" or "14 languages" without "beta" |
+
+Merged after 0.3.20, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
-| 13 beta translations (Spanish, German, French, Italian, Japanese, Simplified Chinese, Brazilian Portuguese, Korean, Dutch, Polish, Russian, Ukrainian, Turkish) and a Language setting | Not yet | Drafted without native speakers' review and shipped as labeled betas by the owner's choice (docs/localization.md); about 1,280 strings each with each language's plural forms; some messages stay English (helper-produced, compared values, about 40 interpolated Core messages); translated fixture renders cover the Servers scenario only. Settings › General › Language sets Volant's per-app language | Always "(beta)" or "beta, unreviewed translations"; list languages only as betas; never "fully translated", "native", "localized for <country>" or "14 languages" without "beta" |
 
 ## Privacy language
 
