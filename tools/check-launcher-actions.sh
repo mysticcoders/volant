@@ -21,8 +21,11 @@ PLIST
 python3 tools/run-bounded-check.py 300 'Compile Actions fixture' swiftc "${VOLANT_APP_FLAGS[@]}" "$fixture_dir/main.swift" -o "$bundle/MacOS/VolantActionsFixture"
 python3 tools/run-bounded-check.py 120 'Light Actions fixture' "$bundle/MacOS/VolantActionsFixture" "$fixture_dir"
 python3 tools/run-bounded-check.py 120 'Dark Actions fixture' "$bundle/MacOS/VolantActionsFixture" "$fixture_dir" dark
-python3 tools/run-bounded-check.py 120 'Light Spanish Actions fixture' "$bundle/MacOS/VolantActionsFixture" "$fixture_dir" spanish -AppleLanguages '(es)'
-python3 tools/run-bounded-check.py 120 'Dark Spanish Actions fixture' "$bundle/MacOS/VolantActionsFixture" "$fixture_dir" dark spanish -AppleLanguages '(es)'
+# Each shipped translation renders the Servers scenario once per appearance, for layout review.
+for lang in es de fr it; do
+    python3 tools/run-bounded-check.py 120 "Light $lang Actions fixture" "$bundle/MacOS/VolantActionsFixture" "$fixture_dir" "language=$lang" -AppleLanguages "($lang)"
+    python3 tools/run-bounded-check.py 120 "Dark $lang Actions fixture" "$bundle/MacOS/VolantActionsFixture" "$fixture_dir" dark "language=$lang" -AppleLanguages "($lang)"
+done
 # Size changes layout and appearance changes color, independently, so each non-default size runs once,
 # one in each appearance, instead of every size in both.
 python3 tools/run-bounded-check.py 120 "Light Actions compact" "$bundle/MacOS/VolantActionsFixture" "$fixture_dir" compact

@@ -14,9 +14,10 @@ let app = NSApplication.shared
 app.setActivationPolicy(.regular)
 let root = URL(fileURLWithPath: CommandLine.arguments[1])
 let dark = CommandLine.arguments.contains("dark")
-/// Runs with `-AppleLanguages (es)` from check-launcher-actions.sh. Only scenarios whose checks don't
-/// compare English text run in Spanish, and their renders carry an `-es` suffix for layout review.
-let spanish = CommandLine.arguments.contains("spanish")
+/// A translation pass from check-launcher-actions.sh, such as `language=de` with `-AppleLanguages (de)`.
+/// Only scenarios whose checks don't compare English text run translated, and their renders carry the
+/// language as a suffix for layout review.
+let language = CommandLine.arguments.first { $0.hasPrefix("language=") }.map { String($0.dropFirst("language=".count)) }
 app.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
 var preferences = Preferences()
 if CommandLine.arguments.contains("compact") { preferences.appearance.scale = 0.8 }
@@ -150,7 +151,7 @@ func render(_ name: String, view supplied: NSView? = nil) throws {
     view.layoutSubtreeIfNeeded()
     let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
     view.cacheDisplay(in: view.bounds, to: bitmap)
-    try bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "/tmp/volant-actions-\(name)\(spanish ? "-es" : "")-\(dark ? "dark" : "light")-\(preferences.appearance.scale).png"))
+    try bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "/tmp/volant-actions-\(name)\(language.map { "-" + $0 } ?? "")-\(dark ? "dark" : "light")-\(preferences.appearance.scale).png"))
 }
 
 /// Sends a native left click at a point in window coordinates, to the launcher unless another window is given.
@@ -1420,7 +1421,7 @@ let scenarios: [Scenario] = [
 ]
 
 app.activate(ignoringOtherApps: true)
-for scenario in scenarios where (defaultScale || scenario.sizeSensitive) && (!spanish || scenario.name == "servers") {
+for scenario in scenarios where (defaultScale || scenario.sizeSensitive) && (language == nil || scenario.name == "servers") {
     currentScenario = scenario.name
     freshLauncher()
     try scenario.run()
