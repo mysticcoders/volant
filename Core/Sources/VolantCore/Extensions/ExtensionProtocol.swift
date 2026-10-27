@@ -39,6 +39,10 @@ public struct ExtensionManifest: Codable, Hashable {
     /// and Ask; the first is the default, and the chosen one's `id` is sent as `filter`. Presentation
     /// only, so not part of the fingerprint.
     public var filters: [ExtensionFilter]?
+    /// Settings the owner chooses in Settings › Extensions, sent as `preferences` with every list request
+    /// (see `ExtensionPreference`). The owner's own choices, giving no new access, so not part of the
+    /// fingerprint.
+    public var preferences: [ExtensionPreference]?
 
     public var declaredSecrets: [ExtensionSecret] { secrets ?? [] }
     public var declaredAppLinks: [String] { appLinks ?? [] }
@@ -51,6 +55,7 @@ public struct ExtensionManifest: Codable, Hashable {
     public var waitsForInput: Bool { mode == "search" }
     public static let maximumPlaceholderLength = 80
     public var declaredFilters: [ExtensionFilter] { filters ?? [] }
+    public var declaredPreferences: [ExtensionPreference] { preferences ?? [] }
 
     public func validate() throws {
         guard [1, 2].contains(abiVersion ?? 0), abiVersion != 2 || capabilities.isEmpty,
@@ -70,7 +75,8 @@ public struct ExtensionManifest: Codable, Hashable {
               declaredPermissions.isEmpty || listsItems, [nil, "list", "search"].contains(mode), mode == nil || listsItems,
               placeholder.map({ (1...Self.maximumPlaceholderLength).contains($0.count) && listsItems }) ?? true,
               filters == nil || (listsItems && (2...ExtensionFilter.maximumCount).contains(declaredFilters.count)),
-              declaredFilters.allSatisfy(\.isValid), Set(declaredFilters.map(\.id)).count == declaredFilters.count else {
+              declaredFilters.allSatisfy(\.isValid), Set(declaredFilters.map(\.id)).count == declaredFilters.count,
+              ExtensionPreferences.isValid(declaredPreferences, listsItems: listsItems) else {
             throw ExtensionValidationError.invalidManifest
         }
     }
@@ -111,7 +117,8 @@ public struct ExtensionManifest: Codable, Hashable {
     public init(abiVersion: Int? = 1, id: String, name: String, version: String, module: String, capabilities: [String], timeoutSeconds: Double? = nil, sha256: String? = nil,
                 hosts: [String]? = nil, output: String? = nil, icon: String? = nil, iconSha256: String? = nil, storage: Bool? = nil,
                 secrets: [ExtensionSecret]? = nil, appLinks: [String]? = nil, permissions: [String]? = nil,
-                mode: String? = nil, placeholder: String? = nil, filters: [ExtensionFilter]? = nil) {
+                mode: String? = nil, placeholder: String? = nil, filters: [ExtensionFilter]? = nil, preferences: [ExtensionPreference]? = nil) {
+        self.preferences = preferences
         self.abiVersion = abiVersion
         self.id = id
         self.name = name

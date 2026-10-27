@@ -21,6 +21,7 @@ struct ExtensionSettingsView: View {
     @State private var confirmingHosts: InstalledExtension?
     @State private var confirmingUninstall: InstalledExtension?
     @State private var confirmingClear: InstalledExtension?
+    @State private var editingPreferences: InstalledExtension?
     @State private var catalog: ExtensionCatalog?
     @State private var catalogLoading = false
     @State private var catalogError: String?
@@ -166,6 +167,9 @@ struct ExtensionSettingsView: View {
                                 },
                                 done: { browsing = false })
         }
+        .sheet(item: $editingPreferences) { ext in
+            ExtensionPreferencesView(ext: ext, manager: manager) { editingPreferences = nil; reload() }
+        }
         .sheet(item: $confirmingHosts) { ext in
             VStack(alignment: .leading, spacing: 16) {
                 Text("Enable \(ext.name)?").font(.title2.bold())
@@ -211,6 +215,7 @@ struct ExtensionSettingsView: View {
         let update = updates.first { $0.ext.id == ext.id }?.listing
         let hasData = ext.manifest.usesStorage && manager.hasStoredData(ext)
         let hasSecrets = manager.hasSecrets(ext)
+        let hasPreferences = !ext.manifest.declaredPreferences.isEmpty
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 10) {
                 Group {
@@ -235,7 +240,7 @@ struct ExtensionSettingsView: View {
                     .font(.callout).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
                     .padding(.leading, 34).accessibilityIdentifier("extension-revoked-" + ext.id)
             }
-            if hasData || hasSecrets || ext.isCommunity {
+            if hasData || hasSecrets || hasPreferences || ext.isCommunity {
                 HStack(spacing: 8) {
                     if let update {
                         if installing == update.id {
@@ -245,6 +250,10 @@ struct ExtensionSettingsView: View {
                                 .disabled(installing != nil || updatingAll || ext.communityBlocked)
                                 .accessibilityIdentifier("extension-update-" + ext.id)
                         }
+                    }
+                    if hasPreferences {
+                        Button(String(localized: "Preferences…", comment: "Button opening an extension's preferences")) { editingPreferences = ext }
+                            .controlSize(.small).accessibilityIdentifier("extension-preferences-" + ext.id)
                     }
                     if hasData {
                         Button("Clear Data…") { confirmingClear = ext }.controlSize(.small)

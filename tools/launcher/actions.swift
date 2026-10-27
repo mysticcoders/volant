@@ -680,6 +680,36 @@ func extensionSettingsScenario() throws {
     try render("extension-storage-settings", view: storageView)
     storageWindow.orderOut(nil)
 
+    let (preferenceDirectory, _) = try copyExtension("preference-reader") { manifest in
+        manifest.id = "fixture.preferences"; manifest.name = "Fixture Headlines"; manifest.output = "items"
+        manifest.preferences = [
+            ExtensionPreference(id: "sort", type: .dropdown, title: "Sort stories by",
+                                choices: [ExtensionFilter(id: "top", title: "Top"), ExtensionFilter(id: "new", title: "Newest")]),
+            ExtensionPreference(id: "hideDomains", type: .text, title: "Hidden domains", description: "Comma-separated, such as fictional.example",
+                                placeholder: "fictional.example", maxLength: 200),
+            ExtensionPreference(id: "limit", type: .number, title: "Stories to show", defaultValue: .number(30), min: 5, max: 50),
+            ExtensionPreference(id: "showScores", type: .toggle, title: "Show scores", description: "Adds each story's points to its row",
+                                defaultValue: .bool(true)),
+        ]
+    }
+    let preferenceManager = ExtensionManager(configURL: panel.model.actionConfigURL, roots: [preferenceDirectory], dataDirectory: storageData)
+    preferenceManager.reload()
+    let preferenceExtension = preferenceManager.extensions.first!
+    try preferenceManager.setEnabled(preferenceExtension, true)
+    try preferenceManager.savePreferences(["hideDomains": .string("fictional.example"), "limit": .number(20)], for: preferenceExtension, expected: [:])
+    let (preferenceWindow, preferenceSettings) = hostWindow(ExtensionSettingsView(configURL: panel.model.actionConfigURL, onChange: {},
+                                                                                  roots: [preferenceDirectory], dataDirectory: storageData,
+                                                                                  catalogClient: ExtensionCatalogClient(fetchFile: { _, _, _ in })),
+                                                            width: 460, height: 440)
+    preferenceSettings.layoutSubtreeIfNeeded(); settle()
+    try render("extension-preference-settings", view: preferenceSettings)
+    preferenceWindow.orderOut(nil)
+    let preferenceSheet = NSHostingView(rootView: ExtensionPreferencesView(ext: preferenceManager.extensions.first!, manager: preferenceManager, done: {}))
+    preferenceSheet.frame = NSRect(x: 0, y: 0, width: 460, height: 400); preferenceSheet.layoutSubtreeIfNeeded(); settle()
+    try render("extension-preferences-sheet", view: preferenceSheet)
+    verify(preferenceManager.preferenceValues(preferenceManager.extensions.first!)["hideDomains"] == .string("fictional.example"),
+           "Saved preferences are what the sheet and the next run read")
+
     let (tokenDirectory, tokenManifest) = try copyExtension("token-tasks") { manifest in
         manifest.id = "fixture.tasks"; manifest.name = "Fixture Tasks"; manifest.output = "items"; manifest.storage = true
         manifest.hosts = ["api.tasks.example.com"]; manifest.permissions = ["location"]
