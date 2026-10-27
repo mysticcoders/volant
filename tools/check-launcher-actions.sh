@@ -22,7 +22,7 @@ python3 tools/run-bounded-check.py 300 'Compile Actions fixture' swiftc "${VOLAN
 python3 tools/run-bounded-check.py 120 'Light Actions fixture' "$bundle/MacOS/VolantActionsFixture" "$fixture_dir"
 python3 tools/run-bounded-check.py 120 'Dark Actions fixture' "$bundle/MacOS/VolantActionsFixture" "$fixture_dir" dark
 # Each shipped translation renders the Servers scenario once per appearance, for layout review.
-for lang in es de fr it ja zh-Hans pt-BR ko nl pl ru uk tr; do
+for lang in es de fr it ja zh-Hans pt-BR pt-PT ko nl pl ru uk tr; do
     python3 tools/run-bounded-check.py 120 "Light $lang Actions fixture" "$bundle/MacOS/VolantActionsFixture" "$fixture_dir" "language=$lang" -AppleLanguages "($lang)"
     python3 tools/run-bounded-check.py 120 "Dark $lang Actions fixture" "$bundle/MacOS/VolantActionsFixture" "$fixture_dir" dark "language=$lang" -AppleLanguages "($lang)"
 done
