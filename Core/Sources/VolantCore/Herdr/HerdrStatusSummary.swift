@@ -18,24 +18,24 @@ public struct HerdrStatusSummary: Equatable {
         var notes: [String] = []
         if unread > 0 { notes.append("\(unread) changed since you last looked") }
         notes += unavailable.map { $0.label + ": " + $0.detail }
-        let suffix = (notes.isEmpty ? "" : "\n" + notes.joined(separator: "\n")) + "\nClick to show Herdr panes."
+        let suffix = (notes.isEmpty ? "" : "\n" + notes.joined(separator: "\n")) + "\n" + String(localized: "Click to show Herdr panes.", table: "Core", comment: "Launcher footer Herdr status tooltip, last line")
         if !connected {
-            text = "Herdr: not connected"; tone = .quiet
-            help = "Herdr isn’t connected." + suffix
+            text = String(localized: "Herdr: not connected", table: "Core", comment: "Launcher footer status for Herdr, the agent multiplexer"); tone = .quiet
+            help = String(localized: "Herdr isn’t connected.", table: "Core", comment: "Launcher footer Herdr status tooltip") + suffix
         } else if waiting > 0 {
             text = "Herdr: \(waiting) waiting"; tone = .waiting
             help = "\(waiting) \(waiting == 1 ? "agent needs" : "agents need") you." + suffix
         } else if unavailable.count == 1 {
             text = "Herdr: \(unavailable[0].label) unavailable"; tone = .warning
-            help = "No agents are waiting." + suffix
+            help = String(localized: "No agents are waiting.", table: "Core", comment: "Launcher footer Herdr status tooltip") + suffix
         } else if unavailable.count > 1 {
             text = "Herdr: \(unavailable.count) machines unavailable"; tone = .warning
-            help = "No agents are waiting." + suffix
+            help = String(localized: "No agents are waiting.", table: "Core", comment: "Launcher footer Herdr status tooltip") + suffix
         } else if busy && sessions.isEmpty {
-            text = "Herdr: loading…"; tone = .quiet
-            help = "Loading panes from Herdr." + suffix
+            text = String(localized: "Herdr: loading…", table: "Core", comment: "Launcher footer status for Herdr, the agent multiplexer"); tone = .quiet
+            help = String(localized: "Loading panes from Herdr.", table: "Core", comment: "Launcher footer Herdr status tooltip") + suffix
         } else {
-            text = "Herdr: none waiting"; tone = .quiet
+            text = String(localized: "Herdr: none waiting", table: "Core", comment: "Launcher footer status for Herdr, the agent multiplexer"); tone = .quiet
             help = "\(sessions.count) \(sessions.count == 1 ? "pane" : "panes"), none waiting." + suffix
         }
     }

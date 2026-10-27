@@ -6,13 +6,13 @@ enum LauncherMenuItem: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .feedback: return "Send Feedback"
-        case .manual: return "Manual"
-        case .changelog: return "What’s New"
-        case .updates: return "Check for Updates…"
-        case .about: return "About Volant"
-        case .settings: return "Settings"
-        case .quit: return "Quit Volant"
+        case .feedback: return String(localized: "Send Feedback", comment: "Launcher menu item")
+        case .manual: return String(localized: "Manual", comment: "Launcher menu item")
+        case .changelog: return String(localized: "What’s New", comment: "Launcher menu item")
+        case .updates: return String(localized: "Check for Updates…", comment: "Launcher menu item")
+        case .about: return String(localized: "About Volant", comment: "Launcher menu item")
+        case .settings: return String(localized: "Settings", comment: "Launcher menu item")
+        case .quit: return String(localized: "Quit Volant", comment: "Launcher menu item")
         }
     }
     var symbol: String {
@@ -52,7 +52,7 @@ enum LauncherMenuItem: String, CaseIterable, Identifiable {
     /// The menu header, such as "Volant v0.2.1", from the running bundle's version.
     static func versionTitle(bundle: Bundle = .main) -> String {
         let version = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-        return version.map { "Volant v" + $0 } ?? "Volant"
+        return version.map { String(localized: "Volant v\($0)", comment: "Launcher menu header with the app version, such as Volant v0.2.1") } ?? "Volant"
     }
 
     /// A new GitHub issue with the app version, build and macOS version filled in, and nothing personal.

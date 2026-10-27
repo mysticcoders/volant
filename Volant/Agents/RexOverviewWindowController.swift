@@ -22,7 +22,7 @@ final class RexOverviewWindowController: NSWindowController, NSWindowDelegate {
         self.model = model
         let window = RexOverviewWindow(contentRect: NSRect(x: 0, y: 0, width: 980, height: 640),
                               styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-        window.title = "Rex Overview"
+        window.title = String(localized: "Rex Overview", comment: "Window title")
         window.minSize = NSSize(width: 640, height: 420)
         window.isReleasedWhenClosed = false
         window.hidesOnDeactivate = false

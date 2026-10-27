@@ -14,11 +14,11 @@ enum VolumeCommand: Hashable {
     }
     var title: String {
         switch self {
-        case .up: return "Volume Up"
-        case .down: return "Volume Down"
-        case .mute: return "Mute Output"
-        case .unmute: return "Unmute Output"
-        case .set(let value): return "Set Volume to \(value)%"
+        case .up: return String(localized: "Volume Up")
+        case .down: return String(localized: "Volume Down")
+        case .mute: return String(localized: "Mute Output")
+        case .unmute: return String(localized: "Unmute Output")
+        case .set(let value): return String(localized: "Set Volume to \(value)%")
         }
     }
     static func matches(_ query: String) -> Bool {
@@ -48,8 +48,8 @@ struct AudioOutputState {
     var uid: String?
     var level: Float32? { volumes.map(\.value).max() }
     var summary: String {
-        let levelText = level.map { "\(Int(($0 * 100).rounded()))%" } ?? "Volume unavailable"
-        return name + " · " + levelText + (muted == true ? " · Muted" : "")
+        let levelText = level.map { "\(Int(($0 * 100).rounded()))%" } ?? String(localized: "Volume unavailable")
+        return muted == true ? String(localized: "\(name) · \(levelText) · Muted", comment: "Audio output name, volume level and its muted state") : "\(name) · \(levelText)"
     }
 }
 
@@ -64,7 +64,7 @@ extension AudioHardwareAccess {
     /// Reads one specific device. Hardware that only knows the default output can answer only for it.
     func output(of device: AudioDeviceID) throws -> AudioOutputState {
         let state = try output()
-        guard state.device == device else { throw VolumeFailure(message: "That audio output is no longer available.") }
+        guard state.device == device else { throw VolumeFailure(message: String(localized: "That audio output is no longer available.")) }
         return state
     }
 }
@@ -83,16 +83,16 @@ final class VolumeControl {
         let state = try hardware.output() // Never use the device or level cached by a search result.
         switch command {
         case .mute, .unmute:
-            guard state.canSetMute else { throw VolumeFailure(message: "This output doesn’t support software mute. Use its hardware controls.") }
+            guard state.canSetMute else { throw VolumeFailure(message: String(localized: "This output doesn’t support software mute. Use its hardware controls.")) }
             try hardware.setMute(command == .mute, device: state.device)
         case .up, .down, .set:
-            guard state.canSetVolume, let current = state.level else { throw VolumeFailure(message: "This output doesn’t support software volume. Use its hardware controls.") }
+            guard state.canSetVolume, let current = state.level else { throw VolumeFailure(message: String(localized: "This output doesn’t support software volume. Use its hardware controls.")) }
             let target: Float32
             switch command {
             case .up: target = min(1, current + 0.05)
             case .down: target = max(0, current - 0.05)
             case .set(let percent):
-                guard (0...100).contains(percent) else { throw VolumeFailure(message: "Enter a volume from 0 to 100%.") }
+                guard (0...100).contains(percent) else { throw VolumeFailure(message: String(localized: "Enter a volume from 0 to 100%.")) }
                 target = Float32(percent) / 100
             default: return state
             }
@@ -110,11 +110,11 @@ final class VolumeControl {
                     do { try hardware.setVolume(volume.value, channel: volume.channel, device: state.device) }
                     catch { restored = false }
                 }
-                throw VolumeFailure(message: restored ? "Couldn’t change output volume. Try again." : "Only part of the volume change succeeded. Check your output’s channel levels.")
+                throw VolumeFailure(message: restored ? String(localized: "Couldn’t change output volume. Try again.") : String(localized: "Only part of the volume change succeeded. Check your output’s channel levels."))
             }
         }
         let updated = try hardware.output()
-        guard updated.device == state.device else { throw VolumeFailure(message: "The output changed during this action. Check the current output and try again.") }
+        guard updated.device == state.device else { throw VolumeFailure(message: String(localized: "The output changed during this action. Check the current output and try again.")) }
         // Some devices apply writes asynchronously. Display the actual readback, not an assumed value.
         return updated
     }
@@ -137,7 +137,7 @@ struct CoreAudioHardware: AudioHardwareAccess {
     func output() throws -> AudioOutputState {
         var device = AudioDeviceID(kAudioObjectUnknown)
         guard read(AudioObjectID(kAudioObjectSystemObject), address(kAudioHardwarePropertyDefaultOutputDevice, global: true), into: &device), device != kAudioObjectUnknown else {
-            throw VolumeFailure(message: "No audio output is available. Connect an output and try again.")
+            throw VolumeFailure(message: String(localized: "No audio output is available. Connect an output and try again."))
         }
         return state(of: device)
     }
@@ -146,13 +146,13 @@ struct CoreAudioHardware: AudioHardwareAccess {
     func output(of device: AudioDeviceID) throws -> AudioOutputState {
         var alive: UInt32 = 0
         guard device != kAudioObjectUnknown, read(device, address(kAudioDevicePropertyDeviceIsAlive, global: true), into: &alive), alive != 0 else {
-            throw VolumeFailure(message: "That audio output is no longer available.")
+            throw VolumeFailure(message: String(localized: "That audio output is no longer available."))
         }
         return state(of: device)
     }
     /// Reads name, UID, channel volumes and mute for a device the caller has already resolved.
     private func state(of device: AudioDeviceID) -> AudioOutputState {
-        var name: CFString = "Audio Output" as CFString
+        var name: CFString = String(localized: "Audio Output", comment: "Name shown for an audio output that reports no name") as CFString
         _ = read(device, address(kAudioObjectPropertyName, global: true), into: &name)
         var uid: CFString = "" as CFString
         let hasUID = read(device, address(kAudioDevicePropertyDeviceUID, global: true), into: &uid)
@@ -181,11 +181,11 @@ struct CoreAudioHardware: AudioHardwareAccess {
     }
     private func write<T>(_ value: T, device: AudioDeviceID, property: AudioObjectPropertyAddress) throws {
         var property = property
-        guard writable(device, property) else { throw VolumeFailure(message: "This output control is unavailable.") }
+        guard writable(device, property) else { throw VolumeFailure(message: String(localized: "This output control is unavailable.")) }
         var value = value
         let status = withUnsafePointer(to: &value) { AudioObjectSetPropertyData(device, &property, 0, nil, UInt32(MemoryLayout<T>.size), $0) }
         guard status == noErr else {
-            throw VolumeFailure(message: "Couldn’t change this output. It may have disconnected or become unavailable.")
+            throw VolumeFailure(message: String(localized: "Couldn’t change this output. It may have disconnected or become unavailable."))
         }
     }
     func setVolume(_ value: Float32, channel: UInt32, device: AudioDeviceID) throws {

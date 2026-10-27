@@ -15,7 +15,7 @@ struct ShortcutControl: View {
             ShortcutRecorder(value: Binding(get: { value }, set: { persist($0) }), removable: true,
                              onMissedKey: { missedKey = $0 })
                 .frame(height: 26)
-                .accessibilityLabel(title + " shortcut: " + (value.isEmpty ? "Not set" : value))
+                .accessibilityLabel(value.isEmpty ? String(localized: "\(title) shortcut: Not set", comment: "Accessibility label of a shortcut control with no shortcut; the value is the command name") : String(localized: "\(title) shortcut: \(value)", comment: "Accessibility label of a shortcut control; the values are the command name and its shortcut"))
                 .accessibilityAction(named: "Remove shortcut") { persist("") }
             if missedKey {
                 Text("No key arrived. If you pressed one, macOS or another app is using it.")
@@ -26,7 +26,7 @@ struct ShortcutControl: View {
             } else if let message = feedback.message {
                 Label(message, systemImage: "checkmark.circle.fill")
                     .font(.caption).foregroundStyle(.secondary)
-                    .accessibilityLabel(title + " shortcut " + message.lowercased())
+                    .accessibilityLabel(String(localized: "\(title) shortcut \(message.lowercased())", comment: "Accessibility label after saving a shortcut; the values are the command name and Saved or Removed"))
             }
         }
         .onChange(of: value) { _, latest in feedback.valueChanged(to: latest) }
@@ -60,7 +60,7 @@ struct ShortcutFeedback: Equatable {
     /// Records a successful write of `value` and shows its confirmation.
     mutating func saved(_ value: String) {
         savedValue = value
-        message = value.isEmpty ? "Removed" : "Saved"
+        message = value.isEmpty ? String(localized: "Removed", comment: "Confirmation under a shortcut after removing it") : String(localized: "Saved", comment: "Confirmation under a shortcut after saving it")
         generation += 1
     }
     /// Keeps the confirmation while the displayed value is the one just written; clears it otherwise.

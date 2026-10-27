@@ -38,7 +38,7 @@ public enum BackupError: Error, LocalizedError, Equatable {
 
     public var errorDescription: String? {
         switch self {
-        case .unreadableConfig: return "No readable config.json in that folder."
+        case .unreadableConfig: return String(localized: "No readable config.json in that folder.", table: "Core", comment: "Backup restore error")
         }
     }
 }

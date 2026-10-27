@@ -88,7 +88,7 @@ public enum FSearch {
     private static func decode(_ reply: Data) throws -> [String: Any] {
         guard let object = try? JSONSerialization.jsonObject(with: reply) as? [String: Any] else { throw FSearchError.malformed }
         if object["ok"] as? Bool == false {
-            throw FSearchError.daemon(String(((object["error"] as? String) ?? "fsearch could not answer.").prefix(300)))
+            throw FSearchError.daemon(String(((object["error"] as? String) ?? String(localized: "fsearch could not answer.", table: "Core", comment: "File search error when the fsearch daemon gives no reason; fsearch is a program name")).prefix(300)))
         }
         return object
     }
@@ -145,10 +145,10 @@ public enum FSearchError: Error, LocalizedError, Equatable {
     case notRunning, timedOut, tooLarge, malformed, daemon(String)
     public var errorDescription: String? {
         switch self {
-        case .notRunning: return "fsearch isn’t running. Run fsearch once in Terminal, or start it at login with fsearch install --login."
-        case .timedOut: return "fsearch didn’t answer in time."
-        case .tooLarge: return "fsearch sent more than Volant reads."
-        case .malformed: return "fsearch sent a reply Volant couldn’t read."
+        case .notRunning: return String(localized: "fsearch isn’t running. Run fsearch once in Terminal, or start it at login with fsearch install --login.", table: "Core", comment: "File search error; fsearch and its command are not translated")
+        case .timedOut: return String(localized: "fsearch didn’t answer in time.", table: "Core", comment: "File search error; fsearch is a program name")
+        case .tooLarge: return String(localized: "fsearch sent more than Volant reads.", table: "Core", comment: "File search error; fsearch is a program name")
+        case .malformed: return String(localized: "fsearch sent a reply Volant couldn’t read.", table: "Core", comment: "File search error; fsearch is a program name")
         case .daemon(let message): return "fsearch: " + message
         }
     }

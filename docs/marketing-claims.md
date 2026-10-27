@@ -159,6 +159,7 @@ Merged after 0.3.16, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
+| Spanish (beta): Volant's interface in neutral Spanish when macOS or the app's language is set to Spanish | Not yet | Drafted without a native speaker's review and shipped as a labeled beta by the owner's choice (docs/localization.md). About 1,280 strings and plural variants; some messages stay English (helper-produced, compared values, about 40 interpolated Core messages); Spanish fixture renders of the Servers scenario only | Always "Spanish (beta)" or "Spanish beta, unreviewed translation"; never "fully translated", "native", or "localized for Spain/Latin America" |
 
 ## Privacy language
 

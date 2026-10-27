@@ -29,8 +29,8 @@ final class RexModel: ObservableObject {
 
     var message: String {
         if let problem { return problem }
-        if loading && panes.isEmpty { return "Loading Rex panes…" }
-        return panes.isEmpty ? "No Rex panes are open." : "Rex panes · refreshes automatically"
+        if loading && panes.isEmpty { return String(localized: "Loading Rex panes…") }
+        return panes.isEmpty ? String(localized: "No Rex panes are open.") : String(localized: "Rex panes · refreshes automatically")
     }
 
     /// Starts reading, which starts the helper's watcher. Volant only reads local status here, so it
@@ -42,8 +42,8 @@ final class RexModel: ObservableObject {
             let connection = NSXPCConnection(serviceName: "com.mysticcoders.volant.AgentHost")
             connection.remoteObjectInterface = NSXPCInterface(with: VolantAgentHostProtocol.self)
             let current = generation
-            connection.interruptionHandler = { [weak self] in DispatchQueue.main.async { self?.failed("The agent helper disconnected.", generation: current) } }
-            connection.invalidationHandler = { [weak self] in DispatchQueue.main.async { self?.failed("The agent helper is unavailable.", generation: current) } }
+            connection.interruptionHandler = { [weak self] in DispatchQueue.main.async { self?.failed(String(localized: "The agent helper disconnected."), generation: current) } }
+            connection.invalidationHandler = { [weak self] in DispatchQueue.main.async { self?.failed(String(localized: "The agent helper is unavailable."), generation: current) } }
             self.connection = connection
             connection.resume()
         }
@@ -98,7 +98,7 @@ final class RexModel: ObservableObject {
                     self.update(\.loading, false)
                 } else {
                     self.update(\.panes, [])
-                    self.update(\.problem, error ?? (data == nil ? nil : "Couldn’t read Rex panes."))
+                    self.update(\.problem, error ?? (data == nil ? nil : String(localized: "Couldn’t read Rex panes.")))
                     self.update(\.loading, error == nil && data == nil)
                 }
             }
@@ -111,7 +111,7 @@ final class RexModel: ObservableObject {
     /// again inside Rex before focusing, so a pane closed since this list was read is refused.
     func focus(_ pane: RexPane, completion: @escaping (String?) -> Void) {
         guard connected, !focusInFlight, panes.contains(where: { $0.id == pane.id }) else {
-            completion(connected ? "This pane changed or closed. Refresh before continuing." : message); return
+            completion(connected ? String(localized: "This pane changed or closed. Refresh before continuing.") : message); return
         }
         focusInFlight = true
         let current = generation
@@ -128,7 +128,7 @@ final class RexModel: ObservableObject {
     }
 
     private func proxy(reply: @escaping (String) -> Void) -> VolantAgentHostProtocol? {
-        connection?.remoteObjectProxyWithErrorHandler { _ in reply("The agent helper is unavailable.") } as? VolantAgentHostProtocol
+        connection?.remoteObjectProxyWithErrorHandler { _ in reply(String(localized: "The agent helper is unavailable.")) } as? VolantAgentHostProtocol
     }
 
     /// Assigns only real changes, so a five-second refresh that changes nothing redraws nothing.

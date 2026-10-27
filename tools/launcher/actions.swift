@@ -14,6 +14,9 @@ let app = NSApplication.shared
 app.setActivationPolicy(.regular)
 let root = URL(fileURLWithPath: CommandLine.arguments[1])
 let dark = CommandLine.arguments.contains("dark")
+/// Runs with `-AppleLanguages (es)` from check-launcher-actions.sh. Only scenarios whose checks don't
+/// compare English text run in Spanish, and their renders carry an `-es` suffix for layout review.
+let spanish = CommandLine.arguments.contains("spanish")
 app.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
 var preferences = Preferences()
 if CommandLine.arguments.contains("compact") { preferences.appearance.scale = 0.8 }
@@ -22,7 +25,7 @@ if CommandLine.arguments.contains("large") { preferences.appearance.scale = 1.4 
 /// the size-sensitive scenarios, and skips standalone views those scenarios render along the way.
 let defaultScale = preferences.appearance.scale == 1
 let positionSuite = "volant.actions.fixture." + UUID().uuidString
-let launcherSearchPlaceholder = "Search for apps, files, contacts, or calculate…"
+let launcherSearchPlaceholder = LauncherModel.defaultSearchPlaceholder
 let entry = AppEntry(id: "/Applications/Fixture.app", name: "Fixture", url: URL(fileURLWithPath: "/Applications/Fixture.app"), lastUsed: Date())
 let bundledExtension = Bundle.main.url(forResource: "HelloWorld", withExtension: nil)!
 // A fictional solid-color WebP icon, so launcher and Settings renders show an extension icon.
@@ -147,7 +150,7 @@ func render(_ name: String, view supplied: NSView? = nil) throws {
     view.layoutSubtreeIfNeeded()
     let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
     view.cacheDisplay(in: view.bounds, to: bitmap)
-    try bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "/tmp/volant-actions-\(name)-\(dark ? "dark" : "light")-\(preferences.appearance.scale).png"))
+    try bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "/tmp/volant-actions-\(name)\(spanish ? "-es" : "")-\(dark ? "dark" : "light")-\(preferences.appearance.scale).png"))
 }
 
 /// Sends a native left click at a point in window coordinates, to the launcher unless another window is given.
@@ -170,7 +173,7 @@ func fields(_ view: NSView) -> [NSTextField] { (view as? NSTextField).map { [$0]
 /// since rendering may end editing.
 func focusActionSearch() {
     var field: NSTextField?
-    verify(waitUntil { field = fields(panel.contentView!).first { $0.placeholderString == "Search for actions…" }; return field != nil },
+    verify(waitUntil { field = fields(panel.contentView!).first { $0.placeholderString == String(localized: "Search for actions…") }; return field != nil },
            "Action search field appears: \(focusState())")
     panel.makeFirstResponder(field!)
     verify(waitUntil(stable: 0.1) { focusedField() === field }, "Action search field takes focus: \(focusState())")
@@ -1417,7 +1420,7 @@ let scenarios: [Scenario] = [
 ]
 
 app.activate(ignoringOtherApps: true)
-for scenario in scenarios where defaultScale || scenario.sizeSensitive {
+for scenario in scenarios where (defaultScale || scenario.sizeSensitive) && (!spanish || scenario.name == "servers") {
     currentScenario = scenario.name
     freshLauncher()
     try scenario.run()

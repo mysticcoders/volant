@@ -38,17 +38,17 @@ public enum LauncherEntries {
     public static func validated(_ snippet: Snippet, in config: Preferences) throws -> Snippet {
         let name = snippet.name.trimmingCharacters(in: .whitespacesAndNewlines)
         let keyword = snippet.keyword.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty, !name.contains(where: \.isNewline) else { throw Failure("Enter a name for the snippet.") }
+        guard !name.isEmpty, !name.contains(where: \.isNewline) else { throw Failure(String(localized: "Enter a name for the snippet.", table: "Core", comment: "Snippet form error")) }
         guard !config.snippets.contains(where: { $0.name.lowercased() == name.lowercased() }) else {
             throw Failure("A snippet named “\(name)” already exists.")
         }
         if !keyword.isEmpty {
             guard !keyword.contains(where: \.isWhitespace), !LauncherRouting.isReserved(keyword) else {
-                throw Failure("Choose a single-word keyword that is not a built-in command.")
+                throw Failure(String(localized: "Choose a single-word keyword that is not a built-in command.", table: "Core", comment: "Snippet form error"))
             }
             try requireUnused(keyword, in: config)
         }
-        guard !snippet.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw Failure("Enter the snippet text.") }
+        guard !snippet.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw Failure(String(localized: "Enter the snippet text.", table: "Core", comment: "Snippet form error")) }
         return Snippet(name: name, keyword: keyword, body: snippet.body)
     }
 
@@ -57,20 +57,20 @@ public enum LauncherEntries {
     public static func validated(_ link: Quicklink, in config: Preferences) throws -> Quicklink {
         let name = link.name.trimmingCharacters(in: .whitespacesAndNewlines)
         let url = link.url.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty, !name.contains(where: \.isNewline) else { throw Failure("Enter a name for the quicklink.") }
+        guard !name.isEmpty, !name.contains(where: \.isNewline) else { throw Failure(String(localized: "Enter a name for the quicklink.", table: "Core", comment: "Quicklink form error")) }
         guard !LauncherRouting.isReserved(name) else { throw Failure("“\(name)” is a built-in command. Choose another name.") }
         try requireUnused(name, in: config)
         let candidate = Quicklink(name: name, url: url)
-        guard !url.isEmpty else { throw Failure("Enter the quicklink URL.") }
+        guard !url.isEmpty else { throw Failure(String(localized: "Enter the quicklink URL.", table: "Core", comment: "Quicklink form error")) }
         guard !url.contains(where: \.isWhitespace), let resolved = candidate.resolvedURL(query: "query"),
               let scheme = resolved.scheme?.lowercased() else {
-            throw Failure("Enter a URL that starts with https://, http:// or mailto:, or a Shortcuts run link.")
+            throw Failure(String(localized: "Enter a URL that starts with https://, http:// or mailto:, or a Shortcuts run link.", table: "Core", comment: "Quicklink form error; URL schemes are not translated"))
         }
         if scheme == "http" || scheme == "https" {
             guard let host = resolved.host, !host.isEmpty else { throw Failure("Include the website’s address after \(scheme)://.") }
         }
         if scheme == "mailto" {
-            guard url.count > "mailto:".count else { throw Failure("Include an email address after mailto:.") }
+            guard url.count > "mailto:".count else { throw Failure(String(localized: "Include an email address after mailto:.", table: "Core", comment: "Quicklink form error; mailto: is not translated")) }
         }
         return candidate
     }
@@ -114,7 +114,7 @@ public enum LauncherEntries {
         let data = try Data(contentsOf: url)
         let current = try JSONDecoder().decode(Preferences.self, from: data)
         guard Snapshot(current) == expected else {
-            throw Failure("Snippets, quicklinks or aliases changed in the configuration file. Review the form and save again.", isConflict: true)
+            throw Failure(String(localized: "Snippets, quicklinks or aliases changed in the configuration file. Review the form and save again.", table: "Core", comment: "Snippet or quicklink form error when config.json changed underneath"), isConflict: true)
         }
         guard var object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw CocoaError(.fileReadCorruptFile) }
         let (existing, entry) = try make(current)

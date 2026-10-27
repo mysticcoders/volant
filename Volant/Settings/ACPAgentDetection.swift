@@ -27,7 +27,7 @@ final class ACPAgentDetection: ObservableObject {
                         return left == right ? ($0.title < $1.title) : left < right
                     }
                 } else {
-                    self.message = error ?? "Couldn’t check for installed agents."
+                    self.message = error ?? String(localized: "Couldn’t check for installed agents.")
                 }
             }
         }
@@ -37,7 +37,7 @@ final class ACPAgentDetection: ObservableObject {
         connection.remoteObjectInterface = NSXPCInterface(with: VolantAgentHostProtocol.self)
         self.connection = connection
         connection.resume()
-        let proxy = connection.remoteObjectProxyWithErrorHandler { _ in reply(nil, "The agent helper is unavailable.") } as? VolantAgentHostProtocol
+        let proxy = connection.remoteObjectProxyWithErrorHandler { _ in reply(nil, String(localized: "The agent helper is unavailable.")) } as? VolantAgentHostProtocol
         proxy?.detectACPAgents(reply: reply)
     }
 

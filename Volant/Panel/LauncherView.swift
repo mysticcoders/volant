@@ -219,7 +219,7 @@ struct LauncherView: View {
                         .padding(.top, 8)
                     }
                     if let held = model.heldCalculation {
-                        sectionTitle("Calculator")
+                        sectionTitle(ResultSection.calculatorTitle)
                         CalculatorCard(rowID: nil, fallback: held, state: model.rowState)
                             .id("calc-held")
                     }
@@ -239,7 +239,7 @@ struct LauncherView: View {
                         }
                     }
                     if model.sections.isEmpty && model.clipboardMessage == nil && model.searchRecoveryMessage == nil {
-                        Text(model.notice ?? (model.query.isEmpty ? "Type to search" : "No results"))
+                        Text(model.notice ?? (model.query.isEmpty ? String(localized: "Type to search", comment: "Launcher notice with an empty search") : String(localized: "No results", comment: "Launcher notice when nothing matches")))
                             .foregroundStyle(.secondary)
                             .padding(.top, 24)
                             .frame(maxWidth: .infinity)
@@ -335,7 +335,7 @@ struct LauncherView: View {
             if let feedback = model.actionFeedback {
                 Text(feedback).font(.system(size: 12)).foregroundStyle(.secondary)
                     .lineLimit(1).truncationMode(.tail).help(feedback)
-                    .accessibilityLabel("Status: " + feedback).layoutPriority(-1)
+                    .accessibilityLabel(String(localized: "Status: \(feedback)", comment: "Accessibility label for the footer feedback line")).layoutPriority(-1)
             }
             DictationStatusView(dictation: model.dictation)
             CaffeinateStatusView(service: model.caffeinate)
@@ -530,24 +530,24 @@ private struct RowView: View {
         case .systemAction(let action): return action.title
         case .caffeinate(let command): return command.title
         case .agentSession(let session): return session.project
-        case .herdrMachine(let machine, _, _): return machine?.label ?? "Local"
+        case .herdrMachine(let machine, _, _): return machine?.label ?? String(localized: "Local", comment: "Herdr machine row title for this Mac")
         case .rexPane(let pane): return pane.project
-        case .rexOverview: return "Open Rex Overview"
+        case .rexOverview: return String(localized: "Open Rex Overview", comment: "Launcher row title")
         case .connectivity(let item): return item.title
         case .audioRoute(let route): return route.name
         case .volume(let command, _): return command.title
-        case .agents: return "Open Agents"
+        case .agents: return String(localized: "Open Agents", comment: "Launcher row title")
         case .calculation(let answer, _): return answer.input + " = " + answer.result
         case .systemSettings(let pane): return pane.title
-        case .settings: return "Volant Settings"
-        case .reloadConfig: return "Reload Configuration"
+        case .settings: return String(localized: "Volant Settings", comment: "Launcher row title")
+        case .reloadConfig: return String(localized: "Reload Configuration", comment: "Launcher row title")
         case .app(let a): return a.name
         case .file(let f): return f.name
         case .contact(let c): return c.name
         case .event(let e): return e.title
         case .clip(let c): return c.text.replacingOccurrences(of: "\n", with: " ")
         case .note(let n): return n.title
-        case .newNote(let t): return "New note “\(t)”"
+        case .newNote(let t): return String(localized: "New note “\(t)”", comment: "Launcher row title; the value is the typed note text")
         case .extensionRun(let e, let i): return i.isEmpty ? e.name : "\(e.name) — \(i)"
         case .extensionResult(let s): return s
         case .extensionItem(let item, _): return item.title
@@ -563,29 +563,31 @@ private struct RowView: View {
         case .server(let server): return server.detail(home: ServersModel.home)
         case .systemAction(let action): return action.detail
         case .caffeinate(let command): return command.detail
-        case .systemSettings: return "Open this pane in System Settings"
-        case .settings: return "Preferences, app shortcuts and backups"
-        case .reloadConfig: return "Apply changes from config.json"
+        case .systemSettings: return String(localized: "Open this pane in System Settings", comment: "Launcher row subtitle")
+        case .settings: return String(localized: "Preferences, app shortcuts and backups", comment: "Launcher row subtitle for Volant Settings")
+        case .reloadConfig: return String(localized: "Apply changes from config.json", comment: "Launcher row subtitle for Reload Configuration")
         case .agentSession(let session):
             return session.machineLabel + " · " + session.provider + " · " + (agentSummary ?? session.paneID)
-        case .herdrMachine(let machine, _, _): return machine.map { $0.target + " · " + $0.session } ?? "This Mac"
+        case .herdrMachine(let machine, _, _): return machine.map { $0.target + " · " + $0.session } ?? String(localized: "This Mac", comment: "Herdr machine row subtitle for the local machine")
         case .rexPane(let pane):
             return ([pane.sessionLabel, pane.program] + [pane.status?.message ?? pane.label]).compactMap { $0 }.joined(separator: " · ")
-        case .rexOverview: return "Every session and tab in a window"
+        case .rexOverview: return String(localized: "Every session and tab in a window", comment: "Launcher row subtitle for Rex Overview")
         case .connectivity(let item): return item.detail
-        case .audioRoute(let route): return route.direction.rawValue.capitalized
+        case .audioRoute(let route): return route.direction == .output ? String(localized: "Output", comment: "Audio device row subtitle") : String(localized: "Input", comment: "Audio device row subtitle")
         case .volume(_, let detail): return detail.isEmpty ? nil : detail
-        case .agents: return "Find Herdr sessions and focus a pane"
+        case .agents: return String(localized: "Find Herdr sessions and focus a pane", comment: "Launcher row subtitle for Open Agents")
         case .appleShortcut, .calculation, .app: return nil
         case .file(let f): return f.url.deletingLastPathComponent().path.replacingOccurrences(of: NSHomeDirectory(), with: "~")
         case .contact(let c): return c.email ?? c.phone ?? (c.organization.isEmpty ? nil : c.organization)
         case .event(let e):
-            return e.isAllDay ? "All day" : "\(e.start.formatted(date: .omitted, time: .shortened)) – \(e.end.formatted(date: .omitted, time: .shortened))"
+            return e.isAllDay ? String(localized: "All day", comment: "Calendar event row subtitle") : "\(e.start.formatted(date: .omitted, time: .shortened)) – \(e.end.formatted(date: .omitted, time: .shortened))"
         case .clip(let c): return c.copiedAt.formatted(date: .abbreviated, time: .shortened)
         case .note(let n): return n.preview.isEmpty ? n.modified.formatted(date: .abbreviated, time: .shortened) : n.preview
         case .newNote: return nil
-        case .extensionRun(let e, _): return (e.communityBlocked ? "Community extensions off · " : (e.enabled ? "Enabled · " : "Off · ")) + e.accessDescription
-        case .extensionResult: return "Press return to copy"
+        case .extensionRun(let e, _):
+            return e.communityBlocked ? String(localized: "Community extensions off · \(e.accessDescription)", comment: "Extension row subtitle; the value describes the extension's access")
+                : (e.enabled ? String(localized: "Enabled · \(e.accessDescription)", comment: "Extension row subtitle; the value describes the extension's access") : String(localized: "Off · \(e.accessDescription)", comment: "Extension row subtitle; the value describes the extension's access"))
+        case .extensionResult: return String(localized: "Press return to copy", comment: "Extension result row subtitle")
         case .extensionItem(let item, _): return item.subtitle ?? item.url ?? ""
         case .snippet(let s): return s.body.replacingOccurrences(of: "\n", with: " ")
         case .emoji: return nil
@@ -679,11 +681,11 @@ struct DictationStatusView: View {
                 Image(systemName: dictation.phase == .listening ? "mic.fill" : "waveform")
                     .font(.system(size: 12))
                     .foregroundStyle(dictation.phase == .listening ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
-                    .accessibilityLabel(dictation.phase == .listening ? "Listening" : "Transcribing")
+                    .accessibilityLabel(dictation.phase == .listening ? String(localized: "Listening", comment: "Dictation status accessibility label") : String(localized: "Transcribing", comment: "Dictation status accessibility label"))
                 if !dictation.transcript.isEmpty {
                     Text(dictation.transcript).font(.system(size: 12)).foregroundStyle(.secondary)
                         .lineLimit(1).truncationMode(.head)
-                        .accessibilityLabel("Heard so far: " + dictation.transcript)
+                        .accessibilityLabel(String(localized: "Heard so far: \(dictation.transcript)", comment: "Accessibility label for the live dictation transcript"))
                 }
             }
         }

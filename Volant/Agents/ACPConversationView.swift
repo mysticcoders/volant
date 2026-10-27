@@ -115,7 +115,7 @@ struct ACPConversationView: View {
                     }
                 }
                 .padding(.horizontal, 16).padding(.bottom, 6)
-                .accessibilityLabel("Attached: " + model.attachments.map(\.title).joined(separator: ", "))
+                .accessibilityLabel(String(localized: "Attached: \(model.attachments.map(\.title).joined(separator: ", "))", comment: "Accessibility label listing AI Chat attachments"))
             }
             HStack(alignment: .bottom, spacing: 10) {
                 ACPPromptView(text: $model.draft, focusRequest: editorFocus, send: model.send,
@@ -210,10 +210,10 @@ private struct ACPConversationTab: View {
     /// without the visual marks.
     private var spokenLabel: String {
         var parts = [model.providerTitle]
-        if let account = model.account { parts.append("account " + account.label) }
+        if let account = model.account { parts.append(String(localized: "account \(account.label)", comment: "Part of an AI Chat conversation's spoken label; the value is the provider account")) }
         if let folder { parts.append(folder) }
         if let topic = model.topic { parts.append(topic) }
-        parts.append(waiting ? "Needs your permission" : model.state.status)
+        parts.append(waiting ? String(localized: "Needs your permission", comment: "AI Chat conversation status") : model.state.status)
         return parts.joined(separator: ", ")
     }
     var body: some View {
@@ -290,8 +290,8 @@ private struct ACPConversationBadge: View {
     @Environment(\.volantTheme) private var theme
     private var waiting: Bool { !model.state.permissions.isEmpty }
     private var spokenLabel: String {
-        let account: String? = model.account.map { "account " + $0.label }
-        let parts: [String?] = [model.providerTitle, account, model.topic, waiting ? "Needs your permission" : model.state.status]
+        let account: String? = model.account.map { String(localized: "account \($0.label)", comment: "Part of an AI Chat conversation's spoken label; the value is the provider account") }
+        let parts: [String?] = [model.providerTitle, account, model.topic, waiting ? String(localized: "Needs your permission", comment: "AI Chat conversation status") : model.state.status]
         return parts.compactMap { $0 }.joined(separator: ", ")
     }
     var body: some View {
@@ -316,7 +316,7 @@ private struct ACPAccountLabel: View {
     let label: String
     var body: some View {
         Label(label, systemImage: "person.crop.circle").foregroundStyle(.secondary).lineLimit(1)
-            .accessibilityLabel("Account " + label)
+            .accessibilityLabel(String(localized: "Account \(label)", comment: "Accessibility label; the value is the provider account"))
     }
 }
 
@@ -337,7 +337,7 @@ private struct ACPMessageView: View {
                 if let attachments = message.attachments, !attachments.isEmpty {
                     Label(attachments.joined(separator: " · "), systemImage: "paperclip")
                         .font(.caption).foregroundStyle(.secondary).lineLimit(2)
-                        .accessibilityLabel("Attached: " + attachments.joined(separator: ", "))
+                        .accessibilityLabel(String(localized: "Attached: \(attachments.joined(separator: ", "))", comment: "Accessibility label listing AI Chat attachments"))
                 }
             }
         }

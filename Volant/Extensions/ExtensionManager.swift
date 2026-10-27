@@ -24,13 +24,13 @@ struct InstalledExtension: Identifiable, Hashable {
     }
     static func accessDescription(capabilities: [String], hosts: [String], storage: Bool = false, secrets: [ExtensionSecret] = [],
                                   appLinks: [String] = [], location: Bool = false) -> String {
-        var access: [String] = capabilities.sorted().map { $0 == "clipboard.write" ? "Write to clipboard" : "Send diagnostic messages" }
-        if !hosts.isEmpty { access.append("Read " + hosts.joined(separator: ", ")) }
-        if storage { access.append("Remember settings and lists on this Mac") }
-        access += secrets.map { "Uses your \($0.title)" }
-        access += appLinks.map { "Opens \($0): links" }
-        if location { access.append("Share your approximate location with the sites it reads") }
-        return access.isEmpty ? "No permissions required" : access.joined(separator: ", ")
+        var access: [String] = capabilities.sorted().map { $0 == "clipboard.write" ? String(localized: "Write to clipboard", comment: "Extension permission summary item, joined with commas") : String(localized: "Send diagnostic messages", comment: "Extension permission summary item, joined with commas") }
+        if !hosts.isEmpty { access.append(String(localized: "Read \(hosts.joined(separator: ", "))", comment: "Extension permission summary item; the value lists the web hosts it reads")) }
+        if storage { access.append(String(localized: "Remember settings and lists on this Mac", comment: "Extension permission summary item, joined with commas")) }
+        access += secrets.map { String(localized: "Uses your \($0.title)", comment: "Extension permission summary item; the value names an access token, such as GitHub token") }
+        access += appLinks.map { String(localized: "Opens \($0): links", comment: "Extension permission summary item; the value is a URL scheme") }
+        if location { access.append(String(localized: "Share your approximate location with the sites it reads", comment: "Extension permission summary item, joined with commas")) }
+        return access.isEmpty ? String(localized: "No permissions required", comment: "Extension permission summary") : access.joined(separator: ", ")
     }
 }
 
@@ -106,11 +106,11 @@ final class ExtensionManager {
                     enabled: ExtensionApproval.enabled(manifest, at: configURL),
                     communityBlocked: !Self.isBundled(dir) && !communityAllowed,
                     revocation: Self.isBundled(dir) ? nil : ExtensionCatalog.revocation(in: revoked, id: manifest.id, sha256: manifest.sha256))
-            } catch { loadErrors.append("\(dir.lastPathComponent): \(error.localizedDescription)"); return nil }
+            } catch { loadErrors.append(String(localized: "\(dir.lastPathComponent): \(error.localizedDescription)", comment: "Extension load problem; the values are the folder name and the reason")); return nil }
         }
         let counts = Dictionary(grouping: candidates, by: \.id)
         extensions = candidates.filter { counts[$0.id]?.count == 1 }.sorted { $0.name < $1.name }
-        if counts.values.contains(where: { $0.count > 1 }) { loadErrors.append("Duplicate extension IDs are disabled. Remove the duplicate folder.") }
+        if counts.values.contains(where: { $0.count > 1 }) { loadErrors.append(String(localized: "Duplicate extension IDs are disabled. Remove the duplicate folder.", comment: "Extension load problem")) }
     }
     func search(_ term: String) -> [InstalledExtension] {
         extensions.filter { term.isEmpty || $0.name.localizedCaseInsensitiveContains(term) || $0.id.lowercased().hasSuffix(term.lowercased()) }
@@ -234,7 +234,7 @@ final class ExtensionManager {
     @discardableResult
     func uninstall(_ ext: InstalledExtension,
                    remove: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }) throws -> [String] {
-        guard ext.isCommunity else { throw ExtensionError.runtime("Extensions bundled with Volant cannot be uninstalled.") }
+        guard ext.isCommunity else { throw ExtensionError.runtime(String(localized: "Extensions bundled with Volant cannot be uninstalled.", comment: "Extension error")) }
         if Self.activeExecution?.extensionID == ext.id { Self.activeExecution?.finish(.failure(ExtensionError.disabled)) }
         try remove(ext.directory)
         try ExtensionApproval.forget(ext.manifest.id, at: configURL)
@@ -295,19 +295,19 @@ final class ExtensionManager {
         let manifest = try listing.verify(manifest: manifestData, module: moduleData, icon: iconData, sha256: Integrity.sha256)
         if ExtensionCatalog.revocation(in: (catalog.revoked ?? []) + ExtensionCatalogState.revoked(at: catalogStateURL),
                                        id: listing.id, sha256: listing.moduleFile.sha256) != nil {
-            throw ExtensionCatalogError.conflict("\(listing.name) \(listing.version) was withdrawn from the catalog and can’t be installed.")
+            throw ExtensionCatalogError.conflict(String(localized: "\(listing.name) \(listing.version) was withdrawn from the catalog and can’t be installed.", comment: "Extension catalog error; the values are the extension name and version"))
         }
         reload()
         let existing = extensions.first { $0.id == listing.id }
         if let existing, !existing.isCommunity {
-            throw ExtensionCatalogError.conflict("\(listing.name) is bundled with Volant and can’t be replaced.")
+            throw ExtensionCatalogError.conflict(String(localized: "\(listing.name) is bundled with Volant and can’t be replaced.", comment: "Extension catalog error"))
         }
         let keepEnabled = existing.map { $0.enabled && manifest.requestsNoMoreThan($0.manifest) } ?? false
         let files = FileManager.default
         let root = installDirectory
         let target = existing?.directory ?? root.appendingPathComponent(listing.id, isDirectory: true)
         if existing == nil, files.fileExists(atPath: target.path) {
-            throw ExtensionCatalogError.conflict("A folder named \(listing.id) is already in the Extensions folder. Remove it, then install again.")
+            throw ExtensionCatalogError.conflict(String(localized: "A folder named \(listing.id) is already in the Extensions folder. Remove it, then install again.", comment: "Extension catalog error; the value is a folder name"))
         }
         let staging = root.appendingPathComponent(".staging-" + UUID().uuidString, isDirectory: true)
         defer { try? files.removeItem(at: staging) }
@@ -338,14 +338,14 @@ final class ExtensionManager {
             reload(); throw error
         } catch {
             reload()
-            throw ExtensionCatalogError.conflict("Couldn’t install \(listing.name): \(error.localizedDescription)")
+            throw ExtensionCatalogError.conflict(String(localized: "Couldn’t install \(listing.name): \(error.localizedDescription)", comment: "Extension catalog error; the values are the extension name and the reason"))
         }
         reload()
         if let existing {
             _ = try? ExtensionHostApprovals.pruneAfterRemoving(existing.manifest, remaining: extensions.map(\.manifest), at: configURL)
         }
         guard var installed = extensions.first(where: { $0.id == listing.id }) else {
-            throw ExtensionCatalogError.conflict("\(listing.name) was installed but couldn’t be loaded. Check the Extensions folder.")
+            throw ExtensionCatalogError.conflict(String(localized: "\(listing.name) was installed but couldn’t be loaded. Check the Extensions folder.", comment: "Extension catalog error"))
         }
         if keepEnabled && !installed.enabled {
             try ExtensionApproval.update(installed.manifest, enabled: true, expected: false, at: configURL)
@@ -512,8 +512,8 @@ final class ExtensionManager {
             guard !isBlocked(ext) else { throw ExtensionError.communityDisabled }
             guard ExtensionApproval.enabled(ext.manifest, at: configURL) else { throw ExtensionError.disabled }
             if let revocation = revocation(for: ext.manifest, in: ext.directory) { throw ExtensionError.revoked(ext.name, revocation.reason) }
-            guard !Self.running else { throw ExtensionError.runtime("An extension is already running.") }
-            guard input.utf8.count <= ExtensionLimits.maximumInputBytes else { throw ExtensionError.runtime("Extension input exceeds \(ExtensionLimits.inputDescription).") }
+            guard !Self.running else { throw ExtensionError.runtime(String(localized: "An extension is already running.", comment: "Extension error")) }
+            guard input.utf8.count <= ExtensionLimits.maximumInputBytes else { throw ExtensionError.runtime(String(localized: "Extension input exceeds \(ExtensionLimits.inputDescription).", comment: "Extension error; the value is a size such as 1 MiB")) }
             let module = try verifiedModule(ext)
             Self.running = true
             let execution = ExtensionExecution(manifest: ext.manifest, configURL: configURL, isCommunity: ext.isCommunity, onLog: onLog) { [self] result in
@@ -528,15 +528,18 @@ final class ExtensionManager {
         case missingModule, hashMismatch, changed, disabled, communityDisabled, secretsMissing([String]), locationNotAllowed, revoked(String, String?), runtime(String)
         var errorDescription: String? {
             switch self {
-            case .missingModule: return "Extension module is missing, too large, or outside its folder."
-            case .hashMismatch: return "Extension module does not match its manifest hash."
-            case .changed: return "Extension changed. Refresh and review it before enabling."
-            case .disabled: return "Extension is disabled. Enable it before running."
-            case .communityDisabled: return "Community extensions are off. Allow them in Settings → Extensions."
-            case .locationNotAllowed: return "Allow this extension to use your approximate location to run it."
-            case .secretsMissing(let titles): return "Add your \(titles.joined(separator: " and ")) to use this extension."
+            case .missingModule: return String(localized: "Extension module is missing, too large, or outside its folder.", comment: "Extension error")
+            case .hashMismatch: return String(localized: "Extension module does not match its manifest hash.", comment: "Extension error")
+            case .changed: return String(localized: "Extension changed. Refresh and review it before enabling.", comment: "Extension error")
+            case .disabled: return String(localized: "Extension is disabled. Enable it before running.", comment: "Extension error")
+            case .communityDisabled: return String(localized: "Community extensions are off. Allow them in Settings → Extensions.", comment: "Extension error")
+            case .locationNotAllowed: return String(localized: "Allow this extension to use your approximate location to run it.", comment: "Extension error")
+            case .secretsMissing(let titles):
+                let names = titles.joined(separator: String(localized: " and ", comment: "Separator between access token names in an extension error, with its spaces"))
+                return String(localized: "Add your \(names) to use this extension.", comment: "Extension error; the value names the missing access tokens")
             case .revoked(let name, let reason):
-                return "\(name) was withdrawn from the extension catalog" + (reason.map { ": \($0)" } ?? ".") + " Update or uninstall it."
+                if let reason { return String(localized: "\(name) was withdrawn from the extension catalog: \(reason) Update or uninstall it.", comment: "Extension error; the values are the extension name and the catalog's reason") }
+                return String(localized: "\(name) was withdrawn from the extension catalog. Update or uninstall it.", comment: "Extension error; the value is the extension name")
             case .runtime(let message): return message
             }
         }
@@ -564,7 +567,7 @@ private final class ExtensionExecution: NSObject, VolantCapabilityClientProtocol
     private var submitted = false
     func start(module: Data, input: String) {
         // launchd normally throttles rapid service restarts for up to ten seconds.
-        armDeadline(15, message: "Extension service could not start. Try again.")
+        armDeadline(15, message: String(localized: "Extension service could not start. Try again.", comment: "Extension error"))
         connect(module: module, input: input)
     }
     private func armDeadline(_ seconds: Double, message: String) {
@@ -592,7 +595,7 @@ private final class ExtensionExecution: NSObject, VolantCapabilityClientProtocol
                 self.clearConnection()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in self?.connect(module: module, input: input) }
             } else {
-                self.finish(.failure(ExtensionManager.ExtensionError.runtime("Extension stopped or exceeded its time limit.")))
+                self.finish(.failure(ExtensionManager.ExtensionError.runtime(String(localized: "Extension stopped or exceeded its time limit.", comment: "Extension error"))))
             }
         } }
         connection.interruptionHandler = failure; connection.invalidationHandler = failure
@@ -602,14 +605,14 @@ private final class ExtensionExecution: NSObject, VolantCapabilityClientProtocol
             guard let self, self.completion != nil, self.attempt == token else { return }
             guard self.approved else { self.finish(.failure(ExtensionManager.ExtensionError.disabled)); return }
             self.submitted = true
-            self.armDeadline((self.manifest.timeoutSeconds ?? 2) + 1, message: "Extension exceeded its time limit.")
+            self.armDeadline((self.manifest.timeoutSeconds ?? 2) + 1, message: String(localized: "Extension exceeded its time limit.", comment: "Extension error"))
             let reply: (String?, String?) -> Void = { [weak self] output, error in
                 DispatchQueue.main.async {
                     guard let self, self.attempt == token else { return }
                     guard self.approved else { self.finish(.failure(ExtensionManager.ExtensionError.disabled)); return }
                     if let error { self.finish(.failure(ExtensionManager.ExtensionError.runtime(error))) }
                     else if let output, output.utf8.count <= ExtensionLimits.maximumOutputBytes { self.finish(.success(output)) }
-                    else { self.finish(.failure(ExtensionManager.ExtensionError.runtime("Invalid extension output."))) }
+                    else { self.finish(.failure(ExtensionManager.ExtensionError.runtime(String(localized: "Invalid extension output.", comment: "Extension error")))) }
                 }
             }
             if self.manifest.abiVersion == 2 {

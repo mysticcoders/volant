@@ -120,10 +120,11 @@ struct ExtensionCatalogView: View {
 
     private func statusText(_ listing: ExtensionCatalog.Listing) -> String {
         switch model.status(listing) {
-        case .available: return "Version \(listing.version)"
-        case .update(let from): return "Update: \(from) → \(listing.version)"
-        case .installed: return (model.installed(listing)?.enabled == true ? "Installed · " : "Off · ") + listing.version
-        case .bundled: return "Bundled with Volant"
+        case .available: return String(localized: "Version \(listing.version)", comment: "Extension catalog row status; the value is a version number")
+        case .update(let from): return String(localized: "Update: \(from) → \(listing.version)", comment: "Extension catalog row status; the values are the installed and new versions")
+        case .installed: return model.installed(listing)?.enabled == true ? String(localized: "Installed · \(listing.version)", comment: "Extension catalog row status; the value is a version number")
+            : String(localized: "Off · \(listing.version)", comment: "Extension catalog row status; the value is a version number")
+        case .bundled: return String(localized: "Bundled with Volant", comment: "Extension catalog row status")
         }
     }
 
@@ -141,7 +142,7 @@ struct ExtensionCatalogView: View {
             if let notes = listing.notes, !notes.isEmpty {
                 Text(notes).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
-            section("Access") {
+            section(String(localized: "Access", comment: "Extension catalog detail section heading")) {
                 if listing.storage == true {
                     Label("Remember settings and lists on this Mac", systemImage: "internaldrive")
                 }
@@ -159,7 +160,7 @@ struct ExtensionCatalogView: View {
                         .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
             }
-            section("On this Mac") {
+            section(String(localized: "On this Mac", comment: "Extension catalog detail section heading")) {
                 Text(onThisMac(listing, installed: installed)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
             if let source = listing.sourceURL {
@@ -172,15 +173,15 @@ struct ExtensionCatalogView: View {
     private func onThisMac(_ listing: ExtensionCatalog.Listing, installed: InstalledExtension?) -> String {
         switch model.status(listing) {
         case .available:
-            return model.communityAllowed ? "Not installed. Installing doesn’t turn it on; it asks the first time you use it."
-                : "Not installed. Turn on Allow Community Extensions in Settings to install it."
+            return model.communityAllowed ? String(localized: "Not installed. Installing doesn’t turn it on; it asks the first time you use it.", comment: "Extension catalog detail, On this Mac section")
+                : String(localized: "Not installed. Turn on Allow Community Extensions in Settings to install it.", comment: "Extension catalog detail, On this Mac section")
         case .update(let from):
-            return "Version \(from) is installed. Updating replaces it in one step; changed code, permissions or hosts need enabling again."
+            return String(localized: "Version \(from) is installed. Updating replaces it in one step; changed code, permissions or hosts need enabling again.", comment: "Extension catalog detail, On this Mac section; the value is the installed version")
         case .installed:
-            return installed?.enabled == true ? "Installed and on. Type \(listing.name) in the launcher."
-                : "Installed and off, so it doesn’t appear in search. Choose Turn On to allow it; it asks for any hosts first."
+            return installed?.enabled == true ? String(localized: "Installed and on. Type \(listing.name) in the launcher.", comment: "Extension catalog detail, On this Mac section; the value is the extension name")
+                : String(localized: "Installed and off, so it doesn’t appear in search. Choose Turn On to allow it; it asks for any hosts first.", comment: "Extension catalog detail, On this Mac section")
         case .bundled:
-            return "Bundled with Volant."
+            return String(localized: "Bundled with Volant.", comment: "Extension catalog detail, On this Mac section")
         }
     }
 

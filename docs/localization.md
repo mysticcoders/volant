@@ -1,8 +1,20 @@
 # Localization
 
-Tracking issue: #294. Volant ships in English only. This page covers the infrastructure that lets
-strings be translated, and the rules for writing new ones. No other language has been chosen yet;
-that, and who translates, is the owner's decision. Never ship unreviewed machine translation.
+Tracking issue: #294. Volant is written in English. Spanish (`es`, neutral wording for Spain and
+Latin America) is the first translation. The owner chose to ship it as a beta drafted without a
+native speaker's review, on October 26, 2026.
+
+## Unreviewed translations
+
+- A translation that no native speaker has reviewed ships only as a labeled beta. Its strings stay
+  in the `needs_review` state in the catalogs. Settings › About tells anyone running Volant in that
+  language that the translation is an unreviewed beta, with a link to report problems.
+- Marketing copy, release notes and the website call it a beta and never claim a reviewed or
+  native-quality translation (`docs/marketing-claims.md`).
+- A reviewer marks strings `translated` as they check them. Once every string in a language is
+  reviewed, the beta labels can go.
+- Never ship a language whose strings are missing from the catalog: `tools/strings.py --check`
+  fails when a key has no value in a shipped language.
 
 ## Where strings live
 
@@ -69,17 +81,17 @@ renders is part of #294.
 
 ## Status
 
-- Done:
-  - the three catalogs, the project settings and `tools/strings.py`
-  - the `--check` in `Scripts/test.sh`
-  - command names and descriptions in Core (`CoreCommand`)
-  - the Servers command's strings in the app, as the worked example
-  - the permission prompts
-  - `CoreLocalizationTests`, which checks Core strings resolve from the `Core` table
-- Remaining (see #294):
-  - the other plain-`String` messages in the app (about 280)
-  - the other user-facing strings in Core (about 120)
-  - AppKit menu titles and accessibility labels
-  - locale-aware output formatting decisions
-  - pseudo-locale and right-to-left fixture renders
-  - choosing languages
+- **Done:**
+  - the catalogs, project settings and `tools/strings.py`, with `--check` in `Scripts/test.sh` (it fails on stale strings and on any string without text in a shipped language)
+  - about 1,280 strings converted across the app and Core
+  - Spanish drafts for every string, marked `needs_review`
+  - plural variants in English and Spanish for strings that count something
+  - the About notice
+  - a Spanish pass of the Servers scenario in the branded Actions fixture, light and dark
+- **Remaining (#294):**
+  - **Interpolated Core messages:** about 40 stay English, because Core can't interpolate. Examples are Herdr and Rex status details, extension network and storage errors, and calculator relative dates and adjustments. Each needs a hand-written format string, or the sentence built in the app.
+  - **Helper-produced messages:** `VolantAgentHost` and `VolantAIHost` errors, and `Shared/` text built inside a helper, reach the app already in English.
+  - **Shown values compared elsewhere:** Wi-Fi security labels, System Settings pane names, `SystemAction` titles (search has no English fallback), Raycast import category names, and ACP roles.
+  - **Formatting decisions:** dates, times, numbers and calculator output.
+  - **More fixture renders:** Spanish passes of scenarios that compare English text, which need language-neutral assertions first, and pseudo-locale and right-to-left renders.
+  - **Review:** a native speaker's review, after which strings move from `needs_review` to `translated`.

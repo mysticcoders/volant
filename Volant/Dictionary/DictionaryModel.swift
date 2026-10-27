@@ -33,7 +33,7 @@ final class DictionaryModel: ObservableObject {
             } catch {
                 guard let self, self.generation == token, !Task.isCancelled else { return }
                 self.busy = false; self.searched = true; self.failed = true
-                self.message = "Dictionary lookup couldn't finish. Try again or open Dictionary."
+                self.message = String(localized: "Dictionary lookup couldn't finish. Try again or open Dictionary.")
             }
         }
     }
@@ -44,7 +44,7 @@ final class DictionaryModel: ObservableObject {
     }
     func copy(using action: (String) -> Void) {
         guard let entry, !busy else { return }
-        action(entry.definition); message = "Definition copied"
+        action(entry.definition); message = String(localized: "Definition copied")
     }
     func open() {
         guard canLookup else { return }
@@ -54,7 +54,7 @@ final class DictionaryModel: ObservableObject {
             do { try await open(text) }
             catch {
                 guard let self, self.generation == token else { return }
-                self.message = "Couldn't open Dictionary. Check that the app is installed, then try again."
+                self.message = String(localized: "Couldn't open Dictionary. Check that the app is installed, then try again.")
             }
         }
     }

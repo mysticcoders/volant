@@ -22,12 +22,12 @@ public struct RaycastTheme: Equatable {
 
         public var errorDescription: String? {
             switch self {
-            case .tooLarge: return "That theme is larger than a Raycast theme can be."
-            case .notATheme: return "That isn’t a Raycast theme. Use a theme JSON file, or a theme link from Raycast or themes.ray.so."
-            case .missingColors: return "That Raycast theme is missing a name, appearance or one of its twelve colors."
+            case .tooLarge: return String(localized: "That theme is larger than a Raycast theme can be.", table: "Core", comment: "Raycast theme import error")
+            case .notATheme: return String(localized: "That isn’t a Raycast theme. Use a theme JSON file, or a theme link from Raycast or themes.ray.so.", table: "Core", comment: "Raycast theme import error")
+            case .missingColors: return String(localized: "That Raycast theme is missing a name, appearance or one of its twelve colors.", table: "Core", comment: "Raycast theme import error")
             case .invalidColor(let key): return "That Raycast theme’s \(key) color isn’t a hex color."
             case .shareLinkWithoutColors:
-                return "That themes.ray.so link names a theme without its colors, and Volant doesn’t download themes. On themes.ray.so choose Download JSON or Copy JSON, then import that."
+                return String(localized: "That themes.ray.so link names a theme without its colors, and Volant doesn’t download themes. On themes.ray.so choose Download JSON or Copy JSON, then import that.", table: "Core", comment: "Raycast theme import error; Download JSON and Copy JSON are button names on themes.ray.so")
             }
         }
     }

@@ -17,7 +17,7 @@ public enum AIConnectionKind: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .acp: return "ACP"
         case .byok: return "BYOK"
-        case .local: return "Local Models"
+        case .local: return String(localized: "Local Models", table: "Core", comment: "AI connection kind in AI Settings")
         case .apple: return "Apple Intelligence"
         }
     }
@@ -28,7 +28,7 @@ public enum AIConnectionKind: String, Codable, CaseIterable, Identifiable {
 public enum AIAPIProvider: String, Codable, CaseIterable, Identifiable {
     case openAI, anthropic, compatible
     public var id: String { rawValue }
-    public var title: String { switch self { case .openAI: return "OpenAI"; case .anthropic: return "Anthropic"; case .compatible: return "OpenAI-compatible" } }
+    public var title: String { switch self { case .openAI: return "OpenAI"; case .anthropic: return "Anthropic"; case .compatible: return String(localized: "OpenAI-compatible", table: "Core", comment: "AI API provider for servers that speak the OpenAI API") } }
     public var endpoint: String { switch self { case .openAI: return "https://api.openai.com/v1"; case .anthropic: return "https://api.anthropic.com/v1"; case .compatible: return "" } }
 }
 public struct AIHTTPConfiguration: Codable, Equatable {
@@ -64,29 +64,29 @@ public enum AIHTTPError: Error, LocalizedError {
     case configuration, key, response, limit, incomplete, unsupported, http(Int)
     public var errorDescription: String? {
         switch self {
-        case .configuration: return "Choose a model and a valid HTTPS API URL, or a loopback URL for local models."
-        case .key: return "Add an API key in AI Settings before connecting."
-        case .response: return "The server returned an unsupported response. Check the provider and endpoint."
-        case .limit: return "This conversation reached its size limit. Start a new conversation."
-        case .incomplete: return "The response stopped before completion. You can try again."
-        case .unsupported: return "This connection supports text chat only; the server requested an unsupported operation."
+        case .configuration: return String(localized: "Choose a model and a valid HTTPS API URL, or a loopback URL for local models.", table: "Core", comment: "AI connection error")
+        case .key: return String(localized: "Add an API key in AI Settings before connecting.", table: "Core", comment: "AI connection error")
+        case .response: return String(localized: "The server returned an unsupported response. Check the provider and endpoint.", table: "Core", comment: "AI connection error")
+        case .limit: return String(localized: "This conversation reached its size limit. Start a new conversation.", table: "Core", comment: "AI connection error")
+        case .incomplete: return String(localized: "The response stopped before completion. You can try again.", table: "Core", comment: "AI connection error")
+        case .unsupported: return String(localized: "This connection supports text chat only; the server requested an unsupported operation.", table: "Core", comment: "AI connection error")
         case .http(let code):
             switch code {
-            case 401, 403: return "The server rejected access. Check your API key and model permissions."
-            case 429: return "The server's rate or usage limit was reached. Try again later."
+            case 401, 403: return String(localized: "The server rejected access. Check your API key and model permissions.", table: "Core", comment: "AI connection error for HTTP 401 or 403")
+            case 429: return String(localized: "The server's rate or usage limit was reached. Try again later.", table: "Core", comment: "AI connection error for HTTP 429")
             default: return "The AI server returned HTTP \(code). Check your connection settings."
             }
         }
     }
     public static func message(_ error: Error) -> String {
-        (error as? AIHTTPError)?.errorDescription ?? "Couldn’t reach the AI server. Check its address and whether it is running."
+        (error as? AIHTTPError)?.errorDescription ?? String(localized: "Couldn’t reach the AI server. Check its address and whether it is running.", table: "Core", comment: "AI connection error")
     }
 }
 public struct AILocalServer: Identifiable, Equatable {
     public var name: String
     public var endpoint: String
     public var models: [String] = []
-    public var message: String = "Checking…"
+    public var message: String = String(localized: "Checking…", table: "Core", comment: "Local AI server status while Volant checks whether it is running")
     public var id: String { endpoint }
     public var configuration: AIHTTPConfiguration { AIHTTPConfiguration(provider: .compatible, endpoint: endpoint, local: true) }
     public static let candidates = [
@@ -95,7 +95,7 @@ public struct AILocalServer: Identifiable, Equatable {
         AILocalServer(name: "Local API · 8000", endpoint: "http://127.0.0.1:8000/v1")
     ]
 
-    public init(name: String, endpoint: String, models: [String] = [], message: String = "Checking…") {
+    public init(name: String, endpoint: String, models: [String] = [], message: String = String(localized: "Checking…", table: "Core", comment: "Local AI server status while Volant checks whether it is running")) {
         self.name = name
         self.endpoint = endpoint
         self.models = models

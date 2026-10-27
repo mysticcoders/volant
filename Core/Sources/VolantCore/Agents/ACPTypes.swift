@@ -42,7 +42,7 @@ public struct ACPPermission: Codable, Identifiable, Equatable {
 }
 public struct ACPState: Codable, Equatable {
     public var phase = "disconnected"
-    public var status = "Connect to your AI provider to start chatting."
+    public var status = String(localized: "Connect to your AI provider to start chatting.", table: "Core", comment: "AI Chat status before connecting")
     public var sessionID: String?
     public var agentName = ""
     public var messages: [ACPMessage] = []
@@ -52,7 +52,7 @@ public struct ACPState: Codable, Equatable {
     public var resumeRejected: Bool?
     public var busy: Bool { ["starting", "working", "cancelling"].contains(phase) }
 
-    public init(phase: String = "disconnected", status: String = "Connect to your AI provider to start chatting.", sessionID: String? = nil, agentName: String = "", messages: [ACPMessage] = [], permissions: [ACPPermission] = [], capabilities: String = "") {
+    public init(phase: String = "disconnected", status: String = String(localized: "Connect to your AI provider to start chatting.", table: "Core", comment: "AI Chat status before connecting"), sessionID: String? = nil, agentName: String = "", messages: [ACPMessage] = [], permissions: [ACPPermission] = [], capabilities: String = "") {
         self.phase = phase
         self.status = status
         self.sessionID = sessionID

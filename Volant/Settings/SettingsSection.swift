@@ -17,7 +17,22 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     case statusBar = "Status Bar"
 
     var id: String { rawValue }
-    var title: String { rawValue }
+    var title: String {
+        switch self {
+        case .general: String(localized: "General", comment: "Settings sidebar section")
+        case .appearance: String(localized: "Appearance", comment: "Settings sidebar section")
+        case .keyboardShortcuts: String(localized: "Keyboard Shortcuts", comment: "Settings sidebar section")
+        case .appShortcuts: String(localized: "App Shortcuts", comment: "Settings sidebar section")
+        case .data: String(localized: "Data & Configuration", comment: "Settings sidebar section")
+        case .whatsNew: String(localized: "What’s New", comment: "Settings sidebar section")
+        case .about: String(localized: "About", comment: "Settings sidebar section")
+        case .ai: String(localized: "AI", comment: "Settings sidebar section")
+        case .dictation: String(localized: "Dictation", comment: "Settings sidebar section")
+        case .extensions: String(localized: "Extensions", comment: "Settings sidebar section")
+        case .fileSearch: String(localized: "File Search", comment: "Settings sidebar section")
+        case .statusBar: String(localized: "Status Bar", comment: "Settings sidebar section")
+        }
+    }
     var isFeature: Bool { [.ai, .dictation, .extensions, .fileSearch, .statusBar].contains(self) }
 
     var symbol: String {

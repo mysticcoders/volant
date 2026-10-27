@@ -27,12 +27,12 @@ public enum NumberForms {
         }
         if let groups = match(toRoman, query), let value = Calculator.evaluate(groups[0], locale: locale),
            value == value.rounded(), let numeral = roman(Int(exactly: value) ?? 0) {
-            return CalculationAnswer(input: input, inputDetail: nil, result: numeral, resultDetail: "Roman numeral",
+            return CalculationAnswer(input: input, inputDetail: nil, result: numeral, resultDetail: String(localized: "Roman numeral", table: "Core", comment: "Calculator answer label"),
                                      copyText: numeral, swapQuery: "\(numeral) in decimal")
         }
         if let groups = match(fromRoman, query), let value = integer(groups[0].isEmpty ? groups[1] : groups[0]) {
             let text = Calculator.format(Double(value), locale: locale)
-            return CalculationAnswer(input: input, inputDetail: "Roman numeral", result: text,
+            return CalculationAnswer(input: input, inputDetail: String(localized: "Roman numeral", table: "Core", comment: "Calculator answer label"), result: text,
                                      resultDetail: CalculationAnswer.spoken(Double(value), locale: locale),
                                      copyText: text, swapQuery: "\(text) in roman")
         }
@@ -53,7 +53,7 @@ public enum NumberForms {
         }
         let result = mixed ? (mixedText ?? improper) : improper
         let other = mixed ? (mixedText == nil ? nil : improper) : mixedText
-        let detail = [exact ? nil : "Approximate", other].compactMap { $0 }.joined(separator: " · ")
+        let detail = [exact ? nil : String(localized: "Approximate", table: "Core", comment: "Calculator answer label: the fraction is not exact"), other].compactMap { $0 }.joined(separator: " · ")
         return CalculationAnswer(input: input, inputDetail: nil, result: result, resultDetail: detail.isEmpty ? nil : detail,
                                  copyText: result)
     }

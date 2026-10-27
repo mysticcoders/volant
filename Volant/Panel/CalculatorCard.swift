@@ -32,7 +32,7 @@ struct CalculatorCard: View {
         .contentShape(Rectangle())
         .opacity(held ? 0.45 : 1)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(held ? "Calculating" : answer.input + " equals " + answer.result)
+        .accessibilityLabel(held ? String(localized: "Calculating", comment: "Accessibility label for a calculator answer still being worked out") : String(localized: "\(answer.input) equals \(answer.result)", comment: "Accessibility label for a calculator answer"))
         .accessibilityValue([answer.inputDetail, answer.resultDetail].compactMap { $0 }.joined(separator: ", "))
         .accessibilityAddTraits(selected ? .isSelected : [])
     }

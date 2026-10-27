@@ -236,9 +236,9 @@ public enum ExtensionCatalogError: Error, LocalizedError, Equatable {
     case badSignature, invalidIndex, rollback, unavailable(String), mismatch(String), conflict(String)
     public var errorDescription: String? {
         switch self {
-        case .badSignature: return "The extension catalog’s signature is not valid. Nothing was installed."
-        case .invalidIndex: return "The extension catalog is not in a format this version of Volant can read."
-        case .rollback: return "The extension catalog is older than one Volant already accepted, so it was not used."
+        case .badSignature: return String(localized: "The extension catalog’s signature is not valid. Nothing was installed.", table: "Core", comment: "Extension catalog error")
+        case .invalidIndex: return String(localized: "The extension catalog is not in a format this version of Volant can read.", table: "Core", comment: "Extension catalog error")
+        case .rollback: return String(localized: "The extension catalog is older than one Volant already accepted, so it was not used.", table: "Core", comment: "Extension catalog error")
         case .unavailable(let detail): return "Couldn’t reach the extension catalog. \(detail)"
         case .mismatch(let detail), .conflict(let detail): return detail
         }

@@ -38,7 +38,7 @@ enum ExtensionFetcher {
             proxy.fetchCatalogFile(path: path, maximumBytes: maximumBytes, reply: reply)
         }) { data, status, error in
             if let data, error == nil, status == 200 { completion(.success(data)); return }
-            let detail = error ?? (status == 0 ? "The fetch helper did not answer." : "The server answered \(status).")
+            let detail = error ?? (status == 0 ? String(localized: "The fetch helper did not answer.", comment: "Extension catalog error detail") : String(localized: "The server answered \(status).", comment: "Extension catalog error detail; the value is an HTTP status code"))
             completion(.failure(ExtensionCatalogError.unavailable(detail)))
         }
     }
@@ -61,7 +61,7 @@ enum ExtensionFetcher {
         connection.invalidationHandler = { finish(nil, 0, nil) }
         connection.interruptionHandler = { finish(nil, 0, nil) }
         connection.resume()
-        DispatchQueue.main.asyncAfter(deadline: .now() + timeout) { finish(nil, 0, "The request timed out.") }
+        DispatchQueue.main.asyncAfter(deadline: .now() + timeout) { finish(nil, 0, String(localized: "The request timed out.", comment: "Extension network error detail")) }
         guard let proxy = connection.remoteObjectProxyWithErrorHandler({ _ in finish(nil, 0, nil) }) as? VolantFetchHostProtocol else {
             finish(nil, 0, nil); return
         }

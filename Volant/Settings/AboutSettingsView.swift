@@ -8,11 +8,28 @@ struct AboutSettingsView: View {
         let info = Bundle.main.infoDictionary ?? [:]
         let short = info["CFBundleShortVersionString"] as? String ?? "?"
         let build = info["CFBundleVersion"] as? String
-        return "Version \(short)" + (build.map { " (\($0))" } ?? "")
+        return build.map { String(localized: "Version \(short) (\($0))", comment: "About settings; the values are the version and build number") } ?? String(localized: "Version \(short)", comment: "About settings; the value is the version number")
+    }
+
+    /// Whether Volant is showing a translation rather than its English source text. Every translation
+    /// so far is an unreviewed beta (docs/localization.md), which About says plainly.
+    private var showsTranslation: Bool {
+        Bundle.main.preferredLocalizations.first.map { !$0.hasPrefix("en") } ?? false
     }
 
     var body: some View {
         Form {
+            if showsTranslation {
+                Section {
+                    LabeledContent(String(localized: "Translation", comment: "About settings row naming the language Volant is shown in")) {
+                        Link(String(localized: "Report a problem", comment: "About settings link to report a translation mistake"),
+                             destination: URL(string: "https://github.com/mysticcoders/volant/issues")!)
+                    }
+                } footer: {
+                    SettingsFooter(String(localized: "This translation is a beta. It was drafted without review by a native speaker, so some wording may be wrong or unnatural.",
+                                          comment: "About settings footer, shown only when Volant runs in a translated language"))
+                }
+            }
             Section {
                 HStack(spacing: 14) {
                     Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 56, height: 56).accessibilityHidden(true)
@@ -49,7 +66,7 @@ struct AboutSettingsView: View {
             } header: {
                 Text("Acknowledgements")
             } footer: {
-                SettingsFooter("GeoNames city names are licensed under Creative Commons Attribution 4.0. Airport codes from mwgg/Airports and the color theme palettes are MIT licensed; their licenses are included with Volant. Runtime logos are trademarks of their owners, shown only to identify a server's runtime; the Ruby and PHP logos are licensed under Creative Commons Attribution-ShareAlike, and their licenses and notices are included with Volant.")
+                SettingsFooter(String(localized: "GeoNames city names are licensed under Creative Commons Attribution 4.0. Airport codes from mwgg/Airports and the color theme palettes are MIT licensed; their licenses are included with Volant. Runtime logos are trademarks of their owners, shown only to identify a server's runtime; the Ruby and PHP logos are licensed under Creative Commons Attribution-ShareAlike, and their licenses and notices are included with Volant."))
             }
         }
         .formStyle(.settings)

@@ -58,7 +58,7 @@ struct ExtensionSettingsView: View {
             case .success(let loaded):
                 let withdrawn = manager.applyRevocations(from: loaded)
                 catalog = loaded
-                notices = withdrawn.map { "Turned off \($0.name): it was withdrawn from the catalog." }
+                notices = withdrawn.map { String(localized: "Turned off \($0.name): it was withdrawn from the catalog.", comment: "Settings → Extensions notice; the value is the extension name") }
                 reload(); if !withdrawn.isEmpty { onChange() }
             case .failure(let failure): catalogError = failure.localizedDescription
             }
@@ -77,7 +77,7 @@ struct ExtensionSettingsView: View {
                 guard manager.communityAllowed else { throw ExtensionManager.ExtensionError.communityDisabled }
                 let files = try result.get()
                 let updated = try manager.install(listing, manifest: files.manifest, module: files.module, icon: files.icon, from: catalog)
-                if wasEnabled && !updated.enabled { notices.append("\(updated.name) \(updated.manifest.version) asks for new access, so it is off. Turn it on to review it.") }
+                if wasEnabled && !updated.enabled { notices.append(String(localized: "\(updated.name) \(updated.manifest.version) asks for new access, so it is off. Turn it on to review it.", comment: "Settings → Extensions notice; the values are the extension name and version")) }
                 reload(); onChange(); completion(nil)
             } catch { reload(); completion(error.localizedDescription) }
         }
@@ -149,7 +149,7 @@ struct ExtensionSettingsView: View {
                     }
                 }
             } footer: {
-                SettingsFooter("Extensions start off and run only when you invoke them. An update keeps an extension on unless it asks for new access; other changed code needs enabling again. Turned-off extensions stay out of search; type ext and a name to find one. Uninstalling moves an extension to the Trash with its data and unused host access. Try Hello World: turn it on, then type hello Andrew")
+                SettingsFooter(String(localized: "Extensions start off and run only when you invoke them. An update keeps an extension on unless it asks for new access; other changed code needs enabling again. Turned-off extensions stay out of search; type ext and a name to find one. Uninstalling moves an extension to the Trash with its data and unused host access. Try Hello World: turn it on, then type hello Andrew", comment: "Footer in Settings → Extensions; ext and hello are typed launcher commands and stay in English"))
             }
             if communityAllowed || !approvedHosts.isEmpty { networkAccessSection }
             if communityAllowed || !locationSharing.isEmpty { locationSection }
@@ -225,14 +225,13 @@ struct ExtensionSettingsView: View {
                     else { setEnabled(ext, enabled) }
                 })) {
                     Text(ext.name)
-                    Text((ext.isCommunity ? (ext.communityBlocked ? "Community · Blocked by master switch" : "Community") : "Bundled with Volant")
-                         + (ext.catalogOrigin == nil ? "" : " · From catalog")
-                         + " · Version \(ext.manifest.version) · " + ext.accessDescription
-                         + (ext.enabled && !ExtensionHostApprovals.missing(ext.manifest, at: configURL).isEmpty ? " · Asks for host access on next use" : ""))
+                    Text(rowDetails(ext))
                 }.disabled(ext.communityBlocked || (ext.revocation != nil && !ext.enabled)).accessibilityIdentifier("extension-toggle-" + ext.id)
             }
             if let revocation = ext.revocation {
-                Label("Withdrawn from the catalog" + (revocation.reason.map { ": " + $0 } ?? ". Update or uninstall it."), systemImage: "exclamationmark.triangle.fill")
+                Label(revocation.reason.map { String(localized: "Withdrawn from the catalog: \($0)", comment: "Settings → Extensions row warning; the value is the catalog's reason") }
+                      ?? String(localized: "Withdrawn from the catalog. Update or uninstall it.", comment: "Settings → Extensions row warning"),
+                      systemImage: "exclamationmark.triangle.fill")
                     .font(.callout).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
                     .padding(.leading, 34).accessibilityIdentifier("extension-revoked-" + ext.id)
             }
@@ -267,6 +266,23 @@ struct ExtensionSettingsView: View {
         }
     }
 
+    /// The details under an extension's name: where it came from, its version, its access and whether
+    /// it still needs host approval, separated by middle dots.
+    private func rowDetails(_ ext: InstalledExtension) -> String {
+        let origin = ext.isCommunity
+            ? (ext.communityBlocked ? String(localized: "Community · Blocked by master switch", comment: "Settings → Extensions row detail")
+                : String(localized: "Community", comment: "Settings → Extensions row detail: a community extension"))
+            : String(localized: "Bundled with Volant", comment: "Settings → Extensions row detail")
+        var parts = [origin]
+        if ext.catalogOrigin != nil { parts.append(String(localized: "From catalog", comment: "Settings → Extensions row detail")) }
+        parts.append(String(localized: "Version \(ext.manifest.version)", comment: "Settings → Extensions row detail; the value is a version number"))
+        parts.append(ext.accessDescription)
+        if ext.enabled && !ExtensionHostApprovals.missing(ext.manifest, at: configURL).isEmpty {
+            parts.append(String(localized: "Asks for host access on next use", comment: "Settings → Extensions row detail"))
+        }
+        return parts.joined(separator: " · ")
+    }
+
     /// Community rows show only while the master switch is on; built-in extensions always show.
     private var visibleExtensions: [InstalledExtension] { communityAllowed ? installed : installed.filter { !$0.isCommunity } }
     private var locationSharing: [InstalledExtension] { let manager = manager; return installed.filter { manager.locationApproved($0) } }
@@ -286,16 +302,16 @@ struct ExtensionSettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
                 Grid(alignment: .topLeading, horizontalSpacing: 20, verticalSpacing: 14) {
                     GridRow {
-                        CommunityPoint(symbol: "shield.lefthalf.filled", title: "Sandboxed",
-                                       text: "Each runs as WebAssembly in a separate sandboxed helper, with no access to your files or the network.")
-                        CommunityPoint(symbol: "checkmark.seal", title: "Reviewed and signed",
-                                       text: "Catalog extensions are reviewed for Volant, and every download is checked against the signed catalog.")
+                        CommunityPoint(symbol: "shield.lefthalf.filled", title: String(localized: "Sandboxed", comment: "Community extensions safety point title"),
+                                       text: String(localized: "Each runs as WebAssembly in a separate sandboxed helper, with no access to your files or the network."))
+                        CommunityPoint(symbol: "checkmark.seal", title: String(localized: "Reviewed and signed", comment: "Community extensions safety point title"),
+                                       text: String(localized: "Catalog extensions are reviewed for Volant, and every download is checked against the signed catalog."))
                     }
                     GridRow {
-                        CommunityPoint(symbol: "hand.raised", title: "You approve access",
-                                       text: "Volant fetches only from sites you allow for each extension. Location needs its own approval.")
-                        CommunityPoint(symbol: "chevron.left.forwardslash.chevron.right", title: "Source you can read",
-                                       text: "Every catalog listing links to the exact source it was built from.")
+                        CommunityPoint(symbol: "hand.raised", title: String(localized: "You approve access", comment: "Community extensions safety point title"),
+                                       text: String(localized: "Volant fetches only from sites you allow for each extension. Location needs its own approval."))
+                        CommunityPoint(symbol: "chevron.left.forwardslash.chevron.right", title: String(localized: "Source you can read", comment: "Community extensions safety point title"),
+                                       text: String(localized: "Every catalog listing links to the exact source it was built from."))
                     }
                 }
             }
@@ -307,8 +323,8 @@ struct ExtensionSettingsView: View {
             } label: {
                 Text("Allow community extensions")
                 Text(blockedCommunityCount == 0
-                     ? "You choose which ones to install and turn on."
-                     : "Your \(blockedCommunityCount) installed community \(blockedCommunityCount == 1 ? "extension comes" : "extensions come") back as you left \(blockedCommunityCount == 1 ? "it" : "them").")
+                     ? String(localized: "You choose which ones to install and turn on.", comment: "Settings → Extensions, Allow community extensions detail")
+                     : String(localized: "Your \(blockedCommunityCount) installed community extensions come back as you left them.", comment: "Settings → Extensions, Allow community extensions detail; the value is a count"))
             }
         } footer: {
             Link("Learn more about extension security", destination: URL(string: "https://usevolant.com/docs/privacy-and-security")!)
@@ -338,22 +354,24 @@ struct ExtensionSettingsView: View {
     }
 
     private var updatesTitle: String {
-        if updatingAll { return "Updating extensions…" }
-        if catalogLoading { return "Checking the catalog…" }
-        if catalogError != nil { return "Couldn’t check for updates" }
-        guard catalog != nil else { return "Updates" }
+        if updatingAll { return String(localized: "Updating extensions…", comment: "Settings → Extensions updates status") }
+        if catalogLoading { return String(localized: "Checking the catalog…", comment: "Settings → Extensions updates status") }
+        if catalogError != nil { return String(localized: "Couldn’t check for updates", comment: "Settings → Extensions updates status") }
+        guard catalog != nil else { return String(localized: "Updates", comment: "Settings → Extensions updates row title before checking") }
         let count = updates.count
-        if count > 0 { return "\(count) \(count == 1 ? "update" : "updates") available" }
+        if count > 0 { return String(localized: "\(count) updates available", comment: "Settings → Extensions updates status; the value is a count") }
         let withdrawn = installed.filter { $0.revocation != nil }.count
-        return withdrawn == 0 ? "Your extensions are up to date" : "\(withdrawn) \(withdrawn == 1 ? "extension was" : "extensions were") withdrawn"
+        return withdrawn == 0 ? String(localized: "Your extensions are up to date", comment: "Settings → Extensions updates status")
+            : String(localized: "\(withdrawn) extensions were withdrawn", comment: "Settings → Extensions updates status; the value is a count")
     }
 
     private var updatesDetail: String {
         if let catalogError, !catalogLoading { return catalogError }
-        guard catalog != nil else { return "Volant checks the signed catalog only when you ask." }
+        guard catalog != nil else { return String(localized: "Volant checks the signed catalog only when you ask.", comment: "Settings → Extensions updates detail") }
         let names = updates.map { "\($0.ext.name) \($0.listing.version)" }
         if !names.isEmpty { return names.joined(separator: ", ") }
-        return installed.contains { $0.revocation != nil } ? "Uninstall below, or update when a fixed version is listed." : "Checked the signed catalog."
+        return installed.contains { $0.revocation != nil } ? String(localized: "Uninstall below, or update when a fixed version is listed.", comment: "Settings → Extensions updates detail")
+            : String(localized: "Checked the signed catalog.", comment: "Settings → Extensions updates detail")
     }
 
     @ViewBuilder private var networkAccessSection: some View {
@@ -364,7 +382,8 @@ struct ExtensionSettingsView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(host).font(.body.monospaced())
                             let names = users(of: host)
-                            Text(names.isEmpty ? "Not used by any installed extension" : "Used by " + names.joined(separator: ", "))
+                            Text(names.isEmpty ? String(localized: "Not used by any installed extension", comment: "Settings → Extensions network host detail")
+                                 : String(localized: "Used by \(names.joined(separator: ", "))", comment: "Settings → Extensions network host detail; the value lists extension names"))
                                 .font(.callout).foregroundStyle(.secondary)
                         }
                         Spacer()
@@ -377,7 +396,7 @@ struct ExtensionSettingsView: View {
             } header: {
                 Text("Network Access")
             } footer: {
-                SettingsFooter("Volant fetches from these hosts for network extensions, which have no network access themselves. Removing a host stops every extension that uses it until you allow it again.")
+                SettingsFooter(String(localized: "Volant fetches from these hosts for network extensions, which have no network access themselves. Removing a host stops every extension that uses it until you allow it again.", comment: "Footer in Settings → Extensions"))
             }
     }
 
@@ -389,7 +408,7 @@ struct ExtensionSettingsView: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(ext.name)
-                            Text("Approximate location, about 11 km, shared with " + ext.manifest.declaredHosts.joined(separator: ", "))
+                            Text(String(localized: "Approximate location, about 11 km, shared with \(ext.manifest.declaredHosts.joined(separator: ", "))", comment: "Settings → Extensions location detail; the value lists web hosts"))
                                 .font(.callout).foregroundStyle(.secondary)
                         }
                         Spacer()
@@ -402,7 +421,7 @@ struct ExtensionSettingsView: View {
             } header: {
                 Text("Location")
             } footer: {
-                SettingsFooter("Each extension here was allowed your location separately. Volant asks macOS for it only when the extension runs, rounds it to about 11 km, and never saves it. Stopping makes the extension ask again on its next run.")
+                SettingsFooter(String(localized: "Each extension here was allowed your location separately. Volant asks macOS for it only when the extension runs, rounds it to about 11 km, and never saves it. Stopping makes the extension ask again on its next run.", comment: "Footer in Settings → Extensions"))
             }
     }
 }
@@ -464,7 +483,8 @@ struct ExtensionSecretField: View {
             Text(secret.title).font(.headline)
             SecureField(secret.title, text: $value).textFieldStyle(.roundedBorder).labelsHidden()
                 .accessibilityIdentifier("extension-secret-\(secret.id)")
-            Text((secret.help.map { $0 + " " } ?? "") + "Volant keeps it in your Keychain and adds it only to requests to \(secret.host). The extension never sees it.")
+            Text(secret.help.map { String(localized: "\($0) Volant keeps it in your Keychain and adds it only to requests to \(secret.host). The extension never sees it.", comment: "Extension token field note; the values are the extension's own help text and a web host") }
+                 ?? String(localized: "Volant keeps it in your Keychain and adds it only to requests to \(secret.host). The extension never sees it.", comment: "Extension token field note; the value is a web host"))
                 .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
     }

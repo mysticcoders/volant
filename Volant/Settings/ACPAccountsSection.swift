@@ -59,15 +59,19 @@ struct ACPAccountsSection: View {
                 label = ""
                 save()
             } catch {
-                refuse((error as? LocalizedError)?.errorDescription ?? "Couldn’t add this account.")
+                refuse((error as? LocalizedError)?.errorDescription ?? String(localized: "Couldn’t add this account."))
             }
         }
     }
 
     private var footer: String {
         let variable = ACPAccountProfile.environmentKey(for: provider) ?? ""
-        let signIn = provider == .codex ? "“CODEX_HOME=<folder> codex login”" : "“CLAUDE_CONFIG_DIR=<folder> claude”, then enter “/login”"
         let title = provider.title
-        return "To sign in to an account, open Terminal and run \(signIn). New conversations run under the account chosen here, and each conversation keeps the account it started with. \(title) receives only the folder’s path, as \(variable); Volant never reads or copies what the folder holds. Default login starts \(title) without \(variable)."
+        if provider == .codex {
+            let command = "CODEX_HOME=<folder> codex login"
+            return String(localized: "To sign in to an account, open Terminal and run “\(command)”. New conversations run under the account chosen here, and each conversation keeps the account it started with. \(title) receives only the folder’s path, as \(variable); Volant never reads or copies what the folder holds. Default login starts \(title) without \(variable).", comment: "AI Settings account footer; the values are a Terminal command, the provider name and an environment variable")
+        }
+        let command = "CLAUDE_CONFIG_DIR=<folder> claude", login = "/login"
+        return String(localized: "To sign in to an account, open Terminal and run “\(command)”, then enter “\(login)”. New conversations run under the account chosen here, and each conversation keeps the account it started with. \(title) receives only the folder’s path, as \(variable); Volant never reads or copies what the folder holds. Default login starts \(title) without \(variable).", comment: "AI Settings account footer; the values are a Terminal command, a command typed in it, the provider name and an environment variable")
     }
 }

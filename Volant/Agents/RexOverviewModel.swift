@@ -93,14 +93,14 @@ final class RexOverviewModel: ObservableObject {
 
     var message: String? {
         if let problem { return problem }
-        if loading && overview.sessions.isEmpty { return "Loading Rex sessions…" }
-        return overview.sessions.isEmpty ? "No Rex sessions are open." : nil
+        if loading && overview.sessions.isEmpty { return String(localized: "Loading Rex sessions…") }
+        return overview.sessions.isEmpty ? String(localized: "No Rex sessions are open.") : nil
     }
 
     /// Turns previews on or off from the window. A failed save leaves the choice as it was.
     func allowPreviews(_ allowed: Bool) {
         do { try save(allowed) }
-        catch { feedback = "Couldn’t save pane previews: " + error.localizedDescription; return }
+        catch { feedback = String(localized: "Couldn’t save pane previews: \(error.localizedDescription)"); return }
         updateAllowed(allowed)
     }
 
@@ -130,8 +130,8 @@ final class RexOverviewModel: ObservableObject {
             let connection = NSXPCConnection(serviceName: "com.mysticcoders.volant.AgentHost")
             connection.remoteObjectInterface = NSXPCInterface(with: VolantAgentHostProtocol.self)
             let current = generation
-            connection.interruptionHandler = { [weak self] in DispatchQueue.main.async { self?.failed("The agent helper disconnected.", generation: current) } }
-            connection.invalidationHandler = { [weak self] in DispatchQueue.main.async { self?.failed("The agent helper is unavailable.", generation: current) } }
+            connection.interruptionHandler = { [weak self] in DispatchQueue.main.async { self?.failed(String(localized: "The agent helper disconnected."), generation: current) } }
+            connection.invalidationHandler = { [weak self] in DispatchQueue.main.async { self?.failed(String(localized: "The agent helper is unavailable."), generation: current) } }
             self.connection = connection
             connection.resume()
         }
@@ -206,7 +206,7 @@ final class RexOverviewModel: ObservableObject {
     }
 
     private func proxy(reply: @escaping (String) -> Void) -> VolantAgentHostProtocol? {
-        connection?.remoteObjectProxyWithErrorHandler { _ in reply("The agent helper is unavailable.") } as? VolantAgentHostProtocol
+        connection?.remoteObjectProxyWithErrorHandler { _ in reply(String(localized: "The agent helper is unavailable.")) } as? VolantAgentHostProtocol
     }
 
     /// Replaces the overview directly, for fixtures that render fictional sessions.

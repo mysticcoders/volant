@@ -1,90 +1,1634 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-    "AI Chat" : {
-      "comment" : "Launcher command name"
+  "sourceLanguage": "en",
+  "strings": {
+    "AA for large text only": {
+      "comment": "Calculator color contrast verdict; AA and AAA are WCAG levels",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "AA solo para texto grande"
+          }
+        }
+      }
     },
-    "Apple Shortcuts" : {
-      "comment" : "Launcher command name"
+    "AI Chat": {
+      "comment": "Launcher command name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Chat de IA"
+          }
+        }
+      }
     },
-    "Audio Devices" : {
-      "comment" : "Launcher command name"
+    "Add an API key in AI Settings before connecting.": {
+      "comment": "AI connection error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Añade una clave de API en los ajustes de IA antes de conectarte."
+          }
+        }
+      }
     },
-    "Bluetooth Devices" : {
-      "comment" : "Launcher command name"
+    "All Herdr agents": {
+      "comment": "Herdr agent filter choice that shows every agent",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Todos los agentes de Herdr"
+          }
+        }
+      }
     },
-    "Browse and install reviewed extensions" : {
-      "comment" : "Launcher command description, shown under its name"
+    "An account folder must be a full path.": {
+      "comment": "AI account settings error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La carpeta de la cuenta debe ser una ruta completa."
+          }
+        }
+      }
     },
-    "Browse emoji and copy one" : {
-      "comment" : "Launcher command description, shown under its name"
+    "Appearance changed in the configuration file. Reload Configuration before changing it again.": {
+      "comment": "Appearance settings error when config.json changed underneath",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La apariencia cambió en el archivo de configuración. Vuelve a cargar la configuración antes de cambiarla de nuevo."
+          }
+        }
+      }
     },
-    "Built into Volant" : {
-      "comment" : "Launcher command description, shown under its name"
+    "Apple Shortcuts": {
+      "comment": "Launcher command name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Atajos de Apple"
+          }
+        }
+      }
     },
-    "Caffeinate" : {
-      "comment" : "Launcher command name"
+    "Approximate": {
+      "comment": "Calculator answer label: the fraction is not exact\nCalculator cooking conversion label: the weight is approximate",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aproximado"
+          }
+        }
+      }
     },
-    "Clipboard History" : {
-      "comment" : "Launcher command name"
+    "Audio Devices": {
+      "comment": "Launcher command name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dispositivos de audio"
+          }
+        }
+      }
     },
-    "Create Quicklink" : {
-      "comment" : "Launcher command name"
+    "Author": {
+      "comment": "VoiceOver name for an extension row's author badge",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Autor"
+          }
+        }
+      }
     },
-    "Create Snippet" : {
-      "comment" : "Launcher command name"
+    "Binary": {
+      "comment": "Calculator number base name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Binario"
+          }
+        }
+      }
     },
-    "Define Word" : {
-      "comment" : "Launcher command name"
+    "Bluetooth Devices": {
+      "comment": "Launcher command name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dispositivos Bluetooth"
+          }
+        }
+      }
     },
-    "Dictate Text" : {
-      "comment" : "Launcher command name"
+    "Browse and install reviewed extensions": {
+      "comment": "Launcher command description, shown under its name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Explorar e instalar extensiones revisadas"
+          }
+        }
+      }
     },
-    "Extension Catalog" : {
-      "comment" : "Launcher command name"
+    "Browse emoji and copy one": {
+      "comment": "Launcher command description, shown under its name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Explorar emojis y copiar uno"
+          }
+        }
+      }
     },
-    "Find and run your Apple Shortcuts" : {
-      "comment" : "Launcher command description, shown under its name"
+    "Built into Volant": {
+      "comment": "Launcher command description, shown under its name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Integrado en Volant"
+          }
+        }
+      }
     },
-    "Keep your Mac awake" : {
-      "comment" : "Launcher command description, shown under its name"
+    "Caffeinate": {
+      "comment": "Launcher command name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Caffeinate"
+          }
+        }
+      }
     },
-    "Listening Servers" : {
-      "comment" : "Launcher command name"
+    "Check SSH access and Herdr 0.9.1 or later on this machine.": {
+      "comment": "Herdr machine status detail when a remote machine isn't reachable",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Comprueba el acceso SSH y que este equipo tenga Herdr 0.9.1 o posterior."
+          }
+        }
+      }
     },
-    "Look up words in your Mac’s dictionaries" : {
-      "comment" : "Launcher command description, shown under its name"
+    "Checking…": {
+      "comment": "Local AI server status while Volant checks whether it is running",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Comprobando…"
+          }
+        }
+      }
     },
-    "Open Agents" : {
-      "comment" : "Launcher command name"
+    "Choose a model and a valid HTTPS API URL, or a loopback URL for local models.": {
+      "comment": "AI connection error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Elige un modelo y una URL de API HTTPS válida, o una URL de loopback para modelos locales."
+          }
+        }
+      }
     },
-    "Open Notes" : {
-      "comment" : "Launcher command name"
+    "Choose a single-word keyword that is not a built-in command.": {
+      "comment": "Snippet form error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Elige una palabra clave de una sola palabra que no sea un comando integrado."
+          }
+        }
+      }
     },
-    "Save a link to open by name" : {
-      "comment" : "Launcher command description, shown under its name"
+    "Click to show Herdr panes.": {
+      "comment": "Launcher footer Herdr status tooltip, last line",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Haz clic para mostrar los paneles de Herdr."
+          }
+        }
+      }
     },
-    "Save text to copy by keyword" : {
-      "comment" : "Launcher command description, shown under its name"
+    "Click to show Rex panes.": {
+      "comment": "Launcher footer Rex status tooltip, last line",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Haz clic para mostrar los paneles de Rex."
+          }
+        }
+      }
     },
-    "Search Emoji" : {
-      "comment" : "Launcher command name"
+    "Clipboard History": {
+      "comment": "Launcher command name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Historial del portapapeles"
+          }
+        }
+      }
     },
-    "See which local servers are listening, and open one" : {
-      "comment" : "Launcher command description, shown under its name"
+    "Comments": {
+      "comment": "VoiceOver name for an extension row's comment count badge",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Comentarios"
+          }
+        }
+      }
     },
-    "Throw Confetti" : {
-      "comment" : "Launcher command name"
+    "Connect to your AI provider to start chatting.": {
+      "comment": "AI Chat status before connecting",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Conéctate a tu proveedor de IA para empezar a chatear."
+          }
+        }
+      }
     },
-    "Translate Text" : {
-      "comment" : "Launcher command name"
+    "Couldn’t reach the AI server. Check its address and whether it is running.": {
+      "comment": "AI connection error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No se pudo conectar con el servidor de IA. Comprueba su dirección y si está en ejecución."
+          }
+        }
+      }
     },
-    "Translate between languages on your Mac" : {
-      "comment" : "Launcher command description, shown under its name"
+    "Couldn’t read saved machines. Check Herdr 0.9.1 or later is installed.": {
+      "comment": "Herdr machine status detail",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No se pudieron leer las máquinas guardadas. Comprueba que Herdr 0.9.1 o posterior esté instalado."
+          }
+        }
+      }
     },
-    "Wi-Fi Networks" : {
-      "comment" : "Launcher command name"
+    "Create Quicklink": {
+      "comment": "Launcher command name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Crear enlace rápido"
+          }
+        }
+      }
+    },
+    "Create Snippet": {
+      "comment": "Launcher command name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Crear fragmento"
+          }
+        }
+      }
+    },
+    "Cursor CLI is not installed. Install and sign in to Cursor CLI, then retry.": {
+      "comment": "AI agent setup error; Cursor CLI is a product name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cursor CLI no está instalado. Instala Cursor CLI, inicia sesión y vuelve a intentarlo."
+          }
+        }
+      }
+    },
+    "Decimal": {
+      "comment": "Calculator number base name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Decimal"
+          }
+        }
+      }
+    },
+    "Define Word": {
+      "comment": "Launcher command name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Definir palabra"
+          }
+        }
+      }
+    },
+    "Dictate Text": {
+      "comment": "Launcher command name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dictar texto"
+          }
+        }
+      }
+    },
+    "Disabled in Herdr": {
+      "comment": "Herdr machine status detail",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Desactivado en Herdr"
+          }
+        }
+      }
+    },
+    "Done": {
+      "comment": "Agent pane status: the agent finished\nRex pane state: the program finished",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Terminado"
+          }
+        }
+      }
+    },
+    "Enter a URL that starts with https://, http:// or mailto:, or a Shortcuts run link.": {
+      "comment": "Quicklink form error; URL schemes are not translated",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Introduce una URL que empiece por https://, http:// o mailto:, o un enlace de ejecución de Atajos."
+          }
+        }
+      }
+    },
+    "Enter a name for the quicklink.": {
+      "comment": "Quicklink form error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Introduce un nombre para el enlace rápido."
+          }
+        }
+      }
+    },
+    "Enter a name for the snippet.": {
+      "comment": "Snippet form error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Introduce un nombre para el fragmento."
+          }
+        }
+      }
+    },
+    "Enter the quicklink URL.": {
+      "comment": "Quicklink form error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Introduce la URL del enlace rápido."
+          }
+        }
+      }
+    },
+    "Enter the snippet text.": {
+      "comment": "Snippet form error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Introduce el texto del fragmento."
+          }
+        }
+      }
+    },
+    "Extension Catalog": {
+      "comment": "Launcher command name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Catálogo de extensiones"
+          }
+        }
+      }
+    },
+    "Extension must declare bounded WebAssembly memory (maximum 16 MiB).": {
+      "comment": "Extension error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La extensión debe declarar memoria WebAssembly limitada (máximo 16 MiB)."
+          }
+        }
+      }
+    },
+    "Extension needs a valid ABI 1 or 2 manifest, SHA-256 and supported permissions.": {
+      "comment": "Extension error; ABI and SHA-256 are not translated",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La extensión necesita un manifiesto ABI 1 o 2 válido, SHA-256 y permisos compatibles."
+          }
+        }
+      }
+    },
+    "Extension returned an invalid fetch plan.": {
+      "comment": "Extension error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La extensión devolvió un plan de obtención no válido."
+          }
+        }
+      }
+    },
+    "Extension returned an invalid list.": {
+      "comment": "Extension error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La extensión devolvió una lista no válida."
+          }
+        }
+      }
+    },
+    "Extension tried to save something other than a JSON object. Its saved data was kept.": {
+      "comment": "Extension storage error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La extensión intentó guardar algo que no es un objeto JSON. Sus datos guardados se conservaron."
+          }
+        }
+      }
+    },
+    "Failed": {
+      "comment": "Rex pane state: the program reported an error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Error"
+          }
+        }
+      }
+    },
+    "Fails AA": {
+      "comment": "Calculator color contrast verdict; AA and AAA are WCAG levels",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No cumple AA"
+          }
+        }
+      }
+    },
+    "Find and run your Apple Shortcuts": {
+      "comment": "Launcher command description, shown under its name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Buscar y ejecutar tus Atajos de Apple"
+          }
+        }
+      }
+    },
+    "Herdr isn’t connected.": {
+      "comment": "Launcher footer Herdr status tooltip",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Herdr no está conectado."
+          }
+        }
+      }
+    },
+    "Herdr: loading…": {
+      "comment": "Launcher footer status for Herdr, the agent multiplexer",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Herdr: cargando…"
+          }
+        }
+      }
+    },
+    "Herdr: none waiting": {
+      "comment": "Launcher footer status for Herdr, the agent multiplexer",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Herdr: ninguno en espera"
+          }
+        }
+      }
+    },
+    "Herdr: not connected": {
+      "comment": "Launcher footer status for Herdr, the agent multiplexer",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Herdr: no conectado"
+          }
+        }
+      }
+    },
+    "Hexadecimal": {
+      "comment": "Calculator number base name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hexadecimal"
+          }
+        }
+      }
+    },
+    "Idle": {
+      "comment": "Agent pane status: the agent is idle\nRex pane state: the program is idle",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Inactivo"
+          }
+        }
+      }
+    },
+    "Include an email address after mailto:.": {
+      "comment": "Quicklink form error; mailto: is not translated",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Incluye una dirección de correo después de mailto:."
+          }
+        }
+      }
+    },
+    "Keep your Mac awake": {
+      "comment": "Launcher command description, shown under its name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Evitar que tu Mac entre en reposo"
+          }
+        }
+      }
+    },
+    "Listening Servers": {
+      "comment": "Launcher command name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Servidores a la escucha"
+          }
+        }
+      }
+    },
+    "Loading panes from Herdr.": {
+      "comment": "Launcher footer Herdr status tooltip",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cargando paneles de Herdr."
+          }
+        }
+      }
+    },
+    "Loading panes from Rex.\nClick to show Rex panes.": {
+      "comment": "Launcher footer Rex status tooltip",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cargando paneles de Rex.\nHaz clic para mostrar los paneles de Rex."
+          }
+        }
+      }
+    },
+    "Local": {
+      "comment": "Herdr machine name for this Mac",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Local"
+          }
+        }
+      }
+    },
+    "Local Models": {
+      "comment": "AI connection kind in AI Settings",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Modelos locales"
+          }
+        }
+      }
+    },
+    "Lock this Mac now": {
+      "comment": "System action description in the launcher",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bloquear tu Mac ahora"
+          }
+        }
+      }
+    },
+    "Look up words in your Mac’s dictionaries": {
+      "comment": "Launcher command description, shown under its name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Buscar palabras en los diccionarios de tu Mac"
+          }
+        }
+      }
+    },
+    "Milliseconds": {
+      "comment": "Calculator Unix time label: the input was in milliseconds",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Milisegundos"
+          }
+        }
+      }
+    },
+    "Needs attention": {
+      "comment": "Agent pane status: the agent is waiting for the owner",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Requiere atención"
+          }
+        }
+      }
+    },
+    "No": {
+      "comment": "Calculator answer to whether a year is a leap year",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No"
+          }
+        }
+      }
+    },
+    "No agents are waiting.": {
+      "comment": "Launcher footer Herdr status tooltip",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No hay agentes en espera."
+          }
+        }
+      }
+    },
+    "No change": {
+      "comment": "Calculator percent change answer label",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sin cambios"
+          }
+        }
+      }
+    },
+    "No readable config.json in that folder.": {
+      "comment": "Backup restore error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No hay ningún config.json legible en esa carpeta."
+          }
+        }
+      }
+    },
+    "Nothing was heard.": {
+      "comment": "Dictation indicator result when no speech was recognized",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No se oyó nada."
+          }
+        }
+      }
+    },
+    "Octal": {
+      "comment": "Calculator number base name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Octal"
+          }
+        }
+      }
+    },
+    "Only Claude Code and Codex can use an account folder.": {
+      "comment": "AI account settings error; Claude Code and Codex are product names",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Solo Claude Code y Codex pueden usar una carpeta de cuenta."
+          }
+        }
+      }
+    },
+    "Open Agents": {
+      "comment": "Launcher command name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Abrir agentes"
+          }
+        }
+      }
+    },
+    "Open Notes": {
+      "comment": "Launcher command name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Abrir notas"
+          }
+        }
+      }
+    },
+    "OpenAI-compatible": {
+      "comment": "AI API provider for servers that speak the OpenAI API",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Compatible con OpenAI"
+          }
+        }
+      }
+    },
+    "OpenCode was not found. Install it and run opencode auth login, then retry.": {
+      "comment": "AI agent setup error; OpenCode and its command are not translated",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No se encontró OpenCode. Instálalo, ejecuta opencode auth login y vuelve a intentarlo."
+          }
+        }
+      }
+    },
+    "Outside sRGB": {
+      "comment": "Calculator color label: the color is outside the sRGB gamut",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Fuera de sRGB"
+          }
+        }
+      }
+    },
+    "Passes AA · AAA for large text": {
+      "comment": "Calculator color contrast verdict; AA and AAA are WCAG levels",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cumple AA · AAA para texto grande"
+          }
+        }
+      }
+    },
+    "Passes AAA": {
+      "comment": "Calculator color contrast verdict; AA and AAA are WCAG levels",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cumple AAA"
+          }
+        }
+      }
+    },
+    "Points": {
+      "comment": "VoiceOver name for an extension row's points badge",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Puntos"
+          }
+        }
+      }
+    },
+    "Put this Mac to sleep": {
+      "comment": "System action description in the launcher",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Poner tu Mac en reposo"
+          }
+        }
+      }
+    },
+    "Rex focused the pane but can’t switch to its session until Remote Control is on in Rex Settings › Rex Server.": {
+      "comment": "Notice after focusing a Rex pane; Remote Control, Rex Settings and Rex Server are Rex's own names",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex enfocó el panel, pero no puede cambiar a su sesión hasta que se active Remote Control en Rex Settings › Rex Server."
+          }
+        }
+      }
+    },
+    "Rex focused the pane but couldn’t switch to its session.": {
+      "comment": "Notice after focusing a Rex pane",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex enfocó el panel, pero no pudo cambiar a su sesión."
+          }
+        }
+      }
+    },
+    "Rex focused the pane. Open the Rex app to see it.": {
+      "comment": "Notice after focusing a Rex pane",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex enfocó el panel. Abre la app Rex para verlo."
+          }
+        }
+      }
+    },
+    "Rex isn’t connected.\nClick to show Rex panes.": {
+      "comment": "Launcher footer Rex status tooltip",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex no está conectado.\nHaz clic para mostrar los paneles de Rex."
+          }
+        }
+      }
+    },
+    "Rex: loading…": {
+      "comment": "Launcher footer status for the Rex terminal app",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex: cargando…"
+          }
+        }
+      }
+    },
+    "Rex: none waiting": {
+      "comment": "Launcher footer status for the Rex terminal app",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex: ninguno en espera"
+          }
+        }
+      }
+    },
+    "Rex: not connected": {
+      "comment": "Launcher footer status for the Rex terminal app",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex: no conectado"
+          }
+        }
+      }
+    },
+    "Rex: unavailable": {
+      "comment": "Launcher footer status for the Rex terminal app",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex: no disponible"
+          }
+        }
+      }
+    },
+    "Roman numeral": {
+      "comment": "Calculator answer label",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Número romano"
+          }
+        }
+      }
+    },
+    "Rounded to a whole degree": {
+      "comment": "Calculator gas mark conversion label",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Redondeado a un grado entero"
+          }
+        }
+      }
+    },
+    "Save a link to open by name": {
+      "comment": "Launcher command description, shown under its name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Guardar un enlace para abrirlo por nombre"
+          }
+        }
+      }
+    },
+    "Save text to copy by keyword": {
+      "comment": "Launcher command description, shown under its name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Guardar texto para copiarlo por palabra clave"
+          }
+        }
+      }
+    },
+    "Saved machines": {
+      "comment": "Herdr status row for the list of saved remote machines",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Máquinas guardadas"
+          }
+        }
+      }
+    },
+    "Search Emoji": {
+      "comment": "Launcher command name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Buscar emojis"
+          }
+        }
+      }
+    },
+    "Seconds": {
+      "comment": "Calculator Unix time label: the input was in seconds",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Segundos"
+          }
+        }
+      }
+    },
+    "Seconds since 1970": {
+      "comment": "Calculator Unix time label",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Segundos desde 1970"
+          }
+        }
+      }
+    },
+    "See which local servers are listening, and open one": {
+      "comment": "Launcher command description, shown under its name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ver qué servidores locales están a la escucha y abrir uno"
+          }
+        }
+      }
+    },
+    "Session": {
+      "comment": "Fallback name for a Rex session that has no label",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sesión"
+          }
+        }
+      }
+    },
+    "Site": {
+      "comment": "VoiceOver name for an extension row's website badge",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sitio"
+          }
+        }
+      }
+    },
+    "Snippets, quicklinks or aliases changed in the configuration file. Review the form and save again.": {
+      "comment": "Snippet or quicklink form error when config.json changed underneath",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Los fragmentos, enlaces rápidos o alias cambiaron en el archivo de configuración. Revisa el formulario y vuelve a guardar."
+          }
+        }
+      }
+    },
+    "Start the local default Herdr session.": {
+      "comment": "Herdr machine status detail when this Mac's Herdr isn't reachable",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Inicia la sesión local predeterminada de Herdr."
+          }
+        }
+      }
+    },
+    "Start the screen saver": {
+      "comment": "System action description in the launcher",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Iniciar el salvapantallas"
+          }
+        }
+      }
+    },
+    "System": {
+      "comment": "Color theme that follows the macOS appearance",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sistema"
+          }
+        }
+      }
+    },
+    "Tab": {
+      "comment": "Fallback name for a Rex tab that has no label",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pestaña"
+          }
+        }
+      }
+    },
+    "Terminal": {
+      "comment": "Fallback name for a Rex pane that has no label",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Terminal"
+          }
+        }
+      }
+    },
+    "Text on background": {
+      "comment": "Calculator color contrast label",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Texto sobre el fondo"
+          }
+        }
+      }
+    },
+    "That Raycast theme is missing a name, appearance or one of its twelve colors.": {
+      "comment": "Raycast theme import error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "A ese tema de Raycast le falta el nombre, la apariencia o alguno de sus doce colores."
+          }
+        }
+      }
+    },
+    "That isn’t a Raycast theme. Use a theme JSON file, or a theme link from Raycast or themes.ray.so.": {
+      "comment": "Raycast theme import error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Eso no es un tema de Raycast. Usa un archivo JSON de tema o un enlace de tema de Raycast o themes.ray.so."
+          }
+        }
+      }
+    },
+    "That theme is larger than a Raycast theme can be.": {
+      "comment": "Raycast theme import error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ese tema es más grande de lo que puede ser un tema de Raycast."
+          }
+        }
+      }
+    },
+    "That themes.ray.so link names a theme without its colors, and Volant doesn’t download themes. On themes.ray.so choose Download JSON or Copy JSON, then import that.": {
+      "comment": "Raycast theme import error; Download JSON and Copy JSON are button names on themes.ray.so",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ese enlace de themes.ray.so indica un tema sin sus colores, y Volant no descarga temas. En themes.ray.so elige Download JSON o Copy JSON y luego impórtalo."
+          }
+        }
+      }
+    },
+    "The ACP adapters require Node.js 22 or newer.": {
+      "comment": "AI agent setup error; ACP and Node.js are not translated",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Los adaptadores ACP requieren Node.js 22 o posterior."
+          }
+        }
+      }
+    },
+    "The extension catalog is not in a format this version of Volant can read.": {
+      "comment": "Extension catalog error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "El catálogo de extensiones tiene un formato que esta versión de Volant no puede leer."
+          }
+        }
+      }
+    },
+    "The extension catalog is older than one Volant already accepted, so it was not used.": {
+      "comment": "Extension catalog error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "El catálogo de extensiones es más antiguo que uno que Volant ya aceptó, así que no se usó."
+          }
+        }
+      }
+    },
+    "The extension catalog’s signature is not valid. Nothing was installed.": {
+      "comment": "Extension catalog error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La firma del catálogo de extensiones no es válida. No se instaló nada."
+          }
+        }
+      }
+    },
+    "The response stopped before completion. You can try again.": {
+      "comment": "AI connection error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La respuesta se detuvo antes de completarse. Puedes volver a intentarlo."
+          }
+        }
+      }
+    },
+    "The server rejected access. Check your API key and model permissions.": {
+      "comment": "AI connection error for HTTP 401 or 403",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "El servidor denegó el acceso. Comprueba tu clave de API y los permisos del modelo."
+          }
+        }
+      }
+    },
+    "The server returned an unsupported response. Check the provider and endpoint.": {
+      "comment": "AI connection error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "El servidor devolvió una respuesta no compatible. Comprueba el proveedor y el endpoint."
+          }
+        }
+      }
+    },
+    "The server's rate or usage limit was reached. Try again later.": {
+      "comment": "AI connection error for HTTP 429",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Se alcanzó el límite de frecuencia o de uso del servidor. Inténtalo más tarde."
+          }
+        }
+      }
+    },
+    "This account is already listed.": {
+      "comment": "AI account settings error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Esta cuenta ya está en la lista."
+          }
+        }
+      }
+    },
+    "This connection supports text chat only; the server requested an unsupported operation.": {
+      "comment": "AI connection error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Esta conexión solo admite chat de texto; el servidor solicitó una operación no compatible."
+          }
+        }
+      }
+    },
+    "This conversation reached its size limit. Start a new conversation.": {
+      "comment": "AI connection error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Esta conversación alcanzó su límite de tamaño. Empieza una nueva conversación."
+          }
+        }
+      }
+    },
+    "This saved machine changed or was disabled. Refresh before continuing.": {
+      "comment": "Herdr remote machine error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Esta máquina guardada cambió o se desactivó. Actualiza antes de continuar."
+          }
+        }
+      }
+    },
+    "This saved machine changed or was removed. Refresh before continuing.": {
+      "comment": "Herdr remote machine error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Esta máquina guardada cambió o se eliminó. Actualiza antes de continuar."
+          }
+        }
+      }
+    },
+    "Throw Confetti": {
+      "comment": "Launcher command name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lanzar confeti"
+          }
+        }
+      }
+    },
+    "Time": {
+      "comment": "VoiceOver name for an extension row's time badge",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tiempo"
+          }
+        }
+      }
+    },
+    "Translate Text": {
+      "comment": "Launcher command name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Traducir texto"
+          }
+        }
+      }
+    },
+    "Translate between languages on your Mac": {
+      "comment": "Launcher command description, shown under its name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Traducir entre idiomas en tu Mac"
+          }
+        }
+      }
+    },
+    "Turn off the displays; locks if a password is required": {
+      "comment": "System action description in the launcher",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apagar las pantallas; bloquea si se requiere contraseña"
+          }
+        }
+      }
+    },
+    "Unknown": {
+      "comment": "Agent pane status Herdr reported that Volant doesn't recognize",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Desconocido"
+          }
+        }
+      }
+    },
+    "Unknown project": {
+      "comment": "Agent pane whose folder is unknown",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Proyecto desconocido"
+          }
+        }
+      }
+    },
+    "Waiting": {
+      "comment": "Rex pane state: the program is waiting for the owner",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "En espera"
+          }
+        }
+      }
+    },
+    "Weekends only": {
+      "comment": "Calculator workday answer note: only weekends were skipped",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Solo fines de semana"
+          }
+        }
+      }
+    },
+    "Wi-Fi Networks": {
+      "comment": "Launcher command name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Redes Wi-Fi"
+          }
+        }
+      }
+    },
+    "Working": {
+      "comment": "Agent pane status: the agent is busy\nRex pane state: the program is busy",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Trabajando"
+          }
+        }
+      }
+    },
+    "Yes": {
+      "comment": "Calculator answer to whether a year is a leap year",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sí"
+          }
+        }
+      }
+    },
+    "clean": {
+      "comment": "Git repository summary: no changes",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "limpio"
+          }
+        }
+      }
+    },
+    "config.json could not be read, so settings were not synced.": {
+      "comment": "iCloud settings sync error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No se pudo leer config.json, así que no se sincronizaron los ajustes."
+          }
+        }
+      }
+    },
+    "detached": {
+      "comment": "Git repository summary: no branch is checked out",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "separado"
+          }
+        }
+      }
+    },
+    "fsearch could not answer.": {
+      "comment": "File search error when the fsearch daemon gives no reason; fsearch is a program name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "fsearch no pudo responder."
+          }
+        }
+      }
+    },
+    "fsearch didn’t answer in time.": {
+      "comment": "File search error; fsearch is a program name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "fsearch no respondió a tiempo."
+          }
+        }
+      }
+    },
+    "fsearch isn’t running. Run fsearch once in Terminal, or start it at login with fsearch install --login.": {
+      "comment": "File search error; fsearch and its command are not translated",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "fsearch no está en ejecución. Ejecuta fsearch una vez en Terminal o inícialo al iniciar sesión con fsearch install --login."
+          }
+        }
+      }
+    },
+    "fsearch sent a reply Volant couldn’t read.": {
+      "comment": "File search error; fsearch is a program name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "fsearch envió una respuesta que Volant no pudo leer."
+          }
+        }
+      }
+    },
+    "fsearch sent more than Volant reads.": {
+      "comment": "File search error; fsearch is a program name",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "fsearch envió más de lo que Volant lee."
+          }
+        }
+      }
+    },
+    "macOS asks before logging out": {
+      "comment": "System action description in the launcher",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS pide confirmación antes de cerrar sesión"
+          }
+        }
+      }
+    },
+    "macOS asks before restarting": {
+      "comment": "System action description in the launcher",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS pide confirmación antes de reiniciar"
+          }
+        }
+      }
+    },
+    "macOS asks before shutting down": {
+      "comment": "System action description in the launcher",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS pide confirmación antes de apagar"
+          }
+        }
+      }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

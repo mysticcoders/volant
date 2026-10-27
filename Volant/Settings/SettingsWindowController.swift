@@ -34,7 +34,7 @@ final class SettingsWindowController: NSWindowController {
         let window = SettingsPanel(contentRect: NSRect(x: 0, y: 0, width: 820, height: 600),
                               styleMask: [.titled, .closable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
         window.minSize = NSSize(width: 680, height: 500)
-        window.title = "Volant Settings"
+        window.title = String(localized: "Volant Settings", comment: "Settings window title")
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.toolbar = NSToolbar(identifier: "VolantSettings")
@@ -75,7 +75,7 @@ final class SettingsWindowController: NSWindowController {
         guard let window, window.attachedSheet == nil else { return }
         let picker = NSOpenPanel()
         picker.canChooseDirectories = true; picker.canChooseFiles = false; picker.allowsMultipleSelection = false
-        picker.prompt = "Use Project"
+        picker.prompt = String(localized: "Use Project", comment: "Folder chooser button for the AI Chat working folder")
         picker.beginSheetModal(for: window) { result in completion(result == .OK ? picker.url : nil) }
     }
     /// The providers' own folders, ~/.claude and ~/.codex, are hidden, so hidden files are shown.
@@ -85,8 +85,8 @@ final class SettingsWindowController: NSWindowController {
         let picker = NSOpenPanel()
         picker.canChooseDirectories = true; picker.canChooseFiles = false; picker.allowsMultipleSelection = false
         picker.showsHiddenFiles = true
-        picker.prompt = "Use Folder"
-        picker.message = "Choose the folder this account signs in with."
+        picker.prompt = String(localized: "Use Folder", comment: "Folder chooser button for an AI account folder")
+        picker.message = String(localized: "Choose the folder this account signs in with.")
         picker.beginSheetModal(for: window) { result in completion(result == .OK ? picker.url : nil) }
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
@@ -163,7 +163,7 @@ private struct SettingsView: View {
     private var sidebar: some View {
         let visible = SettingsSection.allCases.filter { $0.matches(sectionSearch) }
         return VStack(spacing: 8) {
-            SettingsSearchField(prompt: "Search settings", text: $sectionSearch) {
+            SettingsSearchField(prompt: String(localized: "Search settings"), text: $sectionSearch) {
                 if let first = visible.first { state.section = first }
             }
             .padding(.horizontal, 12)
@@ -243,14 +243,14 @@ private struct SettingsView: View {
         Form {
             Section {
                 if !state.registrationErrors.isEmpty { Text(state.registrationErrors.joined(separator: "\n")).foregroundStyle(.red) }
-                GlobalShortcutRow(title: "Show Volant", key: "summonHotKey", value: state.config.summonHotKey, configURL: configURL, onChange: onChange)
-                GlobalShortcutRow(title: "Open Notes", key: "notesHotKey", value: state.config.notesHotKey, configURL: configURL, onChange: onChange)
-                GlobalShortcutRow(title: "Search Emoji", key: "emojiHotKey", value: state.config.emojiHotKey, configURL: configURL, onChange: onChange)
-                GlobalShortcutRow(title: "Dictate Text", key: "talkHotKey", value: state.config.talkHotKey, configURL: configURL, onChange: onChange)
-                GlobalShortcutRow(title: "Lock Screen", key: "lockScreenHotKey", value: state.config.lockScreenHotKey, configURL: configURL, onChange: onChange)
-                GlobalShortcutRow(title: "Sleep Displays", key: "sleepDisplaysHotKey", value: state.config.sleepDisplaysHotKey, configURL: configURL, onChange: onChange)
+                GlobalShortcutRow(title: String(localized: "Show Volant", comment: "Keyboard Shortcuts settings row"), key: "summonHotKey", value: state.config.summonHotKey, configURL: configURL, onChange: onChange)
+                GlobalShortcutRow(title: String(localized: "Open Notes", comment: "Keyboard Shortcuts settings row"), key: "notesHotKey", value: state.config.notesHotKey, configURL: configURL, onChange: onChange)
+                GlobalShortcutRow(title: String(localized: "Search Emoji", comment: "Keyboard Shortcuts settings row"), key: "emojiHotKey", value: state.config.emojiHotKey, configURL: configURL, onChange: onChange)
+                GlobalShortcutRow(title: String(localized: "Dictate Text", comment: "Keyboard Shortcuts settings row"), key: "talkHotKey", value: state.config.talkHotKey, configURL: configURL, onChange: onChange)
+                GlobalShortcutRow(title: String(localized: "Lock Screen", comment: "Keyboard Shortcuts settings row"), key: "lockScreenHotKey", value: state.config.lockScreenHotKey, configURL: configURL, onChange: onChange)
+                GlobalShortcutRow(title: String(localized: "Sleep Displays", comment: "Keyboard Shortcuts settings row"), key: "sleepDisplaysHotKey", value: state.config.sleepDisplaysHotKey, configURL: configURL, onChange: onChange)
             } footer: {
-                SettingsFooter("Click a shortcut and press a new combination; it saves immediately. Hold Dictate Text while you speak, or tap it to start and again to stop.")
+                SettingsFooter(String(localized: "Click a shortcut and press a new combination; it saves immediately. Hold Dictate Text while you speak, or tap it to start and again to stop."))
             }
         }
         .formStyle(.settings)
@@ -272,7 +272,7 @@ private struct SettingsView: View {
             } header: {
                 Text("Herdr")
             } footer: {
-                SettingsFooter("Shows “Herdr: 3 waiting” in the launcher footer when agents need you. Click it, or type herdr, to see waiting panes first and answer their questions. Includes Local and the machines enabled in Herdr.")
+                SettingsFooter(String(localized: "Shows “Herdr: 3 waiting” in the launcher footer when agents need you. Click it, or type herdr, to see waiting panes first and answer their questions. Includes Local and the machines enabled in Herdr."))
             }
             Section {
                 Toggle("Rex pane activity", isOn: Binding(get: { state.config.statusBar.sources.contains("rex") }, set: { value in
@@ -283,7 +283,7 @@ private struct SettingsView: View {
             } header: {
                 Text("Rex")
             } footer: {
-                SettingsFooter("Shows “Rex: 2 waiting” in the launcher footer when a program in a Rex pane is waiting for you. Click it, or type rex, to see those panes first and focus one. To switch Rex to a pane in another session, turn on Remote Control in Rex Settings › Rex Server. Type rex overview to see every session and tab. Pane previews let it show the last \(RexScript.previewLines) lines of each pane’s screen, read only while the overview is open and never saved or logged; without them, Volant reads only what programs report to Rex.")
+                SettingsFooter(String(localized: "Shows “Rex: 2 waiting” in the launcher footer when a program in a Rex pane is waiting for you. Click it, or type rex, to see those panes first and focus one. To switch Rex to a pane in another session, turn on Remote Control in Rex Settings › Rex Server. Type rex overview to see every session and tab. Pane previews let it show the last \(RexScript.previewLines) lines of each pane’s screen, read only while the overview is open and never saved or logged; without them, Volant reads only what programs report to Rex."))
             }
             Section {
                 Toggle("AI Chat activity", isOn: Binding(get: { state.config.statusBar.sources.contains("ai-chat") }, set: { value in
@@ -292,7 +292,7 @@ private struct SettingsView: View {
             } header: {
                 Text("AI Chat")
             } footer: {
-                SettingsFooter("Shows your active conversation below the launcher’s search field, and whether it needs you.")
+                SettingsFooter(String(localized: "Shows your active conversation below the launcher’s search field, and whether it needs you."))
             }
         }
         .formStyle(.settings)
@@ -302,7 +302,7 @@ private struct SettingsView: View {
     private var shortcuts: some View {
         let apps = state.apps.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }
         return VStack(alignment: .leading, spacing: 10) {
-            SettingsSearchField(prompt: "Search applications", text: $search)
+            SettingsSearchField(prompt: String(localized: "Search applications"), text: $search)
             Text("Type an alias to open the app from the launcher, or record a global hotkey. Aliases save on Return or when you leave the field.")
                 .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 4)
@@ -350,7 +350,7 @@ private struct SettingsView: View {
             } header: {
                 Text("Configuration")
             } footer: {
-                SettingsFooter("Aliases, shortcuts and preferences live in one portable JSON file.")
+                SettingsFooter(String(localized: "Aliases, shortcuts and preferences live in one portable JSON file."))
             }
             Section {
                 Toggle("Sync settings with iCloud", isOn: boolean("syncSettingsWithICloud", state.config.syncSettingsWithICloud))
@@ -360,7 +360,7 @@ private struct SettingsView: View {
             } header: {
                 Text("iCloud")
             } footer: {
-                SettingsFooter("Keyboard shortcuts, snippets, quicklinks, aliases, appearance and clipboard history length follow you to Macs signed in to the same Apple Account. App shortcuts, favorites, Dock, status bar, dictation, AI and extension settings stay on this Mac. When turned on, settings already in iCloud replace these, and a copy of this Mac's config.json is kept beside it.")
+                SettingsFooter(String(localized: "Keyboard shortcuts, snippets, quicklinks, aliases, appearance and clipboard history length follow you to Macs signed in to the same Apple Account. App shortcuts, favorites, Dock, status bar, dictation, AI and extension settings stay on this Mac. When turned on, settings already in iCloud replace these, and a copy of this Mac's config.json is kept beside it."))
             }
             Section {
                 LabeledContent("Raycast") {
@@ -373,7 +373,7 @@ private struct SettingsView: View {
             } header: {
                 Text("Import & Backup")
             } footer: {
-                SettingsFooter("Imports show a preview before applying changes. Export a backup before moving to another Mac.")
+                SettingsFooter(String(localized: "Imports show a preview before applying changes. Export a backup before moving to another Mac."))
             }
             CryptoKeySection(onChange: onChange)
         }

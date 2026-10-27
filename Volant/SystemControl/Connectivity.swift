@@ -29,16 +29,19 @@ enum ConnectivityItem: Hashable {
         switch self {
         case .bluetooth(_, let name): return name
         case .wifi(let network): return network.name
-        case .settings(let source): return "Open " + (source == "wifi" ? "Wi-Fi" : "Bluetooth") + " Settings"
-        case .refresh: return "Refresh Devices and Networks"
+        case .settings(let source): return source == "wifi" ? String(localized: "Open Wi-Fi Settings") : String(localized: "Open Bluetooth Settings")
+        case .refresh: return String(localized: "Refresh Devices and Networks")
         }
     }
     var detail: String {
         switch self {
-        case .bluetooth: return "Connected"
-        case .wifi(let network): return (network.current ? "Current · " : "") + network.security + " · \(network.signal) dBm"
-        case .settings: return "System Settings"
-        case .refresh: return "Scan again"
+        case .bluetooth: return String(localized: "Connected", comment: "Detail of a connected Bluetooth device row")
+        case .wifi(let network):
+            return network.current
+                ? String(localized: "Current · \(network.security) · \(network.signal) dBm", comment: "Wi-Fi row detail for the joined network: security type and signal strength")
+                : String(localized: "\(network.security) · \(network.signal) dBm", comment: "Wi-Fi row detail: security type and signal strength")
+        case .settings: return String(localized: "System Settings", comment: "Detail of the row that opens Wi-Fi or Bluetooth settings")
+        case .refresh: return String(localized: "Scan again", comment: "Detail of the Refresh Devices and Networks row")
         }
     }
 }
@@ -76,10 +79,10 @@ final class ConnectivityService: NSObject, ConnectivityAccess, CLLocationManager
             guard let location else { return }
             switch location.authorizationStatus {
             case .notDetermined:
-                completion(ConnectivitySnapshot(items: [.settings("wifi")], message: "Allow Location access to show Wi-Fi network names. Showing Wi-Fi never reads your coordinates."))
+                completion(ConnectivitySnapshot(items: [.settings("wifi")], message: String(localized: "Allow Location access to show Wi-Fi network names. Showing Wi-Fi never reads your coordinates.")))
                 location.requestWhenInUseAuthorization()
             case .authorizedAlways, .authorizedWhenInUse: scanWiFi()
-            default: completion(ConnectivitySnapshot(items: [.settings("wifi")], message: "Wi-Fi names need Location access. Enable Volant in System Settings → Privacy & Security → Location Services."))
+            default: completion(ConnectivitySnapshot(items: [.settings("wifi")], message: String(localized: "Wi-Fi names need Location access. Enable Volant in System Settings → Privacy & Security → Location Services.")))
             }
         }
     }
@@ -88,7 +91,7 @@ final class ConnectivityService: NSObject, ConnectivityAccess, CLLocationManager
         switch manager.authorizationStatus {
         case .authorizedAlways, .authorizedWhenInUse: scanWiFi()
         case .denied, .restricted:
-            pendingWiFi(ConnectivitySnapshot(items: [.settings("wifi")], message: "Location access is off. You can still manage Wi-Fi in System Settings."))
+            pendingWiFi(ConnectivitySnapshot(items: [.settings("wifi")], message: String(localized: "Location access is off. You can still manage Wi-Fi in System Settings.")))
         default: break
         }
     }
@@ -96,32 +99,32 @@ final class ConnectivityService: NSObject, ConnectivityAccess, CLLocationManager
     private func showBluetooth() {
         guard let callback = pendingBluetooth, let bluetooth else { return }
         guard CBManager.authorization == .allowedAlways else {
-            callback(ConnectivitySnapshot(items: [.settings("bluetooth")], message: CBManager.authorization == .notDetermined ? "Allow Bluetooth access to list connected devices." : "Bluetooth access is off. Enable Volant in System Settings → Privacy & Security → Bluetooth."))
+            callback(ConnectivitySnapshot(items: [.settings("bluetooth")], message: CBManager.authorization == .notDetermined ? String(localized: "Allow Bluetooth access to list connected devices.") : String(localized: "Bluetooth access is off. Enable Volant in System Settings → Privacy & Security → Bluetooth.")))
             return
         }
         guard bluetooth.state == .poweredOn else {
-            callback(ConnectivitySnapshot(items: [.settings("bluetooth"), .refresh("bluetooth")], message: bluetooth.state == .poweredOff ? "Bluetooth is turned off." : "Bluetooth is not ready. Try refreshing."))
+            callback(ConnectivitySnapshot(items: [.settings("bluetooth"), .refresh("bluetooth")], message: bluetooth.state == .poweredOff ? String(localized: "Bluetooth is turned off.") : String(localized: "Bluetooth is not ready. Try refreshing.")))
             return
         }
         let devices = (IOBluetoothDevice.pairedDevices() as? [IOBluetoothDevice] ?? []).filter { $0.isConnected() }
         var seen = Set<String>()
         let items = devices.compactMap { device -> ConnectivityItem? in
             guard let id = device.addressString, seen.insert(id).inserted else { return nil }
-            return .bluetooth(id: id, name: device.name ?? "Bluetooth Device")
+            return .bluetooth(id: id, name: device.name ?? String(localized: "Bluetooth Device", comment: "Name shown for a Bluetooth device that reports no name"))
         }.sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
-        callback(ConnectivitySnapshot(items: items + [.refresh("bluetooth"), .settings("bluetooth")], message: items.isEmpty ? "No connected paired Bluetooth devices found." : nil))
+        callback(ConnectivitySnapshot(items: items + [.refresh("bluetooth"), .settings("bluetooth")], message: items.isEmpty ? String(localized: "No connected paired Bluetooth devices found.") : nil))
     }
     private func scanWiFi() {
         if let cache, Date().timeIntervalSince(cacheDate) < 15 { pendingWiFi?(cache); return }
-        pendingWiFi?(ConnectivitySnapshot(items: [], message: "Scanning nearby Wi-Fi networks…"))
+        pendingWiFi?(ConnectivitySnapshot(items: [], message: String(localized: "Scanning nearby Wi-Fi networks…")))
         guard !scanning else { return }
         scanning = true
         queue.async { [weak self] in
             guard let self else { return }
             let snapshot: ConnectivitySnapshot
             do {
-                guard let interface = CWWiFiClient.shared().interface() else { throw VolumeFailure(message: "No Wi-Fi interface is available.") }
-                guard interface.powerOn() else { throw VolumeFailure(message: "Wi-Fi is turned off. Open Wi-Fi Settings to enable it.") }
+                guard let interface = CWWiFiClient.shared().interface() else { throw VolumeFailure(message: String(localized: "No Wi-Fi interface is available.")) }
+                guard interface.powerOn() else { throw VolumeFailure(message: String(localized: "Wi-Fi is turned off. Open Wi-Fi Settings to enable it.")) }
                 let networks = try interface.scanForNetworks(withSSID: nil)
                 let current = interface.ssidData()
                 var choices: [String: WiFiChoice] = [:]
@@ -138,8 +141,8 @@ final class ConnectivityService: NSObject, ConnectivityAccess, CLLocationManager
                     return $0.id < $1.id
                 }
                 let emptyMessage = networks.isEmpty
-                    ? "No visible Wi-Fi networks found. Hidden networks can be joined in System Settings."
-                    : "macOS returned networks without names. Check Volant’s Location access in Privacy & Security, then quit and reopen Volant."
+                    ? String(localized: "No visible Wi-Fi networks found. Hidden networks can be joined in System Settings.")
+                    : String(localized: "macOS returned networks without names. Check Volant’s Location access in Privacy & Security, then quit and reopen Volant.")
                 snapshot = ConnectivitySnapshot(items: sorted.map(ConnectivityItem.wifi) + [.refresh("wifi"), .settings("wifi")], message: sorted.isEmpty ? emptyMessage : nil)
             } catch { snapshot = ConnectivitySnapshot(items: [.refresh("wifi"), .settings("wifi")], message: error.localizedDescription) }
             DispatchQueue.main.async {
@@ -161,23 +164,23 @@ final class ConnectivityService: NSObject, ConnectivityAccess, CLLocationManager
             guard let self else { return }
             var failure: String?
             do {
-                guard let interface = CWWiFiClient.shared().interface(), interface.powerOn() else { throw VolumeFailure(message: "Wi-Fi is unavailable.") }
+                guard let interface = CWWiFiClient.shared().interface(), interface.powerOn() else { throw VolumeFailure(message: String(localized: "Wi-Fi is unavailable.")) }
                 if interface.ssidData() != network.ssid {
                     // Rescan the selected SSID only; never reuse a stale access point or downgrade its security.
                     let fresh = try interface.scanForNetworks(withSSID: network.ssid).filter { Self.security($0) == network.security }.max { $0.rssiValue < $1.rssiValue }
-                    guard let fresh else { throw VolumeFailure(message: "This network is no longer available. Refresh and try again.") }
-                    guard network.security != "Managed / Other" else { throw VolumeFailure(message: "Join this network in Wi-Fi Settings; it needs additional configuration.") }
+                    guard let fresh else { throw VolumeFailure(message: String(localized: "This network is no longer available. Refresh and try again.")) }
+                    guard network.security != "Managed / Other" else { throw VolumeFailure(message: String(localized: "Join this network in Wi-Fi Settings; it needs additional configuration.")) }
                     var credential = password
                     if useSaved {
                         var saved: NSString?
                         var status = CWKeychainFindWiFiPassword(.user, network.ssid, &saved)
                         if status == errSecItemNotFound { status = CWKeychainFindWiFiPassword(.system, network.ssid, &saved) }
-                        guard status == noErr, let saved else { throw VolumeFailure(message: "No accessible saved password. Enter the network password or use Wi-Fi Settings.") }
+                        guard status == noErr, let saved else { throw VolumeFailure(message: String(localized: "No accessible saved password. Enter the network password or use Wi-Fi Settings.")) }
                         credential = saved as String
                     }
-                    guard network.security == "Open" || credential?.isEmpty == false else { throw VolumeFailure(message: "Enter a password for this network.") }
+                    guard network.security == "Open" || credential?.isEmpty == false else { throw VolumeFailure(message: String(localized: "Enter a password for this network.")) }
                     try interface.associate(to: fresh, password: credential)
-                    guard interface.ssidData() == network.ssid else { throw VolumeFailure(message: "macOS hasn’t confirmed this connection yet. Refresh to check the current network.") }
+                    guard interface.ssidData() == network.ssid else { throw VolumeFailure(message: String(localized: "macOS hasn’t confirmed this connection yet. Refresh to check the current network.")) }
                 }
             } catch { failure = error.localizedDescription }
             DispatchQueue.main.async { self.cache = nil; completion(failure) }

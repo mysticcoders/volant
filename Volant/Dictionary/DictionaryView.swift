@@ -30,7 +30,7 @@ struct DictionaryView: View {
                     } else if let entry = model.entry {
                         Text(entry.term).font(.title2.weight(.semibold)).textSelection(.enabled)
                         Text(entry.definition).font(.system(size: 16)).lineSpacing(4).textSelection(.enabled)
-                            .accessibilityLabel("Definition: " + entry.definition)
+                            .accessibilityLabel(String(localized: "Definition: \(entry.definition)", comment: "Accessibility label; the text is the dictionary definition"))
                     } else if model.term.count > DictionaryQuery.limit {
                         Text("Keep the lookup to 256 characters or fewer.").foregroundStyle(.secondary)
                     } else if model.searched {
@@ -46,7 +46,7 @@ struct DictionaryView: View {
             if let message = model.message {
                 Text(message).font(.caption).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 8)
-                    .accessibilityLabel("Dictionary status: " + message)
+                    .accessibilityLabel(String(localized: "Dictionary status: \(message)"))
             }
             Divider()
             HStack(spacing: 12) {

@@ -94,7 +94,7 @@ final class ACPModel: ObservableObject {
     func keyReady(for configuration: AIConfiguration) -> Bool {
         guard configuration.connection == .byok else { return true }
         do { guard let key = try credentials.read(configuration.http.credentialID), !key.isEmpty else { return false } }
-        catch { self.error = "Couldn’t read your API key. Open AI Settings to check it."; return false }
+        catch { self.error = String(localized: "Couldn’t read your API key. Open AI Settings to check it."); return false }
         return true
     }
     private var connection: NSXPCConnection?
@@ -171,11 +171,11 @@ final class ACPModel: ObservableObject {
         if usesApple { startApple(); return }
         if usesAPI { startAPI(); return }
         let current = generation, request = helperStart(resume: record)
-        state = ACPState(); state.phase = "starting"; state.status = record == nil ? "Connecting…" : "Restoring conversation…"; error = nil
+        state = ACPState(); state.phase = "starting"; state.status = record == nil ? String(localized: "Connecting…", comment: "AI Chat status") : String(localized: "Restoring conversation…", comment: "AI Chat status"); error = nil
         if let connector { connector(request); return }
         let connection = NSXPCConnection(serviceName: "com.mysticcoders.volant.AgentHost")
         connection.remoteObjectInterface = NSXPCInterface(with: VolantAgentHostProtocol.self)
-        connection.invalidationHandler = { [weak self] in DispatchQueue.main.async { self?.failed("Agent helper disconnected. Start a new conversation to reconnect.", current: current) } }
+        connection.invalidationHandler = { [weak self] in DispatchQueue.main.async { self?.failed(String(localized: "Agent helper disconnected. Start a new conversation to reconnect."), current: current) } }
         connection.interruptionHandler = connection.invalidationHandler
         self.connection = connection; connection.resume()
         let started: (String?) -> Void = { [weak self] error in
@@ -268,7 +268,7 @@ final class ACPModel: ObservableObject {
             guard let self, self.generation == current else { return }
             self.error = error; self.read()
         } }
-        if usesApple { apple?.cancel(); state.phase = "ready"; state.status = "Ready."; submitting = false }
+        if usesApple { apple?.cancel(); state.phase = "ready"; state.status = String(localized: "Ready.", comment: "AI Chat status"); submitting = false }
         else if usesAPI { apiProxy()?.cancel { reply(nil) } }
         else { proxy()?.acpCancel(reply: reply) }
     }
@@ -285,7 +285,7 @@ final class ACPModel: ObservableObject {
         apple?.cancel(); apple = nil
         // Invalidation stops the provider even if it is waiting on a permission request.
         connection?.invalidate(); connection = nil
-        state.phase = "disconnected"; state.status = "Conversation ended."; state.permissions = []; state.sessionID = nil
+        state.phase = "disconnected"; state.status = String(localized: "Conversation ended.", comment: "AI Chat status"); state.permissions = []; state.sessionID = nil
     }
     deinit { timer?.invalidate(); connection?.invalidate() }
     private func proxy() -> VolantAgentHostProtocol? {
@@ -316,7 +316,7 @@ final class ACPModel: ObservableObject {
         switch result {
         case .unchanged: break
         case .stale: read()
-        case .invalid: failed(error ?? "Invalid conversation state from helper.", current: generation)
+        case .invalid: failed(error ?? String(localized: "Invalid conversation state from helper."), current: generation)
         case .applied:
             if state.phase == "failed" || (usesAPI && state.phase == "ready") { timer?.invalidate(); timer = nil }
         }
@@ -342,10 +342,10 @@ final class ACPModel: ObservableObject {
             try config.validate()
             let key = try credentials.read(config.credentialID) ?? ""
             if !config.local && key.isEmpty { throw AIHTTPError.key }
-            state = ACPState(); state.phase = "starting"; state.status = "Connecting…"; error = nil
+            state = ACPState(); state.phase = "starting"; state.status = String(localized: "Connecting…", comment: "AI Chat status"); error = nil
             let connection = NSXPCConnection(serviceName: "com.mysticcoders.volant.AIHost")
             connection.remoteObjectInterface = NSXPCInterface(with: VolantAIHostProtocol.self)
-            connection.invalidationHandler = { [weak self] in DispatchQueue.main.async { self?.failed("AI connection ended. Connect again to start a new conversation.", current: current) } }
+            connection.invalidationHandler = { [weak self] in DispatchQueue.main.async { self?.failed(String(localized: "AI connection ended. Connect again to start a new conversation."), current: current) } }
             connection.interruptionHandler = connection.invalidationHandler
             self.connection = connection; connection.resume()
             apiProxy()?.start(configuration: try JSONEncoder().encode(config), key: key) { [weak self] error in DispatchQueue.main.async {
@@ -356,22 +356,22 @@ final class ACPModel: ObservableObject {
             } }
             DispatchQueue.main.asyncAfter(deadline: .now() + 15) { [weak self] in
                 guard let self, self.generation == current, self.state.phase == "starting" else { return }
-                self.failed("AI helper did not become ready. Try connecting again.", current: current)
+                self.failed(String(localized: "AI helper did not become ready. Try connecting again."), current: current)
             }
-        } catch { failed((error as? LocalizedError)?.errorDescription ?? "Couldn’t open AI connection.", current: current) }
+        } catch { failed((error as? LocalizedError)?.errorDescription ?? String(localized: "Couldn’t open AI connection."), current: current) }
     }
     /// Apple Intelligence runs in this process: no helper, no polling, no network. Availability is
     /// rechecked at connect time because the owner can switch it off in System Settings.
     private func startApple() {
         let availability = AppleFoundationModel.availability
         guard availability.isReady else {
-            failed(availability.reason ?? "Apple Intelligence is unavailable.", current: generation)
+            failed(availability.reason ?? String(localized: "Apple Intelligence is unavailable."), current: generation)
             return
         }
         apple = AppleFoundationModel.Conversation()
         state = ACPState()
         state.phase = "ready"
-        state.status = "Ready."
+        state.status = String(localized: "Ready.", comment: "AI Chat status")
         state.agentName = AIConnectionKind.apple.title
         error = nil
     }
@@ -391,7 +391,7 @@ final class ACPModel: ObservableObject {
             guard let self, self.generation == current else { return }
             self.submitting = false
             self.state.phase = "ready"
-            self.state.status = failure ?? "Ready."
+            self.state.status = failure ?? String(localized: "Ready.", comment: "AI Chat status")
             if let failure { self.error = failure }
         })
     }
@@ -405,7 +405,7 @@ final class ACPModel: ObservableObject {
     private func apiProxy() -> VolantAIHostProtocol? {
         let current = generation
         return connection?.remoteObjectProxyWithErrorHandler { [weak self] _ in DispatchQueue.main.async {
-            self?.failed("AI helper disconnected. Connect again to start a new conversation.", current: current)
+            self?.failed(String(localized: "AI helper disconnected. Connect again to start a new conversation."), current: current)
         } } as? VolantAIHostProtocol
     }
     private func failed(_ message: String, current: UUID) {

@@ -42,7 +42,7 @@ final class LauncherSnapGuides {
         if let overlay { panel = overlay }
         else {
             panel = SnapGuidePanel(contentRect: screen, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
-            panel.title = "Volant Alignment Guides"
+            panel.title = String(localized: "Volant Alignment Guides", comment: "Window title of the overlay that shows launcher placement guides")
             panel.isOpaque = false
             panel.backgroundColor = .clear
             panel.hasShadow = false

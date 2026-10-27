@@ -64,7 +64,7 @@ struct ExtensionBrowseView: View {
             HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Checking the catalog…").foregroundStyle(.secondary) }
         } else {
             VStack(spacing: 12) {
-                Text(error ?? "The catalog hasn’t been checked.").foregroundStyle(.secondary).multilineTextAlignment(.center)
+                Text(error ?? String(localized: "The catalog hasn’t been checked.", comment: "Browse Extensions status")).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 Button("Try Again", action: load).accessibilityIdentifier("extension-browse-retry")
             }.padding(40)
         }

@@ -22,7 +22,7 @@ final class AIModelDiscovery: ObservableObject {
             lookup(candidate.configuration, key: "") { [weak self] models, error in
                 guard let self, self.generation == current, let index = self.servers.firstIndex(where: { $0.id == candidate.id }) else { return }
                 self.servers[index].models = models ?? []
-                self.servers[index].message = models.map { $0.isEmpty ? "Server available · no models listed" : "\($0.count) models available" } ?? (error ?? "Unavailable")
+                self.servers[index].message = models.map { $0.isEmpty ? String(localized: "Server available · no models listed") : String(localized: "\($0.count) models available", comment: "Local model server status in AI Settings") } ?? (error ?? String(localized: "Unavailable", comment: "Local model server status in AI Settings"))
             }
         }
     }
@@ -37,7 +37,7 @@ final class AIModelDiscovery: ObservableObject {
         lookup(config, key: key) { [weak self] models, error in
             guard let self, self.generation == current else { return }
             self.loading = false; self.models = models ?? []
-            self.message = error ?? (models?.isEmpty == false ? "Connection verified. Choose a model." : "Connected; no models listed. Enter a model ID manually.")
+            self.message = error ?? (models?.isEmpty == false ? String(localized: "Connection verified. Choose a model.") : String(localized: "Connected; no models listed. Enter a model ID manually."))
         }
     }
     private func lookup(_ config: AIHTTPConfiguration, key: String, completion: @escaping ([String]?, String?) -> Void) {
@@ -53,11 +53,11 @@ final class AIModelDiscovery: ObservableObject {
                 guard !completed else { return }; completed = true
                 self?.connections.removeAll { $0 === connection }; connection.invalidate(); completion(models, error)
             } }
-            DispatchQueue.main.asyncAfter(deadline: .now() + (config.local ? 4 : 20)) { finish(nil, "No response. Check that the server is running.") }
-            let proxy = connection.remoteObjectProxyWithErrorHandler { _ in finish(nil, "Couldn’t reach the model service.") } as? VolantAIHostProtocol
+            DispatchQueue.main.asyncAfter(deadline: .now() + (config.local ? 4 : 20)) { finish(nil, String(localized: "No response. Check that the server is running.")) }
+            let proxy = connection.remoteObjectProxyWithErrorHandler { _ in finish(nil, String(localized: "Couldn’t reach the model service.")) } as? VolantAIHostProtocol
             proxy?.models(configuration: try JSONEncoder().encode(config), key: key) { data, error in
                 guard let data, let models = try? JSONDecoder().decode([String].self, from: data) else {
-                    finish(nil, error ?? "The model service returned an invalid list."); return
+                    finish(nil, error ?? String(localized: "The model service returned an invalid list.")); return
                 }
                 finish(models, nil)
             }

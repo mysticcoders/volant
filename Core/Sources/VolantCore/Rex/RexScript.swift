@@ -59,9 +59,9 @@ public enum RexScript {
         public var message: String? {
             switch self {
             case .shown: return nil
-            case .refused: return "Rex focused the pane but can’t switch to its session until Remote Control is on in Rex Settings › Rex Server."
-            case .noApp: return "Rex focused the pane. Open the Rex app to see it."
-            case .failed: return "Rex focused the pane but couldn’t switch to its session."
+            case .refused: return String(localized: "Rex focused the pane but can’t switch to its session until Remote Control is on in Rex Settings › Rex Server.", table: "Core", comment: "Notice after focusing a Rex pane; Remote Control, Rex Settings and Rex Server are Rex's own names")
+            case .noApp: return String(localized: "Rex focused the pane. Open the Rex app to see it.", table: "Core", comment: "Notice after focusing a Rex pane")
+            case .failed: return String(localized: "Rex focused the pane but couldn’t switch to its session.", table: "Core", comment: "Notice after focusing a Rex pane")
             }
         }
     }

@@ -67,13 +67,13 @@ final class TranslationModel: ObservableObject {
     var hasDraft: Bool { !text.isEmpty || busy }
     var status: String {
         if let message { return message }
-        if text.count > Self.textLimit { return "Use up to 16,000 characters per translation." }
-        if busy { return pairState == .downloadable ? "Language download may be required…" : "Translating…" }
+        if text.count > Self.textLimit { return String(localized: "Use up to 16,000 characters per translation.") }
+        if busy { return pairState == .downloadable ? String(localized: "Language download may be required…") : String(localized: "Translating…") }
         switch pairState {
-        case .installed: return "Languages installed · On-device translation"
-        case .downloadable: return "Languages available to download from macOS"
-        case .unsupported: return "This language pair is not supported. Choose another language."
-        case nil: return "On-device translation · macOS may ask to download languages"
+        case .installed: return String(localized: "Languages installed · On-device translation")
+        case .downloadable: return String(localized: "Languages available to download from macOS")
+        case .unsupported: return String(localized: "This language pair is not supported. Choose another language.")
+        case nil: return String(localized: "On-device translation · macOS may ask to download languages")
         }
     }
     static func languageName(_ id: String) -> String {
@@ -116,7 +116,7 @@ final class TranslationModel: ObservableObject {
         }
     }
 
-    func cancel() { invalidate(); message = "Translation canceled. Your text is still here." }
+    func cancel() { invalidate(); message = String(localized: "Translation canceled. Your text is still here.") }
     func clear() { text = ""; invalidate() }
 
     /// An automatic start never begins a language download: macOS asks for consent to download,
@@ -136,14 +136,14 @@ final class TranslationModel: ObservableObject {
                 guard state != .unsupported else { self.busy = false; return }
                 if automatic && state == .downloadable {
                     self.busy = false
-                    self.message = "These languages need a download from macOS. Press ⌘T to download and translate."
+                    self.message = String(localized: "These languages need a download from macOS. Press ⌘T to download and translate.")
                     return
                 }
                 self.request = current
             } catch {
                 guard self.generation == token, !Task.isCancelled else { return }
                 self.busy = false
-                self.message = "Couldn't check these languages. Choose a source language or try again."
+                self.message = String(localized: "Couldn't check these languages. Choose a source language or try again.")
             }
         }
     }
@@ -159,7 +159,7 @@ final class TranslationModel: ObservableObject {
             guard request?.id == current.id else { return }
             busy = false; request = nil
             // Framework errors can contain input. Never log them or echo raw payloads.
-            message = error is CancellationError ? "Translation canceled. Try again when ready." : "Translation couldn't finish. Check language downloads and your connection, then try again."
+            message = error is CancellationError ? String(localized: "Translation canceled. Try again when ready.") : String(localized: "Translation couldn't finish. Check language downloads and your connection, then try again.")
         }
     }
 
@@ -172,6 +172,6 @@ final class TranslationModel: ObservableObject {
 
     func copy(using action: (String) -> Void) {
         guard !output.isEmpty, !busy, !outputIsStale else { return }
-        action(output); message = "Translation copied"
+        action(output); message = String(localized: "Translation copied")
     }
 }

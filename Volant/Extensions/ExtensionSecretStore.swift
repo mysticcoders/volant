@@ -52,7 +52,7 @@ struct ExtensionSecretStore {
     enum SecretError: Error, LocalizedError {
         case unavailable, invalid
         var errorDescription: String? {
-            self == .invalid ? "Enter the token without spaces." : "Couldn’t access the extension’s token in Keychain. The saved token was not replaced."
+            self == .invalid ? String(localized: "Enter the token without spaces.", comment: "Error for an extension access token") : String(localized: "Couldn’t access the extension’s token in Keychain. The saved token was not replaced.")
         }
     }
 }

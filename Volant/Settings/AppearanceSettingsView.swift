@@ -56,7 +56,7 @@ struct AppearanceSettingsView: View {
             } header: {
                 Text("Color Theme")
             } footer: {
-                SettingsFooter("System uses your macOS accent color and Volant its coral one; the others bring their own palette and a fixed appearance. Import a theme from themes.ray.so as a file or a copied link; Volant reads it locally and never downloads themes. Control-click an imported theme to remove it.")
+                SettingsFooter(String(localized: "System uses your macOS accent color and Volant its coral one; the others bring their own palette and a fixed appearance. Import a theme from themes.ray.so as a file or a copied link; Volant reads it locally and never downloads themes. Control-click an imported theme to remove it."))
             }
             Section {
                 LabeledContent {
@@ -95,7 +95,7 @@ struct AppearanceSettingsView: View {
             } header: {
                 Text("Launcher")
             } footer: {
-                SettingsFooter("Changes apply when you let go of a slider. Lower opacity lets more of the desktop show through the launcher.")
+                SettingsFooter(String(localized: "Changes apply when you let go of a slider. Lower opacity lets more of the desktop show through the launcher."))
             }
         }
         .formStyle(.settings)
@@ -109,9 +109,12 @@ struct AppearanceSettingsView: View {
     private var appearanceFooter: String {
         let theme = appearance.resolvedColorTheme
         if let mode = theme.mode {
-            return "\(theme.name) is a \(mode.rawValue) theme, so Volant stays \(mode.rawValue) while it is selected. Choose System or Volant to use this setting."
+            switch mode {
+            case .light: return String(localized: "\(theme.name) is a light theme, so Volant stays light while it is selected. Choose System or Volant to use this setting.", comment: "Appearance settings footer; the value is a color theme name")
+            case .dark: return String(localized: "\(theme.name) is a dark theme, so Volant stays dark while it is selected. Choose System or Volant to use this setting.", comment: "Appearance settings footer; the value is a color theme name")
+            }
         }
-        return "System follows macOS, including automatic switching at sunset. Light and Dark keep Volant’s launcher, notes and Settings in that appearance."
+        return String(localized: "System follows macOS, including automatic switching at sunset. Light and Dark keep Volant’s launcher, notes and Settings in that appearance.")
     }
 
     /// Opens a Raycast theme JSON file the owner chooses and imports it.
@@ -119,7 +122,7 @@ struct AppearanceSettingsView: View {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.json]
         panel.allowsMultipleSelection = false
-        panel.message = "Choose a Raycast theme JSON file"
+        panel.message = String(localized: "Choose a Raycast theme JSON file")
         let completion: (NSApplication.ModalResponse) -> Void = { response in
             guard response == .OK, let url = panel.url else { return }
             do {
@@ -136,7 +139,7 @@ struct AppearanceSettingsView: View {
     /// Imports a Raycast theme link or JSON from the clipboard.
     private func importClipboard() {
         guard let text = NSPasteboard.general.string(forType: .string), !text.isEmpty else {
-            error = "Copy a Raycast theme link or theme JSON first."
+            error = String(localized: "Copy a Raycast theme link or theme JSON first.")
             return
         }
         do {
@@ -206,7 +209,7 @@ private struct ThemeTile: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(theme.title + " appearance")
+        .accessibilityLabel(String(localized: "\(theme.title) appearance", comment: "Accessibility label of an appearance tile; the value is System, Light or Dark"))
         .accessibilityAddTraits(selected ? .isSelected : [])
         .background(ControlAnchor("settings.theme-" + theme.rawValue))
     }
@@ -275,7 +278,7 @@ private struct ColorThemeTile: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(theme.name + " color theme")
+        .accessibilityLabel(String(localized: "\(theme.name) color theme", comment: "Accessibility label of a color theme tile; the value is the theme name"))
         .accessibilityAddTraits(selected ? .isSelected : [])
         .background(ControlAnchor("settings.color-theme-" + theme.id))
     }

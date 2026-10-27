@@ -14,7 +14,7 @@ final class NotesPanel: NSPanel {
         super.init(contentRect: NSRect(x: 0, y: 0, width: 560, height: 620),
                    styleMask: [.titled, .closable, .resizable, .fullSizeContentView, .nonactivatingPanel, .utilityWindow],
                    backing: .buffered, defer: false)
-        title = "Notes"
+        title = String(localized: "Notes", comment: "Notes window title")
         titleVisibility = .hidden
         titlebarAppearsTransparent = true
         isMovableByWindowBackground = true
@@ -257,7 +257,7 @@ final class NotesModel: ObservableObject {
         let pb = NSPasteboard.general
         pb.clearContents()
         pb.setString(text, forType: .string)
-        flash("Copied Markdown")
+        flash(String(localized: "Copied Markdown"))
     }
 
     func flash(_ message: String) {
@@ -351,15 +351,15 @@ struct NotesView: View {
             if let id = model.selectedID, model.pinned.contains(id) {
                 Image(systemName: "pin.fill").font(.caption).foregroundStyle(.secondary)
             }
-            Text(model.selected?.title ?? "Notes")
+            Text(model.selected?.title ?? String(localized: "Notes", comment: "Notes window title"))
                 .font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary).lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
             HStack(spacing: 2) {
-                control("Actions", symbol: "command", help: "Actions (⌘K)") { model.show(.actions) }
+                control(String(localized: "Actions", comment: "Notes toolbar button"), symbol: "command", help: String(localized: "Actions (⌘K)")) { model.show(.actions) }
                     .keyboardShortcut(NotesShortcut.actions.keyboardShortcut)
-                control("Browse notes", symbol: "square.on.square", help: "Browse notes (⌘P)") { model.show(.browse) }
+                control(String(localized: "Browse notes"), symbol: "square.on.square", help: String(localized: "Browse notes (⌘P)")) { model.show(.browse) }
                     .keyboardShortcut(NotesShortcut.browse.keyboardShortcut)
-                control("New note", symbol: "plus", help: "New note (⌘N)") { model.newNote() }
+                control(String(localized: "New note"), symbol: "plus", help: String(localized: "New note (⌘N)")) { model.newNote() }
                     .keyboardShortcut(NotesShortcut.newNote.keyboardShortcut)
             }
             .padding(4)
@@ -393,7 +393,7 @@ struct NotesView: View {
                     }
                     .padding(.horizontal, NotesStyle.inset).padding(.top, 4)
                 } else {
-                    MarkdownView(text: text) { _ in model.flash("Copied") }
+                    MarkdownView(text: text) { _ in model.flash(String(localized: "Copied", comment: "Notes status after copying a block")) }
                 }
             } else {
                 Color.clear.frame(maxHeight: .infinity).onAppear { store.open(note.id) }
@@ -425,13 +425,13 @@ struct NotesView: View {
                             }
                         }
                     } label: {
-                        Text(context.fence.language.isEmpty ? "Auto · " + context.detected.rawValue : CodeLanguage.from(tag: context.fence.language)?.rawValue ?? context.fence.language)
+                        Text(context.fence.language.isEmpty ? String(localized: "Auto · \(context.detected.rawValue)", comment: "Code block language menu; Auto detected this language") : CodeLanguage.from(tag: context.fence.language)?.rawValue ?? context.fence.language)
                     }
                     .menuStyle(.borderlessButton).fixedSize()
                     .accessibilityLabel("Code block language")
                     .help("Language for the code block at your cursor. Auto detects locally.")
                     Spacer(minLength: 0)
-                    Button("Copy Code") { liveState.copyCode(); model.flash("Copied code") }
+                    Button("Copy Code") { liveState.copyCode(); model.flash(String(localized: "Copied code")) }
                         .buttonStyle(.borderless)
                 }
                 .font(.system(size: 12))
@@ -439,7 +439,7 @@ struct NotesView: View {
                 .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 9))
             }
             HStack {
-                Text(model.toast ?? (!store.saveErrors.isEmpty ? "Not saved" : !store.dirtyText.isEmpty ? "Saving…" : ""))
+                Text(model.toast ?? (!store.saveErrors.isEmpty ? String(localized: "Not saved", comment: "Notes save status") : !store.dirtyText.isEmpty ? String(localized: "Saving…", comment: "Notes save status") : ""))
                     .font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 Spacer(minLength: 8)
                 if let note = model.selected, note.readError == nil, let text = note.text {
@@ -516,21 +516,21 @@ struct NotesPicker: View {
                       symbol: model.pinned.contains(note.id) ? "pin.fill" : "doc.text", shortcut: "") { model.select(note.id) }
             }
         }
-        var actions = [Entry(id: "new", title: "New Note", subtitle: "", symbol: "plus", shortcut: "⌘N") { model.newNote() },
-                       Entry(id: "browse", title: "Browse Notes", subtitle: "", symbol: "square.on.square", shortcut: "⌘P") { model.show(.browse) }]
+        var actions = [Entry(id: "new", title: String(localized: "New Note"), subtitle: "", symbol: "plus", shortcut: "⌘N") { model.newNote() },
+                       Entry(id: "browse", title: String(localized: "Browse Notes"), subtitle: "", symbol: "square.on.square", shortcut: "⌘P") { model.show(.browse) }]
         if let note = model.selected, note.readError != nil {
-            actions.append(Entry(id: "reveal", title: "Reveal in Finder", subtitle: "", symbol: "folder", shortcut: "") {
+            actions.append(Entry(id: "reveal", title: String(localized: "Reveal in Finder"), subtitle: "", symbol: "folder", shortcut: "") {
                 NSWorkspace.shared.activateFileViewerSelecting([note.url])
             })
         }
         if let note = model.selected, note.readError == nil {
             actions += [
-                Entry(id: "duplicate", title: "Duplicate Note", subtitle: "", symbol: "plus.square.on.square", shortcut: "⌘D") { if let text = note.text { model.newNote(text: text) } },
-                Entry(id: "pin", title: model.pinned.contains(note.id) ? "Unpin Note" : "Pin Note", subtitle: "", symbol: "pin", shortcut: "⇧⌘P") { model.togglePin() },
-                Entry(id: "preview", title: model.editing ? "Preview Markdown" : "Return to Editor", subtitle: "", symbol: "eye", shortcut: "⌘E") { model.editing.toggle() },
-                Entry(id: "copy", title: "Copy Markdown", subtitle: "", symbol: "doc.on.doc", shortcut: "⇧⌘C") { model.copyMarkdown() },
-                Entry(id: "reveal", title: "Reveal in Finder", subtitle: "", symbol: "folder", shortcut: "") { store.flush(); NSWorkspace.shared.activateFileViewerSelecting([note.url]) },
-                Entry(id: "trash", title: "Move to Trash", subtitle: "", symbol: "trash", shortcut: "⌘⌫") { model.deleteSelected() }
+                Entry(id: "duplicate", title: String(localized: "Duplicate Note"), subtitle: "", symbol: "plus.square.on.square", shortcut: "⌘D") { if let text = note.text { model.newNote(text: text) } },
+                Entry(id: "pin", title: model.pinned.contains(note.id) ? String(localized: "Unpin Note") : String(localized: "Pin Note"), subtitle: "", symbol: "pin", shortcut: "⇧⌘P") { model.togglePin() },
+                Entry(id: "preview", title: model.editing ? String(localized: "Preview Markdown") : String(localized: "Return to Editor"), subtitle: "", symbol: "eye", shortcut: "⌘E") { model.editing.toggle() },
+                Entry(id: "copy", title: String(localized: "Copy Markdown"), subtitle: "", symbol: "doc.on.doc", shortcut: "⇧⌘C") { model.copyMarkdown() },
+                Entry(id: "reveal", title: String(localized: "Reveal in Finder"), subtitle: "", symbol: "folder", shortcut: "") { store.flush(); NSWorkspace.shared.activateFileViewerSelecting([note.url]) },
+                Entry(id: "trash", title: String(localized: "Move to Trash"), subtitle: "", symbol: "trash", shortcut: "⌘⌫") { model.deleteSelected() }
             ]
         }
         let term = model.filter.trimmingCharacters(in: .whitespacesAndNewlines)

@@ -103,7 +103,7 @@ public struct RexOverview: Codable, Equatable {
                       RexIdentifier.isValid(window, kind: .window) else { continue }
                 panesByWindow[window, default: []].append(Pane(
                     blockID: pane.block_id,
-                    label: RexInventory.line(pane.label, limit: RexInventory.maximumLabel) ?? "Terminal",
+                    label: RexInventory.line(pane.label, limit: RexInventory.maximumLabel) ?? String(localized: "Terminal", table: "Core", comment: "Fallback name for a Rex pane that has no label"),
                     title: RexInventory.line(pane.title, limit: RexInventory.maximumLabel),
                     program: programName(pane.program),
                     cwd: RexInventory.directory(pane.cwd),
@@ -117,7 +117,7 @@ public struct RexOverview: Codable, Equatable {
             var tabs: [Tab] = []
             for window in session.windows?.values ?? [] where tabCount < maximumTabs && RexIdentifier.isValid(window.window_id, kind: .window) {
                 guard let panes = panesByWindow[window.window_id], !panes.isEmpty else { continue }
-                tabs.append(Tab(windowID: window.window_id, label: RexInventory.line(window.label, limit: RexInventory.maximumLabel) ?? "Tab",
+                tabs.append(Tab(windowID: window.window_id, label: RexInventory.line(window.label, limit: RexInventory.maximumLabel) ?? String(localized: "Tab", table: "Core", comment: "Fallback name for a Rex tab that has no label"),
                                 active: window.active ?? false,
                                 focusedBlockID: window.focused_block_id.flatMap { RexIdentifier.isValid($0, kind: .block) ? $0 : nil },
                                 panes: panes,
@@ -125,7 +125,7 @@ public struct RexOverview: Codable, Equatable {
                 tabCount += 1
             }
             if !tabs.isEmpty {
-                sessions.append(Session(sessionID: session.session_id, label: RexInventory.line(session.label, limit: RexInventory.maximumLabel) ?? "Session", tabs: tabs))
+                sessions.append(Session(sessionID: session.session_id, label: RexInventory.line(session.label, limit: RexInventory.maximumLabel) ?? String(localized: "Session", table: "Core", comment: "Fallback name for a Rex session that has no label"), tabs: tabs))
             }
         }
         return RexOverview(sessions: sessions)

@@ -14,13 +14,13 @@ struct CaffeinateStatusView: View {
             }
             .buttonStyle(.plain)
             .onHover { hovering = $0 }
-            .help("Caffeinate: " + service.summary + ". Click to stop.")
+            .help(String(localized: "Caffeinate: \(service.summary). Click to stop.", comment: "Tooltip on the Caffeinate status button"))
             .accessibilityLabel("Stop Caffeinate")
             .accessibilityValue(service.summary)
             .popover(isPresented: $showingError) {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Couldn't stop Caffeinate").font(.headline)
-                    Text(service.error ?? "Try stopping the session again.").font(.callout)
+                    Text(service.error ?? String(localized: "Try stopping the session again.")).font(.callout)
                     Button("Try Again") { showingError = !service.stop() }
                 }
                 .padding(16).frame(width: 280)

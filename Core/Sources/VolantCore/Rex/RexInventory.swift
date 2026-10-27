@@ -11,11 +11,11 @@ public enum RexState: String, Codable, CaseIterable, Comparable {
 
     public var title: String {
         switch self {
-        case .blocked: return "Waiting"
-        case .error: return "Failed"
-        case .done: return "Done"
-        case .working: return "Working"
-        case .idle: return "Idle"
+        case .blocked: return String(localized: "Waiting", table: "Core", comment: "Rex pane state: the program is waiting for the owner")
+        case .error: return String(localized: "Failed", table: "Core", comment: "Rex pane state: the program reported an error")
+        case .done: return String(localized: "Done", table: "Core", comment: "Rex pane state: the program finished")
+        case .working: return String(localized: "Working", table: "Core", comment: "Rex pane state: the program is busy")
+        case .idle: return String(localized: "Idle", table: "Core", comment: "Rex pane state: the program is idle")
         }
     }
 
@@ -89,11 +89,11 @@ public struct RexInventory: Codable, Equatable {
         for session in raw.sessions?.values ?? [] {
             guard RexIdentifier.isValid(session.session_id, kind: .session) else { continue }
             if session.error != nil { unreadable += 1; continue }
-            let sessionLabel = line(session.label, limit: maximumLabel) ?? "Session"
+            let sessionLabel = line(session.label, limit: maximumLabel) ?? String(localized: "Session", table: "Core", comment: "Fallback name for a Rex session that has no label")
             for pane in session.panes?.values ?? [] where panes.count < maximumPanes {
                 guard RexIdentifier.isValid(pane.block_id, kind: .block) else { continue }
                 panes.append(RexPane(sessionID: session.session_id, sessionLabel: sessionLabel, blockID: pane.block_id,
-                                     label: line(pane.label, limit: maximumLabel) ?? "Terminal",
+                                     label: line(pane.label, limit: maximumLabel) ?? String(localized: "Terminal", table: "Core", comment: "Fallback name for a Rex pane that has no label"),
                                      cwd: directory(pane.cwd),
                                      status: representative(pane.records?.values ?? [])))
             }
@@ -202,16 +202,16 @@ public struct RexStatusSummary: Equatable {
     public init(panes: [RexPane], connected: Bool, loading: Bool, problem: String?) {
         let blocked = panes.filter { $0.state == .blocked }.count
         if !connected {
-            text = "Rex: not connected"; waiting = false; help = "Rex isn’t connected.\nClick to show Rex panes."
+            text = String(localized: "Rex: not connected", table: "Core", comment: "Launcher footer status for the Rex terminal app"); waiting = false; help = String(localized: "Rex isn’t connected.\nClick to show Rex panes.", table: "Core", comment: "Launcher footer Rex status tooltip")
         } else if blocked > 0 {
             text = "Rex: \(blocked) waiting"; waiting = true
             help = "\(blocked) \(blocked == 1 ? "pane needs" : "panes need") you.\nClick to show Rex panes."
         } else if let problem {
-            text = "Rex: unavailable"; waiting = false; help = problem + "\nClick to show Rex panes."
+            text = String(localized: "Rex: unavailable", table: "Core", comment: "Launcher footer status for the Rex terminal app"); waiting = false; help = problem + "\n" + String(localized: "Click to show Rex panes.", table: "Core", comment: "Launcher footer Rex status tooltip, last line")
         } else if loading && panes.isEmpty {
-            text = "Rex: loading…"; waiting = false; help = "Loading panes from Rex.\nClick to show Rex panes."
+            text = String(localized: "Rex: loading…", table: "Core", comment: "Launcher footer status for the Rex terminal app"); waiting = false; help = String(localized: "Loading panes from Rex.\nClick to show Rex panes.", table: "Core", comment: "Launcher footer Rex status tooltip")
         } else {
-            text = "Rex: none waiting"; waiting = false
+            text = String(localized: "Rex: none waiting", table: "Core", comment: "Launcher footer status for the Rex terminal app"); waiting = false
             help = "\(panes.count) \(panes.count == 1 ? "pane" : "panes"), none waiting.\nClick to show Rex panes."
         }
     }

@@ -53,7 +53,7 @@ final class AppleShortcutsModel: ObservableObject {
             }
         }
         if let loadOverride { loadOverride(finish); return }
-        let failure = { finish(nil, "Couldn’t load Apple Shortcuts. Open Shortcuts, then refresh.") }
+        let failure = { finish(nil, String(localized: "Couldn’t load Apple Shortcuts. Open Shortcuts, then refresh.")) }
         guard let proxy = proxy(failure: failure) else { failure(); return }
         proxy.listAppleShortcuts { data, error in
             guard error == nil, let data, let values = try? JSONDecoder().decode([AppleShortcut].self, from: data) else { failure(); return }
@@ -64,21 +64,21 @@ final class AppleShortcutsModel: ObservableObject {
     func run(_ shortcut: AppleShortcut) {
         guard !running, entries.contains(where: { $0.id == shortcut.id }) else { return }
         let token = UUID(); runToken = token
-        running = true; runMessage = "Running shortcut…"
+        running = true; runMessage = String(localized: "Running shortcut…", comment: "Status while an Apple Shortcut runs")
         let finish: (String?) -> Void = { [weak self] error in
             DispatchQueue.main.async {
                 guard let self, self.running, self.runToken == token else { return }
                 self.running = false
-                self.runMessage = error ?? "Shortcut finished."
+                self.runMessage = error ?? String(localized: "Shortcut finished.", comment: "Status after an Apple Shortcut runs")
             }
         }
         if let runOverride { runOverride(shortcut.id, finish); return }
-        let failure = { finish("Shortcuts helper disconnected. Check Shortcuts before retrying.") }
+        let failure = { finish(String(localized: "Shortcuts helper disconnected. Check Shortcuts before retrying.")) }
         guard let proxy = proxy(failure: failure) else { failure(); return }
         proxy.runAppleShortcut(id: shortcut.id, reply: finish)
     }
 
     func openApp() {
-        guard NSWorkspace.shared.open(URL(string: "shortcuts://")!) else { message = "Couldn’t open the Shortcuts app."; return }
+        guard NSWorkspace.shared.open(URL(string: "shortcuts://")!) else { message = String(localized: "Couldn’t open the Shortcuts app."); return }
     }
 }

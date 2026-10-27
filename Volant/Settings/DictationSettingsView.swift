@@ -99,7 +99,7 @@ struct DictationSettingsView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(entry.term)
                         if !entry.soundsLike.isEmpty {
-                            Text("Also heard as " + entry.soundsLike.joined(separator: ", "))
+                            Text(String(localized: "Also heard as \(entry.soundsLike.joined(separator: ", "))", comment: "Dictation vocabulary row; the value lists the words dictation may hear instead"))
                                 .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                         }
                     }
@@ -122,7 +122,7 @@ struct DictationSettingsView: View {
                     .accessibilityIdentifier("dictation-vocabulary-add")
             }
         } footer: {
-            SettingsFooter("Dictation writes each word as you typed it here, replacing what you list as also heard and any other capitalization of the word. When a word comes out wrong, add what you saw as also heard. Import a text file with one word per line, or a CSV of heard and written pairs. Your list stays in Volant’s settings and syncs with iCloud when settings sync is on.")
+            SettingsFooter(String(localized: "Dictation writes each word as you typed it here, replacing what you list as also heard and any other capitalization of the word. When a word comes out wrong, add what you saw as also heard. Import a text file with one word per line, or a CSV of heard and written pairs. Your list stays in Volant’s settings and syncs with iCloud when settings sync is on."))
         }
     }
 
@@ -137,12 +137,12 @@ struct DictationSettingsView: View {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.plainText, .commaSeparatedText, .tabSeparatedText]
         panel.allowsMultipleSelection = false
-        panel.message = "Choose a text file with one word per line, or a CSV of heard and written pairs."
+        panel.message = String(localized: "Choose a text file with one word per line, or a CSV of heard and written pairs.")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         let before = config.dictationVocabulary
         do {
             guard (try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0) <= 1_048_576 else {
-                importNotice = "That file is larger than 1 MB, so nothing was imported."; return
+                importNotice = String(localized: "That file is larger than 1 MB, so nothing was imported."); return
             }
             let (entries, skipped) = DictationVocabulary.parse(importing: try String(contentsOf: url, encoding: .utf8))
             let merged = DictationVocabulary.merging(entries, into: before)
@@ -153,10 +153,14 @@ struct DictationSettingsView: View {
             }
             guard saved else { return }
             let added = merged.count - before.count
-            importNotice = "Added \(added) \(added == 1 ? "word" : "words")" + (entries.count > added ? " and updated others" : "")
-                + (skipped > 0 ? "; skipped \(skipped) \(skipped == 1 ? "line" : "lines") that weren’t a word or a pair." : ".")
+            switch (entries.count > added, skipped > 0) {
+            case (true, true): importNotice = String(localized: "Added \(added) words and updated others; skipped \(skipped) lines that weren’t a word or a pair.", comment: "Dictation vocabulary import result; needs plural variants for word and line counts")
+            case (true, false): importNotice = String(localized: "Added \(added) words and updated others.", comment: "Dictation vocabulary import result; needs plural variants for word and line counts")
+            case (false, true): importNotice = String(localized: "Added \(added) words; skipped \(skipped) lines that weren’t a word or a pair.", comment: "Dictation vocabulary import result; needs plural variants for word and line counts")
+            case (false, false): importNotice = String(localized: "Added \(added) words.", comment: "Dictation vocabulary import result; needs plural variants for word and line counts")
+            }
         } catch {
-            importNotice = "Couldn’t read that file as UTF-8 text."
+            importNotice = String(localized: "Couldn’t read that file as UTF-8 text.")
         }
     }
 
@@ -173,9 +177,9 @@ struct DictationSettingsView: View {
 
     private var footer: String {
         guard config.dictationOutput == .type else {
-            return "Type at the cursor asks once for Accessibility permission."
+            return String(localized: "Type at the cursor asks once for Accessibility permission.")
         }
-        return "Each phrase is typed as soon as it’s final, or everything when you stop. Return finishes and Escape cancels. Volant never types into password fields or while secure input is on, and copies instead. Only Volant’s input helper uses Accessibility; System Settings lists it as Volant."
+        return String(localized: "Each phrase is typed as soon as it’s final, or everything when you stop. Return finishes and Escape cancels. Volant never types into password fields or while secure input is on, and copies instead. Only Volant’s input helper uses Accessibility; System Settings lists it as Volant.")
     }
 }
 

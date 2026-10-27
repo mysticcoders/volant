@@ -18,11 +18,11 @@ private final class RaycastImportSurface: NSView {
 /// Passwords remain in process memory, never preferences, logs, arguments, or temporary files.
 final class RaycastImportWindowController: NSWindowController, NSWindowDelegate {
     private let password = NSSecureTextField()
-    private let fileLabel = NSTextField(wrappingLabelWithString: "Choose a .rayconfig export from Raycast.")
-    private let status = NSTextField(wrappingLabelWithString: "Your password is used locally and is not saved.")
-    private let choose = NSButton(title: "Choose Export…", target: nil, action: nil)
-    private let unlock = NSButton(title: "Unlock & Preview", target: nil, action: nil)
-    private let applyButton = NSButton(title: "Import Selected", target: nil, action: nil)
+    private let fileLabel = NSTextField(wrappingLabelWithString: String(localized: "Choose a .rayconfig export from Raycast.", comment: "Raycast import window file label"))
+    private let status = NSTextField(wrappingLabelWithString: String(localized: "Your password is used locally and is not saved.", comment: "Raycast import window status"))
+    private let choose = NSButton(title: String(localized: "Choose Export…", comment: "Raycast import window button"), target: nil, action: nil)
+    private let unlock = NSButton(title: String(localized: "Unlock & Preview", comment: "Raycast import window button"), target: nil, action: nil)
+    private let applyButton = NSButton(title: String(localized: "Import Selected", comment: "Raycast import window button"), target: nil, action: nil)
     private let progress = NSProgressIndicator()
     private let details = NSTextView()
     private var choices: [RaycastCategory: NSButton] = [:]
@@ -30,13 +30,13 @@ final class RaycastImportWindowController: NSWindowController, NSWindowDelegate 
     private var plan: RaycastImportPlan?
     private var generation = UUID()
     private var recovery: URL?
-    private let reveal = NSButton(title: "Show Recovery Backup", target: nil, action: nil)
+    private let reveal = NSButton(title: String(localized: "Show Recovery Backup", comment: "Raycast import window button"), target: nil, action: nil)
     private let onChange: () -> Void
 
     init(onChange: @escaping () -> Void) {
         self.onChange = onChange
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 660, height: 670), styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
-        window.title = "Import from Raycast"
+        window.title = String(localized: "Import from Raycast", comment: "Raycast import window title")
         window.minSize = NSSize(width: 560, height: 630)
         window.isReleasedWhenClosed = false
         super.init(window: window)
@@ -47,14 +47,14 @@ final class RaycastImportWindowController: NSWindowController, NSWindowDelegate 
         applyButton.target = self; applyButton.action = #selector(applyImport); applyButton.isEnabled = false
         reveal.target = self; reveal.action = #selector(showRecovery); reveal.isHidden = true
         [choose, unlock, applyButton, reveal].forEach { $0.bezelStyle = .rounded }
-        password.placeholderString = "Export password"
-        password.setAccessibilityLabel("Raycast export password")
+        password.placeholderString = String(localized: "Export password", comment: "Raycast import password field placeholder")
+        password.setAccessibilityLabel(String(localized: "Raycast export password", comment: "Accessibility label for the Raycast import password field"))
         password.target = self; password.action = #selector(unlockFile)
         password.isEnabled = false
         progress.style = .spinning; progress.controlSize = .small; progress.isDisplayedWhenStopped = false
-        let title = NSTextField(labelWithString: "Bring your setup with you.")
+        let title = NSTextField(labelWithString: String(localized: "Bring your setup with you.", comment: "Raycast import window heading"))
         title.font = .systemFont(ofSize: 20, weight: .semibold)
-        let subtitle = NSTextField(wrappingLabelWithString: "Preview what can move to Volant. Existing items are kept, and a recovery backup is created before import.")
+        let subtitle = NSTextField(wrappingLabelWithString: String(localized: "Preview what can move to Volant. Existing items are kept, and a recovery backup is created before import.", comment: "Raycast import window subtitle"))
         subtitle.textColor = .secondaryLabelColor
         fileLabel.textColor = .secondaryLabelColor
         status.textColor = .secondaryLabelColor
@@ -72,7 +72,7 @@ final class RaycastImportWindowController: NSWindowController, NSWindowDelegate 
         details.textContainerInset = NSSize(width: 10, height: 10)
         details.autoresizingMask = [.width]; details.isVerticallyResizable = true; details.isHorizontallyResizable = false
         details.textContainer?.widthTracksTextView = true
-        details.setAccessibilityLabel("Import preview and compatibility report")
+        details.setAccessibilityLabel(String(localized: "Import preview and compatibility report", comment: "Accessibility label for the Raycast import report"))
         let scroll = NSScrollView(); scroll.documentView = details; scroll.hasVerticalScroller = true; scroll.borderType = .bezelBorder
         let buttons = NSStackView(views: [reveal, applyButton]); buttons.spacing = 12
         let stack = NSStackView(views: [title, subtitle, fileRow, passwordRow, categoryRow, scroll, status, buttons])
@@ -100,7 +100,7 @@ final class RaycastImportWindowController: NSWindowController, NSWindowDelegate 
         guard let window else { return }
         let panel = NSOpenPanel()
         panel.canChooseDirectories = false; panel.allowsMultipleSelection = false
-        panel.message = "Choose a Raycast schema 3 .rayconfig export."
+        panel.message = String(localized: "Choose a Raycast schema 3 .rayconfig export.", comment: "Raycast import file picker message")
         panel.beginSheetModal(for: window) { [weak self] result in
             guard let self, result == .OK, let url = panel.url else { return }
             self.reset()
@@ -108,9 +108,9 @@ final class RaycastImportWindowController: NSWindowController, NSWindowDelegate 
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
             do {
                 let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? Int.max
-                guard size <= RaycastArchive.fileLimit else { throw RaycastArchive.failure("Choose an export smaller than 64 MB.") }
+                guard size <= RaycastArchive.fileLimit else { throw RaycastArchive.failure(String(localized: "Choose an export smaller than 64 MB.", comment: "Raycast import error")) }
                 let data = try Data(contentsOf: url)
-                guard data.starts(with: Data("RAYCFG3\n".utf8)) else { throw RaycastArchive.failure("This is not a supported schema 3 Raycast export.") }
+                guard data.starts(with: Data("RAYCFG3\n".utf8)) else { throw RaycastArchive.failure(String(localized: "This is not a supported schema 3 Raycast export.", comment: "Raycast import error")) }
                 self.archive = data; self.fileLabel.stringValue = url.lastPathComponent
                 self.password.isEnabled = true; self.unlock.isEnabled = true
                 window.makeFirstResponder(self.password)
@@ -119,13 +119,13 @@ final class RaycastImportWindowController: NSWindowController, NSWindowDelegate 
     }
     @objc private func unlockFile() {
         guard let data = archive, unlock.isEnabled else { return }
-        guard !password.stringValue.isEmpty, password.stringValue.utf8.count <= 4096 else { status.stringValue = "Enter the export password (up to 4,096 UTF-8 bytes)."; return }
+        guard !password.stringValue.isEmpty, password.stringValue.utf8.count <= 4096 else { status.stringValue = String(localized: "Enter the export password (up to 4,096 UTF-8 bytes).", comment: "Raycast import window status"); return }
         let secret = password.stringValue
         password.stringValue = ""
         let token = UUID(); generation = token
         plan = nil; applyButton.isEnabled = false; choices.values.forEach { $0.isEnabled = false }
         choose.isEnabled = false; unlock.isEnabled = false; password.isEnabled = false
-        details.string = ""; status.stringValue = "Unlocking locally…"; progress.startAnimation(nil)
+        details.string = ""; status.stringValue = String(localized: "Unlocking locally…", comment: "Raycast import window status"); progress.startAnimation(nil)
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let result = Result { try RaycastImportPlan.make(payload: RaycastArchive.decode(data, password: secret)) }
             DispatchQueue.main.async {
@@ -141,24 +141,27 @@ final class RaycastImportWindowController: NSWindowController, NSWindowDelegate 
         plan = incoming
         for category in RaycastCategory.allCases {
             let count = incoming.count(category)
-            choices[category]?.title = "\(category.rawValue) — \(count) new"
+            choices[category]?.title = String(localized: "\(category.rawValue) — \(count) new", comment: "Raycast import category checkbox; the values are the category and how many new items it has")
             choices[category]?.isEnabled = count > 0
             choices[category]?.state = count > 0 && category != .hotkeys ? .on : .off
         }
-        var lines = ["READY TO ADD"]
-        lines += incoming.snippets.map { "Snippet: \($0.name)" }
-        lines += incoming.quicklinks.map { "Quicklink: \($0.name) → \($0.url)" }
-        lines += incoming.aliases.keys.sorted().map { "Alias: \($0) → \(incoming.aliases[$0, default: ""])" }
-        lines += incoming.hotkeys.map { "Hotkey: \(KeyCombo.display($0.hotKey)) → \($0.bundleIdentifier)" }
-        lines += incoming.notes.values.sorted().map { "Note: \($0.split(separator: "\n").first.map(String.init) ?? "Untitled")" }
-        lines += ["", "COMPATIBILITY & CONFLICTS"] + incoming.report
+        var lines = [String(localized: "READY TO ADD", comment: "Raycast import report section heading")]
+        lines += incoming.snippets.map { String(localized: "Snippet: \($0.name)", comment: "Raycast import report line") }
+        lines += incoming.quicklinks.map { String(localized: "Quicklink: \($0.name) → \($0.url)", comment: "Raycast import report line; the values are the quicklink name and URL") }
+        lines += incoming.aliases.keys.sorted().map { String(localized: "Alias: \($0) → \(incoming.aliases[$0, default: ""])", comment: "Raycast import report line; the values are the alias and its app") }
+        lines += incoming.hotkeys.map { String(localized: "Hotkey: \(KeyCombo.display($0.hotKey)) → \($0.bundleIdentifier)", comment: "Raycast import report line; the values are the key combination and the app's bundle identifier") }
+        lines += incoming.notes.values.sorted().map { note in
+            note.split(separator: "\n").first.map { String(localized: "Note: \(String($0))", comment: "Raycast import report line; the value is the note's first line") }
+                ?? String(localized: "Note: Untitled", comment: "Raycast import report line")
+        }
+        lines += ["", String(localized: "COMPATIBILITY & CONFLICTS", comment: "Raycast import report section heading")] + incoming.report
         details.string = lines.joined(separator: "\n\n")
         updateSelection()
     }
     @objc private func updateSelection() {
         let total = RaycastCategory.allCases.filter { choices[$0]?.state == .on }.reduce(0) { $0 + (plan?.count($1) ?? 0) }
         applyButton.isEnabled = total > 0
-        status.stringValue = total > 0 ? "\(total) items selected. Review the report before importing." : "No new items selected. Review skipped items in the report."
+        status.stringValue = total > 0 ? String(localized: "\(total) items selected. Review the report before importing.", comment: "Raycast import window status") : String(localized: "No new items selected. Review skipped items in the report.", comment: "Raycast import window status")
     }
     @objc private func applyImport() {
         guard let plan else { return }
@@ -167,7 +170,7 @@ final class RaycastImportWindowController: NSWindowController, NSWindowDelegate 
             self.plan = nil; archive = nil; password.stringValue = ""
             applyButton.isEnabled = false; unlock.isEnabled = false; password.isEnabled = false
             choices.values.forEach { $0.isEnabled = false }
-            reveal.isHidden = false; status.stringValue = "Import complete. Existing items were kept. Your recovery backup is available below."
+            reveal.isHidden = false; status.stringValue = String(localized: "Import complete. Existing items were kept. Your recovery backup is available below.", comment: "Raycast import window status")
             onChange()
         } catch { status.stringValue = error.localizedDescription }
     }
@@ -176,8 +179,8 @@ final class RaycastImportWindowController: NSWindowController, NSWindowDelegate 
         generation = UUID(); archive = nil; plan = nil; recovery = nil
         password.stringValue = ""; details.string = ""; reveal.isHidden = true
         progress.stopAnimation(nil); choose.isEnabled = true; unlock.isEnabled = false; applyButton.isEnabled = false; password.isEnabled = false
-        fileLabel.stringValue = "Choose a .rayconfig export from Raycast."
-        status.stringValue = "Your password is used locally and is not saved."
+        fileLabel.stringValue = String(localized: "Choose a .rayconfig export from Raycast.", comment: "Raycast import window file label")
+        status.stringValue = String(localized: "Your password is used locally and is not saved.", comment: "Raycast import window status")
         for category in RaycastCategory.allCases { choices[category]?.title = category.rawValue; choices[category]?.state = .off; choices[category]?.isEnabled = false }
     }
     func windowWillClose(_ notification: Notification) { reset() }

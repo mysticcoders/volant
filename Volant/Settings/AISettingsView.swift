@@ -52,7 +52,7 @@ struct AISettingsView: View {
                 config = try AIConfiguration.load(at: configURL); saved = config; loaded = true
                 if config.connection == .local { discovery.discover() }
                 if config.connection == .acp { agentDetection.detect() }
-            } catch { report("Couldn’t load AI settings. Fix or reload the configuration before editing.", failure: true) }
+            } catch { report(String(localized: "Couldn’t load AI settings. Fix or reload the configuration before editing."), failure: true) }
         }
         .onChange(of: config.http.endpoint) { _, _ in discovery.endpointChanged(config.http.endpoint); keyDraft = "" }
         .onDisappear { discovery.cancel(); agentDetection.cancel(); keyDraft = ""; if loaded && config != saved { persist() } }
@@ -78,9 +78,9 @@ struct AISettingsView: View {
     /// With several conversations running, the row counts them instead of naming one.
     private var conversationTitle: String {
         let running = conversations.live.count
-        if running > 1 { return "\(running) conversations running" }
-        if conversations.current.active { return "Current conversation: \(conversations.current.providerTitle)" }
-        return config.isConfigured ? "Ready" : "Finish the settings above to connect"
+        if running > 1 { return String(localized: "\(running) conversations running", comment: "AI Settings row title when several AI Chat conversations are open") }
+        if conversations.current.active { return String(localized: "Current conversation: \(conversations.current.providerTitle)", comment: "AI Settings row title; the value is the provider name") }
+        return config.isConfigured ? String(localized: "Ready", comment: "AI Settings row title when a conversation can be connected") : String(localized: "Finish the settings above to connect")
     }
 
     /// Apple's model has nothing to configure. What matters is whether it can run here at all, and
@@ -95,7 +95,7 @@ struct AISettingsView: View {
         } header: {
             Text("Apple Intelligence")
         } footer: {
-            SettingsFooter("Runs Apple's on-device model. No API key, no network request and no helper process; the conversation stays on this Mac.")
+            SettingsFooter(String(localized: "Runs Apple's on-device model. No API key, no network request and no helper process; the conversation stays on this Mac."))
         }
     }
 
@@ -132,7 +132,7 @@ struct AISettingsView: View {
                 Button("Check Again") { agentDetection.detect() }.controlSize(.small).font(.callout).disabled(agentDetection.checking)
             }
         } footer: {
-            SettingsFooter("Detection only looks for installed programs; your first conversation confirms you are signed in. Claude Code and Codex also need Volant’s ACP adapters and Node.js 22 or newer.")
+            SettingsFooter(String(localized: "Detection only looks for installed programs; your first conversation confirms you are signed in. Claude Code and Codex also need Volant’s ACP adapters and Node.js 22 or newer."))
         }
     }
 
@@ -145,7 +145,7 @@ struct AISettingsView: View {
                 }.labelsHidden().fixedSize()
             }.disabled(!loaded).onChange(of: config.provider) { _, _ in persist() }
             LabeledContent("Working folder") {
-                Text(config.project.isEmpty ? "General chat" : (config.project as NSString).lastPathComponent)
+                Text(config.project.isEmpty ? String(localized: "General chat", comment: "AI Settings working folder value when no folder is chosen") : (config.project as NSString).lastPathComponent)
                     .lineLimit(1).help(config.project).foregroundStyle(.secondary)
                 if !config.project.isEmpty { Button("Clear") { config.project = ""; persist() }.help("Use General Chat") }
                 Button("Choose Folder…") { chooseProject { url in if let url { config.project = url.path; persist() } } }.disabled(!loaded)
@@ -166,8 +166,9 @@ struct AISettingsView: View {
     }
     private var acpFooter: String {
         let accounts = ACPProvider(rawValue: config.provider).flatMap(ACPAccountProfile.environmentKey(for:)) != nil
-        return (accounts ? "Uses your agent’s existing CLI login, or the account chosen below;" : "Uses your agent’s existing CLI login;")
-            + " sign in with that provider first. A working folder is optional and is not a sandbox: your agent’s permissions still control tool access."
+        return accounts
+            ? String(localized: "Uses your agent’s existing CLI login, or the account chosen below; sign in with that provider first. A working folder is optional and is not a sandbox: your agent’s permissions still control tool access.")
+            : String(localized: "Uses your agent’s existing CLI login; sign in with that provider first. A working folder is optional and is not a sandbox: your agent’s permissions still control tool access.")
     }
     private var httpBinding: Binding<AIHTTPConfiguration> {
         Binding(get: { config.http }, set: { if config.connection == .local { config.localAPI = $0 } else { config.api = $0 } })
@@ -220,8 +221,8 @@ struct AISettingsView: View {
             Text(config.connection == .byok ? "Bring Your Own Key" : "Model")
         } footer: {
             SettingsFooter(config.connection == .byok
-                 ? "Uses your API account and its billing. Keys stay in macOS Keychain and are excluded from configuration backups. Text chat only: no filesystem, terminal or other agent tools."
-                 : "Text chat only: no filesystem, terminal or other agent tools.")
+                 ? String(localized: "Uses your API account and its billing. Keys stay in macOS Keychain and are excluded from configuration backups. Text chat only: no filesystem, terminal or other agent tools.")
+                 : String(localized: "Text chat only: no filesystem, terminal or other agent tools."))
         }
         .disabled(!loaded)
     }
@@ -248,7 +249,7 @@ struct AISettingsView: View {
                 Button("Scan Again") { discovery.discover() }.controlSize(.small).font(.callout)
             }
         } footer: {
-            SettingsFooter("Connects to a model server already running on this Mac. Detection lists available models; it does not load or download them.")
+            SettingsFooter(String(localized: "Connects to a model server already running on this Mac. Detection lists available models; it does not load or download them."))
         }
     }
     private func saveKey() {
@@ -256,30 +257,30 @@ struct AISettingsView: View {
             try config.http.validate(requireModel: false)
             guard persist() else { return }
             try credentials.write(config.http.credentialID, keyDraft)
-            keyDraft = ""; report("API key saved in Keychain", failure: false)
-        } catch { report((error as? LocalizedError)?.errorDescription ?? "Couldn’t save the API key.", failure: true) }
+            keyDraft = ""; report(String(localized: "API key saved in Keychain"), failure: false)
+        } catch { report((error as? LocalizedError)?.errorDescription ?? String(localized: "Couldn’t save the API key."), failure: true) }
     }
     private func removeKey() {
-        do { guard persist() else { return }; try credentials.write(config.http.credentialID, nil); keyDraft = ""; report("API key removed", failure: false) }
-        catch { report("Couldn’t remove the API key from Keychain.", failure: true) }
+        do { guard persist() else { return }; try credentials.write(config.http.credentialID, nil); keyDraft = ""; report(String(localized: "API key removed"), failure: false) }
+        catch { report(String(localized: "Couldn’t remove the API key from Keychain."), failure: true) }
     }
     private func testConnection() {
         do {
-            guard keyDraft.isEmpty else { report("Save your key before testing the connection.", failure: true); return }
+            guard keyDraft.isEmpty else { report(String(localized: "Save your key before testing the connection."), failure: true); return }
             guard persist() else { return }
             discovery.refresh(config.http, key: try credentials.read(config.http.credentialID) ?? "")
-        } catch { report("Couldn’t read the API key from Keychain.", failure: true) }
+        } catch { report(String(localized: "Couldn’t read the API key from Keychain."), failure: true) }
     }
     @discardableResult private func persist() -> Bool {
         guard loaded else { return false }
         do {
             guard try AIConfiguration.load(at: configURL) == saved else {
-                report("AI settings changed elsewhere. Reopen this section before editing again.", failure: true); return false
+                report(String(localized: "AI settings changed elsewhere. Reopen this section before editing again."), failure: true); return false
             }
             if config == saved { return true }
             try config.save(at: configURL, expected: saved); saved = config; onChange()
-            report("Settings saved", failure: false); return true
-        } catch { report("Couldn’t save AI settings. Your edits remain here; try again.", failure: true); return false }
+            report(String(localized: "Settings saved"), failure: false); return true
+        } catch { report(String(localized: "Couldn’t save AI settings. Your edits remain here; try again."), failure: true); return false }
     }
     private func report(_ text: String, failure: Bool) { feedback = text; failed = failure }
 }

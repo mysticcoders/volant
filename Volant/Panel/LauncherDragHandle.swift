@@ -12,11 +12,11 @@ final class WindowDragView: NSView {
     private var windowStart: NSPoint?
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
-        toolTip = "Drag to align Volant. Hold Option to move freely."
+        toolTip = String(localized: "Drag to align Volant. Hold Option to move freely.", comment: "Tooltip for the launcher's drag handle")
         setAccessibilityElement(true)
         setAccessibilityRole(.group)
         setAccessibilityLabel("Move Volant window")
-        setAccessibilityHelp("Drag to align the window to the screen's three-by-three placement grid. Hold Option to move freely. Its position is remembered.")
+        setAccessibilityHelp(String(localized: "Drag to align the window to the screen's three-by-three placement grid. Hold Option to move freely. Its position is remembered.", comment: "Accessibility help for the launcher's drag handle"))
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     override var mouseDownCanMoveWindow: Bool { false }

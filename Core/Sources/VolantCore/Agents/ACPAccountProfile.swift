@@ -43,8 +43,8 @@ public struct ACPAccountProfile: Codable, Equatable, Identifiable {
     /// `Refusal` for a provider without an account variable, or a folder that is not an absolute
     /// path or holds NUL. Whether the folder exists is the helper's check, made after this one.
     public static func launchVariables(provider: ACPProvider, directory: String) throws -> [String: String] {
-        guard let key = environmentKey(for: provider) else { throw Refusal("Only Claude Code and Codex can use an account folder.") }
-        guard directory.hasPrefix("/"), !directory.contains("\0") else { throw Refusal("An account folder must be a full path.") }
+        guard let key = environmentKey(for: provider) else { throw Refusal(String(localized: "Only Claude Code and Codex can use an account folder.", table: "Core", comment: "AI account settings error; Claude Code and Codex are product names")) }
+        guard directory.hasPrefix("/"), !directory.contains("\0") else { throw Refusal(String(localized: "An account folder must be a full path.", table: "Core", comment: "AI account settings error")) }
         return [key: directory]
     }
 
@@ -58,7 +58,7 @@ public struct ACPAccountProfile: Codable, Equatable, Identifiable {
     /// Throws a `Refusal` for an unknown provider or one without an account variable, an empty or
     /// overlong label, or a folder `launchVariables` refuses.
     public func validate() throws {
-        guard let known = ACPProvider(rawValue: provider) else { throw Refusal("Only Claude Code and Codex can use an account folder.") }
+        guard let known = ACPProvider(rawValue: provider) else { throw Refusal(String(localized: "Only Claude Code and Codex can use an account folder.", table: "Core", comment: "AI account settings error; Claude Code and Codex are product names")) }
         _ = try Self.launchVariables(provider: known, directory: directory)
         guard Self.trimmedLabel(label) != nil else { throw Refusal("Enter a label of 1 to \(Self.labelLimit) characters.") }
     }

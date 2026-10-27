@@ -149,8 +149,8 @@ struct DictationIndicatorText: View {
 
     private var title: String {
         switch model.phase {
-        case .hidden, .listening: return "Listening"
-        case .transcribing: return "Transcribing…"
+        case .hidden, .listening: return String(localized: "Listening", comment: "Dictation indicator title while recording")
+        case .transcribing: return String(localized: "Transcribing…", comment: "Dictation indicator title")
         case .result(let text, _): return text
         }
     }
@@ -169,9 +169,9 @@ struct DictationIndicatorText: View {
     /// The end of the stop hint, naming only the keys that are actually registered.
     static func keyHint(escape: Bool, return finishes: Bool) -> String {
         switch (finishes, escape) {
-        case (true, true): return ". Return finishes, Escape cancels."
-        case (true, false): return ". Return finishes."
-        case (false, true): return ". Escape cancels."
+        case (true, true): return String(localized: ". Return finishes, Escape cancels.", comment: "Follows the dictation stop hint, such as Release or press ⌥Space to stop; the leading period ends that hint")
+        case (true, false): return String(localized: ". Return finishes.", comment: "Follows the dictation stop hint, such as Release or press ⌥Space to stop; the leading period ends that hint")
+        case (false, true): return String(localized: ". Escape cancels.", comment: "Follows the dictation stop hint, such as Release or press ⌥Space to stop; the leading period ends that hint")
         case (false, false): return "."
         }
     }

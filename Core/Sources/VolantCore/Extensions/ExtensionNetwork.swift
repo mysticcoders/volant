@@ -215,11 +215,11 @@ public enum ExtensionNetworkError: Error, LocalizedError, Equatable {
     case malformedPlan, tooManyFetches, tooManyRounds, hostNotAllowed(String), malformedItems, hostsNotApproved([String])
     public var errorDescription: String? {
         switch self {
-        case .malformedPlan: return "Extension returned an invalid fetch plan."
+        case .malformedPlan: return String(localized: "Extension returned an invalid fetch plan.", table: "Core", comment: "Extension error")
         case .tooManyFetches: return "Extension asked for more than \(ExtensionNetwork.maximumFetches) URLs."
         case .tooManyRounds: return "Extension kept asking for more pages after \(ExtensionNetwork.maximumRounds) rounds."
         case .hostNotAllowed(let url): return "Extension asked for a URL it is not allowed to reach: \(url)"
-        case .malformedItems: return "Extension returned an invalid list."
+        case .malformedItems: return String(localized: "Extension returned an invalid list.", table: "Core", comment: "Extension error")
         case .hostsNotApproved(let hosts): return "Allow access to \(hosts.joined(separator: ", ")) to use this extension."
         }
     }

@@ -63,11 +63,11 @@ public struct RepositoryState: Codable, Equatable {
 
     /// "main · 3 changed · 2 ahead", leaving out whatever is zero.
     public var summary: String {
-        var parts = [branch ?? "detached"]
+        var parts = [branch ?? String(localized: "detached", table: "Core", comment: "Git repository summary: no branch is checked out")]
         if changed > 0 { parts.append("\(changed) changed") }
         if ahead > 0 { parts.append("\(ahead) ahead") }
         if behind > 0 { parts.append("\(behind) behind") }
-        if changed == 0 && ahead == 0 && behind == 0 { parts.append("clean") }
+        if changed == 0 && ahead == 0 && behind == 0 { parts.append(String(localized: "clean", table: "Core", comment: "Git repository summary: no changes")) }
         return parts.joined(separator: " · ")
     }
 }

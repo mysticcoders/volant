@@ -17,7 +17,7 @@ struct CryptoKeySection: View {
         } header: {
             Text("Crypto prices")
         } footer: {
-            SettingsFooter("Conversions include Bitcoin, Ether and other major coins without a key. A free CoinGecko Demo key is optional and gives steadier rate limits. Prices refresh at most every 10 minutes while you convert crypto, and nothing you type is sent. Data provided by CoinGecko.")
+            SettingsFooter(String(localized: "Conversions include Bitcoin, Ether and other major coins without a key. A free CoinGecko Demo key is optional and gives steadier rate limits. Prices refresh at most every 10 minutes while you convert crypto, and nothing you type is sent. Data provided by CoinGecko."))
         }
     }
 

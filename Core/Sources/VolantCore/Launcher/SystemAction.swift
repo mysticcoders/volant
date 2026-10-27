@@ -21,13 +21,13 @@ public enum SystemAction: String, CaseIterable, Identifiable, Hashable {
 
     public var detail: String {
         switch self {
-        case .lockScreen: return "Lock this Mac now"
-        case .sleep: return "Put this Mac to sleep"
-        case .sleepDisplays: return "Turn off the displays; locks if a password is required"
-        case .screenSaver: return "Start the screen saver"
-        case .restart: return "macOS asks before restarting"
-        case .shutDown: return "macOS asks before shutting down"
-        case .logOut: return "macOS asks before logging out"
+        case .lockScreen: return String(localized: "Lock this Mac now", table: "Core", comment: "System action description in the launcher")
+        case .sleep: return String(localized: "Put this Mac to sleep", table: "Core", comment: "System action description in the launcher")
+        case .sleepDisplays: return String(localized: "Turn off the displays; locks if a password is required", table: "Core", comment: "System action description in the launcher")
+        case .screenSaver: return String(localized: "Start the screen saver", table: "Core", comment: "System action description in the launcher")
+        case .restart: return String(localized: "macOS asks before restarting", table: "Core", comment: "System action description in the launcher")
+        case .shutDown: return String(localized: "macOS asks before shutting down", table: "Core", comment: "System action description in the launcher")
+        case .logOut: return String(localized: "macOS asks before logging out", table: "Core", comment: "System action description in the launcher")
         }
     }
 

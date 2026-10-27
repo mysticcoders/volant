@@ -79,7 +79,7 @@ public struct AgentSession: Codable, Identifiable, Hashable {
     }
     public let agentSession: SessionReference?
     public var machine: HerdrMachine? = nil
-    public var machineLabel: String { machine?.label ?? "Local" }
+    public var machineLabel: String { machine?.label ?? String(localized: "Local", table: "Core", comment: "Herdr machine name for this Mac") }
     public var stateChangeSequence: UInt64? = nil
     /// Whether Herdr reports this pane as the one in front, which counts as having looked at it.
     public var focused: Bool? = nil
@@ -87,7 +87,7 @@ public struct AgentSession: Codable, Identifiable, Hashable {
     public var id: String { (machine.map { "remote:" + $0.routeIdentity + ":" } ?? "local:") + terminalID + ":" + paneID }
     /// The folder name, taken from the path string alone. `URL(fileURLWithPath:)` checks the file
     /// system, and on the main thread a sandboxed lookup of every pane's folder stalled typing.
-    public var project: String { cwd.map { ($0 as NSString).lastPathComponent } ?? "Unknown project" }
+    public var project: String { cwd.map { ($0 as NSString).lastPathComponent } ?? String(localized: "Unknown project", table: "Core", comment: "Agent pane whose folder is unknown") }
     public var provider: String {
         switch agent {
         case "claude": return "Claude Code"
@@ -101,11 +101,11 @@ public struct AgentSession: Codable, Identifiable, Hashable {
     }
     public var status: String {
         switch agentStatus {
-        case "blocked": return "Needs attention"
-        case "working": return "Working"
-        case "done": return "Done"
-        case "idle": return "Idle"
-        default: return "Unknown"
+        case "blocked": return String(localized: "Needs attention", table: "Core", comment: "Agent pane status: the agent is waiting for the owner")
+        case "working": return String(localized: "Working", table: "Core", comment: "Agent pane status: the agent is busy")
+        case "done": return String(localized: "Done", table: "Core", comment: "Agent pane status: the agent finished")
+        case "idle": return String(localized: "Idle", table: "Core", comment: "Agent pane status: the agent is idle")
+        default: return String(localized: "Unknown", table: "Core", comment: "Agent pane status Herdr reported that Volant doesn't recognize")
         }
     }
     public var priority: Int { ["blocked": 0, "working": 1, "done": 2, "idle": 3][agentStatus] ?? 4 }

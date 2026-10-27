@@ -22,11 +22,11 @@ final class ClipboardStore {
         case unreadableEntries
         var message: String {
             switch self {
-            case .key(.missingHistoryKey): return "Clipboard history’s encryption key is missing. Existing history has been preserved. Restore access to its original Keychain key, then retry."
-            case .key(.invalidKey): return "Clipboard history’s encryption key couldn’t be read. Existing history has been preserved. Check Keychain access, then retry."
-            case .key: return "Clipboard history can’t access its encryption key. Unlock your login Keychain or allow access, then retry."
-            case .database: return "Clipboard history’s storage is unavailable. Check available disk space and access, then retry."
-            case .unreadableEntries: return "Some clipboard items couldn’t be read. Existing history has been preserved. Check access to its original Keychain key, then retry."
+            case .key(.missingHistoryKey): return String(localized: "Clipboard history’s encryption key is missing. Existing history has been preserved. Restore access to its original Keychain key, then retry.", comment: "Clipboard history error")
+            case .key(.invalidKey): return String(localized: "Clipboard history’s encryption key couldn’t be read. Existing history has been preserved. Check Keychain access, then retry.", comment: "Clipboard history error")
+            case .key: return String(localized: "Clipboard history can’t access its encryption key. Unlock your login Keychain or allow access, then retry.", comment: "Clipboard history error")
+            case .database: return String(localized: "Clipboard history’s storage is unavailable. Check available disk space and access, then retry.", comment: "Clipboard history error")
+            case .unreadableEntries: return String(localized: "Some clipboard items couldn’t be read. Existing history has been preserved. Check access to its original Keychain key, then retry.", comment: "Clipboard history error")
             }
         }
     }
@@ -35,8 +35,8 @@ final class ClipboardStore {
         var message: String? {
             switch self {
             case .ready: return nil
-            case .retrying: return "Retrying clipboard history…"
-            case .unavailable(let failure): return failure.message + " New copies aren’t being saved."
+            case .retrying: return String(localized: "Retrying clipboard history…", comment: "Clipboard history status")
+            case .unavailable(let failure): return String(localized: "\(failure.message) New copies aren’t being saved.", comment: "Clipboard history status; the value is the error that stopped it")
             }
         }
     }
@@ -187,7 +187,7 @@ final class ClipboardStore {
     private func invalidateSearch() { searchLock.withLock { searchEntries = nil } }
 
     private static func imageTitle(_ byteCount: Int) -> String {
-        "Image (\(ByteCountFormatter.string(fromByteCount: Int64(byteCount), countStyle: .file)))"
+        String(localized: "Image (\(ByteCountFormatter.string(fromByteCount: Int64(byteCount), countStyle: .file)))", comment: "Clipboard history title for a copied image; the value is its file size")
     }
 
     /// Bytes AES-GCM's combined form adds to a payload: a 12-byte nonce and a 16-byte tag.

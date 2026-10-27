@@ -24,6 +24,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 RESOURCES = ROOT / "Volant/Resources"
 CATALOGS = ("Localizable.xcstrings", "Core.xcstrings")
+# Languages besides English that ship; every string in use needs a value in each.
+SHIPPED_LANGUAGES = ("es",)
 
 
 def app_stringsdata(build_dir):
@@ -69,6 +71,28 @@ def prompt_problems():
     return problems
 
 
+def has_value(localization):
+    """Whether a catalog localization carries text, directly or in every plural or device variant."""
+    if localization.get("stringUnit", {}).get("value") is not None:
+        return True
+    variations = localization.get("variations", {})
+    return bool(variations) and all(has_value(v) for kind in variations.values() for v in kind.values())
+
+
+def missing_translations(catalog_dir):
+    """Strings in use that lack a value in a shipped language, by catalog and language."""
+    problems = []
+    for name in CATALOGS + ("InfoPlist.xcstrings",):
+        strings = json.loads((catalog_dir / name).read_text())["strings"]
+        for language in SHIPPED_LANGUAGES:
+            missing = sorted(key for key, entry in strings.items()
+                             if entry.get("shouldTranslate", True) and entry.get("extractionState") != "stale"
+                             and not has_value(entry.get("localizations", {}).get(language, {})))
+            if missing:
+                problems.append(f"{name}: {len(missing)} strings have no {language} text, e.g. {missing[:3]}")
+    return problems
+
+
 def changes(before, after):
     """Keys added, made stale or otherwise changed by a sync, for the check's message."""
     old, new = before["strings"], after["strings"]
@@ -83,7 +107,7 @@ def main():
     parser.add_argument("--check", action="store_true", help="report out-of-date catalogs without changing them")
     parser.add_argument("--build-dir", type=Path, default=ROOT / "build")
     args = parser.parse_args()
-    problems = prompt_problems()
+    problems = prompt_problems() + missing_translations(RESOURCES)
     if not args.check:
         sync(RESOURCES, args.build_dir)
         print("Updated " + " and ".join(CATALOGS))

@@ -17,8 +17,8 @@ final class AppUpdater: NSObject {
     func checkForUpdates() {
         guard let controller else {
             let alert = NSAlert()
-            alert.messageText = "Updates aren’t configured in this build"
-            alert.informativeText = "Use a release build with a signed update feed."
+            alert.messageText = String(localized: "Updates aren’t configured in this build", comment: "Alert title")
+            alert.informativeText = String(localized: "Use a release build with a signed update feed.", comment: "Alert message when updates aren't configured")
             alert.runModal()
             return
         }

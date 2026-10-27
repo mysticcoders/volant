@@ -262,18 +262,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         var failures: [String] = []
         if let combo = KeyCombo(parsing: config.summonHotKey) {
             if HotKeyCenter.shared.register(combo, handler: { [weak self] in self?.togglePanelFromHotkey() }) == nil {
-                failures.append("Show Volant shortcut unavailable: " + KeyCombo.display(config.summonHotKey))
+                failures.append(String(localized: "Show Volant shortcut unavailable: \(KeyCombo.display(config.summonHotKey))", comment: "Settings error when a global shortcut can't be registered; the value is the key combination"))
             }
         }
         if let combo = KeyCombo(parsing: config.notesHotKey) {
             if HotKeyCenter.shared.register(combo, handler: { [weak self] in self?.toggleNotes() }) == nil {
-                failures.append("Open Notes shortcut unavailable: " + KeyCombo.display(config.notesHotKey))
+                failures.append(String(localized: "Open Notes shortcut unavailable: \(KeyCombo.display(config.notesHotKey))", comment: "Settings error when a global shortcut can't be registered; the value is the key combination"))
             }
         }
         if let combo = KeyCombo(parsing: config.emojiHotKey) {
             if HotKeyCenter.shared.register(combo, handler: { [weak self] in
                 self?.panel.showEmoji()
-            }) == nil { failures.append("Search Emoji shortcut unavailable: " + KeyCombo.display(config.emojiHotKey)) }
+            }) == nil { failures.append(String(localized: "Search Emoji shortcut unavailable: \(KeyCombo.display(config.emojiHotKey))", comment: "Settings error when a global shortcut can't be registered; the value is the key combination")) }
         }
         if let combo = KeyCombo(parsing: config.talkHotKey) {
             // The only hotkey that also acts on release: hold it to dictate, let go to transcribe.
@@ -282,12 +282,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.beginDictationFromHotkey()
             }, onRelease: { [weak self] in
                 self?.endDictationFromHotkey()
-            }) == nil { failures.append("Dictate Text shortcut unavailable: " + KeyCombo.display(config.talkHotKey)) }
+            }) == nil { failures.append(String(localized: "Dictate Text shortcut unavailable: \(KeyCombo.display(config.talkHotKey))", comment: "Settings error when a global shortcut can't be registered; the value is the key combination")) }
         }
         for (value, action) in [(config.lockScreenHotKey, SystemAction.lockScreen), (config.sleepDisplaysHotKey, .sleepDisplays)] {
             guard let combo = KeyCombo(parsing: value) else { continue }
             if HotKeyCenter.shared.register(combo, handler: { [weak self] in self?.performSystemAction(action) }) == nil {
-                failures.append(action.title + " shortcut unavailable: " + KeyCombo.display(value))
+                failures.append(String(localized: "\(action.title) shortcut unavailable: \(KeyCombo.display(value))", comment: "Settings error when a global shortcut can't be registered; the values are the command name and the key combination"))
             }
         }
         failures += AppHotKeys.register(config.appHotKeys) { [weak self] message in
@@ -303,18 +303,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let item = NSMenuItem()
         bar.addItem(item)
         let menu = NSMenu(title: "Volant")
-        menu.addItem(withTitle: "Agents…", action: #selector(showAgents), keyEquivalent: "").target = self
-        menu.addItem(withTitle: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "").target = self
-        let settings = menu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
+        menu.addItem(withTitle: String(localized: "Agents…", comment: "Application menu item"), action: #selector(showAgents), keyEquivalent: "").target = self
+        menu.addItem(withTitle: String(localized: "Check for Updates…", comment: "Application menu item"), action: #selector(checkForUpdates), keyEquivalent: "").target = self
+        let settings = menu.addItem(withTitle: String(localized: "Settings…", comment: "Application menu item"), action: #selector(showSettings), keyEquivalent: ",")
         settings.target = self
         menu.addItem(.separator())
-        menu.addItem(withTitle: "Quit Volant", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q").target = NSApp
+        menu.addItem(withTitle: String(localized: "Quit Volant", comment: "Application menu item"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q").target = NSApp
         item.submenu = menu
         // Preserve standard text-editing shortcuts in the native notes editor.
         let editItem = NSMenuItem()
         bar.addItem(editItem)
-        let edit = NSMenu(title: "Edit")
-        for (title, selector, key) in [("Undo", "undo:", "z"), ("Cut", "cut:", "x"), ("Copy", "copy:", "c"), ("Paste", "paste:", "v"), ("Select All", "selectAll:", "a")] {
+        let edit = NSMenu(title: String(localized: "Edit", comment: "Edit menu title in the menu bar"))
+        for (title, selector, key) in [(String(localized: "Undo", comment: "Edit menu item"), "undo:", "z"), (String(localized: "Cut", comment: "Edit menu item"), "cut:", "x"), (String(localized: "Copy", comment: "Edit menu item"), "copy:", "c"), (String(localized: "Paste", comment: "Edit menu item"), "paste:", "v"), (String(localized: "Select All", comment: "Edit menu item"), "selectAll:", "a")] {
             edit.addItem(withTitle: title, action: NSSelectorFromString(selector), keyEquivalent: key)
         }
         editItem.submenu = edit
@@ -350,7 +350,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         dictationPressedAt = Date()
         _ = dictationIndicator
-        model.toggleDictation(stopHint: "Release or press \(KeyCombo.display(config.talkHotKey)) to stop", surface: .indicator)
+        model.toggleDictation(stopHint: String(localized: "Release or press \(KeyCombo.display(config.talkHotKey)) to stop", comment: "Dictation indicator hint; the value is the dictation key combination"), surface: .indicator)
     }
 
     /// Holds unmodified Escape as a Carbon hotkey only while the indicator is listening, so Escape
@@ -401,7 +401,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let loaded = Preferences.load()
         if let error = Preferences.loadError {
             let alert = NSAlert()
-            alert.messageText = "Configuration not applied"
+            alert.messageText = String(localized: "Configuration not applied", comment: "Alert title when config.json couldn't be loaded")
             alert.informativeText = error
             if let window = settingsPanel.window { settingsPanel.showWindow(nil); alert.beginSheetModal(for: window) }
             return

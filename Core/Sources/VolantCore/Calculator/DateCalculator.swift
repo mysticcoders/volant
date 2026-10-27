@@ -268,12 +268,12 @@ public enum DateCalculator {
         }
         guard let year, year >= 1 else { return nil }
         if isLeap(year) {
-            return CalculationAnswer(input: input, inputDetail: nil, result: "Yes", resultDetail: "\(year) has 366 days",
+            return CalculationAnswer(input: input, inputDetail: nil, result: String(localized: "Yes", table: "Core", comment: "Calculator answer to whether a year is a leap year"), resultDetail: "\(year) has 366 days",
                                      copyText: "\(year) is a leap year")
         }
         var next = year + 1
         while !isLeap(next) { next += 1 }
-        return CalculationAnswer(input: input, inputDetail: nil, result: "No", resultDetail: "The next leap year is \(next)",
+        return CalculationAnswer(input: input, inputDetail: nil, result: String(localized: "No", table: "Core", comment: "Calculator answer to whether a year is a leap year"), resultDetail: "The next leap year is \(next)",
                                  copyText: "\(year) is not a leap year")
     }
 
@@ -367,13 +367,13 @@ public enum DateCalculator {
     private static func unix(_ words: [String], input: String, _ c: Context) -> CalculationAnswer? {
         if words == ["unix", "now"] || words == ["now", "in", "unix"] || words == ["unix", "time"] {
             let seconds = String(Int(c.now.timeIntervalSince1970))
-            return CalculationAnswer(input: input, inputDetail: nil, result: seconds, resultDetail: "Seconds since 1970", copyText: seconds)
+            return CalculationAnswer(input: input, inputDetail: nil, result: seconds, resultDetail: String(localized: "Seconds since 1970", table: "Core", comment: "Calculator Unix time label"), copyText: seconds)
         }
         guard words.count == 2, words.contains("unix") || words.contains("epoch"),
               let digits = words.first(where: { $0 != "unix" && $0 != "epoch" }),
               digits.allSatisfy(\.isNumber), (9...13).contains(digits.count), let value = Double(digits) else { return nil }
         let date = Date(timeIntervalSince1970: digits.count == 13 ? value / 1000 : value)
-        return moment(date, input: input, inputDetail: digits.count == 13 ? "Milliseconds" : "Seconds", c)
+        return moment(date, input: input, inputDetail: digits.count == 13 ? String(localized: "Milliseconds", table: "Core", comment: "Calculator Unix time label: the input was in milliseconds") : String(localized: "Seconds", table: "Core", comment: "Calculator Unix time label: the input was in seconds"), c)
     }
 
     /// A moment in local time: the clock, tagged with its date, copied with both.
@@ -710,7 +710,7 @@ public enum DateCalculator {
 
     /// Names which holidays a workday answer skipped, or that only weekends were.
     private static func holidayNote(_ c: Context) -> String {
-        PublicHolidays.names[c.locale.region?.identifier ?? ""].map { "Skips \($0) holidays" } ?? "Weekends only"
+        PublicHolidays.names[c.locale.region?.identifier ?? ""].map { "Skips \($0) holidays" } ?? String(localized: "Weekends only", table: "Core", comment: "Calculator workday answer note: only weekends were skipped")
     }
 
     /// The `n`th given weekday (Sunday is 1) of a month; past the month's end for a missing fifth.
