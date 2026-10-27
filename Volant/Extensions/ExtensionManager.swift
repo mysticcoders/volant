@@ -62,6 +62,8 @@ final class ExtensionManager {
     private var itemsRun: ItemsRun?
     /// Stops the extension fetches in flight when a list run is cancelled; tests replace it.
     var cancelFetches: () -> Void = ExtensionFetcher.cancelReads
+    /// Where host-observed activity goes; tests use their own.
+    var activity: ExtensionActivityRecorder = .shared
     private static var running = false
     private static weak var activeExecution: ExtensionExecution?
     /// `roots` lists extension folders to load instead of the bundled example and the Extensions folder.
@@ -189,16 +191,52 @@ final class ExtensionManager {
 
     /// The clipboard text this run may send, read once as it starts: only for an extension that declares
     /// the permission and is enabled and not blocked, otherwise nil without reading the clipboard.
-    private func runClipboard(_ ext: InstalledExtension) -> String? {
-        guard ext.manifest.wantsClipboard, !isBlocked(ext), ExtensionApproval.enabled(ext.manifest, at: configURL) else { return nil }
-        return readClipboard()
+    private func runClipboard(_ ext: InstalledExtension, invocation: Int) -> String? {
+        guard ext.manifest.wantsClipboard else { return nil }
+        guard !isBlocked(ext), ExtensionApproval.enabled(ext.manifest, at: configURL) else {
+            record(ext, invocation, .clipboardRead, .denied); return nil
+        }
+        let text = readClipboard()
+        record(ext, invocation, .clipboardRead, .completed, detail: text == nil ? "empty" : nil)
+        return text
+    }
+
+    /// Records one host-observed event of this extension's run `invocation`, with its duration when
+    /// `start` is given.
+    private func record(_ ext: InstalledExtension, _ invocation: Int, _ operation: ExtensionActivity.Operation, _ outcome: ExtensionActivity.Outcome,
+                        detail: String? = nil, since start: Date? = nil) {
+        activity.record(ExtensionActivity(extensionID: ext.id, version: ext.manifest.version, codeHash: ext.manifest.sha256 ?? "",
+                                          invocation: invocation, time: Date(), operation: operation, outcome: outcome, detail: detail,
+                                          duration: start.map { Date().timeIntervalSince($0) }))
+    }
+
+    /// Records a refused URL or host from a failed run as a denied request, naming only the host.
+    private func recordRefusal(_ error: Error, _ ext: InstalledExtension, _ invocation: Int, _ operation: ExtensionActivity.Operation) {
+        switch error as? ExtensionNetworkError {
+        case .hostsNotApproved(let hosts)?: hosts.forEach { record(ext, invocation, operation, .denied, detail: $0) }
+        case .hostNotAllowed(let url)?: record(ext, invocation, operation, .denied, detail: ExtensionActivity.host(of: url))
+        default: break
+        }
+    }
+
+    /// Records each response of one round of requests by host: completed with any HTTP status, failed
+    /// when nothing came back, cancelled when the run was.
+    private func recordResponses(_ responses: [ExtensionNetwork.Response], _ ext: InstalledExtension, _ invocation: Int,
+                                 _ operation: ExtensionActivity.Operation, cancelled: Bool, since start: Date) {
+        for response in responses {
+            record(ext, invocation, operation, cancelled ? .cancelled : (response.status == 0 ? .failed : .completed),
+                   detail: ExtensionActivity.host(of: response.url), since: start)
+        }
     }
 
     /// The location this run may send: looked up only for an extension that declares the permission and
     /// is allowed it, otherwise nil without asking Location Services.
-    private func runLocation(_ ext: InstalledExtension, _ completion: @escaping (ExtensionLocation?) -> Void) {
+    private func runLocation(_ ext: InstalledExtension, invocation: Int, _ completion: @escaping (ExtensionLocation?) -> Void) {
         guard locationApproved(ext) else { completion(nil); return }
-        locate(completion)
+        locate { [self] location in
+            record(ext, invocation, .location, location == nil ? .failed : .completed)
+            completion(location)
+        }
     }
 
     /// Declared tokens the owner has not given yet, or that the Keychain cannot read now.
@@ -401,14 +439,17 @@ final class ExtensionManager {
         guard !missingLocation(ext) else { completion(.failure(ExtensionError.locationNotAllowed)); return }
         let run = ItemsRun()
         itemsRun = run
+        let sequence = beginRun(ext)
         let finish: (Result<[ExtensionItem], Error>) -> Void = { [weak self] result in
             if self?.itemsRun === run { self?.itemsRun = nil }
+            if case .failure(let error) = result { self?.recordRefusal(error, ext, sequence, .fetch) }
             completion(run.cancelled ? .failure(ExtensionError.cancelled) : result)
         }
-        let clipboard = runClipboard(ext)
-        runLocation(ext) { [self] location in
+        let clipboard = runClipboard(ext, invocation: sequence)
+        runLocation(ext, invocation: sequence) { [self] location in
             guard !run.cancelled else { finish(.failure(ExtensionError.cancelled)); return }
-            runItems(ext, query: query, filter: filter, now: now, location: location, clipboard: clipboard, run: run, fetch: fetch, completion: finish)
+            runItems(ext, query: query, filter: filter, now: now, location: location, clipboard: clipboard, run: run, sequence: sequence,
+                     fetch: fetch, completion: finish)
         }
     }
 
@@ -426,16 +467,18 @@ final class ExtensionManager {
     }
 
     /// One list run with the location this run may send, which plan and every render receive.
-    private func runItems(_ ext: InstalledExtension, query: String, filter: String?, now: Date, location: ExtensionLocation?, clipboard: String?, run: ItemsRun,
+    private func runItems(_ ext: InstalledExtension, query: String, filter: String?, now: Date, location: ExtensionLocation?, clipboard: String?,
+                          run: ItemsRun, sequence: Int,
                           fetch: @escaping ([ExtensionRequest], [String], @escaping ([ExtensionNetwork.Response]) -> Void) -> Void,
                           completion: @escaping (Result<[ExtensionItem], Error>) -> Void) {
         let hosts = ext.manifest.declaredHosts
-        let sequence = beginRun(ext)
         let storage = ext.manifest.usesStorage ? dataStore.load(ext.id) : nil
         let preferences = preferenceValues(ext)
         func approvedHosts() -> Set<String> { Set(hosts).intersection(ExtensionHostApprovals.approved(at: configURL)) }
         func fetchRound(_ planned: ExtensionNetwork.Fetch, round: Int) {
+            let start = Date()
             fetch(planned.urls.map { self.authorized(ExtensionRequest(url: $0), for: ext) }, Array(approvedHosts()).sorted()) { responses in
+                self.recordResponses(responses, ext, sequence, .fetch, cancelled: run.cancelled, since: start)
                 guard !run.cancelled else { completion(.failure(ExtensionError.cancelled)); return }
                 let missing = self.missingHosts(ext)
                 guard missing.isEmpty else { completion(.failure(ExtensionNetworkError.hostsNotApproved(missing))); return }
@@ -447,7 +490,7 @@ final class ExtensionManager {
                 let input = try ExtensionNetwork.request(phase: "render", query: query, now: now, responses: hosts.isEmpty ? nil : responses,
                                                          storage: storage, state: state, location: location, filter: filter,
                                                          preferences: preferences, clipboard: clipboard)
-                invoke(ext, input, run: run) { [self] result in
+                invoke(ext, input, phase: "render", invocation: sequence, run: run) { [self] result in
                     do {
                         let output = try result.get()
                         if let reply = try? ExtensionNetwork.reply(from: output, appLinks: Set(ext.manifest.declaredAppLinks)) {
@@ -473,7 +516,7 @@ final class ExtensionManager {
         guard secrets.isEmpty else { completion(.failure(ExtensionError.secretsMissing(secrets.map(\.title)))); return }
         do {
             invoke(ext, try ExtensionNetwork.request(phase: "plan", query: query, now: now, storage: storage, location: location, filter: filter,
-                                                     preferences: preferences, clipboard: clipboard), run: run) { [self] result in
+                                                     preferences: preferences, clipboard: clipboard), phase: "plan", invocation: sequence, run: run) { [self] result in
                 do {
                     let output = try result.get()
                     if let reply = try? ExtensionNetwork.reply(from: output, appLinks: Set(ext.manifest.declaredAppLinks)), let items = reply.items {
@@ -500,11 +543,15 @@ final class ExtensionManager {
     /// responses and that state. A reply's `storage` is saved under the same rules as a list run.
     func runAction(_ ext: InstalledExtension, item: ExtensionItem, action: String?, query: String, filter: String? = nil, now: Date = Date(),
                    fetch: @escaping ([ExtensionRequest], [String], @escaping ([ExtensionNetwork.Response]) -> Void) -> Void = ExtensionFetcher.fetch,
-                   completion: @escaping (Result<ActionOutcome, Error>) -> Void) {
+                   completion completed: @escaping (Result<ActionOutcome, Error>) -> Void) {
         let sequence = beginRun(ext)
+        let completion: (Result<ActionOutcome, Error>) -> Void = { [weak self] result in
+            if case .failure(let error) = result { self?.recordRefusal(error, ext, sequence, .post) }
+            completed(result)
+        }
         let storage = ext.manifest.usesStorage ? dataStore.load(ext.id) : nil
         let preferences = preferenceValues(ext)
-        let clipboard = runClipboard(ext)
+        let clipboard = runClipboard(ext, invocation: sequence)
         func outcome(_ output: String) throws -> ActionOutcome {
             let reply = try ExtensionNetwork.reply(from: output, appLinks: Set(ext.manifest.declaredAppLinks))
             try save(reply.storage, for: ext, run: sequence)
@@ -514,7 +561,7 @@ final class ExtensionManager {
             let input = try ExtensionNetwork.request(phase: action == nil ? "opened" : "action", query: query, now: now,
                                                      storage: storage, action: action, item: item, filter: filter, preferences: preferences,
                                                      clipboard: clipboard)
-            invoke(ext, input) { [self] result in
+            invoke(ext, input, phase: action == nil ? "opened" : "action", invocation: sequence) { [self] result in
                 do {
                     let output = try result.get()
                     if let done = try? outcome(output) { completion(.success(done)); return }
@@ -525,12 +572,14 @@ final class ExtensionManager {
                     guard missing.isEmpty else { throw ExtensionNetworkError.hostsNotApproved(missing) }
                     let secrets = missingSecrets(ext)
                     guard secrets.isEmpty else { throw ExtensionError.secretsMissing(secrets.map(\.title)) }
+                    let start = Date()
                     fetch(submitted.requests.map { self.authorized($0, for: ext) }, Array(approved).sorted()) { responses in
+                        self.recordResponses(responses, ext, sequence, .post, cancelled: false, since: start)
                         do {
                             let render = try ExtensionNetwork.request(phase: "render", query: query, now: now, responses: responses,
                                                                       storage: storage, action: action, item: item, state: submitted.state,
                                                                       filter: filter, preferences: preferences, clipboard: clipboard)
-                            self.invoke(ext, render) { result in completion(result.flatMap { output in Result { try outcome(output) } }) }
+                            self.invoke(ext, render, phase: "render", invocation: sequence) { result in completion(result.flatMap { output in Result { try outcome(output) } }) }
                         } catch { completion(.failure(error)) }
                     }
                 } catch { completion(.failure(error)) }
@@ -549,13 +598,15 @@ final class ExtensionManager {
     /// `{"text", "notice", "storage"}`, whose storage is saved under the same rules as a list run. Any other
     /// gets the typed text as it is, and its whole output is the text.
     func runText(_ ext: InstalledExtension, input: String, now: Date = Date(), completion: @escaping (Result<TextOutcome, Error>) -> Void) {
-        guard ext.manifest.takesJSON else { invoke(ext, input) { completion($0.map { TextOutcome(text: $0) }) }; return }
         let sequence = beginRun(ext)
+        guard ext.manifest.takesJSON else {
+            invoke(ext, input, phase: "run", invocation: sequence) { completion($0.map { TextOutcome(text: $0) }) }; return
+        }
         do {
             let request = try ExtensionNetwork.request(phase: "run", query: input, now: now,
                                                        storage: ext.manifest.usesStorage ? dataStore.load(ext.id) : nil,
-                                                       preferences: preferenceValues(ext), clipboard: runClipboard(ext))
-            invoke(ext, request) { [self] result in
+                                                       preferences: preferenceValues(ext), clipboard: runClipboard(ext, invocation: sequence))
+            invoke(ext, request, phase: "run", invocation: sequence) { [self] result in
                 completion(result.flatMap { output in
                     Result {
                         guard let reply = try? ExtensionNetwork.reply(from: output) else {
@@ -589,20 +640,47 @@ final class ExtensionManager {
     private func save(_ value: JSONValue?, for ext: InstalledExtension, run sequence: Int) throws {
         guard let value, ext.manifest.usesStorage else { return }
         guard !isBlocked(ext), ExtensionApproval.enabled(ext.manifest, at: configURL),
-              (try? readManifest(ext.directory)) == ext.manifest, sequence >= Self.lastSaved[ext.id, default: 0] else { return }
-        try dataStore.save(value, for: ext.id)
+              (try? readManifest(ext.directory)) == ext.manifest, sequence >= Self.lastSaved[ext.id, default: 0] else {
+            record(ext, sequence, .storageSave, .denied); return
+        }
+        do { try dataStore.save(value, for: ext.id) } catch { record(ext, sequence, .storageSave, .failed); throw error }
+        record(ext, sequence, .storageSave, .completed)
         Self.lastSaved[ext.id] = sequence
     }
 
     /// Runs the module through the extension helper; tests replace it to return fixed output. A list run
-    /// cancelled before the call starts or while it runs gets `ExtensionError.cancelled` instead.
-    private func invoke(_ ext: InstalledExtension, _ input: String, run itemsRun: ItemsRun? = nil, completion: @escaping (Result<String, Error>) -> Void) {
-        guard itemsRun?.cancelled != true else { completion(.failure(ExtensionError.cancelled)); return }
-        let finish: (Result<String, Error>) -> Void = { result in completion(itemsRun?.cancelled == true ? .failure(ExtensionError.cancelled) : result) }
-        if let invokeOverride { invokeOverride(ext, input, finish) } else { run(ext, input: input, completion: finish) }
+    /// cancelled before the call starts or while it runs gets `ExtensionError.cancelled` instead. Each call
+    /// is recorded as module activity named by its `phase`.
+    private func invoke(_ ext: InstalledExtension, _ input: String, phase: String, invocation: Int, run itemsRun: ItemsRun? = nil,
+                        completion: @escaping (Result<String, Error>) -> Void) {
+        guard itemsRun?.cancelled != true else {
+            record(ext, invocation, .module, .cancelled, detail: phase)
+            completion(.failure(ExtensionError.cancelled)); return
+        }
+        let start = Date()
+        let finish: (Result<String, Error>) -> Void = { [weak self] result in
+            let result = itemsRun?.cancelled == true ? .failure(ExtensionError.cancelled) : result
+            let outcome = Self.outcome(of: result, duration: Date().timeIntervalSince(start), timeout: ext.manifest.timeoutSeconds ?? 2)
+            self?.record(ext, invocation, .module, outcome, detail: phase, since: start)
+            completion(result)
+        }
+        if let invokeOverride { invokeOverride(ext, input, finish) } else { run(ext, input: input, invocation: invocation, completion: finish) }
     }
 
-    func run(_ ext: InstalledExtension, input: String, completion: @escaping (Result<String, Error>) -> Void) {
+    /// How a module call ended, for activity. A helper that stopped once its time limit had passed was
+    /// stopped by its watchdog, so it timed out.
+    static func outcome(of result: Result<String, Error>, duration: TimeInterval, timeout: Double) -> ExtensionActivity.Outcome {
+        guard case .failure(let error) = result else { return .completed }
+        switch error as? ExtensionError {
+        case .cancelled?: return .cancelled
+        case .disabled?, .communityDisabled?, .revoked?: return .denied
+        case .timedOut?: return .timedOut
+        case .stopped?: return duration >= timeout ? .timedOut : .failed
+        default: return .failed
+        }
+    }
+
+    func run(_ ext: InstalledExtension, input: String, invocation: Int = 0, completion: @escaping (Result<String, Error>) -> Void) {
         do {
             guard !isBlocked(ext) else { throw ExtensionError.communityDisabled }
             guard ExtensionApproval.enabled(ext.manifest, at: configURL) else { throw ExtensionError.disabled }
@@ -611,7 +689,11 @@ final class ExtensionManager {
             guard input.utf8.count <= ExtensionLimits.maximumInputBytes else { throw ExtensionError.runtime(String(localized: "Extension input exceeds \(ExtensionLimits.inputDescription).", comment: "Extension error; the value is a size such as 1 MiB")) }
             let module = try verifiedModule(ext)
             Self.running = true
-            let execution = ExtensionExecution(manifest: ext.manifest, configURL: configURL, isCommunity: ext.isCommunity, onLog: onLog) { [self] result in
+            let callback: (ExtensionActivity.Operation, ExtensionActivity.Outcome) -> Void = { [weak self] operation, outcome in
+                self?.record(ext, invocation, operation, outcome)
+            }
+            let execution = ExtensionExecution(manifest: ext.manifest, configURL: configURL, isCommunity: ext.isCommunity, onLog: onLog,
+                                               onActivity: callback) { [self] result in
                 Self.running = false; Self.activeExecution = nil; self.execution = nil; completion(result)
             }
             self.execution = execution
@@ -620,7 +702,7 @@ final class ExtensionManager {
         } catch { completion(.failure(error)) }
     }
     enum ExtensionError: Error, LocalizedError {
-        case missingModule, hashMismatch, changed, disabled, communityDisabled, secretsMissing([String]), locationNotAllowed, revoked(String, String?), cancelled, runtime(String)
+        case missingModule, hashMismatch, changed, disabled, communityDisabled, secretsMissing([String]), locationNotAllowed, revoked(String, String?), cancelled, timedOut, stopped, runtime(String)
         var errorDescription: String? {
             switch self {
             case .missingModule: return String(localized: "Extension module is missing, too large, or outside its folder.", comment: "Extension error")
@@ -635,6 +717,8 @@ final class ExtensionManager {
             case .revoked(let name, let reason):
                 if let reason { return String(localized: "\(name) was withdrawn from the extension catalog: \(reason) Update or uninstall it.", comment: "Extension error; the values are the extension name and the catalog's reason") }
                 return String(localized: "\(name) was withdrawn from the extension catalog. Update or uninstall it.", comment: "Extension error; the value is the extension name")
+            case .timedOut: return String(localized: "Extension exceeded its time limit.", comment: "Extension error")
+            case .stopped: return String(localized: "Extension stopped or exceeded its time limit.", comment: "Extension error")
             case .cancelled: return String(localized: "The extension stopped for a newer search.", comment: "Extension error after a newer query replaced its run")
             case .runtime(let message): return message
             }
@@ -653,11 +737,14 @@ private final class ExtensionExecution: NSObject, VolantCapabilityClientProtocol
     let configURL: URL
     let isCommunity: Bool
     private let onLog: (String) -> Void
+    private let onActivity: (ExtensionActivity.Operation, ExtensionActivity.Outcome) -> Void
     private var completion: ((Result<String, Error>) -> Void)?
     private var connection: NSXPCConnection?
     private var deadline: DispatchWorkItem?
-    init(manifest: ExtensionManifest, configURL: URL, isCommunity: Bool, onLog: @escaping (String) -> Void, completion: @escaping (Result<String, Error>) -> Void) {
-        self.manifest = manifest; self.configURL = configURL; self.isCommunity = isCommunity; self.onLog = onLog; self.completion = completion
+    init(manifest: ExtensionManifest, configURL: URL, isCommunity: Bool, onLog: @escaping (String) -> Void,
+         onActivity: @escaping (ExtensionActivity.Operation, ExtensionActivity.Outcome) -> Void, completion: @escaping (Result<String, Error>) -> Void) {
+        self.manifest = manifest; self.configURL = configURL; self.isCommunity = isCommunity; self.onLog = onLog; self.onActivity = onActivity
+        self.completion = completion
     }
     private var approved: Bool {
         (!isCommunity || ExtensionApproval.communityAllowed(at: configURL)) && ExtensionApproval.enabled(manifest, at: configURL)
@@ -667,13 +754,13 @@ private final class ExtensionExecution: NSObject, VolantCapabilityClientProtocol
     private var submitted = false
     func start(module: Data, input: String) {
         // launchd normally throttles rapid service restarts for up to ten seconds.
-        armDeadline(15, message: String(localized: "Extension service could not start. Try again.", comment: "Extension error"))
+        armDeadline(15, error: .runtime(String(localized: "Extension service could not start. Try again.", comment: "Extension error")))
         connect(module: module, input: input)
     }
-    private func armDeadline(_ seconds: Double, message: String) {
+    private func armDeadline(_ seconds: Double, error: ExtensionManager.ExtensionError) {
         deadline?.cancel()
         let deadline = DispatchWorkItem { [weak self] in
-            self?.finish(.failure(ExtensionManager.ExtensionError.runtime(message)))
+            self?.finish(.failure(error))
         }
         self.deadline = deadline
         DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: deadline)
@@ -695,7 +782,7 @@ private final class ExtensionExecution: NSObject, VolantCapabilityClientProtocol
                 self.clearConnection()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in self?.connect(module: module, input: input) }
             } else {
-                self.finish(.failure(ExtensionManager.ExtensionError.runtime(String(localized: "Extension stopped or exceeded its time limit.", comment: "Extension error"))))
+                self.finish(.failure(ExtensionManager.ExtensionError.stopped))
             }
         } }
         connection.interruptionHandler = failure; connection.invalidationHandler = failure
@@ -705,7 +792,7 @@ private final class ExtensionExecution: NSObject, VolantCapabilityClientProtocol
             guard let self, self.completion != nil, self.attempt == token else { return }
             guard self.approved else { self.finish(.failure(ExtensionManager.ExtensionError.disabled)); return }
             self.submitted = true
-            self.armDeadline((self.manifest.timeoutSeconds ?? 2) + 1, message: String(localized: "Extension exceeded its time limit.", comment: "Extension error"))
+            self.armDeadline((self.manifest.timeoutSeconds ?? 2) + 1, error: .timedOut)
             let reply: (String?, String?) -> Void = { [weak self] output, error in
                 DispatchQueue.main.async {
                     guard let self, self.attempt == token else { return }
@@ -736,16 +823,25 @@ private final class ExtensionExecution: NSObject, VolantCapabilityClientProtocol
     private func permitted(_ capability: String) -> Bool {
         completion != nil && manifest.capabilities.contains(capability) && approved
     }
+    /// Each callback is recorded as activity: denied after the run ended or without the capability, failed
+    /// when oversized, completed otherwise. The message and text themselves are never recorded.
     func log(_ message: String) {
-        guard message.utf8.count <= 4096 else { return }
-        DispatchQueue.main.async { if self.permitted("log") { self.onLog(message) } }
+        let fits = message.utf8.count <= 4096
+        DispatchQueue.main.async {
+            guard self.permitted("log") else { self.onActivity(.log, .denied); return }
+            guard fits else { self.onActivity(.log, .failed); return }
+            self.onLog(message)
+            self.onActivity(.log, .completed)
+        }
     }
     func clipboardWrite(_ text: String) {
-        guard text.utf8.count <= 65_536 else { return }
+        let fits = text.utf8.count <= 65_536
         DispatchQueue.main.async {
-            guard self.permitted("clipboard.write") else { return }
+            guard self.permitted("clipboard.write") else { self.onActivity(.clipboardWrite, .denied); return }
+            guard fits else { self.onActivity(.clipboardWrite, .failed); return }
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(text, forType: .string)
+            self.onActivity(.clipboardWrite, .completed)
         }
     }
 }
