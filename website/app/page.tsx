@@ -717,8 +717,8 @@ export default function Home() {
             Version {appVersion} · macOS 15+ · Apple silicon &amp; Intel
           </span>
           <p className="download-scope">
-            New in 0.3.16: type <code>servers</code> to see the local dev
-            servers you&rsquo;re running and open one. See{' '}
+            New in 0.3.20: Volant in 13 more languages, all in beta, with a
+            language setting. See{' '}
             <a href={`${repositoryURL}/releases`}>every release</a>.
           </p>
         </section>
