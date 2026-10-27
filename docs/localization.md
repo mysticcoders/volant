@@ -1,8 +1,10 @@
 # Localization
 
-Tracking issue: #294. Volant is written in English. Spanish (`es`, neutral wording for Spain and
-Latin America) is the first translation. The owner chose to ship it as a beta drafted without a
-native speaker's review, on October 26, 2026.
+Tracking issue: #294. Volant is written in English. It ships four translations, all drafted without
+a native speaker's review and labeled as betas, by the owner's choice: Spanish (`es`, neutral
+wording for Spain and Latin America, October 26, 2026), then German (`de`), French (`fr`) and
+Italian (`it`), October 27, 2026. Their style follows Apple's own macOS in each language: Spanish
+*tú*, German *du*, French *vous*, Italian *tu*, with Apple's terms for Settings and System Settings.
 
 ## Unreviewed translations
 
@@ -14,7 +16,7 @@ native speaker's review, on October 26, 2026.
 - A reviewer marks strings `translated` as they check them. Once every string in a language is
   reviewed, the beta labels can go.
 - Never ship a language whose strings are missing from the catalog: `tools/strings.py --check`
-  fails when a key has no value in a shipped language.
+  fails when a key has no value in a shipped language (`SHIPPED_LANGUAGES`).
 
 ## Where strings live
 
@@ -36,7 +38,7 @@ is missing, which it is in every helper process.
   after a Debug build into `build/` (`Scripts/build.sh`, or the test build in `Scripts/test.sh`),
   then review and commit the catalogs.
 - `tools/strings.py --check` runs in `Scripts/test.sh` after the test build. It fails when a string
-  is new or changed and the catalog wasn't updated, when a string has no Spanish, and when the
+  is new or changed and the catalog wasn't updated, when a string has no text in a shipped language, and when the
   permission prompts in `InfoPlist.xcstrings` differ from `project.yml`. It doesn't fail on unused
   strings: CI's older SDK doesn't compile macOS 26-only code, so those strings look unused there.
   A local `tools/strings.py` marks strings that really are unused as stale.

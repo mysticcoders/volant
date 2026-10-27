@@ -16,6 +16,24 @@
             "state": "needs_review",
             "value": "Volant pide a macOS que muestre sus confirmaciones de reinicio, apagado y cierre de sesión cuando eliges esos comandos."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant bittet macOS, die Bestätigungen für Neustart, Ausschalten und Abmelden anzuzeigen, wenn du diese Befehle wählst."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant chiede a macOS di mostrare le conferme di riavvio, spegnimento e logout quando scegli quei comandi."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant demande à macOS d’afficher ses confirmations de redémarrage, d’extinction et de fermeture de session lorsque vous choisissez ces commandes."
+          }
         }
       }
     },
@@ -33,6 +51,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Volant muestra los dispositivos Bluetooth conectados cuando abres el comando Bluetooth."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant listet verbundene Bluetooth-Geräte auf, wenn du den Bluetooth-Befehl öffnest."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant elenca i dispositivi Bluetooth connessi quando apri il comando Bluetooth."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant affiche la liste des appareils Bluetooth connectés lorsque vous ouvrez la commande Bluetooth."
           }
         }
       }
@@ -52,6 +88,24 @@
             "state": "needs_review",
             "value": "Volant muestra los dispositivos Bluetooth conectados cuando lo solicitas."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant listet verbundene Bluetooth-Geräte auf Anfrage auf."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant elenca i dispositivi Bluetooth connessi su richiesta."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant affiche la liste des appareils Bluetooth connectés à votre demande."
+          }
         }
       }
     },
@@ -69,6 +123,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Volant muestra los eventos de hoy y sus enlaces de reunión. Solo lectura."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant zeigt die heutigen Termine und ihre Meeting-Links. Nur Lesezugriff."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant mostra gli eventi di oggi e i relativi link alle riunioni. Sola lettura."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant affiche les événements du jour et leurs liens de réunion. Lecture seule."
           }
         }
       }
@@ -88,6 +160,24 @@
             "state": "needs_review",
             "value": "Volant busca en tus contactos para que puedas copiar una dirección de correo o un número de teléfono. Solo lectura."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant durchsucht deine Kontakte, damit du eine E-Mail-Adresse oder Telefonnummer kopieren kannst. Nur Lesezugriff."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant cerca nei tuoi contatti per permetterti di copiare un indirizzo email o un numero di telefono. Sola lettura."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant recherche dans vos contacts pour que vous puissiez copier une adresse e-mail ou un numéro de téléphone. Lecture seule."
+          }
         }
       }
     },
@@ -105,6 +195,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "macOS requiere acceso a la ubicación para mostrar los nombres de las redes Wi-Fi. Volant también usa tu ubicación aproximada (unos 11 km) solo para las extensiones que permitas, que la comparten con los sitios que consultan; nunca se guarda."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS erfordert Zugriff auf den Standort, um WLAN-Netzwerknamen anzuzeigen. Volant nutzt deinen ungefähren Standort (ca. 11 km) außerdem nur für Erweiterungen, die du erlaubst und die ihn mit den gelesenen Websites teilen; er wird nie gespeichert."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS richiede l’accesso alla posizione per mostrare i nomi delle reti Wi-Fi. Volant usa inoltre la tua posizione approssimativa (circa 11 km) solo per le estensioni che consenti, che la condividono con i siti che leggono; non viene mai salvata."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS exige l’accès à la position pour afficher le nom des réseaux Wi-Fi. Volant utilise aussi votre position approximative (environ 11 km) uniquement pour les extensions que vous autorisez, qui la partagent avec les sites qu’elles lisent ; elle n’est jamais enregistrée."
           }
         }
       }
@@ -124,6 +232,24 @@
             "state": "needs_review",
             "value": "macOS requiere acceso a la ubicación para mostrar los nombres de las redes Wi-Fi. Volant también usa tu ubicación aproximada (unos 11 km) solo para las extensiones que permitas, que la comparten con los sitios que consultan; nunca se guarda."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS erfordert Zugriff auf den Standort, um WLAN-Netzwerknamen anzuzeigen. Volant nutzt deinen ungefähren Standort (ca. 11 km) außerdem nur für Erweiterungen, die du erlaubst und die ihn mit den gelesenen Websites teilen; er wird nie gespeichert."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS richiede l’accesso alla posizione per mostrare i nomi delle reti Wi-Fi. Volant usa inoltre la tua posizione approssimativa (circa 11 km) solo per le estensioni che consenti, che la condividono con i siti che leggono; non viene mai salvata."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS exige l’accès à la position pour afficher le nom des réseaux Wi-Fi. Volant utilise aussi votre position approximative (environ 11 km) uniquement pour les extensions que vous autorisez, qui la partagent avec les sites qu’elles lisent ; elle n’est jamais enregistrée."
+          }
         }
       }
     },
@@ -141,6 +267,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Volant transcribe el dictado en tu Mac. El audio nunca se envía a ningún sitio y no se guarda."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant transkribiert Diktate auf diesem Mac. Audio wird nie gesendet und nicht gespeichert."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant trascrive la dettatura su questo Mac. L’audio non viene mai inviato da nessuna parte e non viene salvato."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant transcrit la dictée sur ce Mac. L’audio n’est jamais envoyé nulle part et n’est pas enregistré."
           }
         }
       }

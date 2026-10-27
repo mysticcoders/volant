@@ -9,6 +9,24 @@
             "state": "needs_review",
             "value": "AA solo para texto grande"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "AA nur für großen Text"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "AA solo per testo grande"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "AA pour le texte de grande taille uniquement"
+          }
         }
       }
     },
@@ -19,6 +37,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Chat de IA"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "AI Chat"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "AI Chat"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "AI Chat"
           }
         }
       }
@@ -31,6 +67,24 @@
             "state": "needs_review",
             "value": "Añade una clave de API en los ajustes de IA antes de conectarte."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Füge in den AI-Einstellungen einen API-Schlüssel hinzu, bevor du dich verbindest."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aggiungi una chiave API nelle impostazioni AI prima di connetterti."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ajoutez une clé API dans les réglages IA avant de vous connecter."
+          }
         }
       }
     },
@@ -41,6 +95,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Todos los agentes de Herdr"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Alle Herdr-Agenten"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tutti gli agenti Herdr"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tous les agents Herdr"
           }
         }
       }
@@ -53,6 +125,24 @@
             "state": "needs_review",
             "value": "La carpeta de la cuenta debe ser una ruta completa."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ein Account-Ordner muss ein vollständiger Pfad sein."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La cartella di un account deve essere un percorso completo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Un dossier de compte doit être un chemin complet."
+          }
         }
       }
     },
@@ -63,6 +153,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "La apariencia cambió en el archivo de configuración. Vuelve a cargar la configuración antes de cambiarla de nuevo."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Das Erscheinungsbild wurde in der Konfigurationsdatei geändert. Lade die Konfiguration neu, bevor du es erneut änderst."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "L’aspetto è cambiato nel file di configurazione. Ricarica la configurazione prima di modificarlo di nuovo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "L’apparence a changé dans le fichier de configuration. Rechargez la configuration avant de la modifier à nouveau."
           }
         }
       }
@@ -75,6 +183,24 @@
             "state": "needs_review",
             "value": "Atajos de Apple"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apple-Kurzbefehle"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Comandi Rapidi Apple"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apple Shortcuts"
+          }
         }
       }
     },
@@ -85,6 +211,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Aproximado"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ungefähr"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Approssimato"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Approximatif"
           }
         }
       }
@@ -97,6 +241,24 @@
             "state": "needs_review",
             "value": "Dispositivos de audio"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Audiogeräte"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dispositivi audio"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Appareils audio"
+          }
         }
       }
     },
@@ -107,6 +269,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Autor"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Autor"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Autore"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Auteur"
           }
         }
       }
@@ -119,6 +299,24 @@
             "state": "needs_review",
             "value": "Binario"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Binär"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Binario"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Binaire"
+          }
         }
       }
     },
@@ -129,6 +327,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Dispositivos Bluetooth"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bluetooth-Geräte"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dispositivi Bluetooth"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Appareils Bluetooth"
           }
         }
       }
@@ -141,6 +357,24 @@
             "state": "needs_review",
             "value": "Explorar e instalar extensiones revisadas"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Geprüfte Erweiterungen durchsuchen und installieren"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sfoglia e installa estensioni verificate"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Parcourir et installer des extensions vérifiées"
+          }
         }
       }
     },
@@ -151,6 +385,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Explorar emojis y copiar uno"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Emoji durchsuchen und eines kopieren"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sfoglia le emoji e copiane una"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Parcourir les emojis et en copier un"
           }
         }
       }
@@ -163,6 +415,24 @@
             "state": "needs_review",
             "value": "Integrado en Volant"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "In Volant integriert"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Integrato in Volant"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Intégré à Volant"
+          }
         }
       }
     },
@@ -170,6 +440,24 @@
       "comment": "Launcher command name",
       "localizations": {
         "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Caffeinate"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Caffeinate"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Caffeinate"
+          }
+        },
+        "fr": {
           "stringUnit": {
             "state": "needs_review",
             "value": "Caffeinate"
@@ -185,6 +473,24 @@
             "state": "needs_review",
             "value": "Comprueba el acceso SSH y que este equipo tenga Herdr 0.9.1 o posterior."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Prüfe SSH-Zugriff und Herdr 0.9.1 oder neuer auf diesem Rechner."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Verifica l’accesso SSH e Herdr 0.9.1 o successivo su questo computer."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vérifiez l’accès SSH et Herdr 0.9.1 ou version ultérieure sur cette machine."
+          }
         }
       }
     },
@@ -195,6 +501,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Comprobando…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Prüfen …"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Verifica…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vérification…"
           }
         }
       }
@@ -207,6 +531,24 @@
             "state": "needs_review",
             "value": "Elige un modelo y una URL de API HTTPS válida, o una URL de loopback para modelos locales."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wähle ein Modell und eine gültige HTTPS-API-URL oder eine Loopback-URL für lokale Modelle."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Scegli un modello e un URL API HTTPS valido, o un URL loopback per i modelli locali."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Choisissez un modèle et une URL d’API HTTPS valide, ou une URL de bouclage pour les modèles locaux."
+          }
         }
       }
     },
@@ -217,6 +559,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Elige una palabra clave de una sola palabra que no sea un comando integrado."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wähle ein Kürzel aus einem Wort, das kein integrierter Befehl ist."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Scegli una parola chiave di una sola parola che non sia un comando integrato."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Choisissez un mot-clé d’un seul mot qui n’est pas une commande intégrée."
           }
         }
       }
@@ -229,6 +589,24 @@
             "state": "needs_review",
             "value": "Haz clic para mostrar los paneles de Herdr."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Klicken, um Herdr-Bereiche zu zeigen."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Fai clic per mostrare i pannelli Herdr."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cliquez pour afficher les sous-fenêtres Herdr."
+          }
         }
       }
     },
@@ -239,6 +617,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Haz clic para mostrar los paneles de Rex."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Klicken, um Rex-Bereiche zu zeigen."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Fai clic per mostrare i pannelli Rex."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cliquez pour afficher les sous-fenêtres Rex."
           }
         }
       }
@@ -251,6 +647,24 @@
             "state": "needs_review",
             "value": "Historial del portapapeles"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Zwischenablageverlauf"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cronologia appunti"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Historique du presse-papiers"
+          }
         }
       }
     },
@@ -261,6 +675,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Comentarios"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kommentare"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Commenti"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Commentaires"
           }
         }
       }
@@ -273,6 +705,24 @@
             "state": "needs_review",
             "value": "Conéctate a tu proveedor de IA para empezar a chatear."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Verbinde dich mit deinem AI-Anbieter, um zu chatten."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Connettiti al tuo fornitore AI per iniziare a chattare."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Connectez-vous à votre fournisseur d’IA pour commencer à discuter."
+          }
         }
       }
     },
@@ -283,6 +733,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "No se pudo conectar con el servidor de IA. Comprueba su dirección y si está en ejecución."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "AI-Server nicht erreichbar. Prüfe seine Adresse und ob er läuft."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Impossibile raggiungere il server AI. Controlla il suo indirizzo e che sia in esecuzione."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Impossible de joindre le serveur d’IA. Vérifiez son adresse et qu’il est en cours d’exécution."
           }
         }
       }
@@ -295,6 +763,24 @@
             "state": "needs_review",
             "value": "No se pudieron leer las máquinas guardadas. Comprueba que Herdr 0.9.1 o posterior esté instalado."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gesicherte Rechner konnten nicht gelesen werden. Prüfe, ob Herdr 0.9.1 oder neuer installiert ist."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Impossibile leggere i computer salvati. Verifica che sia installato Herdr 0.9.1 o successivo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Impossible de lire les machines enregistrées. Vérifiez que Herdr 0.9.1 ou version ultérieure est installé."
+          }
         }
       }
     },
@@ -305,6 +791,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Crear enlace rápido"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quicklink erstellen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Crea link rapido"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Créer un lien rapide"
           }
         }
       }
@@ -317,6 +821,24 @@
             "state": "needs_review",
             "value": "Crear fragmento"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Textbaustein erstellen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Crea frammento"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Créer un extrait"
+          }
         }
       }
     },
@@ -327,6 +849,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Cursor CLI no está instalado. Instala Cursor CLI, inicia sesión y vuelve a intentarlo."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cursor CLI ist nicht installiert. Installiere Cursor CLI, melde dich an und versuche es erneut."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cursor CLI non è installato. Installa Cursor CLI ed effettua l’accesso, poi riprova."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cursor CLI n’est pas installé. Installez Cursor CLI et connectez-vous, puis réessayez."
           }
         }
       }
@@ -339,6 +879,24 @@
             "state": "needs_review",
             "value": "Decimal"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dezimal"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Decimale"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Décimal"
+          }
         }
       }
     },
@@ -349,6 +907,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Definir palabra"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wort definieren"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Definisci parola"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Définir un mot"
           }
         }
       }
@@ -361,6 +937,24 @@
             "state": "needs_review",
             "value": "Dictar texto"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Text diktieren"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Detta testo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dicter du texte"
+          }
         }
       }
     },
@@ -371,6 +965,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Desactivado en Herdr"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "In Herdr deaktiviert"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Disattivato in Herdr"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Désactivée dans Herdr"
           }
         }
       }
@@ -383,6 +995,24 @@
             "state": "needs_review",
             "value": "Terminado"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Fertig"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Completato"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Terminé"
+          }
         }
       }
     },
@@ -393,6 +1023,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Introduce una URL que empiece por https://, http:// o mailto:, o un enlace de ejecución de Atajos."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gib eine URL ein, die mit https://, http:// oder mailto: beginnt, oder einen Kurzbefehle-Run-Link."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Inserisci un URL che inizi con https://, http:// o mailto:, oppure un link di esecuzione di Comandi Rapidi."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Saisissez une URL commençant par https://, http:// ou mailto:, ou un lien d’exécution de Raccourcis."
           }
         }
       }
@@ -405,6 +1053,24 @@
             "state": "needs_review",
             "value": "Introduce un nombre para el enlace rápido."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gib einen Namen für den Quicklink ein."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Inserisci un nome per il link rapido."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Saisissez un nom pour le lien rapide."
+          }
         }
       }
     },
@@ -415,6 +1081,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Introduce un nombre para el fragmento."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gib einen Namen für den Textbaustein ein."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Inserisci un nome per il frammento."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Saisissez un nom pour l’extrait."
           }
         }
       }
@@ -427,6 +1111,24 @@
             "state": "needs_review",
             "value": "Introduce la URL del enlace rápido."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gib die URL des Quicklinks ein."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Inserisci l’URL del link rapido."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Saisissez l’URL du lien rapide."
+          }
         }
       }
     },
@@ -437,6 +1139,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Introduce el texto del fragmento."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gib den Text des Bausteins ein."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Inserisci il testo del frammento."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Saisissez le texte de l’extrait."
           }
         }
       }
@@ -449,6 +1169,24 @@
             "state": "needs_review",
             "value": "Catálogo de extensiones"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Erweiterungskatalog"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Catalogo estensioni"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Catalogue d’extensions"
+          }
         }
       }
     },
@@ -459,6 +1197,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "La extensión debe declarar memoria WebAssembly limitada (máximo 16 MiB)."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Die Erweiterung muss begrenzten WebAssembly-Speicher deklarieren (maximal 16 MiB)."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "L’estensione deve dichiarare una memoria WebAssembly limitata (massimo 16 MiB)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "L’extension doit déclarer une mémoire WebAssembly limitée (16 Mio au maximum)."
           }
         }
       }
@@ -471,6 +1227,24 @@
             "state": "needs_review",
             "value": "La extensión necesita un manifiesto ABI 1 o 2 válido, SHA-256 y permisos compatibles."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Die Erweiterung braucht ein gültiges ABI-1- oder -2-Manifest, SHA-256 und unterstützte Berechtigungen."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "L’estensione richiede un manifest ABI 1 o 2 valido, uno SHA-256 e permessi supportati."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "L’extension nécessite un manifeste ABI 1 ou 2 valide, un SHA-256 et des autorisations prises en charge."
+          }
         }
       }
     },
@@ -481,6 +1255,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "La extensión devolvió un plan de obtención no válido."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Die Erweiterung hat einen ungültigen Abrufplan geliefert."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "L’estensione ha restituito un piano di recupero non valido."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "L’extension a renvoyé un plan de récupération non valide."
           }
         }
       }
@@ -493,6 +1285,24 @@
             "state": "needs_review",
             "value": "La extensión devolvió una lista no válida."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Die Erweiterung hat eine ungültige Liste geliefert."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "L’estensione ha restituito un elenco non valido."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "L’extension a renvoyé une liste non valide."
+          }
         }
       }
     },
@@ -503,6 +1313,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "La extensión intentó guardar algo que no es un objeto JSON. Sus datos guardados se conservaron."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Die Erweiterung wollte etwas anderes als ein JSON-Objekt sichern. Ihre gesicherten Daten bleiben erhalten."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "L’estensione ha tentato di salvare qualcosa che non è un oggetto JSON. I dati salvati sono stati mantenuti."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "L’extension a tenté d’enregistrer autre chose qu’un objet JSON. Ses données enregistrées ont été conservées."
           }
         }
       }
@@ -515,6 +1343,24 @@
             "state": "needs_review",
             "value": "Error"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Fehlgeschlagen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Non riuscito"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Échec"
+          }
         }
       }
     },
@@ -525,6 +1371,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "No cumple AA"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "AA nicht erfüllt"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Non supera AA"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Échoue AA"
           }
         }
       }
@@ -537,6 +1401,24 @@
             "state": "needs_review",
             "value": "Buscar y ejecutar tus Atajos de Apple"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apple-Kurzbefehle finden und ausführen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Trova ed esegui i tuoi Comandi Rapidi Apple"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rechercher et exécuter vos raccourcis Apple"
+          }
         }
       }
     },
@@ -547,6 +1429,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Herdr no está conectado."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Herdr ist nicht verbunden."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Herdr non è connesso."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Herdr n’est pas connecté."
           }
         }
       }
@@ -559,6 +1459,24 @@
             "state": "needs_review",
             "value": "Herdr: cargando…"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Herdr: Laden …"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Herdr: caricamento…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Herdr : chargement…"
+          }
         }
       }
     },
@@ -569,6 +1487,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Herdr: ninguno en espera"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Herdr: keine wartend"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Herdr: nessuno in attesa"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Herdr : aucun en attente"
           }
         }
       }
@@ -581,6 +1517,24 @@
             "state": "needs_review",
             "value": "Herdr: no conectado"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Herdr: nicht verbunden"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Herdr: non connesso"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Herdr : non connecté"
+          }
         }
       }
     },
@@ -591,6 +1545,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Hexadecimal"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hexadezimal"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Esadecimale"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hexadécimal"
           }
         }
       }
@@ -603,6 +1575,24 @@
             "state": "needs_review",
             "value": "Inactivo"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Inaktiv"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Inattivo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Inactif"
+          }
         }
       }
     },
@@ -613,6 +1603,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Incluye una dirección de correo después de mailto:."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gib nach mailto: eine E-Mail-Adresse an."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Includi un indirizzo email dopo mailto:."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ajoutez une adresse e-mail après mailto:."
           }
         }
       }
@@ -625,6 +1633,24 @@
             "state": "needs_review",
             "value": "Evitar que tu Mac entre en reposo"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac wach halten"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mantieni attivo il Mac"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Garder votre Mac éveillé"
+          }
         }
       }
     },
@@ -635,6 +1661,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Servidores a la escucha"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aktive Server"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Server in ascolto"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Serveurs à l’écoute"
           }
         }
       }
@@ -647,6 +1691,24 @@
             "state": "needs_review",
             "value": "Cargando paneles de Herdr."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bereiche werden aus Herdr geladen."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Caricamento dei pannelli da Herdr."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Chargement des sous-fenêtres depuis Herdr."
+          }
         }
       }
     },
@@ -658,6 +1720,24 @@
             "state": "needs_review",
             "value": "Cargando paneles de Rex.\nHaz clic para mostrar los paneles de Rex."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bereiche werden aus Rex geladen.\nKlicken, um Rex-Bereiche zu zeigen."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Caricamento dei pannelli da Rex.\nFai clic per mostrare i pannelli Rex."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Chargement des sous-fenêtres depuis Rex.\nCliquez pour afficher les sous-fenêtres Rex."
+          }
         }
       }
     },
@@ -665,6 +1745,24 @@
       "comment": "Herdr machine name for this Mac",
       "localizations": {
         "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Local"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lokal"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Locale"
+          }
+        },
+        "fr": {
           "stringUnit": {
             "state": "needs_review",
             "value": "Local"
@@ -680,6 +1778,24 @@
             "state": "needs_review",
             "value": "Modelos locales"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lokale Modelle"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Modelli locali"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Modèles locaux"
+          }
         }
       }
     },
@@ -690,6 +1806,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Bloquear tu Mac ahora"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Diesen Mac jetzt sperren"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Blocca subito questo Mac"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Verrouiller ce Mac maintenant"
           }
         }
       }
@@ -702,6 +1836,24 @@
             "state": "needs_review",
             "value": "Buscar palabras en los diccionarios de tu Mac"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wörter in den Lexika deines Mac nachschlagen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cerca parole nei dizionari del tuo Mac"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rechercher des mots dans les dictionnaires de votre Mac"
+          }
         }
       }
     },
@@ -712,6 +1864,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Milisegundos"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Millisekunden"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Millisecondi"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Millisecondes"
           }
         }
       }
@@ -724,6 +1894,24 @@
             "state": "needs_review",
             "value": "Requiere atención"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Braucht Aufmerksamkeit"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Richiede attenzione"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Requiert votre attention"
+          }
         }
       }
     },
@@ -734,6 +1922,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "No"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nein"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Non"
           }
         }
       }
@@ -746,6 +1952,24 @@
             "state": "needs_review",
             "value": "No hay agentes en espera."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Keine Agenten warten."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nessun agente in attesa."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aucun agent en attente."
+          }
         }
       }
     },
@@ -756,6 +1980,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Sin cambios"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Keine Änderung"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nessuna variazione"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aucun changement"
           }
         }
       }
@@ -768,6 +2010,24 @@
             "state": "needs_review",
             "value": "No hay ningún config.json legible en esa carpeta."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Keine lesbare config.json in diesem Ordner."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nessun config.json leggibile in quella cartella."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aucun config.json lisible dans ce dossier."
+          }
         }
       }
     },
@@ -779,6 +2039,24 @@
             "state": "needs_review",
             "value": "No se oyó nada."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nichts gehört."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Non è stato rilevato alcun suono."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aucun son n’a été entendu."
+          }
         }
       }
     },
@@ -786,6 +2064,24 @@
       "comment": "Calculator number base name",
       "localizations": {
         "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Octal"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Oktal"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ottale"
+          }
+        },
+        "fr": {
           "stringUnit": {
             "state": "needs_review",
             "value": "Octal"
@@ -801,6 +2097,24 @@
             "state": "needs_review",
             "value": "Solo Claude Code y Codex pueden usar una carpeta de cuenta."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nur Claude Code und Codex können einen Account-Ordner verwenden."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Solo Claude Code e Codex possono usare una cartella account."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Seuls Claude Code et Codex peuvent utiliser un dossier de compte."
+          }
         }
       }
     },
@@ -811,6 +2125,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Abrir agentes"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Agenten öffnen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apri agenti"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ouvrir les agents"
           }
         }
       }
@@ -823,6 +2155,24 @@
             "state": "needs_review",
             "value": "Abrir notas"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Notizen öffnen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apri Note"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ouvrir les notes"
+          }
         }
       }
     },
@@ -833,6 +2183,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Compatible con OpenAI"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "OpenAI-kompatibel"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Compatibile con OpenAI"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Compatible OpenAI"
           }
         }
       }
@@ -845,6 +2213,24 @@
             "state": "needs_review",
             "value": "No se encontró OpenCode. Instálalo, ejecuta opencode auth login y vuelve a intentarlo."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "OpenCode wurde nicht gefunden. Installiere es, führe opencode auth login aus und versuche es erneut."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "OpenCode non trovato. Installalo ed esegui opencode auth login, poi riprova."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "OpenCode est introuvable. Installez-le et exécutez opencode auth login, puis réessayez."
+          }
         }
       }
     },
@@ -855,6 +2241,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Fuera de sRGB"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Außerhalb von sRGB"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Fuori da sRGB"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hors sRGB"
           }
         }
       }
@@ -867,6 +2271,24 @@
             "state": "needs_review",
             "value": "Cumple AA · AAA para texto grande"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "AA erfüllt · AAA für großen Text"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Supera AA · AAA per testo grande"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Réussit AA · AAA pour le texte de grande taille"
+          }
         }
       }
     },
@@ -877,6 +2299,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Cumple AAA"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "AAA erfüllt"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Supera AAA"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Réussit AAA"
           }
         }
       }
@@ -889,6 +2329,24 @@
             "state": "needs_review",
             "value": "Puntos"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Punkte"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Punti"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Points"
+          }
         }
       }
     },
@@ -899,6 +2357,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Poner tu Mac en reposo"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Diesen Mac in den Ruhezustand versetzen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Metti in stop questo Mac"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Suspendre l’activité de ce Mac"
           }
         }
       }
@@ -911,6 +2387,24 @@
             "state": "needs_review",
             "value": "Rex enfocó el panel, pero no puede cambiar a su sesión hasta que se active Remote Control en Rex Settings › Rex Server."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex hat den Bereich fokussiert, kann aber erst zu seiner Sitzung wechseln, wenn Remote Control in Rex Settings › Rex Server aktiviert ist."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex ha attivato il pannello ma non può passare alla sua sessione finché Remote Control non è attivo in Rex Settings › Rex Server."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex a activé la sous-fenêtre, mais ne peut pas basculer vers sa session tant que Remote Control n’est pas activé dans Rex Settings › Rex Server."
+          }
         }
       }
     },
@@ -921,6 +2415,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Rex enfocó el panel, pero no pudo cambiar a su sesión."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex hat den Bereich fokussiert, konnte aber nicht zu seiner Sitzung wechseln."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex ha attivato il pannello ma non è riuscito a passare alla sua sessione."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex a activé la sous-fenêtre, mais n’a pas pu basculer vers sa session."
           }
         }
       }
@@ -933,6 +2445,24 @@
             "state": "needs_review",
             "value": "Rex enfocó el panel. Abre la app Rex para verlo."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex hat den Bereich fokussiert. Öffne die Rex-App, um ihn zu sehen."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex ha attivato il pannello. Apri l’app Rex per vederlo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex a activé la sous-fenêtre. Ouvrez l’app Rex pour la voir."
+          }
         }
       }
     },
@@ -943,6 +2473,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Rex no está conectado.\nHaz clic para mostrar los paneles de Rex."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex ist nicht verbunden.\nKlicken, um Rex-Bereiche zu zeigen."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex non è connesso.\nFai clic per mostrare i pannelli Rex."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex n’est pas connecté.\nCliquez pour afficher les sous-fenêtres Rex."
           }
         }
       }
@@ -955,6 +2503,24 @@
             "state": "needs_review",
             "value": "Rex: cargando…"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex: Laden …"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex: caricamento…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex : chargement…"
+          }
         }
       }
     },
@@ -965,6 +2531,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Rex: ninguno en espera"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex: keine wartend"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex: nessuno in attesa"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex : aucun en attente"
           }
         }
       }
@@ -977,6 +2561,24 @@
             "state": "needs_review",
             "value": "Rex: no conectado"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex: nicht verbunden"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex: non connesso"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex : non connecté"
+          }
         }
       }
     },
@@ -987,6 +2589,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Rex: no disponible"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex: nicht verfügbar"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex: non disponibile"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rex : indisponible"
           }
         }
       }
@@ -999,6 +2619,24 @@
             "state": "needs_review",
             "value": "Número romano"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Römische Zahl"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Numero romano"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Chiffres romains"
+          }
         }
       }
     },
@@ -1009,6 +2647,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Redondeado a un grado entero"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Auf ganze Grad gerundet"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Arrotondato al grado intero"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Arrondi au degré près"
           }
         }
       }
@@ -1021,6 +2677,24 @@
             "state": "needs_review",
             "value": "Guardar un enlace para abrirlo por nombre"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Link sichern, um ihn per Name zu öffnen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Salva un link da aprire per nome"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Enregistrer un lien à ouvrir par son nom"
+          }
         }
       }
     },
@@ -1031,6 +2705,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Guardar texto para copiarlo por palabra clave"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Text sichern, um ihn per Kürzel zu kopieren"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Salva testo da copiare tramite parola chiave"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Enregistrer du texte à copier par mot-clé"
           }
         }
       }
@@ -1043,6 +2735,24 @@
             "state": "needs_review",
             "value": "Máquinas guardadas"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gesicherte Rechner"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Computer salvati"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Machines enregistrées"
+          }
         }
       }
     },
@@ -1053,6 +2763,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Buscar emojis"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Emoji suchen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cerca emoji"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rechercher un emoji"
           }
         }
       }
@@ -1065,6 +2793,24 @@
             "state": "needs_review",
             "value": "Segundos"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sekunden"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Secondi"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Secondes"
+          }
         }
       }
     },
@@ -1075,6 +2821,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Segundos desde 1970"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sekunden seit 1970"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Secondi dal 1970"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Secondes depuis 1970"
           }
         }
       }
@@ -1087,6 +2851,24 @@
             "state": "needs_review",
             "value": "Ver qué servidores locales están a la escucha y abrir uno"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aktive lokale Server sehen und einen öffnen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vedi quali server locali sono in ascolto e aprine uno"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Voir quels serveurs locaux sont à l’écoute et en ouvrir un"
+          }
         }
       }
     },
@@ -1097,6 +2879,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Sesión"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sitzung"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sessione"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Session"
           }
         }
       }
@@ -1109,6 +2909,24 @@
             "state": "needs_review",
             "value": "Sitio"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Website"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sito"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Site"
+          }
         }
       }
     },
@@ -1119,6 +2937,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Los fragmentos, enlaces rápidos o alias cambiaron en el archivo de configuración. Revisa el formulario y vuelve a guardar."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Textbausteine, Quicklinks oder Aliasse wurden in der Konfigurationsdatei geändert. Prüfe das Formular und sichere erneut."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Frammenti, link rapidi o alias sono cambiati nel file di configurazione. Controlla il modulo e salva di nuovo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Des extraits, liens rapides ou alias ont changé dans le fichier de configuration. Vérifiez le formulaire et enregistrez à nouveau."
           }
         }
       }
@@ -1131,6 +2967,24 @@
             "state": "needs_review",
             "value": "Inicia la sesión local predeterminada de Herdr."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Starte die lokale Herdr-Standardsitzung."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Avvia la sessione Herdr locale predefinita."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Démarrez la session Herdr locale par défaut."
+          }
         }
       }
     },
@@ -1141,6 +2995,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Iniciar el salvapantallas"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bildschirmschoner starten"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Avvia il salvaschermo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lancer l’économiseur d’écran"
           }
         }
       }
@@ -1153,6 +3025,24 @@
             "state": "needs_review",
             "value": "Sistema"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "System"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sistema"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Système"
+          }
         }
       }
     },
@@ -1164,6 +3054,24 @@
             "state": "needs_review",
             "value": "Pestaña"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tab"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Scheda"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Onglet"
+          }
         }
       }
     },
@@ -1171,6 +3079,24 @@
       "comment": "Fallback name for a Rex pane that has no label",
       "localizations": {
         "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Terminal"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Terminal"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Terminale"
+          }
+        },
+        "fr": {
           "stringUnit": {
             "state": "needs_review",
             "value": "Terminal"
@@ -1186,6 +3112,24 @@
             "state": "needs_review",
             "value": "Texto sobre el fondo"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Text auf Hintergrund"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Testo sullo sfondo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Texte sur l’arrière-plan"
+          }
         }
       }
     },
@@ -1196,6 +3140,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "A ese tema de Raycast le falta el nombre, la apariencia o alguno de sus doce colores."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Diesem Raycast-Theme fehlt ein Name, ein Erscheinungsbild oder eine seiner zwölf Farben."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Al tema Raycast manca un nome, un aspetto o uno dei suoi dodici colori."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Il manque à ce thème Raycast un nom, une apparence ou l’une de ses douze couleurs."
           }
         }
       }
@@ -1208,6 +3170,24 @@
             "state": "needs_review",
             "value": "Eso no es un tema de Raycast. Usa un archivo JSON de tema o un enlace de tema de Raycast o themes.ray.so."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Das ist kein Raycast-Theme. Verwende eine Theme-JSON-Datei oder einen Theme-Link von Raycast oder themes.ray.so."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Non è un tema Raycast. Usa un file JSON del tema o un link a un tema da Raycast o themes.ray.so."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ce n’est pas un thème Raycast. Utilisez un fichier JSON de thème, ou un lien de thème de Raycast ou de themes.ray.so."
+          }
         }
       }
     },
@@ -1218,6 +3198,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Ese tema es más grande de lo que puede ser un tema de Raycast."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dieses Theme ist größer, als ein Raycast-Theme sein kann."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Il tema è più grande di quanto possa esserlo un tema Raycast."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ce thème dépasse la taille maximale d’un thème Raycast."
           }
         }
       }
@@ -1230,6 +3228,24 @@
             "state": "needs_review",
             "value": "Ese enlace de themes.ray.so indica un tema sin sus colores, y Volant no descarga temas. En themes.ray.so elige Download JSON o Copy JSON y luego impórtalo."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dieser themes.ray.so-Link nennt ein Theme ohne seine Farben, und Volant lädt keine Themes herunter. Wähle auf themes.ray.so „Download JSON“ oder „Copy JSON“ und importiere das."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quel link di themes.ray.so indica un tema senza i suoi colori e Volant non scarica temi. Su themes.ray.so scegli Download JSON o Copy JSON, poi importalo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ce lien themes.ray.so désigne un thème sans ses couleurs, et Volant ne télécharge pas de thèmes. Sur themes.ray.so, choisissez Download JSON ou Copy JSON, puis importez le résultat."
+          }
         }
       }
     },
@@ -1240,6 +3256,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Los adaptadores ACP requieren Node.js 22 o posterior."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Die ACP-Adapter erfordern Node.js 22 oder neuer."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gli adattatori ACP richiedono Node.js 22 o successivo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Les adaptateurs ACP nécessitent Node.js 22 ou version ultérieure."
           }
         }
       }
@@ -1252,6 +3286,24 @@
             "state": "needs_review",
             "value": "El catálogo de extensiones tiene un formato que esta versión de Volant no puede leer."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Der Erweiterungskatalog hat ein Format, das diese Version von Volant nicht lesen kann."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Il catalogo estensioni non è in un formato leggibile da questa versione di Volant."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Le catalogue d’extensions n’est pas dans un format lisible par cette version de Volant."
+          }
         }
       }
     },
@@ -1262,6 +3314,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "El catálogo de extensiones es más antiguo que uno que Volant ya aceptó, así que no se usó."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Der Erweiterungskatalog ist älter als einer, den Volant bereits akzeptiert hat, und wurde daher nicht verwendet."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Il catalogo estensioni è più vecchio di uno già accettato da Volant, quindi non è stato usato."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Le catalogue d’extensions est plus ancien qu’un catalogue déjà accepté par Volant ; il n’a donc pas été utilisé."
           }
         }
       }
@@ -1274,6 +3344,24 @@
             "state": "needs_review",
             "value": "La firma del catálogo de extensiones no es válida. No se instaló nada."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Die Signatur des Erweiterungskatalogs ist ungültig. Es wurde nichts installiert."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La firma del catalogo estensioni non è valida. Non è stato installato nulla."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La signature du catalogue d’extensions n’est pas valide. Rien n’a été installé."
+          }
         }
       }
     },
@@ -1284,6 +3372,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "La respuesta se detuvo antes de completarse. Puedes volver a intentarlo."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Die Antwort brach vor dem Abschluss ab. Du kannst es erneut versuchen."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La risposta si è interrotta prima del completamento. Puoi riprovare."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La réponse s’est arrêtée avant la fin. Vous pouvez réessayer."
           }
         }
       }
@@ -1296,6 +3402,24 @@
             "state": "needs_review",
             "value": "El servidor denegó el acceso. Comprueba tu clave de API y los permisos del modelo."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Der Server hat den Zugriff verweigert. Prüfe deinen API-Schlüssel und die Modellberechtigungen."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Il server ha negato l’accesso. Controlla la chiave API e i permessi del modello."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Le serveur a refusé l’accès. Vérifiez votre clé API et les autorisations du modèle."
+          }
         }
       }
     },
@@ -1306,6 +3430,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "El servidor devolvió una respuesta no compatible. Comprueba el proveedor y el endpoint."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Der Server hat eine nicht unterstützte Antwort geliefert. Prüfe Anbieter und Endpunkt."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Il server ha restituito una risposta non supportata. Controlla il fornitore e l’endpoint."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Le serveur a renvoyé une réponse non prise en charge. Vérifiez le fournisseur et le point de terminaison."
           }
         }
       }
@@ -1318,6 +3460,24 @@
             "state": "needs_review",
             "value": "Se alcanzó el límite de frecuencia o de uso del servidor. Inténtalo más tarde."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Das Raten- oder Nutzungslimit des Servers wurde erreicht. Versuche es später erneut."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "È stato raggiunto il limite di frequenza o di utilizzo del server. Riprova più tardi."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La limite de débit ou d’utilisation du serveur a été atteinte. Réessayez plus tard."
+          }
         }
       }
     },
@@ -1328,6 +3488,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Esta cuenta ya está en la lista."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dieser Account ist bereits aufgeführt."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Questo account è già nell’elenco."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ce compte figure déjà dans la liste."
           }
         }
       }
@@ -1340,6 +3518,24 @@
             "state": "needs_review",
             "value": "Esta conexión solo admite chat de texto; el servidor solicitó una operación no compatible."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Diese Verbindung unterstützt nur Text-Chat; der Server hat einen nicht unterstützten Vorgang angefordert."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Questa connessione supporta solo la chat testuale; il server ha richiesto un’operazione non supportata."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cette connexion prend en charge uniquement la discussion textuelle ; le serveur a demandé une opération non prise en charge."
+          }
         }
       }
     },
@@ -1350,6 +3546,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Esta conversación alcanzó su límite de tamaño. Empieza una nueva conversación."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Diese Konversation hat ihre Größengrenze erreicht. Starte eine neue Konversation."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Questa conversazione ha raggiunto il limite di dimensioni. Avvia una nuova conversazione."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cette conversation a atteint sa taille maximale. Démarrez une nouvelle conversation."
           }
         }
       }
@@ -1362,6 +3576,24 @@
             "state": "needs_review",
             "value": "Esta máquina guardada cambió o se desactivó. Actualiza antes de continuar."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dieser gesicherte Rechner wurde geändert oder deaktiviert. Aktualisiere, bevor du fortfährst."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Questo computer salvato è cambiato o è stato disattivato. Aggiorna prima di continuare."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cette machine enregistrée a changé ou a été désactivée. Actualisez avant de continuer."
+          }
         }
       }
     },
@@ -1372,6 +3604,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Esta máquina guardada cambió o se eliminó. Actualiza antes de continuar."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dieser gesicherte Rechner wurde geändert oder entfernt. Aktualisiere, bevor du fortfährst."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Questo computer salvato è cambiato o è stato rimosso. Aggiorna prima di continuare."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cette machine enregistrée a changé ou a été supprimée. Actualisez avant de continuer."
           }
         }
       }
@@ -1384,6 +3634,24 @@
             "state": "needs_review",
             "value": "Lanzar confeti"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Konfetti werfen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lancia coriandoli"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lancer des confettis"
+          }
         }
       }
     },
@@ -1394,6 +3662,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Tiempo"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Zeit"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ora"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Durée"
           }
         }
       }
@@ -1406,6 +3692,24 @@
             "state": "needs_review",
             "value": "Traducir texto"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Text übersetzen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Traduci testo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Traduire du texte"
+          }
         }
       }
     },
@@ -1416,6 +3720,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Traducir entre idiomas en tu Mac"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Auf deinem Mac zwischen Sprachen übersetzen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Traduci tra lingue sul tuo Mac"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Traduire entre plusieurs langues sur votre Mac"
           }
         }
       }
@@ -1428,6 +3750,24 @@
             "state": "needs_review",
             "value": "Apagar las pantallas; bloquea si se requiere contraseña"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Displays ausschalten; sperrt, wenn ein Passwort erforderlich ist"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Spegni i monitor; blocca se è richiesta una password"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Éteindre les écrans ; verrouille si un mot de passe est requis"
+          }
         }
       }
     },
@@ -1438,6 +3778,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Desconocido"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Unbekannt"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sconosciuto"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Inconnu"
           }
         }
       }
@@ -1450,6 +3808,24 @@
             "state": "needs_review",
             "value": "Proyecto desconocido"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Unbekanntes Projekt"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Progetto sconosciuto"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Projet inconnu"
+          }
         }
       }
     },
@@ -1460,6 +3836,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "En espera"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wartet"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "In attesa"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "En attente"
           }
         }
       }
@@ -1472,6 +3866,24 @@
             "state": "needs_review",
             "value": "Solo fines de semana"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nur Wochenenden"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Solo fine settimana"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Week-ends uniquement"
+          }
         }
       }
     },
@@ -1482,6 +3894,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Redes Wi-Fi"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "WLAN-Netzwerke"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Reti Wi-Fi"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Réseaux Wi-Fi"
           }
         }
       }
@@ -1494,6 +3924,24 @@
             "state": "needs_review",
             "value": "Trabajando"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Arbeitet"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "In corso"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "En cours"
+          }
         }
       }
     },
@@ -1504,6 +3952,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Sí"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ja"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sì"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Oui"
           }
         }
       }
@@ -1516,6 +3982,24 @@
             "state": "needs_review",
             "value": "limpio"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "sauber"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "pulito"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "propre"
+          }
         }
       }
     },
@@ -1526,6 +4010,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "No se pudo leer config.json, así que no se sincronizaron los ajustes."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "config.json konnte nicht gelesen werden, daher wurden die Einstellungen nicht synchronisiert."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "scollegato"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "config.json n’a pas pu être lu ; les réglages n’ont donc pas été synchronisés."
           }
         }
       }
@@ -1538,6 +4040,24 @@
             "state": "needs_review",
             "value": "separado"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "losgelöst"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Impossibile leggere config.json, quindi le impostazioni non sono state sincronizzate."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "détaché"
+          }
         }
       }
     },
@@ -1548,6 +4068,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "fsearch no pudo responder."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "fsearch konnte nicht antworten."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "fsearch non ha potuto rispondere."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "fsearch n’a pas pu répondre."
           }
         }
       }
@@ -1560,6 +4098,24 @@
             "state": "needs_review",
             "value": "fsearch no respondió a tiempo."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "fsearch hat nicht rechtzeitig geantwortet."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "fsearch non ha risposto in tempo."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "fsearch n’a pas répondu à temps."
+          }
         }
       }
     },
@@ -1570,6 +4126,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "fsearch no está en ejecución. Ejecuta fsearch una vez en Terminal o inícialo al iniciar sesión con fsearch install --login."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "fsearch läuft nicht. Führe fsearch einmal im Terminal aus oder starte es bei der Anmeldung mit fsearch install --login."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "fsearch non è in esecuzione. Esegui fsearch una volta in Terminale o avvialo al login con fsearch install --login."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "fsearch ne s’exécute pas. Exécutez fsearch une fois dans Terminal, ou lancez-le à l’ouverture de session avec fsearch install --login."
           }
         }
       }
@@ -1582,6 +4156,24 @@
             "state": "needs_review",
             "value": "fsearch envió una respuesta que Volant no pudo leer."
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "fsearch hat eine Antwort gesendet, die Volant nicht lesen konnte."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "fsearch ha inviato una risposta che Volant non riesce a leggere."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "fsearch a envoyé une réponse que Volant n’a pas pu lire."
+          }
         }
       }
     },
@@ -1592,6 +4184,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "fsearch envió más de lo que Volant lee."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "fsearch hat mehr gesendet, als Volant liest."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "fsearch ha inviato più dati di quanti Volant ne legga."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "fsearch a envoyé plus de données que Volant n’en lit."
           }
         }
       }
@@ -1604,6 +4214,24 @@
             "state": "needs_review",
             "value": "macOS pide confirmación antes de cerrar sesión"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS fragt vor dem Abmelden"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS chiede conferma prima di uscire"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS demande confirmation avant de fermer la session"
+          }
         }
       }
     },
@@ -1615,6 +4243,24 @@
             "state": "needs_review",
             "value": "macOS pide confirmación antes de reiniciar"
           }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS fragt vor dem Neustart"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS chiede conferma prima di riavviare"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS demande confirmation avant de redémarrer"
+          }
         }
       }
     },
@@ -1625,6 +4271,24 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "macOS pide confirmación antes de apagar"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS fragt vor dem Ausschalten"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS chiede conferma prima di spegnere"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS demande confirmation avant d’éteindre"
           }
         }
       }
