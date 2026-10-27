@@ -33,6 +33,6 @@ struct AICredentials {
     }
     enum CredentialError: Error, LocalizedError {
         case unavailable, invalid
-        var errorDescription: String? { self == .invalid ? "Enter a valid API key without spaces." : "Couldn’t access the API key in Keychain. Your saved key was not replaced." }
+        var errorDescription: String? { self == .invalid ? String(localized: "Enter a valid API key without spaces.") : String(localized: "Couldn’t access the API key in Keychain. Your saved key was not replaced.") }
     }
 }

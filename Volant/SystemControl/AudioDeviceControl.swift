@@ -3,7 +3,7 @@ import CoreAudio
 
 enum AudioDirection: String, CaseIterable {
     case output, input
-    var title: String { self == .output ? "Audio Output" : "Audio Input" }
+    var title: String { self == .output ? String(localized: "Audio Output") : String(localized: "Audio Input") }
     var scope: AudioObjectPropertyScope { self == .output ? kAudioDevicePropertyScopeOutput : kAudioDevicePropertyScopeInput }
     var selector: AudioObjectPropertySelector { self == .output ? kAudioHardwarePropertyDefaultOutputDevice : kAudioHardwarePropertyDefaultInputDevice }
 }
@@ -46,12 +46,12 @@ struct CoreAudioRouting: AudioRouting {
         var property = address(kAudioHardwarePropertyDevices)
         var size: UInt32 = 0
         guard AudioObjectGetPropertyDataSize(system, &property, 0, nil, &size) == noErr, size <= 65536, size % 4 == 0 else {
-            throw VolumeFailure(message: "Couldn’t list audio devices. Try again.")
+            throw VolumeFailure(message: String(localized: "Couldn’t list audio devices. Try again."))
         }
         if size == 0 { return [] }
         var devices = [AudioDeviceID](repeating: 0, count: Int(size) / MemoryLayout<AudioDeviceID>.size)
         let status = devices.withUnsafeMutableBytes { AudioObjectGetPropertyData(system, &property, 0, nil, &size, $0.baseAddress!) }
-        guard status == noErr else { throw VolumeFailure(message: "The audio device list changed. Try again.") }
+        guard status == noErr else { throw VolumeFailure(message: String(localized: "The audio device list changed. Try again.")) }
         var routes: [AudioRoute] = []
         for direction in AudioDirection.allCases {
             var current = AudioDeviceID(kAudioObjectUnknown)
@@ -65,7 +65,7 @@ struct CoreAudioRouting: AudioRouting {
                 var streamSize: UInt32 = 0
                 guard AudioObjectGetPropertyDataSize(device, &streams, 0, nil, &streamSize) == noErr, streamSize > 0 else { continue }
                 var uid: CFString = "" as CFString
-                var name: CFString = "Audio Device" as CFString
+                var name: CFString = String(localized: "Audio Device", comment: "Name shown for an audio device that reports no name") as CFString
                 guard read(device, address(kAudioDevicePropertyDeviceUID), into: &uid), !(uid as String).isEmpty else { continue }
                 _ = read(device, address(kAudioObjectPropertyName), into: &name)
                 routes.append(AudioRoute(uid: uid as String, device: device, name: name as String, direction: direction, current: device == current))
@@ -80,21 +80,21 @@ struct CoreAudioRouting: AudioRouting {
     func select(_ route: AudioRoute) throws {
         // Resolve stable UID again: CoreAudio numeric device IDs can be recycled after disconnects.
         guard let fresh = try routes().first(where: { $0.id == route.id }) else {
-            throw VolumeFailure(message: "This audio device disconnected. Refresh the list and try again.")
+            throw VolumeFailure(message: String(localized: "This audio device disconnected. Refresh the list and try again."))
         }
         if fresh.current { return }
         var property = address(fresh.direction.selector)
         var writable = DarwinBoolean(false)
         let system = AudioObjectID(kAudioObjectSystemObject)
         guard AudioObjectIsPropertySettable(system, &property, &writable) == noErr, writable.boolValue else {
-            throw VolumeFailure(message: "macOS isn’t allowing this audio route to change.")
+            throw VolumeFailure(message: String(localized: "macOS isn’t allowing this audio route to change."))
         }
         var device = fresh.device
         guard AudioObjectSetPropertyData(system, &property, 0, nil, UInt32(MemoryLayout<AudioDeviceID>.size), &device) == noErr else {
-            throw VolumeFailure(message: "Couldn’t switch audio devices. The device may have disconnected.")
+            throw VolumeFailure(message: String(localized: "Couldn’t switch audio devices. The device may have disconnected."))
         }
         guard try routes().contains(where: { $0.id == fresh.id && $0.current }) else {
-            throw VolumeFailure(message: "macOS hasn’t confirmed the switch yet. Refresh the list to check the current device.")
+            throw VolumeFailure(message: String(localized: "macOS hasn’t confirmed the switch yet. Refresh the list to check the current device."))
         }
     }
 }

@@ -17,19 +17,19 @@ enum GlobalShortcutStore {
         let data = try Data(contentsOf: url)
         let config = try JSONDecoder().decode(Preferences.self, from: data)
         let bindings = bindings(config)
-        guard bindings.keys.contains(key) else { throw BindingFailure(message: "Unknown global shortcut.") }
+        guard bindings.keys.contains(key) else { throw BindingFailure(message: String(localized: "Unknown global shortcut.")) }
         let current = bindings[key] ?? ""
-        guard current == expectedValue else { throw BindingFailure(message: "This shortcut changed in the configuration file. Reload Configuration before saving again.") }
+        guard current == expectedValue else { throw BindingFailure(message: String(localized: "This shortcut changed in the configuration file. Reload Configuration before saving again.")) }
         if !value.isEmpty {
         guard let combo = KeyCombo(parsing: value), combo.carbonModifiers & UInt32(cmdKey | controlKey | optionKey) != 0 else {
-            throw BindingFailure(message: "Include Command, Control or Option with a key.")
+            throw BindingFailure(message: String(localized: "Include Command, Control or Option with a key."))
         }
         let others = bindings.filter { $0.key != key }.map(\.value)
         guard !(others + config.appHotKeys.map(\.hotKey)).contains(where: { KeyCombo(parsing: $0) == combo }) else {
-            throw BindingFailure(message: "That shortcut is already assigned in Volant.")
+            throw BindingFailure(message: String(localized: "That shortcut is already assigned in Volant."))
         }
         guard combo == KeyCombo(parsing: current) || available(combo) else {
-            throw BindingFailure(message: "macOS or another app is using that shortcut. Choose another combination.")
+            throw BindingFailure(message: String(localized: "macOS or another app is using that shortcut. Choose another combination."))
         }
         }
         guard var object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw CocoaError(.fileReadCorruptFile) }

@@ -31,13 +31,13 @@ enum AppleFoundationModel {
         case .available:
             return .ready
         case .unavailable(.deviceNotEligible):
-            return .unavailable("This Mac does not support Apple Intelligence.")
+            return .unavailable(String(localized: "This Mac does not support Apple Intelligence."))
         case .unavailable(.appleIntelligenceNotEnabled):
-            return .unavailable("Turn on Apple Intelligence in System Settings to use this.")
+            return .unavailable(String(localized: "Turn on Apple Intelligence in System Settings to use this."))
         case .unavailable(.modelNotReady):
-            return .unavailable("Apple Intelligence is still downloading its model. Try again shortly.")
+            return .unavailable(String(localized: "Apple Intelligence is still downloading its model. Try again shortly."))
         case .unavailable:
-            return .unavailable("Apple Intelligence is unavailable on this Mac right now.")
+            return .unavailable(String(localized: "Apple Intelligence is unavailable on this Mac right now."))
         }
         #else
         return .unavailable(requiresNewerSystem)
@@ -45,7 +45,7 @@ enum AppleFoundationModel {
     }
 
     private static var requiresNewerSystem: String {
-        "Apple Intelligence needs macOS \(minimumSystemVersion) or later. This Mac runs macOS \(systemVersion)."
+        String(localized: "Apple Intelligence needs macOS \(minimumSystemVersion) or later. This Mac runs macOS \(systemVersion).")
     }
 
     static var systemVersion: String {

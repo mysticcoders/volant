@@ -99,7 +99,7 @@ struct HerdrAttentionView: View {
         }
         .buttonStyle(.plain)
         .disabled(!model.canAnswerAttention)
-        .accessibilityLabel("Answer " + choice.label + ". " + choice.detail)
+        .accessibilityLabel(String(localized: "Answer \(choice.label). \(choice.detail)", comment: "Accessibility label for an answer button; the values are the agent's choice and its detail"))
         if answersFocused {
             button.keyboardShortcut(KeyEquivalent(Character(String(choice.number))), modifiers: [.command, .option])
         } else {

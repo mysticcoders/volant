@@ -23,9 +23,9 @@ final class ICloudSettingsSync {
 
         var text: String {
             switch self {
-            case .off: return "Off"
-            case .unavailable: return "iCloud is unavailable. Check that this Mac is signed in to iCloud."
-            case .synced(let date): return "Up to date as of " + date.formatted(date: .omitted, time: .shortened)
+            case .off: return String(localized: "Off", comment: "iCloud settings sync status")
+            case .unavailable: return String(localized: "iCloud is unavailable. Check that this Mac is signed in to iCloud.")
+            case .synced(let date): return String(localized: "Up to date as of \(date.formatted(date: .omitted, time: .shortened))", comment: "iCloud settings sync status; the value is a time")
             case .attention(let message): return message
             }
         }
@@ -81,7 +81,7 @@ final class ICloudSettingsSync {
     func cloudChanged(reason: Int?) {
         guard enabled else { return }
         if reason == NSUbiquitousKeyValueStoreQuotaViolationChange {
-            status = .attention("Synced settings exceed iCloud's 1 MB limit. Remove large snippets to resume syncing.")
+            status = .attention(String(localized: "Synced settings exceed iCloud's 1 MB limit. Remove large snippets to resume syncing."))
             return
         }
         if reason == NSUbiquitousKeyValueStoreAccountChange { try? FileManager.default.removeItem(at: stateURL) }
@@ -122,9 +122,9 @@ final class ICloudSettingsSync {
             for (key, entry) in outcome.uploads { store.set(entry.propertyList, forKey: Self.prefix + key) }
             try SettingsSync.saveState(outcome.state, at: stateURL)
             if outcome.overBudget {
-                status = .attention("Synced settings exceed iCloud's 1 MB limit. Remove large snippets to resume syncing.")
+                status = .attention(String(localized: "Synced settings exceed iCloud's 1 MB limit. Remove large snippets to resume syncing."))
             } else if !outcome.rejected.isEmpty {
-                status = .attention("Some settings from iCloud were not valid and were not applied: " + outcome.rejected.joined(separator: ", "))
+                status = .attention(String(localized: "Some settings from iCloud were not valid and were not applied: \(outcome.rejected.joined(separator: ", "))", comment: "iCloud settings sync status; the value lists setting names"))
             } else {
                 status = .synced(Date())
             }

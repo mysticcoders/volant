@@ -66,7 +66,7 @@ public enum SettingsSync {
 
         public var errorDescription: String? {
             switch self {
-            case .unreadableConfig: return "config.json could not be read, so settings were not synced."
+            case .unreadableConfig: return String(localized: "config.json could not be read, so settings were not synced.", table: "Core", comment: "iCloud settings sync error")
             }
         }
     }

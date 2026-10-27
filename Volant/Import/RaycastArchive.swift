@@ -13,25 +13,25 @@ enum RaycastArchive {
     static let fileLimit = 64 * 1024 * 1024
     static func decode(_ bytes: Data, password: String) throws -> Data {
         let raw = [UInt8](bytes)
-        guard raw.count <= fileLimit else { throw failure("This export exceeds the 64 MB import limit.") }
+        guard raw.count <= fileLimit else { throw failure(String(localized: "This export exceeds the 64 MB import limit.", comment: "Raycast import error")) }
         guard raw.count >= 12, raw.prefix(8) == Array("RAYCFG3\n".utf8)[...] else {
-            throw failure("Choose a Raycast schema 3 export. Older Raycast exports aren’t supported yet.")
+            throw failure(String(localized: "Choose a Raycast schema 3 export. Older Raycast exports aren’t supported yet.", comment: "Raycast import error"))
         }
         let size = (0..<4).reduce(0) { $0 | Int(raw[8 + $1]) << (8 * $1) }
-        guard size > 0, size <= 1024 * 1024, 12 + size + 16 < raw.count else { throw failure("The export header is damaged.") }
+        guard size > 0, size <= 1024 * 1024, 12 + size + 16 < raw.count else { throw failure(String(localized: "The export header is damaged.", comment: "Raycast import error")) }
         let header = try gunzip(Data(raw[12..<(12 + size)]), limit: 1024 * 1024)
         guard let object = try JSONSerialization.jsonObject(with: header) as? [String: Any],
               object["schemaVersion"] as? Int == 3,
               let encryption = object["encryption"] as? [String: Any],
               let iv = hex(encryption["iv"]), iv.count == 16,
-              let salt = hex(encryption["salt"]), salt.count == 16 else { throw failure("The export uses an unsupported encryption header.") }
+              let salt = hex(encryption["salt"]), salt.count == 16 else { throw failure(String(localized: "The export uses an unsupported encryption header.", comment: "Raycast import error")) }
         var key = try RaycastScrypt.derive(password: Array(password.utf8), salt: salt)
         defer { _ = key.withUnsafeMutableBytes { $0.initializeMemory(as: UInt8.self, repeating: 0) } }
         let compressed: Data
         do {
             let sealed = try AES.GCM.SealedBox(nonce: AES.GCM.Nonce(data: iv), ciphertext: raw[(12 + size)..<(raw.count - 16)], tag: raw.suffix(16))
             compressed = try AES.GCM.open(sealed, using: SymmetricKey(data: key))
-        } catch { throw failure("Couldn’t unlock the export. Check the password, or choose a fresh export if the file is damaged.") }
+        } catch { throw failure(String(localized: "Couldn’t unlock the export. Check the password, or choose a fresh export if the file is damaged.", comment: "Raycast import error")) }
         return try gunzip(compressed, limit: 128 * 1024 * 1024)
     }
     static func failure(_ text: String) -> RaycastImportFailure { .message(text) }
@@ -47,7 +47,7 @@ enum RaycastArchive {
     }
     static func gunzip(_ data: Data, limit: Int) throws -> Data {
         var stream = z_stream()
-        guard inflateInit2_(&stream, 31, ZLIB_VERSION, Int32(MemoryLayout<z_stream>.size)) == Z_OK else { throw failure("Couldn’t initialize the export reader.") }
+        guard inflateInit2_(&stream, 31, ZLIB_VERSION, Int32(MemoryLayout<z_stream>.size)) == Z_OK else { throw failure(String(localized: "Couldn’t initialize the export reader.", comment: "Raycast import error")) }
         defer { inflateEnd(&stream) }
         return try data.withUnsafeBytes { source in
             stream.next_in = UnsafeMutablePointer(mutating: source.bindMemory(to: UInt8.self).baseAddress)
@@ -61,13 +61,13 @@ enum RaycastArchive {
                     return inflate(&stream, Z_NO_FLUSH)
                 }
                 let count = buffer.count - Int(stream.avail_out)
-                guard output.count + count <= limit else { throw failure("The expanded export exceeds the import memory limit.") }
+                guard output.count + count <= limit else { throw failure(String(localized: "The expanded export exceeds the import memory limit.", comment: "Raycast import error")) }
                 output.append(contentsOf: buffer.prefix(count))
                 if status == Z_STREAM_END {
-                    guard stream.avail_in == 0 else { throw failure("Unexpected trailing data in the export.") }
+                    guard stream.avail_in == 0 else { throw failure(String(localized: "Unexpected trailing data in the export.", comment: "Raycast import error")) }
                     return output
                 }
-                guard status == Z_OK, count > 0 else { throw failure("The export’s compressed data is damaged.") }
+                guard status == Z_OK, count > 0 else { throw failure(String(localized: "The export’s compressed data is damaged.", comment: "Raycast import error")) }
             }
         }
     }
@@ -77,7 +77,7 @@ enum RaycastArchive {
 /// Uses system PBKDF2-HMAC-SHA256 and CryptoKit AES-GCM; no dependency on another launcher's code.
 enum RaycastScrypt {
     static func derive(password: [UInt8], salt: [UInt8], n: Int = 16384, r: Int = 8, length: Int = 32) throws -> [UInt8] {
-        guard n > 1, n <= 16384, n & (n - 1) == 0, r > 0, r <= 8, length > 0, length <= 64 else { throw RaycastArchive.failure("Invalid key derivation parameters.") }
+        guard n > 1, n <= 16384, n & (n - 1) == 0, r > 0, r <= 8, length > 0, length <= 64 else { throw RaycastArchive.failure(String(localized: "Invalid key derivation parameters.", comment: "Raycast import error")) }
         let initial = try pbkdf(password, salt, 128 * r)
         var x = stride(from: 0, to: initial.count, by: 4).map { i in
             (0..<4).reduce(UInt32(0)) { $0 | UInt32(initial[i + $1]) << (8 * $1) }
@@ -102,7 +102,7 @@ enum RaycastScrypt {
         let status = password.withUnsafeBytes { p in salt.withUnsafeBytes { s in
             CCKeyDerivationPBKDF(CCPBKDFAlgorithm(kCCPBKDF2), p.baseAddress?.assumingMemoryBound(to: Int8.self), password.count, s.baseAddress?.assumingMemoryBound(to: UInt8.self), salt.count, CCPseudoRandomAlgorithm(kCCPRFHmacAlgSHA256), 1, &result, count)
         } }
-        guard status == kCCSuccess else { throw RaycastArchive.failure("Couldn’t derive the export key.") }
+        guard status == kCCSuccess else { throw RaycastArchive.failure(String(localized: "Couldn’t derive the export key.", comment: "Raycast import error")) }
         return result
     }
     private static func mix(_ input: [UInt32], r: Int) -> [UInt32] {

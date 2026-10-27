@@ -7,18 +7,18 @@ enum LauncherItemAction: String, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .open: return "Open"
-        case .reveal: return "Reveal in Finder"
-        case .contents: return "Show Package Contents"
-        case .favorite: return "Add to Favorites"
-        case .copyPath: return "Copy Path"
-        case .copyName: return "Copy Name"
-        case .copyBundleID: return "Copy Bundle Identifier"
+        case .open: return String(localized: "Open", comment: "Actions menu item")
+        case .reveal: return String(localized: "Reveal in Finder", comment: "Actions menu item")
+        case .contents: return String(localized: "Show Package Contents", comment: "Actions menu item")
+        case .favorite: return String(localized: "Add to Favorites", comment: "Actions menu item")
+        case .copyPath: return String(localized: "Copy Path", comment: "Actions menu item")
+        case .copyName: return String(localized: "Copy Name", comment: "Actions menu item")
+        case .copyBundleID: return String(localized: "Copy Bundle Identifier", comment: "Actions menu item")
         case .copyURL: return String(localized: "Copy URL", comment: "Actions menu item")
         case .copyPort: return String(localized: "Copy Port", comment: "Actions menu item")
         case .copyPID: return String(localized: "Copy Process ID", comment: "Actions menu item")
-        case .configure: return "Edit Shortcut & Alias…"
-        case .resetRanking: return "Reset Ranking"
+        case .configure: return String(localized: "Edit Shortcut & Alias…", comment: "Actions menu item")
+        case .resetRanking: return String(localized: "Reset Ranking", comment: "Actions menu item")
         }
     }
     var symbol: String {
@@ -124,9 +124,9 @@ struct LauncherActionsView: View {
         if action == .open { return target.primaryAction }
         if case .extensionItem = target {
             if action == .reveal { return target.secondaryAction ?? action.title }
-            if action == .copyPath { return "Copy Link" }
+            if action == .copyPath { return String(localized: "Copy Link", comment: "Actions menu item for a link in an extension row") }
         }
-        if action == .favorite, case .app(let app) = target, model.config.favoriteApps.contains(app.id) { return "Remove from Favorites" }
+        if action == .favorite, case .app(let app) = target, model.config.favoriteApps.contains(app.id) { return String(localized: "Remove from Favorites", comment: "Actions menu item") }
         return action.title
     }
     /// An extension row's built-in entries are about links, not files, so they get link symbols.

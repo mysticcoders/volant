@@ -8,7 +8,8 @@ enum Backup {
     static func export() {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true; panel.canChooseFiles = false; panel.canCreateDirectories = true
-        panel.prompt = "Export Here"; panel.message = "Choose a folder. Volant will create a dated backup folder inside it."
+        panel.prompt = String(localized: "Export Here", comment: "Backup export folder picker button")
+        panel.message = String(localized: "Choose a folder. Volant will create a dated backup folder inside it.", comment: "Backup export folder picker message")
         guard panel.runModal() == .OK, let base = panel.url else { return }
         let dest = base.appendingPathComponent(BackupFolder.exportName(), isDirectory: true)
         let fm = FileManager.default
@@ -23,7 +24,7 @@ enum Backup {
             }
             NSWorkspace.shared.activateFileViewerSelecting([dest])
         } catch {
-            alert("Export failed", error.localizedDescription)
+            alert(String(localized: "Export failed", comment: "Backup alert title"), error.localizedDescription)
         }
     }
 
@@ -31,35 +32,41 @@ enum Backup {
     static func importBackup() -> Bool {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true; panel.canChooseFiles = false
-        panel.prompt = "Import"; panel.message = "Choose a Volant-Backup folder."
+        panel.prompt = String(localized: "Import", comment: "Backup import folder picker button")
+        panel.message = String(localized: "Choose a Volant-Backup folder.", comment: "Backup import folder picker message; Volant-Backup is the folder name and stays as is")
         guard panel.runModal() == .OK, let src = panel.url else { return false }
         let notesDestination = Preferences.supportDirectory.appendingPathComponent("Notes", isDirectory: true)
         let plan: BackupPlan
         do {
             plan = try BackupFolder.plan(source: src, notesDestination: notesDestination)
         } catch {
-            alert("Import failed", error.localizedDescription); return false
+            alert(String(localized: "Import failed", comment: "Backup alert title"), error.localizedDescription); return false
         }
         let confirm = NSAlert()
-        confirm.messageText = "Import this backup?"
+        confirm.messageText = String(localized: "Import this backup?", comment: "Backup import confirmation title")
         confirm.informativeText = summary(for: plan)
-        confirm.addButton(withTitle: "Import"); confirm.addButton(withTitle: "Cancel")
+        confirm.addButton(withTitle: String(localized: "Import", comment: "Backup import confirmation button")); confirm.addButton(withTitle: String(localized: "Cancel"))
         guard confirm.runModal() == .alertFirstButtonReturn else { return false }
         do {
             try BackupFolder.apply(plan, source: src, configURL: Preferences.configURL, notesDestination: notesDestination)
             return true
         } catch {
-            alert("Import failed", error.localizedDescription); return false
+            alert(String(localized: "Import failed", comment: "Backup alert title"), error.localizedDescription); return false
         }
     }
 
     private static func summary(for plan: BackupPlan) -> String {
         let incoming = plan.preferences
-        var summary = "Summon: \(KeyCombo.display(incoming.summonHotKey))\nNotes: \(KeyCombo.display(incoming.notesHotKey))\n"
-        summary += "App hotkeys: " + (incoming.appHotKeys.isEmpty ? "none" : incoming.appHotKeys.map { "\(KeyCombo.display($0.hotKey)) → \($0.bundleIdentifier)" }.joined(separator: ", ")) + "\n"
-        summary += "Quicklinks: " + (incoming.quicklinks.isEmpty ? "none" : incoming.quicklinks.map { "\($0.name) → \($0.url)" }.joined(separator: ", ")) + "\n"
-        summary += "Snippets: \(incoming.snippets.count)   Aliases: \(incoming.aliases.count)\n"
-        summary += "Notes to add: \(plan.notes.count) (existing notes are kept)"
+        var summary = String(localized: "Summon: \(KeyCombo.display(incoming.summonHotKey))", comment: "Backup import summary line; the value is a key combination") + "\n"
+            + String(localized: "Notes: \(KeyCombo.display(incoming.notesHotKey))", comment: "Backup import summary line; the value is the Open Notes key combination") + "\n"
+        let appHotKeys = incoming.appHotKeys.map { "\(KeyCombo.display($0.hotKey)) → \($0.bundleIdentifier)" }.joined(separator: ", ")
+        summary += (incoming.appHotKeys.isEmpty ? String(localized: "App hotkeys: none", comment: "Backup import summary line")
+            : String(localized: "App hotkeys: \(appHotKeys)", comment: "Backup import summary line; the value lists key combinations and apps")) + "\n"
+        let quicklinks = incoming.quicklinks.map { "\($0.name) → \($0.url)" }.joined(separator: ", ")
+        summary += (incoming.quicklinks.isEmpty ? String(localized: "Quicklinks: none", comment: "Backup import summary line")
+            : String(localized: "Quicklinks: \(quicklinks)", comment: "Backup import summary line; the value lists quicklink names and URLs")) + "\n"
+        summary += String(localized: "Snippets: \(incoming.snippets.count)   Aliases: \(incoming.aliases.count)", comment: "Backup import summary line with counts") + "\n"
+        summary += String(localized: "Notes to add: \(plan.notes.count) (existing notes are kept)", comment: "Backup import summary line")
         return ([summary] + plan.report).joined(separator: "\n")
     }
 

@@ -56,7 +56,7 @@ final class MarkdownTextView: NSTextView {
         }
         let start = move(oldSelection.location), end = move(NSMaxRange(oldSelection))
         setSelectedRange(NSRange(location: max(0, start), length: max(0, end - start)))
-        undoManager?.setActionName("Change Code Language")
+        undoManager?.setActionName(String(localized: "Change Code Language", comment: "Undo menu action name"))
         breakUndoCoalescing()
         window?.makeFirstResponder(self)
     }
@@ -100,7 +100,7 @@ struct LiveMarkdownEditor: NSViewRepresentable {
         view.isAutomaticSpellingCorrectionEnabled = false
         view.isContinuousSpellCheckingEnabled = false
         view.usesFindBar = true
-        view.setAccessibilityLabel(live ? "Live Markdown editor" : "Markdown source editor")
+        view.setAccessibilityLabel(live ? String(localized: "Live Markdown editor") : String(localized: "Markdown source editor"))
         view.string = text
         view.delegate = context.coordinator
         context.coordinator.adopt(context.environment.volantTheme, in: view, restyle: false)

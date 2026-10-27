@@ -57,7 +57,7 @@ final class ACPConversations: ObservableObject {
     @discardableResult func newConversation(configuration: AIConfiguration?) -> Bool {
         guard let configuration, configuration.isConfigured else { return false }
         guard canStartAnother else {
-            current.error = "Volant runs up to \(ACPConversationLimit.live) conversations at once. End one to start another."
+            current.error = String(localized: "Volant runs up to \(ACPConversationLimit.live) conversations at once. End one to start another.")
             return false
         }
         if !current.active, current.state.messages.isEmpty {

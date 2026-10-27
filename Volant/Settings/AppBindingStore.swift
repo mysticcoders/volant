@@ -15,19 +15,19 @@ enum AppBindingStore {
     static func save(bundleID: String, path: String, originalAlias: String, alias: String, hotKey: String,
                      expected: Data, at url: URL, available: (KeyCombo) -> Bool) throws -> Data {
         let current = try Data(contentsOf: url)
-        guard current == expected else { throw BindingFailure(message: "Configuration changed. Reload this editor before saving again.") }
+        guard current == expected else { throw BindingFailure(message: String(localized: "Configuration changed. Reload this editor before saving again.")) }
         let config = try JSONDecoder().decode(Preferences.self, from: current)
         guard var object = try JSONSerialization.jsonObject(with: current) as? [String: Any] else { throw CocoaError(.fileReadCorruptFile) }
         let alias = alias.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         try validateAlias(alias, originalAlias: originalAlias, config: config)
         if !hotKey.isEmpty {
             guard let combo = KeyCombo(parsing: hotKey), combo.carbonModifiers & UInt32(cmdKey | controlKey | optionKey) != 0 else {
-                throw BindingFailure(message: "Include Command, Control or Option in a global shortcut.")
+                throw BindingFailure(message: String(localized: "Include Command, Control or Option in a global shortcut."))
             }
             let own = AppHotKey.bindingIndex(in: config.appHotKeys, bundleIdentifier: bundleID, path: path)
             let others = Array(GlobalShortcutStore.bindings(config).values) + config.appHotKeys.indices.filter { $0 != own }.map { config.appHotKeys[$0].hotKey }
-            guard !others.contains(where: { KeyCombo(parsing: $0) == combo }) else { throw BindingFailure(message: "That shortcut is already assigned in Volant.") }
-            guard available(combo) else { throw BindingFailure(message: "macOS or another app is using that shortcut. Choose another combination.") }
+            guard !others.contains(where: { KeyCombo(parsing: $0) == combo }) else { throw BindingFailure(message: String(localized: "That shortcut is already assigned in Volant.")) }
+            guard available(combo) else { throw BindingFailure(message: String(localized: "macOS or another app is using that shortcut. Choose another combination.")) }
         }
         var aliases = object["aliases"] as? [String: String] ?? [:]
         if !originalAlias.isEmpty { aliases.removeValue(forKey: originalAlias) }
@@ -54,12 +54,12 @@ enum AppBindingStore {
             guard !LauncherRouting.isReserved(alias), !alias.contains(where: { $0.isWhitespace }),
                   !alias.hasPrefix("/"), !alias.hasPrefix("@"), !alias.hasPrefix(":"),
                   alias.rangeOfCharacter(from: .letters) != nil else {
-                throw BindingFailure(message: "Choose a single word or letter that is not a built-in command.")
+                throw BindingFailure(message: String(localized: "Choose a single word or letter that is not a built-in command."))
             }
             guard !config.aliases.keys.contains(where: { $0.lowercased() == alias && $0 != originalAlias }),
                   !config.quicklinks.contains(where: { $0.name.lowercased() == alias }),
                   !config.snippets.contains(where: { $0.keyword.lowercased() == alias }) else {
-                throw BindingFailure(message: "That alias is already used by another alias, quicklink or snippet.")
+                throw BindingFailure(message: String(localized: "That alias is already used by another alias, quicklink or snippet."))
             }
         }
     }
@@ -70,7 +70,7 @@ enum AppBindingStore {
         let config = try JSONDecoder().decode(Preferences.self, from: data)
         let currentAliases = config.aliases.filter { $0.value == path || $0.value == name }
         guard currentAliases == expectedAliases else {
-            throw BindingFailure(message: "This app's aliases changed. Reload the row before trying again.")
+            throw BindingFailure(message: String(localized: "This app's aliases changed. Reload the row before trying again."))
         }
         let alias = value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         try validateAlias(alias, originalAlias: originalAlias, config: config)
@@ -88,7 +88,7 @@ enum AppBindingStore {
         let data = try Data(contentsOf: url)
         let config = try JSONDecoder().decode(Preferences.self, from: data)
         let current = AppHotKey.binding(in: config.appHotKeys, bundleIdentifier: bundleID, path: path)
-        guard current == expectedValue else { throw BindingFailure(message: "This app shortcut changed. Reload before trying again.") }
+        guard current == expectedValue else { throw BindingFailure(message: String(localized: "This app shortcut changed. Reload before trying again.")) }
         return try save(bundleID: bundleID, path: path, originalAlias: "", alias: "", hotKey: value, expected: data, at: url) { combo in
             combo == KeyCombo(parsing: current) || available(combo)
         }

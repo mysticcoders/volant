@@ -37,7 +37,7 @@ final class FSearchClient {
 
     static func entry(_ hit: FSearch.Hit) -> FileEntry {
         let url = URL(fileURLWithPath: hit.path, isDirectory: hit.isFolder)
-        return FileEntry(id: hit.path, name: url.lastPathComponent, url: url, kind: hit.isFolder ? "Folder" : "")
+        return FileEntry(id: hit.path, name: url.lastPathComponent, url: url, kind: hit.isFolder ? String(localized: "Folder", comment: "File kind shown beside a folder in file search results") : "")
     }
 
     private static func helperCall(_ request: Request, completion: @escaping (Data?, String?) -> Void) {
@@ -52,12 +52,12 @@ final class FSearchClient {
             connection.invalidate()
             DispatchQueue.main.async { completion(data, error) }
         }
-        connection.invalidationHandler = { finish(nil, "The agent helper is unavailable.") }
-        connection.interruptionHandler = { finish(nil, "The agent helper is unavailable.") }
+        connection.invalidationHandler = { finish(nil, String(localized: "The agent helper is unavailable.", comment: "fsearch file search error")) }
+        connection.interruptionHandler = { finish(nil, String(localized: "The agent helper is unavailable.", comment: "fsearch file search error")) }
         connection.resume()
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) { finish(nil, FSearchError.timedOut.localizedDescription) }
-        guard let proxy = connection.remoteObjectProxyWithErrorHandler({ _ in finish(nil, "The agent helper is unavailable.") }) as? VolantAgentHostProtocol else {
-            finish(nil, "The agent helper is unavailable."); return
+        guard let proxy = connection.remoteObjectProxyWithErrorHandler({ _ in finish(nil, String(localized: "The agent helper is unavailable.", comment: "fsearch file search error")) }) as? VolantAgentHostProtocol else {
+            finish(nil, String(localized: "The agent helper is unavailable.", comment: "fsearch file search error")); return
         }
         switch request {
         case .search(let query, let limit): proxy.fsearchSearch(query: query, limit: limit, reply: finish)

@@ -17,10 +17,10 @@ public enum NumberBases {
     }
 
     private static let bases: [String: Base] = {
-        let hex = Base(radix: 16, prefix: "0x", name: "Hexadecimal")
-        let binary = Base(radix: 2, prefix: "0b", name: "Binary")
-        let octal = Base(radix: 8, prefix: "0o", name: "Octal")
-        let decimal = Base(radix: 10, prefix: "", name: "Decimal")
+        let hex = Base(radix: 16, prefix: "0x", name: String(localized: "Hexadecimal", table: "Core", comment: "Calculator number base name"))
+        let binary = Base(radix: 2, prefix: "0b", name: String(localized: "Binary", table: "Core", comment: "Calculator number base name"))
+        let octal = Base(radix: 8, prefix: "0o", name: String(localized: "Octal", table: "Core", comment: "Calculator number base name"))
+        let decimal = Base(radix: 10, prefix: "", name: String(localized: "Decimal", table: "Core", comment: "Calculator number base name"))
         return ["hex": hex, "hexadecimal": hex, "binary": binary, "bin": binary, "octal": octal, "oct": octal,
                 "decimal": decimal, "dec": decimal]
     }()

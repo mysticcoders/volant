@@ -56,7 +56,7 @@ final class DictationVolumeDuck {
                 changed.append(volume)
             } catch {
                 guard write(changed, device: state.device) else {
-                    return "Couldn’t fully lower \(state.name) for dictation and it may be quieter now. Check its volume."
+                    return String(localized: "Couldn’t fully lower \(state.name) for dictation and it may be quieter now. Check its volume.", comment: "The name is an audio output device")
                 }
                 return nil
             }
@@ -75,11 +75,11 @@ final class DictationVolumeDuck {
         monitor?.stop()
         guard let state = try? hardware.output(of: lowered.device),
               lowered.uid == nil || state.uid == nil || lowered.uid == state.uid else {
-            return "\(lowered.name) disconnected during dictation, so its volume wasn’t restored. Check its volume when you reconnect it."
+            return String(localized: "\(lowered.name) disconnected during dictation, so its volume wasn’t restored. Check its volume when you reconnect it.", comment: "The name is an audio output device")
         }
         guard Self.unchanged(state.volumes, since: lowered) else { return nil }
         guard state.canSetVolume, write(lowered.original, device: lowered.device) else {
-            return "Couldn’t restore \(lowered.name)’s volume after dictation. Check its volume."
+            return String(localized: "Couldn’t restore \(lowered.name)’s volume after dictation. Check its volume.", comment: "The name is an audio output device")
         }
         return nil
     }

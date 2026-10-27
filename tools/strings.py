@@ -9,7 +9,9 @@ xcstringstool's lightweight extraction, which is why Core strings must not inter
 InfoPlist.xcstrings must hold exactly the permission prompts in project.yml, with the same English.
 
   tools/strings.py           update the catalogs
-  tools/strings.py --check   fail if either catalog or the permission prompts are out of date
+  tools/strings.py --check   fail on strings the catalogs lack or describe differently, on prompts that
+                             differ from project.yml, and on strings without Spanish. Unused strings are
+                             marked stale only by a full sync, since an older SDK compiles less code.
 """
 import argparse
 import glob
@@ -24,6 +26,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 RESOURCES = ROOT / "Volant/Resources"
 CATALOGS = ("Localizable.xcstrings", "Core.xcstrings")
+# Languages besides English that ship; every string in use needs a value in each.
+SHIPPED_LANGUAGES = ("es",)
 
 
 def app_stringsdata(build_dir):
@@ -46,12 +50,14 @@ def core_stringsdata(out):
     return sorted(str(p) for p in out.glob("*.stringsdata"))
 
 
-def sync(catalog_dir, build_dir):
-    """Merges the current source strings into the catalogs in `catalog_dir`."""
+def sync(catalog_dir, build_dir, mark_stale=True):
+    """Merges the current source strings into the catalogs in `catalog_dir`. Without `mark_stale`, strings
+    this build didn't compile are left alone: code behind a newer SDK, such as macOS 26 dictation and
+    Apple Intelligence, isn't compiled by older Xcode on CI, and its strings are still in use."""
     with tempfile.TemporaryDirectory() as scratch:
         data = app_stringsdata(build_dir) + core_stringsdata(Path(scratch))
-        result = subprocess.run(["xcrun", "xcstringstool", "sync"] + [str(catalog_dir / c) for c in CATALOGS] + ["--stringsdata"] + data,
-                                capture_output=True, text=True)
+        result = subprocess.run(["xcrun", "xcstringstool", "sync"] + [str(catalog_dir / c) for c in CATALOGS] + ["--stringsdata"] + data
+                                + ([] if mark_stale else ["--skip-marking-strings-stale"]), capture_output=True, text=True)
         if result.returncode:
             sys.exit(result.stderr or result.stdout)
 
@@ -69,6 +75,28 @@ def prompt_problems():
     return problems
 
 
+def has_value(localization):
+    """Whether a catalog localization carries text, directly or in every plural or device variant."""
+    if localization.get("stringUnit", {}).get("value") is not None:
+        return True
+    variations = localization.get("variations", {})
+    return bool(variations) and all(has_value(v) for kind in variations.values() for v in kind.values())
+
+
+def missing_translations(catalog_dir):
+    """Strings in use that lack a value in a shipped language, by catalog and language."""
+    problems = []
+    for name in CATALOGS + ("InfoPlist.xcstrings",):
+        strings = json.loads((catalog_dir / name).read_text())["strings"]
+        for language in SHIPPED_LANGUAGES:
+            missing = sorted(key for key, entry in strings.items()
+                             if entry.get("shouldTranslate", True) and entry.get("extractionState") != "stale"
+                             and not has_value(entry.get("localizations", {}).get(language, {})))
+            if missing:
+                problems.append(f"{name}: {len(missing)} strings have no {language} text, e.g. {missing[:3]}")
+    return problems
+
+
 def changes(before, after):
     """Keys added, made stale or otherwise changed by a sync, for the check's message."""
     old, new = before["strings"], after["strings"]
@@ -83,7 +111,7 @@ def main():
     parser.add_argument("--check", action="store_true", help="report out-of-date catalogs without changing them")
     parser.add_argument("--build-dir", type=Path, default=ROOT / "build")
     args = parser.parse_args()
-    problems = prompt_problems()
+    problems = prompt_problems() + missing_translations(RESOURCES)
     if not args.check:
         sync(RESOURCES, args.build_dir)
         print("Updated " + " and ".join(CATALOGS))
@@ -92,10 +120,10 @@ def main():
             copy = Path(scratch)
             for catalog in CATALOGS:
                 shutil.copy(RESOURCES / catalog, copy / catalog)
-            sync(copy, args.build_dir)
+            sync(copy, args.build_dir, mark_stale=False)
             for catalog in CATALOGS:
-                added, stale, changed = changes(json.loads((RESOURCES / catalog).read_text()), json.loads((copy / catalog).read_text()))
-                for label, keys in (("new", added), ("no longer used", stale), ("changed", changed)):
+                added, _, changed = changes(json.loads((RESOURCES / catalog).read_text()), json.loads((copy / catalog).read_text()))
+                for label, keys in (("new", added), ("changed", changed)):
                     if keys:
                         problems.append(f"{catalog}: {len(keys)} {label}, e.g. {keys[:3]}")
     if problems:

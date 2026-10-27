@@ -56,11 +56,11 @@ private struct BlockView: View {
         case .rule:
             Divider()
         case .url(let url):
-            copyable(label: url, mono: false, hint: "Copy URL") {
+            copyable(label: url, mono: false, hint: String(localized: "Copy URL")) {
                 Link(url, destination: URL(string: url)!).font(.system(size: 14)).lineLimit(1)
             }
         case .code(let lang, let code):
-            copyable(label: code, mono: true, hint: lang.map { "Copy \($0)" } ?? "Copy") {
+            copyable(label: code, mono: true, hint: lang.map { String(localized: "Copy \($0)", comment: "Copy button on a code block; the value is its language tag") } ?? String(localized: "Copy")) {
                 Text(code)
                     .font(.system(size: 13, design: .monospaced))
                     .textSelection(.enabled)

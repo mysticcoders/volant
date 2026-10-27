@@ -11,7 +11,7 @@ enum SystemActions {
         case .lockScreen: return lock()
         case .sleep: return sleep()
         case .sleepDisplays:
-            return pmset("displaysleepnow") == 0 ? nil : "Couldn’t turn off the displays."
+            return pmset("displaysleepnow") == 0 ? nil : String(localized: "Couldn’t turn off the displays.")
         case .screenSaver:
             let url = URL(fileURLWithPath: "/System/Library/CoreServices/ScreenSaverEngine.app")
             NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
@@ -32,8 +32,8 @@ enum SystemActions {
             return nil
         }
         return pmset("displaysleepnow") == 0
-            ? "Lock Screen isn’t available on this version of macOS, so the displays were turned off instead."
-            : "Couldn’t lock the screen."
+            ? String(localized: "Lock Screen isn’t available on this version of macOS, so the displays were turned off instead.")
+            : String(localized: "Couldn’t lock the screen.")
     }
 
     /// `pmset sleepnow` first; if that is refused, IOKit's request, which the console user may make.
@@ -41,7 +41,7 @@ enum SystemActions {
         if pmset("sleepnow") == 0 { return nil }
         let port = IOPMFindPowerManagement(kIOMainPortDefault)
         defer { if port != 0 { IOServiceClose(port) } }
-        guard port != 0, IOPMSleepSystem(port) == kIOReturnSuccess else { return "Couldn’t put this Mac to sleep." }
+        guard port != 0, IOPMSleepSystem(port) == kIOReturnSuccess else { return String(localized: "Couldn’t put this Mac to sleep.") }
         return nil
     }
 
@@ -67,6 +67,13 @@ enum SystemActions {
         let event = NSAppleEventDescriptor(eventClass: AEEventClass(kCoreEventClass), eventID: id, targetDescriptor: target,
                                            returnID: AEReturnID(kAutoGenerateReturnID), transactionID: AETransactionID(kAnyTransactionID))
         do { _ = try event.sendEvent(options: [.noReply], timeout: 5); return nil }
-        catch { return "Couldn’t ask macOS to " + action.title.lowercased().replacingOccurrences(of: "…", with: "") + "." }
+        catch {
+            switch action {
+            case .restart: return String(localized: "Couldn’t ask macOS to restart.")
+            case .shutDown: return String(localized: "Couldn’t ask macOS to shut down.")
+            case .logOut: return String(localized: "Couldn’t ask macOS to log out.")
+            default: return String(localized: "Couldn’t ask macOS to do that.", comment: "System action error for an action without its own message")
+            }
+        }
     }
 }

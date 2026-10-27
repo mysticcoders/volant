@@ -172,8 +172,8 @@ public enum ExtensionValidationError: Error, LocalizedError {
     case invalidManifest, invalidMemory
     public var errorDescription: String? {
         switch self {
-        case .invalidManifest: return "Extension needs a valid ABI 1 or 2 manifest, SHA-256 and supported permissions."
-        case .invalidMemory: return "Extension must declare bounded WebAssembly memory (maximum 16 MiB)."
+        case .invalidManifest: return String(localized: "Extension needs a valid ABI 1 or 2 manifest, SHA-256 and supported permissions.", table: "Core", comment: "Extension error; ABI and SHA-256 are not translated")
+        case .invalidMemory: return String(localized: "Extension must declare bounded WebAssembly memory (maximum 16 MiB).", table: "Core", comment: "Extension error")
         }
     }
 }

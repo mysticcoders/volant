@@ -72,7 +72,7 @@ public enum ExtensionStorageError: Error, LocalizedError, Equatable {
     case notObject, tooDeep, tooLarge(Int)
     public var errorDescription: String? {
         switch self {
-        case .notObject: return "Extension tried to save something other than a JSON object. Its saved data was kept."
+        case .notObject: return String(localized: "Extension tried to save something other than a JSON object. Its saved data was kept.", table: "Core", comment: "Extension storage error")
         case .tooDeep: return "Extension tried to save data nested more than \(ExtensionStorage.maximumDepth) levels deep. Its saved data was kept."
         case .tooLarge(let bytes): return "Extension tried to save \(bytes / 1024) KB; the limit is \(ExtensionStorage.maximumBytes / 1024) KB. Its saved data was kept."
         }

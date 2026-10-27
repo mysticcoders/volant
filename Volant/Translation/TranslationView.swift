@@ -14,9 +14,9 @@ struct TranslationView: View {
                 Button(action: back) { Image(systemName: "chevron.left") }
                     .buttonStyle(.plain).help("Back to search (⌘[)")
                     .accessibilityLabel("Back to search").keyboardShortcut("[", modifiers: .command)
-                languagePicker("Source language", selection: $model.source, auto: true)
+                languagePicker(String(localized: "Source language"), selection: $model.source, auto: true)
                 Spacer(minLength: 8)
-                languagePicker("Target language", selection: $model.target, auto: false)
+                languagePicker(String(localized: "Target language"), selection: $model.target, auto: false)
             }.padding(16)
             Divider()
             HStack(spacing: 0) {
@@ -33,12 +33,12 @@ struct TranslationView: View {
                 .background(Color.primary.opacity(0.035))
                 Divider()
                 ScrollView {
-                    Text(model.output.isEmpty ? "Translation" : model.output)
+                    Text(model.output.isEmpty ? String(localized: "Translation", comment: "Placeholder where the translated text appears") : model.output)
                         .foregroundStyle(model.output.isEmpty || model.outputIsStale ? .secondary : .primary)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(16)
-                        .accessibilityLabel(model.output.isEmpty ? "Translation result is empty" : "Translation: " + model.output)
+                        .accessibilityLabel(model.output.isEmpty ? String(localized: "Translation result is empty") : String(localized: "Translation: \(model.output)", comment: "Accessibility label; the text is the translated result"))
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .font(.system(size: 18))
@@ -56,7 +56,7 @@ struct TranslationView: View {
             HStack(spacing: 8) {
                 if model.busy { ProgressView().controlSize(.small) }
                 Text(model.status).font(.system(size: 11)).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true).accessibilityLabel("Translation status: " + model.status)
+                    .fixedSize(horizontal: false, vertical: true).accessibilityLabel(String(localized: "Translation status: \(model.status)"))
                 Spacer(minLength: 0)
                 if !model.text.isEmpty {
                     Button("Clear") { model.clear(); editing = true }.buttonStyle(.plain).font(.system(size: 12))

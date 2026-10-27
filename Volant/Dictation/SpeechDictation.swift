@@ -30,7 +30,7 @@ final class SpeechDictation: ObservableObject {
     enum DictationError: LocalizedError {
         case noCompatibleAudioFormat
         var errorDescription: String? {
-            "This Mac's microphone format cannot be used for dictation."
+            String(localized: "This Mac's microphone format cannot be used for dictation.")
         }
     }
 
@@ -57,11 +57,11 @@ final class SpeechDictation: ObservableObject {
         #if canImport(Speech) && canImport(FoundationModels)
         guard #available(macOS 26.0, *) else { return .unavailable(requiresNewerSystem) }
         guard SpeechTranscriber.isAvailable else {
-            return .unavailable("On-device dictation is unavailable on this Mac.")
+            return .unavailable(String(localized: "On-device dictation is unavailable on this Mac."))
         }
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .denied, .restricted:
-            return .unavailable("Microphone access is off. Turn it on in System Settings, Privacy & Security, Microphone.")
+            return .unavailable(String(localized: "Microphone access is off. Turn it on in System Settings, Privacy & Security, Microphone."))
         default:
             return .ready
         }
@@ -72,7 +72,7 @@ final class SpeechDictation: ObservableObject {
 
     private static var requiresNewerSystem: String {
         let version = ProcessInfo.processInfo.operatingSystemVersion
-        return "Dictation needs macOS 26 or later. This Mac runs macOS \(version.majorVersion).\(version.minorVersion)."
+        return String(localized: "Dictation needs macOS 26 or later. This Mac runs macOS \(version.majorVersion).\(version.minorVersion).")
     }
 
     #if canImport(Speech) && canImport(FoundationModels)
@@ -93,7 +93,7 @@ final class SpeechDictation: ObservableObject {
         guard phase != .listening else { return }
         let availability = Self.availability
         guard availability.isReady else {
-            phase = .failed(availability.reason ?? "Dictation is unavailable.")
+            phase = .failed(availability.reason ?? String(localized: "Dictation is unavailable."))
             finished(nil)
             return
         }
@@ -104,7 +104,7 @@ final class SpeechDictation: ObservableObject {
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
                 guard granted else {
-                    self.phase = .failed("Dictation needs microphone access.")
+                    self.phase = .failed(String(localized: "Dictation needs microphone access."))
                     finished(nil)
                     return
                 }

@@ -30,7 +30,7 @@ struct Note: Identifiable, Hashable {
         if let text { load(text) }
     }
 
-    var title: String { readError != nil ? url.lastPathComponent : heading.isEmpty ? "Untitled" : heading }
+    var title: String { readError != nil ? url.lastPathComponent : heading.isEmpty ? String(localized: "Untitled", comment: "Title of a note with no heading") : heading }
 
     var preview: String { readError ?? snippet }
 
@@ -82,7 +82,7 @@ final class NotesSearchTask {
 /// text in memory; reload reuses notes whose modification date and size are unchanged. Search answers
 /// at once from what is resident and reads other files on a background queue, one at a time.
 final class NotesStore: ObservableObject {
-    static let unreadableMessage = "This note couldn’t be read as UTF-8 Markdown. Check the file’s access and encoding, then retry."
+    static let unreadableMessage = String(localized: "This note couldn’t be read as UTF-8 Markdown. Check the file’s access and encoding, then retry.")
     @Published private(set) var notes: [Note] = [] { didSet { generation += 1 } }
     /// Changes whenever the list changes, so a background search started on an older list is redone.
     private(set) var generation = 0
@@ -92,7 +92,7 @@ final class NotesStore: ObservableObject {
     var loadMessage: String? {
         if let loadError { return loadError }
         let count = notes.filter { $0.readError != nil }.count
-        return count == 0 ? nil : "\(count) unreadable note\(count == 1 ? "" : "s"). Files and pins have been kept."
+        return count == 0 ? nil : String(localized: "\(count) unreadable notes. Files and pins have been kept.", comment: "Notes load status; needs a plural variant for one note")
     }
     let directory: URL
     private let io = DispatchQueue(label: "com.mysticcoders.volant.notes", qos: .utility)
@@ -124,7 +124,7 @@ final class NotesStore: ObservableObject {
             urls = try fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: Array(Self.stampKeys), options: [.skipsHiddenFiles])
             loadError = nil
         } catch {
-            loadError = "The notes folder couldn’t be read. Existing notes and unsaved edits have been kept. Check folder access, then retry."
+            loadError = String(localized: "The notes folder couldn’t be read. Existing notes and unsaved edits have been kept. Check folder access, then retry.")
             return
         }
         let previous = Dictionary(notes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -203,7 +203,7 @@ final class NotesStore: ObservableObject {
             try initialText.write(to: url, atomically: true, encoding: .utf8)
         } catch {
             dirtyText[url.lastPathComponent] = initialText
-            saveErrors[url.lastPathComponent] = "Could not create note: \(error.localizedDescription)"
+            saveErrors[url.lastPathComponent] = String(localized: "Could not create note: \(error.localizedDescription)")
         }
         let note = Note(id: url.lastPathComponent, url: url, text: initialText, modified: Date())
         notes.insert(note, at: 0)
@@ -232,7 +232,7 @@ final class NotesStore: ObservableObject {
             try text.write(to: url, atomically: true, encoding: .utf8)
             return nil
         } catch {
-            return "Could not save note: \(error.localizedDescription)"
+            return String(localized: "Could not save note: \(error.localizedDescription)")
         }
     }
 
@@ -268,7 +268,7 @@ final class NotesStore: ObservableObject {
             notes.remove(at: i)
             lastError = nil
         } catch {
-            lastError = "Could not move note to Trash: \(error.localizedDescription)"
+            lastError = String(localized: "Could not move note to Trash: \(error.localizedDescription)")
         }
     }
 

@@ -8,7 +8,7 @@ final class AgentsModel: ObservableObject {
     @Published var machines: [HerdrMachineStatus] = []
     @Published var connected = false
     @Published var busy = false
-    @Published var message = "Connect to Local and enabled machines saved in Herdr."
+    @Published var message = String(localized: "Connect to Local and enabled machines saved in Herdr.")
     @Published var actionMessage: String?
     @Published var query = ""
     @Published private(set) var attention: HerdrAttention?
@@ -55,8 +55,8 @@ final class AgentsModel: ObservableObject {
         let connection = NSXPCConnection(serviceName: "com.mysticcoders.volant.AgentHost")
         connection.remoteObjectInterface = NSXPCInterface(with: VolantAgentHostProtocol.self)
         let current = generation
-        connection.interruptionHandler = { [weak self] in DispatchQueue.main.async { self?.failed("Local helper disconnected. Reconnect to try again.", generation: current) } }
-        connection.invalidationHandler = { [weak self] in DispatchQueue.main.async { self?.failed("Local helper is unavailable. Reconnect to try again.", generation: current) } }
+        connection.interruptionHandler = { [weak self] in DispatchQueue.main.async { self?.failed(String(localized: "Local helper disconnected. Reconnect to try again."), generation: current) } }
+        connection.invalidationHandler = { [weak self] in DispatchQueue.main.async { self?.failed(String(localized: "Local helper is unavailable. Reconnect to try again."), generation: current) } }
         self.connection = connection
         connection.resume()
         connected = true
@@ -71,7 +71,7 @@ final class AgentsModel: ObservableObject {
         connection?.invalidate(); connection = nil
         connected = false; busy = false; focusInFlight = false; sessions = []; machines = []; actionMessage = nil; machineToggleInFlight = nil
         repositories = [:]; repositoryRequest = nil; repositoryMarks = [:]; repositoryCheckedAt = [:]
-        message = "Connect to Local and enabled machines saved in Herdr."
+        message = String(localized: "Connect to Local and enabled machines saved in Herdr.")
     }
     private func failed(_ error: String, generation current: Int) {
         guard current == generation else { return }
@@ -109,7 +109,7 @@ final class AgentsModel: ObservableObject {
                         if machine.enabled {
                             if !previousRoutes.contains(machine.routeIdentity) { newlyEnabled.append(machine) }
                         }
-                        else { Self.place(.init(id: "remote:" + machine.id, label: machine.label, state: "disabled", detail: "Disabled in Herdr"), in: &machines) }
+                        else { Self.place(.init(id: "remote:" + machine.id, label: machine.label, state: "disabled", detail: String(localized: "Disabled in Herdr", comment: "Herdr machine status detail")), in: &machines) }
                     }
                 } else {
                     // An unreadable catalog cannot authorize stale remote panes.
@@ -117,8 +117,8 @@ final class AgentsModel: ObservableObject {
                     self.inventoryRequests = self.inventoryRequests.filter { $0.key == "local" }
                     sessions.removeAll { $0.machine != nil }
                     machines.removeAll { $0.id != "local" }
-                    Self.place(.init(id: "catalog", label: "Saved machines", state: "unavailable",
-                        detail: error ?? "Couldn’t read saved machines."), in: &machines)
+                    Self.place(.init(id: "catalog", label: String(localized: "Saved machines", comment: "Herdr status row for the list of saved remote machines"), state: "unavailable",
+                        detail: error ?? String(localized: "Couldn’t read saved machines.")), in: &machines)
                 }
                 self.update(\.machines, machines)
                 self.update(\.sessions, sessions)
@@ -139,7 +139,7 @@ final class AgentsModel: ObservableObject {
         guard let data = try? JSONEncoder().encode(machine) else { return }
         let current = generation
         machineToggleInFlight = machine.id
-        actionMessage = (enabled ? "Enabling " : "Disabling ") + machine.label + "…"
+        actionMessage = enabled ? String(localized: "Enabling \(machine.label)…", comment: "Herdr machine being turned on") : String(localized: "Disabling \(machine.label)…", comment: "Herdr machine being turned off")
         let apply: (Data?, String?) -> Void = { [weak self] reply, error in
             DispatchQueue.main.async {
                 guard let self, current == self.generation else { return }
@@ -147,10 +147,11 @@ final class AgentsModel: ObservableObject {
                 if let reply, let profiles = try? HerdrMachine.decode(reply), error == nil {
                     self.profiles = profiles
                     let state = profiles.first { $0.id == machine.id }?.enabled
-                    self.actionMessage = machine.label + " is " + ((state ?? enabled) ? "enabled" : "disabled") + "."
+                    self.actionMessage = (state ?? enabled) ? String(localized: "\(machine.label) is enabled.", comment: "A Herdr machine was turned on")
+                        : String(localized: "\(machine.label) is disabled.", comment: "A Herdr machine was turned off")
                     self.refresh()
                 } else {
-                    self.actionMessage = error ?? "Couldn’t change this machine in Herdr."
+                    self.actionMessage = error ?? String(localized: "Couldn’t change this machine in Herdr.")
                 }
             }
         }
@@ -161,7 +162,7 @@ final class AgentsModel: ObservableObject {
     private func inventoryProxy() -> VolantAgentHostProtocol? {
         let current = generation
         return connection?.remoteObjectProxyWithErrorHandler { [weak self] _ in
-            DispatchQueue.main.async { self?.failed("Local helper disconnected. Reconnect to try again.", generation: current) }
+            DispatchQueue.main.async { self?.failed(String(localized: "Local helper disconnected. Reconnect to try again."), generation: current) }
         } as? VolantAgentHostProtocol
     }
 
@@ -171,7 +172,7 @@ final class AgentsModel: ObservableObject {
         let request = UUID(), current = generation
         inventoryRequests[id] = request
         if !machines.contains(where: { $0.id == id && $0.state == "connected" }) {
-            setMachine(.init(id: id, label: machine?.label ?? "Local", state: "loading", detail: "Loading panes…"))
+            setMachine(.init(id: id, label: machine?.label ?? String(localized: "Local", comment: "Herdr machine name for this Mac"), state: "loading", detail: String(localized: "Loading panes…")))
         }
         updateInventoryMessage()
         let reply: (Data?, String?) -> Void = { [weak self] data, error in
@@ -184,10 +185,10 @@ final class AgentsModel: ObservableObject {
                     self.update(\.sessions, AgentSession.sorted(others + values))
                     self.noteSeen(values)
                     if machine == nil { self.refreshRepositories() }
-                    self.setMachine(.init(id: id, label: machine?.label ?? "Local", state: "connected", detail: "\(values.count) panes"))
+                    self.setMachine(.init(id: id, label: machine?.label ?? String(localized: "Local", comment: "Herdr machine name for this Mac"), state: "connected", detail: String(localized: "\(values.count) panes", comment: "Herdr machine status: number of terminal panes")))
                 } else {
                     self.update(\.sessions, others)
-                    self.setMachine(.init(id: id, label: machine?.label ?? "Local", state: "unavailable", detail: error ?? "Couldn’t read panes."))
+                    self.setMachine(.init(id: id, label: machine?.label ?? String(localized: "Local", comment: "Herdr machine name for this Mac"), state: "unavailable", detail: error ?? String(localized: "Couldn’t read panes.")))
                 }
                 self.refreshAttention()
                 self.updateInventoryMessage()
@@ -196,7 +197,7 @@ final class AgentsModel: ObservableObject {
         if let inventoryReader { inventoryReader(machine, reply) }
         else {
             do { inventoryProxy()?.listAgents(machine: try machine.map { try JSONEncoder().encode($0) }, reply: reply) }
-            catch { reply(nil, "Invalid saved machine.") }
+            catch { reply(nil, String(localized: "Invalid saved machine.")) }
         }
     }
 
@@ -289,9 +290,9 @@ final class AgentsModel: ObservableObject {
     private func updateInventoryMessage() {
         let loading = catalogRequest != nil || !inventoryRequests.isEmpty
         update(\.busy, loading)
-        if machines.contains(where: \.unavailable) { update(\.message, "Some machines are unavailable. Showing connected machines only.") }
-        else if loading { update(\.message, "Loading Herdr machines… Available panes are ready to use.") }
-        else { update(\.message, sessions.isEmpty ? "No agents are running on connected machines." : "Herdr machines · refreshes automatically") }
+        if machines.contains(where: \.unavailable) { update(\.message, String(localized: "Some machines are unavailable. Showing connected machines only.")) }
+        else if loading { update(\.message, String(localized: "Loading Herdr machines… Available panes are ready to use.")) }
+        else { update(\.message, sessions.isEmpty ? String(localized: "No agents are running on connected machines.") : String(localized: "Herdr machines · refreshes automatically")) }
     }
     func isAttentionTarget(_ session: AgentSession) -> Bool {
         attentionTarget?.id == session.id && attentionTarget?.sessionIdentity == session.sessionIdentity
@@ -339,13 +340,13 @@ final class AgentsModel: ObservableObject {
                 self.attention = preview
                 self.attentionQuestion = snapshot?.question
                 self.attentionToken = snapshot?.token
-                self.attentionError = error ?? (self.attention == nil ? "Couldn’t read this question. Open it in Herdr." : nil)
+                self.attentionError = error ?? (self.attention == nil ? String(localized: "Couldn’t read this question. Open it in Herdr.") : nil)
             }
         }
         if let attentionReader { attentionReader(target, completion); return }
-        guard let connection else { completion(nil, "Herdr is disconnected."); return }
-        let proxy = connection.remoteObjectProxyWithErrorHandler { _ in completion(nil, "Couldn’t read this question. Open it in Herdr.") } as? VolantAgentHostProtocol
-        guard let data = try? JSONEncoder().encode(target) else { completion(nil, "Invalid agent destination."); return }
+        guard let connection else { completion(nil, String(localized: "Herdr is disconnected.")); return }
+        let proxy = connection.remoteObjectProxyWithErrorHandler { _ in completion(nil, String(localized: "Couldn’t read this question. Open it in Herdr.")) } as? VolantAgentHostProtocol
+        guard let data = try? JSONEncoder().encode(target) else { completion(nil, String(localized: "Invalid agent destination.")); return }
         proxy?.readAgentAttention(target: data, reply: completion)
     }
 
@@ -354,7 +355,7 @@ final class AgentsModel: ObservableObject {
         guard canAnswerAttention, let token = attentionToken, let target = attentionTarget,
               HerdrAttention.matches(target, in: sessions),
               attentionQuestion?.answerChoices.contains(where: { $0.number == choice }) == true else { return }
-        attentionToken = nil; attentionAnswering = true; attentionResponse = "Sending answer…"
+        attentionToken = nil; attentionAnswering = true; attentionResponse = String(localized: "Sending answer…")
         attentionRequest = UUID()
         answerRequest = UUID()
         let request = answerRequest
@@ -370,8 +371,8 @@ final class AgentsModel: ObservableObject {
             }
         }
         if let attentionResponder { attentionResponder(token, choice, completion); return }
-        guard let connection else { completion(nil, "Herdr is disconnected."); return }
-        let proxy = connection.remoteObjectProxyWithErrorHandler { _ in completion(nil, "Couldn’t confirm delivery. Review Herdr before retrying.") } as? VolantAgentHostProtocol
+        guard let connection else { completion(nil, String(localized: "Herdr is disconnected.")); return }
+        let proxy = connection.remoteObjectProxyWithErrorHandler { _ in completion(nil, String(localized: "Couldn’t confirm delivery. Review Herdr before retrying.")) } as? VolantAgentHostProtocol
         proxy?.answerAgentQuestion(token: token, choice: choice, reply: completion)
     }
 
@@ -389,7 +390,7 @@ final class AgentsModel: ObservableObject {
                 self.focusInFlight = false
                 self.lastFocusSucceeded = error == nil
                 if error == nil { self.markSeen(session) }
-                self.actionMessage = error ?? "Focused on \(session.machineLabel). Switch to that machine in Herdr to continue."
+                self.actionMessage = error ?? String(localized: "Focused on \(session.machineLabel). Switch to that machine in Herdr to continue.")
                 if error == nil { self.refresh() }
             }
         }

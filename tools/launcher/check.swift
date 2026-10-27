@@ -1111,7 +1111,7 @@ RunLoop.main.run(until: Date().addingTimeInterval(0.2))
 // Summon/typing focus is covered above; this fixture checks command keyboard delivery.
 func coreSearchField(in view: NSView) -> NSTextField? {
     if let field = view as? NSTextField,
-       field.placeholderString == "Search for apps, files, contacts, or calculate…" { return field }
+       field.placeholderString == LauncherModel.defaultSearchPlaceholder { return field }
     return view.subviews.lazy.compactMap { coreSearchField(in: $0) }.first
 }
 verify(corePanel.makeFirstResponder(coreSearchField(in: corePanel.contentView!)!), "Focus core command search")

@@ -223,7 +223,7 @@ public enum CookingConverter {
         let text = "\(number) \(target.label(rounded))"
         let friendly = target.milliliters != nil ? kitchenFraction(result, unit: target) : nil
         let plain = friendly == "\(number) \(target.label(rounded))"
-        let approximate: String? = weighed ? "Approximate" : nil
+        let approximate: String? = weighed ? String(localized: "Approximate", table: "Core", comment: "Calculator cooking conversion label: the weight is approximate") : nil
         var detail = approximate
         if let friendly, !plain { detail = "About " + friendly }
         let swap = "\(number) \(target.label(rounded)) \(ingredient.primary) in \(source.plural)"
@@ -357,7 +357,7 @@ public enum CookingConverter {
             let degrees = celsius ? ((fahrenheit - 32) * 5 / 9).rounded() : fahrenheit
             let text = "\(Calculator.format(degrees, locale: locale)) °\(celsius ? "C" : "F")"
             return CalculationAnswer(input: input, inputDetail: celsius ? "Gas mark \(markLabel(mark)) = \(Int(fahrenheit)) °F" : nil, result: text,
-                                     resultDetail: celsius ? "Rounded to a whole degree" : nil, copyText: text,
+                                     resultDetail: celsius ? String(localized: "Rounded to a whole degree", table: "Core", comment: "Calculator gas mark conversion label") : nil, copyText: text,
                                      swapQuery: "\(Calculator.format(degrees, locale: locale)) \(celsius ? "c" : "f") in gas mark")
         }
         guard let match = toGasMark.firstMatch(in: query, range: range),

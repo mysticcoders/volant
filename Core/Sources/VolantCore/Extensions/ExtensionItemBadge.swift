@@ -35,11 +35,11 @@ public struct ExtensionItemBadge: Codable, Hashable, Sendable {
         /// What VoiceOver says before the badge's text.
         public var spokenName: String {
             switch self {
-            case .points: "Points"
-            case .comments: "Comments"
-            case .site: "Site"
-            case .author: "Author"
-            case .time: "Time"
+            case .points: String(localized: "Points", table: "Core", comment: "VoiceOver name for an extension row's points badge")
+            case .comments: String(localized: "Comments", table: "Core", comment: "VoiceOver name for an extension row's comment count badge")
+            case .site: String(localized: "Site", table: "Core", comment: "VoiceOver name for an extension row's website badge")
+            case .author: String(localized: "Author", table: "Core", comment: "VoiceOver name for an extension row's author badge")
+            case .time: String(localized: "Time", table: "Core", comment: "VoiceOver name for an extension row's time badge")
             }
         }
     }

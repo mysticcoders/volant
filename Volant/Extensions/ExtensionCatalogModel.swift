@@ -60,13 +60,13 @@ final class ExtensionCatalogModel: ObservableObject {
 
     /// The footer's Return label for the selected listing, or Check Catalog before loading.
     var primaryTitle: String {
-        guard let selected else { return catalog == nil ? "Check Catalog" : "" }
+        guard let selected else { return catalog == nil ? String(localized: "Check Catalog", comment: "Extension catalog footer button") : "" }
         switch status(selected) {
-        case .available: return communityAllowed ? "Install" : "Open Extension Settings"
-        case .update: return communityAllowed ? "Update" : "Open Extension Settings"
+        case .available: return communityAllowed ? String(localized: "Install", comment: "Extension catalog footer button") : String(localized: "Open Extension Settings", comment: "Extension catalog footer button")
+        case .update: return communityAllowed ? String(localized: "Update", comment: "Extension catalog footer button") : String(localized: "Open Extension Settings", comment: "Extension catalog footer button")
         case .installed, .bundled:
-            guard let ext = installed(selected), ext.enabled else { return communityAllowed || installed(selected)?.isCommunity == false ? "Turn On…" : "Open Extension Settings" }
-            return "Use Extension"
+            guard let ext = installed(selected), ext.enabled else { return communityAllowed || installed(selected)?.isCommunity == false ? String(localized: "Turn On…", comment: "Extension catalog footer button") : String(localized: "Open Extension Settings", comment: "Extension catalog footer button") }
+            return String(localized: "Use Extension", comment: "Extension catalog footer button")
         }
     }
 
@@ -125,7 +125,7 @@ final class ExtensionCatalogModel: ObservableObject {
                 let manager = self.manager()
                 guard manager.communityAllowed else { throw ExtensionManager.ExtensionError.communityDisabled }
                 let installed = try manager.install(listing, manifest: files.manifest, module: files.module, icon: files.icon, from: catalog)
-                self.feedback = "Installed \(installed.name). Choose Turn On to use it."
+                self.feedback = String(localized: "Installed \(installed.name). Choose Turn On to use it.", comment: "Extension catalog feedback; the value is the extension name")
             } catch {
                 self.feedback = error.localizedDescription
             }

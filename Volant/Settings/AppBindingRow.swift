@@ -42,7 +42,7 @@ struct AppBindingRow: View {
                 VStack(alignment: .leading, spacing: 3) {
                     TextField("Alias", text: $alias).textFieldStyle(.roundedBorder)
                         .frame(height: 26).focused($editingAlias)
-                        .accessibilityLabel(app.name + " alias")
+                        .accessibilityLabel(String(localized: "\(app.name) alias", comment: "Accessibility label of an app's alias field in App Shortcuts; the value is the app name"))
                         .help(storedAliases.keys.sorted().joined(separator: ", "))
                         .onSubmit { saveAlias() }
                         .onChange(of: editingAlias) { _, focused in if !focused { saveAlias() } }
@@ -51,7 +51,7 @@ struct AppBindingRow: View {
                     }
                 }.frame(width: 90)
                 ShortcutControl(title: app.name, value: hotKey) { replacement in
-                    guard let bundleID else { throw BindingFailure(message: "This app has no bundle identifier.") }
+                    guard let bundleID else { throw BindingFailure(message: String(localized: "This app has no bundle identifier.")) }
                     _ = try AppBindingStore.updateHotKey(bundleID: bundleID, path: app.url.path, value: replacement, expectedValue: hotKey,
                         at: configURL, available: { HotKeyCenter.shared.isAvailable($0) })
                     onChange()

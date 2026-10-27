@@ -22,11 +22,11 @@ struct FileSearchSettingsView: View {
                     Text("Whole-disk results that tolerate typos, and filters such as ext:swift in / searches.")
                 }.accessibilityIdentifier("settings.fsearch")
                 LabeledContent("fsearch") {
-                    Text(status ?? "Checking…").foregroundStyle(.secondary).multilineTextAlignment(.trailing)
+                    Text(status ?? String(localized: "Checking…", comment: "fsearch status in Settings while it is being checked")).foregroundStyle(.secondary).multilineTextAlignment(.trailing)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             } footer: {
-                SettingsFooter("Spotlight finds files in your home folder. fsearch is a separate tool you install and run yourself, with its own Full Disk Access. Whenever it isn’t running, Volant uses Spotlight.")
+                SettingsFooter(String(localized: "Spotlight finds files in your home folder. fsearch is a separate tool you install and run yourself, with its own Full Disk Access. Whenever it isn’t running, Volant uses Spotlight.", comment: "Footer in Settings → File Search; fsearch is a product name"))
             }
         }
         .formStyle(.settings)
@@ -38,7 +38,9 @@ struct FileSearchSettingsView: View {
         client.status { result in
             switch result {
             case .success(let found):
-                status = "Running · \(found.entries.formatted()) items" + (found.fullDiskAccess == false ? " · without Full Disk Access" : "")
+                status = found.fullDiskAccess == false
+                    ? String(localized: "Running · \(found.entries.formatted()) items · without Full Disk Access", comment: "fsearch status in Settings; the value is the number of indexed items")
+                    : String(localized: "Running · \(found.entries.formatted()) items", comment: "fsearch status in Settings; the value is the number of indexed items")
             case .failure(let error):
                 status = error.localizedDescription.replacingOccurrences(of: "fsearch: ", with: "")
             }

@@ -59,7 +59,7 @@ public final class HerdrMachineRouter {
         guard let machine else { return try run(arguments) }
         guard try profiles().contains(where: { $0.enabled && $0.routeIdentity == machine.routeIdentity }) else {
             throw NSError(domain: "VolantHerdrResponse", code: 2,
-                          userInfo: [NSLocalizedDescriptionKey: "This saved machine changed or was disabled. Refresh before continuing."])
+                          userInfo: [NSLocalizedDescriptionKey: String(localized: "This saved machine changed or was disabled. Refresh before continuing.", table: "Core", comment: "Herdr remote machine error")])
         }
         return try run(["--machine", machine.id] + arguments)
     }
@@ -71,7 +71,7 @@ public final class HerdrMachineRouter {
     public func setEnabled(_ machine: HerdrMachine, _ enabled: Bool) throws -> [HerdrMachine] {
         guard let current = try profiles().first(where: { $0.routeIdentity == machine.routeIdentity }) else {
             throw NSError(domain: "VolantHerdrResponse", code: 3,
-                          userInfo: [NSLocalizedDescriptionKey: "This saved machine changed or was removed. Refresh before continuing."])
+                          userInfo: [NSLocalizedDescriptionKey: String(localized: "This saved machine changed or was removed. Refresh before continuing.", table: "Core", comment: "Herdr remote machine error")])
         }
         if current.enabled != enabled {
             _ = try run(["machine", enabled ? "enable" : "disable", current.id])
@@ -90,11 +90,11 @@ public final class HerdrMachineRouter {
         do {
             for machine in try profiles() {
                 if machine.enabled { destinations.append(machine) }
-                else { statuses.append(.init(id: "remote:" + machine.id, label: machine.label, state: "disabled", detail: "Disabled in Herdr")) }
+                else { statuses.append(.init(id: "remote:" + machine.id, label: machine.label, state: "disabled", detail: String(localized: "Disabled in Herdr", table: "Core", comment: "Herdr machine status detail"))) }
             }
         } catch {
-            statuses.append(.init(id: "catalog", label: "Saved machines", state: "unavailable",
-                                  detail: "Couldn’t read saved machines. Check Herdr 0.9.1 or later is installed."))
+            statuses.append(.init(id: "catalog", label: String(localized: "Saved machines", table: "Core", comment: "Herdr status row for the list of saved remote machines"), state: "unavailable",
+                                  detail: String(localized: "Couldn’t read saved machines. Check Herdr 0.9.1 or later is installed.", table: "Core", comment: "Herdr machine status detail")))
         }
         let results = InventoryResults(statuses: statuses)
         let workers = OperationQueue()
@@ -103,12 +103,12 @@ public final class HerdrMachineRouter {
             workers.addOperation {
                 do {
                     let agents = try self.agents(on: machine)
-                    results.append(agents, status: .init(id: machine.map { "remote:" + $0.id } ?? "local", label: machine?.label ?? "Local",
+                    results.append(agents, status: .init(id: machine.map { "remote:" + $0.id } ?? "local", label: machine?.label ?? String(localized: "Local", table: "Core", comment: "Herdr machine name for this Mac"),
                         state: "connected", detail: "\(agents.count) panes"))
                 } catch {
-                    results.append([], status: .init(id: machine.map { "remote:" + $0.id } ?? "local", label: machine?.label ?? "Local",
-                        state: "unavailable", detail: machine == nil ? "Start the local default Herdr session." :
-                            "Check SSH access and Herdr 0.9.1 or later on this machine."))
+                    results.append([], status: .init(id: machine.map { "remote:" + $0.id } ?? "local", label: machine?.label ?? String(localized: "Local", table: "Core", comment: "Herdr machine name for this Mac"),
+                        state: "unavailable", detail: machine == nil ? String(localized: "Start the local default Herdr session.", table: "Core", comment: "Herdr machine status detail when this Mac's Herdr isn't reachable") :
+                            String(localized: "Check SSH access and Herdr 0.9.1 or later on this machine.", table: "Core", comment: "Herdr machine status detail when a remote machine isn't reachable")))
                 }
             }
         }

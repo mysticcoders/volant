@@ -45,7 +45,7 @@ public struct Preferences: Codable {
             if let newValue { statusBar.sources.append("herdr"); statusBar.herdrFilter = newValue }
         }
     }
-    public static let harnessOptions: [(id: String, title: String)] = [("all", "All Herdr agents"), ("opencode", "OpenCode"), ("cursor", "Cursor"), ("claude", "Claude Code"), ("codex", "Codex"), ("gemini", "Gemini CLI"), ("qwen", "Qwen Code")]
+    public static let harnessOptions: [(id: String, title: String)] = [("all", String(localized: "All Herdr agents", table: "Core", comment: "Herdr agent filter choice that shows every agent")), ("opencode", "OpenCode"), ("cursor", "Cursor"), ("claude", "Claude Code"), ("codex", "Codex"), ("gemini", "Gemini CLI"), ("qwen", "Qwen Code")]
     public var snippets: [Snippet] = []
     public var quicklinks: [Quicklink] = [Quicklink(name: "Google", url: "https://www.google.com/search?q={query}")]
     public var favoriteApps: [String] = []
@@ -227,7 +227,7 @@ public struct Preferences: Codable {
     }
 
     public struct AppearanceConflict: LocalizedError {
-        public var errorDescription: String? { "Appearance changed in the configuration file. Reload Configuration before changing it again." }
+        public var errorDescription: String? { String(localized: "Appearance changed in the configuration file. Reload Configuration before changing it again.", table: "Core", comment: "Appearance settings error when config.json changed underneath") }
     }
 
     /// Patch only this app's membership against the latest document.

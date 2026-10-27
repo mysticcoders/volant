@@ -89,34 +89,34 @@ enum ResultRow: Identifiable, Hashable {
     /// Right-aligned kind label, as in Raycast's "Application" / "Command" column.
     var kind: String {
         switch self {
-        case .appleShortcut: return "Apple Shortcut"
+        case .appleShortcut: return String(localized: "Apple Shortcut", comment: "Result row kind label")
         case .server(let server):
             return server.exposed ? String(localized: "Network", comment: "Server row label: other machines can connect")
                 : String(localized: "Local", comment: "Server row label: only this Mac can connect")
-        case .core, .caffeinate, .systemAction: return "Command"
+        case .core, .caffeinate, .systemAction: return String(localized: "Command", comment: "Result row kind label")
         case .agentSession(let session): return session.status
-        case .herdrMachine(_, let enabled, _): return enabled ? "Enabled" : "Disabled"
+        case .herdrMachine(_, let enabled, _): return enabled ? String(localized: "Enabled", comment: "Result row kind label: a Herdr machine that is on") : String(localized: "Disabled", comment: "Result row kind label: a Herdr machine that is off")
         case .rexPane(let pane): return pane.state.title
-        case .rexOverview: return "Command"
-        case .connectivity: return "Connectivity"
-        case .audioRoute(let route): return route.current ? "Current" : "Device"
-        case .volume: return "System"
-        case .systemSettings: return "System Settings"
-        case .settings, .reloadConfig: return "Command"
-        case .agents: return "Command"
-        case .calculation: return "Calculation"
-        case .app: return "Application"
-        case .file: return "File"
-        case .contact: return "Contact"
-        case .event: return "Event"
-        case .clip: return "Clipboard"
-        case .note, .newNote: return "Note"
-        case .extensionRun: return "Extension"
-        case .extensionResult: return "Result"
+        case .rexOverview: return String(localized: "Command", comment: "Result row kind label")
+        case .connectivity: return String(localized: "Connectivity", comment: "Result row kind label")
+        case .audioRoute(let route): return route.current ? String(localized: "Current", comment: "Result row kind label: the audio device in use") : String(localized: "Device", comment: "Result row kind label: an audio device")
+        case .volume: return String(localized: "System", comment: "Result row kind label")
+        case .systemSettings: return String(localized: "System Settings", comment: "Result row kind label")
+        case .settings, .reloadConfig: return String(localized: "Command", comment: "Result row kind label")
+        case .agents: return String(localized: "Command", comment: "Result row kind label")
+        case .calculation: return String(localized: "Calculation", comment: "Result row kind label")
+        case .app: return String(localized: "Application", comment: "Result row kind label")
+        case .file: return String(localized: "File", comment: "Result row kind label")
+        case .contact: return String(localized: "Contact", comment: "Result row kind label")
+        case .event: return String(localized: "Event", comment: "Result row kind label")
+        case .clip: return String(localized: "Clipboard", comment: "Result row kind label")
+        case .note, .newNote: return String(localized: "Note", comment: "Result row kind label")
+        case .extensionRun: return String(localized: "Extension", comment: "Result row kind label")
+        case .extensionResult: return String(localized: "Result", comment: "Result row kind label")
         case .extensionItem(_, let source): return source.name
-        case .snippet: return "Snippet"
-        case .emoji: return "Emoji"
-        case .quicklink: return "Quicklink"
+        case .snippet: return String(localized: "Snippet", comment: "Result row kind label")
+        case .emoji: return String(localized: "Emoji", comment: "Result row kind label")
+        case .quicklink: return String(localized: "Quicklink", comment: "Result row kind label")
         }
     }
 
@@ -130,53 +130,54 @@ enum ResultRow: Identifiable, Hashable {
     /// Footer label for return.
     var primaryAction: String {
         switch self {
-        case .appleShortcut: return "Run Shortcut"
+        case .appleShortcut: return String(localized: "Run Shortcut", comment: "Footer and Actions label for Return")
         case .server: return String(localized: "Open in Browser", comment: "Footer and Actions label for Return on a server row")
-        case .core: return "Open Command"
+        case .core: return String(localized: "Open Command", comment: "Footer and Actions label for Return")
         case .systemAction(let action): return action.title.replacingOccurrences(of: "…", with: "")
-        case .caffeinate(let command): return command.stop ? "Stop" : "Start"
-        case .agentSession: return "Focus in Herdr"
+        case .caffeinate(let command): return command.stop ? String(localized: "Stop", comment: "Footer label for Return: stop Caffeinate") : String(localized: "Start", comment: "Footer label for Return: start Caffeinate")
+        case .agentSession: return String(localized: "Focus in Herdr", comment: "Footer and Actions label for Return")
         case .herdrMachine(let machine, let enabled, let busy):
-            if busy { return "Working…" }
-            guard machine != nil else { return "Always on" }
-            return enabled ? "Disable Machine" : "Enable Machine"
-        case .rexPane: return "Focus in Rex"
-        case .rexOverview: return "Open Overview"
+            if busy { return String(localized: "Working…", comment: "Footer and Actions label for Return") }
+            guard machine != nil else { return String(localized: "Always on", comment: "Footer and Actions label for Return") }
+            return enabled ? String(localized: "Disable Machine", comment: "Footer label for Return on a Herdr machine row") : String(localized: "Enable Machine", comment: "Footer label for Return on a Herdr machine row")
+        case .rexPane: return String(localized: "Focus in Rex", comment: "Footer and Actions label for Return")
+        case .rexOverview: return String(localized: "Open Overview", comment: "Footer and Actions label for Return")
         case .connectivity(let item):
-            if case .wifi(let network) = item { return network.current ? "Connected" : "Join Network" }
-            if case .refresh = item { return "Refresh" }
-            return "Open Settings"
-        case .audioRoute(let route): return route.current ? "Keep Current Device" : "Use as " + route.direction.rawValue.capitalized
-        case .volume: return "Apply"
-        case .settings, .systemSettings: return "Open Settings"
-        case .reloadConfig: return "Reload Configuration"
-        case .agents: return "Open Agents"
-        case .calculation: return "Copy Result"
-        case .app: return "Open Application"
-        case .file: return "Open File"
-        case .contact(let c): return c.primaryField?.copyTitle ?? "Open Contact"
-        case .event(let e): return e.joinURL != nil ? "Join Meeting" : "Open Calendar"
-        case .clip: return "Copy to Clipboard"
-        case .note: return "Open Note"
-        case .newNote: return "Create Note"
-        case .extensionRun(let ext, _): return ext.communityBlocked ? "Open Extension Settings" : (ext.enabled ? "Run Extension" : "Enable and Run…")
-        case .extensionResult: return "Copy Result"
-        case .extensionItem(let item, _): return item.url == nil ? "Copy Title" : "Open Link"
-        case .snippet: return "Copy Snippet"
-        case .emoji: return "Copy Emoji"
-        case .quicklink: return "Open Link"
+            if case .wifi(let network) = item { return network.current ? String(localized: "Connected", comment: "Footer label for Return on the current Wi-Fi network") : String(localized: "Join Network", comment: "Footer label for Return on a Wi-Fi network") }
+            if case .refresh = item { return String(localized: "Refresh", comment: "Footer and Actions label for Return") }
+            return String(localized: "Open Settings", comment: "Footer and Actions label for Return")
+        case .audioRoute(let route): return route.current ? String(localized: "Keep Current Device", comment: "Footer label for Return on the audio device in use")
+            : (route.direction == .output ? String(localized: "Use as Output", comment: "Footer label for Return on an audio output device") : String(localized: "Use as Input", comment: "Footer label for Return on an audio input device"))
+        case .volume: return String(localized: "Apply", comment: "Footer and Actions label for Return")
+        case .settings, .systemSettings: return String(localized: "Open Settings", comment: "Footer and Actions label for Return")
+        case .reloadConfig: return String(localized: "Reload Configuration", comment: "Footer and Actions label for Return")
+        case .agents: return String(localized: "Open Agents", comment: "Footer and Actions label for Return")
+        case .calculation: return String(localized: "Copy Result", comment: "Footer and Actions label for Return")
+        case .app: return String(localized: "Open Application", comment: "Footer and Actions label for Return")
+        case .file: return String(localized: "Open File", comment: "Footer and Actions label for Return")
+        case .contact(let c): return c.primaryField?.copyTitle ?? String(localized: "Open Contact", comment: "Footer and Actions label for Return")
+        case .event(let e): return e.joinURL != nil ? String(localized: "Join Meeting", comment: "Footer and Actions label for Return") : String(localized: "Open Calendar", comment: "Footer and Actions label for Return")
+        case .clip: return String(localized: "Copy to Clipboard", comment: "Footer and Actions label for Return")
+        case .note: return String(localized: "Open Note", comment: "Footer and Actions label for Return")
+        case .newNote: return String(localized: "Create Note", comment: "Footer and Actions label for Return")
+        case .extensionRun(let ext, _): return ext.communityBlocked ? String(localized: "Open Extension Settings", comment: "Footer and Actions label for Return") : (ext.enabled ? String(localized: "Run Extension", comment: "Footer and Actions label for Return") : String(localized: "Enable and Run…", comment: "Footer and Actions label for Return"))
+        case .extensionResult: return String(localized: "Copy Result", comment: "Footer and Actions label for Return")
+        case .extensionItem(let item, _): return item.url == nil ? String(localized: "Copy Title", comment: "Footer and Actions label for Return") : String(localized: "Open Link", comment: "Footer and Actions label for Return")
+        case .snippet: return String(localized: "Copy Snippet", comment: "Footer and Actions label for Return")
+        case .emoji: return String(localized: "Copy Emoji", comment: "Footer and Actions label for Return")
+        case .quicklink: return String(localized: "Open Link", comment: "Footer and Actions label for Return")
         }
     }
 
     /// Footer label for command-return, when a secondary action exists.
     var secondaryAction: String? {
         switch self {
-        case .file: return "Reveal in Finder"
-        case .app: return "Reveal in Finder"
+        case .file: return String(localized: "Reveal in Finder", comment: "Footer label for Command-Return")
+        case .app: return String(localized: "Reveal in Finder", comment: "Footer label for Command-Return")
         case .server: return String(localized: "Copy URL", comment: "Footer label for Command-Return on a server row")
         case .contact(let c): return c.secondaryField?.copyTitle
-        case .calculation: return "Use Answer"
-        case .extensionItem(let item, _): return item.secondaryURL == nil ? nil : (item.secondaryTitle ?? "Open Second Link")
+        case .calculation: return String(localized: "Use Answer", comment: "Footer label for Command-Return: put the calculator answer in the search field")
+        case .extensionItem(let item, _): return item.secondaryURL == nil ? nil : (item.secondaryTitle ?? String(localized: "Open Second Link", comment: "Footer label for Command-Return"))
         default: return nil
         }
     }
@@ -186,6 +187,10 @@ struct ResultSection: Identifiable, Equatable {
     let title: String
     let rows: [ResultRow]
     var id: String { title }
+
+    /// Titles the launcher also finds sections by, so building and finding use the same text.
+    static let calculatorTitle = String(localized: "Calculator", comment: "Launcher section title for calculator answers")
+    static let appleShortcutsTitle = String(localized: "Apple Shortcuts", comment: "Launcher section title for shortcuts from the Shortcuts app")
 }
 
 /// What a result row draws besides its own payload: the selected identity, the current row for
@@ -349,7 +354,7 @@ final class LauncherModel: ObservableObject {
             config.statusBar.sources.removeAll { $0 == "rex" }
             if shown { config.statusBar.sources.append("rex") }
             if shown && isPresented { rex.connect() }
-        } catch { notice = "Couldn’t save status bar: " + error.localizedDescription }
+        } catch { notice = String(localized: "Couldn’t save status bar: \(error.localizedDescription)", comment: "Launcher notice when saving the status bar setting fails") }
     }
     /// A trailing term filters by project, session, program, state or message. Open Rex Overview
     /// comes first, and appears with no panes only when asked for by name, so a loading or stopped
@@ -368,8 +373,8 @@ final class LauncherModel: ObservableObject {
         let asksForOverview = !term.isEmpty && ("overview".hasPrefix(term.lowercased()) || "grid".hasPrefix(term.lowercased()))
         let overviewMatches = asksForOverview || (term.isEmpty && !rex.panes.isEmpty)
         sections = (overviewMatches ? [ResultSection(title: "Rex", rows: [.rexOverview])] : [])
-            + (panes.isEmpty ? [] : [ResultSection(title: "Rex panes", rows: panes.map(ResultRow.rexPane))])
-        notice = panes.isEmpty && !rex.panes.isEmpty ? "No matching panes" : rex.message
+            + (panes.isEmpty ? [] : [ResultSection(title: String(localized: "Rex panes", comment: "Launcher section title; Rex is a product name"), rows: panes.map(ResultRow.rexPane))])
+        notice = panes.isEmpty && !rex.panes.isEmpty ? String(localized: "No matching panes", comment: "Launcher notice when no Rex or Herdr pane matches the typed filter") : rex.message
         if let selectedID, let index = rows.firstIndex(where: { $0.id == selectedID }) { selection = index }
         else { selection = min(selection, max(0, rows.count - 1)) }
     }
@@ -385,14 +390,14 @@ final class LauncherModel: ObservableObject {
         return ["agents machine", "herdr machine", "agents machines", "herdr machines"].contains(q)
             || ["agents machine ", "herdr machine ", "agents machines ", "herdr machines "].contains(where: q.hasPrefix)
     }
-    var promotedTitle: String { Preferences.harnessOptions.first { $0.id == promotedHarness }?.title ?? "Agents" }
+    var promotedTitle: String { Preferences.harnessOptions.first { $0.id == promotedHarness }?.title ?? String(localized: "Agents", comment: "Footer status title for coding agents") }
     var promotedSessions: [AgentSession] { agents.sessions.filter { promotedHarness == "all" || $0.agent == promotedHarness } }
     func promoteHarness(_ id: String?) {
         do {
             try Preferences.updatePromotedHarness(id)
             config.promotedHarness = id
             if id != nil && isPresented && !agents.connected { agents.connect() }
-        } catch { notice = "Couldn’t save status bar: " + error.localizedDescription }
+        } catch { notice = String(localized: "Couldn’t save status bar: \(error.localizedDescription)", comment: "Launcher notice when saving the status bar setting fails") }
     }
     func resumeAgentsIfNeeded() {
         if promotedHarness != nil && !agents.connected { agents.connect() }
@@ -413,9 +418,9 @@ final class LauncherModel: ObservableObject {
         for machine in agents.profiles where term.isEmpty || machine.label.localizedCaseInsensitiveContains(term) || machine.id.localizedCaseInsensitiveContains(term) {
             rows.append(.herdrMachine(machine, enabled: machine.enabled, busy: agents.machineToggleInFlight == machine.id))
         }
-        sections = rows.isEmpty ? [] : [ResultSection(title: "Herdr machines", rows: rows)]
+        sections = rows.isEmpty ? [] : [ResultSection(title: String(localized: "Herdr machines", comment: "Launcher section title; Herdr is a product name"), rows: rows)]
         if !agents.connected { notice = agents.message }
-        else if rows.isEmpty { notice = agents.profiles.isEmpty ? "No machines saved in Herdr. Add one with herdr machine add." : "No matching machines" }
+        else if rows.isEmpty { notice = agents.profiles.isEmpty ? String(localized: "No machines saved in Herdr. Add one with herdr machine add.", comment: "Launcher notice; herdr machine add is a terminal command and stays in English") : String(localized: "No matching machines", comment: "Launcher notice when no Herdr machine matches the typed filter") }
         else { notice = agents.actionMessage }
         if let selectedID, let index = self.rows.firstIndex(where: { $0.id == selectedID }) { selection = index }
         else { selection = min(selection, max(0, self.rows.count - 1)) }
@@ -430,8 +435,8 @@ final class LauncherModel: ObservableObject {
         let sessions = agents.sessions.filter {
             term.isEmpty || [$0.machineLabel, $0.project, $0.provider, $0.agent, $0.status, $0.cwd ?? "", $0.terminalTitle ?? ""].joined(separator: " ").localizedCaseInsensitiveContains(term)
         }
-        sections = sessions.isEmpty ? [] : [ResultSection(title: "Herdr panes", rows: sessions.map(ResultRow.agentSession))]
-        notice = agents.connected ? (agents.busy && agents.sessions.isEmpty ? "Loading Herdr panes…" : (sessions.isEmpty && !agents.sessions.isEmpty ? "No matching panes" : agents.message)) : agents.message
+        sections = sessions.isEmpty ? [] : [ResultSection(title: String(localized: "Herdr panes", comment: "Launcher section title; Herdr is a product name"), rows: sessions.map(ResultRow.agentSession))]
+        notice = agents.connected ? (agents.busy && agents.sessions.isEmpty ? String(localized: "Loading Herdr panes…") : (sessions.isEmpty && !agents.sessions.isEmpty ? String(localized: "No matching panes", comment: "Launcher notice when no Rex or Herdr pane matches the typed filter") : agents.message)) : agents.message
         if let selectedID, let index = rows.firstIndex(where: { $0.id == selectedID }) { selection = index }
         else { selection = min(selection, max(0, rows.count - 1)) }
     }
@@ -473,9 +478,11 @@ final class LauncherModel: ObservableObject {
     private var routedQuery: String { scopedExtension == nil ? query : "" }
     /// The search field's prompt: the scoped extension's own, emoji search, or the launcher's.
     var searchPlaceholder: String {
-        if let ext = scopedExtension { return ext.manifest.placeholder ?? "Search \(ext.name)…" }
-        return showingEmoji ? "Search emoji…" : "Search for apps, files, contacts, or calculate…"
+        if let ext = scopedExtension { return ext.manifest.placeholder ?? String(localized: "Search \(ext.name)…", comment: "Search field placeholder inside a list extension") }
+        return showingEmoji ? Self.emojiSearchPlaceholder : Self.defaultSearchPlaceholder
     }
+    static let defaultSearchPlaceholder = String(localized: "Search for apps, files, contacts, or calculate…", comment: "Launcher search field placeholder")
+    static let emojiSearchPlaceholder = String(localized: "Search emoji…", comment: "Launcher search field placeholder while searching emoji")
     let usage: UsageStore
     var config: Preferences { didSet { promotedHarness = config.promotedHarness; extensions.invalidateCatalog(); useFSearch() } }
     /// Points file search at fsearch while Use fsearch is on; Spotlight otherwise.
@@ -594,14 +601,14 @@ final class LauncherModel: ObservableObject {
     func enablePendingExtension(secrets: [String: String] = [:]) {
         guard let request = pendingExtension else { return }
         pendingExtension = nil
-        guard !extensionRunning else { notice = "An extension is already running."; return }
+        guard !extensionRunning else { notice = String(localized: "An extension is already running."); return }
         do {
             try extensions.saveSecrets(request.extensionItem, secrets)
             if request.location { try extensions.allowLocation(request.extensionItem) }
             try extensions.setEnabled(request.extensionItem, true)
             guard let enabled = extensions.extensions.first(where: { $0.id == request.extensionItem.id }) else { throw ExtensionManager.ExtensionError.changed }
             if enabled.manifest.listsItems { enterScope(enabled, input: request.input); return }
-            sections = [ResultSection(title: "Extensions", rows: [.extensionRun(enabled, input: request.input)])]
+            sections = [ResultSection(title: String(localized: "Extensions", comment: "Launcher section title"), rows: [.extensionRun(enabled, input: request.input)])]
             runExtension(enabled, input: request.input)
         } catch { notice = error.localizedDescription }
     }
@@ -615,19 +622,19 @@ final class LauncherModel: ObservableObject {
         extensionRunning = true
         let gen = generation
         let selectedID = keepingSelection ? selectedRow?.id : nil
-        notice = keepingSelection ? nil : "Running \(ext.name)…"
+        notice = keepingSelection ? nil : String(localized: "Running \(ext.name)…", comment: "Launcher notice while an extension runs")
         if ext.manifest.listsItems {
             extensions.runItems(ext, query: input, filter: extensionItemsFilter) { [weak self] result in
                 guard let self else { return }
                 guard !self.finishExtensionRun(), gen == self.generation else { return }
                 switch result {
                 case .success(let items):
-                    self.notice = items.isEmpty ? "\(ext.name) returned nothing." : nil
+                    self.notice = items.isEmpty ? String(localized: "\(ext.name) returned nothing.", comment: "Launcher notice when an extension returns no rows") : nil
                     self.sections = [ResultSection(title: ext.name, rows: items.map { .extensionItem($0, source: ext) })]
                     self.selection = selectedID.flatMap { id in self.rows.firstIndex { $0.id == id } } ?? 0
                 case .failure(let error):
                     if self.scopedExtension != nil { self.sections = [] }
-                    self.notice = "Extension failed: \(error.localizedDescription)"
+                    self.notice = String(localized: "Extension failed: \(error.localizedDescription)")
                 }
             }
             return
@@ -642,7 +649,7 @@ final class LauncherModel: ObservableObject {
                 self.sections = [ResultSection(title: ext.name, rows: [.extensionResult(output)])]
             case .failure(let error):
                 self.sections = []
-                self.notice = "Extension failed: \(error.localizedDescription)"
+                self.notice = String(localized: "Extension failed: \(error.localizedDescription)")
             }
         }
     }
@@ -711,7 +718,7 @@ final class LauncherModel: ObservableObject {
         scopeRunsNow = false
         if input.isEmpty && ext.manifest.waitsForInput {
             sections = []
-            notice = ext.manifest.placeholder ?? "Type to search \(ext.name)"
+            notice = ext.manifest.placeholder ?? String(localized: "Type to search \(ext.name)", comment: "Launcher notice inside a search extension before anything is typed")
             return
         }
         let work = DispatchWorkItem { [weak self] in
@@ -780,7 +787,7 @@ final class LauncherModel: ObservableObject {
     /// asynchronous ones already delivered, keeping the selected row by identity.
     private func rebuildMergedResults() {
         immediate = mergedSections(for: query.trimmingCharacters(in: .whitespaces))
-        if immediate.contains(where: { $0.title == "Calculator" }) { releaseHeldCalculation() }
+        if immediate.contains(where: { $0.title == ResultSection.calculatorTitle }) { releaseHeldCalculation() }
         compose()
     }
 
@@ -788,15 +795,15 @@ final class LauncherModel: ObservableObject {
         guard showingAppleShortcuts || searchesAppIndex else { return }
         if showingAppleShortcuts {
             let selectedID = selectedRow?.id
-            sections = [ResultSection(title: "Apple Shortcuts", rows: appleShortcuts.matches(query).map(ResultRow.appleShortcut))]
-            notice = appleShortcuts.loading ? "Loading Apple Shortcuts…" : appleShortcuts.message
-                ?? (rows.isEmpty ? "No matching shortcuts. Create one in the Shortcuts app, then refresh." : nil)
+            sections = [ResultSection(title: ResultSection.appleShortcutsTitle, rows: appleShortcuts.matches(query).map(ResultRow.appleShortcut))]
+            notice = appleShortcuts.loading ? String(localized: "Loading Apple Shortcuts…") : appleShortcuts.message
+                ?? (rows.isEmpty ? String(localized: "No matching shortcuts. Create one in the Shortcuts app, then refresh.") : nil)
             if !rows.isEmpty { actionFeedback = notice }
             selection = selectedID.flatMap { id in rows.firstIndex { $0.id == id } } ?? 0
         } else {
-            immediate.removeAll { $0.title == "Apple Shortcuts" }
+            immediate.removeAll { $0.title == ResultSection.appleShortcutsTitle }
             let matches = appleShortcuts.matches(query).prefix(6).map(ResultRow.appleShortcut)
-            if !matches.isEmpty { immediate.append(ResultSection(title: "Apple Shortcuts", rows: matches)) }
+            if !matches.isEmpty { immediate.append(ResultSection(title: ResultSection.appleShortcutsTitle, rows: matches)) }
             compose()
         }
     }
@@ -826,7 +833,7 @@ final class LauncherModel: ObservableObject {
     private func showSuggestions() {
         let favorites = config.favoriteApps.compactMap { id in index.apps.first { $0.id == id } }.map(ResultRow.app)
         let apps = index.suggestions(usage: usage).filter { !config.favoriteApps.contains($0.id) }.map(ResultRow.app)
-        sections = (favorites.isEmpty ? [] : [ResultSection(title: "Favorites", rows: favorites)]) + (apps.isEmpty ? [] : [ResultSection(title: "Suggestions", rows: apps)]) + [ResultSection(title: "Commands", rows: CoreCommand.allCases.map(ResultRow.core) + [.settings, .reloadConfig])]
+        sections = (favorites.isEmpty ? [] : [ResultSection(title: String(localized: "Favorites", comment: "Launcher section title for favorite apps"), rows: favorites)]) + (apps.isEmpty ? [] : [ResultSection(title: String(localized: "Suggestions", comment: "Launcher section title for suggested apps"), rows: apps)]) + [ResultSection(title: String(localized: "Commands", comment: "Launcher section title for Volant commands"), rows: CoreCommand.allCases.map(ResultRow.core) + [.settings, .reloadConfig])]
     }
 
     var showingNotes: Bool {
@@ -837,12 +844,12 @@ final class LauncherModel: ObservableObject {
         if showingNotes { return notes.loadMessage }
         var messages: [String] = []
         if (query.isEmpty || searchesAppIndex) && index.unavailable {
-            messages.append("Spotlight couldn’t start app discovery. Existing app results have been kept.")
+            messages.append(String(localized: "Spotlight couldn’t start app discovery. Existing app results have been kept."))
         }
-        if filesUnavailable { messages.append("Spotlight couldn’t start file search.") }
-        return messages.isEmpty ? nil : messages.joined(separator: " ") + " Check Spotlight availability, then retry."
+        if filesUnavailable { messages.append(String(localized: "Spotlight couldn’t start file search.")) }
+        return messages.isEmpty ? nil : (messages + [String(localized: "Check Spotlight availability, then retry.")]).joined(separator: " ")
     }
-    var searchRetryTitle: String { showingNotes ? "Retry Loading Notes" : "Retry Spotlight" }
+    var searchRetryTitle: String { showingNotes ? String(localized: "Retry Loading Notes", comment: "Button") : String(localized: "Retry Spotlight", comment: "Button") }
     func retrySearch() {
         guard searchRecoveryMessage != nil else { return }
         if showingNotes { notes.reload() }
@@ -873,7 +880,7 @@ final class LauncherModel: ObservableObject {
         let formatter = RelativeDateTimeFormatter()
         // Anything from the last minute reads as just now, including a copy stamped a moment ahead.
         let age: (Date) -> String = { date in
-            Date().timeIntervalSince(date) < 60 ? "just now" : formatter.localizedString(for: date, relativeTo: Date())
+            Date().timeIntervalSince(date) < 60 ? String(localized: "just now", comment: "Age of a clipboard item or note offered as AI Chat context") : formatter.localizedString(for: date, relativeTo: Date())
         }
         let clips = clipboard.recent(limit: 16, matching: term).filter {
             $0.kind == .text && !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -881,12 +888,12 @@ final class LauncherModel: ObservableObject {
         }.prefix(8).map { clip in
             let first = clip.text.split(whereSeparator: \.isNewline).first.map(String.init) ?? clip.text
             return ChatAttachment(id: "clip:\(clip.id)", kind: .clipboard, title: String(first.trimmingCharacters(in: .whitespaces).prefix(60)),
-                                  detail: "Clipboard · " + age(clip.copiedAt), text: clip.text)
+                                  detail: String(localized: "Clipboard · \(age(clip.copiedAt))", comment: "AI Chat context detail; the value is an age such as 5 minutes ago"), text: clip.text)
         }
         let found = notes.search(term, limit: 16).filter { $0.readError == nil }.prefix(8).compactMap { note in
             notes.text(of: note.id).map { text in
                 ChatAttachment(id: "note:" + note.id, kind: .note, title: note.title,
-                               detail: "Note · edited " + age(note.modified), text: text)
+                               detail: String(localized: "Note · edited \(age(note.modified))", comment: "AI Chat context detail; the value is an age such as 5 minutes ago"), text: text)
             }
         }
         return Array(clips) + Array(found)
@@ -900,8 +907,8 @@ final class LauncherModel: ObservableObject {
         let q = query.trimmingCharacters(in: .whitespaces)
         let term = q.dropFirst(4).trimmingCharacters(in: .whitespaces)
         let clips = clipboard.recent(limit: 12, matching: term).map { ResultRow.clip($0) }
-        sections = clips.isEmpty ? [] : [ResultSection(title: "Clipboard History", rows: clips)]
-        notice = clipboard.state.message == nil ? (term.isEmpty ? "No clipboard history yet" : "No matching clipboard items") : nil
+        sections = clips.isEmpty ? [] : [ResultSection(title: String(localized: "Clipboard History", comment: "Launcher section title"), rows: clips)]
+        notice = clipboard.state.message == nil ? (term.isEmpty ? String(localized: "No clipboard history yet") : String(localized: "No matching clipboard items")) : nil
         if let selected, let index = rows.firstIndex(where: { $0.id == selected }) { selection = index }
         else { selection = 0 }
     }
@@ -989,11 +996,11 @@ final class LauncherModel: ObservableObject {
         if settingTerms.count > 1 && settingTerms.contains("settings") {
             let panes = SystemSettingsDestination.search(q).map { ResultRow.systemSettings($0) }
             if !panes.isEmpty {
-                sections = [ResultSection(title: "System Settings", rows: panes)]
+                sections = [ResultSection(title: String(localized: "System Settings", comment: "Launcher section title for System Settings panes"), rows: panes)]
                 return
             }
         }
-        if q.lowercased() == "notes" { enterNotes(from: previousBranch); sections = [ResultSection(title: "Notes", rows: notes.search("").map { .note($0) } + [.newNote("")])]; return }
+        if q.lowercased() == "notes" { enterNotes(from: previousBranch); sections = [ResultSection(title: String(localized: "Notes", comment: "Launcher section title"), rows: notes.search("").map { .note($0) } + [.newNote("")])]; return }
         if connectivitySource != nil { refreshConnectivity(); return }
         if AudioRouteQuery(q) != nil { refreshAudioRoutes(); return }
         if VolumeCommand.matches(q) {
@@ -1030,15 +1037,15 @@ final class LauncherModel: ObservableObject {
                 self?.deliver(gen) { model in
                     switch outcome {
                     case .denied:
-                        model.notice = "Calendar access is off. Enable it in System Settings, Privacy & Security, Calendars."
+                        model.notice = String(localized: "Calendar access is off. Enable it in System Settings, Privacy & Security, Calendars.")
                         model.immediate = []
                     case .events(let events):
-                        model.notice = events.isEmpty ? "Nothing scheduled through tomorrow." : nil
+                        model.notice = events.isEmpty ? String(localized: "Nothing scheduled through tomorrow.") : nil
                         let today = events.filter { Calendar.current.isDateInToday($0.start) }
                         let tomorrow = events.filter { !Calendar.current.isDateInToday($0.start) }
                         model.immediate = []
-                        if !today.isEmpty { model.immediate.append(ResultSection(title: "Today", rows: today.map { .event($0) })) }
-                        if !tomorrow.isEmpty { model.immediate.append(ResultSection(title: "Tomorrow", rows: tomorrow.map { .event($0) })) }
+                        if !today.isEmpty { model.immediate.append(ResultSection(title: String(localized: "Today", comment: "Launcher section title for today's calendar events"), rows: today.map { .event($0) })) }
+                        if !tomorrow.isEmpty { model.immediate.append(ResultSection(title: String(localized: "Tomorrow", comment: "Launcher section title for tomorrow's calendar events"), rows: tomorrow.map { .event($0) })) }
                     }
                 }
             }
@@ -1046,12 +1053,12 @@ final class LauncherModel: ObservableObject {
         }
         if q.hasPrefix(":") {
             let rows = emojiSearch(String(q.dropFirst())).map { ResultRow.emoji($0) }
-            sections = rows.isEmpty ? [] : [ResultSection(title: "Emoji", rows: rows)]
+            sections = rows.isEmpty ? [] : [ResultSection(title: String(localized: "Emoji", comment: "Launcher section title"), rows: rows)]
             return
         }
         if q.lowercased() == "snip" || q.lowercased().hasPrefix("snip ") {
             let rows = SnippetExpander.search(config.snippets, q.dropFirst(4).trimmingCharacters(in: .whitespaces)).map { ResultRow.snippet($0) }
-            sections = [ResultSection(title: "Snippets", rows: rows + [.core(.newSnippet)])]
+            sections = [ResultSection(title: String(localized: "Snippets", comment: "Launcher section title"), rows: rows + [.core(.newSnippet)])]
             return
         }
         if q.lowercased() == "ext" || q.lowercased().hasPrefix("ext ") {
@@ -1063,8 +1070,8 @@ final class LauncherModel: ObservableObject {
             if previousBranch == "ext" { extensions.loadIfNeeded() } else { extensions.reload() }
             prefixBranch = "ext"
             let rows = extensions.search(name).map { ResultRow.extensionRun($0, input: input) }
-            notice = rows.isEmpty ? "No matching extensions. Manage extensions in Settings → Extensions." : nil
-            sections = rows.isEmpty ? [] : [ResultSection(title: "Extensions", rows: rows)]
+            notice = rows.isEmpty ? String(localized: "No matching extensions. Manage extensions in Settings → Extensions.") : nil
+            sections = rows.isEmpty ? [] : [ResultSection(title: String(localized: "Extensions", comment: "Launcher section title"), rows: rows)]
             return
         }
         if q.lowercased() == "note" || q.lowercased().hasPrefix("note ") {
@@ -1125,28 +1132,28 @@ final class LauncherModel: ObservableObject {
         let head = words.first?.lowercased() ?? ""
         let tail = words.count > 1 ? words[1] : ""
         if let target = config.aliases[head] ?? config.aliases.sorted(by: { $0.key < $1.key }).first(where: { $0.key.lowercased() == head })?.value, words.count == 1, let app = index.resolveAlias(target) {
-            immediate.append(ResultSection(title: "Alias", rows: [.app(app)]))
+            immediate.append(ResultSection(title: String(localized: "Alias", comment: "Launcher section title for the app an alias opens"), rows: [.app(app)]))
         }
-        if !answers.isEmpty { immediate.append(ResultSection(title: "Calculator", rows: answers)) }
+        if !answers.isEmpty { immediate.append(ResultSection(title: ResultSection.calculatorTitle, rows: answers)) }
         let snips = config.snippets.filter { $0.keyword.lowercased() == q.lowercased() }.map { ResultRow.snippet($0) }
-        if !snips.isEmpty { immediate.append(ResultSection(title: "Snippets", rows: snips)) }
+        if !snips.isEmpty { immediate.append(ResultSection(title: String(localized: "Snippets", comment: "Launcher section title"), rows: snips)) }
         let links = QuicklinkResolver.search(config.quicklinks, head).map { ResultRow.quicklink($0, query: tail) }
-        if !links.isEmpty { immediate.append(ResultSection(title: "Quicklinks", rows: links)) }
+        if !links.isEmpty { immediate.append(ResultSection(title: String(localized: "Quicklinks", comment: "Launcher section title"), rows: links)) }
         extensions.configURL = actionConfigURL
         // Everyday search shows only extensions that are on; `ext` and the catalog list the rest.
         let extensionRows = extensions.commandMatches(q).filter { $0.extensionItem.enabled && !$0.extensionItem.communityBlocked }
             .map { ResultRow.extensionRun($0.extensionItem, input: $0.input) }
-        if !extensionRows.isEmpty { immediate.append(ResultSection(title: "Extensions", rows: extensionRows)) }
+        if !extensionRows.isEmpty { immediate.append(ResultSection(title: String(localized: "Extensions", comment: "Launcher section title"), rows: extensionRows)) }
         let aliased = Set(immediate.flatMap(\.rows).map(\.id))
         let apps = index.search(q, limit: 6, usage: usage).map { ResultRow.app($0) }.filter { !aliased.contains($0.id) }
-        if !apps.isEmpty { immediate.append(ResultSection(title: "Applications", rows: apps)) }
+        if !apps.isEmpty { immediate.append(ResultSection(title: String(localized: "Applications", comment: "Launcher section title"), rows: apps)) }
         let actions = SystemAction.search(q).map(ResultRow.systemAction)
-        if !actions.isEmpty { immediate.append(ResultSection(title: "System", rows: actions)) }
+        if !actions.isEmpty { immediate.append(ResultSection(title: String(localized: "System", comment: "Launcher section title for system actions such as Lock Screen"), rows: actions)) }
         let panes = SystemSettingsDestination.search(q).map { ResultRow.systemSettings($0) }
-        if !panes.isEmpty { immediate.append(ResultSection(title: "System Settings", rows: panes)) }
+        if !panes.isEmpty { immediate.append(ResultSection(title: String(localized: "System Settings", comment: "Launcher section title for System Settings panes"), rows: panes)) }
         if !matchingCommands.isEmpty { immediate.append(ResultSection(title: "Volant", rows: matchingCommands)) }
         let shortcuts = appleShortcuts.matches(q).prefix(6).map(ResultRow.appleShortcut)
-        if !shortcuts.isEmpty { immediate.append(ResultSection(title: "Apple Shortcuts", rows: shortcuts)) }
+        if !shortcuts.isEmpty { immediate.append(ResultSection(title: ResultSection.appleShortcutsTitle, rows: shortcuts)) }
         return immediate
     }
 
@@ -1154,7 +1161,7 @@ final class LauncherModel: ObservableObject {
     /// query is still an edit of the one that produced it, for at most the hold duration. Returns
     /// whether calculator state should survive this refresh.
     private func holdCalculation(for q: String) -> Bool {
-        if let section = immediate.first(where: { $0.title == "Calculator" }), case .calculation(let answer, _)? = section.rows.first {
+        if let section = immediate.first(where: { $0.title == ResultSection.calculatorTitle }), case .calculation(let answer, _)? = section.rows.first {
             calculationAnchor = (q, answer)
             releaseHeldCalculation()
             return true
@@ -1203,7 +1210,7 @@ final class LauncherModel: ObservableObject {
     /// dictation from inside the launcher always copies, because Volant itself is in front. From
     /// the launcher, status appears in its feedback line; from the global hotkey
     /// (`surface: .indicator`) it appears in the floating indicator so the owner's app keeps focus.
-    func toggleDictation(stopHint: String = "press Return to stop", surface: DictationSurface = .launcher) {
+    func toggleDictation(stopHint: String = String(localized: "press Return to stop", comment: "Dictation hint, inserted into Listening… %@, or Escape to cancel."), surface: DictationSurface = .launcher) {
         if dictation.isListening { finishDictation(); return }
         dictationSurface = surface
         dictationReported = false
@@ -1214,7 +1221,7 @@ final class LauncherModel: ObservableObject {
         let availability = SpeechDictation.availability
         guard availability.isReady else {
             if surface == .indicator {
-                dictationIndicator.finish(availability.reason ?? "Dictation is unavailable.", outcome: .failed)
+                dictationIndicator.finish(availability.reason ?? String(localized: "Dictation is unavailable."), outcome: .failed)
             } else {
                 actionFeedback = availability.reason
             }
@@ -1233,7 +1240,7 @@ final class LauncherModel: ObservableObject {
         if surface == .indicator {
             dictationIndicator.listen(stopHint: stopHint)
         } else {
-            actionFeedback = "Listening… \(stopHint), or Escape to cancel."
+            actionFeedback = String(localized: "Listening… \(stopHint), or Escape to cancel.", comment: "Dictation feedback; the value is a hint such as press Return to stop")
         }
         dictation.start { [weak self] _ in
             guard let self, case .failed(let reason) = self.dictation.phase else { return }
@@ -1248,7 +1255,7 @@ final class LauncherModel: ObservableObject {
         guard dictation.isListening else { return }
         endDictationTyping()
         dictation.cancel()
-        reportDictation("Dictation cancelled.", outcome: .cancelled)
+        reportDictation(String(localized: "Dictation cancelled."), outcome: .cancelled)
     }
 
     /// Whether the current dictation types at the cursor, which is when Return finishes it.
@@ -1256,7 +1263,7 @@ final class LauncherModel: ObservableObject {
 
     func finishDictation() {
         guard dictation.isListening else { return }
-        if dictationSurface == .indicator { dictationIndicator.transcribing() } else { actionFeedback = "Transcribing…" }
+        if dictationSurface == .indicator { dictationIndicator.transcribing() } else { actionFeedback = String(localized: "Transcribing…", comment: "Dictation feedback") }
         dictation.stop { [weak self] transcript in
             guard let self else { return }
             if let typing = self.dictationTyping, transcript != nil {
@@ -1268,13 +1275,13 @@ final class LauncherModel: ObservableObject {
             self.endDictationTyping()
             guard let transcript else {
                 if case .failed(let reason) = self.dictation.phase { self.reportDictation(reason, outcome: .failed) }
-                else { self.reportDictation("Nothing was heard.", outcome: .nothing) }
+                else { self.reportDictation(String(localized: "Nothing was heard.", comment: "Dictation feedback"), outcome: .nothing) }
                 return
             }
             self.copy(transcript)
             let message = self.dictationSurface == .indicator
-                ? "Copied \(transcript.count) characters — press ⌘V to paste."
-                : "Copied \(transcript.count) characters. Press Command-V to paste."
+                ? String(localized: "Copied \(transcript.count) characters — press ⌘V to paste.", comment: "Dictation indicator after copying the transcript")
+                : String(localized: "Copied \(transcript.count) characters. Press Command-V to paste.", comment: "Launcher feedback after copying the dictation transcript")
             self.reportDictation(message, outcome: .copied)
         }
     }
@@ -1378,7 +1385,7 @@ final class LauncherModel: ObservableObject {
         let selectedID = preservingSelection ? selectedRow?.id : nil
         var rows = found.map { ResultRow.note($0) }
         if !term.isEmpty { rows.append(.newNote(term)) }
-        sections = rows.isEmpty ? [] : [ResultSection(title: term.isEmpty ? "Recent Notes" : "Notes", rows: rows)]
+        sections = rows.isEmpty ? [] : [ResultSection(title: term.isEmpty ? String(localized: "Recent Notes", comment: "Launcher section title") : String(localized: "Notes", comment: "Launcher section title"), rows: rows)]
         if let selectedID, let index = self.rows.firstIndex(where: { $0.id == selectedID }) { selection = index }
         else if preservingSelection { selection = 0 }
     }
@@ -1387,8 +1394,8 @@ final class LauncherModel: ObservableObject {
     private func compose(preservingSelection: Bool = true) {
         let selectedID = preservingSelection ? selectedRow?.id : nil
         var out = immediate
-        if !contactRows.isEmpty { out.append(ResultSection(title: "Contacts", rows: contactRows)) }
-        if !fileRows.isEmpty { out.append(ResultSection(title: "Files", rows: fileRows)) }
+        if !contactRows.isEmpty { out.append(ResultSection(title: String(localized: "Contacts", comment: "Launcher section title"), rows: contactRows)) }
+        if !fileRows.isEmpty { out.append(ResultSection(title: String(localized: "Files", comment: "Launcher section title"), rows: fileRows)) }
         sections = Self.promoting(usage.choice(forQuery: query.trimmingCharacters(in: .whitespaces)), in: out)
         if let selectedID, let i = rows.firstIndex(where: { $0.id == selectedID }) { selection = i }
         else { selection = 0 }
@@ -1418,7 +1425,7 @@ final class LauncherModel: ObservableObject {
         let gen = generation
         let selectedID = force ? selectedRow?.id : nil
         let term = query.split(whereSeparator: \.isWhitespace).dropFirst().joined(separator: " ")
-        sections = []; notice = "Loading…"
+        sections = []; notice = String(localized: "Loading…")
         connectivity.load(source, refresh: force) { [weak self] snapshot in
             guard let self, self.generation == gen else { return }
             let items = snapshot.items.filter { item in
@@ -1427,7 +1434,7 @@ final class LauncherModel: ObservableObject {
                 default: return term.isEmpty || item.title.localizedCaseInsensitiveContains(term)
                 }
             }
-            self.sections = [ResultSection(title: source == "wifi" ? "Wi-Fi Networks" : "Connected Bluetooth Devices", rows: items.map(ResultRow.connectivity))]
+            self.sections = [ResultSection(title: source == "wifi" ? String(localized: "Wi-Fi Networks", comment: "Launcher section title") : String(localized: "Connected Bluetooth Devices", comment: "Launcher section title"), rows: items.map(ResultRow.connectivity))]
             if let selectedID, let index = self.rows.firstIndex(where: { $0.id == selectedID }) { self.selection = index }
             else { self.selection = 0 }
             self.actionFeedback = snapshot.items.isEmpty ? nil : snapshot.message
@@ -1446,7 +1453,7 @@ final class LauncherModel: ObservableObject {
             else {
                 self.wifiJoin = nil
                 self.refreshConnectivity(force: true)
-                self.actionFeedback = "Connected to " + network.name
+                self.actionFeedback = String(localized: "Connected to \(network.name)", comment: "Footer feedback after joining a Wi-Fi network")
                 self.searchFocusRequest = UUID()
             }
         }
@@ -1459,7 +1466,7 @@ final class LauncherModel: ObservableObject {
             sections = search.directions.map { direction in
                 ResultSection(title: direction.title, rows: routes.filter { $0.direction == direction }.map(ResultRow.audioRoute))
             }
-            notice = routes.isEmpty ? "No matching audio devices. Connect the device and search again." : nil
+            notice = routes.isEmpty ? String(localized: "No matching audio devices. Connect the device and search again.") : nil
         } catch { sections = []; notice = error.localizedDescription }
     }
 
@@ -1469,11 +1476,11 @@ final class LauncherModel: ObservableObject {
             let commands = VolumeCommand.parse(query, muted: state.muted)
             let volumeRows = commands.map { command -> ResultRow in
                 let supported = (command == .mute || command == .unmute) ? state.canSetMute : state.canSetVolume
-                let detail = supported ? (command == .up ? "+5%" : command == .down ? "−5%" : "") : "Hardware control only"
+                let detail = supported ? (command == .up ? "+5%" : command == .down ? "−5%" : "") : String(localized: "Hardware control only", comment: "Volume row detail when macOS can't set the device's volume")
                 return .volume(command, detail: detail)
             }
-            sections = [ResultSection(title: "Volume · " + state.summary, rows: volumeRows)]
-            notice = commands.isEmpty ? "Try volume up, volume down, mute, unmute, or volume 40%." : nil
+            sections = [ResultSection(title: String(localized: "Volume · \(state.summary)", comment: "Launcher section title; the value is the current volume, such as 40%"), rows: volumeRows)]
+            notice = commands.isEmpty ? String(localized: "Try volume up, volume down, mute, unmute, or volume 40%.", comment: "Launcher notice; volume up, volume down, mute, unmute and volume 40% are typed commands and stay in English") : nil
         } catch {
             sections = []
             notice = error.localizedDescription
@@ -1484,8 +1491,8 @@ final class LauncherModel: ObservableObject {
         let selectedID = selectedRow?.id
         var commands = CaffeinateCommand.parse(query, keepsDisplayAwake: config.caffeinateKeepsDisplayAwake)
         if caffeinate.isActive { commands = [.off] }
-        sections = [ResultSection(title: "Caffeinate", rows: commands.map(ResultRow.caffeinate))]
-        notice = commands.isEmpty ? "Try caffeinate 30m, caffeinate 1h system, or caffeinate off (up to 24 hours)." : nil
+        sections = [ResultSection(title: String(localized: "Caffeinate", comment: "Launcher section title; the Caffeinate command"), rows: commands.map(ResultRow.caffeinate))]
+        notice = commands.isEmpty ? String(localized: "Try caffeinate 30m, caffeinate 1h system, or caffeinate off (up to 24 hours).", comment: "Launcher notice; caffeinate 30m, caffeinate 1h system and caffeinate off are typed commands and stay in English") : nil
         if let selectedID, let index = rows.firstIndex(where: { $0.id == selectedID }) { selection = index }
         else { selection = 0 }
     }
@@ -1560,7 +1567,7 @@ final class LauncherModel: ObservableObject {
                 refreshAudioRoutes()
                 if let index = rows.firstIndex(where: { $0.id == row.id }) { selection = index }
                 else { selection = 0 }
-                actionFeedback = route.direction.title + ": " + route.name
+                actionFeedback = String(localized: "\(route.direction.title): \(route.name)", comment: "Footer feedback after choosing an audio device, such as Audio Output: Speakers")
             } catch { actionFeedback = error.localizedDescription }
             return
         case .volume(let command, _):
@@ -1574,7 +1581,7 @@ final class LauncherModel: ObservableObject {
             return
         case .systemSettings(let pane):
             guard NSWorkspace.shared.open(pane.url) else {
-                actionFeedback = "Couldn’t open " + pane.title + " in System Settings."
+                actionFeedback = String(localized: "Couldn’t open \(pane.title) in System Settings.")
                 return
             }
             dismiss(); return
@@ -1607,7 +1614,7 @@ final class LauncherModel: ObservableObject {
         case .note(let note): onNote(.open(note.id))
         case .newNote(let text): onNote(.create(text + "\n"))
         case .extensionRun(let ext, let input):
-            guard !extensionRunning else { notice = "An extension is already running."; return }
+            guard !extensionRunning else { notice = String(localized: "An extension is already running."); return }
             if extensions.isBlocked(ext) { dismiss(); onNote(.extensionSettings); return }
             if !extensions.isReady(ext) {
                 pendingExtension = ExtensionPermissionRequest(extensionItem: ext, input: input, hosts: extensions.missingHosts(ext),
@@ -1626,14 +1633,14 @@ final class LauncherModel: ObservableObject {
         case .quicklink(let link, let query):
             if QuicklinkResolver.needsQuery(link) && query.isEmpty { self.query = link.name + " "; return }
             guard let url = QuicklinkResolver.url(for: link, query: query) else {
-                notice = "This quicklink URL is invalid or unsupported. Check it in config.json."
+                notice = String(localized: "This quicklink URL is invalid or unsupported. Check it in config.json.")
                 generation += 1
                 files.cancel()
                 sections = []
                 return
             }
             guard QuicklinkResolver.open(url) else {
-                notice = "Could not open this quicklink. Check that its app is installed."
+                notice = String(localized: "Could not open this quicklink. Check that its app is installed.")
                 generation += 1
                 files.cancel()
                 sections = []
@@ -1707,7 +1714,7 @@ final class LauncherModel: ObservableObject {
             }
             draft.error = failure.message
         } catch {
-            draft.error = "Couldn’t save to the configuration file. Check config.json, then try again."
+            draft.error = String(localized: "Couldn’t save to the configuration file. Check config.json, then try again.")
         }
         return false
     }
@@ -1798,7 +1805,7 @@ final class LauncherModel: ObservableObject {
     /// where it still exists, so a hidden story disappears and a completed task goes. A confirmation such
     /// as "Completed “Ship 0.3.3”" and errors appear as feedback.
     func runItemAction(_ ext: InstalledExtension, item: ExtensionItem, action: String?) {
-        guard !extensionRunning else { notice = "An extension is already running."; return }
+        guard !extensionRunning else { notice = String(localized: "An extension is already running."); return }
         extensionRunning = true
         let gen = generation, opened = action == nil
         extensions.runAction(ext, item: item, action: action, query: extensionItemsQuery, filter: extensionItemsFilter) { [weak self] result in
@@ -1811,7 +1818,7 @@ final class LauncherModel: ObservableObject {
                 guard let items = outcome.items else { self.runExtension(ext, input: self.extensionItemsQuery, keepingSelection: true); return }
                 let selectedID = self.selectedRow?.id
                 self.sections = [ResultSection(title: ext.name, rows: items.map { .extensionItem($0, source: ext) })]
-                self.notice = items.isEmpty ? "\(ext.name) returned nothing." : nil
+                self.notice = items.isEmpty ? String(localized: "\(ext.name) returned nothing.", comment: "Launcher notice when an extension returns no rows") : nil
                 self.selection = selectedID.flatMap { id in self.rows.firstIndex { $0.id == id } } ?? 0
             case .failure(let error):
                 if !opened { self.actionFeedback = "\(ext.name): \(error.localizedDescription)" }
@@ -1842,12 +1849,12 @@ final class LauncherModel: ObservableObject {
         case .contents:
             guard case .app = target else { return }
             if NSWorkspace.shared.open(url.appendingPathComponent("Contents", isDirectory: true)) { dismiss() }
-            else { actionFeedback = "Could not open package contents." }
-        case .copyPath: copyText(url.path); actionFeedback = "Path copied."
-        case .copyName: copyText(target.actionTitle); actionFeedback = "Name copied."
+            else { actionFeedback = String(localized: "Could not open package contents.") }
+        case .copyPath: copyText(url.path); actionFeedback = String(localized: "Path copied.")
+        case .copyName: copyText(target.actionTitle); actionFeedback = String(localized: "Name copied.")
         case .copyBundleID:
-            guard case .app = target, let identifier = Bundle(url: url)?.bundleIdentifier else { actionFeedback = "Bundle identifier unavailable."; return }
-            copyText(identifier); actionFeedback = "Bundle identifier copied."
+            guard case .app = target, let identifier = Bundle(url: url)?.bundleIdentifier else { actionFeedback = String(localized: "Bundle identifier unavailable."); return }
+            copyText(identifier); actionFeedback = String(localized: "Bundle identifier copied.")
         case .configure:
             if case .app(let app) = target { editApp(app) }
         case .favorite:
@@ -1855,11 +1862,11 @@ final class LauncherModel: ObservableObject {
             do {
                 config = try Preferences.updateFavorite(app.id, expected: config.favoriteApps.contains(app.id), at: actionConfigURL)
                 refresh()
-                actionFeedback = config.favoriteApps.contains(app.id) ? "Added to Favorites." : "Removed from Favorites."
-            } catch { actionFeedback = "Could not save Favorites. Reload configuration and try again." }
+                actionFeedback = config.favoriteApps.contains(app.id) ? String(localized: "Added to Favorites.") : String(localized: "Removed from Favorites.")
+            } catch { actionFeedback = String(localized: "Could not save Favorites. Reload configuration and try again.") }
         case .resetRanking:
-            if usage.resetRanking(for: target.id) { refresh(); actionFeedback = "Learned ranking reset." }
-            else { actionFeedback = "Could not reset ranking. Try again." }
+            if usage.resetRanking(for: target.id) { refresh(); actionFeedback = String(localized: "Learned ranking reset.") }
+            else { actionFeedback = String(localized: "Could not reset ranking. Try again.") }
         }
         searchFocusRequest = UUID()
     }

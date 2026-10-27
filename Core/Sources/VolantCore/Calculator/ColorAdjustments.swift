@@ -42,7 +42,7 @@ public enum ColorAdjustments {
         let secondary: Format = primary == .hex ? .rgb : .hex
         let result = ColorCalculator.format(color, as: primary)
         var detail = ColorCalculator.format(color, as: secondary)
-        if !ColorCalculator.inGamut(color) && [.hex, .rgb, .hsl, .hwb].contains(primary) { detail = "Outside sRGB · " + detail }
+        if !ColorCalculator.inGamut(color) && [.hex, .rgb, .hsl, .hwb].contains(primary) { detail = String(localized: "Outside sRGB", table: "Core", comment: "Calculator color label: the color is outside the sRGB gamut") + " · " + detail }
         let shown = ColorCalculator.clamped(color)
         return CalculationAnswer(input: input, inputDetail: operation, result: result, resultDetail: detail, copyText: result,
                                  swatch: .init(red: shown.red, green: shown.green, blue: shown.blue, alpha: shown.alpha))
@@ -179,12 +179,12 @@ public enum ColorAdjustments {
         let answer = Calculator.format(ratio, locale: locale) + ":1"
         let verdict: String
         switch ratio {
-        case 7...: verdict = "Passes AAA"
-        case 4.5...: verdict = "Passes AA · AAA for large text"
-        case 3...: verdict = "AA for large text only"
-        default: verdict = "Fails AA"
+        case 7...: verdict = String(localized: "Passes AAA", table: "Core", comment: "Calculator color contrast verdict; AA and AAA are WCAG levels")
+        case 4.5...: verdict = String(localized: "Passes AA · AAA for large text", table: "Core", comment: "Calculator color contrast verdict; AA and AAA are WCAG levels")
+        case 3...: verdict = String(localized: "AA for large text only", table: "Core", comment: "Calculator color contrast verdict; AA and AAA are WCAG levels")
+        default: verdict = String(localized: "Fails AA", table: "Core", comment: "Calculator color contrast verdict; AA and AAA are WCAG levels")
         }
-        return CalculationAnswer(input: input, inputDetail: "Text on background", result: answer, resultDetail: verdict,
+        return CalculationAnswer(input: input, inputDetail: String(localized: "Text on background", table: "Core", comment: "Calculator color contrast label"), result: answer, resultDetail: verdict,
                                  copyText: answer, swatch: .init(red: ink.red, green: ink.green, blue: ink.blue, alpha: 1))
     }
 

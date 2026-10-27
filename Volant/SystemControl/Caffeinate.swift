@@ -8,8 +8,16 @@ struct CaffeinateCommand: Hashable {
     let stop: Bool
     static let off = Self(minutes: nil, display: false, stop: true)
     var id: String { stop ? "off" : "\(minutes.map(String.init) ?? "unlimited"):\(display)" }
-    var title: String { stop ? "Stop Caffeinate" : "Caffeinate" + (display ? "" : " · Display May Sleep") }
-    var detail: String { stop ? "Allow normal idle sleep" : minutes.map { "\($0) minutes" } ?? "Until stopped" }
+    var title: String {
+        stop ? String(localized: "Stop Caffeinate", comment: "Launcher row that ends the Caffeinate session")
+            : display ? String(localized: "Caffeinate", comment: "Launcher row that keeps the Mac and its display awake")
+            : String(localized: "Caffeinate · Display May Sleep", comment: "Launcher row that keeps the Mac awake but lets the display sleep")
+    }
+    var detail: String {
+        stop ? String(localized: "Allow normal idle sleep", comment: "Detail of the Stop Caffeinate row")
+            : minutes.map { String(localized: "\($0) minutes", comment: "Caffeinate session length") }
+            ?? String(localized: "Until stopped", comment: "Caffeinate session with no time limit")
+    }
 
     static func matches(_ query: String) -> Bool {
         query.lowercased().split(whereSeparator: \.isWhitespace).first == "caffeinate"
@@ -46,7 +54,7 @@ protocol CaffeinateAssertions {
 struct NativeCaffeinateAssertions: CaffeinateAssertions {
     struct Failure: LocalizedError {
         let code: IOReturn
-        var errorDescription: String? { "macOS couldn’t update Caffeinate (\(code)). Try again." }
+        var errorDescription: String? { String(localized: "macOS couldn’t update Caffeinate (\(code)). Try again.", comment: "The number is an IOKit error code") }
     }
     func create(display: Bool, timeout: TimeInterval) throws -> UInt32 {
         var id: IOPMAssertionID = 0
@@ -78,9 +86,14 @@ final class CaffeinateService: ObservableObject {
     private var timer: Timer?
     var isActive: Bool { command != nil }
     var summary: String {
-        let mode = command?.display == true ? "Mac & display awake" : "Mac awake · display may sleep"
-        guard let remaining else { return mode + " · until stopped" }
-        return mode + String(format: " · %d:%02d remaining", remaining / 60, remaining % 60)
+        let display = command?.display == true
+        guard let remaining else {
+            return display ? String(localized: "Mac & display awake · until stopped", comment: "Caffeinate status")
+                : String(localized: "Mac awake · display may sleep · until stopped", comment: "Caffeinate status")
+        }
+        let time = String(format: "%d:%02d", remaining / 60, remaining % 60)
+        return display ? String(localized: "Mac & display awake · \(time) remaining", comment: "Caffeinate status; the time is minutes:seconds")
+            : String(localized: "Mac awake · display may sleep · \(time) remaining", comment: "Caffeinate status; the time is minutes:seconds")
     }
     init(assertions: CaffeinateAssertions = NativeCaffeinateAssertions(), now: (() -> TimeInterval)? = nil, automaticTimer: Bool = true) {
         self.assertions = assertions
@@ -90,8 +103,8 @@ final class CaffeinateService: ObservableObject {
     }
     @discardableResult func perform(_ next: CaffeinateCommand) -> Bool {
         if next.stop { return stop() }
-        if let minutes = next.minutes, !(1...1440).contains(minutes) { error = "Choose a duration from 1 minute to 24 hours."; return false }
-        guard !isActive else { error = "Stop the current Caffeinate session before starting another."; return false }
+        if let minutes = next.minutes, !(1...1440).contains(minutes) { error = String(localized: "Choose a duration from 1 minute to 24 hours.", comment: "Caffeinate error"); return false }
+        guard !isActive else { error = String(localized: "Stop the current Caffeinate session before starting another."); return false }
         do {
             let seconds = TimeInterval((next.minutes ?? 0) * 60)
             assertion = try assertions.create(display: next.display, timeout: seconds)

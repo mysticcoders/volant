@@ -119,7 +119,7 @@ public struct ColorTheme: Equatable, Identifiable {
     /// Built-in themes in picker order. Palette values come from each project's published palette;
     /// docs/color-themes.md lists the sources and licenses.
     public static let catalog: [ColorTheme] = [
-        ColorTheme(id: systemID, name: "System", mode: nil, palette: nil),
+        ColorTheme(id: systemID, name: String(localized: "System", table: "Core", comment: "Color theme that follows the macOS appearance"), mode: nil, palette: nil),
         ColorTheme(id: "volant", name: "Volant", mode: nil, palette: nil, accent: Accent(light: "#c73c2a", dark: "#ff7a5f")),
         ColorTheme(id: "catppuccin-latte", name: "Catppuccin Latte", mode: .light, palette: ColorPalette(
             background: "#eff1f5", secondaryBackground: "#e6e9ef", text: "#4c4f69", secondaryText: "#5c5f77",

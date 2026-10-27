@@ -35,7 +35,7 @@ public final class DictationTypingSession {
         /// The indicator's result line. A copy outcome tells the caller to copy the transcript.
         public var message: String {
             switch self {
-            case .nothing: return "Nothing was heard."
+            case .nothing: return String(localized: "Nothing was heard.", table: "Core", comment: "Dictation indicator result when no speech was recognized")
             case .typed(let count): return "Typed \(count) characters."
             case .pasted(let count): return "Pasted \(count) characters."
             case .copy(let reason, let typed):

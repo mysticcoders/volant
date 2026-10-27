@@ -33,9 +33,9 @@ final class RecorderButton: NSButton {
     private var hoverTracking: NSTrackingArea?
     private var hovering = false
     private lazy var removeButton: NSButton = {
-        let button = NSButton(image: NSImage(systemSymbolName: "xmark", accessibilityDescription: "Remove shortcut")!, target: self, action: #selector(removeShortcut))
+        let button = NSButton(image: NSImage(systemSymbolName: "xmark", accessibilityDescription: String(localized: "Remove shortcut"))!, target: self, action: #selector(removeShortcut))
         button.isBordered = false
-        button.toolTip = "Remove shortcut"
+        button.toolTip = String(localized: "Remove shortcut")
         button.isHidden = true
         addSubview(button)
         return button
@@ -110,10 +110,10 @@ final class RecorderButton: NSButton {
     override var acceptsFirstResponder: Bool { true }
     @objc func beginRecording() { recording = true; window?.makeFirstResponder(self); updateTitle() }
     func updateTitle() {
-        title = recording ? "Press shortcut…" : value.isEmpty ? "Record Hotkey" : KeyCombo.display(value)
-        toolTip = recording ? "Press a shortcut, or Esc to cancel." : nil
-        setAccessibilityLabel("Global shortcut: " + (value.isEmpty || recording ? title : value))
-        setAccessibilityHelp(recording ? "Press a shortcut, or Escape to cancel." : nil)
+        title = recording ? String(localized: "Press shortcut…", comment: "Shortcut recorder button title while waiting for keys") : value.isEmpty ? String(localized: "Record Hotkey", comment: "Shortcut recorder button title when no shortcut is set") : KeyCombo.display(value)
+        toolTip = recording ? String(localized: "Press a shortcut, or Esc to cancel.") : nil
+        setAccessibilityLabel(String(localized: "Global shortcut: \(value.isEmpty || recording ? title : value)", comment: "Accessibility label of a shortcut recorder; the value is the shortcut or the button title"))
+        setAccessibilityHelp(recording ? String(localized: "Press a shortcut, or Escape to cancel.") : nil)
         updateRemoveButton()
     }
     override func resignFirstResponder() -> Bool { recording = false; updateTitle(); return super.resignFirstResponder() }

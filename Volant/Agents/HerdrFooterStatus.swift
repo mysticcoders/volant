@@ -32,7 +32,9 @@ struct HerdrFooterStatus: View {
         let shown = sessions
         let summary = HerdrStatusSummary(sessions: shown, connected: agents.connected, busy: agents.busy,
                                          machines: agents.machines, unread: shown.filter(agents.isUnread).count)
-        let scope = filter == "all" ? "" : (Preferences.harnessOptions.first { $0.id == filter }?.title ?? filter) + " only. "
+        let harness = Preferences.harnessOptions.first { $0.id == filter }?.title ?? filter
+        let help = filter == "all" ? summary.help
+            : String(localized: "\(harness) only. \(summary.help)", comment: "Herdr footer tooltip when Settings limits it to one agent harness, such as Claude Code")
         Button(action: onOpen) {
             HStack(spacing: 5) {
                 Image(systemName: summary.tone == .warning ? "exclamationmark.triangle" : "waveform.path")
@@ -48,7 +50,7 @@ struct HerdrFooterStatus: View {
         .buttonStyle(.plain)
         .focusable(false)
         .onHover { hovering = $0 }
-        .help(scope + summary.help)
+        .help(help)
         .accessibilityLabel(summary.text)
         .accessibilityHint("Shows Herdr panes")
         .accessibilityIdentifier("launcher-herdr-status")

@@ -86,18 +86,18 @@ public struct ACPAgentResolver {
                 throw ACPResolutionError(state: .needsAdapter, message: provider.title + "’s ACP adapter is missing. Install Volant’s ACP adapters and retry.")
             }
             guard let node = find(["node"], in: ["/opt/homebrew/bin", "/usr/local/bin", home + "/.local/bin"]) else {
-                throw ACPResolutionError(state: .needsNode, message: "The ACP adapters require Node.js 22 or newer.")
+                throw ACPResolutionError(state: .needsNode, message: String(localized: "The ACP adapters require Node.js 22 or newer.", table: "Core", comment: "AI agent setup error; ACP and Node.js are not translated"))
             }
             return ACPLaunch(executable: node, arguments: [adapter],
                              environment: [provider == .claude ? "CLAUDE_CODE_EXECUTABLE" : "CODEX_PATH": installed])
         case .opencode:
             guard let installed = find(["opencode"], in: ["/opt/homebrew/bin", home + "/.opencode/bin", home + "/.local/bin", "/usr/local/bin"]) else {
-                throw ACPResolutionError(state: .notInstalled, message: "OpenCode was not found. Install it and run opencode auth login, then retry.")
+                throw ACPResolutionError(state: .notInstalled, message: String(localized: "OpenCode was not found. Install it and run opencode auth login, then retry.", table: "Core", comment: "AI agent setup error; OpenCode and its command are not translated"))
             }
             return ACPLaunch(executable: installed, arguments: ["acp"], environment: [:])
         case .cursor:
             guard let installed = find(["agent", "cursor-agent"]) else {
-                throw ACPResolutionError(state: .notInstalled, message: "Cursor CLI is not installed. Install and sign in to Cursor CLI, then retry.")
+                throw ACPResolutionError(state: .notInstalled, message: String(localized: "Cursor CLI is not installed. Install and sign in to Cursor CLI, then retry.", table: "Core", comment: "AI agent setup error; Cursor CLI is a product name"))
             }
             return ACPLaunch(executable: installed, arguments: ["acp"], environment: [:])
         case .gemini, .qwen:

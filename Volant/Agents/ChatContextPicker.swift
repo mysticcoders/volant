@@ -99,7 +99,7 @@ struct ChatAttachmentChip: View {
                 .font(.caption2).foregroundStyle(.secondary)
             Button(action: remove) { Image(systemName: "xmark").font(.caption2.weight(.bold)) }
                 .buttonStyle(.plain).foregroundStyle(.secondary)
-                .accessibilityLabel("Remove " + attachment.title)
+                .accessibilityLabel(String(localized: "Remove \(attachment.title)", comment: "Accessibility label for removing a chat attachment"))
         }
         .padding(.horizontal, 8).padding(.vertical, 4)
         .background(.tint.opacity(0.12), in: Capsule())

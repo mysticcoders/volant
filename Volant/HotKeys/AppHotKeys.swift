@@ -10,13 +10,13 @@ enum AppHotKeys {
     static func register(_ entries: [AppHotKey], onFailure: @escaping (String) -> Void = { _ in }) -> [String] {
         var failures: [String] = []
         for entry in entries {
-            guard let combo = KeyCombo(parsing: entry.hotKey) else { failures.append("Invalid shortcut for " + entry.bundleIdentifier); continue }
+            guard let combo = KeyCombo(parsing: entry.hotKey) else { failures.append(String(localized: "Invalid shortcut for \(entry.bundleIdentifier)", comment: "Settings error; the value is an app's bundle identifier")); continue }
             let bundleID = entry.bundleIdentifier
             let path = entry.path
             if HotKeyCenter.shared.register(combo, handler: {
-                toggle(bundleID, path: path) { message in onFailure(bundleID + ": " + message) }
+                toggle(bundleID, path: path) { message in onFailure(String(localized: "\(bundleID): \(message)", comment: "Settings error for an app shortcut; the values are the app's bundle identifier and the reason")) }
             }) == nil {
-                failures.append("Shortcut unavailable: " + KeyCombo.display(entry.hotKey) + " (" + bundleID + ")")
+                failures.append(String(localized: "Shortcut unavailable: \(KeyCombo.display(entry.hotKey)) (\(bundleID))", comment: "Settings error; the values are the key combination and the app's bundle identifier"))
             }
         }
         return failures
@@ -43,10 +43,10 @@ enum AppHotKeys {
                     completion(application != nil && error == nil)
                 }
             }
-        }, onFailure: { message in
-            logger.error("App shortcut failed: \(message, privacy: .public)")
+        }, onFailure: { failure in
+            logger.error("App shortcut failed: \(failure.rawValue, privacy: .public)")
             NSSound.beep()
-            onFailure(message)
+            onFailure(failure.message)
         })
     }
 
@@ -67,17 +67,29 @@ enum AppHotKeys {
 
     /// Keep OS handoff injectable: logic tests must never launch or hide the owner's apps.
     static func perform(isActive: Bool, hide: () -> Bool, applicationURL: () -> URL?,
-                        open: (URL, @escaping (Bool) -> Void) -> Void, onFailure: @escaping (String) -> Void) {
+                        open: (URL, @escaping (Bool) -> Void) -> Void, onFailure: @escaping (Failure) -> Void) {
         if isActive {
-            if !hide() { onFailure("macOS could not hide the application.") }
+            if !hide() { onFailure(.hide) }
             return
         }
         guard let url = applicationURL() else {
-            onFailure("Application not found. Check its shortcut in Settings.")
+            onFailure(.notFound)
             return
         }
         open(url) { succeeded in
-            if !succeeded { onFailure("macOS could not open the application. Try opening it from Finder.") }
+            if !succeeded { onFailure(.open) }
+        }
+    }
+
+    /// Why an app shortcut failed: an English code for the log and a translated message for the owner.
+    enum Failure: String {
+        case hide, notFound = "not found", open
+        var message: String {
+            switch self {
+            case .hide: return String(localized: "macOS could not hide the application.", comment: "App shortcut error")
+            case .notFound: return String(localized: "Application not found. Check its shortcut in Settings.", comment: "App shortcut error")
+            case .open: return String(localized: "macOS could not open the application. Try opening it from Finder.", comment: "App shortcut error")
+            }
         }
     }
 }

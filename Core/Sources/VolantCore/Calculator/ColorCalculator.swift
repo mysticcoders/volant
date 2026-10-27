@@ -49,7 +49,7 @@ public enum ColorCalculator {
         let swatch = CalculationAnswer.Swatch(red: shown.red, green: shown.green, blue: shown.blue, alpha: shown.alpha)
         if let platform {
             let result = code(color, for: platform)
-            let detail = (inGamut(color) ? "" : "Outside sRGB · ") + format(color, as: .hex)
+            let detail = (inGamut(color) ? "" : String(localized: "Outside sRGB", table: "Core", comment: "Calculator color label: the color is outside the sRGB gamut") + " · ") + format(color, as: .hex)
             return CalculationAnswer(input: input, inputDetail: named == nil ? nil : format(color, as: .hex), result: result,
                                      resultDetail: detail, copyText: result, swatch: swatch)
         }
@@ -57,7 +57,7 @@ public enum ColorCalculator {
         let secondary: Format = primary == .hex ? (source == .rgb ? .hsl : .rgb) : (primary == .rgb ? .hsl : .hex)
         let result = format(color, as: primary)
         var detail = format(color, as: secondary)
-        if !inGamut(color) && [.hex, .rgb, .hsl, .hwb].contains(primary) { detail = "Outside sRGB · " + detail }
+        if !inGamut(color) && [.hex, .rgb, .hsl, .hwb].contains(primary) { detail = String(localized: "Outside sRGB", table: "Core", comment: "Calculator color label: the color is outside the sRGB gamut") + " · " + detail }
         return CalculationAnswer(input: input, inputDetail: named == nil ? nil : format(color, as: .hex), result: result,
                                  resultDetail: detail, copyText: result, swatch: swatch,
                                  swapQuery: named == nil && primary != source ? "\(result) in \(source.rawValue)" : nil)

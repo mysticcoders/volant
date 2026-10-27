@@ -232,7 +232,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         guard !model.showingACP else { return nil }
         guard let view else { return nil }
         if let field = view as? NSTextField,
-           ["Search for apps, files, contacts, or calculate…", "Search emoji…", model.searchPlaceholder].contains(field.placeholderString ?? "") { return field }
+           [LauncherModel.defaultSearchPlaceholder, LauncherModel.emojiSearchPlaceholder, model.searchPlaceholder].contains(field.placeholderString ?? "") { return field }
         return view.subviews.lazy.compactMap { self.searchInput(in: $0) }.first
     }
 

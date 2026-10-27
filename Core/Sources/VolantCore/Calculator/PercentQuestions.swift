@@ -53,7 +53,7 @@ public enum PercentQuestions {
             let change = (to - from) / abs(from) * 100
             let text = (change > 0 ? "+" : "") + percent(change, locale: locale)
             let amount = Calculator.format(abs(to - from), locale: locale)
-            let detail = to == from ? "No change" : "\(to > from ? "Increase" : "Decrease") of \(amount)"
+            let detail = to == from ? String(localized: "No change", table: "Core", comment: "Calculator percent change answer label") : "\(to > from ? "Increase" : "Decrease") of \(amount)"
             return CalculationAnswer(input: input, inputDetail: nil, result: text, resultDetail: detail, copyText: text)
         }
         if let match = convert.firstMatch(in: query, range: NSRange(query.startIndex..., in: query)),

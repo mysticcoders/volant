@@ -10,6 +10,12 @@
             "state": "translated",
             "value": "Volant asks macOS to show its restart, shut down and log out confirmations when you choose those commands."
           }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant pide a macOS que muestre sus confirmaciones de reinicio, apagado y cierre de sesión cuando eliges esos comandos."
+          }
         }
       }
     },
@@ -21,6 +27,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Volant lists connected Bluetooth devices when you open the Bluetooth command."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant muestra los dispositivos Bluetooth conectados cuando abres el comando Bluetooth."
           }
         }
       }
@@ -34,6 +46,12 @@
             "state": "translated",
             "value": "Volant lists connected Bluetooth devices on request."
           }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant muestra los dispositivos Bluetooth conectados cuando lo solicitas."
+          }
         }
       }
     },
@@ -45,6 +63,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Volant shows today's events and their meeting links. Read-only."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant muestra los eventos de hoy y sus enlaces de reunión. Solo lectura."
           }
         }
       }
@@ -58,6 +82,12 @@
             "state": "translated",
             "value": "Volant searches your contacts so you can copy an email address or phone number. Read-only."
           }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant busca en tus contactos para que puedas copiar una dirección de correo o un número de teléfono. Solo lectura."
+          }
         }
       }
     },
@@ -69,6 +99,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "macOS requires Location access to show Wi-Fi network names. Volant also uses your approximate location (about 11 km) only for extensions you allow, which share it with the sites they read; it is never saved."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS requiere acceso a la ubicación para mostrar los nombres de las redes Wi-Fi. Volant también usa tu ubicación aproximada (unos 11 km) solo para las extensiones que permitas, que la comparten con los sitios que consultan; nunca se guarda."
           }
         }
       }
@@ -82,6 +118,12 @@
             "state": "translated",
             "value": "macOS requires Location access to show Wi-Fi network names. Volant also uses your approximate location (about 11 km) only for extensions you allow, which share it with the sites they read; it is never saved."
           }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "macOS requiere acceso a la ubicación para mostrar los nombres de las redes Wi-Fi. Volant también usa tu ubicación aproximada (unos 11 km) solo para las extensiones que permitas, que la comparten con los sitios que consultan; nunca se guarda."
+          }
         }
       }
     },
@@ -93,6 +135,12 @@
           "stringUnit": {
             "state": "translated",
             "value": "Volant transcribes dictation on this Mac. Audio is never sent anywhere and is not saved."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant transcribe el dictado en tu Mac. El audio nunca se envía a ningún sitio y no se guarda."
           }
         }
       }

@@ -27,8 +27,8 @@ struct ACPPromptView: NSViewRepresentable {
         editor.autoresizingMask = [.width]
         editor.textContainer?.widthTracksTextView = true
         editor.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)
-        editor.setAccessibilityLabel("Agent prompt")
-        editor.setAccessibilityHelp("Return to send; Shift-Return for a new line")
+        editor.setAccessibilityLabel(String(localized: "Agent prompt"))
+        editor.setAccessibilityHelp(String(localized: "Return to send; Shift-Return for a new line"))
         editor.delegate = context.coordinator
         editor.string = text
         editor.submit = send

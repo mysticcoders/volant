@@ -4,10 +4,10 @@ import VolantCore
 enum LauncherEntryKind: String {
     case snippet, quicklink
 
-    var title: String { self == .snippet ? "Create Snippet" : "Create Quicklink" }
-    var savedMessage: String { self == .snippet ? "Snippet saved." : "Quicklink saved." }
+    var title: String { self == .snippet ? String(localized: "Create Snippet", comment: "Launcher form title") : String(localized: "Create Quicklink", comment: "Launcher form title") }
+    var savedMessage: String { self == .snippet ? String(localized: "Snippet saved.") : String(localized: "Quicklink saved.") }
     /// The name field's placeholder, which also lets the panel find that field to focus it.
-    var namePlaceholder: String { self == .snippet ? "Email signature" : "Search Docs" }
+    var namePlaceholder: String { self == .snippet ? String(localized: "Email signature", comment: "Example snippet name shown as the name field placeholder") : String(localized: "Search Docs", comment: "Example quicklink name shown as the name field placeholder") }
 }
 
 /// The in-panel form's fields. It is observed by the form alone, so typing does not redraw the
@@ -51,25 +51,25 @@ struct LauncherEntryFormView: View {
     }
 
     @ViewBuilder private var fields: some View {
-        labeled("Name") {
+        labeled(String(localized: "Name", comment: "Snippet or quicklink form field label")) {
             TextField(draft.kind.namePlaceholder, text: $draft.name)
                 .focused($field, equals: .name).onSubmit(save)
                 .accessibilityIdentifier("launcher-entry-name")
         }
         if draft.kind == .snippet {
-            labeled("Keyword") {
+            labeled(String(localized: "Keyword", comment: "Snippet form field label")) {
                 TextField("Optional, one word, for example sig", text: $draft.keyword)
                     .focused($field, equals: .keyword).onSubmit(save)
                     .accessibilityIdentifier("launcher-entry-keyword")
             }
             snippetText
         } else {
-            labeled("URL") {
+            labeled(String(localized: "URL", comment: "Quicklink form field label")) {
                 TextField("https://example.com/search?q={query}", text: $draft.text)
                     .focused($field, equals: .text).onSubmit(save)
                     .accessibilityIdentifier("launcher-entry-url")
             }
-            hint("Type the quicklink’s name, a space and a term to put it in place of {query}. Opens http, https, mailto and Shortcuts run links.")
+            hint(String(localized: "Type the quicklink’s name, a space and a term to put it in place of {query}. Opens http, https, mailto and Shortcuts run links.", comment: "Quicklink form hint; {query} is a literal placeholder and stays as is"))
         }
     }
 
@@ -84,7 +84,7 @@ struct LauncherEntryFormView: View {
                 .focused($field, equals: .text)
                 .accessibilityLabel("Snippet text")
                 .accessibilityIdentifier("launcher-entry-text")
-            hint("Placeholders: " + LauncherEntries.snippetPlaceholders.joined(separator: " ") + ". Return adds a line; ⌘↩ saves.")
+            hint(String(localized: "Placeholders: \(LauncherEntries.snippetPlaceholders.joined(separator: " ")). Return adds a line; ⌘↩ saves.", comment: "Snippet form hint; the value lists placeholders such as {date} that stay as is"))
         }
     }
 
@@ -96,7 +96,7 @@ struct LauncherEntryFormView: View {
             if let error = draft.error {
                 Text(error).font(.callout).foregroundStyle(.red).lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityLabel("Error: " + error)
+                    .accessibilityLabel(String(localized: "Error: \(error)", comment: "Accessibility label for a snippet or quicklink save error"))
             }
             Spacer(minLength: 8)
             Button("Save") { save() }

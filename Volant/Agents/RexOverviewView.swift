@@ -147,9 +147,9 @@ struct RexSessionSection: View {
             }
             .buttonStyle(.plain)
             .help(minimized ? "Expand this session" : "Minimize this session")
-            .accessibilityLabel(minimized ? "Expand " + session.label : "Minimize " + session.label)
+            .accessibilityLabel(minimized ? String(localized: "Expand \(session.label)", comment: "Rex Overview: expand a minimized session") : String(localized: "Minimize \(session.label)", comment: "Rex Overview: minimize a session"))
             Text(session.label).font(.system(size: 13, weight: .semibold))
-            Text("\(session.tabs.count) \(session.tabs.count == 1 ? "tab" : "tabs")").font(.system(size: 12)).foregroundStyle(.secondary)
+            Text("\(session.tabs.count) tabs", comment: "Rex Overview: number of tabs in a session; needs a plural variant for one tab").font(.system(size: 12)).foregroundStyle(.secondary)
             if session.waiting > 0 {
                 Text("\(session.waiting) waiting").font(.system(size: 12, weight: .medium)).foregroundStyle(.orange)
             }
@@ -293,8 +293,8 @@ struct RexHiddenPanes: View {
             ForEach(shown) { pane in
                 Button { focus(pane) } label: { chip(pane) }
                     .buttonStyle(.plain)
-                    .help("Focus " + pane.name + " in Rex")
-                    .accessibilityLabel(pane.name + ", hidden behind the zoomed pane, " + pane.state.title)
+                    .help(String(localized: "Focus \(pane.name) in Rex", comment: "Rex Overview tooltip on a pane"))
+                    .accessibilityLabel(String(localized: "\(pane.name), hidden behind the zoomed pane, \(pane.state.title)", comment: "Rex Overview accessibility label: pane name, then its state"))
                     .accessibilityAddTraits(pane.blockID == selectedBlockID ? .isSelected : [])
             }
             if panes.count > shown.count {
@@ -352,7 +352,7 @@ struct RexPaneTile: View {
     var body: some View {
         Button(action: action) { tile }
             .buttonStyle(.plain)
-            .help("Focus " + pane.name + " in Rex")
+            .help(String(localized: "Focus \(pane.name) in Rex", comment: "Rex Overview tooltip on a pane"))
             .accessibilityLabel(accessibilityText)
             .accessibilityAddTraits(selected ? .isSelected : [])
     }
