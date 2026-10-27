@@ -717,8 +717,8 @@ export default function Home() {
             Version {appVersion} · macOS 15+ · Apple silicon &amp; Intel
           </span>
           <p className="download-scope">
-            New in 0.3.22: extensions can offer preferences, starting with
-            Hacker News. See{' '}
+            Extensions can now offer preferences, starting with Hacker News.
+            See{' '}
             <a href={`${repositoryURL}/releases`}>every release</a>.
           </p>
         </section>
