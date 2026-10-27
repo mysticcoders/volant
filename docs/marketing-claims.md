@@ -165,6 +165,7 @@ Merged after 0.3.20, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
+| European Portuguese (pt-PT) beta, separate from Brazilian Portuguese | Not yet | Drafted without native review like the other betas; written from English with pt-BR only as a reference (Definições, ficheiro, "A carregar…") | Say "European Portuguese (beta)"; never imply both Portuguese variants were reviewed |
 
 ## Privacy language
 

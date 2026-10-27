@@ -1,6 +1,6 @@
 # Localization
 
-Tracking issue: #294. Volant is written in English and ships 13 translations, all drafted without
+Tracking issue: #294. Volant is written in English and ships 14 translations, all drafted without
 a native speaker's review and labeled as betas, by the owner's choice:
 
 - Spanish (`es`, neutral wording for Spain and Latin America), added October 26, 2026.
@@ -8,6 +8,8 @@ a native speaker's review and labeled as betas, by the owner's choice:
 - Japanese (`ja`), Simplified Chinese (`zh-Hans`), Brazilian Portuguese (`pt-BR`), Korean (`ko`),
   Dutch (`nl`), Polish (`pl`), Russian (`ru`), Ukrainian (`uk`) and Turkish (`tr`), added October 27,
   2026.
+- European Portuguese (`pt-PT`), added October 27, 2026, written separately from `pt-BR`:
+  Definições, ficheiro, "A carregar…", and polite third-person address.
 
 Each follows Apple's own macOS style in that language, including its forms of address and its terms
 for Settings, System Settings, Finder (Apple's Simplified Chinese calls it 访达) and the Shortcuts

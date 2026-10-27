@@ -88,6 +88,12 @@
             "state": "needs_review",
             "value": "Volant, siz yeniden başlatma, kapatma ve oturumu kapatma komutlarını seçtiğinizde macOS’ten bunların onay pencerelerini göstermesini ister."
           }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Volant pede ao macOS que mostre as confirmações de reiniciar, desligar e terminar sessão quando escolhe esses comandos."
+          }
         }
       }
     },
@@ -177,6 +183,12 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Volant, Bluetooth komutunu açtığınızda bağlı Bluetooth aygıtlarını listeler."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Volant lista os dispositivos Bluetooth ligados quando abre o comando Bluetooth."
           }
         }
       }
@@ -268,6 +280,12 @@
             "state": "needs_review",
             "value": "Volant, istendiğinde bağlı Bluetooth aygıtlarını listeler."
           }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Volant lista os dispositivos Bluetooth ligados quando pedido."
+          }
         }
       }
     },
@@ -357,6 +375,12 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Volant bugünün etkinliklerini ve toplantı bağlantılarını gösterir. Salt okunur."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Volant mostra os eventos de hoje e as respetivas ligações de reunião. Apenas leitura."
           }
         }
       }
@@ -448,6 +472,12 @@
             "state": "needs_review",
             "value": "Volant, bir e-posta adresini veya telefon numarasını kopyalayabilmeniz için kişilerinizde arama yapar. Salt okunur."
           }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Volant pesquisa os seus contactos para que possa copiar um endereço de e-mail ou número de telefone. Apenas leitura."
+          }
         }
       }
     },
@@ -537,6 +567,12 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "macOS, Wi-Fi ağ adlarını göstermek için Konum erişimi gerektirir. Volant ayrıca yaklaşık konumunuzu (yaklaşık 11 km) yalnızca izin verdiğiniz genişletmeler için kullanır; bu genişletmeler konumu okudukları sitelerle paylaşır. Konum hiçbir zaman kaydedilmez."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O macOS requer acesso à localização para mostrar os nomes das redes Wi-Fi. O Volant também usa a sua localização aproximada (cerca de 11 km) apenas para as extensões que permitir, que a partilham com os sites que leem; nunca é guardada."
           }
         }
       }
@@ -628,6 +664,12 @@
             "state": "needs_review",
             "value": "macOS, Wi-Fi ağ adlarını göstermek için Konum erişimi gerektirir. Volant ayrıca yaklaşık konumunuzu (yaklaşık 11 km) yalnızca izin verdiğiniz genişletmeler için kullanır; bu genişletmeler konumu okudukları sitelerle paylaşır. Konum hiçbir zaman kaydedilmez."
           }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O macOS requer acesso à localização para mostrar os nomes das redes Wi-Fi. O Volant também usa a sua localização aproximada (cerca de 11 km) apenas para as extensões que permitir, que a partilham com os sites que leem; nunca é guardada."
+          }
         }
       }
     },
@@ -717,6 +759,12 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Volant dikteyi bu Mac’te yazıya döker. Ses hiçbir yere gönderilmez ve kaydedilmez."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Volant transcreve o ditado neste Mac. O áudio nunca é enviado para lado nenhum e não é guardado."
           }
         }
       }
