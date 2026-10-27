@@ -705,8 +705,27 @@ func extensionSettingsScenario() throws {
     try render("extension-preference-settings", view: preferenceSettings)
     preferenceWindow.orderOut(nil)
     let preferenceSheet = NSHostingView(rootView: ExtensionPreferencesView(ext: preferenceManager.extensions.first!, manager: preferenceManager, done: {}))
-    preferenceSheet.frame = NSRect(x: 0, y: 0, width: 460, height: 400); preferenceSheet.layoutSubtreeIfNeeded(); settle()
+    preferenceSheet.frame = NSRect(x: 0, y: 0, width: 460, height: 440); preferenceSheet.layoutSubtreeIfNeeded(); settle()
     try render("extension-preferences-sheet", view: preferenceSheet)
+
+    let (hackerNewsDirectory, _) = try copyExtension("hacker-news-preferences") { manifest in
+        manifest.id = "community.volant.hn"; manifest.name = "Hacker News"; manifest.output = "items"
+        manifest.preferences = [
+            ExtensionPreference(id: "limit", type: .number, title: "Stories to show", description: "How many stories to load at once",
+                                defaultValue: .number(30), min: 10, max: 50),
+            ExtensionPreference(id: "minimumPoints", type: .number, title: "Minimum points", description: "Hide stories with fewer points; 0 shows all",
+                                defaultValue: .number(0), min: 0, max: 1000),
+            ExtensionPreference(id: "showBadges", type: .toggle, title: "Show points and comments",
+                                description: "Adds each story's points, comment count and site to its row", defaultValue: .bool(true)),
+        ]
+    }
+    let hackerNewsManager = ExtensionManager(configURL: panel.model.actionConfigURL, roots: [hackerNewsDirectory], dataDirectory: storageData)
+    hackerNewsManager.reload()
+    try hackerNewsManager.setEnabled(hackerNewsManager.extensions.first!, true)
+    try hackerNewsManager.savePreferences(["limit": .number(40), "minimumPoints": .number(50)], for: hackerNewsManager.extensions.first!, expected: [:])
+    let hackerNewsSheet = NSHostingView(rootView: ExtensionPreferencesView(ext: hackerNewsManager.extensions.first!, manager: hackerNewsManager, done: {}))
+    hackerNewsSheet.frame = NSRect(x: 0, y: 0, width: 460, height: 400); hackerNewsSheet.layoutSubtreeIfNeeded(); settle()
+    try render("hacker-news-preferences-sheet", view: hackerNewsSheet)
     verify(preferenceManager.preferenceValues(preferenceManager.extensions.first!)["hideDomains"] == .string("fictional.example"),
            "Saved preferences are what the sheet and the next run read")
 
