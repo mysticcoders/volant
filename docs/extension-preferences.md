@@ -32,8 +32,8 @@ Every entry has these fields:
 - **`description`:** optional, up to 200 characters.
 - **`default`:** optional, and must be a value the entry's type accepts.
 
-Only list extensions (`"output": "items"`) may declare preferences, because only they receive a JSON
-request. A manifest with an invalid entry is rejected, like any other invalid field.
+Only extensions that receive a JSON request may declare preferences: list extensions
+(`"output": "items"`) and text extensions with `"input": "json"` (see [extensions](extensions.md)). A manifest with an invalid entry is rejected, like any other invalid field.
 
 ## Receiving them
 
@@ -80,5 +80,5 @@ manifest declares none.
 the request field. `ExtensionPreferenceRunTests` cover what reaches the module, preserving other config
 fields, refusing a stale editor, staying enabled when declarations change, and forgetting on uninstall.
 The branded Actions fixture renders the Settings row and the preferences sheet from a fictional manifest.
-Text extensions (ABI 1 `run` with a plain string) can't receive preferences until they get a JSON
-envelope (#65).
+Text extensions with plain input (the default) can't receive preferences; `"input": "json"` gives them
+the JSON request that carries them.

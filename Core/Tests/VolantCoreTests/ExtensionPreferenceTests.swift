@@ -27,9 +27,11 @@ final class ExtensionPreferenceTests: XCTestCase {
         XCTAssertFalse(ExtensionPreference(id: "a", type: .toggle, title: "Stray range", min: 1, max: 2).isValid)
     }
 
-    func testManifestAcceptsPreferencesOnlyOnListExtensions() throws {
+    func testManifestAcceptsPreferencesOnlyOnExtensionsThatReceiveRequests() throws {
         XCTAssertNoThrow(try manifest([hide, sort, scores, limit]).validate())
-        XCTAssertThrowsError(try manifest([hide], output: nil).validate(), "Text extensions have no request to carry them")
+        XCTAssertThrowsError(try manifest([hide], output: nil).validate(), "Plain text extensions have no request to carry them")
+        var json = manifest([hide], output: nil); json.input = "json"
+        XCTAssertNoThrow(try json.validate(), "A text extension that takes JSON requests can have preferences")
         XCTAssertThrowsError(try manifest([hide, hide]).validate(), "Duplicate ids")
         let thirteen = (1...13).map { ExtensionPreference(id: "p\($0)", type: .toggle, title: "P\($0)") }
         XCTAssertThrowsError(try manifest(thirteen).validate())

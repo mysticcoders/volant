@@ -37,7 +37,7 @@ That run happens after the link has opened, so a slow or failing extension never
 
 ## Permission and storage rules
 
-- **Declared, approved, fingerprinted.** The manifest sets `"storage": true` (a list extension only;
+- **Declared, approved, fingerprinted.** The manifest sets `"storage": true` (a list extension, or a text extension with `"input": "json"`;
   it is a separate field because `capabilities` names WebAssembly imports). It joins the approval
   fingerprint, so adding it to an existing extension needs enabling again; manifests without it keep
   their fingerprint. The consent and Settings text reads "Remember settings and lists on this Mac",

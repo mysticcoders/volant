@@ -78,24 +78,26 @@ public enum ExtensionNetwork {
 
     /// The JSON a module receives. `responses` is absent in the plan phase. Extensions that use
     /// storage also get their saved object, and the `action` and `opened` phases name the row and action.
-    /// An extension with `filters` gets the one chosen in the launcher's dropdown as `filter`.
+    /// An extension with `filters` gets the one chosen in the launcher's dropdown as `filter`, and one
+    /// allowed the clipboard gets its text as `clipboard`. A text extension's single request is `run`.
     public static func request(phase: String, query: String, now: Date, responses: [Response]? = nil,
                                storage: JSONValue? = nil, action: String? = nil, item: ExtensionItem? = nil,
                                state: String? = nil, units: String = units(), location: ExtensionLocation? = nil,
-                               filter: String? = nil, preferences: [String: JSONValue]? = nil) throws -> String {
+                               filter: String? = nil, preferences: [String: JSONValue]? = nil, clipboard: String? = nil) throws -> String {
         let encoder = JSONEncoder(); encoder.outputFormatting = .sortedKeys
         let body = Request(phase: phase, query: query, now: Int(now.timeIntervalSince1970), responses: responses,
                            storage: storage, action: action, item: item, state: state, units: units, location: location, filter: filter,
-                           preferences: preferences.flatMap { $0.isEmpty ? nil : $0 })
+                           preferences: preferences.flatMap { $0.isEmpty ? nil : $0 }, clipboard: clipboard)
         return String(decoding: try encoder.encode(body), as: UTF8.self)
     }
 
-    /// A reply that may carry rows, data to save, a short confirmation, or several of these. Missing
-    /// parts are nil; a reply with none of them, or that is not JSON, is malformed.
+    /// A reply that may carry rows, a text extension's result, data to save, a short confirmation, or
+    /// several of these. Missing parts are nil; a reply with none of them, or that is not JSON, is malformed.
     public struct Reply: Equatable {
         public var items: [ExtensionItem]?
         public var storage: JSONValue?
         public var notice: String?
+        public var text: String?
     }
 
     /// The longest confirmation Volant shows, such as "Completed “Ship 0.3.3”".
@@ -106,8 +108,9 @@ public enum ExtensionNetwork {
             throw ExtensionNetworkError.malformedItems
         }
         let notice = raw.notice.map { String($0.trimmingCharacters(in: .whitespacesAndNewlines).prefix(maximumNoticeLength)) }.flatMap { $0.isEmpty ? nil : $0 }
-        guard raw.items != nil || raw.storage != nil || notice != nil else { throw ExtensionNetworkError.malformedItems }
-        return Reply(items: raw.items.map { Array($0.prefix(maximumItems)).compactMap { $0.sanitized(appLinks: appLinks) } }, storage: raw.storage, notice: notice)
+        guard raw.items != nil || raw.storage != nil || notice != nil || raw.text != nil else { throw ExtensionNetworkError.malformedItems }
+        return Reply(items: raw.items.map { Array($0.prefix(maximumItems)).compactMap { $0.sanitized(appLinks: appLinks) } }, storage: raw.storage, notice: notice,
+                     text: raw.text)
     }
 
     /// The rows a render returned, trimmed to the launcher's limits. Links other than http, https and the
@@ -121,7 +124,7 @@ public enum ExtensionNetwork {
 
     private struct Plan: Decodable { let fetch: [String]; let state: String? }
     private struct ItemList: Decodable { let items: [ExtensionItem] }
-    private struct RawReply: Decodable { let items: [ExtensionItem]?; let storage: JSONValue?; let notice: String? }
+    private struct RawReply: Decodable { let items: [ExtensionItem]?; let storage: JSONValue?; let notice: String?; let text: String? }
     private struct Request: Encodable {
         let phase: String
         let query: String
@@ -135,6 +138,7 @@ public enum ExtensionNetwork {
         let location: ExtensionLocation?
         let filter: String?
         let preferences: [String: JSONValue]?
+        let clipboard: String?
     }
 
     /// One fetched URL as the module sees it. A failed fetch has status 0 and an empty body.

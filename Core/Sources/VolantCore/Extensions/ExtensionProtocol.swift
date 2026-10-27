@@ -27,9 +27,14 @@ public struct ExtensionManifest: Codable, Hashable {
     /// URL schemes of apps a row may open, such as `todoist`, so Return can open a task in its app. Part of
     /// the approval fingerprint when present; system and file schemes are never allowed.
     public var appLinks: [String]?
-    /// Owner data the extension asks for, beyond its hosts: today only `"location"` (see
-    /// `ExtensionLocation`). Part of the approval fingerprint when present.
+    /// Owner data the extension asks for, beyond its hosts: `"location"` for list extensions (see
+    /// `ExtensionLocation`) and `"clipboard"` for any extension that receives JSON requests (see
+    /// `ExtensionClipboard`). Part of the approval fingerprint when present.
     public var permissions: [String]?
+    /// How a text extension reads its input: `"text"` (the default), the typed text as it is, or `"json"`,
+    /// the same JSON request a list extension gets, so it can use preferences, storage and the clipboard
+    /// and reply with `{"text"}`. List extensions always get JSON and leave this out.
+    public var input: String?
     /// How a list extension behaves once the owner enters it: `"list"` (the default) runs at once and
     /// shows rows, `"search"` waits for typed input. Presentation only, so not part of the fingerprint.
     public var mode: String?
@@ -48,9 +53,13 @@ public struct ExtensionManifest: Codable, Hashable {
     public var declaredAppLinks: [String] { appLinks ?? [] }
     public var declaredPermissions: [String] { permissions ?? [] }
     public var wantsLocation: Bool { declaredPermissions.contains(ExtensionLocation.permission) }
-    public static let knownPermissions: Set<String> = [ExtensionLocation.permission]
+    public var wantsClipboard: Bool { declaredPermissions.contains(ExtensionClipboard.permission) }
+    public static let knownPermissions: Set<String> = [ExtensionLocation.permission, ExtensionClipboard.permission]
     public var declaredHosts: [String] { hosts ?? [] }
     public var listsItems: Bool { output == "items" }
+    public var takesJSON: Bool { input == "json" }
+    /// Whether runs send the module JSON requests, which carry preferences, storage and owner data.
+    public var receivesRequests: Bool { listsItems || takesJSON }
     public var usesStorage: Bool { storage == true }
     public var waitsForInput: Bool { mode == "search" }
     public static let maximumPlaceholderLength = 80
@@ -66,17 +75,18 @@ public struct ExtensionManifest: Codable, Hashable {
               (timeoutSeconds ?? 2).isFinite, (0.5...10).contains(timeoutSeconds ?? 2),
               [nil, "text", "items"].contains(output), declaredHosts.count <= ExtensionNetwork.maximumHosts,
               Set(declaredHosts).count == declaredHosts.count, declaredHosts.allSatisfy(ExtensionNetwork.isValidHost),
-              declaredHosts.isEmpty || listsItems, Self.isValidIcon(icon, sha256: iconSha256), !usesStorage || listsItems,
+              declaredHosts.isEmpty || listsItems, Self.isValidIcon(icon, sha256: iconSha256), !usesStorage || receivesRequests,
+              [nil, "text", "json"].contains(input), input == nil || !listsItems,
               declaredSecrets.count <= ExtensionSecret.maximumPerExtension, Set(declaredSecrets.map(\.id)).count == declaredSecrets.count,
               Set(declaredSecrets.map(\.host)).count == declaredSecrets.count, declaredSecrets.allSatisfy({ $0.isValid(hosts: declaredHosts) }),
               declaredAppLinks.count <= Self.maximumAppLinks, Set(declaredAppLinks).count == declaredAppLinks.count,
               declaredAppLinks.allSatisfy(Self.isAllowedAppLink), declaredAppLinks.isEmpty || listsItems,
               Set(declaredPermissions).isSubset(of: Self.knownPermissions), Set(declaredPermissions).count == declaredPermissions.count,
-              declaredPermissions.isEmpty || listsItems, [nil, "list", "search"].contains(mode), mode == nil || listsItems,
+              declaredPermissions.isEmpty || receivesRequests, !wantsLocation || listsItems, [nil, "list", "search"].contains(mode), mode == nil || listsItems,
               placeholder.map({ (1...Self.maximumPlaceholderLength).contains($0.count) && listsItems }) ?? true,
               filters == nil || (listsItems && (2...ExtensionFilter.maximumCount).contains(declaredFilters.count)),
               declaredFilters.allSatisfy(\.isValid), Set(declaredFilters.map(\.id)).count == declaredFilters.count,
-              ExtensionPreferences.isValid(declaredPreferences, listsItems: listsItems) else {
+              ExtensionPreferences.isValid(declaredPreferences, receivesRequests: receivesRequests) else {
             throw ExtensionValidationError.invalidManifest
         }
     }
@@ -117,8 +127,10 @@ public struct ExtensionManifest: Codable, Hashable {
     public init(abiVersion: Int? = 1, id: String, name: String, version: String, module: String, capabilities: [String], timeoutSeconds: Double? = nil, sha256: String? = nil,
                 hosts: [String]? = nil, output: String? = nil, icon: String? = nil, iconSha256: String? = nil, storage: Bool? = nil,
                 secrets: [ExtensionSecret]? = nil, appLinks: [String]? = nil, permissions: [String]? = nil,
-                mode: String? = nil, placeholder: String? = nil, filters: [ExtensionFilter]? = nil, preferences: [ExtensionPreference]? = nil) {
+                mode: String? = nil, placeholder: String? = nil, filters: [ExtensionFilter]? = nil, preferences: [ExtensionPreference]? = nil,
+                input: String? = nil) {
         self.preferences = preferences
+        self.input = input
         self.abiVersion = abiVersion
         self.id = id
         self.name = name
