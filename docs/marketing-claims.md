@@ -161,11 +161,16 @@ Added in 0.3.20:
 | --- | --- | --- | --- |
 | 13 beta translations (Spanish, German, French, Italian, Japanese, Simplified Chinese, Brazilian Portuguese, Korean, Dutch, Polish, Russian, Ukrainian, Turkish) and a Language setting | Yes | #296–#299; drafted without native speakers' review and shipped as labeled betas by the owner's choice (docs/localization.md); about 1,280 strings each with each language's plural forms; some messages stay English (helper-produced, compared values, about 40 interpolated Core messages); translated fixture renders cover the Servers scenario only. Settings › General › Language sets Volant's per-app language | Home download line; release notes. Always "(beta)" or "beta, unreviewed translations"; list languages only as betas; never "fully translated", "native", "localized for <country>" or "14 languages" without "beta" |
 
-Merged after 0.3.20, not in the current download:
+Added in 0.3.21:
+
+| Story | In 0.3.21 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| European Portuguese (pt-PT) beta, separate from Brazilian Portuguese | Yes | #301; drafted without native review like the other betas; written from English with pt-BR only as a reference (Definições, ficheiro, "A carregar…") | Home download line; release notes. Say "European Portuguese (beta)"; never imply both Portuguese variants were reviewed |
+
+Merged after 0.3.21, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
-| European Portuguese (pt-PT) beta, separate from Brazilian Portuguese | Not yet | Drafted without native review like the other betas; written from English with pt-BR only as a reference (Definições, ficheiro, "A carregar…") | Say "European Portuguese (beta)"; never imply both Portuguese variants were reviewed |
 
 ## Privacy language
 
