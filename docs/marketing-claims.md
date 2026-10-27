@@ -167,11 +167,16 @@ Added in 0.3.21:
 | --- | --- | --- | --- |
 | European Portuguese (pt-PT) beta, separate from Brazilian Portuguese | Yes | #301; drafted without native review like the other betas; written from English with pt-BR only as a reference (Definições, ficheiro, "A carregar…") | Home download line; release notes. Say "European Portuguese (beta)"; never imply both Portuguese variants were reviewed |
 
-Merged after 0.3.21, not in the current download:
+Added in 0.3.22:
+
+| Story | In 0.3.22 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| Extension preferences: list extensions declare toggles, text, dropdowns and numbers; owners set them in Settings › Extensions | Yes | #303; Core and app tests, fixture renders of the row and sheet; Hacker News 0.5.0 (volant-extensions#17) is the first to declare them | Extensions docs; release notes; claim for list extensions only; never say preferences can hold tokens |
+
+Merged after 0.3.22, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
-| Extension preferences: list extensions declare toggles, text, dropdowns and numbers; owners set them in Settings › Extensions | Not yet | Core and app tests, fixture renders of the row and sheet; no catalog extension declares preferences yet | Extensions docs; claim for list extensions only; never say preferences can hold tokens |
 
 ## Privacy language
 
