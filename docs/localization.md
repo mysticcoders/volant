@@ -36,8 +36,10 @@ is missing, which it is in every helper process.
   after a Debug build into `build/` (`Scripts/build.sh`, or the test build in `Scripts/test.sh`),
   then review and commit the catalogs.
 - `tools/strings.py --check` runs in `Scripts/test.sh` after the test build. It fails when a string
-  is new, unused or changed and the catalog wasn't updated, and when the permission prompts in
-  `InfoPlist.xcstrings` differ from `project.yml`.
+  is new or changed and the catalog wasn't updated, when a string has no Spanish, and when the
+  permission prompts in `InfoPlist.xcstrings` differ from `project.yml`. It doesn't fail on unused
+  strings: CI's older SDK doesn't compile macOS 26-only code, so those strings look unused there.
+  A local `tools/strings.py` marks strings that really are unused as stale.
 - Building in Xcode may sync `Localizable.xcstrings` itself, from the same compiler output, so the
   two agree. If they ever disagree, the script's result is the one to commit.
 

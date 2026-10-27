@@ -9,7 +9,9 @@ xcstringstool's lightweight extraction, which is why Core strings must not inter
 InfoPlist.xcstrings must hold exactly the permission prompts in project.yml, with the same English.
 
   tools/strings.py           update the catalogs
-  tools/strings.py --check   fail if either catalog or the permission prompts are out of date
+  tools/strings.py --check   fail on strings the catalogs lack or describe differently, on prompts that
+                             differ from project.yml, and on strings without Spanish. Unused strings are
+                             marked stale only by a full sync, since an older SDK compiles less code.
 """
 import argparse
 import glob
@@ -48,12 +50,14 @@ def core_stringsdata(out):
     return sorted(str(p) for p in out.glob("*.stringsdata"))
 
 
-def sync(catalog_dir, build_dir):
-    """Merges the current source strings into the catalogs in `catalog_dir`."""
+def sync(catalog_dir, build_dir, mark_stale=True):
+    """Merges the current source strings into the catalogs in `catalog_dir`. Without `mark_stale`, strings
+    this build didn't compile are left alone: code behind a newer SDK, such as macOS 26 dictation and
+    Apple Intelligence, isn't compiled by older Xcode on CI, and its strings are still in use."""
     with tempfile.TemporaryDirectory() as scratch:
         data = app_stringsdata(build_dir) + core_stringsdata(Path(scratch))
-        result = subprocess.run(["xcrun", "xcstringstool", "sync"] + [str(catalog_dir / c) for c in CATALOGS] + ["--stringsdata"] + data,
-                                capture_output=True, text=True)
+        result = subprocess.run(["xcrun", "xcstringstool", "sync"] + [str(catalog_dir / c) for c in CATALOGS] + ["--stringsdata"] + data
+                                + ([] if mark_stale else ["--skip-marking-strings-stale"]), capture_output=True, text=True)
         if result.returncode:
             sys.exit(result.stderr or result.stdout)
 
@@ -116,10 +120,10 @@ def main():
             copy = Path(scratch)
             for catalog in CATALOGS:
                 shutil.copy(RESOURCES / catalog, copy / catalog)
-            sync(copy, args.build_dir)
+            sync(copy, args.build_dir, mark_stale=False)
             for catalog in CATALOGS:
-                added, stale, changed = changes(json.loads((RESOURCES / catalog).read_text()), json.loads((copy / catalog).read_text()))
-                for label, keys in (("new", added), ("no longer used", stale), ("changed", changed)):
+                added, _, changed = changes(json.loads((RESOURCES / catalog).read_text()), json.loads((copy / catalog).read_text()))
+                for label, keys in (("new", added), ("changed", changed)):
                     if keys:
                         problems.append(f"{catalog}: {len(keys)} {label}, e.g. {keys[:3]}")
     if problems:
