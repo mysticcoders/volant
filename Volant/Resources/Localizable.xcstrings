@@ -464,16 +464,16 @@
     "%@ Preferences": {
       "comment": "Title of an extension's preferences sheet; the value is the extension's name",
       "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Preferencias de %@"
-          }
-        },
         "de": {
           "stringUnit": {
             "state": "needs_review",
             "value": "%@ – Einstellungen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Preferencias de %@"
           }
         },
         "fr": {
@@ -494,24 +494,6 @@
             "value": "%@の設定"
           }
         },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "“%@”偏好设置"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Preferências do %@"
-          }
-        },
-        "pt-PT": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Preferências de %@"
-          }
-        },
         "ko": {
           "stringUnit": {
             "state": "needs_review",
@@ -530,10 +512,28 @@
             "value": "Preferencje: %@"
           }
         },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Preferências do %@"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Preferências de %@"
+          }
+        },
         "ru": {
           "stringUnit": {
             "state": "needs_review",
             "value": "Настройки: %@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@ Tercihleri"
           }
         },
         "uk": {
@@ -542,10 +542,10 @@
             "value": "Параметри: %@"
           }
         },
-        "tr": {
+        "zh-Hans": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "%@ Tercihleri"
+            "value": "“%@”偏好设置"
           }
         }
       }
@@ -65961,16 +65961,16 @@
     "Preferences…": {
       "comment": "Button opening an extension's preferences",
       "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Preferencias…"
-          }
-        },
         "de": {
           "stringUnit": {
             "state": "needs_review",
             "value": "Einstellungen …"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Preferencias…"
           }
         },
         "fr": {
@@ -65991,24 +65991,6 @@
             "value": "設定…"
           }
         },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "偏好设置…"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Preferências…"
-          }
-        },
-        "pt-PT": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Preferências…"
-          }
-        },
         "ko": {
           "stringUnit": {
             "state": "needs_review",
@@ -66027,10 +66009,28 @@
             "value": "Preferencje…"
           }
         },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Preferências…"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Preferências…"
+          }
+        },
         "ru": {
           "stringUnit": {
             "state": "needs_review",
             "value": "Настройки…"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tercihler…"
           }
         },
         "uk": {
@@ -66039,10 +66039,10 @@
             "value": "Параметри…"
           }
         },
-        "tr": {
+        "zh-Hans": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Tercihler…"
+            "value": "偏好设置…"
           }
         }
       }
@@ -85726,6 +85726,95 @@
         }
       }
     },
+    "The extension stopped for a newer search.": {
+      "comment": "Extension error after a newer query replaced its run",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Die Erweiterung wurde für eine neuere Suche beendet."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La extensión se detuvo por una búsqueda más reciente."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "L’extension s’est arrêtée pour une recherche plus récente."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "L’estensione si è fermata per una ricerca più recente."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "新しい検索のため、機能拡張を停止しました。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "새 검색 때문에 확장 프로그램이 중지되었습니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "De extensie is gestopt voor een nieuwere zoekopdracht."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rozszerzenie zatrzymało się z powodu nowszego wyszukiwania."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "A extensão parou por causa de uma busca mais recente."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "A extensão parou devido a uma pesquisa mais recente."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Расширение остановлено ради более нового поиска."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Uzantı daha yeni bir arama için durduruldu."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Розширення зупинено заради новішого пошуку."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "扩展已为更新的搜索而停止。"
+          }
+        }
+      }
+    },
     "The fetch helper did not answer.": {
       "comment": "Extension catalog error detail",
       "localizations": {
@@ -86799,16 +86888,16 @@
     "These preferences changed elsewhere. Close this sheet and open it again to see the current values.": {
       "comment": "Extension preferences save error",
       "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Estas preferencias cambiaron en otro lugar. Cierra esta hoja y ábrela de nuevo para ver los valores actuales."
-          }
-        },
         "de": {
           "stringUnit": {
             "state": "needs_review",
             "value": "Diese Einstellungen wurden an anderer Stelle geändert. Schließe dieses Fenster und öffne es erneut, um die aktuellen Werte zu sehen."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Estas preferencias cambiaron en otro lugar. Cierra esta hoja y ábrela de nuevo para ver los valores actuales."
           }
         },
         "fr": {
@@ -86829,24 +86918,6 @@
             "value": "これらの設定は別の場所で変更されました。このシートを閉じて開き直すと、現在の値が表示されます。"
           }
         },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "这些偏好设置已在别处更改。请关闭此表单并重新打开以查看当前值。"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Estas preferências foram alteradas em outro lugar. Feche esta janela e abra-a de novo para ver os valores atuais."
-          }
-        },
-        "pt-PT": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Estas preferências foram alteradas noutro local. Feche esta janela e abra-a novamente para ver os valores atuais."
-          }
-        },
         "ko": {
           "stringUnit": {
             "state": "needs_review",
@@ -86865,10 +86936,28 @@
             "value": "Te preferencje zmieniono w innym miejscu. Zamknij to okno i otwórz je ponownie, aby zobaczyć bieżące wartości."
           }
         },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Estas preferências foram alteradas em outro lugar. Feche esta janela e abra-a de novo para ver os valores atuais."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Estas preferências foram alteradas noutro local. Feche esta janela e abra-a novamente para ver os valores atuais."
+          }
+        },
         "ru": {
           "stringUnit": {
             "state": "needs_review",
             "value": "Эти настройки изменены в другом месте. Закройте это окно и откройте его снова, чтобы увидеть текущие значения."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bu tercihler başka bir yerde değiştirildi. Güncel değerleri görmek için bu sayfayı kapatıp yeniden açın."
           }
         },
         "uk": {
@@ -86877,10 +86966,10 @@
             "value": "Ці параметри змінено в іншому місці. Закрийте це вікно й відкрийте його знову, щоб побачити поточні значення."
           }
         },
-        "tr": {
+        "zh-Hans": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Bu tercihler başka bir yerde değiştirildi. Güncel değerleri görmek için bu sayfayı kapatıp yeniden açın."
+            "value": "这些偏好设置已在别处更改。请关闭此表单并重新打开以查看当前值。"
           }
         }
       }

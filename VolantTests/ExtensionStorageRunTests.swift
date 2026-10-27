@@ -147,4 +147,18 @@ final class ExtensionStorageRunTests: XCTestCase {
         XCTAssertFalse(names[0].contains(".."))
         XCTAssertEqual(store.load("../../escape"), .object(["a": .number(1)]))
     }
+
+    func testACancelledRunDropsTheReplyAndItsStorage() throws {
+        let (manager, ext) = try manager()
+        var pending: ((Result<String, Error>) -> Void)?
+        manager.invokeOverride = { _, _, completion in pending = completion }
+        var outcome: Result<[ExtensionItem], Error>?
+        manager.runItems(ext, query: "new", fetch: { _, _, _ in XCTFail("No hosts, no fetch") }) { outcome = $0 }
+        manager.cancelItemsRun()
+        XCTAssertNil(outcome, "A module already running finishes before the run completes")
+        try XCTUnwrap(pending)(.success(#"{"items":[{"title":"Stale"}],"storage":{"pinned":["stale"]}}"#))
+        guard case .failure(let error) = try XCTUnwrap(outcome) else { return XCTFail("A cancelled run must not show its rows") }
+        XCTAssertTrue(ExtensionManager.ExtensionError.isCancellation(error))
+        XCTAssertFalse(manager.hasStoredData(ext), "A cancelled run must not save its storage")
+    }
 }

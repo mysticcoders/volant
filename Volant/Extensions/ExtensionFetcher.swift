@@ -7,6 +7,17 @@ import VolantCore
 /// body so the extension can still render the ones that did load. Header values, which carry the owner's
 /// tokens, go only to the helper and are never logged.
 enum ExtensionFetcher {
+    private static let pendingLock = NSLock()
+    private static var pendingReads: [ObjectIdentifier: () -> Void] = [:]
+
+    /// Stops every extension GET still in flight, for a list run a newer query replaced. Each completes as
+    /// a failed fetch, and closing its connection makes the helper cancel the transfer. POSTs from row
+    /// actions are left to finish, since the server may already be acting on them.
+    static func cancelReads() {
+        pendingLock.lock(); let pending = Array(pendingReads.values); pendingReads = [:]; pendingLock.unlock()
+        pending.forEach { $0() }
+    }
+
     static func fetch(_ requests: [ExtensionRequest], hosts: [String], completion: @escaping ([ExtensionNetwork.Response]) -> Void) {
         var responses = [ExtensionNetwork.Response?](repeating: nil, count: requests.count)
         let group = DispatchGroup()
@@ -21,7 +32,7 @@ enum ExtensionFetcher {
     }
 
     private static func fetchOne(_ request: ExtensionRequest, hosts: [String], completion: @escaping (ExtensionNetwork.Response) -> Void) {
-        call(timeout: 35, { proxy, reply in
+        call(timeout: 35, cancellable: request.method == "GET", { proxy, reply in
             proxy.request(url: request.url.absoluteString, method: request.method, body: request.body, headers: request.headers,
                           allowedHosts: hosts, maximumBytes: ExtensionNetwork.maximumResponseBytes, reply: reply)
         }) { data, status, error in
@@ -44,8 +55,9 @@ enum ExtensionFetcher {
     }
 
     /// One short-lived helper connection that completes exactly once, on the main queue: with the
-    /// helper's reply, or with no data and status 0 after a connection failure or the timeout.
-    private static func call(timeout: TimeInterval, _ request: (VolantFetchHostProtocol, @escaping (Data?, Int, String?) -> Void) -> Void,
+    /// helper's reply, or with no data and status 0 after a connection failure, the timeout, or, when
+    /// `cancellable`, `cancelReads`.
+    private static func call(timeout: TimeInterval, cancellable: Bool = false, _ request: (VolantFetchHostProtocol, @escaping (Data?, Int, String?) -> Void) -> Void,
                              completion: @escaping (Data?, Int, String?) -> Void) {
         let connection = NSXPCConnection(serviceName: "com.mysticcoders.volant.FetchHost")
         connection.remoteObjectInterface = NSXPCInterface(with: VolantFetchHostProtocol.self)
@@ -55,9 +67,11 @@ enum ExtensionFetcher {
             lock.lock(); defer { lock.unlock() }
             guard !finished else { return }
             finished = true
+            if cancellable { pendingLock.lock(); pendingReads[ObjectIdentifier(connection)] = nil; pendingLock.unlock() }
             connection.invalidate()
             DispatchQueue.main.async { completion(data, status, error) }
         }
+        if cancellable { pendingLock.lock(); pendingReads[ObjectIdentifier(connection)] = { finish(nil, 0, nil) }; pendingLock.unlock() }
         connection.invalidationHandler = { finish(nil, 0, nil) }
         connection.interruptionHandler = { finish(nil, 0, nil) }
         connection.resume()
