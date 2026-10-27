@@ -70,3 +70,7 @@ This caught a real difference from the direct engine checks: launchd throttles r
 
 List extensions can declare `hosts` and `"output": "items"` to read public web data and show it as launcher rows. The module still never touches the network: it plans URLs, Volant fetches them through the sandboxed `VolantFetchHost` from hosts the owner allowed, and the module renders the responses. Hosts are approved in a prompt, shared between extensions, listed under Settings → Extensions → Network Access, and pruned when the last extension using them is uninstalled. See [network extensions](network-extensions.md); the first two, Hacker News and Lobsters, are in [mysticcoders/volant-extensions](https://github.com/mysticcoders/volant-extensions).
 
+
+## Preferences
+
+List extensions can declare `preferences` (toggles, one-line text, dropdowns and numbers) that the owner sets from the extension's **Preferences…** button in Settings › Extensions. Volant sends the chosen values, or the defaults, as `preferences` with every list request. They are the owner's own settings, grant no access, and never hold secrets. See [extension preferences](extension-preferences.md).

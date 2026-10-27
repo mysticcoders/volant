@@ -154,9 +154,9 @@ from their row, without a scope.
 
 ## Not yet
 
-- Preferences an extension declares, such as blocked domains, with a Settings UI (#65). The signed
-  catalog ([extension catalog](extension-catalog.md)) and per-extension storage
-  ([extension storage](extension-storage.md), #226) have shipped.
+- The signed catalog ([extension catalog](extension-catalog.md)), per-extension storage
+  ([extension storage](extension-storage.md), #226) and declared preferences with a Settings UI
+  ([extension preferences](extension-preferences.md)) have shipped.
 - Methods other than GET and POST, OAuth, streaming, or responses over 512 KB.
 - Secrets in catalog listings: the catalog does not list them yet, so Settings shows them only after install.
 - A signed-delivery check of `VolantFetchHost` through the release build, like `tools/check-rates-xpc.sh`.

@@ -228,6 +228,20 @@ final class ExtensionManager {
         }
         reload()
     }
+    /// Every declared preference's value for a run: the owner's stored choice when it still fits the
+    /// declaration, otherwise its default.
+    func preferenceValues(_ ext: InstalledExtension) -> [String: JSONValue] {
+        ExtensionPreferences.resolve(ext.manifest.declaredPreferences, stored: ExtensionPreferenceStore.values(for: ext.id, at: configURL))
+    }
+
+    /// Saves the owner's choices for an extension's preferences, refusing when they changed since `expected`
+    /// was read. Values equal to the default are not stored, so a changed default reaches the owner.
+    func savePreferences(_ values: [String: JSONValue], for ext: InstalledExtension, expected: [String: JSONValue]) throws {
+        let declared = ext.manifest.declaredPreferences
+        let kept = values.filter { key, value in declared.first { $0.id == key }.map { $0.accepted(value) != nil && value != $0.fallback } ?? false }
+        try ExtensionPreferenceStore.save(kept, for: ext.id, expected: expected, at: configURL)
+    }
+
     /// Moves a community extension's folder to the Trash, forgets its approval, and removes any host
     /// approvals that no other installed extension declares. Bundled extensions cannot be removed.
     /// Tests pass `remove` so fixtures are deleted rather than put in the owner's Trash.
@@ -239,6 +253,7 @@ final class ExtensionManager {
         try remove(ext.directory)
         try ExtensionApproval.forget(ext.manifest.id, at: configURL)
         try? dataStore.clear(ext.id)
+        try? ExtensionPreferenceStore.forget(ext.id, at: configURL)
         try? forgetSecrets(ext)
         try? stopSharingLocation(ext)
         reload()
@@ -378,6 +393,7 @@ final class ExtensionManager {
         let hosts = ext.manifest.declaredHosts
         let sequence = beginRun(ext)
         let storage = ext.manifest.usesStorage ? dataStore.load(ext.id) : nil
+        let preferences = preferenceValues(ext)
         func approvedHosts() -> Set<String> { Set(hosts).intersection(ExtensionHostApprovals.approved(at: configURL)) }
         func fetchRound(_ planned: ExtensionNetwork.Fetch, round: Int) {
             fetch(planned.urls.map { self.authorized(ExtensionRequest(url: $0), for: ext) }, Array(approvedHosts()).sorted()) { responses in
@@ -389,7 +405,8 @@ final class ExtensionManager {
         func render(_ responses: [ExtensionNetwork.Response], state: String?, round: Int) {
             do {
                 let input = try ExtensionNetwork.request(phase: "render", query: query, now: now, responses: hosts.isEmpty ? nil : responses,
-                                                         storage: storage, state: state, location: location, filter: filter)
+                                                         storage: storage, state: state, location: location, filter: filter,
+                                                         preferences: preferences)
                 invoke(ext, input) { [self] result in
                     do {
                         let output = try result.get()
@@ -415,7 +432,8 @@ final class ExtensionManager {
         let secrets = missingSecrets(ext)
         guard secrets.isEmpty else { completion(.failure(ExtensionError.secretsMissing(secrets.map(\.title)))); return }
         do {
-            invoke(ext, try ExtensionNetwork.request(phase: "plan", query: query, now: now, storage: storage, location: location, filter: filter)) { [self] result in
+            invoke(ext, try ExtensionNetwork.request(phase: "plan", query: query, now: now, storage: storage, location: location, filter: filter,
+                                                     preferences: preferences)) { [self] result in
                 do {
                     let output = try result.get()
                     if let reply = try? ExtensionNetwork.reply(from: output, appLinks: Set(ext.manifest.declaredAppLinks)), let items = reply.items {
@@ -445,6 +463,7 @@ final class ExtensionManager {
                    completion: @escaping (Result<ActionOutcome, Error>) -> Void) {
         let sequence = beginRun(ext)
         let storage = ext.manifest.usesStorage ? dataStore.load(ext.id) : nil
+        let preferences = preferenceValues(ext)
         func outcome(_ output: String) throws -> ActionOutcome {
             let reply = try ExtensionNetwork.reply(from: output, appLinks: Set(ext.manifest.declaredAppLinks))
             try save(reply.storage, for: ext, run: sequence)
@@ -452,7 +471,7 @@ final class ExtensionManager {
         }
         do {
             let input = try ExtensionNetwork.request(phase: action == nil ? "opened" : "action", query: query, now: now,
-                                                     storage: storage, action: action, item: item, filter: filter)
+                                                     storage: storage, action: action, item: item, filter: filter, preferences: preferences)
             invoke(ext, input) { [self] result in
                 do {
                     let output = try result.get()
@@ -468,7 +487,7 @@ final class ExtensionManager {
                         do {
                             let render = try ExtensionNetwork.request(phase: "render", query: query, now: now, responses: responses,
                                                                       storage: storage, action: action, item: item, state: submitted.state,
-                                                                      filter: filter)
+                                                                      filter: filter, preferences: preferences)
                             self.invoke(ext, render) { result in completion(result.flatMap { output in Result { try outcome(output) } }) }
                         } catch { completion(.failure(error)) }
                     }

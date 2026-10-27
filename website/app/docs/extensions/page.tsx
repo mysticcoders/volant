@@ -22,6 +22,16 @@ const manifest = `{
   "sha256": "…"
 }`;
 
+const preferencesManifest = `"preferences": [
+  {"id": "hideDomains", "type": "text", "title": "Hidden sites",
+   "placeholder": "example.com", "maxLength": 200},
+  {"id": "limit", "type": "number", "title": "Stories to show",
+   "default": 30, "min": 5, "max": 50},
+  {"id": "sort", "type": "dropdown", "title": "Sort by",
+   "choices": [{"id": "top", "title": "Top"}, {"id": "new", "title": "Newest"}]},
+  {"id": "showScores", "type": "toggle", "title": "Show scores", "default": true}
+]`;
+
 export default function Extensions() {
   return (
     <>
@@ -255,11 +265,45 @@ export default function Extensions() {
         </li>
       </ul>
 
+      <h2>Preferences</h2>
+      <p>
+        A list extension can offer settings, such as sites to hide, how many
+        stories to show or a default sort. Choose them from its{' '}
+        <strong>Preferences…</strong> button in Settings → Extensions; Restore
+        Defaults puts them back.
+      </p>
+      <ul>
+        <li>
+          <strong>Four kinds.</strong> Switches, one-line text, menus and
+          numbers within a range, up to 12 per extension.
+        </li>
+        <li>
+          <strong>Settings, not access.</strong> A preference only changes what
+          the extension shows. It can&rsquo;t reach a new site, read your
+          files or hold a password: sites are still approved separately, and
+          tokens stay in your Keychain.
+        </li>
+        <li>
+          <strong>Where they go.</strong> Kept in Volant&rsquo;s config file on
+          this Mac and included in Volant&rsquo;s backups, but never synced
+          through iCloud. Turning an extension off or updating it keeps them;
+          uninstalling removes them.
+        </li>
+      </ul>
+      <p>
+        For extension authors, declare them in <code>manifest.json</code>; each
+        list request then carries a <code>preferences</code> object with every
+        value, using the default until the owner picks one:
+      </p>
+      <pre>
+        <code>{preferencesManifest}</code>
+      </pre>
+
       <h2>Not yet</h2>
       <p>
-        Background update checks, preferences
-        forms, storage for text commands, async or streaming results, and a
-        stable ABI. Each will be added deliberately.
+        Background update checks, preferences and storage for text commands,
+        async or streaming results, and a stable ABI. Each will be added
+        deliberately.
       </p>
 
       <DocFooterNav {...adjacentDocs('extensions')} />

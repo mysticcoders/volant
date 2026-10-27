@@ -171,6 +171,7 @@ Merged after 0.3.21, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
+| Extension preferences: list extensions declare toggles, text, dropdowns and numbers; owners set them in Settings › Extensions | Not yet | Core and app tests, fixture renders of the row and sheet; no catalog extension declares preferences yet | Extensions docs; claim for list extensions only; never say preferences can hold tokens |
 
 ## Privacy language
 
