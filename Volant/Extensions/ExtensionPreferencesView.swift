@@ -11,19 +11,28 @@ struct ExtensionPreferencesView: View {
     @State private var values: [String: JSONValue] = [:]
     @State private var opened: [String: JSONValue] = [:]
     @State private var error: String?
+    @State private var cardHeight: CGFloat = 0
+    @Environment(\.volantTheme) private var theme
 
     private var declared: [ExtensionPreference] { ext.manifest.declaredPreferences }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("\(ext.name) Preferences", comment: "Title of an extension's preferences sheet; the value is the extension's name").font(.title2.bold())
-            Form {
-                ForEach(declared, id: \.id) { preference in
-                    control(preference)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(declared, id: \.id) { preference in
+                        control(preference).frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16).padding(.vertical, 11)
+                    }
                 }
+                .background(theme.settingsCard, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .background(GeometryReader { Color.clear.preference(key: CardHeight.self, value: $0.size.height) })
             }
-            .formStyle(.settings)
-            .frame(height: min(CGFloat(declared.count) * 58 + 8, 420))
+            .frame(height: min(cardHeight, 440))
+            .onPreferenceChange(CardHeight.self) { cardHeight = $0 }
+            .toggleStyle(SettingsToggleStyle())
+            .labeledContentStyle(SettingsLabeledContentStyle())
             if let error {
                 Text(error).foregroundStyle(.red).font(.callout).accessibilityIdentifier("extension-preferences-error")
             }
@@ -94,4 +103,11 @@ struct ExtensionPreferencesView: View {
                                 comment: "Extension preferences save error")
         }
     }
+}
+
+/// The preferences card's laid-out height, so the sheet fits it however its descriptions wrap and
+/// scrolls only past 440 points.
+private struct CardHeight: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
 }
