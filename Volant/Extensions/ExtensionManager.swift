@@ -52,6 +52,10 @@ final class ExtensionManager {
     /// Replaces the extension helper in tests: given the extension and its request, returns its output.
     var invokeOverride: ((InstalledExtension, String, @escaping (Result<String, Error>) -> Void) -> Void)?
     private var execution: ExtensionExecution?
+    /// The list run in progress, which a newer query or leaving the extension may cancel.
+    private var itemsRun: ItemsRun?
+    /// Stops the extension fetches in flight when a list run is cancelled; tests replace it.
+    var cancelFetches: () -> Void = ExtensionFetcher.cancelReads
     private static var running = false
     private static weak var activeExecution: ExtensionExecution?
     /// `roots` lists extension folders to load instead of the bundled example and the Extensions folder.
@@ -377,17 +381,38 @@ final class ExtensionManager {
     /// fetches in one run. Approval and hosts are checked again before every fetch and render, so a change
     /// made mid-run stops it. An extension that uses storage receives its saved object with every request,
     /// and any reply's `storage` replaces it (see `save(_:for:run:)`).
+    /// A run that `cancelItemsRun` stopped completes with `ExtensionError.cancelled` instead of its result.
     func runItems(_ ext: InstalledExtension, query: String, filter: String? = nil, now: Date = Date(),
                   fetch: @escaping ([ExtensionRequest], [String], @escaping ([ExtensionNetwork.Response]) -> Void) -> Void = ExtensionFetcher.fetch,
                   completion: @escaping (Result<[ExtensionItem], Error>) -> Void) {
         guard !missingLocation(ext) else { completion(.failure(ExtensionError.locationNotAllowed)); return }
+        let run = ItemsRun()
+        itemsRun = run
+        let finish: (Result<[ExtensionItem], Error>) -> Void = { [weak self] result in
+            if self?.itemsRun === run { self?.itemsRun = nil }
+            completion(run.cancelled ? .failure(ExtensionError.cancelled) : result)
+        }
         runLocation(ext) { [self] location in
-            runItems(ext, query: query, filter: filter, now: now, location: location, fetch: fetch, completion: completion)
+            guard !run.cancelled else { finish(.failure(ExtensionError.cancelled)); return }
+            runItems(ext, query: query, filter: filter, now: now, location: location, run: run, fetch: fetch, completion: finish)
         }
     }
 
+    /// One list run, so cancelling it can stop it between steps.
+    final class ItemsRun { var cancelled = false }
+
+    /// Stops the list run in progress, for a newer query or leaving the extension. Fetches in flight stop
+    /// at once and no further module call starts; a module already running finishes within its time limit
+    /// and its reply is dropped, storage included. Row actions are never cancelled, since a POST may
+    /// already have reached its server.
+    func cancelItemsRun() {
+        guard let run = itemsRun, !run.cancelled else { return }
+        run.cancelled = true
+        cancelFetches()
+    }
+
     /// One list run with the location this run may send, which plan and every render receive.
-    private func runItems(_ ext: InstalledExtension, query: String, filter: String?, now: Date, location: ExtensionLocation?,
+    private func runItems(_ ext: InstalledExtension, query: String, filter: String?, now: Date, location: ExtensionLocation?, run: ItemsRun,
                           fetch: @escaping ([ExtensionRequest], [String], @escaping ([ExtensionNetwork.Response]) -> Void) -> Void,
                           completion: @escaping (Result<[ExtensionItem], Error>) -> Void) {
         let hosts = ext.manifest.declaredHosts
@@ -397,6 +422,7 @@ final class ExtensionManager {
         func approvedHosts() -> Set<String> { Set(hosts).intersection(ExtensionHostApprovals.approved(at: configURL)) }
         func fetchRound(_ planned: ExtensionNetwork.Fetch, round: Int) {
             fetch(planned.urls.map { self.authorized(ExtensionRequest(url: $0), for: ext) }, Array(approvedHosts()).sorted()) { responses in
+                guard !run.cancelled else { completion(.failure(ExtensionError.cancelled)); return }
                 let missing = self.missingHosts(ext)
                 guard missing.isEmpty else { completion(.failure(ExtensionNetworkError.hostsNotApproved(missing))); return }
                 render(responses, state: planned.state, round: round)
@@ -407,7 +433,7 @@ final class ExtensionManager {
                 let input = try ExtensionNetwork.request(phase: "render", query: query, now: now, responses: hosts.isEmpty ? nil : responses,
                                                          storage: storage, state: state, location: location, filter: filter,
                                                          preferences: preferences)
-                invoke(ext, input) { [self] result in
+                invoke(ext, input, run: run) { [self] result in
                     do {
                         let output = try result.get()
                         if let reply = try? ExtensionNetwork.reply(from: output, appLinks: Set(ext.manifest.declaredAppLinks)) {
@@ -433,7 +459,7 @@ final class ExtensionManager {
         guard secrets.isEmpty else { completion(.failure(ExtensionError.secretsMissing(secrets.map(\.title)))); return }
         do {
             invoke(ext, try ExtensionNetwork.request(phase: "plan", query: query, now: now, storage: storage, location: location, filter: filter,
-                                                     preferences: preferences)) { [self] result in
+                                                     preferences: preferences), run: run) { [self] result in
                 do {
                     let output = try result.get()
                     if let reply = try? ExtensionNetwork.reply(from: output, appLinks: Set(ext.manifest.declaredAppLinks)), let items = reply.items {
@@ -521,9 +547,12 @@ final class ExtensionManager {
         Self.lastSaved[ext.id] = sequence
     }
 
-    /// Runs the module through the extension helper; tests replace it to return fixed output.
-    private func invoke(_ ext: InstalledExtension, _ input: String, completion: @escaping (Result<String, Error>) -> Void) {
-        if let invokeOverride { invokeOverride(ext, input, completion) } else { run(ext, input: input, completion: completion) }
+    /// Runs the module through the extension helper; tests replace it to return fixed output. A list run
+    /// cancelled before the call starts or while it runs gets `ExtensionError.cancelled` instead.
+    private func invoke(_ ext: InstalledExtension, _ input: String, run itemsRun: ItemsRun? = nil, completion: @escaping (Result<String, Error>) -> Void) {
+        guard itemsRun?.cancelled != true else { completion(.failure(ExtensionError.cancelled)); return }
+        let finish: (Result<String, Error>) -> Void = { result in completion(itemsRun?.cancelled == true ? .failure(ExtensionError.cancelled) : result) }
+        if let invokeOverride { invokeOverride(ext, input, finish) } else { run(ext, input: input, completion: finish) }
     }
 
     func run(_ ext: InstalledExtension, input: String, completion: @escaping (Result<String, Error>) -> Void) {
@@ -544,7 +573,7 @@ final class ExtensionManager {
         } catch { completion(.failure(error)) }
     }
     enum ExtensionError: Error, LocalizedError {
-        case missingModule, hashMismatch, changed, disabled, communityDisabled, secretsMissing([String]), locationNotAllowed, revoked(String, String?), runtime(String)
+        case missingModule, hashMismatch, changed, disabled, communityDisabled, secretsMissing([String]), locationNotAllowed, revoked(String, String?), cancelled, runtime(String)
         var errorDescription: String? {
             switch self {
             case .missingModule: return String(localized: "Extension module is missing, too large, or outside its folder.", comment: "Extension error")
@@ -559,8 +588,13 @@ final class ExtensionManager {
             case .revoked(let name, let reason):
                 if let reason { return String(localized: "\(name) was withdrawn from the extension catalog: \(reason) Update or uninstall it.", comment: "Extension error; the values are the extension name and the catalog's reason") }
                 return String(localized: "\(name) was withdrawn from the extension catalog. Update or uninstall it.", comment: "Extension error; the value is the extension name")
+            case .cancelled: return String(localized: "The extension stopped for a newer search.", comment: "Extension error after a newer query replaced its run")
             case .runtime(let message): return message
             }
+        }
+        static func isCancellation(_ error: Error) -> Bool {
+            if case .cancelled? = error as? ExtensionError { return true }
+            return false
         }
     }
 }

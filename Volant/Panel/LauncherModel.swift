@@ -633,6 +633,7 @@ final class LauncherModel: ObservableObject {
                     self.sections = [ResultSection(title: ext.name, rows: items.map { .extensionItem($0, source: ext) })]
                     self.selection = selectedID.flatMap { id in self.rows.firstIndex { $0.id == id } } ?? 0
                 case .failure(let error):
+                    guard !ExtensionManager.ExtensionError.isCancellation(error) else { return }
                     if self.scopedExtension != nil { self.sections = [] }
                     self.notice = String(localized: "Extension failed: \(error.localizedDescription)")
                 }
@@ -680,6 +681,7 @@ final class LauncherModel: ObservableObject {
         guard scopedExtension != nil else { return }
         scopeRun?.cancel()
         scopeRerun = false
+        extensions.cancelItemsRun()
         scopedExtension = nil
         scopeFilter = nil
         if query.isEmpty { refresh() } else { query = "" }
@@ -729,16 +731,18 @@ final class LauncherModel: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + (now ? 0 : Self.scopeDelay), execute: work)
     }
 
-    /// Runs the scoped extension for the field's text, or, while a run is still going, after it.
+    /// Runs the scoped extension for the field's text. While a list run is still going it is cancelled,
+    /// and this runs once it stops.
     private func runScoped() {
         guard let ext = scopedExtension else { return }
-        guard !extensionRunning else { scopeRerun = true; return }
+        guard !extensionRunning else { scopeRerun = true; extensions.cancelItemsRun(); return }
         runExtension(ext, input: query.trimmingCharacters(in: .whitespaces))
     }
 
     func reset() {
         scopeRun?.cancel()
         scopeRerun = false
+        extensions.cancelItemsRun()
         scopedExtension = nil
         scopeFilter = nil
         pendingExtension = nil

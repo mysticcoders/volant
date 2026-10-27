@@ -28,6 +28,11 @@ Kingdom's mixed system reads as metric).
    before it can ask the next question, such as looking up a place and then its forecast. Volant checks
    approval and hosts again, fetches, and renders with the new responses and that `state`. A run fetches
    at most 3 rounds; a fourth request fails the run with "Extension kept asking for more pages".
+5. **Cancellation.** Typing a new query inside the extension, leaving it, or closing the launcher
+   cancels the run in progress. Fetches in flight stop at once (closing their helper connection cancels
+   the transfer), and no further plan or render starts. A module call already running finishes within
+   its time limit; its reply is dropped, storage included, and the new query runs after it. A row
+   action is never cancelled, since its POST may already have reached the server.
 
 ## Tokens, changes and confirmations
 
@@ -166,7 +171,7 @@ from their row, without a scope.
 - `swift test --package-path Core --filter ExtensionNetworkTests`: host names, URL permission, plans,
   item trimming and shared host approvals.
 - `VolantTests/ExtensionTests`: enabling allows hosts, a removed host asks again, uninstall prunes only
-  orphaned hosts.
+  orphaned hosts, and a cancelled run stops its reads and never renders.
 - `tools/check-extensions.sh`: the list fixture runs in the production JavaScriptCore host, plans only
   its host, may return rows instead of URLs, and renders fetched and failed responses.
 - In volant-extensions, `./build.sh --check` runs each extension's tests and confirms the committed

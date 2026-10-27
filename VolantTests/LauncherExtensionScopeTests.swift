@@ -161,6 +161,7 @@ final class LauncherExtensionScopeTests: XCTestCase {
         await wait(0.1)
         XCTAssertEqual(pending.map(\.0), ["", "ask"], "The new text runs once the first finishes")
         XCTAssertTrue(titles(model).isEmpty, "The first run's rows are dropped")
+        XCTAssertFalse(model.notice?.contains("Extension failed") ?? false, "A superseded run is not reported as a failure")
         pending[1].1(.success(#"{"items":[{"title":"Ask rows"}]}"#))
         await wait(0.1)
         XCTAssertEqual(titles(model), ["Ask rows"])

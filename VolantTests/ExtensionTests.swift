@@ -249,6 +249,32 @@ final class ExtensionTests: XCTestCase {
         XCTAssertEqual(error as? ExtensionNetworkError, .hostsNotApproved(["news.example.com"]))
     }
 
+    func testCancellingDuringAFetchStopsTheReadsAndTheRender() async throws {
+        let (root, _, manager, news, requests) = try scriptedNews([#"{"fetch":["https://news.example.com/slow"]}"#, #"{"items":[{"title":"Stale"}]}"#])
+        defer { try? FileManager.default.removeItem(at: root) }
+        var cancelledReads = 0, pending: (([ExtensionNetwork.Response]) -> Void)?, outcome: Result<[ExtensionItem], Error>?
+        manager.cancelFetches = { cancelledReads += 1 }
+        manager.runItems(news, query: "old", fetch: { _, _, reply in pending = reply }) { outcome = $0 }
+        manager.cancelItemsRun()
+        manager.cancelItemsRun()
+        XCTAssertEqual(cancelledReads, 1, "Cancelling stops the reads in flight once")
+        try XCTUnwrap(pending)([.init(url: "https://news.example.com/slow", status: 0, body: "")])
+        guard case .failure(let error) = try XCTUnwrap(outcome) else { return XCTFail("A cancelled run must not render") }
+        XCTAssertTrue(ExtensionManager.ExtensionError.isCancellation(error))
+        XCTAssertEqual(requests().count, 1, "Only the plan ran")
+    }
+
+    func testCancellingAnotherRunLeavesTheNewOneAlone() async throws {
+        let (root, _, manager, news, _) = try scriptedNews([#"{"items":[{"title":"Old"}]}"#, #"{"items":[{"title":"New"}]}"#])
+        defer { try? FileManager.default.removeItem(at: root) }
+        var first: Result<[ExtensionItem], Error>?, second: Result<[ExtensionItem], Error>?
+        manager.runItems(news, query: "old", fetch: { _, _, _ in XCTFail("A plan with items does not fetch") }) { first = $0 }
+        manager.cancelItemsRun()
+        manager.runItems(news, query: "new", fetch: { _, _, _ in XCTFail("A plan with items does not fetch") }) { second = $0 }
+        XCTAssertEqual(try XCTUnwrap(first).get().map(\.title), ["Old"], "A finished run has nothing to cancel")
+        XCTAssertEqual(try XCTUnwrap(second).get().map(\.title), ["New"])
+    }
+
     /// A list extension on two hosts with a token declared for one of them, enabled with both hosts
     /// allowed, its tokens in memory instead of the Keychain, answering requests from `replies` in turn.
     private func tokenFixture(_ replies: [String]) throws -> (URL, URL, ExtensionManager, () -> [String]) {
