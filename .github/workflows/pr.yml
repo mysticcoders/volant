@@ -1,6 +1,7 @@
 name: PR checks
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
 permissions:
   contents: read
@@ -13,8 +14,8 @@ jobs:
   scope:
     runs-on: ubuntu-latest
     outputs:
-      native: ${{ steps.scope.outputs.native }}
-      ui: ${{ steps.scope.outputs.ui }}
+      native: ${{ steps.hosted.outputs.native }}
+      ui: ${{ steps.hosted.outputs.ui }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -26,6 +27,24 @@ jobs:
           BASE: ${{ github.event.pull_request.base.sha || 'origin/main' }}
           HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
         run: python3 tools/test-scope.py --base "$BASE" --head "$HEAD" --github-output "$GITHUB_OUTPUT"
+      # Hosted macOS minutes are opt-in: the macos-ci label or a manual dispatch.
+      # Otherwise selected jobs are skipped and the PR relies on local Scripts/test.sh.
+      - id: hosted
+        env:
+          NATIVE: ${{ steps.scope.outputs.native }}
+          UI: ${{ steps.scope.outputs.ui }}
+          HOSTED: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'macos-ci') }}
+        run: |
+          if [ "$HOSTED" = true ]; then
+            echo "native=$NATIVE" >> "$GITHUB_OUTPUT"
+            echo "ui=$UI" >> "$GITHUB_OUTPUT"
+          else
+            echo "native=false" >> "$GITHUB_OUTPUT"
+            echo "ui=false" >> "$GITHUB_OUTPUT"
+            if [ "$NATIVE" = true ] || [ "$UI" = true ]; then
+              echo "::notice::Scope selected native=$NATIVE ui=$UI; hosted macOS jobs skipped. Add the macos-ci label to run them."
+            fi
+          fi
       - run: git diff --check
   native:
     needs: scope
