@@ -110,3 +110,17 @@ final class ExtensionManifestRulesTests: XCTestCase {
         XCTAssertNil(try ExtensionNetwork.reply(from: #"{"notice":"Saved"}"#).text)
     }
 }
+
+final class ExtensionActivityRulesTests: XCTestCase {
+    func testOnlyTheHostOfARequestIsKept() {
+        XCTAssertEqual(ExtensionActivity.host(of: "https://News.Example.com/path/secret?q=private#frag"), "news.example.com")
+        XCTAssertNil(ExtensionActivity.host(of: "not a url"))
+        XCTAssertNil(ExtensionActivity.host(of: "https://192.168.1.1/admin"))
+    }
+
+    func testDetailsAreBounded() {
+        let event = ExtensionActivity(extensionID: "fixture", version: "1", codeHash: "", invocation: 1, time: Date(),
+                                      operation: .fetch, outcome: .completed, detail: String(repeating: "a", count: 500))
+        XCTAssertEqual(event.detail?.count, ExtensionActivity.maximumDetailLength)
+    }
+}
