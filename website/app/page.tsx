@@ -126,7 +126,7 @@ export default function Home() {
                   alt="Volant’s native launcher with coral accents, Safari results, and expanded Herdr pane details showing each fictional project, provider, and status."
                   width={1500}
                   height={960}
-                  priority
+                  preload
                 />
               </a>
             </figure>

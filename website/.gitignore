@@ -39,3 +39,6 @@ next-env.d.ts
 
 # typescript incremental build cache
 tsconfig.tsbuildinfo
+
+# Generated from security-headers.json before each build
+/public/_headers

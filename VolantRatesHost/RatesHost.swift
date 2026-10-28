@@ -1,68 +1,105 @@
 import Foundation
 import VolantCore
 
-/// Fetches the ECB daily reference feed, ExchangeRate-API's daily rates for the currencies ECB
-/// lacks, and CoinGecko prices for a fixed coin list, and nothing else: the URLs are fixed, requests carry no cookies or cache, redirects are refused, and a
-/// response is returned only when it parses. The owner's optional CoinGecko key is the only input,
-/// sent only to CoinGecko; without one, prices come from CoinGecko's keyless public API. The calling app has no network access of its own.
-final class RatesHost: NSObject, VolantRatesHostProtocol, URLSessionTaskDelegate {
-    private lazy var session: URLSession = {
-        let configuration = URLSessionConfiguration.ephemeral
+/// Reads only the fixed currency feeds. Bodies are bounded while receiving, redirects are refused,
+/// and only parsed responses cross XPC. The optional key is sent only to CoinGecko.
+final class RatesHost: NSObject, VolantRatesHostProtocol, URLSessionDataDelegate {
+    private struct Pending {
+        var data = Data()
+        let limit: Int
+        let valid: (Data) -> Bool
+        let failure: (Int) -> String
+        let reply: (Data?, String?) -> Void
+    }
+    private let lock = NSLock()
+    private var pending: [Int: Pending] = [:]
+    private var session: URLSession!
+
+    init(configuration: URLSessionConfiguration = .ephemeral) {
+        super.init()
         configuration.timeoutIntervalForRequest = 15
         configuration.timeoutIntervalForResource = 30
         configuration.httpCookieStorage = nil
+        configuration.httpShouldSetCookies = false
+        configuration.urlCredentialStorage = nil
         configuration.urlCache = nil
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-        return URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
-    }()
+        session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
+    }
 
     func fetchRates(reply: @escaping (Data?, String?) -> Void) {
-        session.dataTask(with: URLRequest(url: CurrencyRates.feed)) { data, response, _ in
-            guard let http = response as? HTTPURLResponse, http.statusCode == 200, let data,
-                  data.count <= CurrencyRates.maximumBytes, CurrencyRates.parse(data) != nil else {
-                reply(nil, "Couldn’t get exchange rates.")
-                return
-            }
-            reply(data, nil)
-        }.resume()
+        start(URLRequest(url: CurrencyRates.feed), limit: CurrencyRates.maximumBytes,
+              valid: { CurrencyRates.parse($0) != nil }, failure: { _ in "Couldn’t get exchange rates." }, reply: reply)
     }
 
-    /// Fetches ExchangeRate-API's euro-based open access rates. The app's hourly retry already
-    /// outlasts the provider's twenty-minute limit after a 429, so every failure replies alike.
     func fetchWorldRates(reply: @escaping (Data?, String?) -> Void) {
-        session.dataTask(with: URLRequest(url: WorldRates.feed)) { data, response, _ in
-            guard (response as? HTTPURLResponse)?.statusCode == 200, let data, data.count <= WorldRates.maximumBytes,
-                  WorldRates.parse(data) != nil else {
-                reply(nil, "Couldn’t get exchange rates.")
-                return
-            }
-            reply(data, nil)
-        }.resume()
+        start(URLRequest(url: WorldRates.feed), limit: WorldRates.maximumBytes,
+              valid: { WorldRates.parse($0) != nil }, failure: { _ in "Couldn’t get exchange rates." }, reply: reply)
     }
 
-    /// Fetches the fixed coin list, sending the key header only when the owner saved a key. A 429
-    /// replies with `CryptoPrices.busyMessage` so the app backs off longer than for other failures.
+    /// A 429 keeps the app's longer backoff; a rejected saved key keeps its specific explanation.
     func fetchCrypto(key: String?, reply: @escaping (Data?, String?) -> Void) {
         var request = URLRequest(url: CryptoPrices.request)
         if let key {
             guard CryptoPrices.validKey(key) else { return reply(nil, "Enter a valid CoinGecko key.") }
             request.setValue(key, forHTTPHeaderField: CryptoPrices.keyHeader)
         }
-        session.dataTask(with: request) { data, response, _ in
-            let status = (response as? HTTPURLResponse)?.statusCode
-            guard status == 200, let data, data.count <= CryptoPrices.maximumBytes, CryptoPrices.parse(data, at: Date()) != nil else {
-                switch status {
-                case 401, 403: reply(nil, key == nil ? "Couldn’t get crypto prices." : "CoinGecko didn’t accept the key.")
-                case 429: reply(nil, CryptoPrices.busyMessage)
-                default: reply(nil, "Couldn’t get crypto prices.")
-                }
-                return
+        start(request, limit: CryptoPrices.maximumBytes, valid: { CryptoPrices.parse($0, at: Date()) != nil }, failure: { status in
+            switch status {
+            case 401, 403: return key == nil ? "Couldn’t get crypto prices." : "CoinGecko didn’t accept the key."
+            case 429: return CryptoPrices.busyMessage
+            default: return "Couldn’t get crypto prices."
             }
-            reply(data, nil)
-        }.resume()
+        }, reply: reply)
     }
 
-    /// Refusing redirects keeps every request on the fixed ECB, ExchangeRate-API and CoinGecko URLs.
+    private func start(_ request: URLRequest, limit: Int, valid: @escaping (Data) -> Bool,
+                       failure: @escaping (Int) -> String, reply: @escaping (Data?, String?) -> Void) {
+        let task = session.dataTask(with: request)
+        lock.lock()
+        pending[task.taskIdentifier] = Pending(limit: limit, valid: valid, failure: failure, reply: reply)
+        lock.unlock()
+        task.resume()
+    }
+
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse,
+                    completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        lock.lock()
+        guard let entry = pending[dataTask.taskIdentifier] else { lock.unlock(); completionHandler(.cancel); return }
+        let rejected = status != 200 || response.expectedContentLength > Int64(entry.limit)
+        if rejected { pending[dataTask.taskIdentifier] = nil }
+        lock.unlock()
+        completionHandler(rejected ? .cancel : .allow)
+        if rejected { entry.reply(nil, entry.failure(status)) }
+    }
+
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        lock.lock()
+        guard var entry = pending[dataTask.taskIdentifier] else { lock.unlock(); return }
+        // Check before appending: neither a large chunk nor many small chunks may grow our buffer past the cap.
+        if data.count > entry.limit - entry.data.count {
+            pending[dataTask.taskIdentifier] = nil
+            lock.unlock()
+            dataTask.cancel()
+            entry.reply(nil, entry.failure((dataTask.response as? HTTPURLResponse)?.statusCode ?? 0))
+            return
+        }
+        entry.data.append(data)
+        pending[dataTask.taskIdentifier] = entry
+        lock.unlock()
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        lock.lock()
+        let entry = pending.removeValue(forKey: task.taskIdentifier)
+        lock.unlock()
+        guard let entry else { return }
+        let status = (task.response as? HTTPURLResponse)?.statusCode ?? 0
+        guard error == nil, status == 200, entry.valid(entry.data) else { entry.reply(nil, entry.failure(status)); return }
+        entry.reply(entry.data, nil)
+    }
+
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
                     newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
         completionHandler(nil)

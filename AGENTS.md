@@ -10,7 +10,7 @@
 
 # Project working notes
 
-- Security jobs are independent of native/UI change selection. Keep scanner/Action pins current, scan tracked dependency lockfiles (not local worktrees), redact secret findings, and use only individually reviewed secret exceptions. Initial dependency debt expires on 2026-11-10; never auto-renew it or describe a green regression gate as vulnerability-free. See [security review](docs/security-review-2026-10-27.md).
+- Security jobs are independent of native/UI change selection. Keep scanner/Action pins current, scan tracked dependency lockfiles (not local worktrees), redact secret findings, and use only individually reviewed secret exceptions. Initial dependency debt was cleared on 2026-10-28; keep the baseline empty, never auto-renew exceptions, and do not describe a green scan as proof of absence of vulnerabilities. See [security review](docs/security-review-2026-10-27.md).
 
 - `Core/` is the `VolantCore` package: Foundation only, no AppKit, SwiftUI, Carbon, CryptoKit or Combine, linked statically so it adds no embedded framework to sign. Code needing a platform framework belongs in the app target. Run its tests with `swift test --package-path Core`; ad-hoc `swiftc` checks link it through `tools/core-module.sh` rather than listing core files by path. See [cross-platform core](docs/cross-platform-core.md).
 
@@ -102,3 +102,5 @@
 - Extension clipboard reads need `"permissions": ["clipboard"]` on an extension that receives JSON requests (list, or text with `"input": "json"`). Read once when a run or row action starts, only while it is enabled and not blocked, never during search; plain text up to `ExtensionClipboard.maximumBytes`, nothing for items `PasteboardFilter` excludes. Never log or persist it, and keep it separate from `clipboard.write`. Run `ExtensionClipboardRunTests`. See docs/extensions.md.
 
 - Extension preferences (`preferences` in a list extension's manifest: toggle, text, dropdown, number) are the owner's own choices: stored in config.json `extensionPreferences` by narrow, stale-checked patches that keep other fields, sent as `preferences` with every list request after `ExtensionPreferences.resolve`, removed on uninstall, kept on disable and update, never synced, and not part of the approval fingerprint, since they grant no access. Never accept a secret as a preference. Run `ExtensionPreferenceTests` and `ExtensionPreferenceRunTests`. See docs/extension-preferences.md.
+
+- Website security headers cover both the worker and Cloudflare static assets from `website/security-headers.json`. Nonce-bearing HTML must stay dynamic and no-store; hashed assets keep immutable caching. Preserve the CSS-only CSP compatibility exception without adding inline-script/eval exceptions. Run the headless browser security smoke after dependency or policy changes; ZAP warning exits remain visible. See docs/security-remediation-2026-10-28.md.

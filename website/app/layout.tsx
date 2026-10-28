@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { connection } from 'next/server';
 import './globals.css';
 export const metadata: Metadata = {
   metadataBase: new URL('https://usevolant.com'),
@@ -31,9 +32,11 @@ export const metadata: Metadata = {
     images: ['/images/social-card.png'],
   },
 };
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // A fresh request is required for nonce-bearing HTML; do not prerender/cache it.
+  await connection();
   return (
     <html lang="en" className="dark">
       <body>{children}</body>
