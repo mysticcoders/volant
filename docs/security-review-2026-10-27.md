@@ -12,6 +12,7 @@ This is a risk-based repository review, not a penetration test or proof of absen
 | Medium | zizmor found mutable `checkout`/`upload-artifact` Action references and three checkouts retaining credentials. | Fixed in this change: pin full revisions and set `persist-credentials: false`. GitHub states that a [full commit SHA is the immutable Action reference](https://docs.github.com/en/actions/reference/security/secure-use). |
 | Medium | No dedicated security jobs existed; new advisories could arrive while source remained unchanged. | Fixed: PR security jobs included in `PR gate`, plus weekly/manual scans independent of changed-file classification and opt-in macOS jobs. |
 | Medium | Native Sparkle is exactly pinned to 2.10.0 in `project.yml`, but there is no tracked `Package.resolved`. CI installs Python `cryptography` without a pinned dependency input. | Open: add reproducible build-tool requirements and audit them; inventory Sparkle explicitly and monitor its upstream advisories. The OSV job does **not** claim those are covered. No pip-audit job should be described as coverage for an environment that was never resolved/pinned. |
+| Medium | The pinned ZAP baseline completed locally: 60 rule passes, seven warning groups, no configured FAIL alerts (exit 2, warnings preserved). Local responses lack CSP, anti-clickjacking, nosniff, Permissions-Policy and cross-origin policy headers. | Open: define and validate a compatible website header policy, including assets and error responses, then verify deployed CDN/TLS separately. See [ZAP CSP guidance](https://www.zaproxy.org/docs/alerts/10038/) and [anti-clickjacking guidance](https://www.zaproxy.org/docs/alerts/10020/). The SQL alert matched the public prose “Select a meeting … from its meeting link”; the timestamp alert matched the documented calculator example `1700000000`. Those two are inspected false positives, not exposed SQL or a sensitive timestamp. No blanket alert suppression was added. |
 | Informational | Gitleaks initially reported seven historical candidates: five uses of the fictional `CG-fixturekey123` test value and two SHA-256 hashes in the old assessment manifest. | Reviewed false positives: exact commit/file/rule/line exceptions only. No general test, documentation or generic-key exclusions. No confirmed secret leak was found by this scan; this does not prove none exists. |
 
 The Raycast WASM lockfile has no npm advisory matches in this run. The four Rust lockfiles each currently contain only their local fixture crate. A green result there is limited dependency coverage, not runtime WASM safety evidence.
@@ -49,10 +50,11 @@ Scripts/test.sh --base origin/main
 ## Local verification
 
 - `Scripts/test.sh --base origin/main`: passed (native build/tests and boundary checks; UI classified false).
-- Gitleaks 8.30.1: 528 commits scanned across fetched refs; no remaining findings after the seven reviewed false positives.
+- Gitleaks 8.30.1: 529 commits scanned across fetched refs; no remaining findings after the seven reviewed false positives.
 - OSV 2.7.0: all seven tracked lockfiles queried; 99 known matches, zero new or expired matches at review time.
-- Five dependency-gate regression tests, actionlint, and zizmor medium-or-higher checks: passed.
+- Six security-gate/context regression tests, actionlint, and zizmor medium-or-higher checks: passed.
 - `npm ci --ignore-scripts` and `npm run build` in website: passed.
+- Pinned ZAP local baseline: completed against the built website via Docker host access, with seven warning groups and exit 2; scope excluded release downloads. Root context handling was corrected and regression-tested. Local macOS networking differs from the Ubuntu job, whose execution remains separate evidence.
 - Signed installed-app/provider, hardware, TCC, production Cloudflare configuration and release verification: not exercised by this CI-only change.
 
 ## Recurring lesson

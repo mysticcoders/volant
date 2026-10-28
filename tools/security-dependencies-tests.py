@@ -3,7 +3,9 @@
 import datetime
 import importlib.util
 from pathlib import Path
+import re
 import unittest
+import xml.etree.ElementTree as ET
 
 spec = importlib.util.spec_from_file_location("security", Path(__file__).with_name("security-dependencies.py"))
 security = importlib.util.module_from_spec(spec)
@@ -35,6 +37,15 @@ class GateTests(unittest.TestCase):
             "package": {"ecosystem": "npm", "name": "fixture", "version": "1.0"},
             "vulnerabilities": [{"id": "GHSA-fictional"}, {"id": "GHSA-fictional"}]}]}]}
         self.assertEqual(security.findings(report), {self.entry})
+
+    def test_website_context_includes_root_and_excludes_release_downloads(self):
+        context = ET.parse(security.ROOT / "tools/security/website.context").find("context")
+        include = re.compile(context.findtext("incregexes"))
+        exclude = re.compile(context.findtext("excregexes"))
+        for path in ("", "/", "/docs/notes"):
+            self.assertIsNotNone(include.fullmatch("http://127.0.0.1:8787" + path))
+        self.assertIsNone(include.fullmatch("https://usevolant.com/"))
+        self.assertIsNotNone(exclude.fullmatch("http://127.0.0.1:8787/updates/fictional.dmg"))
 
 
 unittest.main()
