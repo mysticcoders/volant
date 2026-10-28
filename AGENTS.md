@@ -10,6 +10,8 @@
 
 # Project working notes
 
+- Security jobs are independent of native/UI change selection. Keep scanner/Action pins current, scan tracked dependency lockfiles (not local worktrees), redact secret findings, and use only individually reviewed secret exceptions. Initial dependency debt expires on 2026-11-10; never auto-renew it or describe a green regression gate as vulnerability-free. See [security review](docs/security-review-2026-10-27.md).
+
 - `Core/` is the `VolantCore` package: Foundation only, no AppKit, SwiftUI, Carbon, CryptoKit or Combine, linked statically so it adds no embedded framework to sign. Code needing a platform framework belongs in the app target. Run its tests with `swift test --package-path Core`; ad-hoc `swiftc` checks link it through `tools/core-module.sh` rather than listing core files by path. See [cross-platform core](docs/cross-platform-core.md).
 
 - Keep notes as plain Markdown files. Failed creates/updates must remain dirty through reload and support retry; never report Saved while any dirty write remains.
