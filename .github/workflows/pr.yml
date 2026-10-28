@@ -8,15 +8,18 @@ concurrency:
   group: pr-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
+  security:
+    uses: ./.github/workflows/security.yml
   scope:
     runs-on: ubuntu-latest
     outputs:
       native: ${{ steps.scope.outputs.native }}
       ui: ${{ steps.scope.outputs.ui }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
+          persist-credentials: false
       - run: python3 tools/test-scope-tests.py
       - id: scope
         env:
@@ -30,7 +33,9 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - run: brew install xcodegen swiftlint
       - run: |
           python3 -m venv /tmp/volant-ci-python
@@ -39,7 +44,7 @@ jobs:
         env:
           VOLANT_TEST_PYTHON: /tmp/volant-ci-python/bin/python
         run: Scripts/test.sh --ci --ui never > /tmp/volant-native.log 2>&1
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: native-test-results
@@ -52,7 +57,9 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - run: brew install xcodegen
       - name: Native UI fixtures
         run: |
@@ -60,7 +67,7 @@ jobs:
             tail -100 /tmp/volant-ui.log
             exit 1
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: ui-test-results
@@ -77,16 +84,18 @@ jobs:
   checks:
     name: PR gate
     if: always()
-    needs: [scope, native, ui]
+    needs: [scope, native, ui, security]
     runs-on: ubuntu-latest
     steps:
       - env:
+          SECURITY: ${{ needs.security.result }}
           SCOPE: ${{ needs.scope.result }}
           NATIVE: ${{ needs.native.result }}
           UI: ${{ needs.ui.result }}
           EXPECT_NATIVE: ${{ needs.scope.outputs.native }}
           EXPECT_UI: ${{ needs.scope.outputs.ui }}
         run: |
+          test "$SECURITY" = success
           test "$SCOPE" = success
           if [ "$EXPECT_NATIVE" = true ]; then test "$NATIVE" = success; else test "$NATIVE" = skipped; fi
           if [ "$EXPECT_UI" = true ]; then test "$UI" = success; else test "$UI" = skipped; fi

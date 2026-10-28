@@ -1,0 +1,9 @@
+# Reviewed false positives only: historical fictional CoinGecko test keys and SHA-256 source hashes.
+# Exact commit/file/rule/line fingerprints; no file or rule exclusions.
+9549a1664a2f2eadedcb536f150108cbaf492e3c:VolantTests/CurrencyRatesStoreTests.swift:generic-api-key:167
+82aa967642bf7c571a3777ba644d0e0da6c8f32e:VolantTests/CurrencyRatesStoreTests.swift:generic-api-key:167
+f84ff40a64fe33fec9b77051eaeec6d7e63be106:VolantTests/CurrencyRatesStoreTests.swift:generic-api-key:99
+f84ff40a64fe33fec9b77051eaeec6d7e63be106:VolantTests/CurrencyRatesStoreTests.swift:generic-api-key:109
+f84ff40a64fe33fec9b77051eaeec6d7e63be106:VolantTests/CurrencyRatesStoreTests.swift:generic-api-key:126
+ea34acb31c9f31bba10436aa4d9764c061e0c269:docs/assessment-2026-09-12/source-manifest.json:generic-api-key:27
+ea34acb31c9f31bba10436aa4d9764c061e0c269:docs/assessment-2026-09-12/source-manifest.json:generic-api-key:40

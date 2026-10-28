@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<configuration>
+  <context>
+    <name>Volant local website</name>
+    <desc>Local marketing build only; exclude release binaries from crawling.</desc>
+    <inscope>true</inscope>
+    <incregexes>http://127\.0\.0\.1:8787/.*</incregexes>
+    <excregexes>http://127\.0\.0\.1:8787/updates/.*</excregexes>
+  </context>
+</configuration>
