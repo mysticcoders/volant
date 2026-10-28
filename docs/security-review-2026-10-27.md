@@ -2,6 +2,8 @@
 
 This is a risk-based repository review, not a penetration test or proof of absence of vulnerabilities. It covers CI, tracked dependency inputs, history secret detection, the network helpers and representative native trust boundaries. No release, website deployment, owner data mutation or live provider credential verification is part of this change.
 
+Current status: the [2026-10-28 remediation](security-remediation-2026-10-28.md) clears all 99 initial dependency exceptions, adds Python/Swift coverage, bounds rates downloads during receipt, and adds website headers/browser checks. The findings and tool-choice tables below retain the initial review snapshot; consult the follow-up for remaining limitations.
+
 ## Findings and next work
 
 | Priority | Evidence and implication | Status / concrete next step |

@@ -1,0 +1,2 @@
+# Used by the isolated Raycast archive fixture in native CI.
+cryptography==50.0.2

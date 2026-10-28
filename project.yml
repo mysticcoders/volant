@@ -258,6 +258,7 @@ targets:
     sources:
       - path: VolantTests
       - path: Shared
+      - path: VolantRatesHost/RatesHost.swift
     dependencies:
       - target: Volant
       # The host app already links the static core; linking it here duplicates the library.
