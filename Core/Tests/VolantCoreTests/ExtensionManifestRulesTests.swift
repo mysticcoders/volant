@@ -62,4 +62,51 @@ final class ExtensionManifestRulesTests: XCTestCase {
         XCTAssertFalse(ExtensionRequest.isAllowed(method: "POST", body: nil, headers: ["Cookie": "a=b"]), "only declared secret headers")
         XCTAssertFalse(ExtensionRequest.isAllowed(method: "POST", body: nil, headers: ["Authorization": "Bearer a\r\nX: y"]))
     }
+
+    func testJSONInputIsForTextExtensionsAndOpensRequestFeatures() {
+        var text = manifest(output: nil)
+        text.input = "json"; text.storage = true; text.permissions = ["clipboard"]
+        XCTAssertNoThrow(try text.validate())
+        XCTAssertTrue(text.receivesRequests)
+        var list = manifest(); list.input = "json"
+        XCTAssertThrowsError(try list.validate(), "List extensions always get JSON")
+        var unknown = manifest(output: nil); unknown.input = "xml"
+        XCTAssertThrowsError(try unknown.validate())
+        var plain = manifest(output: nil); plain.permissions = ["clipboard"]
+        XCTAssertThrowsError(try plain.validate(), "Plain text input has no request to carry the clipboard")
+        plain.permissions = nil; plain.storage = true
+        XCTAssertThrowsError(try plain.validate(), "Plain text input has no request to carry storage")
+        var located = text; located.permissions = ["location"]
+        XCTAssertThrowsError(try located.validate(), "Location is only for list extensions, which read hosts")
+        var listClipboard = manifest(); listClipboard.permissions = ["clipboard", "location"]
+        XCTAssertNoThrow(try listClipboard.validate())
+    }
+
+    func testClipboardPermissionNeedsApprovalAgainOnUpdate() {
+        var old = manifest(output: nil); old.input = "json"
+        var new = old; new.permissions = ["clipboard"]
+        XCTAssertFalse(new.requestsNoMoreThan(old), "Reading the clipboard is new access")
+        XCTAssertTrue(old.requestsNoMoreThan(new))
+    }
+
+    func testClipboardTextSkipsConcealedOversizedAndEmptyItems() {
+        XCTAssertEqual(ExtensionClipboard.text("SGVsbG8=", types: ["public.utf8-plain-text"]), "SGVsbG8=")
+        XCTAssertNil(ExtensionClipboard.text("hunter2", types: ["public.utf8-plain-text", "org.nspasteboard.ConcealedType"]))
+        XCTAssertNil(ExtensionClipboard.text("one-time", types: ["org.nspasteboard.TransientType"]))
+        XCTAssertNil(ExtensionClipboard.text("vault", types: ["com.agilebits.onepassword"]))
+        XCTAssertNil(ExtensionClipboard.text("", types: []))
+        XCTAssertNil(ExtensionClipboard.text(nil, types: []))
+        XCTAssertNil(ExtensionClipboard.text(String(repeating: "a", count: ExtensionClipboard.maximumBytes + 1), types: []))
+        XCTAssertNotNil(ExtensionClipboard.text(String(repeating: "a", count: ExtensionClipboard.maximumBytes), types: []))
+    }
+
+    func testRequestsCarryTheClipboardAndRepliesMayCarryText() throws {
+        let request = try ExtensionNetwork.request(phase: "run", query: "decode", now: Date(timeIntervalSince1970: 0), clipboard: "SGk=")
+        XCTAssertTrue(request.contains(#""clipboard":"SGk=""#), request)
+        XCTAssertTrue(request.contains(#""phase":"run""#))
+        let without = try ExtensionNetwork.request(phase: "run", query: "", now: Date(timeIntervalSince1970: 0))
+        XCTAssertFalse(without.contains("clipboard"))
+        XCTAssertEqual(try ExtensionNetwork.reply(from: #"{"text":"Hi"}"#).text, "Hi")
+        XCTAssertNil(try ExtensionNetwork.reply(from: #"{"notice":"Saved"}"#).text)
+    }
 }

@@ -20,11 +20,12 @@ struct InstalledExtension: Identifiable, Hashable {
     }
     var accessDescription: String {
         Self.accessDescription(capabilities: manifest.capabilities, hosts: manifest.declaredHosts, storage: manifest.usesStorage, secrets: manifest.declaredSecrets,
-                               appLinks: manifest.declaredAppLinks, location: manifest.wantsLocation)
+                               appLinks: manifest.declaredAppLinks, location: manifest.wantsLocation, clipboard: manifest.wantsClipboard)
     }
     static func accessDescription(capabilities: [String], hosts: [String], storage: Bool = false, secrets: [ExtensionSecret] = [],
-                                  appLinks: [String] = [], location: Bool = false) -> String {
+                                  appLinks: [String] = [], location: Bool = false, clipboard: Bool = false) -> String {
         var access: [String] = capabilities.sorted().map { $0 == "clipboard.write" ? String(localized: "Write to clipboard", comment: "Extension permission summary item, joined with commas") : String(localized: "Send diagnostic messages", comment: "Extension permission summary item, joined with commas") }
+        if clipboard { access.append(String(localized: "Read your clipboard’s text when you run it", comment: "Extension permission summary item, joined with commas")) }
         if !hosts.isEmpty { access.append(String(localized: "Read \(hosts.joined(separator: ", "))", comment: "Extension permission summary item; the value lists the web hosts it reads")) }
         if storage { access.append(String(localized: "Remember settings and lists on this Mac", comment: "Extension permission summary item, joined with commas")) }
         access += secrets.map { String(localized: "Uses your \($0.title)", comment: "Extension permission summary item; the value names an access token, such as GitHub token") }
@@ -45,6 +46,11 @@ final class ExtensionManager {
     let dataStore: ExtensionDataStore
     /// Where declared tokens live; tests replace the Keychain with `ExtensionSecretStore.memory()`.
     var secretStore: ExtensionSecretStore = .keychain
+    /// Reads the clipboard's text under `ExtensionClipboard`'s rules; tests replace it.
+    var readClipboard: () -> String? = {
+        let board = NSPasteboard.general
+        return ExtensionClipboard.text(board.string(forType: .string), types: board.types?.map(\.rawValue) ?? [])
+    }
     /// Finds the owner's rounded location for extensions allowed to receive it; tests replace it.
     var locate: (@escaping (ExtensionLocation?) -> Void) -> Void = { completion in
         MainActor.assumeIsolated { ExtensionLocationProvider.shared.locate(completion) }
@@ -180,6 +186,13 @@ final class ExtensionManager {
     }
     /// Settings → Location → Stop Sharing; the next run asks again.
     func stopSharingLocation(_ ext: InstalledExtension) throws { try ExtensionLocationApprovals.remove(ext.id, at: configURL) }
+
+    /// The clipboard text this run may send, read once as it starts: only for an extension that declares
+    /// the permission and is enabled and not blocked, otherwise nil without reading the clipboard.
+    private func runClipboard(_ ext: InstalledExtension) -> String? {
+        guard ext.manifest.wantsClipboard, !isBlocked(ext), ExtensionApproval.enabled(ext.manifest, at: configURL) else { return nil }
+        return readClipboard()
+    }
 
     /// The location this run may send: looked up only for an extension that declares the permission and
     /// is allowed it, otherwise nil without asking Location Services.
@@ -392,9 +405,10 @@ final class ExtensionManager {
             if self?.itemsRun === run { self?.itemsRun = nil }
             completion(run.cancelled ? .failure(ExtensionError.cancelled) : result)
         }
+        let clipboard = runClipboard(ext)
         runLocation(ext) { [self] location in
             guard !run.cancelled else { finish(.failure(ExtensionError.cancelled)); return }
-            runItems(ext, query: query, filter: filter, now: now, location: location, run: run, fetch: fetch, completion: finish)
+            runItems(ext, query: query, filter: filter, now: now, location: location, clipboard: clipboard, run: run, fetch: fetch, completion: finish)
         }
     }
 
@@ -412,7 +426,7 @@ final class ExtensionManager {
     }
 
     /// One list run with the location this run may send, which plan and every render receive.
-    private func runItems(_ ext: InstalledExtension, query: String, filter: String?, now: Date, location: ExtensionLocation?, run: ItemsRun,
+    private func runItems(_ ext: InstalledExtension, query: String, filter: String?, now: Date, location: ExtensionLocation?, clipboard: String?, run: ItemsRun,
                           fetch: @escaping ([ExtensionRequest], [String], @escaping ([ExtensionNetwork.Response]) -> Void) -> Void,
                           completion: @escaping (Result<[ExtensionItem], Error>) -> Void) {
         let hosts = ext.manifest.declaredHosts
@@ -432,7 +446,7 @@ final class ExtensionManager {
             do {
                 let input = try ExtensionNetwork.request(phase: "render", query: query, now: now, responses: hosts.isEmpty ? nil : responses,
                                                          storage: storage, state: state, location: location, filter: filter,
-                                                         preferences: preferences)
+                                                         preferences: preferences, clipboard: clipboard)
                 invoke(ext, input, run: run) { [self] result in
                     do {
                         let output = try result.get()
@@ -459,7 +473,7 @@ final class ExtensionManager {
         guard secrets.isEmpty else { completion(.failure(ExtensionError.secretsMissing(secrets.map(\.title)))); return }
         do {
             invoke(ext, try ExtensionNetwork.request(phase: "plan", query: query, now: now, storage: storage, location: location, filter: filter,
-                                                     preferences: preferences), run: run) { [self] result in
+                                                     preferences: preferences, clipboard: clipboard), run: run) { [self] result in
                 do {
                     let output = try result.get()
                     if let reply = try? ExtensionNetwork.reply(from: output, appLinks: Set(ext.manifest.declaredAppLinks)), let items = reply.items {
@@ -490,6 +504,7 @@ final class ExtensionManager {
         let sequence = beginRun(ext)
         let storage = ext.manifest.usesStorage ? dataStore.load(ext.id) : nil
         let preferences = preferenceValues(ext)
+        let clipboard = runClipboard(ext)
         func outcome(_ output: String) throws -> ActionOutcome {
             let reply = try ExtensionNetwork.reply(from: output, appLinks: Set(ext.manifest.declaredAppLinks))
             try save(reply.storage, for: ext, run: sequence)
@@ -497,7 +512,8 @@ final class ExtensionManager {
         }
         do {
             let input = try ExtensionNetwork.request(phase: action == nil ? "opened" : "action", query: query, now: now,
-                                                     storage: storage, action: action, item: item, filter: filter, preferences: preferences)
+                                                     storage: storage, action: action, item: item, filter: filter, preferences: preferences,
+                                                     clipboard: clipboard)
             invoke(ext, input) { [self] result in
                 do {
                     let output = try result.get()
@@ -513,11 +529,42 @@ final class ExtensionManager {
                         do {
                             let render = try ExtensionNetwork.request(phase: "render", query: query, now: now, responses: responses,
                                                                       storage: storage, action: action, item: item, state: submitted.state,
-                                                                      filter: filter, preferences: preferences)
+                                                                      filter: filter, preferences: preferences, clipboard: clipboard)
                             self.invoke(ext, render) { result in completion(result.flatMap { output in Result { try outcome(output) } }) }
                         } catch { completion(.failure(error)) }
                     }
                 } catch { completion(.failure(error)) }
+            }
+        } catch { completion(.failure(error)) }
+    }
+
+    /// What a text extension produced: its text, a short confirmation, or both.
+    struct TextOutcome: Equatable {
+        var text: String?
+        var notice: String?
+    }
+
+    /// Runs a text extension. One with `"input": "json"` gets a single `run` request carrying the typed
+    /// text as `query`, its preferences, its saved object and, when allowed, the clipboard, and replies
+    /// `{"text", "notice", "storage"}`, whose storage is saved under the same rules as a list run. Any other
+    /// gets the typed text as it is, and its whole output is the text.
+    func runText(_ ext: InstalledExtension, input: String, now: Date = Date(), completion: @escaping (Result<TextOutcome, Error>) -> Void) {
+        guard ext.manifest.takesJSON else { invoke(ext, input) { completion($0.map { TextOutcome(text: $0) }) }; return }
+        let sequence = beginRun(ext)
+        do {
+            let request = try ExtensionNetwork.request(phase: "run", query: input, now: now,
+                                                       storage: ext.manifest.usesStorage ? dataStore.load(ext.id) : nil,
+                                                       preferences: preferenceValues(ext), clipboard: runClipboard(ext))
+            invoke(ext, request) { [self] result in
+                completion(result.flatMap { output in
+                    Result {
+                        guard let reply = try? ExtensionNetwork.reply(from: output) else {
+                            throw ExtensionError.runtime(String(localized: "Extension returned an invalid reply.", comment: "Extension error"))
+                        }
+                        try save(reply.storage, for: ext, run: sequence)
+                        return TextOutcome(text: reply.text, notice: reply.notice)
+                    }
+                })
             }
         } catch { completion(.failure(error)) }
     }

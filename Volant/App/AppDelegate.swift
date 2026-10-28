@@ -177,9 +177,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             manager.reload()
             let input = CommandLine.arguments.indices.contains(i + 2) ? CommandLine.arguments[i + 2] : ""
             guard let ext = manager.search(CommandLine.arguments[i + 1]).first else { print("no such extension"); exit(2) }
-            manager.run(ext, input: input) { result in
+            manager.runText(ext, input: input) { result in
                 switch result {
-                case .success(let out): print("result: \(out)"); exit(0)
+                case .success(let out):
+                    if let notice = out.notice { print("notice: \(notice)") }
+                    print("result: \(out.text ?? "")"); exit(0)
                 case .failure(let err): print("error: \(err.localizedDescription)"); exit(1)
                 }
             }

@@ -41903,6 +41903,95 @@
         }
       }
     },
+    "Extension returned an invalid reply.": {
+      "comment": "Extension error",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Die Erweiterung hat eine ungültige Antwort zurückgegeben."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La extensión devolvió una respuesta no válida."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "L’extension a renvoyé une réponse non valide."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "L’estensione ha restituito una risposta non valida."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "機能拡張が無効な応答を返しました。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "확장 프로그램이 잘못된 응답을 반환했습니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "De extensie gaf een ongeldig antwoord terug."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rozszerzenie zwróciło nieprawidłową odpowiedź."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "A extensão retornou uma resposta inválida."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "A extensão devolveu uma resposta inválida."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Расширение вернуло недопустимый ответ."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Uzantı geçersiz bir yanıt döndürdü."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Розширення повернуло недійсну відповідь."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "扩展返回了无效的回复。"
+          }
+        }
+      }
+    },
     "Extension service could not start. Try again.": {
       "comment": "Extension error",
       "localizations": {
@@ -68707,6 +68796,95 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "读取%@"
+          }
+        }
+      }
+    },
+    "Read your clipboard’s text when you run it": {
+      "comment": "Extension permission summary item, joined with commas",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Den Text deiner Zwischenablage lesen, wenn du sie ausführst"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Leer el texto del portapapeles cuando la ejecutas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lire le texte du presse-papiers quand vous l’exécutez"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Leggere il testo degli appunti quando la esegui"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "実行時にクリップボードのテキストを読み取る"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "실행할 때 클립보드의 텍스트 읽기"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "De tekst op je klembord lezen wanneer je hem uitvoert"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Odczytywanie tekstu ze schowka po uruchomieniu"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ler o texto da área de transferência quando você a executa"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ler o texto da área de transferência quando a executa"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Читать текст из буфера обмена при запуске"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Çalıştırdığınızda panodaki metni okuma"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Читати текст із буфера обміну під час запуску"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "运行时读取剪贴板中的文本"
           }
         }
       }

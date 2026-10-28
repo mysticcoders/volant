@@ -640,14 +640,20 @@ final class LauncherModel: ObservableObject {
             }
             return
         }
-        extensions.run(ext, input: input) { [weak self] result in
+        extensions.runText(ext, input: input) { [weak self] result in
             guard let self else { return }
             self.extensionRunning = false
             guard gen == self.generation else { return }
             switch result {
-            case .success(let output):
+            case .success(let outcome):
+                guard let text = outcome.text else {
+                    self.sections = []
+                    self.notice = outcome.notice ?? String(localized: "\(ext.name) returned nothing.", comment: "Launcher notice when an extension returns no rows")
+                    return
+                }
+                if let notice = outcome.notice { self.actionFeedback = notice }
                 self.notice = nil
-                self.sections = [ResultSection(title: ext.name, rows: [.extensionResult(output)])]
+                self.sections = [ResultSection(title: ext.name, rows: [.extensionResult(text)])]
             case .failure(let error):
                 self.sections = []
                 self.notice = String(localized: "Extension failed: \(error.localizedDescription)")

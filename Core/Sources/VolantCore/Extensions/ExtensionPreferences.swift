@@ -102,10 +102,10 @@ public enum ExtensionPreferences {
         })
     }
 
-    /// Whether a manifest's declarations are usable: at most 12, unique ids, each valid, and only on list
-    /// extensions, which are the ones whose requests can carry them.
-    public static func isValid(_ declared: [ExtensionPreference], listsItems: Bool) -> Bool {
-        declared.isEmpty || (listsItems && declared.count <= maximumCount
+    /// Whether a manifest's declarations are usable: at most 12, unique ids, each valid, and only on
+    /// extensions that receive JSON requests, which are the ones that can carry them.
+    public static func isValid(_ declared: [ExtensionPreference], receivesRequests: Bool) -> Bool {
+        declared.isEmpty || (receivesRequests && declared.count <= maximumCount
             && Set(declared.map(\.id)).count == declared.count && declared.allSatisfy(\.isValid))
     }
 }
