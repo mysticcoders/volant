@@ -37,7 +37,7 @@ struct LauncherView: View {
                     .onAppear { model.openAIChat() }
             } else {
             searchField
-            Divider().opacity(0.6)
+            if reduceTransparency { Divider().opacity(0.6) }
             if model.config.statusBar.sources.contains("ai-chat") {
                 ACPActivityStrip(conversations: model.conversations, open: model.selectConversation)
             }
@@ -294,14 +294,15 @@ struct LauncherView: View {
         .id(row.id)
     }
 
-    /// The footer as a translucent bar over the results, so rows read as soft shapes and colors as
-    /// they pass beneath it. A within-window blur at 60% lets some of the rows through unblurred
-    /// (at full strength the blur reduced them to an imperceptible tint), under a 20% theme tint;
-    /// the theme render measures both the show-through and the label contrast. Reduce Transparency
-    /// uses the solid surface.
+    /// The footer as a bar that is translucent at its top edge and solid below it, so rows blend into
+    /// it as soft shapes and colors without a hairline, as they do under the search field, while its
+    /// labels sit on the solid surface and stay easy to read. A within-window blur at 60% and the theme
+    /// surface both fade in over the top `footerFade` of the bar; the theme render measures the
+    /// show-through in that band and the label contrast below it. Reduce Transparency uses the solid
+    /// surface and keeps the hairlines, since there is nothing to blend.
     private var footerBar: some View {
         VStack(spacing: 0) {
-            Divider().opacity(0.6)
+            if reduceTransparency { Divider().opacity(0.6) }
             footer
         }
         .background {
@@ -310,11 +311,21 @@ struct LauncherView: View {
             } else {
                 ZStack {
                     WithinWindowBlur().opacity(0.6)
-                    Rectangle().fill(theme.surface(opacity: 0.2))
+                        .mask(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: Self.footerFade)],
+                                             startPoint: .top, endPoint: .bottom))
+                    Rectangle().fill(theme.surface(opacity: 1))
+                        .mask(LinearGradient(stops: [.init(color: .clear, location: 0),
+                                                     .init(color: .black.opacity(0.8), location: Self.footerFade * 0.6),
+                                                     .init(color: .black, location: Self.footerFade)],
+                                             startPoint: .top, endPoint: .bottom))
                 }
             }
         }
     }
+
+    /// The share of the footer's height, from its top edge, over which it fades from translucent to the
+    /// solid surface its labels sit on.
+    private static let footerFade = 0.35
 
     private var footer: some View {
         HStack(spacing: 18) {
