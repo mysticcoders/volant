@@ -59,8 +59,9 @@ func captureWindow(_ window: NSWindow, _ name: String) throws {
     }
 }
 
-/// The footer's look-through measurement for one capture: luminance spread inside the footer,
-/// left of its action label and right of the Volant mark, plus the region's average color.
+/// The footer's look-through measurement for one capture: luminance spread inside the footer's
+/// translucent top band, left of its action label and right of the Volant mark, plus the average color
+/// of the nearly solid band below it, where the labels sit.
 struct FooterSample {
     var stddev: Double
     var range: Double
@@ -74,19 +75,22 @@ func sampleFooter(_ window: NSWindow) -> FooterSample? {
     let rep = NSBitmapImageRep(cgImage: image)
     let scale = Double(rep.pixelsWide) / window.frame.width
     let xs = Int(36 * scale)..<Int(window.frame.width * 0.55 * scale)
-    let ys = (rep.pixelsHigh - Int(30 * scale))..<(rep.pixelsHigh - Int(8 * scale))
+    let top = (rep.pixelsHigh - Int(40 * scale))..<(rep.pixelsHigh - Int(28 * scale))
+    let labels = (rep.pixelsHigh - Int(28 * scale))..<(rep.pixelsHigh - Int(8 * scale))
     var values: [Double] = []
-    var sum = (0.0, 0.0, 0.0)
-    for y in ys { for x in xs {
+    var sum = (0.0, 0.0, 0.0), count = 0
+    for y in top { for x in xs {
         guard let color = rep.colorAt(x: x, y: y)?.usingColorSpace(.sRGB) else { continue }
-        let (r, g, b) = (Double(color.redComponent), Double(color.greenComponent), Double(color.blueComponent))
-        values.append(255 * (0.2126 * r + 0.7152 * g + 0.0722 * b))
-        sum = (sum.0 + r, sum.1 + g, sum.2 + b)
+        values.append(255 * (0.2126 * color.redComponent + 0.7152 * color.greenComponent + 0.0722 * color.blueComponent))
     } }
-    guard !values.isEmpty else { return nil }
+    for y in labels { for x in xs {
+        guard let color = rep.colorAt(x: x, y: y)?.usingColorSpace(.sRGB) else { continue }
+        sum = (sum.0 + Double(color.redComponent), sum.1 + Double(color.greenComponent), sum.2 + Double(color.blueComponent)); count += 1
+    } }
+    guard !values.isEmpty, count > 0 else { return nil }
     let mean = values.reduce(0, +) / Double(values.count)
     let deviation = (values.map { ($0 - mean) * ($0 - mean) }.reduce(0, +) / Double(values.count)).squareRoot()
-    let n = Double(values.count)
+    let n = Double(count)
     return FooterSample(stddev: deviation, range: values.max()! - values.min()!, average: (sum.0 / n, sum.1 / n, sum.2 / n))
 }
 
