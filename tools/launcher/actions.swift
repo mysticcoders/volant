@@ -247,7 +247,8 @@ func fictionalCatalog(installed: ExtensionManifest) -> ExtensionCatalog {
         ExtensionCatalog.Listing(id: "community.fictional.reader", name: "Fictional Reader", version: "1.2.0", module: "reader.wasm",
                                  summary: "Front page and newest stories from a fictional news site.", publisher: "Fictional Publisher", license: "MIT",
                                  hosts: ["news.example.com"], source: "https://example.com/fictional/reader",
-                                 manifest: .init(sha256: String(repeating: "2", count: 64), size: 300), moduleFile: .init(sha256: String(repeating: "3", count: 64), size: 4000)),
+                                 manifest: .init(sha256: String(repeating: "2", count: 64), size: 300), moduleFile: .init(sha256: String(repeating: "3", count: 64), size: 4000),
+                                 icon: "icon.webp", iconFile: .init(sha256: Integrity.sha256(fixtureIcon), size: fixtureIcon.count)),
     ])
 }
 
@@ -768,17 +769,18 @@ func catalogScenario() throws {
     panel.model.extensions = communityManager
     let fixtureCatalogKey = Curve25519.Signing.PrivateKey()
     let fixtureIndex = try JSONEncoder().encode(fictionalCatalog(installed: communityManager.search("community").first!.manifest))
-    var fixtureCatalogFetches = 0
+    var fixtureCatalogFetches = 0, fixtureIconFetches = 0
     panel.model.catalog.client = ExtensionCatalogClient(fetchFile: { path, _, completion in
-        fixtureCatalogFetches += 1
         switch path {
-        case ExtensionCatalog.indexPath: completion(.success(fixtureIndex))
-        case ExtensionCatalog.signaturePath: completion(.success(Data(try! fixtureCatalogKey.signature(for: fixtureIndex).base64EncodedString().utf8)))
+        case ExtensionCatalog.indexPath: fixtureCatalogFetches += 1; completion(.success(fixtureIndex))
+        case ExtensionCatalog.signaturePath:
+            fixtureCatalogFetches += 1; completion(.success(Data(try! fixtureCatalogKey.signature(for: fixtureIndex).base64EncodedString().utf8)))
+        case _ where path.hasSuffix("/icon.webp"): fixtureIconFetches += 1; completion(.success(fixtureIcon))
         default: completion(.failure(ExtensionCatalogError.unavailable("Fixture has no packages.")))
         }
     }, publicKey: fixtureCatalogKey.publicKey.rawRepresentation.base64EncodedString(), stateURL: root.appendingPathComponent("extension-catalog-\(UUID().uuidString).json"))
     panel.toggle(); panel.model.query = "catalog"; settle()
-    verify(panel.model.showingCatalog && fixtureCatalogFetches == 0, "Typing catalog opens the catalog view without fetching")
+    verify(panel.model.showingCatalog && fixtureCatalogFetches == 0 && fixtureIconFetches == 0, "Typing catalog opens the catalog view without fetching")
     try render("catalog-check-launcher")
     func catalogField(in view: NSView) -> NSTextField? {
         if let field = view as? NSTextField, field.placeholderString == "Search extensions…" { return field }
@@ -787,6 +789,8 @@ func catalogScenario() throws {
     verify(panel.makeFirstResponder(catalogField(in: panel.contentView!)!), "Focus the catalog search field")
     key("\r", 36)
     verify(waitUntil { fixtureCatalogFetches == 2 && panel.model.catalog.listings.count == 2 }, "Return checks the signed catalog once")
+    let notInstalled = panel.model.catalog.listings.first { $0.id == "community.fictional.reader" }!
+    verify(waitUntil { ExtensionCatalogIcons.shared.image(for: notInstalled) != nil }, "A listing that isn't installed shows its verified catalog icon")
     verify(panel.model.catalog.primaryTitle == "Use Extension", "An installed listing offers to use it")
     try render("catalog-launcher")
     key("\u{F701}", 125); settle()

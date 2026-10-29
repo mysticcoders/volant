@@ -81,6 +81,7 @@ final class ExtensionCatalogModel: ObservableObject {
             case .success(let loaded):
                 self.manager().applyRevocations(from: loaded)
                 self.catalog = loaded; self.keepSelectionVisible()
+                ExtensionCatalogIcons.shared.fetch(loaded.installable, using: self.client)
             case .failure(let failure): self.error = failure.localizedDescription
             }
         }

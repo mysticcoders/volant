@@ -74,8 +74,7 @@ struct ExtensionBrowseView: View {
     /// source link and install state.
     private func row(_ listing: ExtensionCatalog.Listing) -> some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "puzzlepiece.extension").font(.system(size: 16)).foregroundStyle(.secondary)
-                .frame(width: 24, height: 24).accessibilityHidden(true)
+            CatalogIcon(listing: listing, installed: installed.first { $0.id == listing.id }, size: 24)
             VStack(alignment: .leading, spacing: 3) {
                 Text(listing.name).font(.body.weight(.semibold)) + Text("  " + listing.version).foregroundColor(.secondary)
                 Text(listing.summary).fixedSize(horizontal: false, vertical: true)

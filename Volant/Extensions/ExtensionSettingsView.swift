@@ -59,6 +59,7 @@ struct ExtensionSettingsView: View {
             case .success(let loaded):
                 let withdrawn = manager.applyRevocations(from: loaded)
                 catalog = loaded
+                ExtensionCatalogIcons.shared.fetch(loaded.installable, using: catalogClient)
                 notices = withdrawn.map { String(localized: "Turned off \($0.name): it was withdrawn from the catalog.", comment: "Settings → Extensions notice; the value is the extension name") }
                 reload(); if !withdrawn.isEmpty { onChange() }
             case .failure(let failure): catalogError = failure.localizedDescription
