@@ -135,7 +135,7 @@ The October 7 VM profile left about 73 MB of footprint over about 29 MB of live 
 
 ## Recommended, not implemented
 
-- **Send only what changed while streaming.** A streaming 1m conversation still moves about 27 MiB a second through encode, XPC and decode. The helper could return just the messages changed since the app's revision (normally the last one), and the app could patch its copy. This changes the protocol's contract and the stale-snapshot rules more deeply than the revision check, so it should be its own change with its own ACP checks.
+- **Send only what changed while streaming.** Done on October 29, 2026; see [memory-profile-2026-10-29.md](memory-profile-2026-10-29.md). A streaming 1m conversation moved about 27 MiB a second through encode, XPC and decode; it now moves under 1 MiB.
 - **Stop re-encoding tool updates to count their size** in `updateSession`, and parse the agent's capabilities once at initialization instead of on every prompt. Both are small, allocation-only savings in the helper.
 - **Rerun `tools/memory/app-vm.py`** when the Tart guest is free, to see whether the VM app's 73 MB has moved since October 7, and run an installed, team-signed build to measure VolantAgentHost and VolantAIHost directly.
 

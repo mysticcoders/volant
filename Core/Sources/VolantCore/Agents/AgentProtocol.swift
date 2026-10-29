@@ -13,8 +13,10 @@ import Foundation
     /// account folder or a failed launch; when the agent cannot load the conversation, it ends as
     /// failed in `acpRead` and no new conversation starts.
     func acpResume(provider: String, project: String, profile: String, session: String, reply: @escaping (String?) -> Void)
-    /// The conversation as JSON `ACPState` with its revision. When `after` is already the current
-    /// revision the reply carries no data: nothing changed. A negative `after` always gets the state.
+    /// The conversation as a JSON `ACPStateUpdate` with its revision. When `after` is already the
+    /// current revision the reply carries no data: nothing changed. When `after` is the revision the
+    /// helper sent last, the update carries only the messages changed since; any other `after`,
+    /// including a negative one, gets the full state.
     func acpRead(after revision: Int, reply: @escaping (Data?, Int, String?) -> Void)
     func acpPrompt(text: String, reply: @escaping (String?) -> Void)
     /// A prompt with owner-chosen attachments, a JSON array of `ChatAttachment`.

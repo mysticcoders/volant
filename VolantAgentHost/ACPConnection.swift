@@ -97,10 +97,18 @@ final class ACPConnection {
             self.stop("Agent startup timed out. Check its terminal login and reconnect.", failed: true)
         }
     }
-    /// The encoded state and its revision. A reader that already holds the current revision gets
-    /// no data, so an unchanged conversation is neither encoded nor sent again.
+    /// The state last sent and its revision, so the next read from that revision can carry only what
+    /// changed. Copy-on-write shares its storage with `state` until a message changes.
+    private var sent: (revision: Int, state: ACPState)?
+    /// The encoded `ACPStateUpdate` and the current revision. A reader that already holds the current
+    /// revision gets no data, so an unchanged conversation is neither encoded nor sent again. A
+    /// reader holding the revision sent last gets only the messages that changed since; any other
+    /// reader gets the full state.
     func snapshot(after known: Int) throws -> (Data?, Int) {
-        known == revision ? (nil, revision) : (try JSONEncoder().encode(state), revision)
+        guard known != revision else { return (nil, revision) }
+        let update = sent.flatMap { $0.revision == known ? ACPStateUpdate.changes(from: $0.state, base: known, to: state) : nil } ?? .full(state)
+        sent = (revision, state)
+        return (try JSONEncoder().encode(update), revision)
     }
     /// The launch variable for a conversation under the account folder `profile`; none for the
     /// default login (""). The Core rules run first, so a partial path never reaches the file

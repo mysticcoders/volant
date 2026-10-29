@@ -52,7 +52,7 @@ final class ACPAccountTests: XCTestCase {
     /// that follow a change of phase both run.
     private func deliver(_ state: ACPState, to model: ACPModel) {
         snapshotRevision += 1
-        XCTAssertEqual(model.handleRead(try? JSONEncoder().encode(state), revision: snapshotRevision, after: model.helperRevision), .applied)
+        XCTAssertEqual(model.handleRead(try? JSONEncoder().encode(ACPStateUpdate.full(state)), revision: snapshotRevision, after: model.helperRevision), .applied)
     }
 
     func testANewConversationAsksForTheChosenAccount() {
