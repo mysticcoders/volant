@@ -299,6 +299,61 @@ final class ExtensionCatalogInstallTests: XCTestCase {
         XCTAssertNil(icons.image(for: forged), "bytes that don't match the signed hash are refused")
         XCTAssertNil(icons.image(for: plain))
     }
+
+    func testUpdateNoticesComeOnlyFromTheSavedSignedCatalog() async throws {
+        let key = Curve25519.Signing.PrivateKey()
+        let (v1, manifest1) = try package(module: moduleV1)
+        let manager = manager()
+        try manager.install(v1, manifest: manifest1, module: moduleV1, from: catalog([v1]))
+        let (v2, _) = try package(version: "2.0.0", module: moduleV2)
+        var fetches = 0
+        let client = client(try signedFiles(catalog([v2], sequence: 4), key: key), key: key, requests: { _, _ in fetches += 1 })
+        let checker = ExtensionUpdateChecker()
+        checker.client = client
+        checker.manager = { manager }
+        XCTAssertEqual(checker.available(), [], "No notice before any check")
+        _ = try await load(client).get()
+        let fetchesAfterCheck = fetches
+        XCTAssertEqual(checker.available(), [.init(name: "Fictional Reader", version: "2.0.0")])
+        XCTAssertEqual(checker.available().count, 1)
+        XCTAssertEqual(fetches, fetchesAfterCheck, "Showing updates never contacts the catalog")
+        XCTAssertNotNil(ExtensionCatalogState.checked(at: client.stateURL))
+        let indexURL = ExtensionCatalogState.indexURL(beside: client.stateURL)
+        var index = try Data(contentsOf: indexURL)
+        index.append(0x20)
+        try index.write(to: indexURL)
+        XCTAssertEqual(checker.available(), [], "A changed saved index fails its signature and shows nothing")
+    }
+
+    func testTheDailyCheckRunsOnlyWhenOnAndOnceADay() async throws {
+        let key = Curve25519.Signing.PrivateKey()
+        let (v1, _) = try package(module: moduleV1)
+        var fetches = 0
+        let client = client(try signedFiles(catalog([v1], sequence: 2), key: key), key: key, requests: { path, _ in
+            if path == ExtensionCatalog.indexPath { fetches += 1 }
+        })
+        let checker = ExtensionUpdateChecker()
+        checker.client = client
+        checker.manager = { self.manager() }
+        var now = Date()
+        checker.now = { now }
+        checker.checkIfDue()
+        XCTAssertEqual(fetches, 0, "Off by default, so it never contacts the catalog")
+        checker.enabled = { true }
+        let first = expectation(description: "first check")
+        checker.onCheck = { first.fulfill() }
+        checker.checkIfDue()
+        await fulfillment(of: [first], timeout: 2)
+        XCTAssertEqual(fetches, 1)
+        checker.checkIfDue()
+        XCTAssertEqual(fetches, 1, "Not again within a day of the last accepted catalog")
+        now = now.addingTimeInterval(ExtensionUpdateChecker.interval + 60)
+        let second = expectation(description: "second check")
+        checker.onCheck = { second.fulfill() }
+        checker.checkIfDue()
+        await fulfillment(of: [second], timeout: 2)
+        XCTAssertEqual(fetches, 2, "Checked again once a day has passed")
+    }
 }
 
 private extension Result {

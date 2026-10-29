@@ -205,7 +205,9 @@ export default function Extensions() {
         before you install it; in Settings → Extensions, choose Browse
         Extensions. Turn on Allow Community Extensions, then Install, then Turn
         On. Volant contacts the catalog only when you check it, browse it or
-        choose Check for Updates.
+        choose Check for Updates, or once a day if you turn on Check for updates
+        daily. When an installed extension has an update, the launcher lists it
+        at the top until you update it in Settings → Extensions.
       </p>
       <ul>
         <li>

@@ -163,4 +163,19 @@ final class LauncherCatalogTests: XCTestCase {
         XCTAssertEqual(actions, ["extensionSettings"])
         XCTAssertFalse(model.extensions.extensions.contains { $0.isCommunity })
     }
+
+    func testExtensionUpdatesLeadTheSuggestionsAndOpenSettings() async throws {
+        var actions: [LauncherAction] = []
+        let model = model { actions.append($0) }
+        model.query = "x"
+        model.query = ""
+        XCTAssertFalse(model.rows.contains { if case .extensionUpdates = $0 { return true }; return false }, "No row without updates")
+        model.extensionUpdates = { [.init(name: "Fictional Reader", version: "2.0.0"), .init(name: "Fictional Weather", version: "1.1.0")] }
+        model.query = "x"
+        model.query = ""
+        guard case .extensionUpdates(let names) = model.rows.first else { return XCTFail("Updates lead the suggestions") }
+        XCTAssertEqual(names, "Fictional Reader 2.0.0 and Fictional Weather 1.1.0")
+        model.activate(rowID: model.rows[0].id)
+        XCTAssertTrue(actions.contains { if case .extensionSettings = $0 { return true }; return false }, "Return opens Settings › Extensions")
+    }
 }

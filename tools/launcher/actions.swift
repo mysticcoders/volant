@@ -800,6 +800,12 @@ func catalogScenario() throws {
     verify(panel.model.catalog.listings.count == 1, "Typing filters the loaded catalog, including by host")
     try render("catalog-filtered-launcher")
     panel.orderOut(nil)
+    panel.model.extensionUpdates = { [.init(name: "Fictional Reader", version: "1.2.0"), .init(name: "Community Greeting", version: "1.1.0")] }
+    panel.toggle(); panel.model.query = ""; settle()
+    verify(panel.model.rows.first.map { if case .extensionUpdates = $0 { return true }; return false } == true, "Extension updates lead the suggestions")
+    try render("extension-updates-launcher")
+    panel.orderOut(nil)
+    panel.model.extensionUpdates = { [] }
     try communityManager.setCommunityAllowed(false, expected: true)
     print("PASS: launcher catalog checks only on request, filters locally and labels install state")
 }
