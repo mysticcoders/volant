@@ -326,10 +326,27 @@ final class ACPModel: ObservableObject {
     /// Applies one helper reply to a read that asked for changes after `known`. A reply without
     /// data confirms `known` is current, so nothing is decoded; if the app changed `state` while
     /// that read was in flight, the reply is stale and the next read fetches the full state.
-    /// Otherwise the snapshot replaces `state` only when it differs, and its revision is kept.
+    /// The ACP helper replies with an `ACPStateUpdate`: the full state, or only the messages changed
+    /// since `known`, which patch `state` only when it is still exactly revision `known`; otherwise
+    /// the revision is forgotten and the next read fetches the full state. The AI helper, which has
+    /// no revisions (`revision` -1), replies with a plain `ACPState`. The result replaces `state`
+    /// only when it differs, and its revision is kept.
     func receive(_ data: Data?, revision: Int, after known: Int) -> SnapshotResult {
         if data == nil, revision >= 0, revision == known { return helperRevision == known ? .unchanged : .stale }
-        guard let data, let snapshot = try? JSONDecoder().decode(ACPState.self, from: data) else { return .invalid }
+        guard let data else { return .invalid }
+        let snapshot: ACPState
+        if revision < 0 {
+            guard let full = try? JSONDecoder().decode(ACPState.self, from: data) else { return .invalid }
+            snapshot = full
+        } else {
+            guard let update = try? JSONDecoder().decode(ACPStateUpdate.self, from: data) else { return .invalid }
+            if let base = update.base {
+                guard base == known, helperRevision == known, let patched = update.applied(to: state) else { helperRevision = -1; return .stale }
+                snapshot = patched
+            } else {
+                snapshot = update.state
+            }
+        }
         if snapshot != state { state = snapshot }
         helperRevision = revision
         remember(snapshot)

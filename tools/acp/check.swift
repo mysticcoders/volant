@@ -185,24 +185,30 @@ rejectedLoad.queue.sync {
 require(unsupported.state.resumeRejected == true, "an agent without loadSession stops offering resume")
 print("Passed: long replays keep their newest history, and refused loads clear the resume offer.")
 
-/// Reads skip the snapshot only while the reader holds the current revision; every visible change advances it.
+/// Reads skip the snapshot only while the reader holds the current revision; every visible change
+/// advances it. A reader holding the revision sent last gets only the messages that changed; any
+/// other reader gets the full state.
 let polled = ACPConnection()
 polled.testSend = { _ in }
 try polled.queue.sync {
-    let decode: (Data?) -> ACPState? = { $0.flatMap { try? JSONDecoder().decode(ACPState.self, from: $0) } }
+    var held = ACPState()
+    let updateIn: (Data?) -> ACPStateUpdate? = { $0.flatMap { try? JSONDecoder().decode(ACPStateUpdate.self, from: $0) } }
+    let decode: (Data?) -> ACPState? = { updateIn($0)?.applied(to: held) }
     let peek: (Int) -> Data? = { try! polled.snapshot(after: $0).0 }
     let (initial, start) = try polled.snapshot(after: -1)
-    require(decode(initial) == polled.state, "a reader without a revision gets the full state")
+    require(updateIn(initial)?.base == nil && decode(initial) == polled.state, "a reader without a revision gets the full state")
+    held = polled.state
     let (repeated, same) = try polled.snapshot(after: start)
     require(repeated == nil && same == start, "an unchanged conversation sends no snapshot")
-    require(peek(start + 1) != nil, "any other revision gets the full state")
+    require(updateIn(peek(start + 1))?.base == nil, "any other revision gets the full state")
     polled.beginHandshake(project: "/tmp/fictional-project")
     polled.receive(frame(["jsonrpc": "2.0", "id": 1, "result": ["protocolVersion": 1, "agentCapabilities": [:]]]))
     polled.receive(frame(["jsonrpc": "2.0", "id": 2, "result": ["sessionId": "polled-session"]]))
     var known = start
     let advances: (String) throws -> Void = { reason in
         let (data, revision) = try polled.snapshot(after: known)
-        require(revision != known && decode(data) == polled.state, reason)
+        require(revision != known && updateIn(data)?.base == known && decode(data) == polled.state, reason)
+        held = polled.state
         known = revision
         require(peek(known) == nil, reason + " and then stays unchanged")
     }
@@ -213,8 +219,17 @@ try polled.queue.sync {
     polled.receive(frame(update("polled-session", "Hello ")))
     try advances("a new agent message advances the revision")
     polled.receive(frame(update("polled-session", "world")))
-    try advances("text appended in place advances the revision")
-    require(decode(peek(-1))?.messages.last?.text == "Hello world", "the snapshot carries the appended text")
+    let (appended, _) = try polled.snapshot(after: known)
+    let streamed = updateIn(appended)
+    require(streamed?.from == polled.state.messages.count - 1 && streamed?.state.messages.map(\.text) == ["Hello world"],
+            "text appended in place sends only the message it changed")
+    require(decode(appended) == polled.state, "the reader's patched transcript equals the helper's")
+    held = polled.state; known = polled.revision
+    require(peek(known) == nil, "text appended in place advances the revision and then stays unchanged")
+    polled.receive(frame(update("polled-session", "!")))
+    require(updateIn(peek(known - 1))?.base == nil, "a reader at a revision other than the one sent last gets the full state")
+    held = polled.state; known = polled.revision
+    require(decode(peek(-1))?.messages.last?.text == "Hello world!", "the snapshot carries the appended text")
     polled.receive(frame(update("other-session", "ignored")))
     require(peek(known) == nil, "an update for another session changes nothing")
     polled.receive(frame(["jsonrpc": "2.0", "id": 40, "method": "session/request_permission", "params": ["sessionId": "polled-session", "toolCall": ["toolCallId": "tool-1"], "options": [["optionId": "once", "name": "Allow once", "kind": "allow_once"]]]]))
@@ -228,7 +243,7 @@ try polled.queue.sync {
     polled.stop()
     try advances("stopping advances the revision")
 }
-print("Passed: revisions skip unchanged snapshots and advance on every change, including in-place text.")
+print("Passed: revisions skip unchanged snapshots, advance on every change including in-place text, and send only changed messages to the reader of the last revision.")
 
 // The helper counts conversations across connections and refuses one past the limit before it
 // resolves or launches anything.

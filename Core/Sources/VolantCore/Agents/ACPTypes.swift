@@ -63,6 +63,45 @@ public struct ACPState: Codable, Equatable {
     }
 }
 
+/// What the ACP helper sends for one read of a conversation that changed. A reader with no usable
+/// revision gets the whole state (`base` nil). A reader that holds revision `base` gets every field
+/// except the transcript in full, with only the messages from index `from` on: everything before
+/// `from` is unchanged from `base`. While a reply streams that is normally just its last message, so
+/// a long conversation is not encoded, copied over XPC and decoded again on every poll.
+public struct ACPStateUpdate: Codable, Equatable {
+    public var base: Int?
+    public var from: Int
+    public var state: ACPState
+
+    public init(base: Int?, from: Int, state: ACPState) {
+        self.base = base
+        self.from = from
+        self.state = state
+    }
+
+    public static func full(_ state: ACPState) -> ACPStateUpdate { ACPStateUpdate(base: nil, from: 0, state: state) }
+
+    /// The update from `old`, which the reader holds as revision `base`, to `new`: messages from the
+    /// first one that differs, or from the end of the shorter transcript.
+    public static func changes(from old: ACPState, base: Int, to new: ACPState) -> ACPStateUpdate {
+        let shared = min(old.messages.count, new.messages.count)
+        var first = 0
+        while first < shared && old.messages[first] == new.messages[first] { first += 1 }
+        var partial = new
+        partial.messages = Array(new.messages[first...])
+        return ACPStateUpdate(base: base, from: first, state: partial)
+    }
+
+    /// The conversation this update describes for a reader holding `current` at revision `base`, or
+    /// nil when it cannot apply: `from` lies outside the reader's transcript.
+    public func applied(to current: ACPState) -> ACPState? {
+        guard base != nil else { return state }
+        guard from >= 0, from <= current.messages.count else { return nil }
+        var result = state
+        result.messages = Array(current.messages[..<from]) + state.messages
+        return result
+    }
+}
 
 /// The last ACP conversation Volant started, kept so it can be resumed by its own ID.
 /// Resuming by "the latest conversation in this folder" could reopen one the owner started in
