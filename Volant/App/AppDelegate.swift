@@ -98,6 +98,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    private let extensionUpdateChecker = ExtensionUpdateChecker()
+
+    /// Shows extension updates from the last accepted catalog in the launcher, and runs the daily
+    /// catalog check when the owner turned it on.
+    private func startExtensionUpdates() {
+        let checker = extensionUpdateChecker
+        checker.manager = { [weak self] in
+            let manager = self?.panel.model.extensions ?? ExtensionManager()
+            manager.loadIfNeeded()
+            return manager
+        }
+        checker.enabled = { [weak self] in self?.config.extensionUpdateChecks == true }
+        checker.onCheck = { [weak self] in self?.panel.model.extensions.invalidateCatalog() }
+        panel.model.extensionUpdates = { checker.available() }
+        checker.start()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         Preferences.resolvedSupportDirectory.moveLegacyDefaults(in: .standard)
         if CommandLine.arguments.contains("--acp-check") {
@@ -187,6 +204,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
+        startExtensionUpdates()
         if CommandLine.arguments.contains("--import-raycast") {
             DispatchQueue.main.async { [weak self] in self?.settingsPanel.showRaycastImport() }
         }

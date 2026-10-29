@@ -28,6 +28,8 @@ struct ExtensionSettingsView: View {
     @State private var installing: String?
     @State private var updatingAll = false
     @State private var notices: [String] = []
+    /// The daily background check (`extensionUpdateChecks`), read from this view's config file.
+    @State private var dailyChecks = false
     @State private var browsing = false
     private let secretStore: ExtensionSecretStore
     init(configURL: URL, onChange: @escaping () -> Void, roots: [URL]? = nil, directory: URL? = nil, dataDirectory: URL? = nil,
@@ -360,7 +362,23 @@ struct ExtensionSettingsView: View {
                 Text(updatesDetail)
             }
             ForEach(notices, id: \.self) { Text($0).font(.callout).foregroundStyle(.secondary) }
+            Toggle(isOn: Binding(get: { dailyChecks }, set: setDailyChecks)) {
+                Text("Check for updates daily")
+                Text("Volant checks the signed catalog once a day and lists updates at the top of the launcher. Nothing is installed until you choose Update.")
+            }
+            .accessibilityIdentifier("extension-daily-checks")
         }
+        .onAppear { dailyChecks = Self.dailyChecks(at: configURL) }
+    }
+
+    private static func dailyChecks(at url: URL) -> Bool {
+        guard let object = (try? Data(contentsOf: url)).flatMap({ try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }) else { return false }
+        return object["extensionUpdateChecks"] as? Bool ?? false
+    }
+
+    private func setDailyChecks(_ on: Bool) {
+        do { try Preferences.updateBoolean("extensionUpdateChecks", value: on, at: configURL); dailyChecks = on; onChange() }
+        catch { self.error = error.localizedDescription }
     }
 
     private var updatesTitle: String {
@@ -377,7 +395,10 @@ struct ExtensionSettingsView: View {
 
     private var updatesDetail: String {
         if let catalogError, !catalogLoading { return catalogError }
-        guard catalog != nil else { return String(localized: "Volant checks the signed catalog only when you ask.", comment: "Settings → Extensions updates detail") }
+        guard catalog != nil else {
+            return dailyChecks ? String(localized: "Volant checks the signed catalog once a day, and whenever you ask.", comment: "Settings → Extensions updates detail")
+                : String(localized: "Volant checks the signed catalog only when you ask.", comment: "Settings → Extensions updates detail")
+        }
         let names = updates.map { "\($0.ext.name) \($0.listing.version)" }
         if !names.isEmpty { return names.joined(separator: ", ") }
         return installed.contains { $0.revocation != nil } ? String(localized: "Uninstall below, or update when a fixed version is listed.", comment: "Settings → Extensions updates detail")

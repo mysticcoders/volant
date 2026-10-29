@@ -548,6 +548,7 @@ private struct RowView: View {
         case .audioRoute(let route): return route.name
         case .volume(let command, _): return command.title
         case .agents: return String(localized: "Open Agents", comment: "Launcher row title")
+        case .extensionUpdates: return String(localized: "Extension Updates Available", comment: "Launcher row title")
         case .calculation(let answer, _): return answer.input + " = " + answer.result
         case .systemSettings(let pane): return pane.title
         case .settings: return String(localized: "Volant Settings", comment: "Launcher row title")
@@ -587,6 +588,7 @@ private struct RowView: View {
         case .audioRoute(let route): return route.direction == .output ? String(localized: "Output", comment: "Audio device row subtitle") : String(localized: "Input", comment: "Audio device row subtitle")
         case .volume(_, let detail): return detail.isEmpty ? nil : detail
         case .agents: return String(localized: "Find Herdr sessions and focus a pane", comment: "Launcher row subtitle for Open Agents")
+        case .extensionUpdates(let names): return names
         case .appleShortcut, .calculation, .app: return nil
         case .file(let f): return f.url.deletingLastPathComponent().path.replacingOccurrences(of: NSHomeDirectory(), with: "~")
         case .contact(let c): return c.email ?? c.phone ?? (c.organization.isEmpty ? nil : c.organization)
@@ -647,6 +649,7 @@ private struct RowView: View {
         case .audioRoute(let route): CommandTile(symbol: route.direction == .input ? "mic" : "speaker.wave.2", tint: CoreCommand.audio.tint)
         case .volume(let command, _): CommandTile(symbol: command == .mute ? "speaker.slash" : "speaker.wave.2", tint: CoreCommand.audio.tint)
         case .agents: CommandTile(symbol: "terminal", tint: CoreCommand.agents.tint)
+        case .extensionUpdates: CommandTile(symbol: "arrow.down.circle", tint: Color(red: 0.95, green: 0.42, blue: 0.29))
         case .calculation: Image(systemName: "equal.circle.fill").font(.system(size: 20)).foregroundStyle(.secondary)
         case .systemSettings, .settings: CommandTile(symbol: "gearshape", tint: .gray)
         case .reloadConfig: CommandTile(symbol: "arrow.clockwise", tint: .gray)

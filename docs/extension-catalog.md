@@ -16,6 +16,16 @@ the exact reviewed revision, and **Install**, **Installed**, **Bundled**, or **U
 for an installed extension with a newer version. Install and Update need **Allow Community
 Extensions** on.
 
+**Updates outside Settings.** Every accepted catalog (from any check) is saved beside
+`extension-catalog.json` as `extension-catalog-index.json` and its signature. With an empty search, the
+launcher's suggestions start with **Extension Updates Available**, naming each installed extension with
+a newer version in that saved catalog; Return opens Settings → Extensions, where updates happen. The
+row reads only the saved copy, verifies its signature and sequence again when it changes on disk, and
+never contacts the catalog. **Check for updates daily** (off by default, per Mac, never synced,
+`extensionUpdateChecks`) lets Volant check the catalog itself: a minute after launch and then hourly, it
+checks only when no catalog was accepted in the last day. Like Check for Updates it applies revocations,
+and it never installs or updates anything.
+
 The launcher has the same catalog as its own view, like Dictionary: choose **Extension Catalog**
 (or type `catalog`, `store` or `marketplace` to find it), or type `catalog` directly. The view has its
 own search field, the matching extensions on the left and the selected one's details on the right:
@@ -149,8 +159,6 @@ extension.
 
 ## Remaining work
 
-- Update discovery happens only when the owner checks the catalog; there is no background check or
-  badge, so a revocation reaches a Mac only when its owner checks.
 - volant-extensions' `tools/catalog.py` must publish the `revoked` list before a revocation can ship.
 - Curate beyond the first two readers: text utilities such as Base64, URL encoding, UUIDs and JSON
   formatting, after reviewing source, license and maintenance. Native and adapted upstream

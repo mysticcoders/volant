@@ -93,6 +93,101 @@
         }
       }
     },
+    "%@ %@": {
+      "comment": "An extension and its new version in the Extension Updates row",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ %2$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ %2$@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ %2$@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ %2$@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ %2$@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ %2$@"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ %2$@"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ %2$@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ %2$@"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ %2$@"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ %2$@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ %2$@"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ %2$@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%1$@ %2$@"
+          }
+        }
+      }
+    },
     "%@ %@ asks for new access, so it is off. Turn it on to review it.": {
       "comment": "Settings → Extensions notice; the values are the extension name and version",
       "localizations": {
@@ -19564,6 +19659,94 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "检查更新…"
+          }
+        }
+      }
+    },
+    "Check for updates daily": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Täglich nach Updates suchen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Buscar actualizaciones a diario"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rechercher les mises à jour chaque jour"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cerca aggiornamenti ogni giorno"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "毎日アップデートを確認"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "매일 업데이트 확인"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dagelijks controleren op updates"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Codziennie sprawdzaj uaktualnienia"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Verificar atualizações diariamente"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Procurar atualizações diariamente"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Проверять обновления ежедневно"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Güncellemeleri her gün denetle"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Перевіряти оновлення щодня"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "每天检查更新"
           }
         }
       }
@@ -41281,6 +41464,95 @@
         }
       }
     },
+    "Extension Updates Available": {
+      "comment": "Launcher row title",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Updates für Erweiterungen verfügbar"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hay actualizaciones de extensiones"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mises à jour d’extensions disponibles"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aggiornamenti delle estensioni disponibili"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "機能拡張のアップデートがあります"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "확장 프로그램 업데이트 사용 가능"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Updates voor extensies beschikbaar"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dostępne uaktualnienia rozszerzeń"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Atualizações de extensões disponíveis"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Atualizações de extensões disponíveis"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Доступны обновления расширений"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Uzantı güncellemeleri var"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Доступні оновлення розширень"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "有可用的扩展更新"
+          }
+        }
+      }
+    },
     "Extension changed. Refresh and review it before enabling.": {
       "comment": "Extension error",
       "localizations": {
@@ -42171,7 +42443,7 @@
       }
     },
     "Extensions": {
-      "comment": "Launcher section title\nSettings sidebar section",
+      "comment": "Launcher section title\nResult row kind label\nSettings sidebar section",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -95034,7 +95306,7 @@
       }
     },
     "Updates": {
-      "comment": "Settings → Extensions updates row title before checking",
+      "comment": "Launcher section title for extension updates\nSettings → Extensions updates row title before checking",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -97875,6 +98147,183 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Volant内建命令"
+          }
+        }
+      }
+    },
+    "Volant checks the signed catalog once a day and lists updates at the top of the launcher. Nothing is installed until you choose Update.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant prüft den signierten Katalog einmal täglich und zeigt Updates oben im Launcher an. Installiert wird erst, wenn du „Aktualisieren“ wählst."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant revisa el catálogo firmado una vez al día y muestra las actualizaciones arriba del lanzador. No se instala nada hasta que eliges Actualizar."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant consulte le catalogue signé une fois par jour et affiche les mises à jour en haut du lanceur. Rien n’est installé tant que vous ne choisissez pas Mettre à jour."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant controlla il catalogo firmato una volta al giorno e mostra gli aggiornamenti in cima al launcher. Non viene installato nulla finché non scegli Aggiorna."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volantは署名付きカタログを1日に1回確認し、アップデートをランチャーの上部に表示します。「アップデート」を選ぶまで何もインストールされません。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant는 서명된 카탈로그를 하루에 한 번 확인하고 런처 맨 위에 업데이트를 표시합니다. 업데이트를 선택하기 전까지는 아무것도 설치되지 않습니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant controleert de ondertekende catalogus één keer per dag en toont updates boven aan de launcher. Er wordt niets geïnstalleerd totdat je Werk bij kiest."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant raz dziennie sprawdza podpisany katalog i pokazuje uaktualnienia na górze launchera. Nic nie zostanie zainstalowane, dopóki nie wybierzesz Uaktualnij."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Volant verifica o catálogo assinado uma vez por dia e mostra as atualizações no topo do iniciador. Nada é instalado até você escolher Atualizar."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Volant verifica o catálogo assinado uma vez por dia e mostra as atualizações no topo do iniciador. Nada é instalado até escolher Atualizar."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant раз в день проверяет подписанный каталог и показывает обновления вверху лаунчера. Ничего не устанавливается, пока вы не выберете «Обновить»."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant imzalı kataloğu günde bir kez denetler ve güncellemeleri başlatıcının üstünde gösterir. Güncelle'yi seçene kadar hiçbir şey yüklenmez."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant раз на день перевіряє підписаний каталог і показує оновлення вгорі лаунчера. Нічого не встановлюється, доки ви не виберете «Оновити»."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant 每天检查一次已签名的目录，并在启动器顶部列出更新。在你选择“更新”之前不会安装任何内容。"
+          }
+        }
+      }
+    },
+    "Volant checks the signed catalog once a day, and whenever you ask.": {
+      "comment": "Settings → Extensions updates detail",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant prüft den signierten Katalog einmal täglich und immer, wenn du es möchtest."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant revisa el catálogo firmado una vez al día y siempre que lo pidas."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant consulte le catalogue signé une fois par jour, et chaque fois que vous le demandez."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant controlla il catalogo firmato una volta al giorno e ogni volta che lo chiedi."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volantは署名付きカタログを1日に1回、および依頼したときに確認します。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant는 서명된 카탈로그를 하루에 한 번, 그리고 요청할 때마다 확인합니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant controleert de ondertekende catalogus één keer per dag, en wanneer je erom vraagt."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant sprawdza podpisany katalog raz dziennie i zawsze, gdy o to poprosisz."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Volant verifica o catálogo assinado uma vez por dia e sempre que você pedir."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Volant verifica o catálogo assinado uma vez por dia e sempre que pedir."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant проверяет подписанный каталог раз в день и всякий раз, когда вы попросите."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant imzalı kataloğu günde bir kez ve siz istediğinizde denetler."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant перевіряє підписаний каталог раз на день і щоразу, коли ви попросите."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant 每天检查一次已签名的目录，你要求时也会检查。"
           }
         }
       }
