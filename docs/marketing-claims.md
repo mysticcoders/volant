@@ -173,7 +173,17 @@ Added in 0.3.22:
 | --- | --- | --- | --- |
 | Extension preferences: list extensions declare toggles, text, dropdowns and numbers; owners set them in Settings › Extensions | Yes | #303; Core and app tests, fixture renders of the row and sheet; Hacker News 0.5.0 (volant-extensions#17) is the first to declare them | Extensions docs; release notes; claim for list extensions only; never say preferences can hold tokens |
 
-Merged after 0.3.22, not in the current download:
+Added in 0.3.24:
+
+| Story | In 0.3.24 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| A blended launcher: no lines under the search field or above the footer; the footer fades in at its top edge and is solid beneath its labels | Yes | #317; macOS 27 VM renders in light and dark, theme render label contrast 9.86–18.02:1 with rows still showing through the top band; the owner tuned it in Volant Dev. No fixture captures a long list scrolled under the footer, and Reduce Transparency wasn't rendered | Home download line; release notes |
+| Extension clipboard permission: an extension that declares `clipboard` gets the clipboard's plain text once per run, up to 64 KB, never concealed or password-manager items | Yes | #308; Core tests of the filter and manifest rules, app tests of when it is read and sent; no signed installed-app read yet, and no catalog extension uses it | Extensions docs; release notes. Never say Volant reads the clipboard in the background, and never call it "secure" beyond the filter's stated rules |
+| Text commands with `"input": "json"` get preferences, saved data and the clipboard | Yes | #308; app tests of the request and reply; no catalog extension uses it yet | Extensions docs; release notes |
+| Typing in a list extension stops the earlier search; leaving or closing stops it; row actions are never interrupted | Yes | #307; app tests with a scripted fetcher; a module already running finishes within its time limit. Not verified through the signed fetch helper | Release notes |
+| Extension activity recorded by Volant (in memory only) | Not shown to owners | #309; no UI, persistence or export yet (#68) | None until #68 ships |
+
+Merged after 0.3.24, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |

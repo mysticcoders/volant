@@ -22,6 +22,9 @@ const manifest = `{
   "sha256": "…"
 }`;
 
+const jsonCommandManifest = `"input": "json",
+"permissions": ["clipboard"]`;
+
 const preferencesManifest = `"preferences": [
   {"id": "hideDomains", "type": "text", "title": "Hidden sites",
    "placeholder": "example.com", "maxLength": 200},
@@ -267,7 +270,8 @@ export default function Extensions() {
 
       <h2>Preferences</h2>
       <p>
-        A list extension can offer settings, such as sites to hide, how many
+        A list extension, or a text command with JSON input, can offer
+        settings, such as sites to hide, how many
         stories to show or a default sort. Choose them from its{' '}
         <strong>Preferences…</strong> button in Settings → Extensions; Restore
         Defaults puts them back.
@@ -299,11 +303,52 @@ export default function Extensions() {
         <code>{preferencesManifest}</code>
       </pre>
 
+      <h2>Reading the clipboard</h2>
+      <p>
+        An extension can ask to read your clipboard, for example to decode or
+        reformat whatever you just copied. When you enable it, Volant says{' '}
+        <strong>Read your clipboard&rsquo;s text when you run it</strong>.
+      </p>
+      <ul>
+        <li>
+          <strong>Only when you run it.</strong> Volant reads the clipboard once
+          as the extension starts, never while you search or browse Settings,
+          and never for an extension that is off.
+        </li>
+        <li>
+          <strong>Plain text only.</strong> Up to 64 KB, and nothing at all
+          when the item comes from a password manager or is marked concealed
+          or transient, the same rule that keeps those out of clipboard
+          history.
+        </li>
+        <li>
+          <strong>Not kept by Volant.</strong> Volant doesn&rsquo;t store or log
+          the text. An extension that saves data could keep it, so enable only
+          extensions you trust.
+        </li>
+        <li>
+          <strong>Separate from writing.</strong> Reading needs this permission;
+          writing to the clipboard is the existing <code>clipboard.write</code>{' '}
+          capability.
+        </li>
+      </ul>
+
+      <h2>Text commands with JSON input</h2>
+      <p>
+        A text command normally receives just the text you type. With{' '}
+        <code>&quot;input&quot;: &quot;json&quot;</code> it receives the same kind
+        of request a list extension gets, with its preferences, its saved data
+        and, when allowed, the clipboard, and replies with{' '}
+        <code>{'{"text": "…"}'}</code>. Return copies the text, as before.
+      </p>
+      <pre>
+        <code>{jsonCommandManifest}</code>
+      </pre>
+
       <h2>Not yet</h2>
       <p>
-        Background update checks, preferences and storage for text commands,
-        async or streaming results, and a stable ABI. Each will be added
-        deliberately.
+        Background update checks, async or streaming results, and a stable ABI.
+        Each will be added deliberately.
       </p>
 
       <DocFooterNav {...adjacentDocs('extensions')} />

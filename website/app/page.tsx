@@ -717,8 +717,8 @@ export default function Home() {
             Version {appVersion} · macOS 15+ · Apple silicon &amp; Intel
           </span>
           <p className="download-scope">
-            Extensions can now offer preferences, starting with Hacker News.
-            See{' '}
+            New in 0.3.24: a launcher without dividing lines, and extensions
+            that can read your clipboard when you allow it. See{' '}
             <a href={`${repositoryURL}/releases`}>every release</a>.
           </p>
         </section>
