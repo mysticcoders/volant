@@ -1,7 +1,7 @@
 #!/bin/bash
 # Ship a Volant release with one owner action: merging its release pull request.
 #
-#   Scripts/ship.sh 0.2.3            prepare, wait for the owner's merge, then publish
+#   Scripts/ship.sh 0.2.3            prepare, wait for the release PR's merge, then publish
 #   Scripts/ship.sh 0.2.3 --publish  publish an already-merged release PR (resume)
 #
 # Prepare builds from `release/<version>` (or a fresh branch from main), which must contain
@@ -9,7 +9,7 @@
 # build number, archives, notarizes and staples through Scripts/release.sh, and opens one pull
 # request with the DMG, checksums, signed update feed and release record. It never merges.
 #
-# Publish runs only after the owner merges that pull request, and uses only the merged commit. It
+# Publish runs only after that pull request is merged once its checks pass, and uses only the merged commit. It
 # keeps the two-stage order: the first deploy serves the previous feed while the public download is
 # verified, and only then does a second deploy serve the merged feed, verified byte for byte. It
 # finishes by publishing the GitHub release the app's Changelog item opens and posting the
@@ -39,7 +39,7 @@ open_pr() {
   gh pr create --base main --head "$BRANCH" --title "$1" --body-file "$2" | sed 's#.*/##'
 }
 
-# Waits until the owner merges the pull request and prints the merge commit. A pull request closed
+# Waits until the pull request is merged and prints the merge commit. A pull request closed
 # without merging stops the release with nothing published.
 wait_for_merge() {
   local pr="$1" state
