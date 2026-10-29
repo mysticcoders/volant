@@ -101,7 +101,7 @@ struct ExtensionCatalogView: View {
         let selected = listing.id == model.selected?.id
         return Button { model.selectedID = listing.id; editing = true } label: {
             HStack(spacing: 10) {
-                CatalogIcon(installed: model.installed(listing), size: 22)
+                CatalogIcon(listing: listing, installed: model.installed(listing), size: 22)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(listing.name).lineLimit(1)
                     Text(statusText(listing)).font(.caption).foregroundStyle(.secondary).lineLimit(1)
@@ -132,7 +132,7 @@ struct ExtensionCatalogView: View {
         let installed = model.installed(listing)
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 14) {
-                CatalogIcon(installed: installed, size: 48)
+                CatalogIcon(listing: listing, installed: installed, size: 48)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(listing.name).font(.title2.weight(.semibold))
                     Text("\(listing.publisher) · Version \(listing.version) · \(listing.license)").foregroundStyle(.secondary)
@@ -193,14 +193,17 @@ struct ExtensionCatalogView: View {
     }
 }
 
-/// An installed extension's own icon, or the catalog symbol.
-private struct CatalogIcon: View {
+/// An installed extension's own icon, the listing's verified icon from the signed catalog, or the
+/// catalog symbol.
+struct CatalogIcon: View {
+    let listing: ExtensionCatalog.Listing?
     let installed: InstalledExtension?
     let size: CGFloat
+    @ObservedObject private var icons = ExtensionCatalogIcons.shared
 
     var body: some View {
         Group {
-            if let installed, let icon = ExtensionIcon.image(for: installed) {
+            if let icon = installed.flatMap(ExtensionIcon.image(for:)) ?? listing.flatMap(icons.image(for:)) {
                 Image(nsImage: icon).resizable()
             } else {
                 RoundedRectangle(cornerRadius: size / 4, style: .continuous)

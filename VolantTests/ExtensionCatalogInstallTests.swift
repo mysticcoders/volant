@@ -272,6 +272,33 @@ final class ExtensionCatalogInstallTests: XCTestCase {
         try FileManager.default.removeItem(at: installed.directory.appendingPathComponent("reader.webp"))
         XCTAssertEqual(ExtensionManager.catalogStatus(listing, installed: manager.extensions), .update(from: "1.0.0"))
     }
+
+    func testCatalogIconsAreFetchedOnceAndOnlyShownWhenTheyMatchTheSignedHash() throws {
+        var (good, _) = try package(id: "community.fictional.good", module: moduleV1)
+        good.icon = "reader.webp"; good.iconFile = .init(sha256: Integrity.sha256(squareIcon), size: squareIcon.count)
+        var (swapped, _) = try package(id: "community.fictional.swapped", module: moduleV1)
+        swapped.icon = "reader.webp"; swapped.iconFile = .init(sha256: Integrity.sha256(wideIcon), size: wideIcon.count)
+        var (forged, _) = try package(id: "community.fictional.forged", module: moduleV1)
+        forged.icon = "reader.webp"; forged.iconFile = .init(sha256: String(repeating: "a", count: 64), size: squareIcon.count)
+        let (plain, _) = try package(id: "community.fictional.plain", module: moduleV1)
+        var fetched: [String] = []
+        let client = ExtensionCatalogClient(fetchFile: { path, maximum, completion in
+            fetched.append(path)
+            XCTAssertLessThanOrEqual(maximum, ExtensionManifest.maximumIconBytes)
+            completion(.success(path.contains("swapped") ? self.wideIcon : self.squareIcon))
+        })
+        let icons = ExtensionCatalogIcons()
+        icons.fetch([good, swapped, forged, plain], using: client)
+        icons.fetch([good], using: client)
+        let shown = expectation(description: "the verified icon is published")
+        DispatchQueue.main.async { shown.fulfill() }
+        wait(for: [shown], timeout: 2)
+        XCTAssertEqual(fetched.sorted(), [good, swapped, forged].compactMap(\.iconPath).sorted(), "each icon is fetched once, and a listing without one fetches nothing")
+        XCTAssertNotNil(icons.image(for: good))
+        XCTAssertNil(icons.image(for: swapped), "a wide icon is refused even when its hash matches")
+        XCTAssertNil(icons.image(for: forged), "bytes that don't match the signed hash are refused")
+        XCTAssertNil(icons.image(for: plain))
+    }
 }
 
 private extension Result {

@@ -34,6 +34,12 @@ under Installed, off, marked "From catalog", and its first use asks as usual. Re
 existing **Uninstall…**, which moves the folder to the Trash, forgets its approval and prunes hosts no
 other extension needs. Manually copied folders still work as before.
 
+Once a catalog is loaded by one of those actions, its rows in the launcher and in Browse show each
+listing's own icon, installed or not. Each icon is fetched once per session through the same fixed
+catalog paths, must match the SHA-256 the signed index lists, and passes the same checks as an
+installed icon (a square WebP of 16–512 pixels, at most 32 KB); otherwise the row shows the catalog
+symbol. Icons are kept in memory only.
+
 The first catalog holds the Hacker News and Lobsters readers from
 [mysticcoders/volant-extensions](https://github.com/mysticcoders/volant-extensions).
 
@@ -146,7 +152,6 @@ extension.
 - Update discovery happens only when the owner checks the catalog; there is no background check or
   badge, so a revocation reaches a Mac only when its owner checks.
 - volant-extensions' `tools/catalog.py` must publish the `revoked` list before a revocation can ship.
-- Catalog rows show icons only after an extension is installed.
 - Curate beyond the first two readers: text utilities such as Base64, URL encoding, UUIDs and JSON
   formatting, after reviewing source, license and maintenance. Native and adapted upstream
   extensions should be identified as such.
