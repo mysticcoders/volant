@@ -5,16 +5,18 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 IDENTITY="${VOLANT_SIGNING_IDENTITY:-Developer ID Application: Mystic Coders, LLC (REMBT6JY4N)}"
 PROFILE="${VOLANT_NOTARY_PROFILE:-volant}"
-# Without an explicit key or a working Keychain profile, use the App Store Connect API key kept in
-# ~/.appstoreconnect (private_keys/AuthKey_<id>.p8 and issuer_id), as earlier releases did.
+# Without an explicit key, use the App Store Connect API key kept in ~/.appstoreconnect
+# (private_keys/AuthKey_<id>.p8 and issuer_id) whenever it is there, and the Keychain profile only
+# without it. Reading the profile from the Keychain can work for the pre-build check and then fail for
+# the submission minutes later, as it did for 0.3.26 when run from an agent session, while the key file
+# reads the same every time.
 ASC_DIR="${VOLANT_ASC_DIR:-$HOME/.appstoreconnect}"
 ASC_KEY_ID="${VOLANT_NOTARY_KEY_ID:-SCV5964PL2}"
-if [[ -z "${VOLANT_NOTARY_KEY:-}" && -f "$ASC_DIR/private_keys/AuthKey_$ASC_KEY_ID.p8" && -s "$ASC_DIR/issuer_id" ]] \
-  && ! xcrun notarytool history --keychain-profile "$PROFILE" --output-format json > /dev/null 2>&1; then
+if [[ -z "${VOLANT_NOTARY_KEY:-}" && -f "$ASC_DIR/private_keys/AuthKey_$ASC_KEY_ID.p8" && -s "$ASC_DIR/issuer_id" ]]; then
   VOLANT_NOTARY_KEY="$ASC_DIR/private_keys/AuthKey_$ASC_KEY_ID.p8"
   VOLANT_NOTARY_KEY_ID="$ASC_KEY_ID"
   VOLANT_NOTARY_ISSUER="${VOLANT_NOTARY_ISSUER:-$(tr -d '[:space:]' < "$ASC_DIR/issuer_id")}"
-  echo "No '$PROFILE' notarization profile in the Keychain; using App Store Connect key $ASC_KEY_ID from $ASC_DIR."
+  echo "Notarizing with App Store Connect key $ASC_KEY_ID from $ASC_DIR."
 fi
 if [[ -n "${VOLANT_NOTARY_KEY:-}" ]]; then
   : "${VOLANT_NOTARY_KEY_ID:?Set the App Store Connect key ID}"
