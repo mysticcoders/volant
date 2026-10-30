@@ -245,6 +245,25 @@ try polled.queue.sync {
 }
 print("Passed: revisions skip unchanged snapshots, advance on every change including in-place text, and send only changed messages to the reader of the last revision.")
 
+/// Tool updates count their frame's size against the 2 MB tool-detail limit, so a conversation that
+/// keeps sending large tool details stops instead of growing without bound.
+let detailed = ACPConnection()
+detailed.testSend = { _ in }
+detailed.queue.sync {
+    detailed.beginHandshake(project: "/tmp/fictional-project")
+    detailed.receive(frame(["jsonrpc": "2.0", "id": 1, "result": ["protocolVersion": 1, "agentCapabilities": [:]]]))
+    detailed.receive(frame(["jsonrpc": "2.0", "id": 2, "result": ["sessionId": "detailed-session"]]))
+    try! detailed.prompt("Fictional question")
+    let large = String(repeating: "x", count: 700_000)
+    let tool: (Int) -> Data = { index in frame(["jsonrpc": "2.0", "method": "session/update", "params": ["sessionId": "detailed-session", "update": [
+        "sessionUpdate": "tool_call_update", "toolCallId": "tool-\(index)", "title": "Fictional tool", "rawInput": ["text": large]]]]) }
+    detailed.receive(tool(1)); detailed.receive(tool(2))
+    require(detailed.state.phase == "working", "tool details under 2 MB are kept")
+    detailed.receive(tool(3))
+    require(detailed.state.phase == "failed" && detailed.state.status == "Conversation reached its tool-detail limit.", "tool details past 2 MB end the conversation")
+}
+print("Passed: tool updates count their frame size against the tool-detail limit.")
+
 // The helper counts conversations across connections and refuses one past the limit before it
 // resolves or launches anything.
 let full = ACPConversationSlots(limit: 0)
