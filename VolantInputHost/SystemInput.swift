@@ -184,12 +184,13 @@ final class SystemInput: InputSystem {
         item.setString(session, forType: NSPasteboard.PasteboardType(PasteboardFilter.dictationSessionType))
     }
 
-    /// Command-V from a private event source, using the physical V key so layouts that remap
-    /// under Command still paste.
+    /// Command-V from a private event source, using the key that types "v" with Command held in the
+    /// current layout (`PasteKey`), so it pastes on Dvorak as well as on layouts that switch to QWERTY
+    /// under Command.
     private static func postCommandV() -> Bool {
         let source = CGEventSource(stateID: .privateState)
         let command = CGKeyCode(kVK_Command)
-        let v = CGKeyCode(kVK_ANSI_V)
+        let v = PasteKey.current()
         guard let commandDown = CGEvent(keyboardEventSource: source, virtualKey: command, keyDown: true),
               let vDown = CGEvent(keyboardEventSource: source, virtualKey: v, keyDown: true),
               let vUp = CGEvent(keyboardEventSource: source, virtualKey: v, keyDown: false),
