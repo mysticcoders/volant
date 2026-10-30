@@ -11,7 +11,7 @@ enum WASICommand {
       const output = [], closed = new Set();
       const exitSignal = {};
       let exitCode = 0, exited = false;
-      const input = Uint8Array.from(inputBytes);
+      const input = inputBytes;
       function range(pointer, length) {
         pointer >>>= 0;
         if (!memory || !Number.isSafeInteger(length) || length < 0 || pointer > memory.buffer.byteLength || length > memory.buffer.byteLength - pointer)
@@ -76,7 +76,7 @@ enum WASICommand {
           return implementation(...args);
         };
       }
-      const module = new WebAssembly.Module(Uint8Array.from(moduleBytes));
+      const module = new WebAssembly.Module(moduleBytes);
       for (const item of WebAssembly.Module.imports(module)) {
         if (item.kind !== 'function' || item.module !== 'wasi_snapshot_preview1' || !Object.hasOwn(wasi, item.name))
           throw new Error('Unsupported command import');
