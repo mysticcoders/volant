@@ -199,7 +199,7 @@ public enum MoneyCalculator {
                 spoken = word
             } else if let size = fixedSeconds[unit ?? "hour"], let seconds = durationSeconds(otherSide, clockOnly: true, locale: locale) {
                 units = seconds / size
-                spoken = DateCalculator.spanText(seconds)
+                spoken = DateCalculator.spanText(seconds, locale: locale)
             } else if let unit, let count = NumberLiteral.parse(otherSide, locale: locale) {
                 units = count
                 spoken = "\(Calculator.format(count, locale: locale)) \(unit)\(count == 1 ? "" : "s")"

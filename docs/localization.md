@@ -137,10 +137,36 @@ carry `-pseudo` or `-pseudo-rtl`. The renders show layout, not translation quali
   - interpolated Core messages, through `specifier:` and `format: .verbatim` interpolation: Herdr and Rex status and tooltips, extension network and storage errors, dictation results, Git summaries, AI account, attachment and connection errors, snippet, quicklink and theme errors, contact actions, the backup report, and calculator date details (relative days, days left, leap years, age, holidays) and percent change labels, with plural variants in every shipped language
   - helper messages as `HostMessage` codes: Apple Shortcuts, Herdr discovery and question delivery, Rex, fsearch, listening servers and repository errors from `VolantAgentHost` and `Shared/`, and AI errors and statuses from `VolantAIHost`
   - the `en-XA` pseudo-locale and right-to-left runs in `tools/render-vm.py`, built on the host; their VM renders still need inspecting
+  - **formatting** (the owner's decision of October 30, 2026; see "Formatting" below): dates, times, numbers, durations and currency in calculator answers follow the Mac's language and region, Copy copies what the card shows, and values meant for code or parsed back keep a fixed form. Time and date answers, their Copy text and details, the tip and percentage details are translated, with drafts in every shipped language
 - **Remaining (#294):**
-  - **Calculator output:** answers, Copy text and their details (unit, currency, cooking, color, time zone, week and day numbers, date ranges, "X of Y") stay English. They are part of the formatting decision below, and swap queries are parsed back, so they stay English.
+  - **Calculator words outside dates and times:** their numbers, units and currency already follow the locale, but some words are still English: kitchen measures and ingredient names (`About 1 ¼ cups`, `Gas mark`), currency rate tags (`ECB rates · …`, `per hour`), color operation labels (`Alpha 50%`), screen-unit assumptions (`1rem = 16px`) and money-for-time phrases (`… at $20.00/hour`). Their swap queries stay English on purpose, since Volant parses them back.
   - **ACP helper text:** `ACPConnection`'s statuses and refusals ("Working…", "Needs your permission", "Volant runs up to N conversations…") are still worded in the helper, often around the agent's own text, and `tools/check-acp.sh` asserts their English. They need `HostMessage` codes with arguments.
   - **Shown values compared elsewhere:** Wi-Fi security labels, System Settings pane names, `SystemAction` titles (search has no English fallback), Raycast import category names, and ACP roles.
-  - **Formatting decisions:** dates, times, numbers and calculator output.
   - **More fixture renders:** Spanish passes of scenarios that compare English text, which need language-neutral assertions first; the pseudo-locale and right-to-left renders cover the same scenarios for the same reason.
   - **Review:** a native speaker's review, after which strings move from `needs_review` to `translated`.
+
+## Formatting
+
+Decided by the owner on October 30, 2026: dates, numbers and calculator answers follow the Mac's
+language and region settings (the current locale), and Copy copies exactly what is shown, so it
+follows the locale too, except values meant for code or other programs, which keep a fixed form.
+
+- **Follows the locale:** decimal and grouping separators, dates (`Tuesday, October 27`,
+  `Dienstag, 27. Oktober`), clock times, which use the locale's 12- or 24-hour clock and the
+  owner's own 24-hour setting (`9:00 PM`, `21:00`), durations and counts with the locale's unit
+  words and plurals from Foundation (`2 hours 25 minutes`, `2 Stunden 25 Minuten`, `80日`),
+  currency in the locale's format for the target currency (`€80.00`, `80,00 €`), unit names, and
+  spelled-out numbers. Formatter no-break spaces become ordinary spaces, so a pasted answer
+  behaves like typed text.
+- **Copy and Use Answer:** Copy puts the card's own text on the clipboard. Command-Return puts it
+  in the search field, where numbers in the locale's format read back (`2,5 * 2` in German).
+- **Stays fixed:** CSS and Swift color values (`#ff6363`, `rgb(255 99 99)`, `hsl(0 100% 69.4%)`),
+  number bases and Roman numerals, ISO 8601 dates and week numbers, Unix time, and swap queries:
+  a swapped time conversion keeps `9:00pm cet in est` and `2026-10-03 4:00am cet in est`, and unit
+  and currency swaps write their amount the way the locale's calculator reads it
+  (`3,106856 mi in km` in German). The `%` sign stays right after the number, since the calculator
+  reads it there.
+- **Injection:** every calculator entry point takes a `locale` (defaulting to `.current`) beside
+  the injected clock and time zone. Tests pin `en_US` and check `de_DE`, `fr_FR` and `ja_JP`
+  (`LocaleFormattingTests`); `swift test` has no catalog, so it checks formatting and English
+  words, and `CoreLocalizationTests` in the app checks English singulars from the catalog.

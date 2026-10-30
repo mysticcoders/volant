@@ -132,14 +132,14 @@ public enum TimeCalculator {
         if query.hasPrefix("time in ") || query.hasPrefix("now in ") {
             guard relativeDay == nil, reading == nil else { return nil }
             let name = String(query.dropFirst(query.hasPrefix("time") ? 8 : 7))
-            if let later = elapsed(name) ?? elapsed(name + " in local"), let zone = resolve(later.place, local: localZone) {
+            if let later = elapsed(name, locale: locale) ?? elapsed(name + " in local", locale: locale), let zone = resolve(later.place, local: localZone) {
                 let date = now.addingTimeInterval(later.seconds)
                 return .answer(result(date, zone: zone, label: destinationLabel(later.place, zone: zone, date: date), baseline: baseline,
                                       explicitDate: false, source: later.phrase, now: now, locale: locale))
             }
             guard let zone = resolve(name, local: localZone) else { return nil }
             return .answer(result(now, zone: zone, label: destinationLabel(name, zone: zone, date: now), baseline: baseline,
-                                  explicitDate: false, source: "Now", now: now, locale: locale))
+                                  explicitDate: false, source: nowWord, now: now, locale: locale))
         }
         guard let match = expression.firstMatch(in: query, range: NSRange(query.startIndex..., in: query)) else { return nil }
         func part(_ index: Int) -> String? {
@@ -185,8 +185,9 @@ public enum TimeCalculator {
                   let typed = Calendar(identifier: .gregorian).date(from: DateComponents(
                       timeZone: TimeZone(secondsFromGMT: 0), year: 2001, month: 1, day: 1, hour: hour, minute: minute)) else { return nil }
             let utc = TimeZone(secondsFromGMT: 0)!
-            let explanation = "\(clockText(typed, zone: utc, locale: locale)) is skipped · clocks jump to "
-                + clockText(jump, zone: source, locale: locale)
+            let skipped = clockText(typed, zone: utc, locale: locale), valid = clockText(jump, zone: source, locale: locale)
+            let explanation = String(localized: "\(skipped, format: .verbatim) is skipped · clocks jump to \(valid, format: .verbatim)", table: "Core",
+                                     comment: "Calculator time answer label: a wall time a daylight-saving change skips, then the time clocks jump to")
             let formatter = DateFormatter()
             formatter.locale = Locale(identifier: "en_US_POSIX")
             formatter.timeZone = source
@@ -302,15 +303,17 @@ public enum TimeCalculator {
         #"^(\d+(?:\.\d+)?)\s*(minutes?|mins?|hours?|hrs?|h|days?)\s+in\s+(.+)$"#)
 
     /// "4 hours in san francisco" after "time in": elapsed minutes, hours or days, then a place.
-    /// "time in 4 hours" passes its place as "local".
-    private static func elapsed(_ text: String) -> (seconds: Double, place: String, phrase: String)? {
+    /// "time in 4 hours" passes its place as "local". The phrase names the wait in the locale.
+    private static func elapsed(_ text: String, locale: Locale) -> (seconds: Double, place: String, phrase: String)? {
         guard let found = elapsedPattern.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
               let numberRange = Range(found.range(at: 1), in: text), let unitRange = Range(found.range(at: 2), in: text),
               let placeRange = Range(found.range(at: 3), in: text), let value = Double(text[numberRange]) else { return nil }
         let unit = String(text[unitRange])
-        let (size, name): (Double, String) = unit.hasPrefix("d") ? (86_400, "day") : unit.hasPrefix("m") ? (60, "minute") : (3600, "hour")
-        let amount = value == value.rounded() ? String(Int(value)) : String(value)
-        return (value * size, String(text[placeRange]), "In \(amount) \(name)\(value == 1 ? "" : "s")")
+        let (size, name): (Double, CalculatorText.Unit) = unit.hasPrefix("d") ? (86_400, .day) : unit.hasPrefix("m") ? (60, .minute) : (3600, .hour)
+        let amount = CalculatorText.amount(value, name, locale: locale)
+        let phrase = String(localized: "In \(amount, format: .verbatim)", table: "Core",
+                            comment: "Calculator time answer label: how long from now, such as In 4 hours")
+        return (value * size, String(text[placeRange]), phrase)
     }
 
     /// Qualified alternatives for a time question with no single answer. A complete question whose
@@ -370,17 +373,30 @@ public enum TimeCalculator {
 
     /// How far a place's clock is from the owner's right now: "1 hour ahead", "5 hours 30 minutes
     /// behind" or "Same time", tagged with the time there.
-    private static func difference(_ zone: TimeZone, label: String, local: TimeZone, now: Date, locale: Locale) -> Result {
+    private static func difference(_ zone: TimeZone, label: Label, local: TimeZone, now: Date, locale: Locale) -> Result {
         let offset = zone.secondsFromGMT(for: now) - local.secondsFromGMT(for: now)
-        let place = label.hasPrefix("in ") ? String(label.dropFirst(3)) : label
+        let place = label.place ?? label.text
         let hours = abs(offset) / 3600, minutes = abs(offset) % 3600 / 60
-        let span = [hours > 0 ? "\(hours) hour\(hours == 1 ? "" : "s")" : nil, minutes > 0 ? "\(minutes) minutes" : nil]
-            .compactMap { $0 }.joined(separator: " ")
-        let headline = offset == 0 ? "Same time" : "\(span) \(offset > 0 ? "ahead" : "behind")"
-        let text = offset == 0 ? "\(place) is on your time" : "\(place) is \(headline)"
+        let span = [hours > 0 ? CalculatorText.count(hours, .hour, locale: locale) : nil,
+                    minutes > 0 ? CalculatorText.count(minutes, .minute, locale: locale) : nil].compactMap { $0 }.joined(separator: " ")
+        let headline: String, text: String
+        if offset == 0 {
+            headline = String(localized: "Same time", table: "Core", comment: "Calculator time difference answer: the place keeps the owner's clock")
+            text = String(localized: "\(place, format: .verbatim) is on your time", table: "Core",
+                          comment: "Calculator time difference copy text; a place that keeps the owner's clock")
+        } else if offset > 0 {
+            headline = String(localized: "\(span, format: .verbatim) ahead", table: "Core",
+                              comment: "Calculator time difference answer; a duration such as 7 hours, the place's clock is later")
+            text = String(localized: "\(place, format: .verbatim) is \(span, format: .verbatim) ahead", table: "Core",
+                          comment: "Calculator time difference copy text; a place, then a duration such as 7 hours")
+        } else {
+            headline = String(localized: "\(span, format: .verbatim) behind", table: "Core",
+                              comment: "Calculator time difference answer; a duration such as 6 hours, the place's clock is earlier")
+            text = String(localized: "\(place, format: .verbatim) is \(span, format: .verbatim) behind", table: "Core",
+                          comment: "Calculator time difference copy text; a place, then a duration such as 6 hours")
+        }
         let clock = clockText(now, zone: zone, locale: locale)
-        let detail = label.hasPrefix("in ") ? "\(clock) \(label)" : "\(clock) \(place)"
-        return Result(date: now, text: text, headline: headline, detail: detail, source: "Now")
+        return Result(date: now, text: text, headline: headline, detail: label.local ? "\(clock) · \(label.text)" : "\(clock) \(label.text)", source: nowWord)
     }
 
     private static func resolve(_ name: String, local: TimeZone) -> TimeZone? {
@@ -410,17 +426,39 @@ public enum TimeCalculator {
             .split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
     }
 
-    private static func destinationLabel(_ name: String, zone: TimeZone, date: Date) -> String {
-        if ["local", "here", "my time"].contains(name) { return "· your time" }
-        if fixed[name] != nil { return name.uppercased() }
-        if let region = regions[regionKey(name)] { return zone.isDaylightSavingTime(for: date) ? region.daylight : region.standard }
-        if let city = cities[name] { return "in \(city.name)" }
+    /// Where an answer's clock is: the owner's own time, a zone abbreviation ("CET"), or a place,
+    /// shown as "in Tokyo" in the locale.
+    private struct Label {
+        let text: String
+        var place: String?
+        var local = false
+    }
+
+    private static func destinationLabel(_ name: String, zone: TimeZone, date: Date) -> Label {
+        if ["local", "here", "my time"].contains(name) { return Label(text: yourTime, local: true) }
+        if fixed[name] != nil { return Label(text: name.uppercased()) }
+        if let region = regions[regionKey(name)] { return Label(text: zone.isDaylightSavingTime(for: date) ? region.daylight : region.standard) }
+        if let city = cities[name] { return located(city.name) }
         if identifiers[name] == nil, zoneCities[name] == nil, placeShaped(name) {
-            if let match = CityDirectory.shared.lookup(name) { return "in \(match.name)" }
-            if let airport = AirportDirectory.shared.lookup(name) { return "in \(airport.city) (\(airport.code))" }
+            if let match = CityDirectory.shared.lookup(name) { return located(match.name) }
+            if let airport = AirportDirectory.shared.lookup(name) { return located("\(airport.city) (\(airport.code))") }
         }
         let city = zone.identifier.split(separator: "/").last.map(String.init)?.replacingOccurrences(of: "_", with: " ")
-        return city.map { "in \($0)" } ?? zone.identifier
+        return city.map(located) ?? Label(text: zone.identifier)
+    }
+
+    private static func located(_ place: String) -> Label {
+        Label(text: String(localized: "in \(place, format: .verbatim)", table: "Core",
+                           comment: "Calculator time answer: the place whose clock is shown, after the time, such as 4:00 PM in Tokyo"),
+              place: place)
+    }
+
+    private static var yourTime: String {
+        String(localized: "your time", table: "Core", comment: "Calculator time answer: the owner's own clock, after a time and a separator")
+    }
+
+    private static var nowWord: String {
+        String(localized: "Now", table: "Core", comment: "Calculator time answer label: the conversion is for the current moment")
     }
 
     /// Weekday and date of an instant in the zone it was written in; the year appears only when it differs from now.
@@ -460,20 +498,27 @@ public enum TimeCalculator {
         }
     }
 
-    /// The clock as people say it: Midnight and Noon by name, otherwise the locale's hour and
-    /// minute, which follows the owner's 24-hour setting.
-    static func clockText(_ date: Date, zone: TimeZone, locale: Locale) -> String {
+    /// The clock as people say it: Midnight and Noon by name (lowercase inside a sentence),
+    /// otherwise the locale's hour and minute, which follows its 12- or 24-hour clock and the
+    /// owner's 24-hour setting when `locale` is the current one.
+    static func clockText(_ date: Date, zone: TimeZone, locale: Locale, inSentence: Bool = false) -> String {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = zone
         let parts = calendar.dateComponents([.hour, .minute], from: date)
-        if parts.hour == 0 && parts.minute == 0 { return "Midnight" }
-        if parts.hour == 12 && parts.minute == 0 { return "Noon" }
+        if parts.hour == 0 && parts.minute == 0 {
+            return inSentence ? String(localized: "midnight", table: "Core", comment: "Calculator time answer inside a sentence, such as Tomorrow at midnight")
+                : String(localized: "Midnight", table: "Core", comment: "Calculator time answer: 12 AM, at the start of a line")
+        }
+        if parts.hour == 12 && parts.minute == 0 {
+            return inSentence ? String(localized: "noon", table: "Core", comment: "Calculator time answer inside a sentence, such as Tomorrow at noon")
+                : String(localized: "Noon", table: "Core", comment: "Calculator time answer: 12 PM, at the start of a line")
+        }
         let formatter = DateFormatter()
         formatter.calendar = calendar
         formatter.timeZone = zone
         formatter.locale = locale
-        formatter.dateFormat = "h:mm a"
-        return formatter.string(from: date)
+        formatter.setLocalizedDateFormatFromTemplate("jmm")
+        return CalculatorText.plain(formatter.string(from: date))
     }
 
     /// A day word with a local time and no zone resolves a moment rather than converting one:
@@ -484,15 +529,14 @@ public enum TimeCalculator {
         formatter.locale = locale
         formatter.setLocalizedDateFormatFromTemplate("EEEE")
         let weekday = formatter.string(from: date)
-        let words = [0: "Today", 1: "Tomorrow", -1: "Yesterday"]
-        var clock = clockText(date, zone: zone, locale: locale)
-        if clock == "Midnight" || clock == "Noon" { clock = clock.lowercased() }
+        let word = [0, 1, -1].contains(offset) ? DateCalculator.relativeDays(offset) : nil
+        let clock = clockText(date, zone: zone, locale: locale, inSentence: true)
         let full = describe(date, in: zone, now: now, locale: locale)
-        return Result(date: date, text: "\(full) at \(clock)", headline: "\(words[offset] ?? weekday) at \(clock)",
-                      detail: words[offset] == nil ? (offset > 0 ? "In \(offset) days" : "\(-offset) days ago") : weekday, source: full)
+        return Result(date: date, text: CalculatorText.at(full, clock), headline: CalculatorText.at(word ?? weekday, clock),
+                      detail: word == nil ? DateCalculator.relativeDays(offset) : weekday, source: full)
     }
 
-    private static func result(_ date: Date, zone: TimeZone, label: String,
+    private static func result(_ date: Date, zone: TimeZone, label: Label,
                                baseline: DateComponents, explicitDate: Bool, source: String, now: Date, locale: Locale) -> Result {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = zone
@@ -508,18 +552,22 @@ public enum TimeCalculator {
         if explicitDate || ![0, 1, -1].contains(offset) {
             formatter.setLocalizedDateFormatFromTemplate("MMM d yyyy")
             day = formatter.string(from: date)
-        } else if offset == 1 { day = "tomorrow" }
-        else if offset == -1 { day = "yesterday" }
-        let local = label == "· your time"
-        let when: String
-        switch offset {
-        case 0: when = "Today"
-        case 1: when = "Tomorrow"
-        case -1: when = "Yesterday"
-        default: when = describe(date, in: zone, now: now, locale: locale)
+        } else if offset == 1 {
+            day = String(localized: "tomorrow", table: "Core", comment: "Calculator time copy text after a time and a separator: the answer falls on the next day")
+        } else if offset == -1 {
+            day = String(localized: "yesterday", table: "Core", comment: "Calculator time copy text after a time and a separator: the answer falls on the previous day")
         }
-        return Result(date: date, text: "\(clock) \(label)" + (day.map { " · " + $0 } ?? ""),
-                      headline: local ? clock : "\(clock) \(label)",
-                      detail: local ? "Your time · " + when : when, source: source)
+        let when: String
+        if let offset, [0, 1, -1].contains(offset) {
+            when = DateCalculator.relativeDays(offset)
+        } else {
+            when = describe(date, in: zone, now: now, locale: locale)
+        }
+        let place = label.local ? "\(clock) · \(label.text)" : "\(clock) \(label.text)"
+        let yours = String(localized: "Your time · \(when, format: .verbatim)", table: "Core",
+                           comment: "Calculator time answer detail for the owner's own clock; a day such as Today or a date")
+        return Result(date: date, text: place + (day.map { " · " + $0 } ?? ""),
+                      headline: label.local ? clock : place,
+                      detail: label.local ? yours : when, source: source)
     }
 }

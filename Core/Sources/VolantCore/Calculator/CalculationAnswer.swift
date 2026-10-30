@@ -128,7 +128,8 @@ public struct CalculationAnswer: Hashable {
         let lowered = query.lowercased()
         guard let range = lowered.range(of: #"\btip\s+on\b"#, options: .regularExpression),
               let amount = Calculator.evaluate(lowered.replacingCharacters(in: range, with: "of"), locale: locale) else { return nil }
-        return "Tip " + Calculator.format(amount, locale: locale)
+        let text = Calculator.format(amount, locale: locale)
+        return String(localized: "Tip \(text, format: .verbatim)", table: "Core", comment: "Calculator answer label: the tip amount in a tip calculation")
     }
 
     /// Small whole numbers read as words; larger ones gain thousands separators, and numbers in
@@ -149,7 +150,7 @@ public struct CalculationAnswer: Hashable {
         }
         guard abs(value) < 1e15 else { return nil }
         formatter.numberStyle = .decimal
-        return formatter.string(from: NSNumber(value: value))
+        return formatter.string(from: NSNumber(value: value)).map(CalculatorText.plain)
     }
 
     static func unitName(_ unit: Dimension?, locale: Locale) -> String? {

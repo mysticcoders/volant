@@ -159,7 +159,7 @@ public enum DateCalculator {
         if words[0] == "now" || words[0] == "time" {
             let full = dateText(c.now, c)
             let clock = TimeCalculator.clockText(c.now, zone: c.calendar.timeZone, locale: c.locale)
-            return CalculationAnswer(input: input, inputDetail: nil, result: clock, resultDetail: full, copyText: "\(full) at \(clock)")
+            return CalculationAnswer(input: input, inputDetail: nil, result: clock, resultDetail: full, copyText: CalculatorText.at(full, clock))
         }
         guard ["today", "tomorrow", "yesterday"].contains(words[0]), case .day(let day)? = dateWord(words[...], c) else { return nil }
         let text = dateText(day, c)
@@ -201,9 +201,12 @@ public enum DateCalculator {
         let week = iso.component(.weekOfYear, from: day), weekYear = iso.component(.yearForWeekOfYear, from: day)
         guard let interval = iso.dateInterval(of: .weekOfYear, for: day),
               let sunday = c.calendar.date(byAdding: .day, value: 6, to: interval.start) else { return nil }
-        let text = weekYear == c.calendar.component(.year, from: day) ? "Week \(week)" : "Week \(week) of \(weekYear)"
+        let text = weekYear == c.calendar.component(.year, from: day)
+            ? String(localized: "Week \(week, specifier: "%lld")", table: "Core", comment: "Calculator answer: the ISO 8601 week number")
+            : String(localized: "Week \(week, specifier: "%lld") of \(String(weekYear), format: .verbatim)", table: "Core",
+                     comment: "Calculator answer: the ISO 8601 week number, then the week-based year it belongs to")
         return CalculationAnswer(input: input, inputDetail: "ISO 8601", result: text,
-                                 resultDetail: "\(dateText(interval.start, c)) to \(dateText(sunday, c))", copyText: text)
+                                 resultDetail: CalculatorText.range(dateText(interval.start, c), dateText(sunday, c)), copyText: text)
     }
 
     /// "day of the year", "day of year Dec 25", "day number".
@@ -213,7 +216,7 @@ public enum DateCalculator {
               let ordinal = c.calendar.ordinality(of: .day, in: .year, for: day),
               let length = c.calendar.range(of: .day, in: .year, for: day)?.count else { return nil }
         let year = c.calendar.component(.year, from: day)
-        let text = "Day \(ordinal)"
+        let text = String(localized: "Day \(ordinal, specifier: "%lld")", table: "Core", comment: "Calculator answer: the day of the year, from 1 to 366")
         return CalculationAnswer(input: input, inputDetail: words.count > prefix.count ? dateText(day, c) : nil, result: text,
                                  resultDetail: String(localized: "\(length - ordinal, specifier: "%lld") days left in \(String(year), format: .verbatim)", table: "Core",
                                                       comment: "Calculator day-of-year answer detail; the number of days left, then the year"),
@@ -246,7 +249,7 @@ public enum DateCalculator {
         }
         guard let start = c.calendar.date(from: components), let length = c.calendar.range(of: .day, in: unit, for: start)?.count else { return nil }
         let label = unit == .year ? String(components.year!) : formatted(start, "MMMM yyyy", c)
-        let text = count(length, "day")
+        let text = CalculatorText.count(length, .day, locale: c.locale)
         return CalculationAnswer(input: input, inputDetail: nil, result: text, resultDetail: label, copyText: text)
     }
 
@@ -271,12 +274,12 @@ public enum DateCalculator {
         guard let year, year >= 1 else { return nil }
         if isLeap(year) {
             return CalculationAnswer(input: input, inputDetail: nil, result: String(localized: "Yes", table: "Core", comment: "Calculator answer to whether a year is a leap year"), resultDetail: String(localized: "\(String(year), format: .verbatim) has 366 days", table: "Core", comment: "Calculator leap year answer detail; the year"),
-                                     copyText: "\(year) is a leap year")
+                                     copyText: String(localized: "\(String(year), format: .verbatim) is a leap year", table: "Core", comment: "Calculator leap year copy text; the year"))
         }
         var next = year + 1
         while !isLeap(next) { next += 1 }
         return CalculationAnswer(input: input, inputDetail: nil, result: String(localized: "No", table: "Core", comment: "Calculator answer to whether a year is a leap year"), resultDetail: String(localized: "The next leap year is \(String(next), format: .verbatim)", table: "Core", comment: "Calculator leap year answer detail; a year"),
-                                 copyText: "\(year) is not a leap year")
+                                 copyText: String(localized: "\(String(year), format: .verbatim) is not a leap year", table: "Core", comment: "Calculator leap year copy text; the year"))
     }
 
     /// "age 1985-04-12", "age April 12 1985", "age 1985-04-12 on Jan 1 2030". The birthdate needs
@@ -301,7 +304,7 @@ public enum DateCalculator {
               let years = c.calendar.dateComponents([.year], from: birth, to: reference).year,
               let next = c.calendar.date(byAdding: .year, value: years + 1, to: birth),
               let last = c.calendar.date(byAdding: .year, value: years, to: birth) else { return nil }
-        let text = count(years, "year")
+        let text = CalculatorText.count(years, .year, locale: c.locale)
         let detail: String
         if onDate {
             detail = String(localized: "On \(dateText(reference, c), format: .verbatim)", table: "Core", comment: "Calculator age answer detail; the date the age is measured on")
@@ -320,9 +323,9 @@ public enum DateCalculator {
         guard words.filter({ $0 == "-" }).count == 1, !words.contains("+"), let minus = words.firstIndex(of: "-"), minus > 0,
               let first = date(words[..<minus], c, direction: 0), let second = date(words[(minus + 1)...], c, direction: 0),
               let days = c.calendar.dateComponents([.day], from: second, to: first).day else { return nil }
-        let text = count(days, "day")
+        let text = CalculatorText.count(days, .day, locale: c.locale)
         return CalculationAnswer(input: input, inputDetail: nil, result: text,
-                                 resultDetail: "\(dateText(second, c)) to \(dateText(first, c))", copyText: text)
+                                 resultDetail: CalculatorText.range(dateText(second, c), dateText(first, c)), copyText: text)
     }
 
     /// The date a fact asks about: today when none is given, else the words after an optional
@@ -388,7 +391,7 @@ public enum DateCalculator {
     private static func moment(_ date: Date, input: String, inputDetail: String?, _ c: Context) -> CalculationAnswer {
         let clock = TimeCalculator.clockText(date, zone: c.calendar.timeZone, locale: c.locale)
         let day = dateText(date, c)
-        return CalculationAnswer(input: input, inputDetail: inputDetail, result: clock, resultDetail: day, copyText: "\(day) at \(clock)")
+        return CalculationAnswer(input: input, inputDetail: inputDetail, result: clock, resultDetail: day, copyText: CalculatorText.at(day, clock))
     }
 
     /// "days until 31 Mar", "weeks since Jan 1", "days between Jan 1 and Mar 1", "workdays until
@@ -414,14 +417,14 @@ public enum DateCalculator {
         if unit == 0 {
             guard abs(days) <= 36_600 else { return nil }
             let (from, to) = days < 0 ? (end, start) : (start, end)
-            span = count(workdays(after: from, through: to, c), "workday")
+            span = CalculatorText.workdays(Double(workdays(after: from, through: to, c)), locale: c.locale)
         } else {
-            span = unit == 7 ? weeksText(abs(days)) : count(abs(days), "day")
+            span = unit == 7 ? weeksText(abs(days), c.locale) : CalculatorText.count(abs(days), .day, locale: c.locale)
         }
-        let text = days < 0 ? span + " ago" : span
+        let text = days < 0 ? String(localized: "\(span, format: .verbatim) ago", table: "Core", comment: "Calculator answer: a span of time counted back to a past date, such as 3 days ago") : span
         let anchor = words[1] == "between" ? nil : (words[1] == "since" || words[1] == "from" ? start : end)
         return CalculationAnswer(input: input, inputDetail: unit == 0 ? holidayNote(c) : nil, result: text,
-                                 resultDetail: anchor.map { dateText($0, c) } ?? "\(dateText(start, c)) to \(dateText(end, c))", copyText: text)
+                                 resultDetail: anchor.map { dateText($0, c) } ?? CalculatorText.range(dateText(start, c), dateText(end, c)), copyText: text)
     }
 
     /// "145 mins to timespan", "100000 s as duration".
@@ -437,7 +440,7 @@ public enum DateCalculator {
         default: return nil
         }
         guard seconds > 0 else { return nil }
-        let text = spanText(seconds)
+        let text = spanText(seconds, locale: c.locale)
         return CalculationAnswer(input: input, inputDetail: nil, result: text, resultDetail: nil, copyText: text)
     }
 
@@ -494,26 +497,25 @@ public enum DateCalculator {
     }
 
     /// Splits a trailing "in hours", "to minutes" or "as timespan" from a duration question.
-    private static func durationTarget(_ words: ArraySlice<String>) -> (ArraySlice<String>, (seconds: Double, name: String)?) {
+    private static func durationTarget(_ words: ArraySlice<String>) -> (ArraySlice<String>, (seconds: Double, unit: CalculatorText.Unit)?) {
         guard words.count >= 3, ["in", "to", "as"].contains(words[words.endIndex - 2]) else { return (words, nil) }
-        let units: [String: (Double, String)] = ["seconds": (1, "second"), "second": (1, "second"), "s": (1, "second"),
-                                                 "minutes": (60, "minute"), "minute": (60, "minute"), "min": (60, "minute"),
-                                                 "mins": (60, "minute"), "hours": (3600, "hour"), "hour": (3600, "hour"),
-                                                 "h": (3600, "hour"), "hrs": (3600, "hour"), "days": (86_400, "day"), "day": (86_400, "day")]
+        let units: [String: (Double, CalculatorText.Unit)] = ["seconds": (1, .second), "second": (1, .second), "s": (1, .second),
+                                                              "minutes": (60, .minute), "minute": (60, .minute), "min": (60, .minute),
+                                                              "mins": (60, .minute), "hours": (3600, .hour), "hour": (3600, .hour),
+                                                              "h": (3600, .hour), "hrs": (3600, .hour), "days": (86_400, .day), "day": (86_400, .day)]
         if words.last == "timespan" || words.last == "duration" { return (words.dropLast(2), nil) }
         if let unit = units[words.last!] { return (words.dropLast(2), unit) }
         return (words, nil)
     }
 
     /// A duration as a timespan ("3 hours 15 minutes") or, with a target, a decimal ("3.25 hours").
-    private static func durationAnswer(_ total: Double, target: (seconds: Double, name: String)?, input: String,
+    private static func durationAnswer(_ total: Double, target: (seconds: Double, unit: CalculatorText.Unit)?, input: String,
                                        inputDetail: String?, _ c: Context) -> CalculationAnswer {
         let text: String
         if let target {
-            let value = (total / target.seconds * 10_000).rounded() / 10_000
-            text = "\(Calculator.format(value, locale: c.locale)) \(target.name)\(value == 1 ? "" : "s")"
+            text = CalculatorText.amount((total / target.seconds * 10_000).rounded() / 10_000, target.unit, locale: c.locale)
         } else {
-            text = spanText(total)
+            text = spanText(total, locale: c.locale)
         }
         return CalculationAnswer(input: input, inputDetail: inputDetail, result: text, resultDetail: nil, copyText: text)
     }
@@ -551,10 +553,12 @@ public enum DateCalculator {
               let before = c.calendar.date(byAdding: .day, value: -1, to: start),
               let end = c.calendar.date(byAdding: .day, value: -1, to: next) else { return nil }
         let days = workdays(after: before, through: end, c)
-        let hours = count(days * Int(workdayHours), "hour"), dayText = count(days, "workday")
+        let total = days * Int(workdayHours)
+        let hours = CalculatorText.count(total, .hour, locale: c.locale), dayText = CalculatorText.workdays(Double(days), locale: c.locale)
         let hoursFirst = words[0].hasPrefix("workhour")
+        let workHours = String(localized: "\(total, specifier: "%lld") work hours", table: "Core", comment: "Calculator workday answer detail: the working hours in a period, eight per workday")
         return CalculationAnswer(input: input, inputDetail: holidayNote(c), result: hoursFirst ? hours : dayText,
-                                 resultDetail: hoursFirst ? dayText : "\((days * Int(workdayHours)).formatted()) work hours", copyText: hoursFirst ? hours : dayText)
+                                 resultDetail: hoursFirst ? dayText : workHours, copyText: hoursFirst ? hours : dayText)
     }
 
     /// "55h in workdays" gives 6.875 workdays, tagged "6 workdays 7 hours"; "3 workdays in hours"
@@ -568,18 +572,22 @@ public enum DateCalculator {
             guard let (total, _, _) = elapsed(body, hoursOnly: true), total > 0 else { return nil }
             let value = total / day
             let whole = Int(value), rest = total - Double(whole) * day
-            let text = "\(Calculator.format((value * 10_000).rounded() / 10_000, locale: c.locale)) workday\(value == 1 ? "" : "s")"
-            let parts = [whole > 0 ? count(whole, "workday") : nil, rest >= 1 ? spanText(rest) : nil].compactMap { $0 }
-            return CalculationAnswer(input: input, inputDetail: "8-hour days", result: text,
+            let text = CalculatorText.workdays((value * 10_000).rounded() / 10_000, locale: c.locale)
+            let parts = [whole > 0 ? CalculatorText.workdays(Double(whole), locale: c.locale) : nil,
+                         rest >= 1 ? spanText(rest, locale: c.locale) : nil].compactMap { $0 }
+            return CalculationAnswer(input: input, inputDetail: eightHourDays, result: text,
                                      resultDetail: parts.joined(separator: " "), copyText: text)
         }
-        let units: [String: (Double, String)] = ["hours": (3600, "hour"), "hour": (3600, "hour"), "h": (3600, "hour"),
-                                                 "minutes": (60, "minute"), "minute": (60, "minute"), "min": (60, "minute")]
+        let units: [String: (Double, CalculatorText.Unit)] = ["hours": (3600, .hour), "hour": (3600, .hour), "h": (3600, .hour),
+                                                              "minutes": (60, .minute), "minute": (60, .minute), "min": (60, .minute)]
         guard body.count == 2, ["workdays", "workday"].contains(body.last!), let number = Double(body.first!), number > 0,
-              let (size, name) = units[target] else { return nil }
-        let value = number * day / size
-        let text = "\(Calculator.format(value, locale: c.locale)) \(name)\(value == 1 ? "" : "s")"
-        return CalculationAnswer(input: input, inputDetail: "8-hour days", result: text, resultDetail: nil, copyText: text)
+              let (size, unit) = units[target] else { return nil }
+        let text = CalculatorText.amount(number * day / size, unit, locale: c.locale)
+        return CalculationAnswer(input: input, inputDetail: eightHourDays, result: text, resultDetail: nil, copyText: text)
+    }
+
+    private static var eightHourDays: String {
+        String(localized: "8-hour days", table: "Core", comment: "Calculator workday conversion label: a workday counts as eight hours")
     }
 
     /// "9am to 5:30pm", "from 9am until 5pm", "3pm - 9am", "between 9am and noon": the wall-clock
@@ -599,8 +607,11 @@ public enum DateCalculator {
         let span = (minutes(end) - minutes(start) + 1440) % 1440
         guard span > 0 else { return nil }
         let zone = c.calendar.timeZone
-        var detail = "\(TimeCalculator.clockText(start, zone: zone, locale: c.locale)) to \(TimeCalculator.clockText(end, zone: zone, locale: c.locale))"
-        if minutes(end) < minutes(start) { detail += " · Overnight" }
+        var detail = CalculatorText.range(TimeCalculator.clockText(start, zone: zone, locale: c.locale),
+                                          TimeCalculator.clockText(end, zone: zone, locale: c.locale))
+        if minutes(end) < minutes(start) {
+            detail += " · " + String(localized: "Overnight", table: "Core", comment: "Calculator clock span label: the span passes midnight")
+        }
         return durationAnswer(Double(span * 60), target: target, input: input, inputDetail: detail, c)
     }
 
@@ -653,7 +664,7 @@ public enum DateCalculator {
         if case .seconds = step {
             let clock = TimeCalculator.clockText(target, zone: c.calendar.timeZone, locale: c.locale)
             let day = relative(c.calendar.startOfDay(for: target), c)
-            let copy = daysFromToday(target, c) == 0 ? clock : "\(dateText(target, c)) at \(clock)"
+            let copy = daysFromToday(target, c) == 0 ? clock : CalculatorText.at(dateText(target, c), clock)
             return CalculationAnswer(input: input, inputDetail: inputDetail, result: clock, resultDetail: day, copyText: copy)
         }
         let text = dateText(target, c)
@@ -688,7 +699,11 @@ public enum DateCalculator {
 
     /// Today, Tomorrow, Yesterday, otherwise "In 21 days" or "35 days ago".
     private static func relative(_ date: Date, _ c: Context) -> String {
-        guard let days = daysFromToday(date, c) else { return "" }
+        daysFromToday(date, c).map(relativeDays) ?? ""
+    }
+
+    /// A distance in days from today as words: Today, Tomorrow, Yesterday, "In 21 days" or "35 days ago".
+    static func relativeDays(_ days: Int) -> String {
         switch days {
         case 0: return String(localized: "Today", table: "Core", comment: "Calculator date answer detail")
         case 1: return String(localized: "Tomorrow", table: "Core", comment: "Calculator date answer detail")
@@ -757,24 +772,23 @@ public enum DateCalculator {
         return ((h + l - 7 * m + 114) / 31, (h + l - 7 * m + 114) % 31 + 1)
     }
 
-    private static func count(_ value: Int, _ unit: String) -> String {
-        "\(value.formatted()) \(unit)\(abs(value) == 1 ? "" : "s")"
-    }
-
-    private static func weeksText(_ days: Int) -> String {
+    private static func weeksText(_ days: Int, _ locale: Locale) -> String {
         let weeks = days / 7, rest = days % 7
-        return rest == 0 ? count(weeks, "week") : "\(count(weeks, "week")) \(count(rest, "day"))"
+        let text = CalculatorText.count(weeks, .week, locale: locale)
+        return rest == 0 ? text : "\(text) \(CalculatorText.count(rest, .day, locale: locale))"
     }
 
-    /// Days, hours, minutes and seconds, largest first, skipping empty parts.
-    static func spanText(_ seconds: Double) -> String {
+    /// Days, hours, minutes and seconds, largest first, skipping empty parts, in the locale's unit
+    /// words: "3 hours 15 minutes", "3 Stunden 15 Minuten".
+    static func spanText(_ seconds: Double, locale: Locale) -> String {
         var remaining = Int(seconds.rounded())
         var parts: [String] = []
-        for (size, unit) in [(86_400, "day"), (3600, "hour"), (60, "minute"), (1, "second")] where remaining >= size {
-            parts.append(count(remaining / size, unit))
+        let units: [(Int, CalculatorText.Unit)] = [(86_400, .day), (3600, .hour), (60, .minute), (1, .second)]
+        for (size, unit) in units where remaining >= size {
+            parts.append(CalculatorText.count(remaining / size, unit, locale: locale))
             remaining %= size
         }
-        return parts.isEmpty ? "0 seconds" : parts.joined(separator: " ")
+        return parts.isEmpty ? CalculatorText.count(0, .second, locale: locale) : parts.joined(separator: " ")
     }
 
     /// "3 weeks", "a week", "90 min", "1.5 hours". Calendar steps need whole numbers.
