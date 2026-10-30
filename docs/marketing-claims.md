@@ -199,7 +199,14 @@ Added in 0.3.26:
 | Dictation keeps capturing 200 ms after release, starts capture before the recognizer is ready, and discards near-silent dictations | Yes | #327; Core level tests; the owner dictated with it in Volant Dev on October 30, 2026; macOS 26 only, like all dictation; no fixture verifies a real microphone or recognizer | Release notes; say "keeps your last word" and "an accidental tap types nothing", never "perfect" or "never misses a word" |
 | ACP helper allocates less while handling provider frames | Yes | #326; fixture: 1 MB conversation build 62.6 → 55.7 MiB allocated | Release notes only; too small for marketing |
 
-Merged after 0.3.26, not in the current download:
+Added in 0.3.27:
+
+| Story | In 0.3.27 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| Extensions run faster: modules reach the sandbox as one typed-array copy | Yes | #330; in-process fixture with the production host: Base64 warm run 42.9 → 5.5 ms, peak footprint 91 → 61 MiB; not measured through the signed XPC helper | Release notes; give figures as fixture measurements |
+| Interpolated Core messages and helper messages translated in every beta language | Yes | #331; app-hosted English checks, Core round-trip tests, pseudo-locale and right-to-left VM renders; translations remain unreviewed betas; calculator answers still English | Release notes; always say beta |
+
+Merged after 0.3.27, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
