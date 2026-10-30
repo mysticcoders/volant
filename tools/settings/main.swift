@@ -265,7 +265,9 @@ if CommandLine.arguments.contains("--render") {
             if let windowImage, let image = windowImage(.null, 1 << 3, UInt32(window.windowNumber), 1 | 8)?.takeRetainedValue() {
                 let rep = NSBitmapImageRep(cgImage: image)
                 try! rep.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent(name + ".png"))
-                verifySidebarSelection(rep, window: window, name: name)
+                // The selection check samples beside the sidebar's trailing edge assuming a left-to-right
+                // window; a right-to-left layout run mirrors the sidebar, so it is checked by eye instead.
+                if window.contentView?.userInterfaceLayoutDirection != .rightToLeft { verifySidebarSelection(rep, window: window, name: name) }
             } else {
                 let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
                 view.cacheDisplay(in: view.bounds, to: rep)
