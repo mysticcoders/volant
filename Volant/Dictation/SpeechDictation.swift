@@ -84,9 +84,22 @@ final class SpeechDictation: ObservableObject {
         var stream: AsyncStream<AnalyzerInput>.Continuation?
         var collector: Task<Void, Never>?
         var converter: AVAudioConverter?
+        let meter = LevelMeter()
     }
     private var session: Any?
     #endif
+
+    /// The loudest audio buffer so far, written only by the realtime tap and read only after the tap is
+    /// removed.
+    private final class LevelMeter {
+        var loudest = DictationLevel.floor
+    }
+
+    /// How long capture continues after the owner releases the key, so the last word isn't cut off.
+    /// hex measured that stopping at release lost the final word in 3 of 10 clips (issue #323).
+    static let releaseTail: TimeInterval = 0.2
+    /// Microphone buffers kept while the analyzer is still being set up, about a minute of audio.
+    static let bufferedInputs = 256
 
     /// Starts capture. `finished` receives the final transcript, or nil when nothing was said.
     func start(finished: @escaping (String?) -> Void) {
@@ -132,19 +145,7 @@ final class SpeechDictation: ObservableObject {
                 if let request = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) {
                     try await request.downloadAndInstall()
                 }
-                let analyzer = SpeechAnalyzer(modules: [transcriber])
-                session.analyzer = analyzer
-                // The terms go to the analyzer as contextual strings too. On macOS 27.0.1 SpeechTranscriber
-                // ignored them in every measured clip (docs/dictation-vocabulary.md), so the
-                // corrections below are what the owner relies on; the hints cost nothing if a later
-                // system honors them.
                 let vocabulary = self.vocabulary
-                let hints = DictationVocabulary.hints(vocabulary)
-                if !hints.isEmpty {
-                    let context = AnalysisContext()
-                    context.contextualStrings[.general] = hints
-                    try? await analyzer.setContext(context)
-                }
 
                 // The microphone runs at the hardware rate, typically 48 kHz, while the analyzer
                 // wants its own format, typically 16 kHz. AnalyzerInput traps on a mismatched
@@ -160,17 +161,38 @@ final class SpeechDictation: ObservableObject {
                 }
                 session.converter = converter
 
-                let (stream, continuation) = AsyncStream<AnalyzerInput>.makeStream()
+                // Capture starts before the analyzer is built, so words spoken while it is set up are
+                // kept in the stream instead of lost.
+                let (stream, continuation) = AsyncStream<AnalyzerInput>.makeStream(bufferingPolicy: .bufferingNewest(Self.bufferedInputs))
                 session.stream = continuation
+                let meter = session.meter
                 session.engine.inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { buffer, _ in
                     // Nothing in here may trap: this is the realtime audio thread, where a trap
                     // takes the whole process down rather than surfacing as an error.
+                    if let channels = buffer.floatChannelData, buffer.frameLength > 0 {
+                        let level = DictationLevel.decibels(UnsafeBufferPointer(start: channels[0], count: Int(buffer.frameLength)))
+                        if level > meter.loudest { meter.loudest = level }
+                    }
                     guard let converted = SpeechDictation.convert(buffer, using: converter, to: analyzerFormat)
                     else { return }
                     continuation.yield(AnalyzerInput(buffer: converted))
                 }
                 session.engine.prepare()
                 try session.engine.start()
+
+                let analyzer = SpeechAnalyzer(modules: [transcriber])
+                session.analyzer = analyzer
+                // The terms go to the analyzer as contextual strings too. On macOS 27.0.1 SpeechTranscriber
+                // ignored them in every measured clip (docs/dictation-vocabulary.md), so the
+                // corrections below are what the owner relies on; the hints cost nothing if a later
+                // system honors them.
+                let hints = DictationVocabulary.hints(vocabulary)
+                if !hints.isEmpty {
+                    let context = AnalysisContext()
+                    context.contextualStrings[.general] = hints
+                    try? await analyzer.setContext(context)
+                }
+                try await analyzer.prepareToAnalyze(in: analyzerFormat)
                 try await analyzer.start(inputSequence: stream)
 
                 session.collector = Task { @MainActor in
@@ -207,6 +229,9 @@ final class SpeechDictation: ObservableObject {
                 }
             } catch {
                 await MainActor.run {
+                    session.engine.inputNode.removeTap(onBus: 0)
+                    session.engine.stop()
+                    session.stream?.finish()
                     self.phase = .failed(error.localizedDescription)
                     self.session = nil
                     finished(nil)
@@ -247,24 +272,37 @@ final class SpeechDictation: ObservableObject {
         return converted
     }
 
-    /// Stops capture and reports the transcript. Safe to call when not listening.
+    /// Stops capture and reports the transcript. Safe to call when not listening. Capture continues for
+    /// `releaseTail` after the call so the last word isn't cut off. A dictation whose loudest moment
+    /// stayed below `DictationLevel.silenceThreshold` is discarded without finishing its transcription,
+    /// so an accidental tap of the key types nothing.
     func stop(finished: @escaping (String?) -> Void) {
         #if canImport(Speech) && canImport(FoundationModels)
         guard #available(macOS 26.0, *), let session = session as? Session, phase == .listening else {
             finished(nil); return
         }
         phase = .finishing
-        session.engine.inputNode.removeTap(onBus: 0)
-        session.engine.stop()
-        session.stream?.finish()
-        Task {
-            try? await session.analyzer?.finalizeAndFinishThroughEndOfInput()
-            _ = await session.collector?.result
-            await MainActor.run {
-                self.session = nil
-                let text = self.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-                if case .failed = self.phase {} else { self.phase = .idle }
-                finished(text.isEmpty ? nil : text)
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.releaseTail) { [weak self] in
+            guard let self, let current = self.session as? Session, current === session else { finished(nil); return }
+            session.engine.inputNode.removeTap(onBus: 0)
+            session.engine.stop()
+            session.stream?.finish()
+            let silent = DictationLevel.isSilent(loudest: session.meter.loudest)
+            Task {
+                if silent {
+                    await session.analyzer?.cancelAndFinishNow()
+                    session.collector?.cancel()
+                } else {
+                    try? await session.analyzer?.finalizeAndFinishThroughEndOfInput()
+                }
+                _ = await session.collector?.result
+                await MainActor.run {
+                    self.session = nil
+                    if silent { self.transcript = "" }
+                    let text = self.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if case .failed = self.phase {} else { self.phase = .idle }
+                    finished(text.isEmpty ? nil : text)
+                }
             }
         }
         #else
