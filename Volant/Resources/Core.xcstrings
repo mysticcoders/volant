@@ -17404,7 +17404,7 @@
         "fr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Apple Intelligence accepte environ %lld KB de pièces jointes. Supprimez-en une et réessayez."
+            "value": "Apple Intelligence accepte environ %lld Ko de pièces jointes. Supprimez-en une et réessayez."
           }
         },
         "it": {
@@ -17768,7 +17768,7 @@
         "fr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Les pièces jointes sont limitées à %lld KB par message. Supprimez-en une et réessayez."
+            "value": "Les pièces jointes sont limitées à %lld Ko par message. Supprimez-en une et réessayez."
           }
         },
         "it": {
@@ -20450,7 +20450,7 @@
         "fr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "L’extension a tenté d’enregistrer %1$lld KB ; la limite est de %2$lld KB. Ses données enregistrées ont été conservées."
+            "value": "L’extension a tenté d’enregistrer %1$lld Ko ; la limite est de %2$lld Ko. Ses données enregistrées ont été conservées."
           }
         },
         "it": {
@@ -26819,7 +26819,7 @@
         "fr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "« %1$@ » est trop volumineux pour être joint (plus de %2$lld KB)."
+            "value": "« %1$@ » est trop volumineux pour être joint (plus de %2$lld Ko)."
           }
         },
         "it": {
