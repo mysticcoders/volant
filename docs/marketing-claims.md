@@ -183,7 +183,16 @@ Added in 0.3.24:
 | Typing in a list extension stops the earlier search; leaving or closing stops it; row actions are never interrupted | Yes | #307; app tests with a scripted fetcher; a module already running finishes within its time limit. Not verified through the signed fetch helper | Release notes |
 | Extension activity recorded by Volant (in memory only) | Not shown to owners | #309; no UI, persistence or export yet (#68) | None until #68 ships |
 
-Merged after 0.3.24, not in the current download:
+Added in 0.3.25:
+
+| Story | In 0.3.25 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| Extension updates listed in the launcher from the last accepted signed catalog, never fetched to show it | Yes | #324; tests that the row comes only from the saved, re-verified index and makes no fetch, and a tampered index shows nothing; VM renders light/dark | Extensions docs; release notes |
+| Optional daily catalog check, off by default, per Mac, not synced; applies revocations, never installs | Yes | #324; tests that it is off by default, runs at most once a day across all checks; not verified through the signed fetch helper against the live catalog | Extensions and privacy docs; release notes. Always say off by default |
+| Catalog icons before install, checked against the signed catalog's SHA-256 | Yes | #322; tests of hash and shape refusal and one fetch per icon; launcher fixture shows a not-installed listing's icon | Release notes |
+| AI Chat streaming sends only changed messages | Yes | #321; memory fixture: 1 MB conversation 26.9 → 0.83 MiB/s allocated, 20.4 → 1.8 ms/s CPU; not verified with a real provider through the signed helper | Release notes; give figures as measured on a fixture, not a promise for every conversation |
+
+Merged after 0.3.25, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
