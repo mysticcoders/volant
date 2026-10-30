@@ -41,7 +41,7 @@ enum HerdrProcess {
         guard capture.finished.wait(timeout: .now() + 1) == .success,
               task.terminationStatus == 0, let data = capture.result() else {
             throw NSError(domain: "VolantHerdrProcess", code: 1,
-                          userInfo: [NSLocalizedDescriptionKey: "Herdr is unavailable or the connection timed out.",
+                          userInfo: [NSLocalizedDescriptionKey: HostMessage(.herdrUnavailable).text, HostMessage.userInfoKey: HostMessage(.herdrUnavailable).wire,
                                      terminationStatusKey: task.isRunning ? -1 : task.terminationStatus])
         }
         return data

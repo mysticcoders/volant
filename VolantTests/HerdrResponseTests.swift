@@ -67,7 +67,7 @@ final class HerdrResponseTests: XCTestCase {
         let terminal = Terminal(), controller = Volant.HerdrResponseController(run: { try terminal.run($0) })
         let snapshot = try controller.read(terminal.target())
         let token = try XCTUnwrap(snapshot.token)
-        XCTAssertEqual(try controller.respond(token: token, choice: 2), "Answer sent; Codex resumed.")
+        XCTAssertEqual(HostMessage.display(try controller.respond(token: token, choice: 2)), "Answer sent; Codex resumed.")
         XCTAssertEqual(terminal.keys, [["down"], ["enter"]])
         XCTAssertThrowsError(try controller.respond(token: token, choice: 2))
         XCTAssertEqual(terminal.keys.count, 2)
@@ -169,7 +169,7 @@ final class HerdrResponseTests: XCTestCase {
             let terminal = Terminal(); terminal.provider = "claude"; terminal.text = screen
             let controller = Volant.HerdrResponseController(run: { try terminal.run($0) })
             let token = try XCTUnwrap(controller.read(terminal.target()).token)
-            XCTAssertEqual(try controller.respond(token: token, choice: choice), "Answer sent; Claude Code resumed.")
+            XCTAssertEqual(HostMessage.display(try controller.respond(token: token, choice: choice)), "Answer sent; Claude Code resumed.")
             XCTAssertEqual(terminal.keys.last, ["enter"])
             XCTAssertEqual(terminal.keys.flatMap { $0 }.filter { $0 == "down" }.count, choice - 1)
         }
@@ -187,7 +187,7 @@ final class HerdrResponseTests: XCTestCase {
         let terminal = Terminal(); terminal.confirmationRace = true
         let controller = Volant.HerdrResponseController(run: { try terminal.run($0) })
         let token = try XCTUnwrap(controller.read(terminal.target()).token)
-        XCTAssertEqual(try controller.respond(token: token, choice: 1), "Answer sent; Codex resumed.")
+        XCTAssertEqual(HostMessage.display(try controller.respond(token: token, choice: 1)), "Answer sent; Codex resumed.")
         XCTAssertEqual(terminal.keys, [["enter"]])
     }
 

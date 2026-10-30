@@ -6,6 +6,9 @@ import VolantCore
 let app = NSApplication.shared
 app.setActivationPolicy(.regular)
 app.appearance = NSAppearance(named: CommandLine.arguments.contains("dark") ? .darkAqua : .aqua)
+/// A layout run from render-vm.py, such as `language=pseudo` with `-AppleLanguages (en-XA)`. Its
+/// renders carry the layout as a suffix and are named by section case rather than translated title.
+let language = CommandLine.arguments.first { $0.hasPrefix("language=") }.map { String($0.dropFirst("language=".count)) }
 let root = FileManager.default.temporaryDirectory.appendingPathComponent("volant-settings-" + UUID().uuidString)
 try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 let configURL = root.appendingPathComponent("config.json")
@@ -254,14 +257,17 @@ if CommandLine.arguments.contains("--render") {
             precondition(selected > (dark ? 0.12 : 0.6), "\(name): sidebar selection draws black (\(selected))")
             precondition(abs(selected - unselected) > 0.02, "\(name): sidebar selection does not stand out (\(selected) vs \(unselected))")
         }
-        func capture(_ name: String) {
+        func capture(_ base: String) {
+            let name = base + (language.map { "-" + $0 } ?? "")
             let window = controller.window!
             let view = window.contentView!
             view.layoutSubtreeIfNeeded()
             if let windowImage, let image = windowImage(.null, 1 << 3, UInt32(window.windowNumber), 1 | 8)?.takeRetainedValue() {
                 let rep = NSBitmapImageRep(cgImage: image)
                 try! rep.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent(name + ".png"))
-                verifySidebarSelection(rep, window: window, name: name)
+                // The selection check samples beside the sidebar's trailing edge assuming a left-to-right
+                // window; a right-to-left layout run mirrors the sidebar, so it is checked by eye instead.
+                if window.contentView?.userInterfaceLayoutDirection != .rightToLeft { verifySidebarSelection(rep, window: window, name: name) }
             } else {
                 let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
                 view.cacheDisplay(in: view.bounds, to: rep)
@@ -286,11 +292,12 @@ if CommandLine.arguments.contains("--render") {
                                                    windowNumber: controller.window!.windowNumber, context: nil, eventNumber: 0, clickCount: 0, pressure: 0)!
                     for recorder in recorders(view) where !recorder.value.isEmpty {
                         recorder.mouseEntered(with: event)
-                        precondition(recorder.subviews.contains { !$0.isHidden && ($0 as? NSButton)?.toolTip == "Remove shortcut" })
+                        precondition(recorder.subviews.contains { !$0.isHidden && ($0 as? NSButton)?.toolTip == String(localized: "Remove shortcut") })
                     }
                 }
-                capture(theme + "-" + section.title)
-                print("Rendered \(theme) \(section.title): \(view.bounds.size)")
+                let sectionName = language == nil ? section.title : "\(section)"
+                capture(theme + "-" + sectionName)
+                print("Rendered \(theme) \(sectionName): \(view.bounds.size)")
                 if section == .data || section == .appearance || section == .extensions {
                     func scrollViews(_ view: NSView) -> [NSScrollView] {
                         (view as? NSScrollView).map { [$0] } ?? view.subviews.flatMap(scrollViews)
@@ -300,7 +307,7 @@ if CommandLine.arguments.contains("--render") {
                         document.scroll(NSPoint(x: 0, y: document.isFlipped ? document.bounds.height : 0))
                     }
                     RunLoop.main.run(until: Date().addingTimeInterval(0.15))
-                    capture(theme + "-" + section.title + "-bottom")
+                    capture(theme + "-" + sectionName + "-bottom")
                 }
             }
         }

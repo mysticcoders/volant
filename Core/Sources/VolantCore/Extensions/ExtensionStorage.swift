@@ -73,8 +73,12 @@ public enum ExtensionStorageError: Error, LocalizedError, Equatable {
     public var errorDescription: String? {
         switch self {
         case .notObject: return String(localized: "Extension tried to save something other than a JSON object. Its saved data was kept.", table: "Core", comment: "Extension storage error")
-        case .tooDeep: return "Extension tried to save data nested more than \(ExtensionStorage.maximumDepth) levels deep. Its saved data was kept."
-        case .tooLarge(let bytes): return "Extension tried to save \(bytes / 1024) KB; the limit is \(ExtensionStorage.maximumBytes / 1024) KB. Its saved data was kept."
+        case .tooDeep:
+            return String(localized: "Extension tried to save data nested more than \(ExtensionStorage.maximumDepth, specifier: "%lld") levels deep. Its saved data was kept.",
+                          table: "Core", comment: "Extension storage error; the number is the deepest nesting allowed")
+        case .tooLarge(let bytes):
+            return String(localized: "Extension tried to save \(bytes / 1024, specifier: "%lld") KB; the limit is \(ExtensionStorage.maximumBytes / 1024, specifier: "%lld") KB. Its saved data was kept.",
+                          table: "Core", comment: "Extension storage error; the numbers are the kilobytes tried and allowed")
         }
     }
 }

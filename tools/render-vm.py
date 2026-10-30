@@ -5,6 +5,11 @@ The fixtures are compiled on the host against its SDK, which is what decides whe
 SwiftUI draw the newer system styling such as Liquid Glass, and only the finished app bundles are
 run in the guest. This is render evidence for a newer OS, not a test gate: a fixture that stops on
 a behavioral check still returns the images it wrote before stopping, and its exit code is reported.
+
+--pseudo and --rtl add layout runs of the Actions fixture's Servers scenario and the Settings preview
+in en-XA, a pseudo-locale about 35% longer than English (tools/pseudo-locale.py), and with --rtl
+also laid out right to left. Their images carry a -pseudo or -pseudo-rtl suffix. --layout-only skips
+the default runs, and --build-only compiles the bundles on the host and stops before Tart.
 """
 import argparse
 import json
@@ -18,9 +23,16 @@ ROOT = Path(__file__).resolve().parent.parent
 os.chdir(ROOT)
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--vm", default=os.environ.get("VOLANT_RENDER_VM", "volant-render-27"))
+parser.add_argument("--pseudo", action="store_true", help="add en-XA pseudo-locale runs, about 35%% longer text")
+parser.add_argument("--rtl", action="store_true", help="add en-XA runs laid out right to left")
+parser.add_argument("--layout-only", action="store_true", help="run only the --pseudo and --rtl runs")
+parser.add_argument("--build-only", action="store_true", help="compile the fixture bundles on the host, then stop")
 args = parser.parse_args()
+layouts = (["pseudo"] if args.pseudo else []) + (["pseudo-rtl"] if args.rtl else [])
+if args.layout_only and not layouts:
+    raise SystemExit("--layout-only needs --pseudo, --rtl or both.")
 KEY = Path.home() / ".ssh" / "volant-render-vm"
-if not KEY.exists():
+if not args.build_only and not KEY.exists():
     raise SystemExit(f"Install an SSH key in the guest first; see docs/ui-testing.md ({KEY} is missing).")
 output = Path(tempfile.mkdtemp(prefix="volant-render-vm-"))
 print(f"Render artifacts: {output}", flush=True)
@@ -48,21 +60,41 @@ for pair in {" ".join(f"{name}:{path}" for name, path in FIXTURES)}; do
     # and its ranking checks expect that; a bundled Hello World would rank above Applications for "h".
     [[ "$name" == VolantLauncherFixture ]] || ditto Volant/Resources/HelloWorld "$bundle/Resources/HelloWorld"
     printf '%s' '<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>CFBundleExecutable</key><string>'"$name"'</string><key>CFBundleIdentifier</key><string>com.mysticcoders.volant.render.'"$name"'</string><key>CFBundlePackageType</key><string>APPL</string><key>CFBundleShortVersionString</key><string>0.0.0</string></dict></plist>' > "$bundle/Info.plist"
+    # Layout runs need the catalogs, so text that isn't localized stays visibly plain English.
+    if {"true" if layouts else "false"}; then
+        for catalog in Localizable Core; do
+            xcrun xcstringstool compile "Volant/Resources/$catalog.xcstrings" --output-directory "$bundle/Resources" >/dev/null
+        done
+        python3 tools/pseudo-locale.py --output-directory "$bundle/Resources" >/dev/null
+    fi
     cp "$main" "{output}/work/$name/main.swift"
     swiftc -target "$(uname -m)-apple-macosx15.0" "${{VOLANT_CORE_FLAGS[@]}}" "${{sources[@]}}" "{output}/work/$name/main.swift" -o "$bundle/MacOS/$name"
 done
 '''
 print("Compiling fixtures on the host", flush=True)
 subprocess.run(["bash", "-c", build], check=True)
+if args.build_only:
+    print(f"Built fixture bundles: {output / 'bundles'}", flush=True)
+    raise SystemExit(0)
 subprocess.run(["tar", "-cf", str(output / "bundles.tar"), "-C", str(output), "bundles"], check=True)
 
 # Each fixture runs in both appearances; images are collected whatever the exit code.
-runs = [
+runs = [] if args.layout_only else [
     ("VolantLauncherFixture", "light", "\"$work\""), ("VolantLauncherFixture", "dark", "\"$work\" dark"),
     ("VolantActionsFixture", "light", "\"$work\""), ("VolantActionsFixture", "dark", "\"$work\" dark"),
     ("VolantSettingsPreview", "both", "--render"),
     ("VolantThemeFixture", "all", "\"$work\""),
 ]
+# A layout run passes `language=<layout>`, which limits the Actions fixture to scenarios that compare
+# no English text and names the images, and the launch arguments that pick en-XA and the direction.
+for layout in layouts:
+    locale = "language=" + layout + " -AppleLanguages '(en-XA)'"
+    if layout.endswith("rtl"):
+        locale += " -AppleTextDirection YES -NSForceRightToLeftWritingDirection YES"
+    runs += [
+        ("VolantActionsFixture", layout + "-light", f"\"$work\" {locale}"), ("VolantActionsFixture", layout + "-dark", f"\"$work\" dark {locale}"),
+        ("VolantSettingsPreview", layout + "-both", f"--render {locale}"),
+    ]
 # Fixtures start through LaunchServices, as an app would. A process started directly from the SSH
 # session cannot become the active app in the guest, so a newly shown launcher panel never becomes
 # key and the fixture's focus checks fail only here. `open` cannot report the exit status, so a run

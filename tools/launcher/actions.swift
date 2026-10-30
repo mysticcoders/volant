@@ -14,9 +14,10 @@ let app = NSApplication.shared
 app.setActivationPolicy(.regular)
 let root = URL(fileURLWithPath: CommandLine.arguments[1])
 let dark = CommandLine.arguments.contains("dark")
-/// A translation pass from check-launcher-actions.sh, such as `language=de` with `-AppleLanguages (de)`.
-/// Only scenarios whose checks don't compare English text run translated, and their renders carry the
-/// language as a suffix for layout review.
+/// A translation pass from check-launcher-actions.sh, such as `language=de` with `-AppleLanguages (de)`,
+/// or a layout pass from render-vm.py, `language=pseudo` or `language=pseudo-rtl` with the en-XA
+/// pseudo-locale. Only scenarios whose checks don't compare English text run translated, and their
+/// renders carry the language as a suffix for layout review.
 let language = CommandLine.arguments.first { $0.hasPrefix("language=") }.map { String($0.dropFirst("language=".count)) }
 app.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
 var preferences = Preferences()

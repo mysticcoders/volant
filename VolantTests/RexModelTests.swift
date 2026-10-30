@@ -65,7 +65,7 @@ final class RexModelTests: XCTestCase {
         rex.reader = { _, next in reply = next }
         rex.stopper = {}
         rex.connect()
-        reply?(nil, 1, "Rex isn’t running. Open Rex, then try again.")
+        reply?(nil, 1, HostMessage(.rexNotRunning).wire)
         await drain()
         XCTAssertTrue(rex.connected)
         XCTAssertEqual(rex.message, "Rex isn’t running. Open Rex, then try again.")

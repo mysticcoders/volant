@@ -74,7 +74,8 @@ public enum BackupFolder {
         }
         let renamed = copies.filter(\.renamed).count
         if renamed > 0 {
-            report.append("\(renamed) note\(renamed == 1 ? "" : "s") already exist by name and will be added alongside the originals.")
+            report.append(String(localized: "\(renamed, specifier: "%lld") notes already exist by name and will be added alongside the originals.", table: "Core",
+                                 comment: "Backup restore report; the number of restored notes whose names are already taken"))
         }
         return BackupPlan(configData: data, preferences: preferences, notes: copies, report: report)
     }

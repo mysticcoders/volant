@@ -40,7 +40,7 @@ public enum LauncherEntries {
         let keyword = snippet.keyword.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty, !name.contains(where: \.isNewline) else { throw Failure(String(localized: "Enter a name for the snippet.", table: "Core", comment: "Snippet form error")) }
         guard !config.snippets.contains(where: { $0.name.lowercased() == name.lowercased() }) else {
-            throw Failure("A snippet named “\(name)” already exists.")
+            throw Failure(String(localized: "A snippet named “\(name, format: .verbatim)” already exists.", table: "Core", comment: "Snippet form error; the snippet's name"))
         }
         if !keyword.isEmpty {
             guard !keyword.contains(where: \.isWhitespace), !LauncherRouting.isReserved(keyword) else {
@@ -58,7 +58,7 @@ public enum LauncherEntries {
         let name = link.name.trimmingCharacters(in: .whitespacesAndNewlines)
         let url = link.url.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty, !name.contains(where: \.isNewline) else { throw Failure(String(localized: "Enter a name for the quicklink.", table: "Core", comment: "Quicklink form error")) }
-        guard !LauncherRouting.isReserved(name) else { throw Failure("“\(name)” is a built-in command. Choose another name.") }
+        guard !LauncherRouting.isReserved(name) else { throw Failure(String(localized: "“\(name, format: .verbatim)” is a built-in command. Choose another name.", table: "Core", comment: "Quicklink form error; the name typed")) }
         try requireUnused(name, in: config)
         let candidate = Quicklink(name: name, url: url)
         guard !url.isEmpty else { throw Failure(String(localized: "Enter the quicklink URL.", table: "Core", comment: "Quicklink form error")) }
@@ -67,7 +67,7 @@ public enum LauncherEntries {
             throw Failure(String(localized: "Enter a URL that starts with https://, http:// or mailto:, or a Shortcuts run link.", table: "Core", comment: "Quicklink form error; URL schemes are not translated"))
         }
         if scheme == "http" || scheme == "https" {
-            guard let host = resolved.host, !host.isEmpty else { throw Failure("Include the website’s address after \(scheme)://.") }
+            guard let host = resolved.host, !host.isEmpty else { throw Failure(String(localized: "Include the website’s address after \(scheme, format: .verbatim)://.", table: "Core", comment: "Quicklink form error; the URL scheme, http or https")) }
         }
         if scheme == "mailto" {
             guard url.count > "mailto:".count else { throw Failure(String(localized: "Include an email address after mailto:.", table: "Core", comment: "Quicklink form error; mailto: is not translated")) }
@@ -81,7 +81,8 @@ public enum LauncherEntries {
         guard !config.quicklinks.contains(where: { $0.name.lowercased() == word }),
               !config.snippets.contains(where: { $0.keyword.lowercased() == word }),
               !config.aliases.keys.contains(where: { $0.lowercased() == word }) else {
-            throw Failure("“\(display)” is already used by a quicklink, snippet keyword or alias.")
+            throw Failure(String(localized: "“\(display, format: .verbatim)” is already used by a quicklink, snippet keyword or alias.", table: "Core",
+                                 comment: "Quicklink or snippet form error; the word typed"))
         }
     }
 

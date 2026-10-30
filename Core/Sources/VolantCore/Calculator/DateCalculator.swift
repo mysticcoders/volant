@@ -215,7 +215,9 @@ public enum DateCalculator {
         let year = c.calendar.component(.year, from: day)
         let text = "Day \(ordinal)"
         return CalculationAnswer(input: input, inputDetail: words.count > prefix.count ? dateText(day, c) : nil, result: text,
-                                 resultDetail: "\(count(length - ordinal, "day")) left in \(year)", copyText: text)
+                                 resultDetail: String(localized: "\(length - ordinal, specifier: "%lld") days left in \(String(year), format: .verbatim)", table: "Core",
+                                                      comment: "Calculator day-of-year answer detail; the number of days left, then the year"),
+                                 copyText: text)
     }
 
     /// "days in february" (this year), "days in Feb 2028", "days in 2028", "days in this month".
@@ -268,12 +270,12 @@ public enum DateCalculator {
         }
         guard let year, year >= 1 else { return nil }
         if isLeap(year) {
-            return CalculationAnswer(input: input, inputDetail: nil, result: String(localized: "Yes", table: "Core", comment: "Calculator answer to whether a year is a leap year"), resultDetail: "\(year) has 366 days",
+            return CalculationAnswer(input: input, inputDetail: nil, result: String(localized: "Yes", table: "Core", comment: "Calculator answer to whether a year is a leap year"), resultDetail: String(localized: "\(String(year), format: .verbatim) has 366 days", table: "Core", comment: "Calculator leap year answer detail; the year"),
                                      copyText: "\(year) is a leap year")
         }
         var next = year + 1
         while !isLeap(next) { next += 1 }
-        return CalculationAnswer(input: input, inputDetail: nil, result: String(localized: "No", table: "Core", comment: "Calculator answer to whether a year is a leap year"), resultDetail: "The next leap year is \(next)",
+        return CalculationAnswer(input: input, inputDetail: nil, result: String(localized: "No", table: "Core", comment: "Calculator answer to whether a year is a leap year"), resultDetail: String(localized: "The next leap year is \(String(next), format: .verbatim)", table: "Core", comment: "Calculator leap year answer detail; a year"),
                                  copyText: "\(year) is not a leap year")
     }
 
@@ -301,10 +303,16 @@ public enum DateCalculator {
               let last = c.calendar.date(byAdding: .year, value: years, to: birth) else { return nil }
         let text = count(years, "year")
         let detail: String
-        if onDate { detail = "On " + dateText(reference, c) }
-        else if c.calendar.isDate(last, inSameDayAs: reference) { detail = "Birthday today" }
-        else { detail = "Next birthday in " + count(c.calendar.dateComponents([.day], from: reference, to: next).day ?? 0, "day") }
-        return CalculationAnswer(input: input, inputDetail: "Born " + dateText(birth, c), result: text, resultDetail: detail, copyText: text)
+        if onDate {
+            detail = String(localized: "On \(dateText(reference, c), format: .verbatim)", table: "Core", comment: "Calculator age answer detail; the date the age is measured on")
+        } else if c.calendar.isDate(last, inSameDayAs: reference) {
+            detail = String(localized: "Birthday today", table: "Core", comment: "Calculator age answer detail")
+        } else {
+            let days = c.calendar.dateComponents([.day], from: reference, to: next).day ?? 0
+            detail = String(localized: "Next birthday in \(days, specifier: "%lld") days", table: "Core", comment: "Calculator age answer detail; the number of days until the next birthday")
+        }
+        let born = String(localized: "Born \(dateText(birth, c), format: .verbatim)", table: "Core", comment: "Calculator age answer detail; the birth date")
+        return CalculationAnswer(input: input, inputDetail: born, result: text, resultDetail: detail, copyText: text)
     }
 
     /// "Dec 25 - Oct 6", "2027-01-01 - today": the days from the second date to the first.
@@ -645,7 +653,7 @@ public enum DateCalculator {
         if case .seconds = step {
             let clock = TimeCalculator.clockText(target, zone: c.calendar.timeZone, locale: c.locale)
             let day = relative(c.calendar.startOfDay(for: target), c)
-            let copy = day == "Today" ? clock : "\(dateText(target, c)) at \(clock)"
+            let copy = daysFromToday(target, c) == 0 ? clock : "\(dateText(target, c)) at \(clock)"
             return CalculationAnswer(input: input, inputDetail: inputDetail, result: clock, resultDetail: day, copyText: copy)
         }
         let text = dateText(target, c)
@@ -680,14 +688,19 @@ public enum DateCalculator {
 
     /// Today, Tomorrow, Yesterday, otherwise "In 21 days" or "35 days ago".
     private static func relative(_ date: Date, _ c: Context) -> String {
-        guard let days = c.calendar.dateComponents([.day], from: c.today, to: c.calendar.startOfDay(for: date)).day else { return "" }
+        guard let days = daysFromToday(date, c) else { return "" }
         switch days {
-        case 0: return "Today"
-        case 1: return "Tomorrow"
-        case -1: return "Yesterday"
-        case let n where n > 0: return "In \(count(n, "day"))"
-        default: return "\(count(-days, "day")) ago"
+        case 0: return String(localized: "Today", table: "Core", comment: "Calculator date answer detail")
+        case 1: return String(localized: "Tomorrow", table: "Core", comment: "Calculator date answer detail")
+        case -1: return String(localized: "Yesterday", table: "Core", comment: "Calculator date answer detail")
+        case let n where n > 0: return String(localized: "In \(n, specifier: "%lld") days", table: "Core", comment: "Calculator date answer detail; the number of days from today")
+        default: return String(localized: "\(-days, specifier: "%lld") days ago", table: "Core", comment: "Calculator date answer detail; the number of days before today")
         }
+    }
+
+    /// Whole days from today to the day holding `date`, negative for the past.
+    private static func daysFromToday(_ date: Date, _ c: Context) -> Int? {
+        c.calendar.dateComponents([.day], from: c.today, to: c.calendar.startOfDay(for: date)).day
     }
 
     /// Workdays after `start`, up to and including `end`.
@@ -710,7 +723,9 @@ public enum DateCalculator {
 
     /// Names which holidays a workday answer skipped, or that only weekends were.
     private static func holidayNote(_ c: Context) -> String {
-        PublicHolidays.names[c.locale.region?.identifier ?? ""].map { "Skips \($0) holidays" } ?? String(localized: "Weekends only", table: "Core", comment: "Calculator workday answer note: only weekends were skipped")
+        PublicHolidays.names[c.locale.region?.identifier ?? ""].map {
+            String(localized: "Skips \($0, format: .verbatim) holidays", table: "Core", comment: "Calculator workday answer note; a region's short name, such as US or UK")
+        } ?? String(localized: "Weekends only", table: "Core", comment: "Calculator workday answer note: only weekends were skipped")
     }
 
     /// The `n`th given weekday (Sunday is 1) of a month; past the month's end for a missing fifth.

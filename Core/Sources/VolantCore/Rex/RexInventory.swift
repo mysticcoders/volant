@@ -204,15 +204,16 @@ public struct RexStatusSummary: Equatable {
         if !connected {
             text = String(localized: "Rex: not connected", table: "Core", comment: "Launcher footer status for the Rex terminal app"); waiting = false; help = String(localized: "Rex isn’t connected.\nClick to show Rex panes.", table: "Core", comment: "Launcher footer Rex status tooltip")
         } else if blocked > 0 {
-            text = "Rex: \(blocked) waiting"; waiting = true
-            help = "\(blocked) \(blocked == 1 ? "pane needs" : "panes need") you.\nClick to show Rex panes."
+            text = String(localized: "Rex: \(blocked, specifier: "%lld") waiting", table: "Core", comment: "Launcher footer status for the Rex terminal app; the number of panes waiting for the owner")
+            waiting = true
+            help = String(localized: "\(blocked, specifier: "%lld") panes need you.\nClick to show Rex panes.", table: "Core", comment: "Launcher footer Rex status tooltip; the number of panes waiting for the owner")
         } else if let problem {
             text = String(localized: "Rex: unavailable", table: "Core", comment: "Launcher footer status for the Rex terminal app"); waiting = false; help = problem + "\n" + String(localized: "Click to show Rex panes.", table: "Core", comment: "Launcher footer Rex status tooltip, last line")
         } else if loading && panes.isEmpty {
             text = String(localized: "Rex: loading…", table: "Core", comment: "Launcher footer status for the Rex terminal app"); waiting = false; help = String(localized: "Loading panes from Rex.\nClick to show Rex panes.", table: "Core", comment: "Launcher footer Rex status tooltip")
         } else {
             text = String(localized: "Rex: none waiting", table: "Core", comment: "Launcher footer status for the Rex terminal app"); waiting = false
-            help = "\(panes.count) \(panes.count == 1 ? "pane" : "panes"), none waiting.\nClick to show Rex panes."
+            help = String(localized: "\(panes.count, specifier: "%lld") panes, none waiting.\nClick to show Rex panes.", table: "Core", comment: "Launcher footer Rex status tooltip; the number of panes")
         }
     }
 }

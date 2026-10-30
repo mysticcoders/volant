@@ -36,25 +36,32 @@ public final class DictationTypingSession {
         public var message: String {
             switch self {
             case .nothing: return String(localized: "Nothing was heard.", table: "Core", comment: "Dictation indicator result when no speech was recognized")
-            case .typed(let count): return "Typed \(count) characters."
-            case .pasted(let count): return "Pasted \(count) characters."
+            case .typed(let count):
+                return String(localized: "Typed \(count, specifier: "%lld") characters.", table: "Core", comment: "Dictation indicator result; the number of characters typed")
+            case .pasted(let count):
+                return String(localized: "Pasted \(count, specifier: "%lld") characters.", table: "Core", comment: "Dictation indicator result; the number of characters pasted")
             case .copy(let reason, let typed):
-                let prefix = typed > 0 ? "Stopped after \(typed) characters and copied the transcript" : "Copied"
-                return prefix + " — " + Self.explanation(reason) + "."
+                let why = Self.explanation(reason)
+                if typed > 0 {
+                    return String(localized: "Stopped after \(typed, specifier: "%lld") characters and copied the transcript — \(why, format: .verbatim).", table: "Core",
+                                  comment: "Dictation indicator result; the number of characters typed, then why typing stopped, such as “the app in front changed”")
+                }
+                return String(localized: "Copied — \(why, format: .verbatim).", table: "Core",
+                              comment: "Dictation indicator result; why the transcript was copied instead of typed, such as “the app in front changed”")
             }
         }
 
-        /// Why typing stopped, worded for the indicator.
+        /// Why typing stopped, worded for the indicator as a clause that follows a dash.
         static func explanation(_ reason: InputRefusal?) -> String {
             switch reason {
-            case .secureField: return "typing isn’t allowed in password fields"
-            case .secureInput: return "secure input is on, so Volant won’t type"
-            case .appChanged: return "the app in front changed"
-            case .noTarget: return "no other app was in front"
-            case .notTrusted: return "Volant needs Accessibility permission to type"
-            case .tooLong: return "too long to type at once"
-            case .staleSession: return "the typing session ended"
-            case nil: return "the input helper didn’t respond"
+            case .secureField: return String(localized: "typing isn’t allowed in password fields", table: "Core", comment: "Dictation indicator: why typing stopped; follows a dash")
+            case .secureInput: return String(localized: "secure input is on, so Volant won’t type", table: "Core", comment: "Dictation indicator: why typing stopped; follows a dash")
+            case .appChanged: return String(localized: "the app in front changed", table: "Core", comment: "Dictation indicator: why typing stopped; follows a dash")
+            case .noTarget: return String(localized: "no other app was in front", table: "Core", comment: "Dictation indicator: why typing stopped; follows a dash")
+            case .notTrusted: return String(localized: "Volant needs Accessibility permission to type", table: "Core", comment: "Dictation indicator: why typing stopped; follows a dash")
+            case .tooLong: return String(localized: "too long to type at once", table: "Core", comment: "Dictation indicator: why typing stopped; follows a dash")
+            case .staleSession: return String(localized: "the typing session ended", table: "Core", comment: "Dictation indicator: why typing stopped; follows a dash")
+            case nil: return String(localized: "the input helper didn’t respond", table: "Core", comment: "Dictation indicator: why typing stopped; follows a dash")
             }
         }
     }

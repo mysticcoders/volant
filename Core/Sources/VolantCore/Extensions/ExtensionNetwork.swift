@@ -222,11 +222,18 @@ public enum ExtensionNetworkError: Error, LocalizedError, Equatable {
     public var errorDescription: String? {
         switch self {
         case .malformedPlan: return String(localized: "Extension returned an invalid fetch plan.", table: "Core", comment: "Extension error")
-        case .tooManyFetches: return "Extension asked for more than \(ExtensionNetwork.maximumFetches) URLs."
-        case .tooManyRounds: return "Extension kept asking for more pages after \(ExtensionNetwork.maximumRounds) rounds."
-        case .hostNotAllowed(let url): return "Extension asked for a URL it is not allowed to reach: \(url)"
+        case .tooManyFetches:
+            return String(localized: "Extension asked for more than \(ExtensionNetwork.maximumFetches, specifier: "%lld") URLs.", table: "Core",
+                          comment: "Extension error; the number is the most URLs one run may fetch")
+        case .tooManyRounds:
+            return String(localized: "Extension kept asking for more pages after \(ExtensionNetwork.maximumRounds, specifier: "%lld") rounds.", table: "Core",
+                          comment: "Extension error; the number is the most fetch rounds one run may take")
+        case .hostNotAllowed(let url):
+            return String(localized: "Extension asked for a URL it is not allowed to reach: \(url, format: .verbatim)", table: "Core", comment: "Extension error; ends with the URL")
         case .malformedItems: return String(localized: "Extension returned an invalid list.", table: "Core", comment: "Extension error")
-        case .hostsNotApproved(let hosts): return "Allow access to \(hosts.joined(separator: ", ")) to use this extension."
+        case .hostsNotApproved(let hosts):
+            return String(localized: "Allow access to \(hosts, format: .list(type: .and)) to use this extension.", table: "Core",
+                          comment: "Extension error; the list names the web hosts the extension needs")
         }
     }
 }

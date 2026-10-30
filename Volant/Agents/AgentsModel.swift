@@ -118,7 +118,7 @@ final class AgentsModel: ObservableObject {
                     sessions.removeAll { $0.machine != nil }
                     machines.removeAll { $0.id != "local" }
                     Self.place(.init(id: "catalog", label: String(localized: "Saved machines", comment: "Herdr status row for the list of saved remote machines"), state: "unavailable",
-                        detail: error ?? String(localized: "Couldn’t read saved machines.")), in: &machines)
+                        detail: HostMessage.display(error) ?? String(localized: "Couldn’t read saved machines.")), in: &machines)
                 }
                 self.update(\.machines, machines)
                 self.update(\.sessions, sessions)
@@ -151,7 +151,7 @@ final class AgentsModel: ObservableObject {
                         : String(localized: "\(machine.label) is disabled.", comment: "A Herdr machine was turned off")
                     self.refresh()
                 } else {
-                    self.actionMessage = error ?? String(localized: "Couldn’t change this machine in Herdr.")
+                    self.actionMessage = HostMessage.display(error) ?? String(localized: "Couldn’t change this machine in Herdr.")
                 }
             }
         }
@@ -188,7 +188,7 @@ final class AgentsModel: ObservableObject {
                     self.setMachine(.init(id: id, label: machine?.label ?? String(localized: "Local", comment: "Herdr machine name for this Mac"), state: "connected", detail: String(localized: "\(values.count) panes", comment: "Herdr machine status: number of terminal panes")))
                 } else {
                     self.update(\.sessions, others)
-                    self.setMachine(.init(id: id, label: machine?.label ?? String(localized: "Local", comment: "Herdr machine name for this Mac"), state: "unavailable", detail: error ?? String(localized: "Couldn’t read panes.")))
+                    self.setMachine(.init(id: id, label: machine?.label ?? String(localized: "Local", comment: "Herdr machine name for this Mac"), state: "unavailable", detail: HostMessage.display(error) ?? String(localized: "Couldn’t read panes.")))
                 }
                 self.refreshAttention()
                 self.updateInventoryMessage()
@@ -340,7 +340,7 @@ final class AgentsModel: ObservableObject {
                 self.attention = preview
                 self.attentionQuestion = snapshot?.question
                 self.attentionToken = snapshot?.token
-                self.attentionError = error ?? (self.attention == nil ? String(localized: "Couldn’t read this question. Open it in Herdr.") : nil)
+                self.attentionError = HostMessage.display(error) ?? (self.attention == nil ? String(localized: "Couldn’t read this question. Open it in Herdr.") : nil)
             }
         }
         if let attentionReader { attentionReader(target, completion); return }
@@ -359,7 +359,8 @@ final class AgentsModel: ObservableObject {
         attentionRequest = UUID()
         answerRequest = UUID()
         let request = answerRequest
-        let completion: (String?, String?) -> Void = { [weak self] status, error in
+        let completion: (String?, String?) -> Void = { [weak self] reply, failure in
+            let status = HostMessage.display(reply), error = HostMessage.display(failure)
             DispatchQueue.main.async {
                 guard let self, self.answerRequest == request else { return }
                 self.attentionAnswering = false
@@ -390,7 +391,7 @@ final class AgentsModel: ObservableObject {
                 self.focusInFlight = false
                 self.lastFocusSucceeded = error == nil
                 if error == nil { self.markSeen(session) }
-                self.actionMessage = error ?? String(localized: "Focused on \(session.machineLabel). Switch to that machine in Herdr to continue.")
+                self.actionMessage = HostMessage.display(error) ?? String(localized: "Focused on \(session.machineLabel). Switch to that machine in Herdr to continue.")
                 if error == nil { self.refresh() }
             }
         }

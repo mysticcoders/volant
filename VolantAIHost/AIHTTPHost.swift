@@ -14,7 +14,7 @@ actor AIHTTPConversation {
         try config.validate()
         if !config.local && key.isEmpty { throw AIHTTPError.key }
         cancel(); self.config = config; self.key = key; history = []
-        state = ACPState(); state.phase = "ready"; state.status = "Ready"; state.agentName = config.model
+        state = ACPState(); state.phase = "ready"; state.status = HostMessage(.aiReady).wire; state.agentName = config.model
     }
     func snapshot() throws -> Data { try JSONEncoder().encode(state) }
     /// The transcript shows the prompt and attachment titles; the model receives the attachments
@@ -27,7 +27,7 @@ actor AIHTTPConversation {
               history.reduce(0, { $0 + $1.text.utf8.count }) + composed.utf8.count <= 262_144 else { throw AIHTTPError.limit }
         let user = ACPMessage(role: "You", text: text, attachments: attachments.isEmpty ? nil : attachments.map(\.title))
         let reply = ACPMessage(role: "Agent", text: "")
-        state.messages += [user, reply]; state.phase = "working"; state.status = "Responding…"
+        state.messages += [user, reply]; state.phase = "working"; state.status = HostMessage(.aiResponding).wire
         let sent = ACPMessage(id: user.id, role: "You", text: composed)
         generation = UUID(); let token = generation, key = key, input = history + [sent]
         turn = Task {
@@ -36,10 +36,10 @@ actor AIHTTPConversation {
                 guard generation == token else { return }
                 guard let answer = state.messages.last, !answer.text.isEmpty else { throw AIHTTPError.response }
                 history = input + [answer]
-                state.phase = "ready"; state.status = "Ready"; turn = nil
+                state.phase = "ready"; state.status = HostMessage(.aiReady).wire; turn = nil
             } catch {
                 guard generation == token else { return }
-                state.phase = "ready"; state.status = AIHTTPError.message(error); turn = nil
+                state.phase = "ready"; state.status = AIHTTPError.wire(error); turn = nil
             }
         }
     }
@@ -50,7 +50,7 @@ actor AIHTTPConversation {
     }
     func cancel() {
         generation = UUID(); turn?.cancel(); turn = nil
-        state.phase = config == nil ? "disconnected" : "ready"; state.status = "Stopped"
+        state.phase = config == nil ? "disconnected" : "ready"; state.status = HostMessage(.aiStopped).wire
     }
     func stop() { cancel(); key = ""; config = nil; history = []; state = ACPState() }
 }
@@ -61,17 +61,17 @@ final class AIHTTPHost: NSObject, VolantAIHostProtocol {
     func start(configuration: Data, key: String, reply: @escaping (String?) -> Void) {
         Task { do { guard configuration.count <= 8192 else { throw AIHTTPError.configuration }
             try await conversation.start(JSONDecoder().decode(AIHTTPConfiguration.self, from: configuration), key: key); reply(nil)
-        } catch { reply(AIHTTPError.message(error)) } }
+        } catch { reply(AIHTTPError.wire(error)) } }
     }
-    func read(reply: @escaping (Data?, String?) -> Void) { Task { do { reply(try await conversation.snapshot(), nil) } catch { reply(nil, "Couldn’t read conversation.") } } }
-    func prompt(text: String, reply: @escaping (String?) -> Void) { Task { do { try await conversation.prompt(text); reply(nil) } catch { reply(AIHTTPError.message(error)) } } }
+    func read(reply: @escaping (Data?, String?) -> Void) { Task { do { reply(try await conversation.snapshot(), nil) } catch { reply(nil, HostMessage(.aiConversationUnreadable).wire) } } }
+    func prompt(text: String, reply: @escaping (String?) -> Void) { Task { do { try await conversation.prompt(text); reply(nil) } catch { reply(AIHTTPError.wire(error)) } } }
     func promptWithContext(text: String, attachments data: Data, reply: @escaping (String?) -> Void) {
         Task {
             do {
                 guard data.count <= 512_000 else { throw AIHTTPError.limit }
                 try await conversation.prompt(text, attachments: try JSONDecoder().decode([ChatAttachment].self, from: data))
                 reply(nil)
-            } catch { reply(AIHTTPError.message(error)) }
+            } catch { reply(AIHTTPError.wire(error)) }
         }
     }
     func cancel(reply: @escaping () -> Void) { Task { await conversation.cancel(); reply() } }
@@ -79,6 +79,6 @@ final class AIHTTPHost: NSObject, VolantAIHostProtocol {
         Task { do { guard configuration.count <= 8192 else { throw AIHTTPError.configuration }
             let config = try JSONDecoder().decode(AIHTTPConfiguration.self, from: configuration)
             reply(try JSONEncoder().encode(await transport.models(config, key: key)), nil)
-        } catch { reply(nil, AIHTTPError.message(error)) } }
+        } catch { reply(nil, AIHTTPError.wire(error)) } }
     }
 }

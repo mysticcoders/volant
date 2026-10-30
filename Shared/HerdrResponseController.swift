@@ -29,13 +29,13 @@ final class HerdrResponseController {
               let current = try AgentSession.decodeList(run(target.machine, ["agent", "list"]), machine: target.machine).first(where: {
                   $0.id == target.id && $0.sessionIdentity == target.sessionIdentity && $0.agentStatus == "blocked"
               }), current.stateChangeSequence == target.stateChangeSequence else {
-            throw failure("This pane or question changed. Refresh before answering.")
+            throw failure(.paneOrQuestionChanged)
         }
     }
     private func screen(_ target: AgentSession) throws -> String {
         try validate(target)
         let data = try run(target.machine, ["agent", "read", target.paneID, "--source", "detection", "--lines", "80", "--format", "text"])
-        guard data.count <= 128_000, let text = String(data: data, encoding: .utf8) else { throw failure("Couldn’t read the current question.") }
+        guard data.count <= 128_000, let text = String(data: data, encoding: .utf8) else { throw failure(.currentQuestionUnreadable) }
         try validate(target)
         return text
     }
@@ -52,16 +52,16 @@ final class HerdrResponseController {
     }
     func respond(token: String, choice: Int) throws -> String {
         guard let request = pending.removeValue(forKey: token), now().timeIntervalSince(request.created) < 30 else {
-            throw failure("This response expired or was already sent. Refresh the question.")
+            throw failure(.responseExpired)
         }
         let target = request.target
         guard let question = HerdrQuestion.parse(try screen(target), provider: target.agent),
               question.fingerprint == request.fingerprint,
               question.answerChoices.contains(where: { $0.number == choice }) else {
-            throw failure("The question changed. Nothing was submitted; refresh to review it.")
+            throw failure(.questionChanged)
         }
         let identity = target.id + ":" + target.sessionIdentity + ":" + String(target.stateChangeSequence ?? 0) + ":" + question.fingerprint
-        guard consumed[target.id] != identity else { throw failure("This question was already answered. Review its pane before retrying.") }
+        guard consumed[target.id] != identity else { throw failure(.questionAlreadyAnswered) }
         consumed[target.id] = identity
         let delta = choice - question.selected
         if delta != 0 {
@@ -72,35 +72,35 @@ final class HerdrResponseController {
         for _ in 0..<5 {
             let current = HerdrQuestion.parse(try screen(target), provider: target.agent)
             guard current?.fingerprint == request.fingerprint else {
-                throw failure("The question changed while selecting. Nothing was submitted; review it in Herdr.")
+                throw failure(.questionChangedWhileSelecting)
             }
             if current?.selected == choice { selected = current; break }
             Thread.sleep(forTimeInterval: 0.08)
         }
-        guard selected != nil else { throw failure("Couldn’t confirm the selected answer. Review it in Herdr before retrying.") }
+        guard selected != nil else { throw failure(.answerUnconfirmed) }
         _ = try run(target.machine, ["agent", "send-keys", target.paneID, "enter"])
         // Key delivery is not acknowledgement. Look for an advance; never resend on timeout.
         for _ in 0..<10 {
             Thread.sleep(forTimeInterval: 0.15)
             guard let agents = try? AgentSession.decodeList(run(target.machine, ["agent", "list"]), machine: target.machine) else {
-                return "Answer sent, but confirmation is unavailable. Check Herdr before retrying."
+                return HostMessage(.answerSentUnconfirmed).wire
             }
             guard let current = agents.first(where: { $0.id == target.id && $0.sessionIdentity == target.sessionIdentity }) else {
-                return "Answer sent; the agent changed before confirmation. Review its pane."
+                return HostMessage(.answerSentAgentChanged).wire
             }
-            if ["working", "idle", "done"].contains(current.agentStatus) { return "Answer sent; \(target.provider) resumed." }
+            if ["working", "idle", "done"].contains(current.agentStatus) { return HostMessage(.answerSentResumed, target.provider).wire }
             guard current.agentStatus == "blocked" else { break }
             // The submitted answer can make the screen disappear between list and read.
             // Retry observation only; never resend Enter or report a pre-submit validation failure.
             guard let text = try? screen(current) else { continue }
             if let next = HerdrQuestion.parse(text, provider: target.agent), next.fingerprint != request.fingerprint {
-                return "Answer sent; \(target.provider) advanced to the next question."
+                return HostMessage(.answerSentAdvanced, target.provider).wire
             }
             if target.agent == "codex", text.contains("Questions ") && text.contains(" answered") && text.contains("answer: " + question.choices[choice - 1].label) {
-                return "Codex acknowledged your answer."
+                return HostMessage(.answerAcknowledgedByCodex).wire
             }
         }
-        return "Answer sent, but confirmation is pending. Check Herdr before retrying."
+        return HostMessage(.answerSentPending).wire
     }
-    private func failure(_ message: String) -> NSError { NSError(domain: "VolantHerdrResponse", code: 1, userInfo: [NSLocalizedDescriptionKey: message]) }
+    private func failure(_ code: HostMessage.Code) -> NSError { HostMessage(code).error(domain: "VolantHerdrResponse") }
 }

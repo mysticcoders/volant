@@ -51,7 +51,7 @@ final class AIModelDiscovery: ObservableObject {
             var completed = false
             let finish: ([String]?, String?) -> Void = { [weak self] models, error in DispatchQueue.main.async {
                 guard !completed else { return }; completed = true
-                self?.connections.removeAll { $0 === connection }; connection.invalidate(); completion(models, error)
+                self?.connections.removeAll { $0 === connection }; connection.invalidate(); completion(models, HostMessage.display(error))
             } }
             DispatchQueue.main.asyncAfter(deadline: .now() + (config.local ? 4 : 20)) { finish(nil, String(localized: "No response. Check that the server is running.")) }
             let proxy = connection.remoteObjectProxyWithErrorHandler { _ in finish(nil, String(localized: "Couldn’t reach the model service.")) } as? VolantAIHostProtocol

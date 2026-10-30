@@ -16,27 +16,41 @@ public struct HerdrStatusSummary: Equatable {
         let waiting = sessions.filter { $0.agentStatus == "blocked" }.count
         let unavailable = machines.filter(\.unavailable)
         var notes: [String] = []
-        if unread > 0 { notes.append("\(unread) changed since you last looked") }
-        notes += unavailable.map { $0.label + ": " + $0.detail }
+        if unread > 0 {
+            notes.append(String(localized: "\(unread, specifier: "%lld") changed since you last looked", table: "Core",
+                                comment: "Launcher footer Herdr status tooltip line; the number of panes that changed"))
+        }
+        notes += unavailable.map {
+            String(localized: "\($0.label, format: .verbatim): \($0.detail, format: .verbatim)", table: "Core",
+                   comment: "Launcher footer Herdr status tooltip line: a machine name, then why it is unavailable")
+        }
         let suffix = (notes.isEmpty ? "" : "\n" + notes.joined(separator: "\n")) + "\n" + String(localized: "Click to show Herdr panes.", table: "Core", comment: "Launcher footer Herdr status tooltip, last line")
         if !connected {
             text = String(localized: "Herdr: not connected", table: "Core", comment: "Launcher footer status for Herdr, the agent multiplexer"); tone = .quiet
             help = String(localized: "Herdr isn’t connected.", table: "Core", comment: "Launcher footer Herdr status tooltip") + suffix
         } else if waiting > 0 {
-            text = "Herdr: \(waiting) waiting"; tone = .waiting
-            help = "\(waiting) \(waiting == 1 ? "agent needs" : "agents need") you." + suffix
+            text = String(localized: "Herdr: \(waiting, specifier: "%lld") waiting", table: "Core",
+                          comment: "Launcher footer status for Herdr, the agent multiplexer; the number of agents waiting for the owner")
+            tone = .waiting
+            help = String(localized: "\(waiting, specifier: "%lld") agents need you.", table: "Core",
+                          comment: "Launcher footer Herdr status tooltip; the number of agents waiting for the owner") + suffix
         } else if unavailable.count == 1 {
-            text = "Herdr: \(unavailable[0].label) unavailable"; tone = .warning
+            text = String(localized: "Herdr: \(unavailable[0].label, format: .verbatim) unavailable", table: "Core",
+                          comment: "Launcher footer status for Herdr, the agent multiplexer; the name of a saved machine that can't be reached")
+            tone = .warning
             help = String(localized: "No agents are waiting.", table: "Core", comment: "Launcher footer Herdr status tooltip") + suffix
         } else if unavailable.count > 1 {
-            text = "Herdr: \(unavailable.count) machines unavailable"; tone = .warning
+            text = String(localized: "Herdr: \(unavailable.count, specifier: "%lld") machines unavailable", table: "Core",
+                          comment: "Launcher footer status for Herdr, the agent multiplexer; the number of saved machines that can't be reached")
+            tone = .warning
             help = String(localized: "No agents are waiting.", table: "Core", comment: "Launcher footer Herdr status tooltip") + suffix
         } else if busy && sessions.isEmpty {
             text = String(localized: "Herdr: loading…", table: "Core", comment: "Launcher footer status for Herdr, the agent multiplexer"); tone = .quiet
             help = String(localized: "Loading panes from Herdr.", table: "Core", comment: "Launcher footer Herdr status tooltip") + suffix
         } else {
             text = String(localized: "Herdr: none waiting", table: "Core", comment: "Launcher footer status for Herdr, the agent multiplexer"); tone = .quiet
-            help = "\(sessions.count) \(sessions.count == 1 ? "pane" : "panes"), none waiting." + suffix
+            help = String(localized: "\(sessions.count, specifier: "%lld") panes, none waiting.", table: "Core",
+                          comment: "Launcher footer Herdr status tooltip; the number of panes") + suffix
         }
     }
 }

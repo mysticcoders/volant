@@ -50,7 +50,7 @@ final class FSearchClient {
             guard !finished else { return }
             finished = true
             connection.invalidate()
-            DispatchQueue.main.async { completion(data, error) }
+            DispatchQueue.main.async { completion(data, HostMessage.display(error)) }
         }
         connection.invalidationHandler = { finish(nil, String(localized: "The agent helper is unavailable.", comment: "fsearch file search error")) }
         connection.interruptionHandler = { finish(nil, String(localized: "The agent helper is unavailable.", comment: "fsearch file search error")) }

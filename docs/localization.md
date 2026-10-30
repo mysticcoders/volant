@@ -70,9 +70,24 @@ is missing, which it is in every helper process.
   uses `String(localized: "…", comment: "…")`. Add a comment whenever the text alone doesn't say
   where it appears or what a word means; translators see only the key and the comment.
 - **Core:** use `LocalizedStringResource("…", table: "Core", comment: "…")` and expose a `String`
-  through `String(localized:)`, as `CoreCommand.titleResource` and `title` do. Core strings must
-  not interpolate, because Core's extraction can't know the format specifiers. Pass values to the
-  app and build the sentence there, or add a specific format string by hand.
+  through `String(localized:)`, as `CoreCommand.titleResource` and `title` do. Core's extraction
+  runs without the compiler, so it can't see an interpolation's type and skips any string with a
+  plain `\(value)`; such a string would stay English. Interpolate only with an explicit specifier:
+  `\(count, specifier: "%lld")` for an integer and `\(text, format: .verbatim)` for text
+  (`VerbatimFormatStyle`), or `\(list, format: .list(type: .and))` for a list. Extraction then
+  reads `%lld` and `%@`, exactly the key built at run time, and the catalog can carry plural
+  variants for the count. `tools/strings.py` reports any Core string extraction skipped. Format a
+  year or another number that must not be grouped as text (`String(year)`), since `%lld` follows
+  the locale's grouping.
+- **Plural keys in Core** are written in the plural (`"%lld panes"`), and English's singular comes
+  from the catalog's `en` plural variant. `swift test` and the helpers have no catalog, so there a
+  count of one shows the key's form ("1 panes"); `CoreLocalizationTests` checks the app's English.
+- **Helper messages:** helpers have no catalog either, so a message worded in `VolantAgentHost`,
+  `VolantAIHost` or `Shared/` reaches the app in English. A helper replies with a
+  `HostMessage` code instead (`HostMessage(.rexNotRunning).wire`, or `HostMessage.wire(for:)` for a
+  thrown error), in the same string reply the XPC method already has, and the app shows
+  `HostMessage.display(_:)`. Text that isn't a code, such as an agent's or provider's own error,
+  is shown as it arrives.
 - **Whole sentences.** Never assemble a sentence from fragments, and never pluralize with
   `count == 1 ? … : …`. Use an interpolated `String(localized:)` and let the catalog hold plural
   variants.
@@ -98,8 +113,17 @@ is still hard-coded:
   Finnish.
 - `-AppleTextDirection YES -NSForceRightToLeftWritingDirection YES` lays the app out right to left.
 
-Run them on Volant Dev only in an agreed window, or in the VM fixtures; adding pseudo-locale fixture
-renders is part of #294.
+Run them on Volant Dev only in an agreed window, or in the VM fixtures.
+
+The fixtures render a pseudo-locale instead: `tools/pseudo-locale.py` compiles `en-XA` from both
+catalogs, with accented look-alike letters about 35% longer than English inside brackets
+("[Ŕéƒŕéšĥ~~]"), keeping format specifiers, line breaks and plural categories. A clipped string
+loses its closing bracket, and plain English is text that never went through a catalog.
+`tools/render-vm.py --pseudo --rtl` adds runs of the Actions fixture's Servers scenario (light and
+dark) and the Settings preview (every section, light and dark) in `en-XA`, and right to left with
+`-AppleTextDirection YES -NSForceRightToLeftWritingDirection YES`; `--layout-only` skips the default
+runs, and `--build-only` compiles the bundles on the host without starting Tart. Their image names
+carry `-pseudo` or `-pseudo-rtl`. The renders show layout, not translation quality.
 
 ## Status
 
@@ -110,10 +134,13 @@ renders is part of #294.
   - plural variants in English and Spanish for strings that count something
   - the About notice
   - a Spanish pass of the Servers scenario in the branded Actions fixture, light and dark
+  - interpolated Core messages, through `specifier:` and `format: .verbatim` interpolation: Herdr and Rex status and tooltips, extension network and storage errors, dictation results, Git summaries, AI account, attachment and connection errors, snippet, quicklink and theme errors, contact actions, the backup report, and calculator date details (relative days, days left, leap years, age, holidays) and percent change labels, with plural variants in every shipped language
+  - helper messages as `HostMessage` codes: Apple Shortcuts, Herdr discovery and question delivery, Rex, fsearch, listening servers and repository errors from `VolantAgentHost` and `Shared/`, and AI errors and statuses from `VolantAIHost`
+  - the `en-XA` pseudo-locale and right-to-left runs in `tools/render-vm.py`, built on the host; their VM renders still need inspecting
 - **Remaining (#294):**
-  - **Interpolated Core messages:** about 40 stay English, because Core can't interpolate. Examples are Herdr and Rex status details, extension network and storage errors, and calculator relative dates and adjustments. Each needs a hand-written format string, or the sentence built in the app.
-  - **Helper-produced messages:** `VolantAgentHost` and `VolantAIHost` errors, and `Shared/` text built inside a helper, reach the app already in English.
+  - **Calculator output:** answers, Copy text and their details (unit, currency, cooking, color, time zone, week and day numbers, date ranges, "X of Y") stay English. They are part of the formatting decision below, and swap queries are parsed back, so they stay English.
+  - **ACP helper text:** `ACPConnection`'s statuses and refusals ("Working…", "Needs your permission", "Volant runs up to N conversations…") are still worded in the helper, often around the agent's own text, and `tools/check-acp.sh` asserts their English. They need `HostMessage` codes with arguments.
   - **Shown values compared elsewhere:** Wi-Fi security labels, System Settings pane names, `SystemAction` titles (search has no English fallback), Raycast import category names, and ACP roles.
   - **Formatting decisions:** dates, times, numbers and calculator output.
-  - **More fixture renders:** Spanish passes of scenarios that compare English text, which need language-neutral assertions first, and pseudo-locale and right-to-left renders.
+  - **More fixture renders:** Spanish passes of scenarios that compare English text, which need language-neutral assertions first; the pseudo-locale and right-to-left renders cover the same scenarios for the same reason.
   - **Review:** a native speaker's review, after which strings move from `needs_review` to `translated`.

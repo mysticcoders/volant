@@ -80,13 +80,13 @@ check(!running("rex-lines-marker"), "stop ends the watcher process")
 let stopped = try fake("rex-stopped", "exit 4")
 let notRunning = RexWatch(queue: queue, home: folder.path, executable: { stopped })
 reply = poll(notRunning, after: -1) { _, _, message in message != nil }
-check(reply.0 == nil && reply.2 == "Rex isn’t running. Open Rex, then try again.", "exit status 4 reads as Rex not running")
+check(reply.0 == nil && reply.2 == HostMessage(.rexNotRunning).wire, "exit status 4 reads as Rex not running, sent as a code")
 queue.sync { notRunning.stop() }
 
 let huge = try fake("rex-huge", "head -c 4100000 /dev/zero | tr '\\0' x\nexec sleep 30 # rex-huge-marker")
 let oversized = RexWatch(queue: queue, home: folder.path, executable: { huge })
 reply = poll(oversized, after: -1, seconds: 8) { _, _, message in message != nil }
-check(reply.2 == "Couldn’t read Rex panes.", "an oversized line stops the watcher and says so")
+check(reply.2 == HostMessage(.rexUnreadable).wire, "an oversized line stops the watcher and says so")
 queue.sync { oversized.stop() }
 
 let launches = folder.appendingPathComponent("launches")

@@ -74,9 +74,14 @@ public struct AIConfiguration: Codable, Equatable {
         let title = ACPProvider(rawValue: profile.provider)?.title ?? profile.provider
         guard !added.id.isEmpty, !profiles.contains(where: { $0.id == added.id }) else { throw ACPAccountProfile.Refusal(String(localized: "This account is already listed.", table: "Core", comment: "AI account settings error")) }
         if let owner = profiles.first(where: { $0.directory == added.directory }) {
-            throw ACPAccountProfile.Refusal("This folder is already a \(ACPProvider(rawValue: owner.provider)?.title ?? owner.provider) account.")
+            let owned = ACPProvider(rawValue: owner.provider)?.title ?? owner.provider
+            throw ACPAccountProfile.Refusal(String(localized: "This folder is already a \(owned, format: .verbatim) account.", table: "Core",
+                                                   comment: "AI account settings error; the name of an agent such as Claude Code"))
         }
-        guard !profiles(for: added.provider).contains(where: { $0.label == added.label }) else { throw ACPAccountProfile.Refusal("Another \(title) account uses this label.") }
+        guard !profiles(for: added.provider).contains(where: { $0.label == added.label }) else {
+            throw ACPAccountProfile.Refusal(String(localized: "Another \(title, format: .verbatim) account uses this label.", table: "Core",
+                                                   comment: "AI account settings error; the name of an agent such as Claude Code"))
+        }
         profiles.append(added)
     }
 
