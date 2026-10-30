@@ -31,3 +31,19 @@ The allocation count no longer grows with the conversation. What still grows wit
   - `ACPStateUpdateTests` (Core): where changes start, rebuilding every kind of change, and rejecting bad offsets.
   - `ACPSnapshotModelTests`: only the changed messages patch the held revision, at under a tenth of the full encoding. An update for another revision, one after a local change, and one beyond the held transcript are each stale and force the full state. The AI helper's plain state still applies.
 - **Not verified:** a signed, installed VolantAgentHost streaming a real provider. The fixture runs the helper's and the app's code in one process over an in-process XPC connection.
+
+## Helper savings — October 30, 2026
+
+The two small savings recommended in the October 10 profile, measured with the same fixture (`VOLANT_MEMORY_SCENARIOS="acp-poll-200k acp-poll-1m"`, three fresh processes, medians):
+
+- **Tool updates are counted by their frame's size.** `updateSession` used to encode each tool update to JSON again only to count it against the 2 MB tool-detail limit. It now counts the size of the frame the update arrived in, which is slightly larger, so the limit is a little stricter, never looser.
+- **The agent's capabilities are read once.** `ACPConnection` decides at initialization whether the agent accepts embedded context, instead of parsing the capabilities JSON again for every prompt.
+
+Building the conversation (`transcript_built`, which feeds every provider frame through the helper):
+
+| Conversation | Before | After |
+| --- | --- | --- |
+| 200k | 13.2 MiB, 32,798 allocations, 11.7 ms | 11.7 MiB, 29,542 allocations, 9.1 ms |
+| 1m | 62.6 MiB, 156,600 allocations, 47.4 ms | 55.7 MiB, 141,191 allocations, 40.7 ms |
+
+`./tools/check-acp.sh` adds a check that tool details past 2 MB end the conversation. Its existing embedded-context checks still pass.

@@ -25,6 +25,8 @@ final class ACPConnection {
     private var textBytes = 0
     private var toolDetails: [String: [String: Any]] = [:]
     private var detailBytes = 0
+    /// Whether the agent accepts embedded context in prompts, read once from its capabilities at initialization.
+    private var embeddedContext = false
     private var replayTrimmed = false
     static let replayTextLimit = 400_000
     static let replayEventLimit = 800
@@ -158,7 +160,7 @@ final class ACPConnection {
         state.messages.append(ACPMessage(role: "You", text: text, attachments: attachments.isEmpty ? nil : attachments.map(\.title)))
         state.phase = "working"; state.status = "Working…"; turn = UUID()
         let blocks = ChatPromptComposer.acpBlocks(prompt: text, attachments: attachments,
-                                                  embeddedContext: ChatPromptComposer.supportsEmbeddedContext(capabilities: state.capabilities))
+                                                  embeddedContext: embeddedContext)
         request("session/prompt", ["sessionId": id, "prompt": blocks])
     }
     func cancel() {
@@ -232,12 +234,14 @@ final class ACPConnection {
             guard line.count <= 2_000_000, let message = try? JSONSerialization.jsonObject(with: line) as? [String: Any], message["jsonrpc"] as? String == "2.0" else {
                 stop("Agent returned invalid ACP data.", failed: true); return
             }
-            handle(message)
+            handle(message, bytes: line.count)
             if state.phase == "failed" { return }
         }
         if buffer.count > 2_000_000 { stop("Agent response exceeded the ACP frame limit.", failed: true) }
     }
-    private func handle(_ object: [String: Any]) {
+    /// Handles one decoded frame; `bytes` is its size on the wire, which tool updates count against
+    /// the tool-detail limit instead of being encoded again only to measure them.
+    private func handle(_ object: [String: Any], bytes: Int) {
         if let method = object["method"] as? String {
             let params = object["params"] as? [String: Any] ?? [:]
             if let id = object["id"] {
@@ -264,7 +268,7 @@ final class ACPConnection {
                     state.status = "Unsupported agent request: " + method
                 }
             } else if method == "session/update", let sessionID = state.sessionID, params["sessionId"] as? String == sessionID,
-                      let update = params["update"] as? [String: Any] { updateSession(update) }
+                      let update = params["update"] as? [String: Any] { updateSession(update, bytes: bytes) }
             return
         }
         guard let id = object["id"] as? Int, let method = pending.removeValue(forKey: id) else { return }
@@ -284,6 +288,7 @@ final class ACPConnection {
             guard result["protocolVersion"] as? Int == 1 else { stop("Agent requires an unsupported ACP version.", failed: true); return }
             state.agentName = (result["agentInfo"] as? [String: Any])?["name"] as? String ?? "ACP agent"
             state.capabilities = ((try? JSONSerialization.data(withJSONObject: result["agentCapabilities"] ?? [:], options: [.sortedKeys])).flatMap { String(data: $0, encoding: .utf8) }) ?? "{}"
+            embeddedContext = ChatPromptComposer.supportsEmbeddedContext(capabilities: state.capabilities)
             if let resumeID {
                 // Never fall back to a new session: the owner asked for this one.
                 guard ACPCapabilities.supportsLoadSession(state.capabilities) else {
@@ -309,7 +314,7 @@ final class ACPConnection {
         default: break
         }
     }
-    private func updateSession(_ update: [String: Any]) {
+    private func updateSession(_ update: [String: Any], bytes: Int) {
         let kind = update["sessionUpdate"] as? String ?? ""
         // Volant shows the owner's own turns only from history replayed by session/load. During a
         // live turn the transcript already holds the prompt Volant sent, so user chunks are ignored.
@@ -323,8 +328,7 @@ final class ACPConnection {
             else { state.messages.append(ACPMessage(role: role, text: text)) }
         } else if kind == "tool_call" || kind == "tool_call_update" {
             if !replaying, let toolID = update["toolCallId"] as? String {
-                let size = (try? JSONSerialization.data(withJSONObject: update).count) ?? 0
-                detailBytes += size
+                detailBytes += bytes
                 guard detailBytes < 2_000_000 else { stop("Conversation reached its tool-detail limit.", failed: true); return }
                 var details = toolDetails[toolID] ?? [:]
                 details.merge(update) { _, new in new }
