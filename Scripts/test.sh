@@ -48,6 +48,7 @@ if [[ "$ui_mode" != only ]]; then
     timed ./tools/check-ai-http.sh
     timed ./tools/check-rex.sh
     timed ./tools/check-extensions.sh
+    timed ./tools/check-paste-key.sh
     timed swift test --package-path Core
     timed xcodebuild "${build_options[@]}" test -skip-testing:VolantTests/NotesRenderTests \
         -skip-testing:VolantTests/LiveMarkdownTests/testLanguageChangePreservesContentSelectionAndUndo \

@@ -165,8 +165,12 @@ Order of attempts, all inside the helper:
      type carrying a random ID. Volant's own `PasteboardFilter` already refuses all three marker
      families, so dictation never enters encrypted clipboard history. Other managers that follow
      [nspasteboard.org](http://nspasteboard.org) skip it too.
-   - Wait 100 ms. Post Command-V with key codes `0x37` and `0x09` from a `privateState` event source
-     to `cghidEventTap`. Using physical key codes avoids layouts that remap when Command is held.
+   - Wait 100 ms. Post Command-V from a `privateState` event source to `cghidEventTap`: Command
+     (`0x37`) plus the key that types "v" with Command held in the current layout (`PasteKey`, #323).
+     That is the physical V key (`0x09`) on U.S., AZERTY and "Dvorak – QWERTY ⌘" layouts, which switch
+     to QWERTY under Command, and the key that types "v" on plain Dvorak, where the physical V key
+     would send Command-K. An unreadable layout falls back to `0x09`. `tools/check-paste-key.sh`
+     checks the installed U.S., Dvorak, Dvorak – QWERTY ⌘ and French layouts.
    - After at least 250 ms, restore the snapshot, but only if `changeCount` and the session marker
      show the pasteboard still holds this write. If the owner copied something in between, it is
      never overwritten.
