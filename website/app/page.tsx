@@ -717,8 +717,8 @@ export default function Home() {
             Version {appVersion} · macOS 15+ · Apple silicon &amp; Intel
           </span>
           <p className="download-scope">
-            New in 0.3.25: extension updates right in the launcher, and catalog
-            icons before you install. See{' '}
+            New in 0.3.26: dictation keeps your last word and ignores an
+            accidental tap. See{' '}
             <a href={`${repositoryURL}/releases`}>every release</a>.
           </p>
         </section>

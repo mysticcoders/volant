@@ -192,7 +192,14 @@ Added in 0.3.25:
 | Catalog icons before install, checked against the signed catalog's SHA-256 | Yes | #322; tests of hash and shape refusal and one fetch per icon; launcher fixture shows a not-installed listing's icon | Release notes |
 | AI Chat streaming sends only changed messages | Yes | #321; memory fixture: 1 MB conversation 26.9 → 0.83 MiB/s allocated, 20.4 → 1.8 ms/s CPU; not verified with a real provider through the signed helper | Release notes; give figures as measured on a fixture, not a promise for every conversation |
 
-Merged after 0.3.25, not in the current download:
+Added in 0.3.26:
+
+| Story | In 0.3.26 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| Dictation keeps capturing 200 ms after release, starts capture before the recognizer is ready, and discards near-silent dictations | Yes | #327; Core level tests; the owner dictated with it in Volant Dev on October 30, 2026; macOS 26 only, like all dictation; no fixture verifies a real microphone or recognizer | Release notes; say "keeps your last word" and "an accidental tap types nothing", never "perfect" or "never misses a word" |
+| ACP helper allocates less while handling provider frames | Yes | #326; fixture: 1 MB conversation build 62.6 → 55.7 MiB allocated | Release notes only; too small for marketing |
+
+Merged after 0.3.26, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
