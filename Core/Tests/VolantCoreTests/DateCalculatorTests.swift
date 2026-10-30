@@ -277,13 +277,15 @@ final class DateCalculatorTests: XCTestCase {
         XCTAssertNil(answer("is 28 a leap year"))
     }
 
+    /// `swift test` has no Core catalog, so "1 days" is the key's plural form; the app's English
+    /// singular comes from the catalog (`CoreLocalizationTests`).
     func testAgeFromABirthdate() {
         XCTAssertEqual(card("age 1985-04-12"), ["41 years", "Next birthday in 188 days", "41 years"])
         XCTAssertEqual(answer("age 1985-04-12")?.inputDetail, "Born Friday, April 12, 1985")
         XCTAssertEqual(card("age April 12 1985").first, "41 years")
         XCTAssertEqual(card("age 1985-04-12 on Jan 1 2030"), ["44 years", "On Tuesday, January 1, 2030", "44 years"])
         XCTAssertEqual(card("age 1985-10-06"), ["41 years", "Birthday today", "41 years"])
-        XCTAssertEqual(card("age 1985-10-07"), ["40 years", "Next birthday in 1 day", "40 years"])
+        XCTAssertEqual(card("age 1985-10-07"), ["40 years", "Next birthday in 1 days", "40 years"])
         XCTAssertEqual(card("age 2026-01-01").first, "0 years")
         XCTAssertEqual(card("age 2000-02-29 on 2001-02-28").first, "1 year", "a February 29 birthday falls on February 28 in common years")
         XCTAssertEqual(card("age 2000-02-29 on 2004-02-29").first, "4 years")

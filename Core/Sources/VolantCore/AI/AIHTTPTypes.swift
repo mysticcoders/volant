@@ -62,24 +62,35 @@ public struct AIHTTPConfiguration: Codable, Equatable {
 }
 public enum AIHTTPError: Error, LocalizedError {
     case configuration, key, response, limit, incomplete, unsupported, http(Int)
-    public var errorDescription: String? {
+    public var errorDescription: String? { hostMessage.text }
+
+    /// The code `VolantAIHost` sends for this error, which the app shows in the owner's language.
+    public var hostMessage: HostMessage {
         switch self {
-        case .configuration: return String(localized: "Choose a model and a valid HTTPS API URL, or a loopback URL for local models.", table: "Core", comment: "AI connection error")
-        case .key: return String(localized: "Add an API key in AI Settings before connecting.", table: "Core", comment: "AI connection error")
-        case .response: return String(localized: "The server returned an unsupported response. Check the provider and endpoint.", table: "Core", comment: "AI connection error")
-        case .limit: return String(localized: "This conversation reached its size limit. Start a new conversation.", table: "Core", comment: "AI connection error")
-        case .incomplete: return String(localized: "The response stopped before completion. You can try again.", table: "Core", comment: "AI connection error")
-        case .unsupported: return String(localized: "This connection supports text chat only; the server requested an unsupported operation.", table: "Core", comment: "AI connection error")
+        case .configuration: return HostMessage(.aiConfiguration)
+        case .key: return HostMessage(.aiKey)
+        case .response: return HostMessage(.aiResponse)
+        case .limit: return HostMessage(.aiLimit)
+        case .incomplete: return HostMessage(.aiIncomplete)
+        case .unsupported: return HostMessage(.aiUnsupported)
         case .http(let code):
             switch code {
-            case 401, 403: return String(localized: "The server rejected access. Check your API key and model permissions.", table: "Core", comment: "AI connection error for HTTP 401 or 403")
-            case 429: return String(localized: "The server's rate or usage limit was reached. Try again later.", table: "Core", comment: "AI connection error for HTTP 429")
-            default: return "The AI server returned HTTP \(code). Check your connection settings."
+            case 401, 403: return HostMessage(.aiRejected)
+            case 429: return HostMessage(.aiRateLimited)
+            default: return HostMessage(.aiHTTPStatus, String(code))
             }
         }
     }
-    public static func message(_ error: Error) -> String {
-        (error as? AIHTTPError)?.errorDescription ?? String(localized: "Couldn’t reach the AI server. Check its address and whether it is running.", table: "Core", comment: "AI connection error")
+
+    /// The message for any error from an AI connection, worded in this process.
+    public static func message(_ error: Error) -> String { hostMessage(error).text }
+
+    /// The code for any error from an AI connection, which is what the AI helper replies with.
+    public static func wire(_ error: Error) -> String { hostMessage(error).wire }
+
+    /// The message for a connection error, or "couldn't reach the server" for one that isn't.
+    private static func hostMessage(_ error: Error) -> HostMessage {
+        (error as? AIHTTPError)?.hostMessage ?? HostMessage(.aiUnreachable)
     }
 }
 public struct AILocalServer: Identifiable, Equatable {

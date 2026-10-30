@@ -266,7 +266,7 @@ final class ACPModel: ObservableObject {
         state.phase = "cancelling"
         let reply: (String?) -> Void = { [weak self] error in DispatchQueue.main.async {
             guard let self, self.generation == current else { return }
-            self.error = error; self.read()
+            self.error = HostMessage.display(error); self.read()
         } }
         if usesApple { apple?.cancel(); state.phase = "ready"; state.status = String(localized: "Ready.", comment: "AI Chat status"); submitting = false }
         else if usesAPI { apiProxy()?.cancel { reply(nil) } }
@@ -277,7 +277,7 @@ final class ACPModel: ObservableObject {
         revision += 1
         proxy()?.acpPermission(request: permission.id, option: option.optionId) { [weak self] error in DispatchQueue.main.async {
             guard let self, self.generation == current else { return }
-            self.error = error; self.read()
+            self.error = HostMessage.display(error); self.read()
         } }
     }
     func disconnect() {
@@ -329,12 +329,13 @@ final class ACPModel: ObservableObject {
     /// The ACP helper replies with an `ACPStateUpdate`: the full state, or only the messages changed
     /// since `known`, which patch `state` only when it is still exactly revision `known`; otherwise
     /// the revision is forgotten and the next read fetches the full state. The AI helper, which has
-    /// no revisions (`revision` -1), replies with a plain `ACPState`. The result replaces `state`
-    /// only when it differs, and its revision is kept.
+    /// no revisions (`revision` -1), replies with a plain `ACPState`. A status sent as a
+    /// `HostMessage` code is shown in the owner's language. The result replaces `state` only when
+    /// it differs, and its revision is kept.
     func receive(_ data: Data?, revision: Int, after known: Int) -> SnapshotResult {
         if data == nil, revision >= 0, revision == known { return helperRevision == known ? .unchanged : .stale }
         guard let data else { return .invalid }
-        let snapshot: ACPState
+        var snapshot: ACPState
         if revision < 0 {
             guard let full = try? JSONDecoder().decode(ACPState.self, from: data) else { return .invalid }
             snapshot = full
@@ -347,6 +348,7 @@ final class ACPModel: ObservableObject {
                 snapshot = update.state
             }
         }
+        snapshot.status = HostMessage.display(snapshot.status)
         if snapshot != state { state = snapshot }
         helperRevision = revision
         remember(snapshot)
@@ -427,6 +429,7 @@ final class ACPModel: ObservableObject {
     }
     private func failed(_ message: String, current: UUID) {
         guard generation == current else { return }
-        disconnect(); state.phase = "failed"; error = message; state.status = message
+        let shown = HostMessage.display(message)
+        disconnect(); state.phase = "failed"; error = shown; state.status = shown
     }
 }

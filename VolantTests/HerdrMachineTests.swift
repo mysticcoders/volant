@@ -76,7 +76,7 @@ final class HerdrMachineTests: XCTestCase {
         })
         let target = try AgentSession.decodeList(list(), machine: remote)[0]
         let token = try XCTUnwrap(controller.read(target).token)
-        XCTAssertTrue(try controller.respond(token: token, choice: 1).contains("resumed"))
+        XCTAssertTrue(HostMessage.display(try controller.respond(token: token, choice: 1)).contains("resumed"))
         XCTAssertEqual(keys, [["agent", "send-keys", "w1:p1", "enter"]])
         XCTAssertThrowsError(try controller.respond(token: token, choice: 1))
         XCTAssertEqual(keys.count, 1)

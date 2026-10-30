@@ -98,7 +98,7 @@ final class RexModel: ObservableObject {
                     self.update(\.loading, false)
                 } else {
                     self.update(\.panes, [])
-                    self.update(\.problem, error ?? (data == nil ? nil : String(localized: "Couldn’t read Rex panes.")))
+                    self.update(\.problem, HostMessage.display(error) ?? (data == nil ? nil : String(localized: "Couldn’t read Rex panes.")))
                     self.update(\.loading, error == nil && data == nil)
                 }
             }
@@ -120,7 +120,7 @@ final class RexModel: ObservableObject {
                 guard let self, current == self.generation else { return }
                 self.focusInFlight = false
                 if error == nil { self.activateRex() } else { self.refresh() }
-                completion(error)
+                completion(HostMessage.display(error))
             }
         }
         if let focuser { focuser(pane, done) }

@@ -6,6 +6,9 @@ import VolantCore
 let app = NSApplication.shared
 app.setActivationPolicy(.regular)
 app.appearance = NSAppearance(named: CommandLine.arguments.contains("dark") ? .darkAqua : .aqua)
+/// A layout run from render-vm.py, such as `language=pseudo` with `-AppleLanguages (en-XA)`. Its
+/// renders carry the layout as a suffix and are named by section case rather than translated title.
+let language = CommandLine.arguments.first { $0.hasPrefix("language=") }.map { String($0.dropFirst("language=".count)) }
 let root = FileManager.default.temporaryDirectory.appendingPathComponent("volant-settings-" + UUID().uuidString)
 try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
 let configURL = root.appendingPathComponent("config.json")
@@ -254,7 +257,8 @@ if CommandLine.arguments.contains("--render") {
             precondition(selected > (dark ? 0.12 : 0.6), "\(name): sidebar selection draws black (\(selected))")
             precondition(abs(selected - unselected) > 0.02, "\(name): sidebar selection does not stand out (\(selected) vs \(unselected))")
         }
-        func capture(_ name: String) {
+        func capture(_ base: String) {
+            let name = base + (language.map { "-" + $0 } ?? "")
             let window = controller.window!
             let view = window.contentView!
             view.layoutSubtreeIfNeeded()
@@ -286,11 +290,12 @@ if CommandLine.arguments.contains("--render") {
                                                    windowNumber: controller.window!.windowNumber, context: nil, eventNumber: 0, clickCount: 0, pressure: 0)!
                     for recorder in recorders(view) where !recorder.value.isEmpty {
                         recorder.mouseEntered(with: event)
-                        precondition(recorder.subviews.contains { !$0.isHidden && ($0 as? NSButton)?.toolTip == "Remove shortcut" })
+                        precondition(recorder.subviews.contains { !$0.isHidden && ($0 as? NSButton)?.toolTip == String(localized: "Remove shortcut") })
                     }
                 }
-                capture(theme + "-" + section.title)
-                print("Rendered \(theme) \(section.title): \(view.bounds.size)")
+                let sectionName = language == nil ? section.title : "\(section)"
+                capture(theme + "-" + sectionName)
+                print("Rendered \(theme) \(sectionName): \(view.bounds.size)")
                 if section == .data || section == .appearance || section == .extensions {
                     func scrollViews(_ view: NSView) -> [NSScrollView] {
                         (view as? NSScrollView).map { [$0] } ?? view.subviews.flatMap(scrollViews)
@@ -300,7 +305,7 @@ if CommandLine.arguments.contains("--render") {
                         document.scroll(NSPoint(x: 0, y: document.isFlipped ? document.bounds.height : 0))
                     }
                     RunLoop.main.run(until: Date().addingTimeInterval(0.15))
-                    capture(theme + "-" + section.title + "-bottom")
+                    capture(theme + "-" + sectionName + "-bottom")
                 }
             }
         }

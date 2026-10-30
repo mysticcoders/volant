@@ -31,9 +31,9 @@ final class AppleShortcutsHost {
     }
 
     func run(id: String, reply: @escaping (String?) -> Void) {
-        guard let uuid = UUID(uuidString: id) else { reply("Invalid shortcut identifier. Refresh and try again."); return }
+        guard let uuid = UUID(uuidString: id) else { reply(HostMessage(.shortcutInvalid).wire); return }
         lock.lock()
-        guard runningProcess == nil else { lock.unlock(); reply("A shortcut is already running."); return }
+        guard runningProcess == nil else { lock.unlock(); reply(HostMessage(.shortcutRunning).wire); return }
         let process = Process()
         runningProcess = process
         lock.unlock()
@@ -45,10 +45,10 @@ final class AppleShortcutsHost {
         process.standardError = FileHandle.nullDevice
         process.terminationHandler = { [self] task in
             lock.lock(); runningProcess = nil; lock.unlock()
-            reply(task.terminationStatus == 0 ? nil : "Shortcut did not finish successfully. Open Shortcuts to review its permissions and actions.")
+            reply(task.terminationStatus == 0 ? nil : HostMessage(.shortcutFailed).wire)
         }
         do { try process.run() }
-        catch { process.terminationHandler = nil; lock.lock(); runningProcess = nil; lock.unlock(); reply("Couldn’t start Shortcuts. Open the Shortcuts app and try again.") }
+        catch { process.terminationHandler = nil; lock.lock(); runningProcess = nil; lock.unlock(); reply(HostMessage(.shortcutsUnavailable).wire) }
         // Retain the process and host until completion; interactive shortcuts may wait for input.
     }
 }

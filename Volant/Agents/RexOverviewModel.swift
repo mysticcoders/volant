@@ -179,7 +179,7 @@ final class RexOverviewModel: ObservableObject {
                     self.loading = false
                 } else {
                     self.present(RexOverview(sessions: []))
-                    self.problem = error
+                    self.problem = HostMessage.display(error)
                     self.loading = error == nil
                 }
             }
@@ -197,7 +197,7 @@ final class RexOverviewModel: ObservableObject {
             DispatchQueue.main.async {
                 guard let self, current == self.generation else { return }
                 self.focusInFlight = false
-                self.feedback = error
+                self.feedback = HostMessage.display(error)
                 if error == nil { self.activateRex() }
             }
         }

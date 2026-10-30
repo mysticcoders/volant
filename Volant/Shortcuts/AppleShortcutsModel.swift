@@ -69,7 +69,7 @@ final class AppleShortcutsModel: ObservableObject {
             DispatchQueue.main.async {
                 guard let self, self.running, self.runToken == token else { return }
                 self.running = false
-                self.runMessage = error ?? String(localized: "Shortcut finished.", comment: "Status after an Apple Shortcut runs")
+                self.runMessage = HostMessage.display(error) ?? String(localized: "Shortcut finished.", comment: "Status after an Apple Shortcut runs")
             }
         }
         if let runOverride { runOverride(shortcut.id, finish); return }

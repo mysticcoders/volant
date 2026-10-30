@@ -5,7 +5,8 @@ Localizable.xcstrings holds the app's strings, from the .stringsdata files the c
 Volant target when SWIFT_EMIT_LOC_STRINGS is on, so interpolations carry their real format
 specifiers. Run it after a Debug build into build/ (Scripts/test.sh does). Core.xcstrings holds
 VolantCore's `table: "Core"` strings; the package target emits none, so they come from
-xcstringstool's lightweight extraction, which is why Core strings must not interpolate.
+xcstringstool's lightweight extraction, which is why Core strings interpolate only with an explicit
+`specifier:` or `format:` (a skipped string is reported as a problem).
 InfoPlist.xcstrings must hold exactly the permission prompts in project.yml, with the same English.
 
   tools/strings.py           update the catalogs
@@ -42,24 +43,31 @@ def app_stringsdata(build_dir):
 
 
 def core_stringsdata(out):
-    """VolantCore's Core-table strings, by lightweight extraction from its sources."""
+    """VolantCore's Core-table strings, by lightweight extraction from its sources, and the strings it
+    skipped. Extraction can't see an interpolation's type, so it skips any Core string that interpolates
+    without `specifier:` or `format:`; such a string would silently stay English."""
     sources = sorted(str(p) for p in (ROOT / "Core/Sources").rglob("*.swift"))
-    subprocess.run(["xcrun", "xcstringstool", "extract", "--modern-localizable-strings", "--table", "Core",
-                    "--avoid-arg-placeholder", "--omit-empty-stringsdata", "-o", str(out)] + sources,
-                   check=True, capture_output=True)
-    return sorted(str(p) for p in out.glob("*.stringsdata"))
+    result = subprocess.run(["xcrun", "xcstringstool", "extract", "--modern-localizable-strings", "--table", "Core",
+                             "--avoid-arg-placeholder", "--omit-empty-stringsdata", "-o", str(out)] + sources,
+                            check=True, capture_output=True, text=True)
+    skipped = [line.split(" warning:")[0].replace(str(ROOT) + "/", "")
+               for line in (result.stdout + result.stderr).splitlines() if "Skipping extraction" in line]
+    return sorted(str(p) for p in out.glob("*.stringsdata")), skipped
 
 
 def sync(catalog_dir, build_dir, mark_stale=True):
-    """Merges the current source strings into the catalogs in `catalog_dir`. Without `mark_stale`, strings
-    this build didn't compile are left alone: code behind a newer SDK, such as macOS 26 dictation and
-    Apple Intelligence, isn't compiled by older Xcode on CI, and its strings are still in use."""
+    """Merges the current source strings into the catalogs in `catalog_dir` and returns the Core strings
+    extraction skipped. Without `mark_stale`, strings this build didn't compile are left alone: code behind
+    a newer SDK, such as macOS 26 dictation and Apple Intelligence, isn't compiled by older Xcode on CI,
+    and its strings are still in use."""
     with tempfile.TemporaryDirectory() as scratch:
-        data = app_stringsdata(build_dir) + core_stringsdata(Path(scratch))
+        core, skipped = core_stringsdata(Path(scratch))
+        data = app_stringsdata(build_dir) + core
         result = subprocess.run(["xcrun", "xcstringstool", "sync"] + [str(catalog_dir / c) for c in CATALOGS] + ["--stringsdata"] + data
                                 + ([] if mark_stale else ["--skip-marking-strings-stale"]), capture_output=True, text=True)
         if result.returncode:
             sys.exit(result.stderr or result.stdout)
+    return [f"Core string not extracted, interpolate with specifier: or format: .verbatim: {place}" for place in skipped]
 
 
 def prompt_problems():
@@ -113,14 +121,14 @@ def main():
     args = parser.parse_args()
     problems = prompt_problems() + missing_translations(RESOURCES)
     if not args.check:
-        sync(RESOURCES, args.build_dir)
+        problems += sync(RESOURCES, args.build_dir)
         print("Updated " + " and ".join(CATALOGS))
     else:
         with tempfile.TemporaryDirectory() as scratch:
             copy = Path(scratch)
             for catalog in CATALOGS:
                 shutil.copy(RESOURCES / catalog, copy / catalog)
-            sync(copy, args.build_dir, mark_stale=False)
+            problems += sync(copy, args.build_dir, mark_stale=False)
             for catalog in CATALOGS:
                 added, _, changed = changes(json.loads((RESOURCES / catalog).read_text()), json.loads((copy / catalog).read_text()))
                 for label, keys in (("new", added), ("changed", changed)):

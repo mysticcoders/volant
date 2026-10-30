@@ -10,7 +10,7 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
     func listAppleShortcuts(reply: @escaping (Data?, String?) -> Void) {
         shortcutsQueue.async {
             do { reply(try AppleShortcutsHost.list(), nil) }
-            catch { reply(nil, "Couldn’t read Apple Shortcuts. Open Shortcuts and try again.") }
+            catch { reply(nil, HostMessage(.shortcutsUnreadable).wire) }
         }
     }
     func runAppleShortcut(id: String, reply: @escaping (String?) -> Void) {
@@ -18,11 +18,11 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
     }
     private let acp = ACPConnection()
     func acpStart(provider: String, project: String, profile: String, reply: @escaping (String?) -> Void) {
-        acp.queue.async { do { try self.acp.start(provider: provider, project: project, profile: profile); reply(nil) } catch { reply(error.localizedDescription) } }
+        acp.queue.async { do { try self.acp.start(provider: provider, project: project, profile: profile); reply(nil) } catch { reply(HostMessage.wire(for: error)) } }
     }
     func acpResume(provider: String, project: String, profile: String, session: String, reply: @escaping (String?) -> Void) {
         acp.queue.async {
-            do { try self.acp.start(provider: provider, project: project, resume: session, profile: profile); reply(nil) } catch { reply(error.localizedDescription) }
+            do { try self.acp.start(provider: provider, project: project, resume: session, profile: profile); reply(nil) } catch { reply(HostMessage.wire(for: error)) }
         }
     }
     func acpRead(after revision: Int, reply: @escaping (Data?, Int, String?) -> Void) {
@@ -32,7 +32,7 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
         }
     }
     func acpPrompt(text: String, reply: @escaping (String?) -> Void) {
-        acp.queue.async { do { try self.acp.prompt(text); reply(nil) } catch { reply(error.localizedDescription) } }
+        acp.queue.async { do { try self.acp.prompt(text); reply(nil) } catch { reply(HostMessage.wire(for: error)) } }
     }
     func acpPromptWithContext(text: String, attachments data: Data, reply: @escaping (String?) -> Void) {
         acp.queue.async {
@@ -40,12 +40,12 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
                 guard data.count <= 512_000 else { throw CocoaError(.fileReadTooLarge) }
                 try self.acp.prompt(text, attachments: try JSONDecoder().decode([ChatAttachment].self, from: data))
                 reply(nil)
-            } catch { reply(error.localizedDescription) }
+            } catch { reply(HostMessage.wire(for: error)) }
         }
     }
     func acpCancel(reply: @escaping (String?) -> Void) { acp.queue.async { self.acp.cancel(); reply(nil) } }
     func acpPermission(request: String, option: String, reply: @escaping (String?) -> Void) {
-        acp.queue.async { do { try self.acp.choose(request: request, option: option); reply(nil) } catch { reply(error.localizedDescription) } }
+        acp.queue.async { do { try self.acp.choose(request: request, option: option); reply(nil) } catch { reply(HostMessage.wire(for: error)) } }
     }
     func acpStop(reply: @escaping () -> Void) { acp.queue.async { self.acp.stop(); reply() } }
     func invalidate() {
@@ -56,13 +56,13 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
     func detectACPAgents(reply: @escaping (Data?, String?) -> Void) {
         inspectionQueue.async {
             do { reply(try JSONEncoder().encode(ACPAgentResolver.system.detectAll()), nil) }
-            catch { reply(nil, "Couldn’t check for installed agents.") }
+            catch { reply(nil, HostMessage(.agentsUndetected).wire) }
         }
     }
     func listListeningServers(reply: @escaping (Data?, String?) -> Void) {
         inspectionQueue.async {
             do { reply(try JSONEncoder().encode(ListeningServers.scan()), nil) }
-            catch { reply(nil, "Couldn’t read listening servers.") }
+            catch { reply(nil, HostMessage(.serversUnreadable).wire) }
         }
     }
     func repositoryStates(paths data: Data, reply: @escaping (Data?, String?) -> Void) {
@@ -72,7 +72,7 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
                 let paths = try JSONDecoder().decode([String].self, from: data)
                 reply(try JSONEncoder().encode(RepositoryInspector.states(for: paths)), nil)
             } catch {
-                reply(nil, "Couldn’t read repository changes.")
+                reply(nil, HostMessage(.repositoriesUnreadable).wire)
             }
         }
     }
@@ -87,22 +87,22 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
                 guard let request = FSearch.searchRequest(query, limit: limit) else { throw FSearchError.malformed }
                 let hits = try FSearch.hits(from: try FSearch.exchange(socket: fsearchSocket, request: request))
                 reply(try JSONEncoder().encode(hits), nil)
-            } catch { reply(nil, error.localizedDescription) }
+            } catch { reply(nil, HostMessage.wire(for: error)) }
         }
     }
 
     func fsearchStatus(reply: @escaping (Data?, String?) -> Void) {
         fsearchQueue.async { [fsearchSocket] in
             do { reply(try JSONEncoder().encode(try FSearch.status(from: try FSearch.exchange(socket: fsearchSocket, request: FSearch.statusRequest))), nil) }
-            catch { reply(nil, error.localizedDescription) }
+            catch { reply(nil, HostMessage.wire(for: error)) }
         }
     }
 
     func fsearchOpened(path: String, reply: @escaping (String?) -> Void) {
         fsearchQueue.async { [fsearchSocket] in
-            guard let request = FSearch.openedRequest(path) else { reply("Not a file path."); return }
+            guard let request = FSearch.openedRequest(path) else { reply(HostMessage(.notAFilePath).wire); return }
             do { _ = try FSearch.exchange(socket: fsearchSocket, request: request); reply(nil) }
-            catch { reply(error.localizedDescription) }
+            catch { reply(HostMessage.wire(for: error)) }
         }
     }
 
@@ -119,7 +119,7 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         let candidates = [home + "/.local/bin/herdr", "/opt/homebrew/bin/herdr", "/usr/local/bin/herdr"]
         guard let executable = candidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
-            throw NSError(domain: "VolantAgents", code: 1, userInfo: [NSLocalizedDescriptionKey: "Herdr was not found. Install Herdr, start a local session, then reconnect."])
+            throw HostMessage(.herdrNotFound).error(domain: "VolantAgents")
         }
         return try HerdrProcess.run(executable: URL(fileURLWithPath: executable), arguments: arguments, home: home)
     }
@@ -127,7 +127,7 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
     func listHerdrMachines(reply: @escaping (Data?, String?) -> Void) {
         catalogQueue.async {
             do { reply(try JSONEncoder().encode(self.machines.profiles()), nil) }
-            catch { reply(nil, "Couldn’t read saved machines. Check Herdr 0.9.1 or later is installed.") }
+            catch { reply(nil, HostMessage(.savedMachinesUnreadable).wire) }
         }
     }
     func setHerdrMachine(machine data: Data, enabled: Bool, reply: @escaping (Data?, String?) -> Void) {
@@ -137,7 +137,7 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
                 let machine = try JSONDecoder().decode(HerdrMachine.self, from: data)
                 reply(try JSONEncoder().encode(self.machines.setEnabled(machine, enabled)), nil)
             } catch {
-                reply(nil, error.localizedDescription)
+                reply(nil, HostMessage.wire(for: error))
             }
         }
     }
@@ -169,13 +169,13 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
         queue.async {
             do {
                 reply(try JSONEncoder().encode(self.herdrResponses.read(self.currentTarget(target, blocked: true))), nil)
-            } catch { reply(nil, "This question or machine changed or could not be read. Open Herdr to review it.") }
+            } catch { reply(nil, HostMessage(.questionUnreadable).wire) }
         }
     }
     func answerAgentQuestion(token: String, choice: Int, reply: @escaping (String?, String?) -> Void) {
         queue.async {
             do { reply(try self.herdrResponses.respond(token: token, choice: choice), nil) }
-            catch { reply(nil, (error as NSError).domain == "VolantHerdrResponse" ? error.localizedDescription : "Couldn’t confirm delivery. Review the pane before retrying.") }
+            catch { reply(nil, (error as NSError).domain == "VolantHerdrResponse" ? HostMessage.wire(for: error) : HostMessage(.deliveryUnconfirmed).wire) }
         }
     }
     func focusAgent(target: Data, reply: @escaping (String?) -> Void) {
@@ -187,7 +187,7 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
                 }
                 _ = try self.machines.execute(current.machine, ["agent", "focus", current.paneID])
                 reply(nil)
-            } catch { reply("This pane or machine changed or is unavailable. Refresh before continuing.") }
+            } catch { reply(HostMessage(.paneChanged).wire) }
         }
     }
 
@@ -203,8 +203,8 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
     }
     func focusRexPane(session: String, block: String, reply: @escaping (String?) -> Void) {
         rex.queue.async {
-            do { reply(try self.rex.focus(session: session, block: block).message) }
-            catch { reply(error.localizedDescription) }
+            do { reply(try self.rex.focus(session: session, block: block).hostMessage?.wire) }
+            catch { reply(HostMessage.wire(for: error)) }
         }
     }
 }

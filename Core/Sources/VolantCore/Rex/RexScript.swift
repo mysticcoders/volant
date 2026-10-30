@@ -56,12 +56,15 @@ public enum RexScript {
         }
 
         /// The message shown when the Rex app did not switch to the pane's session, or nil when it did.
-        public var message: String? {
+        public var message: String? { hostMessage?.text }
+
+        /// The code `VolantAgentHost` replies with when the Rex app did not switch, or nil when it did.
+        public var hostMessage: HostMessage? {
             switch self {
             case .shown: return nil
-            case .refused: return String(localized: "Rex focused the pane but can’t switch to its session until Remote Control is on in Rex Settings › Rex Server.", table: "Core", comment: "Notice after focusing a Rex pane; Remote Control, Rex Settings and Rex Server are Rex's own names")
-            case .noApp: return String(localized: "Rex focused the pane. Open the Rex app to see it.", table: "Core", comment: "Notice after focusing a Rex pane")
-            case .failed: return String(localized: "Rex focused the pane but couldn’t switch to its session.", table: "Core", comment: "Notice after focusing a Rex pane")
+            case .refused: return HostMessage(.rexFocusRefused)
+            case .noApp: return HostMessage(.rexFocusNoApp)
+            case .failed: return HostMessage(.rexFocusFailed)
             }
         }
     }

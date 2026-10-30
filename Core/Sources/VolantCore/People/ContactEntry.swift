@@ -5,13 +5,6 @@ import Foundation
 public struct ContactField: Identifiable, Hashable {
     public enum Kind: String, Hashable {
         case email, phone
-
-        public var noun: String {
-            switch self {
-            case .email: return "Email"
-            case .phone: return "Phone"
-            }
-        }
     }
 
     public let id: String
@@ -32,9 +25,18 @@ public struct ContactField: Identifiable, Hashable {
         return label.prefix(1).uppercased() + label.dropFirst()
     }
 
-    /// Footer and Actions title, such as "Copy Work Email".
+    /// Footer and Actions title, such as "Copy Work Email". The label comes from Contacts already
+    /// localized, so each kind has its own whole phrase around it.
     public var copyTitle: String {
-        displayLabel.isEmpty ? "Copy \(kind.noun)" : "Copy \(displayLabel) \(kind.noun)"
+        let label = displayLabel
+        switch (kind, label.isEmpty) {
+        case (.email, true): return String(localized: "Copy Email", table: "Core", comment: "Contact action title")
+        case (.phone, true): return String(localized: "Copy Phone", table: "Core", comment: "Contact action title")
+        case (.email, false):
+            return String(localized: "Copy \(label, format: .verbatim) Email", table: "Core", comment: "Contact action title; the address's label from Contacts, such as Work")
+        case (.phone, false):
+            return String(localized: "Copy \(label, format: .verbatim) Phone", table: "Core", comment: "Contact action title; the number's label from Contacts, such as Mobile")
+        }
     }
 }
 

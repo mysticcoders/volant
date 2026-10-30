@@ -60,7 +60,7 @@ public struct ACPAccountProfile: Codable, Equatable, Identifiable {
     public func validate() throws {
         guard let known = ACPProvider(rawValue: provider) else { throw Refusal(String(localized: "Only Claude Code and Codex can use an account folder.", table: "Core", comment: "AI account settings error; Claude Code and Codex are product names")) }
         _ = try Self.launchVariables(provider: known, directory: directory)
-        guard Self.trimmedLabel(label) != nil else { throw Refusal("Enter a label of 1 to \(Self.labelLimit) characters.") }
+        guard Self.trimmedLabel(label) != nil else { throw Refusal(String(localized: "Enter a label of 1 to \(Self.labelLimit, specifier: "%lld") characters.", table: "Core", comment: "AI account settings error; the number is the longest label allowed")) }
     }
 
     public var isValid: Bool { !id.isEmpty && (try? validate()) != nil }

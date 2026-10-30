@@ -14,16 +14,20 @@ final class RexHost {
     private var verified: [String: Date] = [:]
     private lazy var watcher = RexWatch(queue: queue, home: home, executable: { [unowned self] in try self.executable() })
 
-    enum Failure: LocalizedError {
+    /// Why Rex couldn't be read or focused. The app is sent `hostMessage`'s code, through
+    /// `errorUserInfo` for thrown errors, and shows it in the owner's language.
+    enum Failure: LocalizedError, CustomNSError {
         case notFound, notRunning, unreadable, changed
-        var errorDescription: String? {
+        var hostMessage: HostMessage {
             switch self {
-            case .notFound: return "Rex was not found. Install Rex, then try again."
-            case .notRunning: return "Rex isn’t running. Open Rex, then try again."
-            case .unreadable: return "Couldn’t read Rex panes."
-            case .changed: return "This pane changed or closed. Refresh before continuing."
+            case .notFound: return HostMessage(.rexNotFound)
+            case .notRunning: return HostMessage(.rexNotRunning)
+            case .unreadable: return HostMessage(.rexUnreadable)
+            case .changed: return HostMessage(.rexPaneChanged)
             }
         }
+        var errorDescription: String? { hostMessage.text }
+        var errorUserInfo: [String: Any] { [HostMessage.userInfoKey: hostMessage.wire] }
     }
 
     /// Where Rex installs its CLI: inside its server bundle, inside the app, then owner tool folders.
@@ -171,7 +175,7 @@ final class RexWatch {
         let task = Process(), pipe = Pipe()
         do { task.executableURL = try executable() }
         catch {
-            publish(nil, overview: nil, problem: (error as? LocalizedError)?.errorDescription ?? RexHost.Failure.notFound.errorDescription)
+            publish(nil, overview: nil, problem: (error as? RexHost.Failure ?? .notFound).hostMessage.wire)
             scheduleRestart()
             return
         }
@@ -193,7 +197,7 @@ final class RexWatch {
         do { try task.run() }
         catch {
             pipe.fileHandleForReading.readabilityHandler = nil
-            publish(nil, overview: nil, problem: RexHost.Failure.unreadable.errorDescription)
+            publish(nil, overview: nil, problem: RexHost.Failure.unreadable.hostMessage.wire)
             scheduleRestart()
             return
         }
@@ -217,7 +221,7 @@ final class RexWatch {
         if buffer.count > Self.maximumLine {
             buffer = Data()
             terminate()
-            publish(nil, overview: nil, problem: RexHost.Failure.unreadable.errorDescription)
+            publish(nil, overview: nil, problem: RexHost.Failure.unreadable.hostMessage.wire)
         }
     }
 
@@ -231,7 +235,7 @@ final class RexWatch {
         if status == 0 {
             backoff = 1
         } else {
-            publish(nil, overview: nil, problem: (status == RexScript.notRunningStatus ? RexHost.Failure.notRunning : .unreadable).errorDescription)
+            publish(nil, overview: nil, problem: (status == RexScript.notRunningStatus ? RexHost.Failure.notRunning : .unreadable).hostMessage.wire)
         }
         scheduleRestart(immediately: status == 0)
     }

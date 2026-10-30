@@ -144,12 +144,18 @@ public enum FSearch {
 public enum FSearchError: Error, LocalizedError, Equatable {
     case notRunning, timedOut, tooLarge, malformed, daemon(String)
     public var errorDescription: String? {
+        if case .daemon(let message) = self { return "fsearch: " + message }
+        return hostMessage?.text
+    }
+
+    /// The code `VolantAgentHost` sends for this error, or nil for the daemon's own text.
+    public var hostMessage: HostMessage? {
         switch self {
-        case .notRunning: return String(localized: "fsearch isn’t running. Run fsearch once in Terminal, or start it at login with fsearch install --login.", table: "Core", comment: "File search error; fsearch and its command are not translated")
-        case .timedOut: return String(localized: "fsearch didn’t answer in time.", table: "Core", comment: "File search error; fsearch is a program name")
-        case .tooLarge: return String(localized: "fsearch sent more than Volant reads.", table: "Core", comment: "File search error; fsearch is a program name")
-        case .malformed: return String(localized: "fsearch sent a reply Volant couldn’t read.", table: "Core", comment: "File search error; fsearch is a program name")
-        case .daemon(let message): return "fsearch: " + message
+        case .notRunning: return HostMessage(.fsearchNotRunning)
+        case .timedOut: return HostMessage(.fsearchTimedOut)
+        case .tooLarge: return HostMessage(.fsearchTooLarge)
+        case .malformed: return HostMessage(.fsearchMalformed)
+        case .daemon: return nil
         }
     }
 }

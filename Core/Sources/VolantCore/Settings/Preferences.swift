@@ -227,7 +227,10 @@ public struct Preferences: Codable {
     }
 
     public struct CustomThemeLimit: LocalizedError {
-        public var errorDescription: String? { "Volant keeps up to \(CustomColorTheme.maximumCount) imported themes. Remove one before importing another." }
+        public var errorDescription: String? {
+            String(localized: "Volant keeps up to \(CustomColorTheme.maximumCount, specifier: "%lld") imported themes. Remove one before importing another.", table: "Core",
+                   comment: "Theme import error; the most imported themes Volant keeps")
+        }
     }
 
     public struct AppearanceConflict: LocalizedError {

@@ -40,14 +40,21 @@ public enum ChatAttachmentLimits {
     /// Returns the reason a set of attachments cannot be sent, or nil when it can. Oversized items
     /// are refused rather than cut short, so an agent never answers from a silently truncated note.
     public static func problem(_ attachments: [ChatAttachment], apple: Bool = false) -> String? {
-        guard attachments.count <= count else { return "Attach at most \(count) items." }
+        guard attachments.count <= count else {
+            return String(localized: "Attach at most \(count, specifier: "%lld") items.", table: "Core", comment: "AI Chat attachment error; the most attachments one message may carry")
+        }
         if let large = attachments.first(where: { $0.size > perItem }) {
-            return "“\(large.title)” is too large to attach (over \(perItem / 1000) KB)."
+            return String(localized: "“\(large.title, format: .verbatim)” is too large to attach (over \(perItem / 1000, specifier: "%lld") KB).", table: "Core",
+                          comment: "AI Chat attachment error; the attachment's title, then the per-item limit in kilobytes")
         }
         let budget = apple ? appleTotal : total
         guard attachments.reduce(0, { $0 + $1.size }) <= budget else {
-            return apple ? "Apple Intelligence can take about \(appleTotal / 1000) KB of attachments. Remove one and try again."
-                         : "Attachments are limited to \(total / 1000) KB in one message. Remove one and try again."
+            if apple {
+                return String(localized: "Apple Intelligence can take about \(appleTotal / 1000, specifier: "%lld") KB of attachments. Remove one and try again.", table: "Core",
+                              comment: "AI Chat attachment error; the attachment limit in kilobytes")
+            }
+            return String(localized: "Attachments are limited to \(total / 1000, specifier: "%lld") KB in one message. Remove one and try again.", table: "Core",
+                          comment: "AI Chat attachment error; the attachment limit in kilobytes")
         }
         return nil
     }

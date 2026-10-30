@@ -59,6 +59,8 @@ final class BackupPlanTests: XCTestCase {
         XCTAssertTrue(plan.report.isEmpty)
     }
 
+    /// `swift test` has no Core catalog, so the report shows the key's plural form even for one
+    /// note; the app's English singular comes from the catalog (`CoreLocalizationTests`).
     func testCollidingNotesAreRenamedRatherThanReplacingExistingOnes() throws {
         try writeConfig()
         try writeNote("shared.md", "incoming", in: source.appendingPathComponent("Notes"))
@@ -67,7 +69,7 @@ final class BackupPlanTests: XCTestCase {
         let plan = try BackupFolder.plan(source: source, notesDestination: notesDestination)
         XCTAssertEqual(plan.notes.map(\.destination), ["imported-shared.md"])
         XCTAssertEqual(plan.renamedCount, 1)
-        XCTAssertEqual(plan.report, ["1 note already exist by name and will be added alongside the originals."])
+        XCTAssertEqual(plan.report, ["1 notes already exist by name and will be added alongside the originals."])
 
         try BackupFolder.apply(plan, source: source, configURL: configURL, notesDestination: notesDestination)
         XCTAssertEqual(try String(contentsOf: notesDestination.appendingPathComponent("shared.md"), encoding: .utf8), "existing")

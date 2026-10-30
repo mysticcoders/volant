@@ -27,7 +27,7 @@ final class ACPAgentDetection: ObservableObject {
                         return left == right ? ($0.title < $1.title) : left < right
                     }
                 } else {
-                    self.message = error ?? String(localized: "Couldn’t check for installed agents.")
+                    self.message = HostMessage.display(error) ?? String(localized: "Couldn’t check for installed agents.")
                 }
             }
         }
