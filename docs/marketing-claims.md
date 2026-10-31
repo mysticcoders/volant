@@ -213,7 +213,13 @@ Added in 0.3.28:
 | Calculator answers follow the Mac's language and region (dates, 12/24-hour clocks, durations, currency), and Copy matches the card | Yes | #294, #334; Core tests pin en_US and check de_DE, fr_FR and ja_JP formatting, Copy and swap round trips; translated words are unreviewed betas; kitchen, currency-tag and color words are still English; not verified in a VM render | Release notes; say beta for translated words |
 | Dictation pastes with the key that types v in the current layout (Dvorak no longer gets Command-K) | Yes | #333; `tools/check-paste-key.sh` against installed U.S., Dvorak, Dvorak – QWERTY ⌘ and French layouts; no live paste on a Dvorak Mac | Release notes |
 
-Merged after 0.3.28, not in the current download:
+Added in 0.3.29:
+
+| Story | In 0.3.29 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| usevolant.com redirects plain HTTP to HTTPS and sends a one-year HSTS header | Website | #313, #336; Always Use HTTPS on the zone verified October 30, 2026 (301, path and query kept); HSTS verified by the production smoke in `Scripts/ship.sh`; app unchanged from 0.3.28 | Release notes only |
+
+Merged after 0.3.29, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |

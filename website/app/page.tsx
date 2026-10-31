@@ -717,7 +717,7 @@ export default function Home() {
             Version {appVersion} · macOS 15+ · Apple silicon &amp; Intel
           </span>
           <p className="download-scope">
-            New in 0.3.28: calculator answers follow your Mac's language and
+            Since 0.3.28: calculator answers follow your Mac's language and
             region, and dictation pastes on any keyboard layout. See{' '}
             <a href={`${repositoryURL}/releases`}>every release</a>.
           </p>
