@@ -42,8 +42,17 @@ The CSP implementation follows the framework's [nonce/dynamic-rendering guidance
 - Cause: Cloudflare's asset path bypasses the worker; component-injected styles also differ from server-rendered styles.
 - Prevention: one policy for worker and assets, assertions against assets actually loaded by a browser, and hydration/navigation checks alongside header assertions. These checks are automated in PR CI; screenshot inspection and signed live-XPC smoke remain separately reported evidence.
 
+## Production verification — 2026-10-30
+
+Read-only checks against the 0.3.28 deployment, with no configuration change (#313):
+
+- `VOLANT_WEBSITE_TARGET=production npm run test:security` (`test:security:production`, fixed to `https://usevolant.com`; the loopback guard still applies to every other run) passed every browser assertion: desktop and mobile, both appearance settings, CSP with a fresh nonce per response, no inline-script or eval allowance, the shared header policy and no-store HTML on `/`, `/docs`, `/docs/agents`, `/docs/calculator` and a 404, documentation navigation without runtime errors or CSP violations, a blocked injected markup script, and `nosniff`, resource-policy and immutable caching on the hashed JS and CSS the browser actually loaded. The screenshots were inspected; the site is dark-only by design.
+- It then failed its HTTP check: `http://usevolant.com/`, `/docs/agents` and `/updates/appcast.xml` return 200 over plain HTTP. The app is unaffected (its feed is `https://` and the DMG is signed and notarized), but browsers following an `http://` link stay on HTTP.
+
+Policy decided October 30, 2026: the owner turns on Cloudflare's **Always Use HTTPS** for the usevolant.com zone, and the site sends `Strict-Transport-Security: max-age=31536000` from `security-headers.json` (Worker and static assets), without `includeSubDomains` or preload, so the `getvolant.*` redirect domains and future subdomains are unaffected and the policy stays reversible. Browsers ignore HSTS over plain HTTP, so it takes effect only once a visitor reaches HTTPS. `Scripts/ship.sh` now refuses to start a release while plain HTTP does not redirect permanently, and runs the production smoke, including the redirect and HSTS checks, before publishing the GitHub release.
+
 ## Remaining backlog
 
 1. Continue to treat ZAP warning exits as warnings, not a clean scan. Keep the CSS-only CSP exception explicit; do not weaken script protection to make libraries render.
 2. Recheck the temporary overrides and vendored CSS when upstream packages change; run OSV/npm and the browser suite again.
-3. Production Cloudflare headers/TLS, cache behavior and downloadable release verification remain for the separately authorized release cycle. Installed authenticated ACP provider testing remains separate from dependency resolution and fake transports.
+3. Production headers and cache behavior were verified on October 30, 2026 (below). TLS configuration beyond certificate/hostname and TLS 1.2/1.3 negotiation has not been audited. Installed authenticated ACP provider testing remains separate from dependency resolution and fake transports.

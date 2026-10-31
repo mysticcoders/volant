@@ -2,8 +2,10 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { chromium } from 'playwright';
 
-const base = new URL(process.env.VOLANT_WEBSITE_TEST_URL ?? 'http://127.0.0.1:8787');
-assert.equal(base.hostname, '127.0.0.1', 'Only the isolated loopback fixture may be tested');
+// Production mode is read-only and fixed to the public origin; every other run stays on loopback.
+const production = process.env.VOLANT_WEBSITE_TARGET === 'production';
+const base = new URL(production ? 'https://usevolant.com' : process.env.VOLANT_WEBSITE_TEST_URL ?? 'http://127.0.0.1:8787');
+if (!production) assert.equal(base.hostname, '127.0.0.1', 'Only the isolated loopback fixture may be tested');
 const artifacts = process.env.VOLANT_WEBSITE_ARTIFACTS ?? '/tmp/volant-website-security';
 await mkdir(artifacts, { recursive: true });
 const browser = await chromium.launch({ headless: true });
@@ -33,6 +35,7 @@ try {
         for (const [name, value] of Object.entries({
           'x-content-type-options': 'nosniff', 'x-frame-options': 'DENY',
           'cross-origin-opener-policy': 'same-origin', 'cross-origin-resource-policy': 'same-origin',
+          'strict-transport-security': 'max-age=31536000',
         })) assert.equal(headers[name], value, `${route}: ${name}`);
         assert.match(headers['permissions-policy'], /geolocation=\(\)/);
         assert.match(headers['cache-control'], /no-store/);
@@ -91,9 +94,17 @@ try {
     assert.equal(asset.status, 200);
     assert.equal(asset.headers.get('X-Content-Type-Options'), 'nosniff', path);
     assert.equal(asset.headers.get('Cross-Origin-Resource-Policy'), 'same-origin', path);
+    assert.equal(asset.headers.get('Strict-Transport-Security'), 'max-age=31536000', path);
     if (new URL(path, base).pathname.startsWith('/_next/static/')) assert.match(asset.headers.get('Cache-Control'), /immutable/);
   }
-  console.log('Website security smoke passed: desktop/mobile, light/dark, hydration, navigation, headers and fresh nonces.');
+  if (production) {
+    for (const path of ['/', '/docs/agents?ref=smoke', '/updates/appcast.xml']) {
+      const plain = await fetch(new URL(path, 'http://usevolant.com'), { redirect: 'manual' });
+      assert.ok([301, 308].includes(plain.status), `http://usevolant.com${path} must redirect permanently, got ${plain.status}`);
+      assert.equal(plain.headers.get('Location'), new URL(path, base).href, `http://usevolant.com${path} must keep its path`);
+    }
+  }
+  console.log(`Website security smoke passed against ${base.origin}: desktop/mobile, light/dark, hydration, navigation, headers and fresh nonces${production ? ', HTTPS redirects' : ''}.`);
 } finally {
   await browser.close();
 }

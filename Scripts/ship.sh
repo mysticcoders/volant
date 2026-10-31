@@ -13,7 +13,8 @@
 # keeps the two-stage order: the first deploy serves the previous feed while the public download is
 # verified, and only then does a second deploy serve the merged feed, verified byte for byte. It
 # finishes by publishing the GitHub release the app's Changelog item opens and posting the
-# verification on the pull request.
+# verification on the pull request. Preflight requires plain HTTP to redirect permanently to HTTPS, and
+# the production browser security smoke must pass before the GitHub release is published.
 #
 # All work happens in a temporary worktree, so the main checkout and its branch are untouched. A
 # failure stops at that point and states what has and has not been published.
@@ -88,6 +89,8 @@ git -C "$ROOT" fetch -q origin
 LOGS="$(mktemp -d "$ROOT/dist-release.ship-$VERSION.XXXXXX")"
 WT="$LOGS/worktree"
 gh release view "v$VERSION" > /dev/null 2>&1 && fail "GitHub release v$VERSION already exists"
+[[ "$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' "http://${SITE#https://}/")" =~ ^30[18]\ $SITE/$ ]] \
+  || fail "http://${SITE#https://}/ does not redirect permanently to $SITE/; turn on Always Use HTTPS for the zone"
 
 if [[ -z "$MODE" ]]; then
   CURRENT="$(git -C "$ROOT" show origin/main:project.yml | sed -n 's/.*MARKETING_VERSION: "\(.*\)"/\1/p' | head -1)"
@@ -235,6 +238,8 @@ fi
 for path in / /docs "/updates/Volant-$VERSION.dmg" "/updates/Volant-$PREVIOUS.dmg"; do
   [[ "$(curl -s -o /dev/null -w '%{http_code}' -I "$SITE$path")" == 200 ]] || fail "$SITE$path did not return 200"
 done
+(cd "$WT/website" && VOLANT_WEBSITE_ARTIFACTS="$LOGS/site-smoke" npm run --silent test:security:production) > "$LOGS/site-smoke.log" 2>&1 \
+  || fail "the production security smoke failed; see $LOGS/site-smoke.log"
 
 step "Publish the GitHub release"
 RELEASE_URL="$(gh release create "v$VERSION" "$DMG" --target "$MERGED" --title "Volant $VERSION" \
@@ -247,6 +252,7 @@ cat > "$LOGS/report.md" <<EOF
 - **Stage 1:** Worker version \`$DEPLOY1\` served the download while the $PREVIOUS feed stayed live. The homepage offers \`Volant-$VERSION.dmg\`; the public DMG (HTTP 200, $SIZE bytes) matched SHA-256 \`$SHA\`, passed stapler validation and passed Gatekeeper.
 - **Stage 2:** Worker version \`$DEPLOY2\` serves the $VERSION feed: $FEED_SIGNATURE.
 - **Pages:** \`/\`, \`/docs\`, and the $VERSION and $PREVIOUS DMGs return 200.
+- **Security:** the production browser smoke passed: CSP with fresh nonces, shared headers, no-store HTML, immutable hashed assets, desktop/mobile hydration and permanent HTTP→HTTPS redirects.
 - **GitHub release:** $RELEASE_URL
 - **Still unverified:** installed $PREVIOUS → $VERSION Sparkle upgrades.
 EOF
