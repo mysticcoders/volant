@@ -17,6 +17,10 @@ final class CoreLocalizationTests: XCTestCase {
         XCTAssertTrue(herdr.help.hasPrefix("1 agent needs you."), herdr.help)
         XCTAssertEqual(DictationTypingSession.Outcome.typed(1).message, "Typed 1 character.")
         XCTAssertEqual(DictationTypingSession.Outcome.typed(26).message, "Typed 26 characters.")
+        let english = Locale(identifier: "en_US"), now = ISO8601DateFormatter().date(from: "2026-10-06T12:15:00Z")!
+        let paris = TimeZone(identifier: "Europe/Paris")!
+        XCTAssertEqual(DateCalculator.evaluate("8 hours in workdays", now: now, localZone: paris, locale: english)?.result, "1 workday")
+        XCTAssertEqual(DateCalculator.evaluate("workdays until tomorrow", now: now, localZone: paris, locale: english)?.result, "1 workday")
         XCTAssertEqual(ExtensionNetworkError.hostsNotApproved(["one.example", "two.example"]).errorDescription,
                        "Allow access to one.example and two.example to use this extension.")
     }

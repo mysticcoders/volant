@@ -91,7 +91,7 @@ final class CaffeinateService: ObservableObject {
             return display ? String(localized: "Mac & display awake · until stopped", comment: "Caffeinate status")
                 : String(localized: "Mac awake · display may sleep · until stopped", comment: "Caffeinate status")
         }
-        let time = String(format: "%d:%02d", remaining / 60, remaining % 60)
+        let time = Duration.seconds(remaining).formatted(.time(pattern: .minuteSecond))
         return display ? String(localized: "Mac & display awake · \(time) remaining", comment: "Caffeinate status; the time is minutes:seconds")
             : String(localized: "Mac awake · display may sleep · \(time) remaining", comment: "Caffeinate status; the time is minutes:seconds")
     }

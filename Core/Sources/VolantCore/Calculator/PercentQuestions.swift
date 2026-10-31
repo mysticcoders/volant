@@ -36,16 +36,20 @@ public enum PercentQuestions {
         if let (part, total) = values(share) ?? values(shareIs) ?? values(shareOf).map({ ($0.1, $0.0) }) {
             guard total != 0 else { return nil }
             let text = percent(part / total * 100, locale: locale)
+            let shown = Calculator.format(part, locale: locale), whole = Calculator.format(total, locale: locale)
             return CalculationAnswer(input: input, inputDetail: nil, result: text,
-                                     resultDetail: "\(Calculator.format(part, locale: locale)) of \(Calculator.format(total, locale: locale))",
+                                     resultDetail: String(localized: "\(shown, format: .verbatim) of \(whole, format: .verbatim)", table: "Core",
+                                                          comment: "Calculator percentage answer detail: a part of a total, such as 20 of 80"),
                                      copyText: text)
         }
         if let (part, rate) = values(whole) {
             guard rate != 0 else { return nil }
             let total = (part / rate * 100 * 1e10).rounded() / 1e10
             let text = Calculator.format(total, locale: locale)
+            let share = Calculator.format(rate, locale: locale) + "%", shown = Calculator.format(part, locale: locale)
             return CalculationAnswer(input: input, inputDetail: nil, result: text,
-                                     resultDetail: "\(Calculator.format(rate, locale: locale))% of \(text) is \(Calculator.format(part, locale: locale))",
+                                     resultDetail: String(localized: "\(share, format: .verbatim) of \(text, format: .verbatim) is \(shown, format: .verbatim)", table: "Core",
+                                                          comment: "Calculator percentage answer detail: a percentage of the total is the part, such as 20% of 80 is 16"),
                                      copyText: text)
         }
         if let (from, to) = values(changeFrom) ?? values(changeTo) {

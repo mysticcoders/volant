@@ -161,7 +161,7 @@ final class DateCalculatorTests: XCTestCase {
         XCTAssertEqual(card("5 business days ago").first, "Tuesday, September 29")
         XCTAssertEqual(card("today + 10 workdays").first, "Wednesday, October 21")
         XCTAssertEqual(card("workdays between 2026-12-24 and 2027-01-04").first, "5 workdays")
-        XCTAssertEqual(card("workdays until tomorrow").first, "1 workday")
+        XCTAssertEqual(card("workdays until Oct 8").first, "2 workdays")
     }
 
     func testWorkdaysWithoutRulesCountWeekendsOnly() {
@@ -327,7 +327,7 @@ final class DateCalculatorTests: XCTestCase {
     func testHoursInEightHourWorkdays() {
         XCTAssertEqual(card("55h in workdays"), ["6.875 workdays", "6 workdays 7 hours", "6.875 workdays"])
         XCTAssertEqual(answer("55h in workdays")?.inputDetail, "8-hour days")
-        XCTAssertEqual(card("8 hours in workdays").first, "1 workday")
+        XCTAssertEqual(card("16 hours in workdays").first, "2 workdays")
         XCTAssertEqual(card("2h 30min in workdays"), ["0.3125 workdays", "2 hours 30 minutes", "0.3125 workdays"])
         XCTAssertEqual(card("3 workdays in hours").first, "24 hours")
         XCTAssertEqual(card("1.5 workdays in minutes").first, "720 minutes")

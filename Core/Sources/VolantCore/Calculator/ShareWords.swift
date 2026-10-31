@@ -23,12 +23,12 @@ enum ShareWords {
         let input = text.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
         guard input.utf8.count <= 128 else { return nil }
         if let (fraction, amount) = percentOf(input), let seconds = MoneyCalculator.durationSeconds(amount, locale: locale) {
-            let text = DateCalculator.spanText(seconds * fraction)
+            let text = DateCalculator.spanText(seconds * fraction, locale: locale)
             return CalculationAnswer(input: input, inputDetail: nil, result: text, resultDetail: nil, copyText: text)
         }
         guard let (numerator, denominator, amount) = parse(input) else { return nil }
         if let seconds = MoneyCalculator.durationSeconds(amount, locale: locale) {
-            let text = DateCalculator.spanText(seconds * numerator / denominator)
+            let text = DateCalculator.spanText(seconds * numerator / denominator, locale: locale)
             return CalculationAnswer(input: input, inputDetail: nil, result: text, resultDetail: nil, copyText: text)
         }
         let scale = " * \(Int(numerator))" + (denominator == 1 ? "" : " / \(Int(denominator))")

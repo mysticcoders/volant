@@ -210,6 +210,7 @@ Merged after 0.3.27, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
+| Calculator answers follow the Mac's language and region (dates, 12/24-hour clocks, durations, currency), and Copy matches the card | No | #294; Core tests pin en_US and check de_DE, fr_FR and ja_JP formatting, Copy and swap round trips; translated words are unreviewed betas; kitchen, currency-tag and color words are still English; not verified in a VM render | Release notes; say beta for translated words |
 
 ## Privacy language
 

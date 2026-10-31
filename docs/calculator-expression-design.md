@@ -307,3 +307,15 @@ Conversions now cover about 160 currencies. ECB stays the source for the 29 it p
 - **Rate fetches:** `CurrencyConverter.feedsNeeded` decides whether a query needs ECB rates or crypto prices after dropping the framing the calculator forgives, so `what is 100 usd in eur?` fetches on first use like `100 usd in eur`, and mixed-currency arithmetic fetches too; ExchangeRate-API is fetched only when one of those names a currency outside the ECB list. One-currency arithmetic never fetches.
 
 Not included: trailing words after an amount (`2 dozen eggs`), a decimal separator setting (numbers follow the Mac's region), and other ambiguous abbreviations the zone table does not list.
+
+## Locale formatting — October 30, 2026
+
+Answers follow the Mac's language and region (the locale passed to `CalculationAnswer.answers`, `.current` in the app), and Copy copies what the card shows (#294; the full rule is in docs/localization.md under "Formatting"):
+
+- **Numbers and currency:** the locale's decimal and grouping separators, as before, and currency in the locale's format for the target currency (`€80.00` in English, `80,00 €` in German).
+- **Dates and times:** dates use the locale's date format (`Dienstag, 27. Oktober`), and clock times its 12- or 24-hour clock and the owner's own 24-hour setting (`21:00 CEST` in German). Previously clocks were always 12-hour.
+- **Durations and counts:** `CalculatorText` formats days, weeks, years, hours, minutes and seconds with Foundation's unit words and plural rules (`2 Stunden 25 Minuten`, `80 Tage`, `1.992 Stunden`, `80日`); fractional durations keep the four-decimal rounding with the locale's separator (`3,25 Stunden`). Workdays, week and day numbers, "ago", ranges ("to"), "at", the time-difference and day words, and the tip and percentage details are catalog strings, translated in every beta language.
+- **Copy:** each card's Copy text is formatted in the same locale as the card, so `now` copies `Dienstag, 6. Oktober um 14:15` in German. Command-Return puts it in the search field, where locale numbers read back.
+- **Fixed:** color values, number bases, Roman numerals, ISO 8601 dates and week labels, Unix time and swap queries. Time swaps keep `9:00pm cet in est`; unit and currency swaps write the amount as the locale's calculator reads it (`3,106856 mi in km` in German), and `LocaleFormattingTests` round-trips them in `en_US` and `de_DE`. Percentages keep `%` right after the number, since the calculator reads it only there.
+
+Precision and rounding are unchanged; only presentation changed. English output is unchanged.
