@@ -206,11 +206,17 @@ Added in 0.3.27:
 | Extensions run faster: modules reach the sandbox as one typed-array copy | Yes | #330; in-process fixture with the production host: Base64 warm run 42.9 → 5.5 ms, peak footprint 91 → 61 MiB; not measured through the signed XPC helper | Release notes; give figures as fixture measurements |
 | Interpolated Core messages and helper messages translated in every beta language | Yes | #331; app-hosted English checks, Core round-trip tests, pseudo-locale and right-to-left VM renders; translations remain unreviewed betas; calculator answers still English | Release notes; always say beta |
 
-Merged after 0.3.27, not in the current download:
+Added in 0.3.28:
+
+| Story | In 0.3.28 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| Calculator answers follow the Mac's language and region (dates, 12/24-hour clocks, durations, currency), and Copy matches the card | Yes | #294, #334; Core tests pin en_US and check de_DE, fr_FR and ja_JP formatting, Copy and swap round trips; translated words are unreviewed betas; kitchen, currency-tag and color words are still English; not verified in a VM render | Release notes; say beta for translated words |
+| Dictation pastes with the key that types v in the current layout (Dvorak no longer gets Command-K) | Yes | #333; `tools/check-paste-key.sh` against installed U.S., Dvorak, Dvorak – QWERTY ⌘ and French layouts; no live paste on a Dvorak Mac | Release notes |
+
+Merged after 0.3.28, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
-| Calculator answers follow the Mac's language and region (dates, 12/24-hour clocks, durations, currency), and Copy matches the card | No | #294; Core tests pin en_US and check de_DE, fr_FR and ja_JP formatting, Copy and swap round trips; translated words are unreviewed betas; kitchen, currency-tag and color words are still English; not verified in a VM render | Release notes; say beta for translated words |
 
 ## Privacy language
 
