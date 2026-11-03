@@ -12,7 +12,9 @@ let package = Package(
         .library(name: "VolantCore", type: .static, targets: ["VolantCore"])
     ],
     targets: [
-        .target(name: "VolantCore"),
+        // Swift marks public declarations as always used, so each helper would keep all of the core.
+        // Internalizing at link lets DEAD_CODE_STRIPPING drop what a binary does not reach.
+        .target(name: "VolantCore", swiftSettings: [.unsafeFlags(["-Xfrontend", "-internalize-at-link"])]),
         .testTarget(name: "VolantCoreTests", dependencies: ["VolantCore"])
     ]
 )
