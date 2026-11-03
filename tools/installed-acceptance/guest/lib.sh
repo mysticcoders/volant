@@ -129,6 +129,7 @@ open_settings() {
   status_menu "Settings…"
   for _ in $(seq 1 20); do [ "$(onscreen Volant | grep -c 'Volant Settings')" -ge 1 ] && break; sleep 0.5; done
   sleep 1
+  AX Volant set "Volant Settings" settings-search "" >/dev/null 2>&1
   [ -n "${1:-}" ] && { AX Volant select "Volant Settings" "$1" >/dev/null; sleep 1.5; }
 }
 

@@ -10,6 +10,16 @@ CMD_OPT="{command down, option down}"
 finder_front() { osascript -e 'tell application "Finder" to activate' >/dev/null; sleep 1; }
 textedit_hotkey() { config_get appHotKeys.0.hotKey; }
 
+# Counts rows that confirm TextEdit's shortcut was saved or removed. The confirmation lasts 2.5 s, so this
+# reads the fast axtree dump right after the key instead of a slower JXA walk; the app name may carry
+# direction isolates.
+confirmations() {
+  local dump
+  dump=$("$W/bin/axtree" "$ID" dump "$S" 2>/dev/null)
+  { echo "===== $1 $(date +%T)"; echo "$dump"; } >> "$A/shortcuts-confirmations.txt"
+  grep -ci "TextEdit.\{0,8\}shortcut $1\|^AXStaticText .*| $1 |" <<<"$dump"
+}
+
 # Closes Volant's Notes window if a test key opened it.
 close_notes() {
   [ "$(onscreen Volant | grep -c ' Notes$')" -ge 1 ] || return 0
@@ -22,7 +32,8 @@ record_textedit() {
   AX Volant press "$S" "prefix=TextEdit shortcut:" >/dev/null
   sleep 0.8
   key "$1" "$2" >/dev/null
-  sleep 0.6
+  sleep 0.4
+  SAVED=$(confirmations saved)
 }
 
 # From Finder, presses a combination and reports which app ends up in front.
@@ -55,13 +66,13 @@ else
   osascript -e "tell application id \"$ID\" to activate"; sleep 1
 fi
 AX Volant select "$S" "App Shortcuts" >/dev/null; sleep 1.5
-AX Volant set "$S" "role=AXTextField" TextEdit >/dev/null
+AX Volant set "$S" app-shortcuts-search TextEdit >/dev/null
 for _ in $(seq 1 30); do [ "$(AX Volant count "$S" "prefix=TextEdit shortcut:")" -ge 1 ] && break; sleep 2; done
 shot app-shortcuts
 
 step "record a shortcut"
 record_textedit 17 "$CMD_OPT"
-saved=$(AX Volant count "$S" "TextEdit shortcut saved")
+saved=$SAVED
 expect_eq "recording writes config.json" "cmd+option+t" "$(textedit_hotkey)"
 expect_eq "the row says Saved" 1 "$saved"
 
@@ -125,8 +136,8 @@ kill $holder 2>/dev/null
 step "remove the shortcut"
 osascript -e "tell application id \"$ID\" to activate"; sleep 1
 AX Volant focus "$S" "prefix=TextEdit shortcut:" >/dev/null; sleep 0.5
-key 51 >/dev/null; sleep 0.6
-removed=$(AX Volant count "$S" "TextEdit shortcut removed")
+key 51 >/dev/null; sleep 0.4
+removed=$(confirmations removed)
 expect_eq "Delete removes the binding from config.json" "[]" "$(config_json appHotKeys)"
 expect_eq "the row says Removed" 1 "$removed"
 quit_app $TE

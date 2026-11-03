@@ -47,7 +47,8 @@ case "dump":
         let title: String = attribute(element, kAXTitleAttribute) ?? ""
         let description: String = attribute(element, kAXDescriptionAttribute) ?? ""
         let label: String = attribute(element, "AXLabel") ?? ""
-        print([role, title, description, label, frame(element)].joined(separator: " | "))
+        let value: String = attribute(element, kAXValueAttribute) ?? ""
+        print([role, title, description, label, value, frame(element)].joined(separator: " | "))
     } }
 case "focused":
     guard let element: AXUIElement = attribute(root, kAXFocusedUIElementAttribute) else { print("none"); exit(0) }

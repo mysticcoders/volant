@@ -10,7 +10,7 @@ set -euo pipefail
 BASE_VM="${BASE_VM:-volant-sequoia-15}"
 VM="volant-sparkle-$(date +%Y%m%d-%H%M%S)"
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_ed25519}"
-SSH_OPTS=(-i "$SSH_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=10)
+SSH_OPTS=(-i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=10)
 CONTAINER='~/Library/Containers/com.mysticcoders.volant'
 PREFS="$CONTAINER/Data/Library/Preferences/com.mysticcoders.volant.plist"
 

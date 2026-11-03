@@ -85,7 +85,11 @@ expect_eq "Escape closes Settings" 0 "$(onscreen Volant | grep -c "$S")"
 step "change a setting"
 open_settings General
 before=$(config_get showOnLaunch)
-AX Volant press "$S" "role=AXCheckBox:Show launcher when Volant starts" >/dev/null; sleep 1.5
+# JXA's walk of this long page can come back without the switch, so press it through axtree by its
+# position among the switches.
+switch=$("$W/bin/axtree" "$ID" dump "$S" | awk -F' [|] ' '$1 == "AXCheckBox" { n++; if ($3 == "Show launcher when Volant starts") { print n; exit } }')
+"$W/bin/axtree" "$ID" press "$S" AXCheckBox "$switch" >/dev/null
+for _ in $(seq 1 10); do [ "$(config_get showOnLaunch)" = false ] && break; sleep 0.5; done
 expect_eq "turning off Show launcher when Volant starts writes config.json" "false" "$(config_get showOnLaunch)"
 record NOTE "showOnLaunch before the change" "$before"
 

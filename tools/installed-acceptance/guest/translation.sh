@@ -149,7 +149,9 @@ else
 fi
 echo sentinel | pbcopy
 key 36 "{command down}"; sleep 1
-expect_eq "copying Arabic keeps every character" "$arabic" "$(pbpaste)"
+# The result's accessibility text wraps the translation in direction isolates (U+2066-U+2069); Copy
+# returns the translation itself.
+expect_eq "copying Arabic keeps every character" "$(printf '%s' "$arabic" | python3 -c 'import sys; print(sys.stdin.read().translate({c: None for c in range(0x2066, 0x206A)}), end="")')" "$(pbpaste)"
 shot rtl-result
 record NOTE "inspect right-to-left layout" "shots/translation-rtl-result.png and shots/translation-rtl-source.png"
 

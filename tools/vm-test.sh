@@ -11,7 +11,7 @@ set -euo pipefail
 BASE_VM="${BASE_VM:-volant-sequoia-15}"
 VM="volant-test-$(date +%Y%m%d-%H%M%S)"
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_ed25519}"
-SSH_OPTS=(-i "$SSH_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=10)
+SSH_OPTS=(-i "$SSH_KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=10)
 CONTAINER='~/Library/Containers/com.mysticcoders.volant'
 
 DMG="${1:?Usage: volant-vm-test.sh <path-to-Volant.dmg> [--gatekeeper-prompt] [--keep]}"
@@ -46,7 +46,7 @@ ensure_ssh_key() {
   pub="$(cat "$SSH_KEY.pub")"
   expect <<EOF >/dev/null
 set timeout 90
-spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR admin@$VM_IP "mkdir -p ~/.ssh && chmod 700 ~/.ssh && echo '$pub' >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
+spawn ssh -o PubkeyAuthentication=no -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR admin@$VM_IP "mkdir -p ~/.ssh && chmod 700 ~/.ssh && echo '$pub' >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
 expect {
   "assword:" { send "admin\r"; exp_continue }
   timeout { exit 1 }

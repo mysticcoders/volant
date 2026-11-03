@@ -64,7 +64,7 @@ try:
                     f"mkdir -p ~/.ssh && cat '{guest}/ssh-key.pub' >> ~/.ssh/authorized_keys"], check=True)
     address = subprocess.check_output(["tart", "ip", args.clone], text=True).strip()
     with (output / "e2e.log").open("w") as handle:
-        subprocess.run(["ssh", "-i", str(key), "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null",
+        subprocess.run(["ssh", "-i", str(key), "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "-o", "IdentitiesOnly=yes",
                         "-o", "LogLevel=ERROR", f"admin@{address}", f"bash '{guest}/e2e.sh'"],
                        stdout=handle, stderr=subprocess.STDOUT, timeout=1800, check=False)
 finally:

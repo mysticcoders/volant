@@ -150,7 +150,7 @@ def shutdown():
 
 def ssh(command, quiet=False, logname=None, timeout=1800):
     """Runs a command in the guest's admin account and returns its exit status."""
-    base = ["ssh", "-i", str(key), "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null",
+    base = ["ssh", "-i", str(key), "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "-o", "IdentitiesOnly=yes",
             "-o", "LogLevel=ERROR", "-o", "ConnectTimeout=10", f"admin@{state['address']}", command]
     if quiet:
         return subprocess.run(base, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=60).returncode

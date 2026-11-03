@@ -143,6 +143,7 @@ extension ResolvedTheme {
 /// A rounded search field without a bezel, used by the sidebar and App Shortcuts.
 struct SettingsSearchField: View {
     let prompt: String
+    let identifier: String
     @Binding var text: String
     var submit: () -> Void = {}
 
@@ -152,6 +153,7 @@ struct SettingsSearchField: View {
             TextField(prompt, text: $text)
                 .textFieldStyle(.plain)
                 .onSubmit(submit)
+                .accessibilityIdentifier(identifier)
             if !text.isEmpty {
                 Button { text = "" } label: { Image(systemName: "xmark.circle.fill") }
                     .buttonStyle(.plain).foregroundStyle(.secondary).help("Clear search")

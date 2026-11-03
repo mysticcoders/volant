@@ -163,7 +163,7 @@ private struct SettingsView: View {
     private var sidebar: some View {
         let visible = SettingsSection.allCases.filter { $0.matches(sectionSearch) }
         return VStack(spacing: 8) {
-            SettingsSearchField(prompt: String(localized: "Search settings"), text: $sectionSearch) {
+            SettingsSearchField(prompt: String(localized: "Search settings"), identifier: "settings-search", text: $sectionSearch) {
                 if let first = visible.first { state.section = first }
             }
             .padding(.horizontal, 12)
@@ -303,7 +303,7 @@ private struct SettingsView: View {
     private var shortcuts: some View {
         let apps = state.apps.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }
         return VStack(alignment: .leading, spacing: 10) {
-            SettingsSearchField(prompt: String(localized: "Search applications"), text: $search)
+            SettingsSearchField(prompt: String(localized: "Search applications"), identifier: "app-shortcuts-search", text: $search)
             Text("Type an alias to open the app from the launcher, or record a global hotkey. Aliases save on Return or when you leave the field.")
                 .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 4)

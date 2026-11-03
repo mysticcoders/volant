@@ -134,7 +134,7 @@ process = subprocess.Popen(["tart", "run", args.vm, "--no-graphics", "--no-audio
 try:
     # Cirrus's vanilla images have no Tart guest agent, only SSH for admin, who is logged in on the
     # console. Fixtures must run in that GUI session to reach the window server.
-    ssh = ["ssh", "-i", str(KEY), "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null",
+    ssh = ["ssh", "-i", str(KEY), "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "-o", "IdentitiesOnly=yes",
            "-o", "LogLevel=ERROR", "-o", "ConnectTimeout=5"]
     deadline = time.monotonic() + 300
     while True:

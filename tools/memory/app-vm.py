@@ -143,7 +143,7 @@ log = (output / "tart.log").open("w")
 process = subprocess.Popen(["tart", "run", args.vm, "--no-graphics", "--no-audio", "--no-clipboard", f"--dir=artifacts:{output}"],
                            stdout=log, stderr=subprocess.STDOUT)
 try:
-    ssh = ["ssh", "-i", str(KEY), "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null",
+    ssh = ["ssh", "-i", str(KEY), "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "-o", "IdentitiesOnly=yes",
            "-o", "LogLevel=ERROR", "-o", "ConnectTimeout=5", "-o", "IdentitiesOnly=yes"]
     deadline = time.monotonic() + 300
     while True:

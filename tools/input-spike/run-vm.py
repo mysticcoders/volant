@@ -72,7 +72,7 @@ def ssh_exec(address, script, *extra, record):
     with record.open("a") as handle:
         handle.write(f"\n######## (ssh) {script} {' '.join(extra)}\n")
         handle.flush()
-        subprocess.run(["ssh", "-i", str(key), "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null",
+        subprocess.run(["ssh", "-i", str(key), "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", "-o", "IdentitiesOnly=yes",
                         "-o", "LogLevel=ERROR", f"admin@{address}", f"bash '{guest}/{script}' {' '.join(extra)}"],
                        stdout=handle, stderr=subprocess.STDOUT, timeout=600, check=False)
 
