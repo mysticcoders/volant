@@ -13,6 +13,9 @@ settings:
     # Apple silicon only (decided November 3, 2026); Sparkle's generate_appcast then marks each
     # update arm64, so Intel Macs are not offered builds they cannot run.
     ARCHS: arm64
+    # XcodeGen leaves Xcode's default (off). With VolantCore's -internalize-at-link, each helper keeps
+    # only the core code it uses instead of all of it.
+    DEAD_CODE_STRIPPING: YES
     SWIFT_EMIT_LOC_STRINGS: YES
     SWIFT_VERSION: "5.0"
     SWIFT_STRICT_CONCURRENCY: minimal
