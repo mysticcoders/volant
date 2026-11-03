@@ -28,10 +28,7 @@ export default function GettingStarted() {
       <h2>What you need</h2>
       <ul>
         <li>macOS 15 or later.</li>
-        <li>
-          Any Mac. The download is universal and includes both Apple silicon and
-          Intel builds.
-        </li>
+        <li>A Mac with Apple silicon. Intel Macs are not supported.</li>
       </ul>
 
       <h2>Install</h2>

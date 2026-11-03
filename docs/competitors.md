@@ -41,7 +41,7 @@ Reviewed 2026-09-14 from vicinae.com, docs.vicinae.com, and the `vicinaehq/vicin
 - **Agents.** Herdr pane discovery, focus, and pinned status, plus native ACP conversations with OpenCode, Claude Code, and Codex. Vicinae has no built-in equivalent.
 - **Notes.** A Live Markdown notes window of plain `.md` files, with code-block copy. Vicinae has no built-in notes.
 - **Calendar and contacts built in.** Volant has a `cal` agenda with meeting join, plus contact search. Vicinae requests calendar, reminders, and contacts access for extensions rather than shipping these.
-- **Reach on the Mac specifically.** Volant targets macOS 15 and builds for Apple Silicon and Intel; Vicinae's install guide requires macOS 26 on Apple Silicon. Note the direction of this claim: Vicinae reaches far more machines overall, across three operating systems. It reaches fewer *Macs*.
+- **Reach on the Mac specifically.** Volant targets macOS 15 on Apple Silicon; Vicinae's install guide requires macOS 26 on Apple Silicon. Note the direction of this claim: Vicinae reaches far more machines overall, across three operating systems. It reaches fewer *Macs*. Volant dropped Intel builds after 0.3.29 (November 3, 2026).
 - **Native UI.** Volant uses AppKit and SwiftUI; Vicinae's core uses Qt.
 - **Migration.** Volant imports Raycast snippets, quicklinks, aliases, hotkeys, and notes. Whether Vicinae imports Raycast settings wasn't assessed.
 
@@ -142,7 +142,7 @@ Reviewed 2026-09-19 from supercmd.sh and the `SuperCmdLabs` GitHub organization.
 - **Open source as shipped.** Volant's MIT repository is the application people run. SuperCmd's MIT repository is the superseded Electron v1; the product being sold is closed source with no published license. Anyone concluding "open source, therefore the privacy claims are auditable" is mistaken about v2.
 - **Enforced rather than promised privacy.** Volant's main binary has no network entitlement, which the operating system enforces regardless of intent. SuperCmd offers a policy statement plus Aptabase telemetry, and no source to check it against.
 - **Extension isolation.** WebAssembly in a capability-limited sandboxed process, against extensions running with the full Node API through Raycast shims.
-- **Platform reach.** macOS 15 with Apple Silicon and Intel builds, against macOS 26 or later.
+- **Platform reach.** macOS 15 on Apple Silicon, against macOS 26 or later.
 - **Price.** Free against $19.99.
 - **Agents.** Herdr pane discovery and native ACP conversations. No equivalent.
 
@@ -154,7 +154,7 @@ App and file search, clipboard history, snippets, quicklinks, calculator, emoji,
 
 - Be precise, not dismissive, about the licensing: v1 really is MIT and really did earn 3.2k stars. The accurate statement is that the paid v2 is closed source, not that the project is dishonest.
 - The subscription-replacement framing is the strongest competitive idea seen in this category. Volant, being free, cannot use it, but it explains why feature bundling wins attention.
-- macOS 26 is required by both SuperCmd and Vicinae. Volant's macOS 15 and Intel support is a genuine reach advantage against both, and is worth stating plainly.
+- macOS 26 is required by both SuperCmd and Vicinae. Volant's macOS 15 support is a genuine reach advantage against both, and is worth stating plainly.
 - Recheck: whether v2 source is ever published, whether Aptabase remains, and whether the macOS minimum drops.
 
 ### Sources
@@ -358,7 +358,7 @@ Platform scope separates the first three. Tuna separates itself on something els
 | Vicinae | Beta, macOS 26 | New in v0.29.0, 2026-09-18 | Yes, center of gravity |
 | SuperCmd | Yes, macOS 26 | No | No |
 | Tuna | Yes, beta | No | No |
-| Volant | Yes, macOS 15, Intel and Apple Silicon | No | No |
+| Volant | Yes, macOS 15, Apple Silicon | No | No |
 
 **SuperCmd is the direct competitor.** Mac-only, native, privacy-forward, anti-subscription — it wants the same user Volant wants, and it converges with Vicinae on the same tactic of Raycast extension compatibility at a lower price. Competing with that on feature count or ecosystem breadth is a losing race and is not worth entering.
 
@@ -385,6 +385,6 @@ Two positions are defensible because they are structural rather than a matter of
 1. **A security posture the operating system enforces rather than one the vendor promises.** Every competitor reviewed runs unsandboxed and executes extension code with full process privileges — Node for the Raycast-compatible ones, native Swift in-process for Tuna — and ships some form of telemetry. Volant is sandboxed, holds no network entitlement, requests no Input Monitoring grant and no Accessibility grant unless the owner opts into typing dictation at the cursor, encrypts clipboard history by default, sends no telemetry, and is open source as shipped. Each of those is checkable against entitlements and source, which is precisely what the competitors cannot offer.
 2. **Agent workflows.** None of Raycast, Vicinae, SuperCmd or Tuna has Herdr pane discovery or native ACP conversations. This is the only capability Volant has that the category does not, and the competitive review reinforces that it is the wedge rather than a side feature. JetBrains Air now does ACP orchestration too, from the IDE and the cloud. It is not a launcher and does not reach agents already running in terminal panes, so the wedge narrows to answering and steering agents from anywhere on the desktop, locally, the moment one needs you. Air's agent discovery and per-session change tracking are the table stakes to meet there.
 
-A shared weakness worth using: both Vicinae and SuperCmd require macOS 26. Volant runs on macOS 15 and still ships Intel builds.
+A shared weakness worth using: both Vicinae and SuperCmd require macOS 26. Volant runs on macOS 15.
 
 Weaknesses to hold honestly: Volant has 1 GitHub star against 3.2k and 9.9k, no extension ecosystem, far fewer features, and Raycast is measurably faster on reopen. None of these should be argued away in marketing copy.

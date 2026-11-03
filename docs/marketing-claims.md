@@ -223,6 +223,7 @@ Merged after 0.3.29, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
+| Apple silicon only; Intel Macs stay on 0.3.29 and are not offered later updates | Next release | Owner decision November 3, 2026; `ARCHS: arm64`; `Scripts/ship.sh` checks every Volant binary and the feed's arm64 requirement; Sparkle stays universal | FAQ, download line and Getting started say Apple silicon; deployed with the release |
 
 ## Privacy language
 

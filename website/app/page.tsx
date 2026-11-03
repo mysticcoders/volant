@@ -52,7 +52,7 @@ const questions = [
   ],
   [
     'What Mac do I need?',
-    'Volant requires macOS 15 or later. The download includes both Apple silicon and Intel versions.',
+    'Volant requires macOS 15 or later on a Mac with Apple silicon.',
   ],
   [
     'Where does my data live?',
@@ -714,7 +714,7 @@ export default function Home() {
             Download for Mac <ArrowRight size={17} />
           </a>
           <span className="availability">
-            Version {appVersion} · macOS 15+ · Apple silicon &amp; Intel
+            Version {appVersion} · macOS 15+ · Apple silicon
           </span>
           <p className="download-scope">
             Since 0.3.28: calculator answers follow your Mac's language and

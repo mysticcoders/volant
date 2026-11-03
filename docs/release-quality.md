@@ -35,7 +35,8 @@ Not automated: an installed previous build updating through Sparkle (decline/can
 - Notarization completed for build 2; see the release evidence below.
 - Installed signed-app live smoke test: OS appearance switching, Herdr disclosure click/persistence, Settings/menus, updater prompt, larger text and minimum launcher scale. Render fixtures do not establish these.
 - Two-version Sparkle installation verified on October 7, 2026: the owner updated two Macs from 0.1.5 to 0.2.0 through Sparkle. See the 0.2.0 entry.
-- Intel hardware testing is out of scope (decided October 15, 2026): the owner has no Intel Mac. Releases stay universal, and `Scripts/ship.sh` refuses a DMG whose app lacks the `x86_64` slice, which is what the "Apple silicon & Intel" download line rests on. Records before this date list Intel as unverified; that is no longer tracked.
+- Intel hardware testing is out of scope (decided October 15, 2026): the owner has no Intel Mac. Records before this date list Intel as unverified; that is no longer tracked.
+- Apple silicon only from the release after 0.3.29 (decided November 3, 2026): Intel Mac owners are expected to use Spotlight, and dropping the `x86_64` slice roughly halves the app. `project.yml` sets `ARCHS: arm64`; `Scripts/ship.sh` refuses a DMG whose app or Volant helpers carry any other slice, and an appcast that lacks `<sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>`, which Sparkle's `generate_appcast` adds for arm64-only apps so installed copies on Intel Macs are not offered the update. Sparkle's prebuilt framework stays universal. Release notes end with "Requires macOS 15 or later on Apple silicon." 0.3.29 is the last universal build.
 
 ## Automation
 

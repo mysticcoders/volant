@@ -10,6 +10,9 @@ settings:
     # Strings come from String Catalogs: Localizable (app), Core (VolantCore's table, looked up in
     # the main bundle) and InfoPlist (permission prompts). See docs/localization.md.
     LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    # Apple silicon only (decided November 3, 2026); Sparkle's generate_appcast then marks each
+    # update arm64, so Intel Macs are not offered builds they cannot run.
+    ARCHS: arm64
     SWIFT_EMIT_LOC_STRINGS: YES
     SWIFT_VERSION: "5.0"
     SWIFT_STRICT_CONCURRENCY: minimal

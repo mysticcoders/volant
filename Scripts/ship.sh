@@ -132,7 +132,11 @@ if [[ -z "$MODE" ]]; then
   [[ "$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP/Contents/Info.plist")" == "$VERSION" ]] || fail "DMG app version mismatch"
   [[ "$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP/Contents/Info.plist")" == "$BUILD" ]] || fail "DMG app build mismatch"
   ARCHS="$(lipo -archs "$APP/Contents/MacOS/Volant")"
-  [[ " $ARCHS " == *" x86_64 "* && " $ARCHS " == *" arm64 "* ]] || fail "DMG app is not universal ($ARCHS)"
+  for exe in "$APP"/Contents/MacOS/Volant "$APP"/Contents/XPCServices/Volant*.xpc/Contents/MacOS/*; do
+    [[ "$(lipo -archs "$exe")" == arm64 ]] || fail "$(basename "$exe") is not Apple silicon only ($(lipo -archs "$exe"))"
+  done
+  grep -q '<sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>' "$OUT/updates/appcast.xml" \
+    || fail "the appcast does not mark $VERSION arm64, so Intel Macs would be offered it"
   codesign --verify --deep --strict "$APP"
   xcrun stapler validate "$APP" > /dev/null
   [[ -L "$MOUNT/Applications" ]] || fail "DMG has no Applications link"
