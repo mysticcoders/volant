@@ -4,7 +4,7 @@
 
 ![Volant's launcher](website/public/images/launcher-dark.png)
 
-**[Download Volant](https://usevolant.com)** · macOS 15 or later on Apple silicon · 9.3 MB · signed and notarized, updates through Sparkle
+**[Download Volant](https://usevolant.com)** · macOS 15 or later on Apple silicon · about 9 MB · signed and notarized, updates through Sparkle
 
 Or with Homebrew:
 
