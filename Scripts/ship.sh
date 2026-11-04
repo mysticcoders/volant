@@ -12,7 +12,8 @@
 # Publish runs only after that pull request is merged once its checks pass, and uses only the merged commit. It
 # keeps the two-stage order: the first deploy serves the previous feed while the public download is
 # verified, and only then does a second deploy serve the merged feed, verified byte for byte. It
-# finishes by publishing the GitHub release the app's Changelog item opens and posting the
+# finishes by publishing the GitHub release the app's Changelog item opens, updating the Volant cask in
+# mysticcoders/homebrew-tap, and posting the
 # verification on the pull request. Preflight requires plain HTTP to redirect permanently to HTTPS, and
 # the production browser security smoke must pass before the GitHub release is published.
 #
@@ -68,6 +69,19 @@ deploy_site() {
   version="$(sed -n 's/.*Current Version ID: \([0-9a-f-]*\).*/\1/p' "$LOGS/deploy-$label.log" | head -1)"
   [[ -n "$version" ]] || fail "wrangler reported no Worker version; see $LOGS/deploy-$label.log"
   echo "$version"
+}
+
+# Points the Volant cask in the mysticcoders/homebrew-tap repository at this release's DMG and pushes
+# it, printing what happened. It runs after publication, so a failure is reported, not fatal.
+update_tap() {
+  local tap="$LOGS/homebrew-tap" cask
+  gh repo clone mysticcoders/homebrew-tap "$tap" -- -q > /dev/null 2>&1 || { echo "not updated: could not clone mysticcoders/homebrew-tap"; return; }
+  cask="$tap/Casks/volant.rb"
+  sed -i '' -e "s/^  version \".*\"$/  version \"$VERSION\"/" -e "s/^  sha256 \".*\"$/  sha256 \"$SHA\"/" "$cask"
+  grep -q "version \"$VERSION\"" "$cask" && grep -q "sha256 \"$SHA\"" "$cask" || { echo "not updated: the cask did not take $VERSION"; return; }
+  if git -C "$tap" diff --quiet; then echo "already at $VERSION"; return; fi
+  git -C "$tap" commit -qam "Update Volant to $VERSION" && git -C "$tap" push -q > /dev/null 2>&1 \
+    && echo "updated to $VERSION" || echo "not updated: push to mysticcoders/homebrew-tap failed"
 }
 
 # Fetches a public URL into a file, retrying while a deployment propagates, and succeeds only once
@@ -249,6 +263,7 @@ step "Publish the GitHub release"
 RELEASE_URL="$(gh release create "v$VERSION" "$DMG" --target "$MERGED" --title "Volant $VERSION" \
   --notes-file "$WT/docs/releases/$VERSION.md" --latest | tail -1)"
 STATE="fully published"
+TAP="$(update_tap)"
 
 cat > "$LOGS/report.md" <<EOF
 **Published by \`Scripts/ship.sh\`.**
@@ -258,6 +273,7 @@ cat > "$LOGS/report.md" <<EOF
 - **Pages:** \`/\`, \`/docs\`, and the $VERSION and $PREVIOUS DMGs return 200.
 - **Security:** the production browser smoke passed: CSP with fresh nonces, shared headers, no-store HTML, immutable hashed assets, desktop/mobile hydration and permanent HTTP→HTTPS redirects.
 - **GitHub release:** $RELEASE_URL
+- **Homebrew tap:** \`mysticcoders/tap/volant\` $TAP.
 - **Still unverified:** installed $PREVIOUS → $VERSION Sparkle upgrades.
 EOF
 gh pr comment "$PR" --body-file "$LOGS/report.md" > /dev/null
