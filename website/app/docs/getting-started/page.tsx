@@ -42,6 +42,14 @@ export default function GettingStarted() {
           Download Volant {appVersion}
         </a>
       </p>
+      <p>Or install it with Homebrew:</p>
+      <pre>
+        <code>brew install --cask mysticcoders/tap/volant</code>
+      </pre>
+      <p>
+        Volant updates itself through Check for Updates either way; Homebrew
+        installs also update with <code>brew upgrade --cask</code>.
+      </p>
 
       <h2>Summon the launcher</h2>
       <p>

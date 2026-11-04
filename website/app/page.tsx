@@ -48,7 +48,7 @@ const answerExamples = [
 const questions = [
   [
     'Can I download Volant yet?',
-    'Yes. Download the macOS disk image, open it, and drag Volant into Applications. This is an early release, signed with Developer ID and notarized by Apple. Volant includes Check for Updates in its menu.',
+    'Yes. Download the macOS disk image, open it, and drag Volant into Applications, or install it with Homebrew: brew install --cask mysticcoders/tap/volant. This is an early release, signed with Developer ID and notarized by Apple. Volant includes Check for Updates in its menu.',
   ],
   [
     'What Mac do I need?',
@@ -716,6 +716,9 @@ export default function Home() {
           <span className="availability">
             Version {appVersion} · macOS 15+ · Apple silicon
           </span>
+          <p className="brew-install">
+            Or with Homebrew: <code>brew install --cask mysticcoders/tap/volant</code>
+          </p>
           <p className="download-scope">
             Since 0.3.28: calculator answers follow your Mac's language and
             region, and dictation pastes on any keyboard layout. See{' '}

@@ -1052,6 +1052,8 @@ h1 { font-size: clamp(44px, 4.65vw, 66px); letter-spacing: -3px; }
 .next-release .feature-grid { margin-top: 36px; }
 .get .download-scope { font-size: 13px; margin: 20px auto 0; max-width: 500px; }
 .download-scope a { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+.get .brew-install { font-size: 13px; margin: 16px auto 0; max-width: 500px; color: var(--muted-foreground); }
+.brew-install code { font: 13px ui-monospace, monospace; background: #1f2122; border: 1px solid var(--border); border-radius: 5px; padding: 2px 6px; color: #e9b19f; overflow-wrap: anywhere; user-select: all; }
 @media (max-width: 700px) {
   .answers-section, .next-release { padding-block: 60px; }
   .answer-showcase, .ai-showcase { grid-template-columns: minmax(0, 1fr); gap: 20px; }
