@@ -6,6 +6,10 @@
 
 **[Download Volant](https://usevolant.com)** · macOS 15 or later on Apple silicon · 9.3 MB · signed and notarized, updates through Sparkle
 
+Or with Homebrew:
+
+    brew install --cask mysticcoders/tap/volant
+
 ## Highlights
 
 - **Launcher:** fuzzy app search that learns from your picks, file search, contacts, today's calendar, per-app hotkeys and aliases.
