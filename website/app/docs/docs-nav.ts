@@ -69,6 +69,23 @@ export const docGroups: DocGroup[] = [
     ],
   },
   {
+    group: 'COMPARE',
+    links: [
+      {
+        slug: 'volant-vs-raycast',
+        title: 'Volant vs Raycast',
+        summary:
+          'Price, accounts, extensions and agents, and where Raycast is ahead.',
+      },
+      {
+        slug: 'volant-vs-alfred',
+        title: 'Volant vs Alfred',
+        summary:
+          'Clipboard history, snippets, workflows and agents, and where Alfred is ahead.',
+      },
+    ],
+  },
+  {
     group: 'GOING FURTHER',
     links: [
       {

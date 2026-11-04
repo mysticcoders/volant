@@ -42,3 +42,5 @@ tsconfig.tsbuildinfo
 
 # Generated from security-headers.json before each build
 /public/_headers
+/public/sitemap.xml
+/public/robots.txt

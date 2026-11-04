@@ -13,7 +13,7 @@
     "format": "oxfmt",
     "test:security": "node scripts/security-smoke.mjs",
     "test:security:production": "VOLANT_WEBSITE_TARGET=production node scripts/security-smoke.mjs",
-    "prebuild": "node scripts/security-headers.mjs"
+    "prebuild": "node scripts/security-headers.mjs && node scripts/sitemap.mjs"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",

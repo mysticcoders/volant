@@ -230,6 +230,7 @@ Merged after 0.3.30, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
+| Comparison pages: Volant vs Raycast, Volant vs Alfred | Website, next deployment | Competitor facts limited to what their sites state (closed source, paid tiers linked rather than priced, Alfred's Powerpack listing Clipboard History and Snippets) and `docs/competitors.md`; Raycast's faster reopen is stated against Volant; no footprint or speed claims, since the September 19 figures predate the current helpers | /docs/volant-vs-raycast and /docs/volant-vs-alfred, plus sitemap.xml and robots.txt |
 
 ## Privacy language
 
