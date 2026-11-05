@@ -387,7 +387,9 @@ func panelChatScenario() throws {
     ]
     settle()
     try render("chat-streaming")
-    panel.model.acp.state.messages[1].text += "\n```\n\nSee [the example](https://example.com)."
+    panel.model.acp.state.messages[1].text += "\n```\n\nSee [the example](https://example.com).\n\n"
+        + "| Option | Cost | Notes |\n|:--|--:|:-:|\n| **Fast** | 12 | uses `cache` |\n| Slow | 3 | fictional |\n\n"
+        + "1. Install\n   - run `fictional install`\n   - check the version\n2. Configure"
     settle()
     verify(panel.model.acp.draft == "A fictional follow-up", "Streaming Markdown preserves the prompt draft")
     try render("chat")

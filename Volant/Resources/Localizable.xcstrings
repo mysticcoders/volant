@@ -6520,9 +6520,6 @@
     "%lld%%": {
       "shouldTranslate": false
     },
-    "%lld.": {
-      "shouldTranslate": false
-    },
     "+%lld": {
       "shouldTranslate": false
     },

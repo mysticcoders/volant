@@ -44,14 +44,37 @@ private struct BlockView: View {
                 RoundedRectangle(cornerRadius: 2).fill(Color.secondary.opacity(0.5)).frame(width: 3)
                 inline(text).font(.system(size: 14)).foregroundStyle(.secondary).textSelection(.enabled)
             }
-        case .list(let items, let ordered):
+        case .list(let items):
             VStack(alignment: .leading, spacing: 4) {
-                ForEach(Array(items.enumerated()), id: \.offset) { i, item in
+                ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text(ordered ? "\(i + 1)." : "•").foregroundStyle(.secondary).frame(width: 18, alignment: .trailing)
-                        inline(item).font(.system(size: 14)).textSelection(.enabled)
+                        Text(verbatim: item.number.map { "\($0)." } ?? (item.depth == 0 ? "•" : "◦"))
+                            .foregroundStyle(.secondary).frame(minWidth: 18, alignment: .trailing)
+                        inline(item.text).font(.system(size: 14)).textSelection(.enabled)
+                    }
+                    .padding(.leading, CGFloat(item.depth) * 22)
+                }
+            }
+        case .table(let header, let alignments, let rows):
+            ScrollView(.horizontal, showsIndicators: false) {
+                Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 8) {
+                    GridRow {
+                        ForEach(Array(header.enumerated()), id: \.offset) { column, cell in
+                            inline(cell).font(.system(size: 13, weight: .semibold)).gridColumnAlignment(alignment(alignments[column]))
+                        }
+                    }
+                    Divider().gridCellUnsizedAxes(.horizontal)
+                    ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                        GridRow {
+                            ForEach(Array(row.enumerated()), id: \.offset) { _, cell in
+                                inline(cell).font(.system(size: 13))
+                            }
+                        }
                     }
                 }
+                .textSelection(.enabled)
+                .padding(12)
+                .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
         case .rule:
             Divider()
@@ -66,6 +89,15 @@ private struct BlockView: View {
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
+        }
+    }
+
+    /// A table column's horizontal alignment in the grid.
+    private func alignment(_ column: MarkdownColumnAlignment) -> HorizontalAlignment {
+        switch column {
+        case .leading: return .leading
+        case .center: return .center
+        case .trailing: return .trailing
         }
     }
 
