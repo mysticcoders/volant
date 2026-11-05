@@ -39,6 +39,16 @@ timed python3 tools/check-dev-entitlements.py
 build_options=(-project Volant.xcodeproj -scheme Volant -derivedDataPath build -destination 'platform=macOS')
 if [[ "$ci" == true ]]; then
     build_options+=(CODE_SIGNING_ALLOWED=NO ENABLE_APP_SANDBOX=NO)
+    # A hosted runner can drop Sparkle's binary download partway; SwiftPM's own retry then finds the
+    # partial file and fails with "already exists in file system". Resolve up front, clearing the
+    # partial artifact between attempts, so the builds below start with packages in place.
+    for attempt in 1 2 3; do
+        xcodebuild -project Volant.xcodeproj -scheme Volant -derivedDataPath build -resolvePackageDependencies > /dev/null 2>&1 && break
+        [[ "$attempt" == 3 ]] && { echo "Package resolution failed three times" >&2; exit 1; }
+        echo "Package resolution failed (attempt $attempt); clearing the partial download and retrying" >&2
+        rm -rf ~/Library/Caches/org.swift.swiftpm/artifacts/*Sparkle* build/SourcePackages/artifacts
+        sleep 10
+    done
 fi
 if [[ "$ui_mode" != only ]]; then
     timed swiftlint lint --strict --quiet --config .swiftlint.yml
