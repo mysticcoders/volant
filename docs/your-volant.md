@@ -41,7 +41,12 @@ holds no live connection. The aggregation is `VolantCore.UsageStats`.
   limits.
 - `UsageActivityTests` (app): counting through `UsageStore.record`, the read-only snapshot, clearing
   daily counts while the ranking stays, and a missing store reading as empty without creating it.
-- The Settings preview renders the section with fictional usage in light and dark.
+- The Settings preview (`tools/settings/main.swift`) seeds fictional usage and renders the section
+  and its scrolled bottom in light and dark through `tools/render-vm.py`; the Actions fixture's
+  Settings walk reads an empty isolated store and shows the empty state.
+- The extra sidebar row made the section list taller than the 680×500 fixture window, so the sidebar
+  now scrolls to a section chosen from code (the launcher's What's New item, the fixture), and the
+  fixture's bottom capture scrolls only the detail pane.
 - Daily counts start with this build, so existing owners see one day of history at first while the
   ranking lists are already full.
 - Day keys use the Mac's current calendar and time zone when a choice is recorded; travel across

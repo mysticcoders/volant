@@ -171,16 +171,19 @@ private struct SettingsView: View {
             }
             .padding(.horizontal, 12)
             .padding(.top, titleBand - 8)
-            List(selection: Binding(get: { state.section }, set: { if let section = $0 { state.section = section } })) {
-                Section {
-                    ForEach(visible.filter { !$0.isFeature }) { row($0) }
+            ScrollViewReader { proxy in
+                List(selection: Binding(get: { state.section }, set: { if let section = $0 { state.section = section } })) {
+                    Section {
+                        ForEach(visible.filter { !$0.isFeature }) { row($0) }
+                    }
+                    Section("Features") {
+                        ForEach(visible.filter(\.isFeature)) { row($0) }
+                    }
                 }
-                Section("Features") {
-                    ForEach(visible.filter(\.isFeature)) { row($0) }
-                }
+                .listStyle(.sidebar)
+                .scrollContentBackground(.hidden)
+                .onChange(of: state.section) { _, section in proxy.scrollTo(section.id) }
             }
-            .listStyle(.sidebar)
-            .scrollContentBackground(.hidden)
             .overlay {
                 if visible.isEmpty { Text("No matching settings").foregroundStyle(.secondary) }
             }

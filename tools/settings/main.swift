@@ -322,11 +322,12 @@ if CommandLine.arguments.contains("--render") {
                 let sectionName = language == nil ? section.title : "\(section)"
                 capture(theme + "-" + sectionName)
                 print("Rendered \(theme) \(sectionName): \(view.bounds.size)")
-                if section == .data || section == .appearance || section == .extensions {
+                if section == .data || section == .appearance || section == .extensions || section == .yourVolant {
                     func scrollViews(_ view: NSView) -> [NSScrollView] {
                         (view as? NSScrollView).map { [$0] } ?? view.subviews.flatMap(scrollViews)
                     }
-                    for scroll in scrollViews(view) {
+                    let rightToLeft = view.userInterfaceLayoutDirection == .rightToLeft
+                    for scroll in scrollViews(view) where rightToLeft ? scroll.convert(scroll.bounds, to: nil).maxX < view.bounds.width - 200 : scroll.convert(scroll.bounds, to: nil).minX > 200 {
                         guard let document = scroll.documentView else { continue }
                         document.scroll(NSPoint(x: 0, y: document.isFlipped ? document.bounds.height : 0))
                     }

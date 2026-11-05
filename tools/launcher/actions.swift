@@ -475,7 +475,7 @@ func panelChatScenario() throws {
     key("\u{1b}", 53)
     verify(waitUntil { !panel.isVisible }, "A second Escape closes the launcher")
     panel.orderOut(nil)
-    let settings = SettingsWindowController(configURL: panel.model.actionConfigURL, conversations: panel.model.conversations) {}
+    let settings = SettingsWindowController(configURL: panel.model.actionConfigURL, usageURL: root.appendingPathComponent("settings-usage.sqlite"), conversations: panel.model.conversations) {}
     try chatConfig!.save(at: panel.model.actionConfigURL)
     settings.state.section = .ai
     settings.window!.setContentSize(NSSize(width: 680, height: 500))
@@ -556,7 +556,7 @@ func communityLauncherScenario() throws {
 /// Extension Settings with the community master gate off, on with the extension enabled, beside the
 /// fictional catalog, and paused again; the window's Extensions section shows the bundled example.
 func communitySettingsScenario() throws {
-    let settings = SettingsWindowController(configURL: panel.model.actionConfigURL, conversations: panel.model.conversations) {}
+    let settings = SettingsWindowController(configURL: panel.model.actionConfigURL, usageURL: root.appendingPathComponent("settings-usage.sqlite"), conversations: panel.model.conversations) {}
     settings.state.section = .extensions
     settings.window!.setContentSize(NSSize(width: 680, height: 500))
     settings.showWindow(nil); settle()
@@ -675,7 +675,7 @@ func dictationVocabularyScenario() throws {
                       DictationVocabularyEntry(term: "Tailscale", soundsLike: ["tail scale"]),
                       DictationVocabularyEntry(term: "Sparkle")]
     try Preferences.updateDictationVocabulary(vocabulary, expected: [], at: panel.model.actionConfigURL)
-    let settings = SettingsWindowController(configURL: panel.model.actionConfigURL, conversations: panel.model.conversations) {}
+    let settings = SettingsWindowController(configURL: panel.model.actionConfigURL, usageURL: root.appendingPathComponent("settings-usage.sqlite"), conversations: panel.model.conversations) {}
     settings.refresh(try JSONDecoder().decode(Preferences.self, from: Data(contentsOf: panel.model.actionConfigURL)))
     verify(settings.state.config.dictationVocabulary == vocabulary && settings.state.config.dictationOutput == .copy, "Dictation Settings reads the saved vocabulary")
     settings.state.section = .dictation
