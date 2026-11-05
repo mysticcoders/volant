@@ -246,10 +246,11 @@ Merged after 0.3.32, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
+| Settings › Your Volant: your own launcher activity for the last 30 days and your most used apps, commands and extensions, counted only on this Mac | Not yet | #357; UsageStatsTests, FrecencyTests, seeded Settings renders in light and dark; owner tried a Volant Dev build; daily counts start with the build that adds them; calculator answers, extension results and Shortcuts are not counted | Release notes; say "stays on your Mac, never sent anywhere", never "analytics" or "telemetry" |
 
 ## Privacy language
 
-No Volant account or telemetry. Notes and encrypted clipboard history remain local. Submitted AI prompts and selected context reach the chosen provider/server. Keys stay in Keychain. Updates, HTTP AI, rates and network extensions use separate helpers; opt-in iCloud uses Apple's system service. Avoid blanket “everything stays on your Mac,” “entirely offline,” or “zero dependencies” claims. Say “no Accessibility unless you choose Type at the cursor”: the main app stays sandboxed and never uses Accessibility, and only the separate input helper does, listed as Volant in System Settings, after the owner picks that output.
+No Volant account or telemetry. Usage stats in Settings › Your Volant are computed from data on the Mac and never sent; there is no opt-in telemetry either. Notes and encrypted clipboard history remain local. Submitted AI prompts and selected context reach the chosen provider/server. Keys stay in Keychain. Updates, HTTP AI, rates and network extensions use separate helpers; opt-in iCloud uses Apple's system service. Avoid blanket “everything stays on your Mac,” “entirely offline,” or “zero dependencies” claims. Say “no Accessibility unless you choose Type at the cursor”: the main app stays sandboxed and never uses Accessibility, and only the separate input helper does, listed as Volant in System Settings, after the owner picks that output.
 
 ## Imagery
 

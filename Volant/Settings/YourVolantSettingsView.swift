@@ -53,7 +53,7 @@ struct YourVolantSettingsView: View {
             Text("Last 30 days").font(.system(size: 13, weight: .semibold)).padding(.horizontal, 16)
             VStack(alignment: .leading, spacing: 16) {
                 HStack(alignment: .top, spacing: 12) {
-                    tile(value: summary.total.formatted(), label: Text("Launcher choices"))
+                    tile(value: summary.total.formatted(), label: Text("Choices"))
                     tile(value: summary.activeDays.formatted(), label: Text("Active days"))
                     tile(value: summary.streak.formatted(), label: Text("Day streak"))
                     tile(value: summary.busiest.map { Self.shortDate($0.day) } ?? "–", label: Text("Busiest day"))
