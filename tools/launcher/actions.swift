@@ -462,6 +462,16 @@ func panelChatScenario() throws {
     click(at: NSPoint(x: 20, y: LauncherPanel.size.height - 18))
     verify(!panel.model.showingACP && panel.model.acp.active && !panel.model.acp.draft.isEmpty, "Back returns to search without ending chat or discarding its draft")
     try render("chat-back")
+    let searchAfterBack = fields(panel.contentView!).first { $0.placeholderString == launcherSearchPlaceholder }!
+    panel.makeFirstResponder(searchAfterBack)
+    verify(waitUntil(stable: 0.1) { focusedField() === searchAfterBack }, "Search takes focus before Tab: \(focusState())")
+    key("\t", 48)
+    awaitChatPrompt("Tab returns to the chat before Escape")
+    key("\u{1b}", 53)
+    verify(waitUntil { panel.isVisible && !panel.model.showingACP && panel.model.query.isEmpty } && panel.model.acp.active && !panel.model.acp.draft.isEmpty,
+           "Escape in AI Chat returns to search and keeps the conversation and draft")
+    key("\u{1b}", 53)
+    verify(waitUntil { !panel.isVisible }, "A second Escape closes the launcher")
     panel.orderOut(nil)
     let settings = SettingsWindowController(configURL: panel.model.actionConfigURL, conversations: panel.model.conversations) {}
     try chatConfig!.save(at: panel.model.actionConfigURL)

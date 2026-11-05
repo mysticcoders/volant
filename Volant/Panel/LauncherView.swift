@@ -131,6 +131,9 @@ struct LauncherView: View {
             if model.dictation.isListening { model.cancelDictation(); return .handled }
             if model.entryForm != nil { model.cancelEntryForm(); return .handled }
             if model.backOutOfScope() { return .handled }
+            // Escape in AI Chat steps back to search like Back, keeping the conversation and its draft;
+            // a second Escape closes the launcher.
+            if model.showingACP { model.query = ""; model.searchFocusRequest = UUID(); return .handled }
             if model.wifiJoin != nil { guard !model.connectivityBusy else { return .handled }; model.wifiJoin = nil; model.searchFocusRequest = UUID() }
             else { model.dismiss() }
             return .handled
