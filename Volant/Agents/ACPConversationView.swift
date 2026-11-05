@@ -14,6 +14,10 @@ struct ACPConversationView: View {
     var conversations: ACPConversations?
     var newConversation: () -> Void = {}
     var select: (ACPModel) -> Void = { _ in }
+    /// Saves an installed agent as the AI Chat provider and connects; nil where the host offers no setup.
+    var choose: ((String) -> Void)?
+    /// Finds the agents the setup offers; the launcher owns it so fixtures can supply fictional results.
+    var detection: ACPAgentDetection?
     @State private var follow = true
     @State private var picking = false
     @State private var mentionLocation: Int?
@@ -29,7 +33,7 @@ struct ACPConversationView: View {
                     .accessibilityHidden(true).overlay(LauncherDragHandle())
                 if let caffeinate { CaffeinateStatusView(service: caffeinate) }
                 Text("AI Chat").fontWeight(.medium)
-                Text(model.providerTitle).foregroundStyle(.secondary).lineLimit(1).help(model.providerTitle)
+                if !model.needsSetup { Text(model.providerTitle).foregroundStyle(.secondary).lineLimit(1).help(model.providerTitle) }
                 if let account = model.account { ACPAccountLabel(label: account.label).help(account.directory) }
                 if !model.project.isEmpty {
                     Label((model.project as NSString).lastPathComponent, systemImage: "folder")
@@ -41,7 +45,7 @@ struct ACPConversationView: View {
                     if let conversations { ACPNewConversationButton(conversations: conversations, action: newConversation) }
                     Button("End", action: model.disconnect)
                 }
-                else {
+                else if !model.needsSetup {
                     if model.canResume { Button("Resume", action: model.resume).help("Continue your last conversation with this provider, folder and account") }
                     Button(model.canResume ? "New" : "Connect", action: model.start).disabled(!model.configured)
                 }
@@ -51,7 +55,9 @@ struct ACPConversationView: View {
             ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    if model.state.messages.isEmpty {
+                    if let choose, let detection, model.needsSetup && !model.active && model.state.messages.isEmpty {
+                        ACPProviderSetup(detection: detection, choose: choose, settings: settings)
+                    } else if model.state.messages.isEmpty {
                         Text("What would you like to talk about?")
                             .font(.headline)
                         Text(model.usesAPI ? "Chat with your selected model." : "Chat with your configured AI provider. A project folder is optional.")
@@ -240,6 +246,46 @@ private struct ACPConversationTab: View {
 
 /// The launcher's row for running conversations. With one it is the row Volant always showed; with
 /// several it stays one row, with a button per conversation.
+/// Shown in AI Chat before any provider is chosen: the agents installed on this Mac, each one click from
+/// a connected chat, and a way to Settings for an API key or a local model.
+private struct ACPProviderSetup: View {
+    @ObservedObject var detection: ACPAgentDetection
+    let choose: (String) -> Void
+    let settings: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Choose who to chat with").font(.headline)
+            Text("Volant looks for coding agents installed on this Mac. You can change this later in Settings › AI.")
+                .font(.callout).foregroundStyle(.secondary)
+            if detection.checking && detection.agents.isEmpty {
+                HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Looking for installed agents…").foregroundStyle(.secondary) }
+            } else if let message = detection.message {
+                Text(message).foregroundStyle(.secondary)
+            }
+            ForEach(detection.agents.filter { $0.state != .notInstalled }) { agent in
+                HStack(spacing: 10) {
+                    Image(systemName: agent.symbol).foregroundStyle(agent.state == .ready ? Color.green : Color.orange)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(agent.title)
+                        if agent.state != .ready { Text(agent.detail).font(.caption).foregroundStyle(.secondary) }
+                    }
+                    Spacer()
+                    if agent.state == .ready { Button("Chat") { choose(agent.provider) } }
+                    else { Button("Set Up…", action: settings) }
+                }
+            }
+            if !detection.checking && detection.message == nil && !detection.agents.contains(where: { $0.state != .notInstalled }) {
+                Text("No supported agent is installed. Claude Code, Codex and OpenCode work here once installed.")
+                    .font(.callout).foregroundStyle(.secondary)
+            }
+            Button("Use an API Key or Local Model…", action: settings)
+        }
+        .task { detection.detect() }
+        .onDisappear { detection.cancel() }
+    }
+}
+
 struct ACPActivityStrip: View {
     @ObservedObject var conversations: ACPConversations
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
@@ -276,7 +322,7 @@ private struct ACPActivityRow: View {
             HStack {
                 Image(systemName: model.state.permissions.isEmpty ? "bubble.left.and.bubble.right" : "hand.raised")
                 Text("AI Chat").fontWeight(.medium)
-                Text(model.providerTitle).foregroundStyle(.secondary).lineLimit(1).help(model.providerTitle)
+                if !model.needsSetup { Text(model.providerTitle).foregroundStyle(.secondary).lineLimit(1).help(model.providerTitle) }
                 if let account = model.account { ACPAccountLabel(label: account.label) }
                 Text(model.state.status).foregroundStyle(.secondary).lineLimit(1)
                 Spacer()

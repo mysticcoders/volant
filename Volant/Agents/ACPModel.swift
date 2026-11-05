@@ -5,6 +5,8 @@ import VolantCore
 /// UI-owned ACP conversation. Transcript stays in memory; the provider owns its own session storage.
 final class ACPModel: ObservableObject {
     @Published var provider = "opencode"
+    /// True while the owner has chosen no AI provider at all, so AI Chat shows its setup instead of chatting.
+    @Published private(set) var needsSetup = false
     @Published var project = ""
     /// The account this conversation runs under, or ran under once it has ended; nil for the
     /// provider's default login. Each start sets it, so a transcript keeps the account that produced
@@ -85,7 +87,12 @@ final class ACPModel: ObservableObject {
     /// header still starts a fresh one.
     @discardableResult func openChat(configuration: AIConfiguration?, connect: () -> Void, resume: (() -> Void)? = nil) -> Bool {
         if active { return true }
-        guard let configuration, configuration.isConfigured, keyReady(for: configuration) else { return false }
+        guard let configuration, configuration.isConfigured else {
+            needsSetup = true; state.status = ""
+            return false
+        }
+        needsSetup = false
+        guard keyReady(for: configuration) else { return false }
         configure(configuration)
         if canResume { (resume ?? self.resume)() } else { connect() }
         return true

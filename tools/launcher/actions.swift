@@ -72,7 +72,11 @@ func freshLauncher() {
         switch action {
         case .ai:
             chatRequests += 1
-            if !panel.model.acp.openChat(configuration: chatConfig, connect: { panel.model.acp.state.phase = "ready"; panel.model.acp.state.status = "Connected" }) {
+            // As in the app: the saved choice is read from config, and Settings opens only for a chosen
+            // connection that still needs a key; with nothing chosen the chat shows its setup.
+            let configuration = chatConfig ?? (try? AIConfiguration.load(at: panel.model.actionConfigURL))
+            if !panel.model.acp.openChat(configuration: configuration, connect: { panel.model.acp.state.phase = "ready"; panel.model.acp.state.status = "Connected" }),
+               configuration?.isConfigured == true {
                 settingsRequests += 1; panel.orderOut(nil)
             }
         case .aiSettings: settingsRequests += 1; panel.orderOut(nil)
@@ -338,12 +342,26 @@ func volantMenuScenario() throws {
     print("PASS: Volant menu click, version header, filtering, Return, and Escape order")
 }
 
-/// AI Chat inside the launcher: setup routing, the native prompt editor, the @ context picker, and an
+/// AI Chat inside the launcher: first-use setup, the native prompt editor, the @ context picker, and an
 /// active conversation and draft surviving summon, focus loss and Back. Entering AI Chat invokes setup
 /// routing, never a real provider. AI Settings is drawn last because it shows this live conversation.
 func panelChatScenario() throws {
+    // Fictional detection results: one agent ready, one needing its adapter, one not installed.
+    let agents = [ACPAgentAvailability(provider: "claude", state: .ready, detail: "Ready", path: "/fictional/bin/claude"),
+                  ACPAgentAvailability(provider: "codex", state: .needsAdapter, detail: "Install the ACP adapter in Settings › AI.", path: nil),
+                  ACPAgentAvailability(provider: "opencode", state: .notInstalled, detail: "Not installed", path: nil)]
+    panel.model.aiDetection.reader = { reply in reply(try? JSONEncoder().encode(agents), nil) }
     summon(); key("\t", 48)
-    verify(waitUntil { settingsRequests == 1 && !panel.isVisible }, "Unconfigured AI Chat routes to Settings")
+    verify(waitUntil { panel.isVisible && panel.model.showingACP && settingsRequests == 0 }, "Unconfigured AI Chat shows its setup instead of Settings")
+    verify(waitUntil { panel.model.aiDetection.agents.count == 3 },
+           "AI Chat setup lists the installed agents (checking \(panel.model.aiDetection.checking), message \(panel.model.aiDetection.message ?? "none"), configured \(panel.model.acp.configured), active \(panel.model.acp.active), showingACP \(panel.model.showingACP))")
+    try render("chat-setup")
+    panel.model.chooseAIProvider("claude")
+    verify(waitUntil { panel.model.acp.state.phase == "ready" }, "Choosing an agent connects the chat")
+    verify((try? AIConfiguration.load(at: panel.model.actionConfigURL))?.provider == "claude", "Choosing an agent saves it as the AI Chat provider")
+    panel.model.acp.disconnect()
+    try Data("{}".utf8).write(to: panel.model.actionConfigURL)
+    panel.orderOut(nil); settle()
     chatConfig = AIConfiguration(); chatConfig?.provider = "claude"
     summon()
     (panel.firstResponder as? NSTextView)?.insertText("A fictional question", replacementRange: NSRange(location: NSNotFound, length: 0)); settle()
@@ -427,11 +445,11 @@ func panelChatScenario() throws {
     key("\t", 48)
     awaitChatPrompt("Tab resumes chat")
     verify(panel.model.acp.draft == savedDraft, "Tab resumes chat without overwriting its draft")
-    // A busy chat stays visible on blur, but a subsequent summon returns to search.
+    // A busy chat hides on blur like any screen; its turn keeps running and a summon returns to search.
     panel.model.acp.state.phase = "working"
     let backgroundWindow = NSWindow(contentRect: NSRect(x: 20, y: 20, width: 180, height: 100), styleMask: [.titled], backing: .buffered, defer: false)
     backgroundWindow.makeKeyAndOrderFront(nil); settle()
-    verify(panel.isVisible && !panel.isKeyWindow && panel.model.showingACP, "Working chat remains visible on real focus loss")
+    verify(!panel.isVisible && panel.model.acp.state.phase == "working", "A working chat hides on real focus loss without stopping its turn")
     summon()
     verify(!panel.model.showingACP && panel.model.query.isEmpty && panel.model.acp.state.phase == "working", "Summoning a visible inactive chat returns home without stopping the turn")
     verify(panel.model.acp.state.messages == savedMessages && panel.model.acp.draft == savedDraft, "Focus loss and summon preserve conversation state")
@@ -1052,8 +1070,9 @@ func acpResumeScenario() throws {
     print("PASS: opening chat resumes a recorded ACP conversation; Resume and New stay available until it connects")
 }
 
-/// Translate in the launcher with fictional text: a draft survives focus loss and refocusing, and an
-/// explicit dismissal starts the next summon on search with Translate cleared.
+/// Translate in the launcher with fictional text: clicking away hides the launcher and the next summon
+/// returns to Translate with the draft, while an explicit dismissal starts the next summon on search with
+/// Translate cleared.
 func translateScenario() throws {
     summon()
     panel.model.query = "translate"
@@ -1062,16 +1081,16 @@ func translateScenario() throws {
     try render("translate")
     let background = NSWindow(contentRect: NSRect(x: 20, y: 20, width: 180, height: 100), styleMask: [.titled], backing: .buffered, defer: false)
     background.makeKeyAndOrderFront(nil); settle()
-    verify(panel.isVisible && panel.model.showingTranslation && panel.model.translation.text == "Good morning, fictional team",
-           "A Translate draft stays on screen through focus loss")
+    verify(!panel.isVisible && panel.model.translation.text == "Good morning, fictional team", "Clicking away hides Translate and keeps its draft")
     panel.toggle(); settle()
     background.orderOut(nil)
-    verify(panel.model.showingTranslation && panel.model.translation.text == "Good morning, fictional team", "Refocusing keeps the Translate draft")
+    verify(panel.isVisible && panel.model.showingTranslation && panel.model.translation.text == "Good morning, fictional team",
+           "Summoning after a click-away returns to Translate with its draft")
     panel.model.dismiss(); settle()
     summon()
     verify(panel.model.query.isEmpty && !panel.model.showingTranslation && panel.model.translation.text.isEmpty,
            "Summoning after an explicit dismissal opens search with Translate cleared")
-    print("PASS: Translate keeps its draft through focus loss and clears after an explicit dismissal")
+    print("PASS: Translate hides on click-away and returns with its draft, and clears after an explicit dismissal")
 }
 
 /// Several conversations in one list, drawn in the standalone chat view, activity strip and AI

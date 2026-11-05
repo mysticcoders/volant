@@ -33,7 +33,7 @@ struct LauncherView: View {
             } else if model.showingACP {
                 ACPConversationView(model: model.acp, settings: model.openAISettings, back: { model.query = "" }, caffeinate: model.caffeinate, focusRequest: model.searchFocusRequest,
                                     contextCandidates: model.contextCandidates, conversations: model.conversations,
-                                    newConversation: model.newConversation, select: model.selectConversation)
+                                    newConversation: model.newConversation, select: model.selectConversation, choose: model.chooseAIProvider, detection: model.aiDetection)
                     .onAppear { model.openAIChat() }
             } else {
             searchField
