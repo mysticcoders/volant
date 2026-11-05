@@ -19,6 +19,7 @@ final class SettingsWindowController: NSWindowController {
     let state = SettingsState()
     private let onChange: () -> Void
     private let configURL: URL
+    let usageURL: URL
     /// Changing section replaces the detail view, but AppKit keeps the key view loop it built for the
     /// first one, so Tab from the sidebar stopped reaching the new section's controls. The loop is
     /// rebuilt after each change.
@@ -26,11 +27,12 @@ final class SettingsWindowController: NSWindowController {
 
     /// `dictationAccess` defaults to a real helper connection, which connects only when typing is
     /// chosen; fixtures pass one with a fake client.
-    init(configURL: URL = Preferences.configURL, conversations: ACPConversations = ACPConversations(),
+    init(configURL: URL = Preferences.configURL, usageURL: URL = UsageStore.defaultURL, conversations: ACPConversations = ACPConversations(),
          dictationAccess: DictationTypingAccess = DictationTypingAccess(client: InputHostConnection()),
          openAI: @escaping (AIConfiguration) -> Void = { _ in }, onChange: @escaping () -> Void) {
         self.onChange = onChange
         self.configURL = configURL
+        self.usageURL = usageURL
         let window = SettingsPanel(contentRect: NSRect(x: 0, y: 0, width: 820, height: 600),
                               styleMask: [.titled, .closable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
         window.minSize = NSSize(width: 680, height: 500)
@@ -46,7 +48,7 @@ final class SettingsWindowController: NSWindowController {
         window.setFrameAutosaveName("VolantSettings")
         super.init(window: window)
         let hosting = NSHostingView(rootView: ThemedRoot(paletteText: false) {
-            SettingsView(state: state, conversations: conversations, dictationAccess: dictationAccess, configURL: configURL, onChange: onChange, openAI: openAI,
+            SettingsView(state: state, conversations: conversations, dictationAccess: dictationAccess, configURL: configURL, usageURL: usageURL, onChange: onChange, openAI: openAI,
                          chooseAIProject: { [weak self] completion in self?.chooseAIProject(completion) },
                          chooseAccountFolder: { [weak self] completion in self?.chooseAccountFolder(completion) },
                          importRaycast: { [weak self] in self?.showRaycastImport() })
@@ -104,6 +106,7 @@ private struct SettingsView: View {
     @ObservedObject var conversations: ACPConversations
     let dictationAccess: DictationTypingAccess
     let configURL: URL
+    let usageURL: URL
     let onChange: () -> Void
     let openAI: (AIConfiguration) -> Void
     let chooseAIProject: (@escaping (URL?) -> Void) -> Void
@@ -196,6 +199,7 @@ private struct SettingsView: View {
         case .keyboardShortcuts: keyboardShortcuts
         case .appShortcuts: shortcuts
         case .data: data
+        case .yourVolant: YourVolantSettingsView(usageURL: usageURL)
         case .whatsNew: WhatsNewSettingsView()
         case .about: AboutSettingsView()
         case .ai: AISettingsView(conversations: conversations, configURL: configURL, onChange: onChange, openConversation: openAI, chooseProject: chooseAIProject,

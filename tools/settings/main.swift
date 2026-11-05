@@ -1,5 +1,6 @@
 import AppKit
 import CryptoKit
+import SQLite3
 import SwiftUI
 import VolantCore
 
@@ -29,8 +30,31 @@ final class PreviewInputHost: InputHostClient {
 }
 let previewInputHost = PreviewInputHost()
 let dictationAccess = DictationTypingAccess(client: previewInputHost)
+/// Fictional usage for Settings › Your Volant: a fixed pattern of daily counts over the last 30 days
+/// and ranking rows for system apps, commands and the bundled Hello extension.
+func seedFictionalUsage(at url: URL) {
+    var db: OpaquePointer?
+    guard sqlite3_open(url.path, &db) == SQLITE_OK else { return }
+    defer { sqlite3_close(db) }
+    sqlite3_exec(db, "CREATE TABLE usage (key TEXT PRIMARY KEY, score REAL NOT NULL, last REAL NOT NULL); CREATE TABLE query_choice (query TEXT PRIMARY KEY, key TEXT NOT NULL, last REAL NOT NULL); CREATE TABLE daily_use (day TEXT PRIMARY KEY, uses INTEGER NOT NULL)", nil, nil, nil)
+    let pattern = [12, 18, 0, 22, 31, 9, 0, 14, 27, 35, 19, 24, 6, 0, 0, 17, 21, 29, 33, 15, 11, 0, 26, 38, 30, 22, 18, 25, 19, 8]
+    let today = Calendar.current.startOfDay(for: Date())
+    for (offset, uses) in pattern.enumerated() where uses > 0 {
+        let day = UsageStats.dayKey(Calendar.current.date(byAdding: .day, value: offset - (pattern.count - 1), to: today)!)
+        sqlite3_exec(db, "INSERT INTO daily_use VALUES ('\(day)', \(uses))", nil, nil, nil)
+    }
+    let now = Date().timeIntervalSince1970
+    let rows: [(String, Double)] = [("app:/System/Applications/Calculator.app", 9.5), ("app:/Applications/Safari.app", 14), ("app:/System/Applications/Notes.app", 6),
+                                    ("app:/System/Applications/Calendar.app", 4.5), ("app:/System/Applications/Music.app", 2), ("core:clipboard", 11), ("core:translate", 5),
+                                    ("core:notes", 7.5), ("system-action:lockScreen", 3), ("command:settings", 1.5), ("ext:com.mysticcoders.volant.hello:", 2.5)]
+    for (key, score) in rows {
+        sqlite3_exec(db, "INSERT INTO usage VALUES ('\(key)', \(score), \(now - 3600))", nil, nil, nil)
+    }
+}
+let usageURL = root.appendingPathComponent("settings-usage.sqlite")
+seedFictionalUsage(at: usageURL)
 var controller: SettingsWindowController!
-controller = SettingsWindowController(configURL: configURL, dictationAccess: dictationAccess) {
+controller = SettingsWindowController(configURL: configURL, usageURL: usageURL, dictationAccess: dictationAccess) {
     HotKeyCenter.shared.unregisterAll()
     AppHotKeys.register((try? JSONDecoder().decode(Preferences.self, from: Data(contentsOf: configURL)))?.appHotKeys ?? [])
     controller.refresh(try! JSONDecoder().decode(Preferences.self, from: Data(contentsOf: configURL)), apps: apps)

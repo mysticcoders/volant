@@ -8,6 +8,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     case keyboardShortcuts = "Keyboard Shortcuts"
     case appShortcuts = "App Shortcuts"
     case data = "Data & Configuration"
+    case yourVolant = "Your Volant"
     case whatsNew = "What’s New"
     case about = "About"
     case ai = "AI"
@@ -24,6 +25,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .keyboardShortcuts: String(localized: "Keyboard Shortcuts", comment: "Settings sidebar section")
         case .appShortcuts: String(localized: "App Shortcuts", comment: "Settings sidebar section")
         case .data: String(localized: "Data & Configuration", comment: "Settings sidebar section")
+        case .yourVolant: String(localized: "Your Volant", comment: "Settings sidebar section showing the owner's own usage on this Mac")
         case .whatsNew: String(localized: "What’s New", comment: "Settings sidebar section")
         case .about: String(localized: "About", comment: "Settings sidebar section")
         case .ai: String(localized: "AI", comment: "Settings sidebar section")
@@ -42,6 +44,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .keyboardShortcuts: "keyboard.fill"
         case .appShortcuts: "command"
         case .data: "externaldrive.fill"
+        case .yourVolant: "chart.bar.fill"
         case .whatsNew: "gift.fill"
         case .about: "info"
         case .ai: "sparkles"
@@ -58,6 +61,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .appearance: .indigo
         case .appShortcuts: .teal
         case .data: .blue
+        case .yourVolant: .mint
         case .whatsNew: .purple
         case .ai: .pink
         case .dictation: .red
@@ -74,6 +78,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .keyboardShortcuts: ["hotkey", "shortcut", "notes", "emoji", "lock screen", "sleep displays", "dictate"]
         case .appShortcuts: ["alias", "hotkey", "application"]
         case .data: ["config", "json", "icloud", "sync", "backup", "import", "export", "raycast", "coingecko", "crypto"]
+        case .yourVolant: ["stats", "statistics", "usage", "activity", "streak", "most used", "history"]
         case .whatsNew: ["changelog", "release notes", "new", "changes", "version", "update"]
         case .about: ["version", "acknowledgements", "license", "geonames", "website"]
         case .ai: ["chat", "acp", "claude", "codex", "api key", "model", "apple intelligence", "ollama"]
