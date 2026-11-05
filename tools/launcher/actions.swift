@@ -1042,13 +1042,36 @@ func acpResumeScenario() throws {
     resumeStore.set(try JSONEncoder().encode(ACPResumeRecord(provider: "claude", project: "", sessionID: "fictional-session")), forKey: ACPModel.resumeKey)
     let resumeModel = ACPModel(resumeStore: resumeStore)
     var resumeConfig = AIConfiguration(); resumeConfig.provider = "claude"
-    var resumeConnects = 0
-    verify(resumeModel.openChat(configuration: resumeConfig) { resumeConnects += 1 } && resumeConnects == 0 && resumeModel.canResume, "Opening chat offers Resume without connecting")
+    var resumeConnects = 0, resumes = 0
+    verify(resumeModel.openChat(configuration: resumeConfig, connect: { resumeConnects += 1 }, resume: { resumes += 1 }) && resumes == 1 && resumeConnects == 0,
+           "Opening chat resumes the recorded conversation instead of waiting for a button")
     let (resumeChatWindow, resumeChat) = hostWindow(ACPConversationView(model: resumeModel), width: 740, height: 450)
     try render("ai-acp-resume", view: resumeChat)
     resumeChatWindow.orderOut(nil)
     UserDefaults().removePersistentDomain(forName: resumeSuite)
-    print("PASS: a recorded ACP conversation offers Resume and New without connecting")
+    print("PASS: opening chat resumes a recorded ACP conversation; Resume and New stay available until it connects")
+}
+
+/// Translate in the launcher with fictional text: a draft survives focus loss and refocusing, and an
+/// explicit dismissal starts the next summon on search with Translate cleared.
+func translateScenario() throws {
+    summon()
+    panel.model.query = "translate"
+    verify(waitUntil { panel.model.showingTranslation }, "translate opens the Translate screen")
+    panel.model.translation.text = "Good morning, fictional team"; settle()
+    try render("translate")
+    let background = NSWindow(contentRect: NSRect(x: 20, y: 20, width: 180, height: 100), styleMask: [.titled], backing: .buffered, defer: false)
+    background.makeKeyAndOrderFront(nil); settle()
+    verify(panel.isVisible && panel.model.showingTranslation && panel.model.translation.text == "Good morning, fictional team",
+           "A Translate draft stays on screen through focus loss")
+    panel.toggle(); settle()
+    background.orderOut(nil)
+    verify(panel.model.showingTranslation && panel.model.translation.text == "Good morning, fictional team", "Refocusing keeps the Translate draft")
+    panel.model.dismiss(); settle()
+    summon()
+    verify(panel.model.query.isEmpty && !panel.model.showingTranslation && panel.model.translation.text.isEmpty,
+           "Summoning after an explicit dismissal opens search with Translate cleared")
+    print("PASS: Translate keeps its draft through focus loss and clears after an explicit dismissal")
 }
 
 /// Several conversations in one list, drawn in the standalone chat view, activity strip and AI
@@ -1417,6 +1440,7 @@ struct Scenario {
 /// - extension-rows: row Actions and colored symbol rows in the panel.
 /// - catalog: the catalog list, detail and filter inside the panel.
 /// - herdr: question cards clicked at fixed offsets from the panel height, machine rows and the footer.
+/// - translate: the Translate screen drawn in the panel, and its draft across focus loss and dismissal.
 /// - rex: Rex pane rows and the footer status drawn in the panel.
 /// - clipboard-recovery, spotlight-recovery: error, progress and Retry states drawn in the panel.
 /// Default size only, because they draw standalone windows that ignore the launcher size:
@@ -1473,6 +1497,7 @@ let scenarios: [Scenario] = [
     Scenario(name: "api-settings", sizeSensitive: false, run: apiSettingsScenario),
     Scenario(name: "acp-detection", sizeSensitive: false, run: acpDetectionScenario),
     Scenario(name: "acp-resume", sizeSensitive: false, run: acpResumeScenario),
+    Scenario(name: "translate", sizeSensitive: true, run: translateScenario),
     Scenario(name: "acp-several", sizeSensitive: false, run: acpSeveralScenario),
     Scenario(name: "acp-accounts", sizeSensitive: false, run: acpAccountsScenario),
     Scenario(name: "clipboard-recovery", sizeSensitive: true, run: clipboardRecoveryScenario),

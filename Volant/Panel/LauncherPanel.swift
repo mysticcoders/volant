@@ -126,7 +126,9 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         let previousSelection = model.selection
         model.isPresented = true
         observeOutsideInteraction()
-        if model.showingACP || !keepsVisibleOnBlur { model.reset() }
+        // A hidden launcher was dismissed on purpose (focus loss keeps a translation draft on screen),
+        // so Translate starts over instead of reopening on the last text.
+        if model.showingACP || model.showingTranslation || !keepsVisibleOnBlur { model.reset() }
         model.resumeAgentsIfNeeded()
         model.resumeRexIfNeeded()
         restorePositionOrCenter()

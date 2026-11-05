@@ -765,6 +765,7 @@ final class LauncherModel: ObservableObject {
         actionFeedback = nil
         files.cancel()
         notesSearch?.cancel()
+        if showingTranslation { translation.clear() }
         // Changing the query already refreshes suggestions. Empty-query reopens still
         // refresh recency, which may have changed while the panel was hidden.
         if query.isEmpty { showSuggestions() }

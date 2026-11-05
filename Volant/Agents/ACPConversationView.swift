@@ -18,6 +18,7 @@ struct ACPConversationView: View {
     @State private var picking = false
     @State private var mentionLocation: Int?
     @State private var editorFocus = UUID()
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
@@ -46,7 +47,7 @@ struct ACPConversationView: View {
                 }
             }.padding(.horizontal, 16).padding(.vertical, 8)
             if let conversations { ACPConversationTabs(conversations: conversations, select: select) }
-            Divider()
+            if reduceTransparency { Divider().opacity(0.6) }
             ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
@@ -92,7 +93,7 @@ struct ACPConversationView: View {
                 if let permission = model.state.permissions.first { proxy.scrollTo(permission.id, anchor: .top) }
             }
             }
-            Divider()
+            if reduceTransparency { Divider().opacity(0.6) }
             HStack(spacing: 8) {
                 if model.state.busy && model.state.permissions.isEmpty { ProgressView().controlSize(.small) }
                 Text(model.state.status).font(.caption).foregroundStyle(.secondary).lineLimit(2)
@@ -241,13 +242,14 @@ private struct ACPConversationTab: View {
 /// several it stays one row, with a button per conversation.
 struct ACPActivityStrip: View {
     @ObservedObject var conversations: ACPConversations
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     /// Shows a conversation in AI Chat.
     var open: (ACPModel) -> Void
     var body: some View {
         let live = conversations.live
         if let only = live.first, live.count == 1 {
             ACPActivityRow(model: only) { open(only) }
-            Divider()
+            if reduceTransparency { Divider().opacity(0.6) }
         } else if live.count > 1 {
             HStack {
                 Image(systemName: "bubble.left.and.bubble.right")
@@ -261,7 +263,7 @@ struct ACPActivityStrip: View {
                     .buttonStyle(.plain).foregroundStyle(.secondary).layoutPriority(1)
                     .help("Open a running conversation, the one waiting for your permission first")
             }.font(.system(size: 12)).padding(.horizontal, 20).padding(.vertical, 8)
-            Divider()
+            if reduceTransparency { Divider().opacity(0.6) }
         }
     }
 }

@@ -80,13 +80,14 @@ final class ACPModel: ObservableObject {
         if let ranUnder, ranUnder.provider == provider, ranUnder.connection == configuration.connection { account = ranUnder.account }
         else { account = nextAccount }
     }
-    /// Reopening an active chat must never replace its session or draft. A conversation that can be
-    /// resumed is offered instead of connecting, so opening the chat never replaces its record.
-    @discardableResult func openChat(configuration: AIConfiguration?, connect: () -> Void) -> Bool {
+    /// Reopening an active chat must never replace its session or draft. Opening it connects right away
+    /// so the owner can type: a recorded conversation is resumed rather than replaced, and New in the
+    /// header still starts a fresh one.
+    @discardableResult func openChat(configuration: AIConfiguration?, connect: () -> Void, resume: (() -> Void)? = nil) -> Bool {
         if active { return true }
         guard let configuration, configuration.isConfigured, keyReady(for: configuration) else { return false }
         configure(configuration)
-        if !canResume { connect() }
+        if canResume { (resume ?? self.resume)() } else { connect() }
         return true
     }
     /// False for a BYOK connection without a stored key, so the caller opens AI Settings instead of
