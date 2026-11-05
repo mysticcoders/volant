@@ -54,14 +54,17 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         orderAboveFloatingPeer(floatingPeer)
     }
 
-    /// Ordinary search is transient; conversations and unfinished input survive focus changes.
+    /// Clicking away hides the launcher, including Translate and AI Chat, whose text and conversations
+    /// are kept in their models. Only work that would be lost or left half-entered keeps it on screen.
     var keepsVisibleOnBlur: Bool {
-        (model.showingACP && (model.acp.active || model.acp.submitting ||
-        !model.acp.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)) ||
         model.pendingExtension != nil || model.extensionRunning || model.wifiJoin != nil || model.connectivityBusy || model.entryForm != nil ||
-        (model.showingTranslation && model.translation.hasDraft) ||
         model.dictation.phase == .listening || model.dictation.phase == .finishing
     }
+    /// Whether the launcher was last hidden by clicking away rather than dismissed on purpose, so the
+    /// next summon can return to Translate with its text instead of starting over.
+    private var hiddenByFocusLoss = false
+    /// A Translate screen hidden by clicking away comes back as it was, so nothing resets it while hidden.
+    private var returnsToTranslation: Bool { hiddenByFocusLoss && model.showingTranslation }
 
     override func resignKey() {
         super.resignKey()
@@ -69,7 +72,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
     }
 
     private func dismissAfterFocusLoss() {
-        if isVisible && !PermissionGate.isPrompting && !keepsVisibleOnBlur { orderOut(nil) }
+        if isVisible && !PermissionGate.isPrompting && !keepsVisibleOnBlur { hiddenByFocusLoss = true; orderOut(nil) }
     }
 
     // A nonactivating panel may leave the previous application active. Clicking
@@ -126,7 +129,11 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         let previousSelection = model.selection
         model.isPresented = true
         observeOutsideInteraction()
-        if model.showingACP || !keepsVisibleOnBlur { model.reset() }
+        // After a click-away, Translate comes back with its text; after Escape, Back or the shortcut it
+        // starts over. AI Chat keeps its conversation in its model either way, and Tab returns to it.
+        let returning = returnsToTranslation
+        hiddenByFocusLoss = false
+        if !returning && (model.showingACP || model.showingTranslation || !keepsVisibleOnBlur) { model.reset() }
         model.resumeAgentsIfNeeded()
         model.resumeRexIfNeeded()
         restorePositionOrCenter()
@@ -275,13 +282,13 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         model.agents.disconnect()
         model.rex.disconnect()
         super.orderOut(sender)
-        guard preparesWhenHidden, !keepsVisibleOnBlur else { return }
+        guard preparesWhenHidden, !keepsVisibleOnBlur, !returnsToTranslation else { return }
         let generation = presentationGeneration
         let dismissedQuery = model.query
         let preparation = DispatchWorkItem { [weak self] in
             guard let self, self.presentationGeneration == generation else { return }
             self.hiddenPreparation = nil
-            guard !self.isVisible, !self.keepsVisibleOnBlur, self.model.query == dismissedQuery,
+            guard !self.isVisible, !self.keepsVisibleOnBlur, !self.returnsToTranslation, self.model.query == dismissedQuery,
                   NSApp.modalWindow == nil else { return }
             let id = OSSignpostID(log: Self.openingLog)
             os_signpost(.begin, log: Self.openingLog, name: "Prepare hidden home", signpostID: id)

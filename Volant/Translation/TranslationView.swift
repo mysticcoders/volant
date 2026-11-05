@@ -7,6 +7,7 @@ struct TranslationView: View {
     let back: () -> Void
     let copy: (String) -> Void
     @FocusState private var editing: Bool
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
         VStack(spacing: 0) {
@@ -18,20 +19,19 @@ struct TranslationView: View {
                 Spacer(minLength: 8)
                 languagePicker(String(localized: "Target language"), selection: $model.target, auto: false)
             }.padding(16)
-            Divider()
+            if reduceTransparency { Divider().opacity(0.6) }
             HStack(spacing: 0) {
                 ZStack(alignment: .topLeading) {
                     if model.text.isEmpty {
                         Text("Enter text…").foregroundStyle(.secondary).padding(.horizontal, 5).padding(.top, 1)
                             .allowsHitTesting(false).accessibilityHidden(true)
                     }
-                    TextEditor(text: $model.text).scrollContentBackground(.hidden)
+                    TextEditor(text: $model.text).scrollContentBackground(.hidden).focusEffectDisabled()
                         .focused($editing).accessibilityLabel("Text to translate")
                 }
                 .padding(16)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.primary.opacity(0.035))
-                Divider()
+                if reduceTransparency { Divider().opacity(0.6) }
                 ScrollView {
                     Text(model.output.isEmpty ? String(localized: "Translation", comment: "Placeholder where the translated text appears") : model.output)
                         .foregroundStyle(model.output.isEmpty || model.outputIsStale ? .secondary : .primary)
@@ -68,7 +68,7 @@ struct TranslationView: View {
                     Button("Retry Languages") { Task { await model.loadCatalog() } }
                 }.padding(.bottom, 8)
             }
-            Divider()
+            if reduceTransparency { Divider().opacity(0.6) }
             HStack(spacing: 12) {
                 Image("VolantWing").renderingMode(.template).resizable().scaledToFit()
                     .frame(width: 16, height: 16).foregroundStyle(.tint)

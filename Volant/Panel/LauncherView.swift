@@ -29,11 +29,11 @@ struct LauncherView: View {
             } else if model.showingCatalog {
                 ExtensionCatalogView(model: model.catalog, caffeinate: model.caffeinate, back: { model.query = ""; model.searchFocusRequest = UUID() })
             } else if model.showingTranslation {
-                TranslationView(model: model.translation, caffeinate: model.caffeinate, back: { model.query = ""; model.searchFocusRequest = UUID() }, copy: model.copyText)
+                TranslationView(model: model.translation, caffeinate: model.caffeinate, back: { model.translation.clear(); model.query = ""; model.searchFocusRequest = UUID() }, copy: model.copyText)
             } else if model.showingACP {
                 ACPConversationView(model: model.acp, settings: model.openAISettings, back: { model.query = "" }, caffeinate: model.caffeinate, focusRequest: model.searchFocusRequest,
                                     contextCandidates: model.contextCandidates, conversations: model.conversations,
-                                    newConversation: model.newConversation, select: model.selectConversation)
+                                    newConversation: model.newConversation, select: model.selectConversation, choose: model.chooseAIProvider, detection: model.aiDetection)
                     .onAppear { model.openAIChat() }
             } else {
             searchField
@@ -131,6 +131,9 @@ struct LauncherView: View {
             if model.dictation.isListening { model.cancelDictation(); return .handled }
             if model.entryForm != nil { model.cancelEntryForm(); return .handled }
             if model.backOutOfScope() { return .handled }
+            // Escape in AI Chat steps back to search like Back, keeping the conversation and its draft;
+            // a second Escape closes the launcher.
+            if model.showingACP { model.query = ""; model.searchFocusRequest = UUID(); return .handled }
             if model.wifiJoin != nil { guard !model.connectivityBusy else { return .handled }; model.wifiJoin = nil; model.searchFocusRequest = UUID() }
             else { model.dismiss() }
             return .handled

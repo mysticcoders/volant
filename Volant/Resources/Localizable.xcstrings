@@ -19042,6 +19042,94 @@
         }
       }
     },
+    "Chat": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Chatten"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Chatear"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Discuter"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Chatta"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "チャット"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "채팅"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Chatten"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Czat"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Conversar"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Conversar"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Чат"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sohbet"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Чат"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "聊天"
+          }
+        }
+      }
+    },
     "Chat with your configured AI provider. A project folder is optional.": {
       "localizations": {
         "de": {
@@ -21339,6 +21427,94 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "选择此账户登录时使用的文件夹。"
+          }
+        }
+      }
+    },
+    "Choose who to chat with": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wähle, mit wem du chatten möchtest"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Elige con quién chatear"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Choisissez avec qui discuter"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Scegli con chi chattare"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "チャットの相手を選択"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "채팅할 상대 선택"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kies met wie je wilt chatten"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wybierz, z kim chcesz rozmawiać"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Escolha com quem conversar"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Escolha com quem conversar"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Выберите, с кем общаться"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kiminle sohbet edeceğinizi seçin"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Виберіть, з ким спілкуватися"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "选择聊天对象"
           }
         }
       }
@@ -33658,6 +33834,95 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "无法存储状态栏：%@"
+          }
+        }
+      }
+    },
+    "Couldn’t save the AI provider. Choose it in Settings › AI.": {
+      "comment": "AI Chat setup status when saving the chosen agent fails",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Der KI-Anbieter konnte nicht gesichert werden. Wähle ihn in Einstellungen › KI."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No se pudo guardar el proveedor de IA. Elígelo en Ajustes › IA."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Impossible d’enregistrer le fournisseur d’IA. Choisissez-le dans Réglages › IA."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Impossibile salvare il fornitore AI. Sceglilo in Impostazioni › AI."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "AIプロバイダを保存できませんでした。設定 › AIで選択してください。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "AI 제공자를 저장할 수 없습니다. 설정 › AI에서 선택하세요."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kan de AI-aanbieder niet bewaren. Kies deze in Instellingen › AI."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nie udało się zapisać dostawcy AI. Wybierz go w Ustawienia › AI."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Não foi possível salvar o provedor de IA. Escolha-o em Ajustes › IA."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Não foi possível guardar o fornecedor de IA. Escolha-o em Definições › IA."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Не удалось сохранить поставщика ИИ. Выберите его в разделе Настройки › ИИ."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Yapay zekâ sağlayıcısı kaydedilemedi. Ayarlar › Yapay Zekâ bölümünden seçin."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Не вдалося зберегти постачальника ШІ. Виберіть його в розділі Параметри › ШІ."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "无法保存 AI 提供商。请在设置 › AI中选择。"
           }
         }
       }
@@ -53056,6 +53321,94 @@
         }
       }
     },
+    "Looking for installed agents…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Suche nach installierten Agenten …"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Buscando agentes instalados…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Recherche des agents installés…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ricerca degli agenti installati…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "インストール済みのエージェントを探しています…"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "설치된 에이전트를 찾는 중…"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Geïnstalleerde agents zoeken…"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Szukanie zainstalowanych agentów…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Procurando agentes instalados…"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "A procurar agentes instalados…"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Поиск установленных агентов…"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Yüklü ajanlar aranıyor…"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Пошук установлених агентів…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "正在查找已安装的代理…"
+          }
+        }
+      }
+    },
     "Looking up definition…": {
       "localizations": {
         "de": {
@@ -58965,6 +59318,94 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "尚未找到服务器。"
+          }
+        }
+      }
+    },
+    "No supported agent is installed. Claude Code, Codex and OpenCode work here once installed.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Es ist kein unterstützter Agent installiert. Claude Code, Codex und OpenCode funktionieren hier, sobald sie installiert sind."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No hay ningún agente compatible instalado. Claude Code, Codex y OpenCode funcionan aquí una vez instalados."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aucun agent compatible n’est installé. Claude Code, Codex et OpenCode fonctionnent ici une fois installés."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nessun agente supportato è installato. Claude Code, Codex e OpenCode funzionano qui una volta installati."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "対応するエージェントがインストールされていません。Claude Code、Codex、OpenCode はインストールすると使えます。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "지원되는 에이전트가 설치되어 있지 않습니다. Claude Code, Codex, OpenCode를 설치하면 여기서 사용할 수 있습니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Er is geen ondersteunde agent geïnstalleerd. Claude Code, Codex en OpenCode werken hier zodra ze zijn geïnstalleerd."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nie zainstalowano żadnego obsługiwanego agenta. Claude Code, Codex i OpenCode działają tu po zainstalowaniu."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nenhum agente compatível está instalado. Claude Code, Codex e OpenCode funcionam aqui depois de instalados."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Não está instalado nenhum agente compatível. O Claude Code, o Codex e o OpenCode funcionam aqui depois de instalados."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Поддерживаемые агенты не установлены. Claude Code, Codex и OpenCode заработают здесь после установки."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Desteklenen bir ajan yüklü değil. Claude Code, Codex ve OpenCode yüklendikten sonra burada çalışır."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Підтримуваних агентів не встановлено. Claude Code, Codex і OpenCode працюватимуть тут після встановлення."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "未安装受支持的代理。安装 Claude Code、Codex 或 OpenCode 后即可在此使用。"
           }
         }
       }
@@ -77829,6 +78270,94 @@
         }
       }
     },
+    "Set Up…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Einrichten …"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Configurar…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Configurer…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Configura…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "設定…"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "설정…"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Instellen…"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Skonfiguruj…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Configurar…"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Configurar…"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Настроить…"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kur…"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Налаштувати…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "设置…"
+          }
+        }
+      }
+    },
     "Set Volume to %lld%%": {
       "localizations": {
         "de": {
@@ -96368,6 +96897,94 @@
         }
       }
     },
+    "Use an API Key or Local Model…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "API-Schlüssel oder lokales Modell verwenden …"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Usar una clave de API o un modelo local…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Utiliser une clé d’API ou un modèle local…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Usa una chiave API o un modello locale…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "APIキーまたはローカルモデルを使用…"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "API 키 또는 로컬 모델 사용…"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Een API-sleutel of lokaal model gebruiken…"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Użyj klucza API lub modelu lokalnego…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Usar uma chave de API ou um modelo local…"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Utilizar uma chave de API ou um modelo local…"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Использовать ключ API или локальную модель…"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "API anahtarı veya yerel model kullan…"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Використати ключ API або локальну модель…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "使用 API 密钥或本地模型…"
+          }
+        }
+      }
+    },
     "Use as Input": {
       "comment": "Footer label for Return on an audio input device",
       "localizations": {
@@ -99030,6 +99647,94 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Volant会将它保存在你的钥匙串中，并仅添加到发往%@的请求中。扩展永远不会看到它。"
+          }
+        }
+      }
+    },
+    "Volant looks for coding agents installed on this Mac. You can change this later in Settings › AI.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant sucht auf diesem Mac nach installierten Coding-Agenten. Du kannst das später in Einstellungen › KI ändern."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant busca agentes de programación instalados en este Mac. Puedes cambiarlo más adelante en Ajustes › IA."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant recherche les agents de programmation installés sur ce Mac. Vous pourrez modifier ce choix plus tard dans Réglages › IA."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant cerca gli agenti di programmazione installati su questo Mac. Puoi cambiare scelta in seguito in Impostazioni › AI."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant はこの Mac にインストールされているコーディングエージェントを探します。あとで設定 › AIで変更できます。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant가 이 Mac에 설치된 코딩 에이전트를 찾습니다. 나중에 설정 › AI에서 변경할 수 있습니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant zoekt naar programmeeragents die op deze Mac zijn geïnstalleerd. Je kunt dit later wijzigen in Instellingen › AI."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant szuka agentów programistycznych zainstalowanych na tym Macu. Możesz to później zmienić w Ustawienia › AI."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Volant procura agentes de programação instalados neste Mac. Você pode mudar isso depois em Ajustes › IA."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Volant procura agentes de programação instalados neste Mac. Pode alterar isto mais tarde em Definições › IA."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant ищет агентов для программирования, установленных на этом Mac. Позже это можно изменить в разделе Настройки › ИИ."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant bu Mac'te yüklü kodlama ajanlarını arar. Bunu daha sonra Ayarlar › Yapay Zekâ bölümünden değiştirebilirsiniz."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant шукає агентів для програмування, установлених на цьому Mac. Пізніше це можна змінити в розділі Параметри › ШІ."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant 会查找此 Mac 上已安装的编程代理。之后可以在设置 › AI中更改。"
           }
         }
       }

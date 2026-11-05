@@ -765,6 +765,7 @@ final class LauncherModel: ObservableObject {
         actionFeedback = nil
         files.cancel()
         notesSearch?.cancel()
+        if showingTranslation { translation.clear() }
         // Changing the query already refreshes suggestions. Empty-query reopens still
         // refresh recency, which may have changed while the panel was hidden.
         if query.isEmpty { showSuggestions() }
@@ -1773,6 +1774,21 @@ final class LauncherModel: ObservableObject {
         presentAIChat()
     }
     func openAIChat() { onNote(.ai) }
+    /// Installed agents for AI Chat's first-use setup, read only while that setup is on screen.
+    let aiDetection = ACPAgentDetection()
+    /// Saves an installed agent as the AI Chat provider, keeping the rest of the AI settings, and opens
+    /// the chat on it so the owner can type straight away.
+    func chooseAIProvider(_ provider: String) {
+        let saved = (try? AIConfiguration.load(at: actionConfigURL)) ?? AIConfiguration()
+        var config = saved
+        config.connection = .acp
+        config.provider = provider
+        do { try config.save(at: actionConfigURL, expected: saved) } catch {
+            acp.state.status = String(localized: "Couldn’t save the AI provider. Choose it in Settings › AI.", comment: "AI Chat setup status when saving the chosen agent fails")
+            return
+        }
+        openAIChat()
+    }
     func openSettings() { dismiss(); onNote(.settings) }
     func openAISettings() { dismiss(); onNote(.aiSettings) }
 

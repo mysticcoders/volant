@@ -65,17 +65,19 @@ final class ACPResumeModelTests: XCTestCase {
         XCTAssertNil(ACPModel(resumeStore: store).resumable)
     }
 
-    func testOpeningTheChatOffersResumeInsteadOfReplacingTheRecord() throws {
+    func testOpeningTheChatResumesInsteadOfReplacingTheRecord() throws {
         try save(ACPResumeRecord(provider: "claude", project: "", sessionID: "fictional-session"))
         let model = ACPModel(resumeStore: store)
         var config = AIConfiguration(); config.provider = "claude"
-        var connects = 0
-        XCTAssertTrue(model.openChat(configuration: config) { connects += 1 })
+        var connects = 0, resumes = 0
+        XCTAssertTrue(model.openChat(configuration: config, connect: { connects += 1 }, resume: { resumes += 1 }))
+        XCTAssertEqual(resumes, 1)
         XCTAssertEqual(connects, 0)
         XCTAssertTrue(model.canResume)
         config.provider = "codex"
-        XCTAssertTrue(model.openChat(configuration: config) { connects += 1 })
+        XCTAssertTrue(model.openChat(configuration: config, connect: { connects += 1 }, resume: { resumes += 1 }))
         XCTAssertEqual(connects, 1)
+        XCTAssertEqual(resumes, 1)
     }
 
     func testOnlyAConversationWithAnOwnerTurnReplacesTheRecord() throws {

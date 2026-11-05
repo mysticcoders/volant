@@ -2,7 +2,7 @@
 
 **A private, open-source launcher for macOS.** Find apps and files, do math and conversions, keep notes and clipboard history, and keep your coding agents moving, all from one shortcut. A free, MIT-licensed alternative to Raycast, Alfred and Spotlight.
 
-![Volant's launcher](website/public/images/launcher-dark.png)
+![Volant: finding an app, answering 12% of 840, and showing coding agents waiting on you](website/public/images/volant-demo.webp)
 
 **[Download Volant](https://usevolant.com)** · macOS 15 or later on Apple silicon · about 9 MB · signed and notarized, updates through Sparkle
 

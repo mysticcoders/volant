@@ -30,7 +30,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func openAIChat() {
         guard !panel.model.acp.active else { return }
         let acp = panel.model.acp
-        if !acp.openChat(configuration: try? AIConfiguration.load(), connect: acp.start) { showAISettings() }
+        let configuration = try? AIConfiguration.load()
+        // With no provider chosen, the chat shows installed agents to pick from; Settings opens only when
+        // a chosen API connection still needs its key.
+        if !acp.openChat(configuration: configuration, connect: acp.start), configuration?.isConfigured == true { showAISettings() }
     }
 
     private lazy var settingsSync: ICloudSettingsSync = {

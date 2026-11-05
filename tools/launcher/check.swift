@@ -597,7 +597,7 @@ print("PASS: create snippet and quicklink forms, native typing, Return saves, Es
 
 
 
-// A real key-window transfer must preserve a live conversation and unsent input.
+// A real key-window transfer hides the launcher but must preserve a live conversation and unsent input.
 var openedSettings = 0
 let sticky = LauncherPanel(index: AppIndex(), clipboard: clipboard, notes: notes, config: Preferences(), usage: usage, positionStore: positionDefaults, onNote: { action in
     if case .settings = action { openedSettings += 1 }
@@ -615,9 +615,10 @@ for phase in ["starting", "working", "cancelling", "ready"] {
     sticky.model.acp.state.phase = phase
     otherWindow.makeKeyAndOrderFront(nil)
     RunLoop.main.run(until: Date().addingTimeInterval(0.1))
-    verify(sticky.isVisible && !sticky.isKeyWindow, "ACP remains visible after real focus loss in \(phase)")
+    verify(!sticky.isVisible && sticky.model.acp.state.phase == phase && sticky.model.acp.draft == "Keep this fictional draft",
+           "ACP hides on real focus loss in \(phase) and keeps its conversation")
     sticky.toggle()
-    verify(sticky.isVisible && sticky.isKeyWindow && !sticky.model.showingACP && sticky.model.query.isEmpty, "Summon returns a visible inactive conversation to search")
+    verify(waitUntil { sticky.isVisible && sticky.isKeyWindow } && !sticky.model.showingACP && sticky.model.query.isEmpty, "Summon after a click-away returns to search")
 }
 /// Returns whether `upper` is in front of `lower` among this process's on-screen windows.
 func isOrdered(_ upper: NSWindow, above lower: NSWindow) -> Bool {
@@ -631,13 +632,8 @@ sticky.floatingPeer = orderedNotes
 sticky.model.presentAIChat()
 sticky.model.acp.state.phase = "working"
 orderedNotes.toggle()
-verify(waitUntil(stable: 0.1) { orderedNotes.isKeyWindow && sticky.isVisible }, "Notes takes key focus while the ACP conversation stays visible")
-verify(isOrdered(orderedNotes, above: sticky), "Notes opened during an ACP conversation is in front of the launcher")
-verify(sticky.model.showingACP && sticky.model.acp.state.sessionID == "fictional-session", "Opening notes preserves the ACP conversation")
-orderedNotes.cancelOperation(nil)
-verify(!orderedNotes.isVisible && sticky.isVisible && sticky.model.showingACP, "Escape in notes closes only notes")
-orderedNotes.toggle()
-verify(waitUntil(stable: 0.1) { orderedNotes.isKeyWindow } && isOrdered(orderedNotes, above: sticky), "Reopened notes returns in front of the conversation")
+verify(waitUntil(stable: 0.1) { orderedNotes.isKeyWindow && !sticky.isVisible }, "Opening notes during an ACP conversation hides the launcher")
+verify(sticky.model.acp.state.sessionID == "fictional-session", "Opening notes preserves the ACP conversation")
 sticky.toggle()
 verify(waitUntil(stable: 0.1) { sticky.isKeyWindow } && orderedNotes.isVisible && isOrdered(sticky, above: orderedNotes), "Summoning the launcher orders it in front of visible notes")
 orderedNotes.close()
@@ -663,7 +659,7 @@ sticky.toggle()
 sticky.model.acp.state.phase = "disconnected"
 sticky.model.presentAIChat()
 otherWindow.makeKeyAndOrderFront(nil)
-verify(sticky.isVisible, "Unsent ACP draft survives focus loss")
+verify(!sticky.isVisible && !sticky.model.acp.draft.isEmpty, "An unsent ACP draft hides on focus loss and is kept")
 sticky.toggle()
 sticky.model.acp.draft = ""
 sticky.model.query = "screen"
@@ -1181,7 +1177,7 @@ verify(corePanel.model.showingTranslation && corePanel.model.rows.isEmpty)
 try renderCore("translation-empty")
 translator.text = "Hello\nHow are you?"
 translator.target = "es"
-verify(corePanel.keepsVisibleOnBlur, "Translation draft survives focus loss")
+verify(!corePanel.keepsVisibleOnBlur, "Translate lets the launcher hide on focus loss; its model keeps the draft")
 Task { @MainActor in translator.start() }
 verify(waitUntil { translator.output == "Hola\n¿Cómo estás?" }, "Translation session view delivers fixture result")
 try renderCore("translation-result")
@@ -1203,7 +1199,7 @@ verify(translator.output == "Hola\n¿Cómo estás?" && !translator.outputIsStale
 translator.text = "Hello\nHow are you?"
 corePanel.orderOut(nil)
 RunLoop.main.run(until: Date().addingTimeInterval(0.25))
-verify(corePanel.model.query == "translate" && translator.text == "Hello\nHow are you?", "Hidden idle work preserves translation draft")
+verify(corePanel.model.query.isEmpty && translator.text.isEmpty, "Dismissing Translate on purpose clears it while hidden")
 corePanel.toggle()
 translator.clear()
 verify(!corePanel.keepsVisibleOnBlur)

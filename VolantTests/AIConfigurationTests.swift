@@ -8,9 +8,11 @@ final class AIConfigurationTests: XCTestCase {
         var connects = 0
         XCTAssertFalse(model.openChat(configuration: nil) { connects += 1 })
         XCTAssertFalse(model.openChat(configuration: AIConfiguration()) { connects += 1 })
+        XCTAssertTrue(model.needsSetup, "With no provider chosen, AI Chat shows its setup")
         var config = AIConfiguration(); config.provider = "claude"
         XCTAssertTrue(model.openChat(configuration: config) { connects += 1; model.state.phase = "ready" })
         XCTAssertEqual(connects, 1)
+        XCTAssertFalse(model.needsSetup)
         XCTAssertEqual(model.project, "")
         model.draft = "Unfinished question"
         XCTAssertTrue(model.openChat(configuration: nil) { connects += 1 })

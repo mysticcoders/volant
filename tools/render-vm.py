@@ -9,7 +9,8 @@ a behavioral check still returns the images it wrote before stopping, and its ex
 --pseudo and --rtl add layout runs of the Actions fixture's Servers scenario and the Settings preview
 in en-XA, a pseudo-locale about 35% longer than English (tools/pseudo-locale.py), and with --rtl
 also laid out right to left. Their images carry a -pseudo or -pseudo-rtl suffix. --layout-only skips
-the default runs, and --build-only compiles the bundles on the host and stops before Tart.
+the default runs, and --build-only compiles the bundles on the host and stops before Tart. --demo renders
+only the README demo frames; tools/render-demo.sh turns them into website/public/images/volant-demo.webp.
 """
 import argparse
 import json
@@ -27,6 +28,7 @@ parser.add_argument("--pseudo", action="store_true", help="add en-XA pseudo-loca
 parser.add_argument("--rtl", action="store_true", help="add en-XA runs laid out right to left")
 parser.add_argument("--layout-only", action="store_true", help="run only the --pseudo and --rtl runs")
 parser.add_argument("--build-only", action="store_true", help="compile the fixture bundles on the host, then stop")
+parser.add_argument("--demo", action="store_true", help="render only the README demo frames (tools/marketing/demo.swift)")
 args = parser.parse_args()
 layouts = (["pseudo"] if args.pseudo else []) + (["pseudo-rtl"] if args.rtl else [])
 if args.layout_only and not layouts:
@@ -43,6 +45,8 @@ FIXTURES = [
     ("VolantSettingsPreview", "tools/settings/main.swift"),
     ("VolantThemeFixture", "tools/themes/render.swift"),
 ]
+if args.demo:
+    FIXTURES = [("VolantDemo", "tools/marketing/demo.swift")]
 build = f'''
 set -euo pipefail
 source tools/core-module.sh
@@ -79,7 +83,7 @@ if args.build_only:
 subprocess.run(["tar", "-cf", str(output / "bundles.tar"), "-C", str(output), "bundles"], check=True)
 
 # Each fixture runs in both appearances; images are collected whatever the exit code.
-runs = [] if args.layout_only else [
+runs = [("VolantDemo", "dark", "\"$work\"")] if args.demo else [] if args.layout_only else [
     ("VolantLauncherFixture", "light", "\"$work\""), ("VolantLauncherFixture", "dark", "\"$work\" dark"),
     ("VolantActionsFixture", "light", "\"$work\""), ("VolantActionsFixture", "dark", "\"$work\" dark"),
     ("VolantSettingsPreview", "both", "--render"),
