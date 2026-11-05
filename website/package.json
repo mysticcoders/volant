@@ -6,6 +6,7 @@
     "node": ">=22.13.0"
   },
   "scripts": {
+    "predev": "node scripts/stars.mjs",
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "wrangler dev --config dist/server/wrangler.json",
@@ -13,7 +14,7 @@
     "format": "oxfmt",
     "test:security": "node scripts/security-smoke.mjs",
     "test:security:production": "VOLANT_WEBSITE_TARGET=production node scripts/security-smoke.mjs",
-    "prebuild": "node scripts/security-headers.mjs && node scripts/sitemap.mjs"
+    "prebuild": "node scripts/security-headers.mjs && node scripts/sitemap.mjs && node scripts/stars.mjs"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",

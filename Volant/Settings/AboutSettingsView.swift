@@ -39,7 +39,13 @@ struct AboutSettingsView: View {
                     }
                     Spacer()
                     Link("Website", destination: URL(string: "https://usevolant.com")!)
-                    Link("GitHub", destination: URL(string: "https://github.com/mysticcoders/volant")!)
+                    Link(destination: URL(string: "https://github.com/mysticcoders/volant")!) {
+                        Label {
+                            Text("Star on GitHub", comment: "About settings link that opens Volant's GitHub page, where people can star the project")
+                        } icon: {
+                            Image(systemName: "star")
+                        }
+                    }
                 }
                 .padding(.vertical, 4)
             }

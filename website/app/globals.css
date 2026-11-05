@@ -842,16 +842,33 @@ h1 { font-size: clamp(44px, 4.65vw, 66px); letter-spacing: -3px; }
 
 /* Nav actions: coral GitHub mark beside the compact download button. */
 .nav-actions { display: flex; align-items: center; gap: 18px; }
-.nav-github {
-  width: 20px;
-  height: 20px;
+.nav-star {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--foreground);
+  white-space: nowrap;
+  transition: border-color 0.2s;
+}
+.nav-star:hover { border-color: var(--primary); }
+.nav-star-icon {
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
-  background-color: #fff;
+  background-color: currentColor;
   -webkit-mask: url('/icons/github.svg') center / contain no-repeat;
   mask: url('/icons/github.svg') center / contain no-repeat;
-  transition: background-color 0.2s;
 }
-.nav-github:hover { background-color: var(--primary); }
+.nav-star-count {
+  padding-left: 8px;
+  border-left: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
 
 /* Documentation: sidebar index beside long-form prose. */
 .docs-shell {
@@ -1025,7 +1042,7 @@ h1 { font-size: clamp(44px, 4.65vw, 66px); letter-spacing: -3px; }
   .docs-card-grid { grid-template-columns: 1fr; }
   /* Phones keep a text-only nav: the hero carries the download, the footer the source link. */
   .nav-actions { gap: 14px; }
-  .nav-github { display: none; }
+  .nav-star { display: none; }
 }
 
 /* Product stories reuse the site's graphite/coral semantic palette. */

@@ -44746,6 +44746,7 @@
       }
     },
     "GitHub": {
+      "extractionState": "stale",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -82460,6 +82461,95 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Spotlight会查找你个人文件夹中的文件。fsearch是你自行安装和运行的独立工具，拥有其自身的完全磁盘访问权限。每当它未运行时，Volant会使用Spotlight。"
+          }
+        }
+      }
+    },
+    "Star on GitHub": {
+      "comment": "About settings link that opens Volant's GitHub page, where people can star the project",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Auf GitHub mit Stern markieren"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Destacar en GitHub"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ajouter une étoile sur GitHub"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aggiungi una stella su GitHub"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "GitHubでスターを付ける"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "GitHub에서 별표 주기"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ster geven op GitHub"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Oznacz gwiazdką na GitHubie"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Marcar com estrela no GitHub"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Marcar com estrela no GitHub"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Отметить звездой на GitHub"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "GitHub'da yıldız ver"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Позначити зіркою на GitHub"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "在 GitHub 上加星标"
           }
         }
       }

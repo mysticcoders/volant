@@ -3,6 +3,8 @@
 // navigation dead. Plain anchors until that is fixed upstream. See QUALITY.md.
 import Image from 'next/image';
 
+import { StarButton } from '@/components/star-button';
+
 export const repositoryURL = 'https://github.com/mysticcoders/volant';
 export const socialURL = 'https://x.com/mysticcoders';
 export const appVersion = '0.3.31';
@@ -31,11 +33,7 @@ export function SiteHeader() {
         <a href="/docs">Docs</a>
       </nav>
       <div className="nav-actions">
-        <a
-          href={repositoryURL}
-          className="nav-github"
-          aria-label="Volant on GitHub"
-        />
+        <StarButton href={repositoryURL} />
         <a className="button small" href={downloadURL} download>
           Download
         </a>

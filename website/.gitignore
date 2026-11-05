@@ -44,3 +44,4 @@ tsconfig.tsbuildinfo
 /public/_headers
 /public/sitemap.xml
 /public/robots.txt
+/lib/github-stars.json
