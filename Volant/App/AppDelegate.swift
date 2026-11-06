@@ -20,6 +20,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.panel.model.presentAIChat()
         self.panel.makeKeyAndOrderFront(nil)
         if !self.panel.model.acp.active, !self.panel.model.acp.canResume { self.panel.model.acp.start() }
+    }, showWelcome: { [weak self] in
+        self?.settingsPanel.window?.orderOut(nil)
+        self?.showWelcome()
     }, onChange: { [weak self] in self?.reloadConfig(); self?.notesStore.reload() })
     private func showAISettings() {
         panel.orderOut(nil)
@@ -51,7 +54,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let updater = AppUpdater()
     private var statusItem: NSStatusItem?
     private var memoryCheck: MemoryCheck?
+    /// Read before `config` loads, because loading writes a default file when none exists; a fresh
+    /// install is how the Welcome window tells a new Mac from an existing one.
+    private let configExistedAtLaunch = FileManager.default.fileExists(atPath: Preferences.configURL.path)
     private var config = Preferences.load()
+    private var summonRegistered = true
+    private var welcome: WelcomeWindowController?
     private let index = AppIndex()
     private var indexObserver: AnyCancellable?
     private lazy var clipboardStore = ClipboardStore(retention: config.clipboardRetention)
@@ -98,6 +106,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApp.activate(ignoringOtherApps: true)
             NSApp.orderFrontStandardAboutPanel(nil)
         case .quit: NSApp.terminate(nil)
+        case .welcome: self?.showWelcome()
         }
     }
 
@@ -218,7 +227,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             try? SMAppService.mainApp.register()
             print("login item: \(SMAppService.mainApp.status == .enabled ? "enabled" : "not enabled")")
         }
-        if config.showOnLaunch && !CommandLine.arguments.contains("--import-raycast") && !CommandLine.arguments.contains("--settings") && !CommandLine.arguments.contains("--agents") && !CommandLine.arguments.contains("--show") && !CommandLine.arguments.contains("--notes") {
+        let launchedForTask = ["--import-raycast", "--settings", "--agents", "--show", "--notes"].contains { CommandLine.arguments.contains($0) }
+        var showingWelcome = false
+        switch WelcomeLaunch.decide(configExisted: configExistedAtLaunch, completed: config.welcomeCompleted) {
+        case .markDone: try? WelcomeModel.markCompleted()
+        case .show where !launchedForTask && !CommandLine.arguments.contains("--memory-check"):
+            // Recorded as not done yet, so a Welcome that never closed shows again next launch.
+            try? Preferences.updateBoolean("welcomeCompleted", value: false)
+            showingWelcome = true
+            DispatchQueue.main.async { [weak self] in self?.showWelcome() }
+        case .show, .skip: break
+        }
+        if config.showOnLaunch && !showingWelcome && !launchedForTask {
             // AppKit is ready on the next main turn; Spotlight results refresh independently.
             DispatchQueue.main.async { [weak self] in
                 guard let self, !self.panel.isVisible else { return }
@@ -283,8 +303,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         updateDictationEscape(listening: false)
         HotKeyCenter.shared.unregisterAll()
         var failures: [String] = []
+        summonRegistered = true
         if let combo = KeyCombo(parsing: config.summonHotKey) {
             if HotKeyCenter.shared.register(combo, handler: { [weak self] in self?.togglePanelFromHotkey() }) == nil {
+                summonRegistered = false
                 failures.append(String(localized: "Show Volant shortcut unavailable: \(KeyCombo.display(config.summonHotKey))", comment: "Settings error when a global shortcut can't be registered; the value is the key combination"))
             }
         }
@@ -359,6 +381,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func toggleNotes() { notesPanel.toggle() }
+
+    /// Opens the Welcome window, from the first launch, the `welcome` command or Settings › About.
+    /// Its buttons close it before showing the launcher, AI Chat or Settings, and closing it records it
+    /// as done on this Mac.
+    @objc func showWelcome() {
+        panel.orderOut(nil)
+        if let welcome { welcome.present(); return }
+        let actions = WelcomeActions(
+            tryQuery: { [weak self] text in
+                guard let self else { return }
+                self.welcome?.close()
+                if !self.panel.isVisible { self.panel.toggle() }
+                self.panel.setQuery(text)
+            },
+            connectAgent: { [weak self] provider in
+                guard let self else { return }
+                self.welcome?.close()
+                if !self.panel.isVisible { self.panel.toggle() }
+                self.panel.model.chooseAIProvider(provider)
+            },
+            browseCatalog: { [weak self] in
+                guard let self else { return }
+                self.welcome?.close()
+                if !self.panel.isVisible { self.panel.toggle() }
+                self.panel.model.openExtensionCatalog()
+            },
+            openDictationSettings: { [weak self] in
+                self?.showSettings()
+                self?.settingsPanel.state.section = .dictation
+            },
+            openAISettings: { [weak self] in self?.showAISettings() },
+            configChanged: { [weak self] in self?.reloadConfig() })
+        let model = WelcomeModel(config: config, summonRegistered: summonRegistered, actions: actions)
+        let controller = WelcomeWindowController(model: model) { [weak self] in
+            try? WelcomeModel.markCompleted()
+            self?.reloadConfig()
+        }
+        welcome = controller
+        controller.present()
+    }
 
     /// Held long enough to be a hold rather than a tap, the release stops dictation. A tap leaves
     /// it listening so the same key can stop it, which is how push-to-talk and toggle both work.
@@ -435,6 +497,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         applyTheme()
         settingsPanel.refresh(config, apps: index.apps)
         registerHotKeys()
+        welcome?.model.refresh(config: config, summonRegistered: summonRegistered)
         panel.apply(config: config)
         if rexOverviewCreated { rexOverview.model.updateAllowed(config.rexPanePreviews) }
         if let ai = try? AIConfiguration.load() { panel.model.conversations.apply(ai) }

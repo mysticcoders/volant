@@ -17,6 +17,7 @@ enum LauncherAction {
     case confetti
     case systemAction(SystemAction)
     case checkForUpdates, whatsNew, about, quit
+    case welcome
 }
 
 /// What the launcher's search field is inside of: a list extension, or one of Volant's own sources.
@@ -1680,6 +1681,7 @@ final class LauncherModel: ObservableObject {
             if command == .ai { presentAIChat() }
             else if command == .talk { toggleDictation() }
             else if command == .confetti { onNote(.confetti); dismiss(); return }
+            else if command == .welcome { dismiss(); onNote(.welcome); return }
             else if command == .newSnippet { openEntryForm(.snippet) }
             else if command == .newQuicklink { openEntryForm(.quicklink) }
             else { query = command.query }
@@ -1900,6 +1902,12 @@ final class LauncherModel: ObservableObject {
             return
         }
         openAIChat()
+    }
+    /// Shows the extension catalog in the launcher and fetches it, as choosing the Extension Catalog
+    /// command does; the Welcome window's Browse button comes here, so the fetch follows that click.
+    func openExtensionCatalog() {
+        query = CoreCommand.catalog.query + " "
+        catalog.load()
     }
     func openSettings() { dismiss(); onNote(.settings) }
     func openAISettings() { dismiss(); onNote(.aiSettings) }

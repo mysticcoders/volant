@@ -47,7 +47,12 @@ osascript -e 'tell application "System Events" to tell appearance preferences to
 step "first launch"
 launch_volant
 expect_eq "first launch creates config.json" yes "$([ -f "$CONFIG" ] && echo yes || echo no)"
+record NOTE "first launch shows the Welcome window" "$(config_get welcomeCompleted)"
+shot welcome
 quit_volant
+# A fresh install keeps showing Welcome until it is closed; the later phases test the launcher and
+# Settings, so record it as seen, as closing the window would.
+/usr/bin/plutil -replace welcomeCompleted -bool true "$CONFIG"
 defaults write "$CONTAINER/Library/Preferences/$ID" SUEnableAutomaticChecks -bool false
 defaults write "$CONTAINER/Library/Preferences/$ID" SUHasLaunchedBefore -bool true
 cp "$CONFIG" "$W/config-initial.json"

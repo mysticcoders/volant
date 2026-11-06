@@ -259,6 +259,7 @@ Merged after 0.3.34, not in the current download:
 
 | Story | Released | Evidence and limits | Website treatment |
 | --- | --- | --- | --- |
+| A Welcome window on first launch: set the shortcut, see what you can type, allow access with one click each, find installed agents, turn on extensions; reopen it with `welcome` or Settings › About | Not yet | Welcome PR; WelcomeTests, WelcomeModelTests with fake permissions, login item and detection; `tools/welcome/main.swift` renders every page in light and dark from fictional data; the real permission prompts from the window, helper agent detection in the installed app and a clean signed first launch not exercised | Getting started on release (its first-launch paragraph describes only the launcher today); release notes |
 
 ## Privacy language
 

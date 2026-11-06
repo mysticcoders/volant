@@ -4,6 +4,8 @@ import VolantCore
 
 /// Settings → About: the app's version and links, and credits for the data and palettes Volant ships.
 struct AboutSettingsView: View {
+    /// Opens the Welcome window again; absent in fixtures that have no app to open it.
+    var showWelcome: (() -> Void)?
     private var version: String {
         let info = Bundle.main.infoDictionary ?? [:]
         let short = info["CFBundleShortVersionString"] as? String ?? "?"
@@ -48,6 +50,15 @@ struct AboutSettingsView: View {
                     }
                 }
                 .padding(.vertical, 4)
+            }
+            if let showWelcome {
+                Section {
+                    LabeledContent {
+                        Button(String(localized: "Show Welcome…", comment: "About settings button that opens the first-run Welcome window again"), action: showWelcome)
+                    } label: {
+                        Text("Set up your shortcut, access and extensions again.", comment: "About settings row beside the Show Welcome button")
+                    }
+                }
             }
             Section {
                 LabeledContent("City time zones") {

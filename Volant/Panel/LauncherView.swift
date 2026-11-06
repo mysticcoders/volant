@@ -504,6 +504,7 @@ private extension CoreCommand {
         case .audio: return .mint
         case .newSnippet, .newQuicklink: return .cyan
         case .catalog: return Color(red: 0.95, green: 0.42, blue: 0.29)
+        case .welcome: return .yellow
         }
     }
 }
