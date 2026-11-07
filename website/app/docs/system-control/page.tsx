@@ -91,7 +91,7 @@ export default function SystemControl() {
         drops, and another once it stops; turn them off with{' '}
         <strong>Play sounds when dictation starts and stops</strong>.
         None of this needs Accessibility; only the separate, opt-in Type at the
-        cursor dictation output does, and, coming in the next release, the
+        cursor dictation output does, and the
         opt-in Search Menu Items command.
       </p>
       <p>

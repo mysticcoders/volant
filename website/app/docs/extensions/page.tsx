@@ -425,8 +425,7 @@ export default function Extensions() {
           extension&rsquo;s icon instead.
         </li>
         <li>
-          <strong>SVG, checked first.</strong> Coming in the next release:
-          SVG logos show too. Volant checks each file and refuses anything
+          <strong>SVG, checked first.</strong> SVG logos show too. Volant checks each file and refuses anything
           that could reach another file or the network, run a script, embed
           a page or another image, or grow out of bounds, then its extension
           helper, which has no network access, draws it into the same small

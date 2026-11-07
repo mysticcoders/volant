@@ -167,7 +167,7 @@ export default function Launcher() {
 
       <h2>Searching the menus of the app you were using</h2>
       <p>
-        Coming in the next release. Turn on <strong>Search Menu Items</strong>{' '}
+        Turn on <strong>Search Menu Items</strong>{' '}
         in Settings → General, then type <code>menus</code> (or{' '}
         <code>menu items</code>) followed by a few letters to search the menu
         bar of the app that was in front when you opened Volant. Each row shows

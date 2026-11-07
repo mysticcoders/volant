@@ -241,7 +241,7 @@ export default function PrivacyAndSecurity() {
         until you turn Volant off in Privacy &amp; Security → Accessibility.
       </p>
       <p>
-        Coming in the next release: <strong>Search Menu Items</strong> in
+        <strong>Search Menu Items</strong> is in
         Settings → General, off until you turn it on. Type{' '}
         <code>menus</code> in the launcher to search the menu bar of the app
         you were using, and press Return to choose an item. The same helper
