@@ -27,7 +27,7 @@ try {
         }));
       });
       let lastNonce;
-      for (const route of ['/', '/docs', '/docs/agents', '/docs/calculator', '/fictional-missing-page']) {
+      for (const route of ['/', '/try', '/docs', '/docs/agents', '/docs/calculator', '/fictional-missing-page']) {
         console.log(viewport.width, colorScheme, route);
         const response = await page.goto(new URL(route, base).href, { waitUntil: 'networkidle' });
         assert.equal(response.status(), route.includes('fictional-missing') ? 404 : 200, route);
@@ -42,7 +42,9 @@ try {
         const csp = headers['content-security-policy'];
         assert.ok(csp);
         assert.ok(!csp.split(';').find(value => value.trim().startsWith('script-src ')).includes('unsafe-inline'));
-        assert.ok(!csp.includes('unsafe-eval'));
+        assert.ok(!csp.includes("'unsafe-eval'"));
+        // Only the /try demo may compile WebAssembly; every other page keeps the plain script policy.
+        assert.equal(csp.includes("'wasm-unsafe-eval'"), route === '/try', `${route}: wasm-unsafe-eval scope`);
         const nonce = csp.match(/'nonce-([^']+)'/)?.[1];
         assert.ok(nonce && nonce !== lastNonce, 'A fresh nonce is required');
         lastNonce = nonce;
@@ -60,6 +62,19 @@ try {
           path: `${artifacts}/${viewport.width}-${colorScheme}-${route === '/' ? 'home' : route.slice(1).replaceAll('/', '-')}.png`, fullPage: false,
         });
         }
+      }
+      // The homepage hero hands typing over to /try: the typed text arrives in the field, focused.
+      await page.goto(new URL('/', base).href, { waitUntil: 'networkidle' });
+      await page.getByRole('textbox', { name: 'Try Volant in your browser now' }).pressSequentially('2');
+      await page.waitForURL('**/try?q=2');
+      await page.waitForLoadState('networkidle');
+      assert.equal(await page.locator('.try-bar input').inputValue(), '2', 'Hero hand-off keeps the first keystroke');
+      assert.ok(await page.locator('.try-bar input').evaluate((field) => field === document.activeElement), 'Hand-off keeps focus');
+      assert.deepEqual(await page.evaluate(() => window.securityViolations), [], 'Hand-off CSP violations');
+      // The /try worker scripts are static files with their own strict policy.
+      const workerScript = await context.request.get(new URL('/try/worker.js', base).href);
+      if (!production || workerScript.headers()['content-security-policy']) {
+        assert.match(workerScript.headers()['content-security-policy'] ?? '', /default-src 'none'.*script-src 'self' 'wasm-unsafe-eval'/, '/try/worker.js policy');
       }
       await page.goto(new URL('/docs', base).href, { waitUntil: 'networkidle' });
       await page.getByRole('navigation', { name: 'Documentation' }).getByRole('link', { name: 'Agents', exact: true }).click();

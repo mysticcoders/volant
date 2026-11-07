@@ -94,6 +94,14 @@ export default function PrivacyAndSecurity() {
           is sent only to CoinGecko. Nothing you type is included in any of
           these requests. See <a href="/docs/calculator">The calculator</a>.
         </li>
+        <li>
+          <strong>The in-browser demo</strong> at{' '}
+          <a href="/try">usevolant.com/try</a> runs in your browser, and
+          nothing you type there leaves the page. For currency answers, this
+          website refreshes the same three public exchange-rate feeds on a
+          schedule and keeps a copy; the demo reads that copy, so your queries
+          never reach the providers, and the site doesn&rsquo;t record them.
+        </li>
       </ul>
       <p>
         Opening a link hands it to another app. Running an Apple Shortcut hands

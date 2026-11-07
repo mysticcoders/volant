@@ -10,9 +10,18 @@ const localBindingConfig = {
   workers_dev: true,
   account_id: '55b50ebf1d3295768fc53dd77cb0e2e6',
   routes: [{ pattern: 'usevolant.com', custom_domain: true }],
-  main: 'vinext/server/fetch-handler',
+  // vinext's handler plus the Cron Trigger that refreshes the /try demo's exchange rates.
+  main: './worker/index.ts',
   compatibility_date: '2026-05-15',
   compatibility_flags: ['nodejs_compat'],
+  // The /try calculator module, in a private bucket served only through /try/calculator/.
+  r2_buckets: [{ binding: 'TRY_CALCULATOR', bucket_name: 'volant-try' }],
+  // /try exchange rates written by the Cron Trigger and read by /try/rates/*.
+  kv_namespaces: [{ binding: 'TRY_RATES', id: 'd2bbde17df6242c39627641c6d0ad41f' }],
+  // ECB and ExchangeRate-API every 6 hours, CoinGecko every 5 minutes (lib/try-rates.ts).
+  triggers: { crons: ['0 */6 * * *', '*/5 * * * *'] },
+  // 60 /try/rates requests a minute per client address.
+  ratelimits: [{ name: 'TRY_RATES_LIMIT', namespace_id: '1001', simple: { limit: 60, period: 60 as const } }],
 };
 
 export default defineConfig(async () => {

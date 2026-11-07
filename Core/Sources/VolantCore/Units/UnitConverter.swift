@@ -129,8 +129,10 @@ public enum UnitConverter {
 
     /// Exact legal definitions where Foundation's coefficients are rounded to about six digits,
     /// which showed in answers ("10 kn in kph" gave 18.519969). Cup is the US customary cup
-    /// (236.588 mL); Foundation's 0.24 L is the US nutrition-label cup.
+    /// (236.588 mL); Foundation's 0.24 L is the US nutrition-label cup. The international mile is
+    /// listed because swift-corelibs-foundation (the browser build) rounds it to 1609.34 m.
     private static let exactFactors: [(Dimension, Double)] = [
+        (UnitLength.miles, 1609.344), (UnitSpeed.milesPerHour, 0.44704),
         (UnitMass.pounds, 0.45359237), (UnitMass.ounces, 0.028349523125), (UnitMass.stones, 6.35029318),
         (UnitVolume.gallons, 3.785411784), (UnitVolume.quarts, 0.946352946), (UnitVolume.pints, 0.473176473),
         (UnitVolume.cups, 0.2365882365), (UnitVolume.fluidOunces, 0.0295735295625),

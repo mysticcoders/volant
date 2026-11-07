@@ -65,6 +65,85 @@
   align-items: center;
   padding-block: 68px 58px;
 }
+/* "Extensions are WebAssembly": a compact section after the feature links. */
+.home-wasm {
+  margin-block: 56px;
+  padding: 36px 40px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.home-wasm h2 {
+  margin-bottom: 14px;
+}
+.home-wasm p:not(.home-kicker) {
+  max-width: 680px;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--muted-foreground);
+  margin: 0 0 20px;
+}
+.home-wasm-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+}
+.home-wasm-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+@media (max-width: 760px) {
+  .home-wasm {
+    padding: 26px 22px;
+  }
+}
+
+/* ?hero=launcher: the launcher card is the first viewport, large and centered, with a one-line
+   kicker above and Download and Star below; the usual hero copy follows. */
+.home-launcher-hero {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding-block: 40px 56px;
+  text-align: center;
+}
+.home-launcher-hero .home-kicker {
+  margin: 0;
+}
+.home-launcher-hero .hero-launcher {
+  width: min(100%, 940px);
+  text-align: left;
+}
+.home-launcher-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.home-launcher-hero .home-requirements {
+  margin: 0;
+}
+/* The header hides its Star button on small screens; the one under the launcher card stays. */
+.home-refresh .home-launcher-actions .nav-star,
+.home-refresh .try-page .home-actions .nav-star {
+  display: inline-flex;
+}
+
+/* The hero with the in-browser launcher: copy above, the card across the full hero width. */
+.home-hero-try {
+  grid-template-columns: 1fr;
+  gap: 36px;
+}
+.home-hero-try .home-intro {
+  max-width: 620px;
+}
 .home-hero h1 {
   font-size: clamp(54px, 5.4vw, 78px);
   letter-spacing: -4px;

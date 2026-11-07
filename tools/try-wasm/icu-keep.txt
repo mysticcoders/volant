@@ -1,0 +1,67 @@
+# ICU data items the /try calculator keeps (tools/try-wasm/icu-data.mjs trim). Globs over item names
+# without the icudt76l/ prefix. Everything else in ICU's 34 MB common data is dropped: converters,
+# collation, break iteration, transliteration, string prep, normalization, Unicode names, language
+# and region names, and every non-English locale. The demo answers in English only.
+#
+# Verified with tools/try-wasm/parity.mjs (full vs trimmed module, 80 queries with fixed rates:
+# identical) and the 26-query native comparison against the app (identical). keep-prune.sh tests
+# dropping entries one by one; small locale-fallback tables stay for queries the parity set lacks.
+# Result: 40 of 4855 items, 1.79 MB of 33.98 MB.
+
+# Package metadata and the locale fallback tables every lookup goes through.
+icuver.res
+icustd.res
+res_index.res
+pool.res
+metadata.res
+likelySubtags.res
+supplementalData.res
+keyTypeData.res
+
+# Root and English locale data: number formats and symbols, date patterns, day and month names.
+root.res
+en.res
+en_US.res
+en_US_POSIX.res
+en_001.res
+
+# Numbers, plurals and units ("3 days", "1,992 hours"). pluralRanges is required (keep-prune.sh).
+numberingSystems.res
+plurals.res
+pluralRanges.res
+units.res
+dayPeriods.res
+
+# Time zones: rules (zoneinfo64), metazones and their English names and abbreviations.
+zoneinfo64.res
+metaZones.res
+timezoneTypes.res
+zone/res_index.res
+zone/pool.res
+zone/root.res
+zone/en.res
+zone/en_US.res
+zone/en_001.res
+
+# Unit names.
+unit/res_index.res
+unit/pool.res
+unit/root.res
+unit/en.res
+unit/en_US.res
+unit/en_001.res
+
+# Currency names and symbols. curr/supplementalData holds currency digits and rounding: without it
+# ICU can't open a currency formatter and Foundation's NumberFormatter traps ("100 usd in eur").
+curr/res_index.res
+curr/pool.res
+curr/root.res
+curr/en.res
+curr/en_US.res
+curr/en_001.res
+curr/supplementalData.res
+
+# Spelled-out numbers ("Twelve").
+rbnf/res_index.res
+rbnf/root.res
+rbnf/en.res

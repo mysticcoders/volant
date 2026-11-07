@@ -90,6 +90,14 @@ final class UnitConverterTests: XCTestCase {
         XCTAssertEqual(try result("5 nautical miles in km"), 9.26, accuracy: 1e-9)
     }
 
+    /// The international mile is exactly 1609.344 m and mph exactly 0.44704 m/s, whatever the
+    /// platform's Foundation rounds them to (swift-corelibs uses 1609.34 m).
+    func testMilesUseTheExactInternationalMile() throws {
+        XCTAssertEqual(try result("5 km in miles"), 5000 / 1609.344, accuracy: 1e-12)
+        XCTAssertEqual(try result("1 mi in m"), 1609.344, accuracy: 1e-9)
+        XCTAssertEqual(try result("25 mph in km/h"), 40.2336, accuracy: 1e-9)
+    }
+
     func testNumbersFollowTheLocaleWithoutMagnitudes() throws {
         XCTAssertEqual(try result("1,000 m in km"), 1, accuracy: 1e-12)
         XCTAssertEqual(try XCTUnwrap(UnitConverter.convert("2,5 km in m", locale: Locale(identifier: "de_DE"))).result, 2500, accuracy: 1e-9)

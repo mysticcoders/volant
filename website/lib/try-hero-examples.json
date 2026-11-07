@@ -1,0 +1,39 @@
+{
+  "capturedAt": "2026-11-07T12:12:14.000Z",
+  "zone": "America/New_York",
+  "examples": [
+    {
+      "query": "3pm tokyo in new york",
+      "kind": "answer",
+      "result": "1:00 AM in New York",
+      "detail": ""
+    },
+    {
+      "query": "15% of 80",
+      "kind": "answer",
+      "result": "12",
+      "detail": "Twelve"
+    },
+    {
+      "query": "hn",
+      "kind": "rows",
+      "extension": "Hacker News",
+      "icon": "/try/extensions/hackernews/icon.webp",
+      "sampleDate": "2026-11-07T08:12:22.000Z",
+      "rows": [
+        {
+          "title": "Tesla to wind down Cybertruck production",
+          "subtitle": "by PLenz"
+        },
+        {
+          "title": "Libghostty 1.0",
+          "subtitle": "by mfiguiere"
+        },
+        {
+          "title": "A Jev that can ask Opus for help gives Opus accuracy at 4x lower cost",
+          "subtitle": "by theanomaly"
+        }
+      ]
+    }
+  ]
+}
