@@ -40,16 +40,20 @@ def encode(frames, output):
 def main():
     """Groups the frames by scene, then writes each clip with its title card and the full video."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("frames", type=Path, help="folder holding the volant-video-*.png frames")
+    parser.add_argument("frames", type=Path, nargs="+",
+                        help="folders holding volant-video-*.png frames; a scene in a later folder replaces it from earlier ones")
     parser.add_argument("--output", type=Path, default=ROOT / "dist-video")
     args = parser.parse_args()
     scenes = json.loads((ROOT / "tools/marketing/video/scenes.json").read_text())["scenes"]
     titles = {scene["number"]: scene["title"] for scene in scenes}
     grouped = {}
-    for path in sorted(args.frames.glob("volant-video-*.png")):
-        match = FRAME.search(path.name)
-        if match:
-            grouped.setdefault(int(match[1]), []).append((int(match[2]), path, int(match[3])))
+    for folder in args.frames:
+        found = {}
+        for path in sorted(folder.glob("volant-video-*.png")):
+            match = FRAME.search(path.name)
+            if match:
+                found.setdefault(int(match[1]), []).append((int(match[2]), path, int(match[3])))
+        grouped.update(found)
     if not grouped:
         raise SystemExit(f"No video frames in {args.frames}")
     clips = args.output / "clips"

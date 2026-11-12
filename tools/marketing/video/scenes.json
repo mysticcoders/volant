@@ -1,5 +1,5 @@
 {
-  "_help": "Scene list for the 10-feature demo video. tools/render-video.sh renders it in the render VM through tools/marketing/video/render.swift and encodes the clips. Each scene opens with a title card (cardMs), then runs its steps against its fixture. Step keys: stage (what is on screen: launcher, notch, break-notice, break-overlay, pick-screen, rex-overview, notes, notes-iphone, settings), type (text typed one character per frame into `into`: search, form, chat; it appends to what is there), key (return, down, up, left, right, tab, escape, cmd-k, cmd-p), hook (a fixture action in render.swift), cursor (an anchor name or [x, y] on the 1080 canvas, moved over moveMs), click (a pressed cursor, then the hook), hideCursor, reveal (the notch panel's growing edge drawn over that many ms, from its size before the step), holdMs (how long the frame after the step shows), keyMs (per typed character), repeat. All data shown is fictional.",
+  "_help": "Scene list for the 10-feature demo video. tools/render-video.sh renders it in the render VM through tools/marketing/video/render.swift and encodes the clips. Each scene opens with a title card (cardMs), then runs its steps against its fixture. Step keys: stage (what is on screen: launcher, notch, break-notice, break-overlay, pick-screen, rex-overview, notes, notes-iphone, settings), type (text typed one character per frame into `into`: search, form, chat, catalog; it appends to what is there), key (return, down, up, left, right, tab, escape, cmd-k, cmd-p), hook (a fixture action in render.swift), cursor (an anchor name or [x, y] on the 1080 canvas, moved over moveMs), click (a pressed cursor, then the hook), hideCursor, reveal (the notch panel's growing edge drawn over that many ms, from its size before the step), holdMs (how long the frame after the step shows), keyMs (per typed character), repeat. Scene 3's catalog is the real published catalog, fetched and verified by `catalog.refresh` into `catalog.fetchedInto` before each render; everything else shown is fictional.",
   "cardMs": 1100,
   "endMs": 3500,
   "scenes": [
@@ -39,13 +39,16 @@
       "number": 3,
       "title": "Extension Catalog",
       "caption": "Browse, install and update reviewed, signed extensions from the launcher.",
+      "note": "The published catalog as of {catalogDate}: {catalogCount} extensions.",
       "fixture": "catalog",
+      "catalog": {"source": "https://mysticcoders.github.io/volant-extensions/", "refresh": "tools/marketing/video/fetch-catalog.py", "fetchedInto": "dist-video/catalog"},
       "steps": [
         {"stage": "launcher", "holdMs": 300},
-        {"type": "catalog", "into": "search", "keyMs": 90, "holdMs": 800},
-        {"hook": "catalog.check", "holdMs": 1300},
-        {"key": "down", "holdMs": 1500},
-        {"hook": "catalog.updates", "holdMs": 1600}
+        {"type": "catalog", "into": "search", "keyMs": 90, "holdMs": 700},
+        {"hook": "catalog.check", "holdMs": 1500},
+        {"key": "down", "holdMs": 110, "repeat": 24},
+        {"holdMs": 700},
+        {"type": "hacker", "into": "catalog", "keyMs": 90, "holdMs": 2200}
       ]
     },
     {

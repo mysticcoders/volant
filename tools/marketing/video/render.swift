@@ -584,66 +584,62 @@ func breaksFixture() {
     hooks["breaks.tick"] = { advance(1); settle(0.1) }
 }
 
-/// Copies the bundled Hello World into a fictional community extension with a fictional icon.
-func makeCommunityExtension() throws -> ExtensionManager {
-    let directory = root.appendingPathComponent("community-" + UUID().uuidString)
-    let bundled = Bundle.main.url(forResource: "HelloWorld", withExtension: nil)!
-    try FileManager.default.copyItem(at: bundled, to: directory)
-    let manifestURL = directory.appendingPathComponent("manifest.json")
-    var manifest = try JSONDecoder().decode(ExtensionManifest.self, from: Data(contentsOf: manifestURL))
-    manifest.id = "fixture.community"; manifest.name = "Community Greeting"
-    manifest.icon = "icon.webp"; manifest.iconSha256 = Integrity.sha256(fixtureIcon)
-    try JSONEncoder().encode(manifest).write(to: manifestURL)
-    try fixtureIcon.write(to: directory.appendingPathComponent("icon.webp"))
-    let manager = ExtensionManager(configURL: panel.model.actionConfigURL, roots: [bundled, directory])
-    manager.reload()
-    return manager
-}
-
-// Extension Catalog: the launcher's catalog checks a fictional signed index on request, lists one
-// installed and one new extension, and the launcher then offers their updates. Nothing is downloaded.
+// Extension Catalog: the real published catalog, fetched and verified on the host by fetch-catalog.py
+// and bundled as catalog-fixture, served to the real catalog view at the same paths the fetch helper
+// reads, and checked again here with the app's production key and icon hashes. Packages aren't
+// bundled, so nothing is installed.
 func catalogFixture() throws {
     freshLauncher()
-    let manager = try makeCommunityExtension()
+    let folder = resources.appendingPathComponent("catalog-fixture")
+    guard FileManager.default.fileExists(atPath: folder.appendingPathComponent("catalog.json").path) else {
+        fail("No catalog fixture; run tools/marketing/video/fetch-catalog.py")
+    }
+    let manager = ExtensionManager(configURL: panel.model.actionConfigURL, roots: [Bundle.main.url(forResource: "HelloWorld", withExtension: nil)!])
+    manager.reload()
     try manager.setCommunityAllowed(true, expected: false)
-    try manager.setEnabled(manager.search("community").first!, true)
     panel.model.extensions = manager
-    let installed = manager.search("community").first!.manifest
-    let catalog = ExtensionCatalog(format: 1, sequence: 1, generated: "2026-11-01T00:00:00Z", revision: String(repeating: "0", count: 40), extensions: [
-        ExtensionCatalog.Listing(id: installed.id, name: installed.name, version: installed.version, module: installed.module,
-                                 summary: "Greets the name you type.", publisher: "Fictional Publisher", license: "MIT", source: "https://example.com/fictional/greeting",
-                                 manifest: .init(sha256: String(repeating: "1", count: 64), size: 200), moduleFile: .init(sha256: installed.sha256!, size: 100),
-                                 icon: "icon.webp", iconFile: .init(sha256: Integrity.sha256(fixtureIcon), size: fixtureIcon.count)),
-        ExtensionCatalog.Listing(id: "community.fictional.reader", name: "Fictional Reader", version: "1.2.0", module: "reader.wasm",
-                                 summary: "Front page and newest stories from a fictional news site.", publisher: "Fictional Publisher", license: "MIT",
-                                 hosts: ["news.example.com"], source: "https://example.com/fictional/reader",
-                                 manifest: .init(sha256: String(repeating: "2", count: 64), size: 300), moduleFile: .init(sha256: String(repeating: "3", count: 64), size: 4000),
-                                 icon: "icon.webp", iconFile: .init(sha256: Integrity.sha256(fixtureIcon), size: fixtureIcon.count)),
-    ])
-    let key = Curve25519.Signing.PrivateKey()
-    let index = try JSONEncoder().encode(catalog)
-    panel.model.catalog.client = ExtensionCatalogClient(fetchFile: { path, _, completion in
-        switch path {
-        case ExtensionCatalog.indexPath: completion(.success(index))
-        case ExtensionCatalog.signaturePath: completion(.success(Data(try! key.signature(for: index).base64EncodedString().utf8)))
-        case _ where path.hasSuffix("/icon.webp"): completion(.success(fixtureIcon))
-        default: completion(.failure(ExtensionCatalogError.unavailable("The video fixture has no packages.")))
+    panel.model.catalog.client = ExtensionCatalogClient(fetchFile: { path, limit, completion in
+        guard let data = try? Data(contentsOf: folder.appendingPathComponent(path)), data.count <= limit else {
+            completion(.failure(ExtensionCatalogError.unavailable("The video fixture has no packages.")))
+            return
         }
-    }, publicKey: key.publicKey.rawRepresentation.base64EncodedString(), stateURL: root.appendingPathComponent("catalog-state.json"))
+        completion(.success(data))
+    }, publicKey: ExtensionCatalogKey.publicKey, stateURL: root.appendingPathComponent("catalog-state.json"))
     summon()
     hooks["catalog.check"] = {
         guard let field = fields(panel.contentView!).first(where: { $0.placeholderString == "Search extensions…" }) else { fail("No catalog search field") }
         panel.makeFirstResponder(field)
         sendKey("return", to: panel)
-        waitUntil { panel.model.catalog.listings.count == 2 }
+        guard waitUntil(timeout: 8, { panel.model.catalog.listings.count == catalogFacts.count }) else {
+            fail("The catalog fixture didn't load \(catalogFacts.count) listings: \(panel.model.catalog.listings.count)")
+        }
+        guard waitUntil(timeout: 8, { panel.model.catalog.listings.allSatisfy { ExtensionCatalogIcons.shared.image(for: $0) != nil } }) else {
+            fail("Not every catalog icon matched the signed index")
+        }
         settle(0.4)
     }
-    hooks["catalog.updates"] = {
-        panel.orderOut(nil)
-        panel.model.extensionUpdates = { [.init(name: "Fictional Reader", version: "1.2.0"), .init(name: "Community Greeting", version: "1.1.0")] }
-        panel.toggle(); panel.model.query = ""
-        settle(0.5)
-    }
+}
+
+/// What fetch-catalog.py recorded about the bundled catalog: the date it was fetched and how many
+/// extensions it lists, for the scene's note.
+let catalogFacts: (date: String, count: Int) = {
+    let url = resources.appendingPathComponent("catalog-fixture/fetched.json")
+    guard let data = try? Data(contentsOf: url), let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+          let day = object["fetched"] as? String, let count = object["extensions"] as? Int else { return ("", 0) }
+    let parser = DateFormatter()
+    parser.locale = Locale(identifier: "en_US_POSIX")
+    parser.timeZone = TimeZone(identifier: "UTC")
+    parser.dateFormat = "yyyy-MM-dd"
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "en_US")
+    formatter.timeZone = TimeZone(identifier: "UTC")
+    formatter.dateStyle = .long
+    return (parser.date(from: day).map(formatter.string(from:)) ?? day, count)
+}()
+
+/// Fills a caption's `{catalogDate}` and `{catalogCount}` from the bundled catalog.
+func filled(_ text: String) -> String {
+    text.replacingOccurrences(of: "{catalogDate}", with: catalogFacts.date).replacingOccurrences(of: "{catalogCount}", with: "\(catalogFacts.count)")
 }
 
 // AI Chat: search text carried to an agent conversation with Tab, then a fictional exchange drawn
@@ -968,6 +964,7 @@ func run(_ step: Step) {
                 switch step.into ?? "search" {
                 case "form": panel.model.entryForm?.name.append(character)
                 case "chat": panel.model.acp.draft.append(character)
+                case "catalog": panel.model.catalog.input.append(character)
                 default: panel.model.query.append(character)
                 }
                 settle(0.12)
@@ -1037,7 +1034,7 @@ for scene in sceneList.scenes where onlyScenes?.contains(scene.number) ?? true {
     guard let fixture = fixtures[scene.fixture] else { fail("Unknown fixture \(scene.fixture)") }
     try fixture()
     titleCard(scene, ms: sceneList.cardMs)
-    stageCaption = (scene.caption, scene.note)
+    stageCaption = (filled(scene.caption), scene.note.map(filled))
     for step in scene.steps { run(step) }
     panel?.orderOut(nil)
     focusNotch?.orderOut(nil); focusNotch = nil

@@ -75,6 +75,9 @@ for pair in {" ".join(f"{name}:{path}" for name, path in FIXTURES)}; do
         cp tools/marketing/video/scenes.json "$bundle/Resources/"
         cp Volant/Resources/Assets.xcassets/AppIcon.appiconset/icon_512x512@2x.png "$bundle/Resources/AppIcon.png"
         cp website/public/images/iphone/note.webp "$bundle/Resources/iphone-note.webp"
+        # The Extension Catalog scene shows the published catalog that tools/marketing/video/fetch-catalog.py
+        # fetched and verified into dist-video/catalog.
+        [[ ! -d dist-video/catalog ]] || ditto dist-video/catalog "$bundle/Resources/catalog-fixture"
     fi
     printf '%s' '<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>CFBundleExecutable</key><string>'"$name"'</string><key>CFBundleIdentifier</key><string>com.mysticcoders.volant.render.'"$name"'</string><key>CFBundlePackageType</key><string>APPL</string><key>CFBundleShortVersionString</key><string>0.0.0</string></dict></plist>' > "$bundle/Info.plist"
     # Layout runs need the catalogs, so text that isn't localized stays visibly plain English.

@@ -1,6 +1,6 @@
 # Marketing renders
 
-Everything here draws the real Volant views with fictional data, compiled with the release asset catalog. Nothing is an HTML rebuild of the app.
+Everything here draws the real Volant views with fictional data (the video's catalog scene shows the real published catalog), compiled with the release asset catalog. Nothing is an HTML rebuild of the app.
 
 - `main.swift` (`tools/render-marketing.sh`): the light and dark launcher captures on the website.
 - `demo.swift` (`tools/render-demo.sh`): the README's animated launcher demo.
@@ -10,7 +10,8 @@ Everything here draws the real Volant views with fictional data, compiled with t
 
 ```sh
 tools/render-video.sh                 # every scene and the end card
-tools/render-video.sh --scenes 3,0    # only scene 3 and the end card
+VOLANT_VIDEO_BASE_FRAMES=/path/to/full/images tools/render-video.sh --scenes 3
+                                      # redraw scene 3 and encode it into an earlier full run
 VOLANT_VIDEO_FRAMES=/path/to/images tools/render-video.sh   # encode earlier frames again, no VM
 ```
 
@@ -18,6 +19,8 @@ It needs the `volant-render-27` Tart VM and its SSH key (see docs/ui-testing.md)
 
 1. `tools/render-vm.py --video` compiles `video/render.swift` with the app sources on the host, bundles it with `video/scenes.json`, the app icon and the website's iPhone capture, and runs it in the VM. It writes 1080x1080 frames named `volant-video-SS-NNNN-MS.png`: scene SS (00 is the end card), frame NNNN, shown for MS milliseconds.
 2. `video/encode.py` encodes them with ffmpeg: `dist-video/clips/NN-title.mp4` per scene, each starting with its title card, and `dist-video/volant-features.mp4` with all ten and the end card. Both are H.264, yuv420p, 30 fps, `+faststart`, no audio. `dist-video/` is ignored by git.
+
+Scene 3 shows the real published extension catalog. Before each render, `video/fetch-catalog.py` downloads the signed index, its signature and every listing icon from the catalog URL the app uses, checks the signature with the app's public key and each icon against the signed index, and writes them to `dist-video/catalog/` with the fetch date. The fixture serves them to the real catalog view, which checks them again, and the scene's note names the date and the count. Packages aren't fetched, so nothing is installed.
 
 `video/scenes.json` holds each scene's number, card title, caption, qualifying note, fixture and scripted steps: typed text (one character per frame), keys, cursor moves and clicks, fixture hooks and how long each frame shows. Change the script there; change a fixture or hook in `render.swift`. When the UI changes, run the script again and look at the frames before using the video.
 
