@@ -5,12 +5,12 @@ Downloads the signed index, its signature and every listing icon from the fixed 
 uses (ExtensionCatalog.baseURL, the same paths VolantFetchHost.fetchCatalogFile reads), checks the
 Ed25519 signature against the app's public key (ExtensionCatalogKey) and each icon's size and SHA-256
 against the signed index, and writes them under the output folder at their catalog paths, with
-fetched.json recording when and what was fetched. Nothing is installed and no package is downloaded.
+fetched.json recording what was fetched and when, as the host's local date and time. Nothing is installed and no package is downloaded.
 The fixture checks them again with the app's own code in the render VM.
 """
 import argparse
 import base64
-from datetime import datetime, timezone
+from datetime import datetime
 import hashlib
 import json
 from pathlib import Path
@@ -64,7 +64,8 @@ def main():
         target = args.output / path
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(data)
-    fetched = {"source": BASE, "fetched": datetime.now(timezone.utc).strftime("%Y-%m-%d"), "sequence": catalog["sequence"],
+    now = datetime.now().astimezone()
+    fetched = {"source": BASE, "fetched": now.strftime("%Y-%m-%d"), "fetchedAt": now.isoformat(timespec="seconds"), "sequence": catalog["sequence"],
                "extensions": len(catalog["extensions"]), "icons": len(files) - 2}
     (args.output / "fetched.json").write_text(json.dumps(fetched, indent=2) + "\n")
     print(f"Verified catalog sequence {fetched['sequence']}: {fetched['extensions']} extensions, {fetched['icons']} icons, fetched {fetched['fetched']}")
