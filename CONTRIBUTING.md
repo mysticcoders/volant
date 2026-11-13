@@ -12,7 +12,9 @@ Thanks for helping. Volant is a small project, so every bug report, idea and pul
 
 ## Build and test
 
-You need macOS 15 or later, Xcode 26, xcodegen and swiftlint (`brew install xcodegen swiftlint`). With [just](https://github.com/casey/just) installed, run `just doctor` to check these and see how to install what is missing. `just` lists the other recipes, which run the scripts below.
+You need macOS 15 or later, Xcode 26, xcodegen, swiftlint and uv (`brew install xcodegen swiftlint uv`). With [just](https://github.com/casey/just) installed, run `just doctor` to check these and see how to install what is missing. `just` lists the other recipes, which run the scripts below.
+
+`Scripts/build.sh` also runs `tools/python-env.sh`. That script uses uv to make `.venv` hold the hash-locked Python packages in `tools/security/requirements.txt`, the same ones CI uses. `Scripts/test.sh` runs its Python checks with `.venv` when it exists. To use another Python, set `VOLANT_TEST_PYTHON`.
 
     Scripts/build.sh                     # regenerate the project and build Volant Dev
     swift test --package-path Core       # VolantCore tests: calculator, units, time zones and more

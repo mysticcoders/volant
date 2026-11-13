@@ -12,7 +12,7 @@ Implementation is independent; Tinycast's public format documentation was consul
 
 ## Evidence and follow-up
 
-- `tools/check-raycast.sh`: synthetic Python cryptography archive + Swift reader, RFC vector, wrong password/tampering, framing, duplicate/unsupported mappings, unknown settings, stale preview, selection, recovery, and partial-write rollback. Requires Python cryptography. No personal fixture is committed.
+- `tools/check-raycast.sh`: synthetic Python cryptography archive + Swift reader, RFC vector, wrong password/tampering, framing, duplicate/unsupported mappings, unknown settings, stale preview, selection, recovery, and partial-write rollback. Requires Python cryptography: `Scripts/test.sh` uses the `.venv` that `tools/python-env.sh` makes. To run the check alone, set `VOLANT_TEST_PYTHON=.venv/bin/python`. No personal fixture is committed.
 - `tools/render-raycast.sh`: actual AppKit controller under Aqua/Dark Aqua, empty and selected states, 660-point and compact 560-point widths; secure-field presence and isolated import button action. Inspected renders. This does not prove the installed NSOpenPanel/security-scoped URL or password keyboard path.
 - Release build passed. Computer Use could not initialize because its runtime still references the old workspace location.
 - Next: verify a real archive locally, add the actual rich-note representation if necessary, then add clipboard migration as a separate bounded feature.
