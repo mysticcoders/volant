@@ -11,6 +11,8 @@ in en-XA, a pseudo-locale about 35% longer than English (tools/pseudo-locale.py)
 also laid out right to left. Their images carry a -pseudo or -pseudo-rtl suffix. --layout-only skips
 the default runs, and --build-only compiles the bundles on the host and stops before Tart. --demo renders
 only the README demo frames; tools/render-demo.sh turns them into website/public/images/volant-demo.webp.
+--video renders only the feature video frames (tools/marketing/video); tools/render-video.sh encodes them,
+and --scenes limits it to some scenes.
 """
 import argparse
 import json
@@ -29,6 +31,8 @@ parser.add_argument("--rtl", action="store_true", help="add en-XA runs laid out 
 parser.add_argument("--layout-only", action="store_true", help="run only the --pseudo and --rtl runs")
 parser.add_argument("--build-only", action="store_true", help="compile the fixture bundles on the host, then stop")
 parser.add_argument("--demo", action="store_true", help="render only the README demo frames (tools/marketing/demo.swift)")
+parser.add_argument("--video", action="store_true", help="render only the feature video frames (tools/marketing/video/render.swift)")
+parser.add_argument("--scenes", default="", help="with --video, comma-separated scene numbers to render; 0 is the end card")
 args = parser.parse_args()
 layouts = (["pseudo"] if args.pseudo else []) + (["pseudo-rtl"] if args.rtl else [])
 if args.layout_only and not layouts:
@@ -47,6 +51,8 @@ FIXTURES = [
 ]
 if args.demo:
     FIXTURES = [("VolantDemo", "tools/marketing/demo.swift")]
+if args.video:
+    FIXTURES = [("VolantVideo", "tools/marketing/video/render.swift")]
 build = f'''
 set -euo pipefail
 source tools/core-module.sh
@@ -63,6 +69,16 @@ for pair in {" ".join(f"{name}:{path}" for name, path in FIXTURES)}; do
     # tools/check-launcher.sh runs the launcher fixture as a bare executable with no bundled extension,
     # and its ranking checks expect that; a bundled Hello World would rank above Applications for "h".
     [[ "$name" == VolantLauncherFixture ]] || ditto Volant/Resources/HelloWorld "$bundle/Resources/HelloWorld"
+    # The video reads its scene list, draws the end card from the shipping app icon, and shows the
+    # website's existing iPhone capture of a fictional note.
+    if [[ "$name" == VolantVideo ]]; then
+        cp tools/marketing/video/scenes.json "$bundle/Resources/"
+        cp Volant/Resources/Assets.xcassets/AppIcon.appiconset/icon_512x512@2x.png "$bundle/Resources/AppIcon.png"
+        cp website/public/images/iphone/note.webp "$bundle/Resources/iphone-note.webp"
+        # The Extension Catalog scene shows the published catalog that tools/marketing/video/fetch-catalog.py
+        # fetched and verified into dist-video/catalog.
+        [[ ! -d dist-video/catalog ]] || ditto dist-video/catalog "$bundle/Resources/catalog-fixture"
+    fi
     printf '%s' '<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>CFBundleExecutable</key><string>'"$name"'</string><key>CFBundleIdentifier</key><string>com.mysticcoders.volant.render.'"$name"'</string><key>CFBundlePackageType</key><string>APPL</string><key>CFBundleShortVersionString</key><string>0.0.0</string></dict></plist>' > "$bundle/Info.plist"
     # Layout runs need the catalogs, so text that isn't localized stays visibly plain English.
     if {"true" if layouts else "false"}; then
@@ -83,7 +99,8 @@ if args.build_only:
 subprocess.run(["tar", "-cf", str(output / "bundles.tar"), "-C", str(output), "bundles"], check=True)
 
 # Each fixture runs in both appearances; images are collected whatever the exit code.
-runs = [("VolantDemo", "dark", "\"$work\"")] if args.demo else [] if args.layout_only else [
+video_arguments = "\"$work\"" + (f" scenes={args.scenes}" if args.scenes else "")
+runs = [("VolantDemo", "dark", "\"$work\"")] if args.demo else [("VolantVideo", "dark", video_arguments)] if args.video else [] if args.layout_only else [
     ("VolantLauncherFixture", "light", "\"$work\""), ("VolantLauncherFixture", "dark", "\"$work\" dark"),
     ("VolantActionsFixture", "light", "\"$work\""), ("VolantActionsFixture", "dark", "\"$work\" dark"),
     ("VolantSettingsPreview", "both", "--render"),
