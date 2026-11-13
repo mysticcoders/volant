@@ -261,4 +261,47 @@ final class UnitConverterTests: XCTestCase {
         XCTAssertEqual(converted("6' in cm"), "182.88 cm")
         XCTAssertEqual(converted("10\" in cm"), "25.4 cm")
     }
+
+    /// Each name converts to its reference unit, works as a target, and shows the unit's symbol.
+    func testTonnesTonsMicrometersAndNanometers() {
+        let cases: [(names: [String], reference: String, factor: Double, symbol: String)] = [
+            (["tonne", "tonnes", "metric ton", "metric tons"], "kg", 1000, "t"),
+            (["ton", "tons", "short ton", "short tons"], "kg", 907.18474, "short ton"),
+            (["long ton", "long tons"], "kg", 1016.0469088, "long ton"),
+            (["µm", "um", "micrometer", "micrometers", "micron", "microns"], "mm", 0.001, "µm"),
+            (["nanometer", "nanometers"], "mm", 0.000001, "nm")
+        ]
+        for entry in cases {
+            for name in entry.names {
+                let query = "1 \(name) in \(entry.reference)"
+                let reverseQuery = "\(entry.factor) \(entry.reference) in \(name)"
+                guard let forward = UnitConverter.convert(query, locale: Self.english),
+                      let reverse = UnitConverter.convert(reverseQuery, locale: Self.english) else {
+                    XCTFail("no conversion for \(name)")
+                    continue
+                }
+                XCTAssertEqual(forward.result, entry.factor, accuracy: entry.factor * 1e-9, query)
+                XCTAssertEqual(forward.fromSymbol, entry.symbol, query)
+                XCTAssertEqual(reverse.result, 1, accuracy: 1e-9, reverseQuery)
+            }
+        }
+    }
+
+    /// The micro sign from Option-M and the Greek letter mu look the same; both mean micrometers.
+    func testGreekMuReadsAsMicrometers() throws {
+        XCTAssertEqual(try result("1 \u{03BC}m in mm"), 0.001, accuracy: 1e-12)
+    }
+
+    func testTonsAndMicrometersAcceptance() throws {
+        XCTAssertEqual(try result("1 tonne in kg"), 1000, accuracy: 1e-9)
+        XCTAssertEqual(try result("1 ton in lb"), 2000, accuracy: 1e-9)
+        XCTAssertEqual(try result("1 long ton in kg"), 1016.05, accuracy: 0.005)
+        XCTAssertEqual(try result("1 micrometer in nm"), 1000, accuracy: 1e-9)
+    }
+
+    /// `nm` stays nautical miles and a bare `t` is too ambiguous to be tonnes.
+    func testNmStaysNauticalAndBareTIsNoUnit() throws {
+        XCTAssertEqual(try result("5 nm in km"), 9.26, accuracy: 1e-9)
+        XCTAssertNil(UnitConverter.convert("2 t in kg", locale: Self.english))
+    }
 }
