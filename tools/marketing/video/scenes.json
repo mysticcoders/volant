@@ -1,0 +1,152 @@
+{
+  "_help": "Scene list for the 10-feature demo video. tools/render-video.sh renders it in the render VM through tools/marketing/video/render.swift and encodes the clips. Each scene opens with a title card (cardMs), then runs its steps against its fixture. Step keys: stage (what is on screen: launcher, notch, break-notice, break-overlay, pick-screen, rex-overview, notes, notes-iphone, settings), type (text typed one character per frame into `into`: search, form, chat, catalog; it appends to what is there), key (return, down, up, left, right, tab, escape, cmd-k, cmd-p), hook (a fixture action in render.swift), cursor (an anchor name or [x, y] on the 1080 canvas, moved over moveMs), click (a pressed cursor, then the hook), hideCursor, reveal (the notch panel's growing edge drawn over that many ms, from its size before the step), holdMs (how long the frame after the step shows), keyMs (per typed character), repeat. Scene 3's catalog is the real published catalog, fetched and verified by `catalog.refresh` into `catalog.fetchedInto` before each render; everything else shown is fictional.",
+  "cardMs": 1100,
+  "endMs": 3500,
+  "scenes": [
+    {
+      "number": 1,
+      "title": "Focus mode",
+      "caption": "Hide distracting apps and blank blocked sites while you work toward one goal.",
+      "note": "On a MacBook with a notch; otherwise a floating bar or the menu bar.",
+      "fixture": "focus",
+      "steps": [
+        {"stage": "launcher", "holdMs": 300},
+        {"type": "focus", "into": "search", "keyMs": 90, "holdMs": 700},
+        {"key": "return", "holdMs": 500},
+        {"type": "Write the launch post", "into": "form", "keyMs": 40, "holdMs": 300},
+        {"hook": "focus.addBlocks", "holdMs": 1100},
+        {"hook": "focus.start", "stage": "notch", "holdMs": 900},
+        {"cursor": "notch", "moveMs": 500},
+        {"hook": "focus.expand", "holdMs": 1000, "reveal": 320},
+        {"cursor": [880, 520], "moveMs": 300},
+        {"hook": "focus.collapse", "hideCursor": true, "holdMs": 400},
+        {"hook": "focus.blockedApp", "holdMs": 2000, "reveal": 320}
+      ]
+    },
+    {
+      "number": 2,
+      "title": "Breaks",
+      "caption": "A reminder to step away after 45 minutes that waits while your camera or microphone is in use.",
+      "note": "Off by default. Shown on the Standard setting.",
+      "fixture": "breaks",
+      "steps": [
+        {"hook": "breaks.headsUp", "stage": "break-notice", "holdMs": 1800},
+        {"hook": "breaks.begin", "stage": "break-overlay", "holdMs": 900},
+        {"hook": "breaks.tick", "holdMs": 800, "repeat": 4}
+      ]
+    },
+    {
+      "number": 3,
+      "title": "Extension Catalog",
+      "caption": "Browse, install and update reviewed, signed extensions from the launcher.",
+      "note": "The published catalog as of {catalogDate}: {catalogCount} extensions.",
+      "fixture": "catalog",
+      "catalog": {"source": "https://mysticcoders.github.io/volant-extensions/", "refresh": "tools/marketing/video/fetch-catalog.py", "fetchedInto": "dist-video/catalog"},
+      "steps": [
+        {"stage": "launcher", "holdMs": 300},
+        {"type": "catalog", "into": "search", "keyMs": 90, "holdMs": 700},
+        {"hook": "catalog.check", "holdMs": 1500},
+        {"key": "down", "holdMs": 110, "repeat": 24},
+        {"holdMs": 700},
+        {"type": "hacker", "into": "catalog", "keyMs": 90, "holdMs": 2200}
+      ]
+    },
+    {
+      "number": 4,
+      "title": "AI Chat with your coding agents",
+      "caption": "Tab from search and you're in the conversation.",
+      "note": "Fictional conversation. Prompts go to the agent you choose.",
+      "fixture": "chat",
+      "steps": [
+        {"stage": "launcher", "holdMs": 300},
+        {"type": "Why does the booking test fail?", "into": "search", "keyMs": 45, "holdMs": 500},
+        {"key": "tab", "holdMs": 800},
+        {"hook": "chat.send", "holdMs": 400},
+        {"hook": "chat.stream", "holdMs": 260, "repeat": 6},
+        {"hook": "chat.finish", "holdMs": 1800}
+      ]
+    },
+    {
+      "number": 5,
+      "title": "Rex Overview",
+      "caption": "Your agent sessions and panes, from the launcher.",
+      "note": "Pane previews are optional and off by default.",
+      "fixture": "rex",
+      "steps": [
+        {"stage": "launcher", "holdMs": 300},
+        {"type": "rex", "into": "search", "keyMs": 110, "holdMs": 1300},
+        {"key": "return", "stage": "rex-overview", "holdMs": 1200},
+        {"key": "down", "holdMs": 650},
+        {"key": "right", "holdMs": 650},
+        {"key": "tab", "holdMs": 1000}
+      ]
+    },
+    {
+      "number": 6,
+      "title": "Search Menu Items",
+      "caption": "Search the menus of the app you were using.",
+      "note": "Opt-in: turn it on in Settings › General.",
+      "fixture": "menus",
+      "steps": [
+        {"stage": "launcher", "holdMs": 300},
+        {"type": "menus", "into": "search", "keyMs": 100, "holdMs": 1300},
+        {"type": " export", "into": "search", "keyMs": 100, "holdMs": 1700}
+      ]
+    },
+    {
+      "number": 7,
+      "title": "Pick Color",
+      "caption": "Pick a color from anywhere on screen.",
+      "fixture": "color",
+      "steps": [
+        {"stage": "launcher", "holdMs": 300},
+        {"type": "pick color", "into": "search", "keyMs": 70, "holdMs": 600},
+        {"key": "return", "stage": "pick-screen", "holdMs": 200},
+        {"cursor": [300, 700], "moveMs": 1},
+        {"cursor": [545, 620], "moveMs": 900},
+        {"click": true, "hook": "color.pick", "stage": "launcher", "hideCursor": true, "holdMs": 1600},
+        {"key": "down", "holdMs": 700},
+        {"key": "down", "holdMs": 700},
+        {"key": "down", "holdMs": 900}
+      ]
+    },
+    {
+      "number": 8,
+      "title": "Listening servers",
+      "caption": "See the dev servers you're running.",
+      "note": "Read-only: Volant lists them and never stops them.",
+      "fixture": "servers",
+      "steps": [
+        {"stage": "launcher", "holdMs": 300},
+        {"type": "servers", "into": "search", "keyMs": 90, "holdMs": 1600},
+        {"key": "cmd-k", "holdMs": 1900}
+      ]
+    },
+    {
+      "number": 9,
+      "title": "Notes in iCloud",
+      "caption": "Your notes on your Mac and your iPhone.",
+      "note": "iCloud sync is opt-in. Volant for iPhone is a public beta.",
+      "fixture": "notes",
+      "steps": [
+        {"stage": "notes", "holdMs": 1300},
+        {"key": "cmd-p", "holdMs": 1400},
+        {"key": "escape", "holdMs": 300},
+        {"stage": "notes-iphone", "holdMs": 2400}
+      ]
+    },
+    {
+      "number": 10,
+      "title": "Your Volant",
+      "caption": "Your own launcher activity, on your Mac.",
+      "note": "Counted on this Mac and never sent anywhere.",
+      "fixture": "settings",
+      "steps": [
+        {"stage": "settings", "holdMs": 500},
+        {"cursor": "sidebar:yourVolant", "moveMs": 700},
+        {"click": true, "hook": "settings.yourVolant", "holdMs": 1700},
+        {"hook": "settings.scrollBottom", "hideCursor": true, "holdMs": 1800}
+      ]
+    }
+  ]
+}
