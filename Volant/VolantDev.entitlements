@@ -34,6 +34,10 @@
 		<string>company.thebrowser.Browser</string>
 		<string>org.chromium.Chromium</string>
 	</array>
+	<key>com.apple.security.temporary-exception.files.home-relative-path.read-only</key>
+	<array>
+		<string>/Applications/</string>
+	</array>
 	<key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
 	<array>
 		<string>com.apple.airportd</string>
