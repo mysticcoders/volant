@@ -262,7 +262,8 @@ final class UnitConverterTests: XCTestCase {
         XCTAssertEqual(converted("10\" in cm"), "25.4 cm")
     }
 
-    /// Each name converts to its reference unit, works as a target, and shows the unit's symbol.
+    /// Each name converts to its reference unit, works as a target, shows the unit's symbol, and
+    /// Swap reads the result back as the same unit in both directions.
     func testTonnesTonsMicrometersAndNanometers() {
         let cases: [(names: [String], reference: String, factor: Double, symbol: String)] = [
             (["tonne", "tonnes", "metric ton", "metric tons"], "kg", 1000, "t"),
@@ -283,6 +284,8 @@ final class UnitConverterTests: XCTestCase {
                 XCTAssertEqual(forward.result, entry.factor, accuracy: entry.factor * 1e-9, query)
                 XCTAssertEqual(forward.fromSymbol, entry.symbol, query)
                 XCTAssertEqual(reverse.result, 1, accuracy: 1e-9, reverseQuery)
+                assertSwap(forward, gives: 1, query)
+                assertSwap(reverse, gives: entry.factor, reverseQuery)
             }
         }
     }
@@ -297,9 +300,18 @@ final class UnitConverterTests: XCTestCase {
         XCTAssertEqual(try result("1 ton in lb"), 2000, accuracy: 1e-9)
         XCTAssertEqual(try result("1 long ton in kg"), 1016.05, accuracy: 0.005)
         XCTAssertEqual(try result("1 micrometer in nanometers"), 1000, accuracy: 1e-9)
-        // "nm" already means nautical miles, so it is not a nanometer name. Restore this line if "nm"
-        // is ever moved to nanometers, and change testNmStaysNauticalAndBareTIsNoUnit to match.
-        // XCTAssertEqual(try result("1 micrometer in nm"), 1000, accuracy: 1e-9)
+    }
+
+    /// Swaps a conversion and checks that the swapped query converts to the expected value.
+    private func assertSwap(_ conversion: VolantCore.UnitConverter.Conversion, gives expected: Double, _ query: String,
+                            file: StaticString = #filePath, line: UInt = #line) {
+        let swapped = UnitConverter.swapQuery(conversion, locale: Self.english)
+        guard let back = UnitConverter.convert(swapped, locale: Self.english) else {
+            XCTFail("Swap of \(query) gave \(swapped), which does not convert", file: file, line: line)
+            return
+        }
+        XCTAssertEqual(back.result, expected, accuracy: expected * 1e-9,
+                       "Swap of \(query) gave \(swapped)", file: file, line: line)
     }
 
     /// `nm` stays nautical miles and a bare `t` is too ambiguous to be tonnes.
