@@ -12,7 +12,8 @@ xcuserdata/
 
 dist-release.*/
 
-# Python test tooling caches
+# Python test tooling caches and the environment from tools/python-env.sh
+.venv/
 __pycache__/
 *.pyc
 build-dev/
