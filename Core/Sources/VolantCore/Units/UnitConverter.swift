@@ -118,14 +118,24 @@ public enum UnitConverter {
 
     /// The converted side alone, rounded to six decimal places, as Copy puts it on the clipboard.
     public static func formatResult(_ c: Conversion, locale: Locale = .current) -> String {
-        let number = Calculator.format((c.result * 1e6).rounded() / 1e6, locale: locale)
-        return c.toSymbol.isEmpty ? number : "\(number) \(c.toSymbol)"
+        formatResult(c.result, c.toSymbol, locale: locale)
     }
 
-    /// The same conversion the other way, for Swap; a bare count swaps back as "each".
-    public static func swapQuery(_ c: Conversion, locale: Locale = .current) -> String {
-        "\(formatResult(c, locale: locale)) in \(c.fromSymbol.isEmpty ? "each" : c.fromSymbol)"
+    private static func formatResult(_ result: Double, _ symbol: String, locale: Locale) -> String {
+        let number = Calculator.format((result * 1e6).rounded() / 1e6, locale: locale)
+        return symbol.isEmpty ? number : "\(number) \(symbol)"
     }
+
+    /// The same conversion the other way, for Swap; a bare count swaps back as "each". A symbol
+    /// in `swapNames` is written as its name, so the swapped query reads back as the same unit.
+    public static func swapQuery(_ c: Conversion, locale: Locale = .current) -> String {
+        let target = c.fromSymbol.isEmpty ? "each" : swapNames[c.fromSymbol, default: c.fromSymbol]
+        return "\(formatResult(c.result, swapNames[c.toSymbol, default: c.toSymbol], locale: locale)) in \(target)"
+    }
+
+    /// Shown symbols the parser reads as another unit or not at all: "nm" is nautical miles, and a
+    /// bare "t" is no unit. Swap writes these units by name instead.
+    private static let swapNames = ["nm": "nanometers", "t": "tonnes"]
 
     /// Exact legal definitions where Foundation's coefficients are rounded to about six digits,
     /// which showed in answers ("10 kn in kph" gave 18.519969). Cup is the US customary cup
@@ -223,6 +233,8 @@ public enum UnitConverter {
 
     /// Unit names ignore spacing and the degree sign, and read superscript squares, so the
     /// converter's own symbols ("ft²", "°F") work as input: "sq ft", "fl oz", "square feet".
+    /// The micro sign (Option-M) and the Greek mu both read as micrometers. "nm" stays nautical
+    /// miles, and a bare "t" is too ambiguous to mean tonnes; see `swapNames`.
     static func lookup(_ raw: String) -> Spec? {
         let key = raw.replacingOccurrences(of: "°", with: "").replacingOccurrences(of: "²", with: "2").filter { !$0.isWhitespace }
         return key.isEmpty ? nil : table[key]
@@ -240,7 +252,6 @@ public enum UnitConverter {
         add(["in", "inch", "inches"], UnitLength.inches, "in")
         add(["yd", "yard", "yards"], UnitLength.yards, "yd")
         add(["nmi", "nm", "nautical", "nauticalmile", "nauticalmiles"], UnitLength.nauticalMiles, "nmi")
-        // The micro sign (Option-M) and the Greek mu look alike; "nm" stays nautical miles above.
         add(["µm", "\u{03BC}m", "um", "micrometer", "micrometers", "micron", "microns"], UnitLength.micrometers, "µm")
         add(["nanometer", "nanometers"], UnitLength.nanometers, "nm")
         add(["kg", "kilogram", "kilograms"], UnitMass.kilograms, "kg")
@@ -249,7 +260,6 @@ public enum UnitConverter {
         add(["lb", "lbs", "pound", "pounds"], UnitMass.pounds, "lb")
         add(["oz", "ounce", "ounces"], UnitMass.ounces, "oz")
         add(["st", "stone", "stones"], UnitMass.stones, "st")
-        // No bare "t": a single letter is too ambiguous to mean tonnes.
         add(["tonne", "tonnes", "metricton", "metrictons"], UnitMass.metricTons, "t")
         add(["ton", "tons", "shortton", "shorttons"], UnitMass.shortTons, "short ton")
         add(["longton", "longtons"], longTon, "long ton")

@@ -324,4 +324,4 @@ Precision and rounding are unchanged; only presentation changed. English output 
 
 - **Mass:** `tonne` and `metric ton` (1,000 kg, symbol `t`), `ton` and `short ton` (2,000 lb, exactly 907.18474 kg), and `long ton` (2,240 lb, exactly 1016.0469088 kg). Foundation has no long ton, so the converter defines one.
 - **Length:** `micrometer`, `micron`, `µm` and `um` (symbol `µm`), and `nanometer` (symbol `nm`). The micro sign from Option-M and the Greek letter mu both read as micrometers.
-- **Not added:** `nm` stays nautical miles, so nanometers need the full word. A bare `t` is too ambiguous to mean tonnes.
+- **Not added:** `nm` stays nautical miles, so nanometers need the full word. A bare `t` is too ambiguous to mean tonnes. Cards still show `nm` and `t`, so Swap writes those two units by name: `1,000 nm in µm` swaps as `1,000 nanometers in µm`, and `1 t` as `1 tonnes`.
