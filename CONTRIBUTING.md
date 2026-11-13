@@ -12,7 +12,7 @@ Thanks for helping. Volant is a small project, so every bug report, idea and pul
 
 ## Build and test
 
-You need macOS 15 or later, Xcode 26 and xcodegen (`brew install xcodegen`).
+You need macOS 15 or later, Xcode 26, xcodegen and swiftlint (`brew install xcodegen swiftlint`). With [just](https://github.com/casey/just) installed, run `just doctor` to check these and see how to install what is missing. `just` lists the other recipes, which run the scripts below.
 
     Scripts/build.sh                     # regenerate the project and build Volant Dev
     swift test --package-path Core       # VolantCore tests: calculator, units, time zones and more
