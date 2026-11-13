@@ -296,7 +296,10 @@ final class UnitConverterTests: XCTestCase {
         XCTAssertEqual(try result("1 tonne in kg"), 1000, accuracy: 1e-9)
         XCTAssertEqual(try result("1 ton in lb"), 2000, accuracy: 1e-9)
         XCTAssertEqual(try result("1 long ton in kg"), 1016.05, accuracy: 0.005)
-        XCTAssertEqual(try result("1 micrometer in nm"), 1000, accuracy: 1e-9)
+        XCTAssertEqual(try result("1 micrometer in nanometers"), 1000, accuracy: 1e-9)
+        // "nm" already means nautical miles, so it is not a nanometer name. Restore this line if "nm"
+        // is ever moved to nanometers, and change testNmStaysNauticalAndBareTIsNoUnit to match.
+        // XCTAssertEqual(try result("1 micrometer in nm"), 1000, accuracy: 1e-9)
     }
 
     /// `nm` stays nautical miles and a bare `t` is too ambiguous to be tonnes.

@@ -134,6 +134,7 @@ public enum UnitConverter {
     private static let exactFactors: [(Dimension, Double)] = [
         (UnitLength.miles, 1609.344), (UnitSpeed.milesPerHour, 0.44704),
         (UnitMass.pounds, 0.45359237), (UnitMass.ounces, 0.028349523125), (UnitMass.stones, 6.35029318),
+        (UnitMass.shortTons, 907.18474),
         (UnitVolume.gallons, 3.785411784), (UnitVolume.quarts, 0.946352946), (UnitVolume.pints, 0.473176473),
         (UnitVolume.cups, 0.2365882365), (UnitVolume.fluidOunces, 0.0295735295625),
         (UnitVolume.tablespoons, 0.01478676478125), (UnitVolume.teaspoons, 0.00492892159375),
@@ -147,18 +148,19 @@ public enum UnitConverter {
     /// Units Foundation lacks, at their defined sizes: the standard atmosphere and the torr
     /// (1/760 atm), the International Table BTU, Mach 1 as the speed of sound in the ISA sea-level
     /// atmosphere at 15 °C (an assumption, since Mach depends on temperature), the 250 mL metric
-    /// cup, the speed of light, and counts.
+    /// cup, the long ton (2,240 lb), the speed of light, and counts.
     private static let atmosphere = UnitPressure(symbol: "atm", converter: UnitConverterLinear(coefficient: 101_325))
     private static let torr = UnitPressure(symbol: "Torr", converter: UnitConverterLinear(coefficient: 101_325.0 / 760))
     private static let btu = UnitEnergy(symbol: "BTU", converter: UnitConverterLinear(coefficient: 1055.05585262))
     private static let metricCup = UnitVolume(symbol: "metric cup", converter: UnitConverterLinear(coefficient: 0.25))
+    private static let longTon = UnitMass(symbol: "long ton", converter: UnitConverterLinear(coefficient: 1016.0469088))
     private static let mach = UnitSpeed(symbol: "Mach", converter: UnitConverterLinear(coefficient: 340.29))
     private static let light = Spec(unit: UnitSpeed(symbol: "c", converter: UnitConverterLinear(coefficient: 299_792_458)), symbol: "c")
     private static let lightNames: Set<String> = ["speedoflight", "lightspeed", "thespeedoflight"]
 
     private static let customNames: [(Dimension, String)] = [
         (atmosphere, "Standard atmospheres"), (torr, "Torr"), (btu, "British thermal units (IT)"),
-        (mach, "Mach (sea level, 15 °C)"), (metricCup, "Metric cups"), (light.unit, "Speed of light"),
+        (mach, "Mach (sea level, 15 °C)"), (metricCup, "Metric cups"), (longTon, "Long tons"), (light.unit, "Speed of light"),
         (UnitCount.dozen, "Dozen"), (UnitCount.gross, "Gross"), (UnitPressure.newtonsPerMetersSquared, "Pascals")
     ]
 
@@ -238,12 +240,19 @@ public enum UnitConverter {
         add(["in", "inch", "inches"], UnitLength.inches, "in")
         add(["yd", "yard", "yards"], UnitLength.yards, "yd")
         add(["nmi", "nm", "nautical", "nauticalmile", "nauticalmiles"], UnitLength.nauticalMiles, "nmi")
+        // The micro sign (Option-M) and the Greek mu look alike; "nm" stays nautical miles above.
+        add(["µm", "\u{03BC}m", "um", "micrometer", "micrometers", "micron", "microns"], UnitLength.micrometers, "µm")
+        add(["nanometer", "nanometers"], UnitLength.nanometers, "nm")
         add(["kg", "kilogram", "kilograms"], UnitMass.kilograms, "kg")
         add(["g", "gram", "grams"], UnitMass.grams, "g")
         add(["mg", "milligram", "milligrams"], UnitMass.milligrams, "mg")
         add(["lb", "lbs", "pound", "pounds"], UnitMass.pounds, "lb")
         add(["oz", "ounce", "ounces"], UnitMass.ounces, "oz")
         add(["st", "stone", "stones"], UnitMass.stones, "st")
+        // No bare "t": a single letter is too ambiguous to mean tonnes.
+        add(["tonne", "tonnes", "metricton", "metrictons"], UnitMass.metricTons, "t")
+        add(["ton", "tons", "shortton", "shorttons"], UnitMass.shortTons, "short ton")
+        add(["longton", "longtons"], longTon, "long ton")
         add(["c", "celsius", "centigrade", "degreesc", "degreec", "degreescelsius", "degreecelsius"], UnitTemperature.celsius, "°C")
         add(["f", "fahrenheit", "degreesf", "degreef", "degreesfahrenheit", "degreefahrenheit"], UnitTemperature.fahrenheit, "°F")
         add(["k", "kelvin"], UnitTemperature.kelvin, "K")

@@ -319,3 +319,9 @@ Answers follow the Mac's language and region (the locale passed to `CalculationA
 - **Fixed:** color values, number bases, Roman numerals, ISO 8601 dates and week labels, Unix time and swap queries. Time swaps keep `9:00pm cet in est`; unit and currency swaps write the amount as the locale's calculator reads it (`3,106856 mi in km` in German), and `LocaleFormattingTests` round-trips them in `en_US` and `de_DE`. Percentages keep `%` right after the number, since the calculator reads it only there.
 
 Precision and rounding are unchanged; only presentation changed. English output is unchanged.
+
+## Tonnes, tons, micrometers and nanometers — November 13, 2026
+
+- **Mass:** `tonne` and `metric ton` (1,000 kg, symbol `t`), `ton` and `short ton` (2,000 lb, exactly 907.18474 kg), and `long ton` (2,240 lb, exactly 1016.0469088 kg). Foundation has no long ton, so the converter defines one.
+- **Length:** `micrometer`, `micron`, `µm` and `um` (symbol `µm`), and `nanometer` (symbol `nm`). The micro sign from Option-M and the Greek letter mu both read as micrometers.
+- **Not added:** `nm` stays nautical miles, so nanometers need the full word. A bare `t` is too ambiguous to mean tonnes.
