@@ -1,3 +1,4 @@
+#if os(macOS)
 import Foundation
 
 /// How to start one provider's ACP agent: the executable, its arguments and extra environment.
@@ -129,3 +130,4 @@ public struct ACPAgentResolver {
         path.hasPrefix(home + "/") ? "~" + path.dropFirst(home.count) : path
     }
 }
+#endif

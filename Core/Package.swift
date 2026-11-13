@@ -5,9 +5,11 @@ import PackageDescription
 // calculation, unit and emoji lookup, Markdown block parsing, preferences, and the
 // agent, Herdr and extension protocol types. It imports Foundation and nothing else,
 // so platform code cannot leak back in and the core can be tested without the app.
+// Volant for iPhone (ios/) links it too; the two files that read Mac-only process and
+// home-folder APIs are compiled for macOS alone.
 let package = Package(
     name: "VolantCore",
-    platforms: [.macOS("15.0")],
+    platforms: [.macOS("15.0"), .iOS("26.0")],
     products: [
         .library(name: "VolantCore", type: .static, targets: ["VolantCore"])
     ],

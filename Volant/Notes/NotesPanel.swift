@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 /// Floating notes window: one note with browsing and actions on demand. Stays up until closed.
@@ -161,6 +162,7 @@ final class NotesModel: ObservableObject {
     @Published var overlay: Overlay?
     @Published private(set) var pinned: Set<String>
     private var preferenceKey: String { "notes." + store.directory.path }
+    private var directoryChange: AnyCancellable?
 
     /// `defaults` holds the remembered selection and pins; tests pass an isolated suite.
     init(store: NotesStore, defaults: UserDefaults = .standard) {
@@ -171,6 +173,14 @@ final class NotesModel: ObservableObject {
         pinned = Set(defaults.stringArray(forKey: key + ".pinned") ?? [])
         selectIfNeeded()
         store.open(selectedID)
+        directoryChange = store.$directory.dropFirst().receive(on: DispatchQueue.main).sink { [weak self] _ in self?.folderChanged() }
+    }
+
+    /// Reads the pins and remembered note kept for the store's new folder after notes sync moves it.
+    private func folderChanged() {
+        pinned = Set(defaults.stringArray(forKey: preferenceKey + ".pinned") ?? [])
+        selectedID = defaults.string(forKey: preferenceKey + ".selected")
+        selectIfNeeded()
     }
 
     /// Browse results: matches available at once, replaced by the background full-text matches for the same
@@ -379,6 +389,12 @@ struct NotesView: View {
                         Button("Reveal in Finder") { NSWorkspace.shared.activateFileViewerSelecting([note.url]) }
                     }.padding(NotesStyle.inset).frame(maxWidth: .infinity, alignment: .leading)
                 }.frame(maxHeight: .infinity)
+            } else if note.downloading {
+                VStack(spacing: 10) {
+                    ProgressView().controlSize(.small)
+                    Text("Downloading from iCloud…").foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let text = note.text {
                 if model.editing {
                     ZStack(alignment: .topLeading) {

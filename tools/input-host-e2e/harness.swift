@@ -16,6 +16,10 @@ import VolantCore
 //                                          finishes when Return is pressed (or after 20 s)
 //   two-sessions <pause> <first> <second>  two dictations over one helper connection, `pause` apart
 //   stale                                  inserts with a token the helper never issued
+//   menus <bundle id>                      Search Menu Items' listing for the running app, with the
+//                                          count and the menus' titles (the VM holds no owner data)
+//   press <bundle id> <title>…             presses the menu item with that title path
+//   menus-self                             lists Volant's own menus, which the helper must refuse
 
 /// Prints and flushes, so output survives exiting from a callback.
 func say(_ text: String) {
@@ -94,6 +98,28 @@ func run(_ arguments: [String]) {
     case "stale":
         client.insert(phrase: "never typed", token: Data(repeating: 7, count: 32)) { result in
             say("stale token insert: \(result.map { String(describing: $0) } ?? "no reply")")
+            exit(0)
+        }
+    case "menus", "menus-self":
+        let bundle = arguments.first == "menus-self" ? "com.mysticcoders.volant" : arguments[1]
+        let pid = arguments.first == "menus-self" ? ProcessInfo.processInfo.processIdentifier
+            : NSRunningApplication.runningApplications(withBundleIdentifier: bundle).first?.processIdentifier ?? 0
+        client.menuItems(pid: pid, bundleID: bundle) { reply in
+            guard let reply else { say("menus: no reply"); exit(1) }
+            let tops = reply.items.reduce(into: [String]()) { if let top = $1.path.first, !$0.contains(top) { $0.append(top) } }
+            say("menus: count=\(reply.items.count) truncated=\(reply.truncated) refusal=\(reply.refusal?.rawValue ?? "none") elapsed=\(Int(Date().timeIntervalSince(started) * 1000))ms")
+            say("menus: top=\(tops.joined(separator: " | "))")
+            say("menus: apple menu listed=\(reply.items.contains { $0.path.first == "Apple" })")
+            for item in reply.items where item.path.first == "Format" || item.path.first == "Edit" {
+                say("menus: \(item.path.joined(separator: " › ")) shortcut=\(item.shortcut?.display ?? "-") enabled=\(item.enabled)")
+            }
+            exit(0)
+        }
+    case "press":
+        let bundle = arguments[1]
+        let pid = NSRunningApplication.runningApplications(withBundleIdentifier: bundle).first?.processIdentifier ?? 0
+        client.pressMenuItem(pid: pid, path: Array(arguments.dropFirst(2)), bundleID: bundle) { reply in
+            say("press \(arguments.dropFirst(2).joined(separator: " › ")): \(reply.map { "pressed=\($0.pressed) refusal=\($0.refusal?.rawValue ?? "none")" } ?? "no reply")")
             exit(0)
         }
     default:

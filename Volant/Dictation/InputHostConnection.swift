@@ -2,11 +2,12 @@ import Foundation
 import VolantCore
 
 /// The XPC connection to `VolantInputHost`. It is created on the first call, never at launch, and
-/// the app makes that first call only after the owner chooses Type at the cursor, so until then
-/// the helper never runs and nothing asks macOS about Accessibility. `disconnect` invalidates the
-/// connection and the helper exits. Replies are decoded here and delivered on the main queue; a
-/// helper that fails, refuses the connection or does not answer within `timeout` yields nil.
-final class InputHostConnection: InputHostClient {
+/// the app makes that first call only after the owner chooses Type at the cursor or turns on Search
+/// Menu Items, so until then the helper never runs and nothing asks macOS about Accessibility.
+/// `disconnect` invalidates the connection and the helper exits. Replies are decoded here and
+/// delivered on the main queue; a helper that fails, refuses the connection or does not answer
+/// within `timeout` yields nil.
+final class InputHostConnection: InputHostClient, MenuItemsClient {
     static let timeout: TimeInterval = 10
     private var connection: NSXPCConnection?
 
@@ -20,6 +21,17 @@ final class InputHostConnection: InputHostClient {
 
     func insert(phrase: String, token: Data, completion: @escaping (InputInsertion?) -> Void) {
         call(completion) { proxy, reply in proxy.insert(phrase: phrase, token: token, reply: reply) }
+    }
+
+    func menuItems(pid: Int32, bundleID: String, completion: @escaping (MenuItemsReply?) -> Void) {
+        call(completion, maximumBytes: MenuItemPolicy.maximumReplyBytes) { proxy, reply in
+            proxy.menuItems(pid: pid, bundleID: bundleID, reply: reply)
+        }
+    }
+
+    func pressMenuItem(pid: Int32, path: [String], bundleID: String, completion: @escaping (MenuPressReply?) -> Void) {
+        guard let encoded = try? JSONEncoder().encode(path) else { completion(nil); return }
+        call(completion) { proxy, reply in proxy.pressMenuItem(pid: pid, path: encoded, bundleID: bundleID, reply: reply) }
     }
 
     func endSession(token: Data) {
@@ -46,8 +58,9 @@ final class InputHostConnection: InputHostClient {
         return made
     }
 
-    /// Sends one request and delivers exactly one decoded reply, or nil on error or timeout.
-    private func call<T: Decodable>(_ completion: @escaping (T?) -> Void,
+    /// Sends one request and delivers exactly one decoded reply, or nil on error, timeout or a reply
+    /// larger than `maximumBytes`.
+    private func call<T: Decodable>(_ completion: @escaping (T?) -> Void, maximumBytes: Int = 4096,
                                     _ send: (VolantInputHostProtocol, @escaping (Data) -> Void) -> Void) {
         var delivered = false
         let deliver: (T?) -> Void = { value in
@@ -61,7 +74,7 @@ final class InputHostConnection: InputHostClient {
         guard let host = proxy as? VolantInputHostProtocol else { deliver(nil); return }
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.timeout) { deliver(nil) }
         send(host) { data in
-            deliver(data.count <= 4096 ? try? JSONDecoder().decode(T.self, from: data) : nil)
+            deliver(data.count <= maximumBytes ? try? JSONDecoder().decode(T.self, from: data) : nil)
         }
     }
 }

@@ -13,6 +13,14 @@ whether it can run only for people who turn the feature on.
 owner decisions recorded there (dictation output as a setting, live typing, AX-first insertion,
 Volant never frontmost) supersede the matching parts of this design.
 
+**Search Menu Items shares the helper** (November 7, 2026, merged after 0.3.36). The owner approved a
+second opt-in use of `VolantInputHost`: listing the front app's menu items and pressing one. The
+helper's API grew from four calls to six (`menuItems` and `pressMenuItem`); it still takes no key
+codes, attribute names or element references and reads no field or window text, only menu titles,
+command characters and modifiers, and the enabled state. The promise is now "no Accessibility
+unless you choose Type at the cursor or Search Menu Items", with the same single Volant entry in
+Privacy & Security. Design, limits and evidence: [Search Menu Items](search-menu-items.md).
+
 Labels used below: **Verified** means an Apple document, an Apple engineer's forum post, source
 code read for this review, or a measurement already recorded in this repository. **Unverified**
 means a community report, a vendor's help page, or reasoning that still needs a measurement. Every

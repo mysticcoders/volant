@@ -1,17 +1,20 @@
 import Foundation
 import VolantCore
 
-/// Types dictation at the cursor for Volant. This is the only Volant code that uses Accessibility
-/// or posts events, and it runs outside App Sandbox because a sandboxed process cannot. It starts
-/// only when the owner has chosen Type at the cursor and Volant connects, and exits when Volant
-/// disconnects. Everything it does is in `InputSessionController`; this file only checks the
-/// caller and moves JSON across the connection on one serial queue.
+/// Types dictation at the cursor and searches and presses the front app's menu items for Volant.
+/// This is the only Volant code that uses Accessibility or posts events, and it runs outside App
+/// Sandbox because a sandboxed process cannot. It starts only when the owner has chosen Type at the
+/// cursor or turned on Search Menu Items and Volant connects, and exits when Volant disconnects.
+/// Everything it does is in `InputSessionController` and `MenuItemsController`; this file only checks
+/// the caller and moves JSON across the connection on one serial queue.
 final class InputHost: NSObject, VolantInputHostProtocol {
     private let queue = DispatchQueue(label: "com.mysticcoders.volant.input-host")
     private let controller: InputSessionController
+    private let menus: MenuItemsController
 
     init(callerPID: Int32) {
         controller = InputSessionController(system: SystemInput(), callerPID: callerPID)
+        menus = MenuItemsController(system: SystemMenus(), callerPID: callerPID)
     }
 
     func accessibilityStatus(prompt: Bool, reply: @escaping (Data) -> Void) {
@@ -28,6 +31,22 @@ final class InputHost: NSObject, VolantInputHostProtocol {
 
     func endSession(token: Data) {
         queue.async { self.controller.end(token: token) }
+    }
+
+    func menuItems(pid: Int32, bundleID: String, reply: @escaping (Data) -> Void) {
+        queue.async { reply(Self.encode(self.menus.list(pid: pid, bundleID: bundleID))) }
+    }
+
+    /// The path arrives as JSON so no Objective-C collection crosses the connection; anything other
+    /// than a small array of strings is refused before the menus are touched.
+    func pressMenuItem(pid: Int32, path: Data, bundleID: String, reply: @escaping (Data) -> Void) {
+        queue.async {
+            guard path.count <= 4096, let titles = try? JSONDecoder().decode([String].self, from: path) else {
+                reply(Self.encode(MenuPressReply(pressed: false, refusal: .invalidRequest)))
+                return
+            }
+            reply(Self.encode(self.menus.press(pid: pid, path: titles, bundleID: bundleID)))
+        }
     }
 
     /// The reply as JSON; the types are plain values, so encoding cannot fail in practice.

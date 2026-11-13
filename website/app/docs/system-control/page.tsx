@@ -21,8 +21,9 @@ export default function SystemControl() {
       <h1>System control</h1>
       <p className="docs-lede">
         Volume, audio routes, Bluetooth, and Wi-Fi, all through public APIs
-        inside the app sandbox. Keep your Mac awake or open System Settings from
-        the keyboard. No Accessibility grant is needed.
+        inside the app sandbox. Keep your Mac awake, switch Light and Dark,
+        pick a color on screen, or open System Settings from the keyboard. No
+        Accessibility grant is needed.
       </p>
 
       <h2>Volume</h2>
@@ -90,7 +91,8 @@ export default function SystemControl() {
         drops, and another once it stops; turn them off with{' '}
         <strong>Play sounds when dictation starts and stops</strong>.
         None of this needs Accessibility; only the separate, opt-in Type at the
-        cursor dictation output does.
+        cursor dictation output does, and the
+        opt-in Search Menu Items command.
       </p>
       <p>
         <strong>Vocabulary</strong> in Settings → Dictation teaches dictation
@@ -201,6 +203,35 @@ export default function SystemControl() {
         reports failures. Lock Screen and Sleep Displays can have their own
         global shortcuts.
       </p>
+      <p>
+        Type <code>dark mode</code>, <code>light mode</code> or{' '}
+        <code>toggle appearance</code> to switch macOS between Light and Dark,
+        and <code>menu bar</code> to turn automatic menu bar hiding on or off.
+        The row says which mode is on now, and the launcher stays open after
+        Return so you can switch back. Volant asks System Events to make the
+        change, so macOS asks once whether Volant may control System Events.
+        The menu bar command switches between hiding always and never; the
+        desktop-only and full-screen-only choices stay in System Settings.
+      </p>
+
+      <h2>Pick Color</h2>
+      <p>
+        Type <code>color picker</code> or <code>pick color</code> and press
+        Return. The launcher steps aside and macOS shows its magnifying loupe;
+        click any pixel on screen. The launcher comes back with the color as
+        HEX, RGB, HSL and OKLCH, HEX selected, and Return copies the one you
+        choose. <strong>Pick Another Color</strong>, just below, opens the
+        loupe again. Escape in the loupe cancels without copying anything. No
+        permission is needed: macOS hands Volant only the color you clicked,
+        never a picture of your screen.
+      </p>
+
+      <h2>Camera</h2>
+      <p>
+        Type <code>camera</code> to open a small, mirrored preview from your
+        Mac&rsquo;s camera, handy before a call. Press Escape or close the
+        window to stop the camera. Nothing is recorded, saved or sent.
+      </p>
       <h2>Permissions</h2>
       <p>
         Bluetooth uses its own sandbox entitlement and system consent. Reading
@@ -209,6 +240,14 @@ export default function SystemControl() {
         coordinates. Both are asked for on first use, and
         denying either produces guidance plus a System Settings action rather
         than a broken screen.
+      </p>
+      <p>
+        The camera and the appearance and menu bar commands work the same way:
+        macOS asks for Camera access the first time you open the camera, and
+        for permission to control System Events the first time you switch
+        appearance or menu bar hiding, never at launch. If you decline, the
+        launcher says so and offers the matching Privacy &amp; Security pane.
+        Volant automates no other app.
       </p>
 
       <DocFooterNav {...adjacentDocs('system-control')} />

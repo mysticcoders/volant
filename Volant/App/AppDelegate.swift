@@ -5,14 +5,20 @@ import VolantCore
 
 /// Owns the long-lived services: menu bar item, hotkeys, app index, clipboard monitor, and the panel.
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    /// The one connection to the input helper, shared by dictation and Settings. It connects only
-    /// when the owner has chosen Type at the cursor.
+    /// The one connection to the input helper, shared by dictation, Search Menu Items and Settings.
+    /// It connects only when the owner has chosen Type at the cursor or turned on Search Menu Items.
     private let inputHost = InputHostConnection()
     private lazy var dictationAccess = DictationTypingAccess(client: inputHost, canReconnect: { [weak self] in
         guard let model = self?.panel.model else { return true }
         return !model.dictation.isListening && !model.dictationTypesAtCursor
     })
-    private lazy var settingsPanel: SettingsWindowController = SettingsWindowController(conversations: panel.model.conversations, dictationAccess: dictationAccess, openAI: { [weak self] configuration in
+    /// Turning Search Menu Items off stops the helper only when dictation isn't typing with it.
+    private lazy var menuItemsAccess = MenuItemsAccess(client: inputHost, canDisconnect: { [weak self] in
+        guard let self else { return true }
+        return self.config.dictationOutput == .copy && !self.panel.model.dictationTypesAtCursor
+    })
+    private lazy var settingsPanel: SettingsWindowController = SettingsWindowController(conversations: panel.model.conversations, dictationAccess: dictationAccess,
+                                                                                        menuItemsAccess: menuItemsAccess, openAI: { [weak self] configuration in
         guard let self else { return }
         self.settingsPanel.window?.orderOut(nil)
         self.panel.model.acp.configure(configuration)
@@ -65,6 +71,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var clipboardStore = ClipboardStore(retention: config.clipboardRetention)
     private lazy var clipboardMonitor = ClipboardMonitor(store: clipboardStore)
     private let notesStore = NotesStore()
+    private lazy var notesSync: NotesICloudSync = {
+        let sync = NotesICloudSync(store: notesStore)
+        sync.onStatus = { [weak self] status in self?.settingsPanel.state.notesICloudStatus = status.text }
+        return sync
+    }()
     /// Created on first use. Pane previews follow `config.rexPanePreviews`; turning them on or off
     /// in the window writes the configuration and reloads it, so Settings shows the same choice.
     private lazy var rexOverview = RexOverviewWindowController(model: RexOverviewModel(previewsAllowed: config.rexPanePreviews, save: { [weak self] allowed in
@@ -78,7 +89,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.floatingPeer = notes
         return notes
     }()
-    private lazy var panel: LauncherPanel = LauncherPanel(index: index, clipboard: clipboardStore, notes: notesStore, config: config) { [weak self] action in
+    private let focus = FocusController()
+    private let focusActions = FocusBarActions()
+    private lazy var focusBar = FocusBarPanel(controller: focus, actions: focusActions)
+    private lazy var focusReminder = FocusReminderPanel(controller: focus, snoozeMinutes: { [weak self] in self?.config.focus.snoozeMinutes ?? 3 })
+    private lazy var focusStatusItem = FocusStatusItem(controller: focus, actions: focusActions)
+    private lazy var focusNotch = FocusNotchPanel(controller: focus, actions: focusActions, snoozeMinutes: { [weak self] in self?.config.focus.snoozeMinutes ?? 3 })
+    private lazy var breaks = BreakController(preferences: config.breaks)
+    private lazy var breakPresenter = BreakPresenter(controller: breaks)
+    private lazy var panel: LauncherPanel = LauncherPanel(index: index, clipboard: clipboardStore, notes: notesStore, config: config, focus: focus, breaks: breaks) { [weak self] action in
         switch action {
         case .settings: self?.showSettings()
         case .extensionSettings:
@@ -97,11 +116,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .open(let id): self?.notesPanel.open(noteID: id)
         case .create(let text): self?.notesPanel.openNew(text: text)
         case .confetti: ConfettiWindow.celebrate()
+        case .camera: self?.showCamera()
         case .systemAction(let action): self?.performSystemAction(action)
         case .checkForUpdates: self?.checkForUpdates()
         case .whatsNew:
             self?.showSettings()
             self?.settingsPanel.state.section = .whatsNew
+        case .menuItemsSettings:
+            self?.showSettings()
+            self?.settingsPanel.state.section = .general
         case .about:
             NSApp.activate(ignoringOtherApps: true)
             NSApp.orderFrontStandardAboutPanel(nil)
@@ -186,13 +209,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         applyTheme()
         if let ai = try? AIConfiguration.load() { panel.model.acp.configure(ai) }
         if config.syncSettingsWithICloud { settingsSync.update(enabled: true) }
+        notesSync.update(enabled: config.syncSettingsWithICloud)
         panel.model.inputHost = inputHost
+        panel.model.menuItems.client = inputHost
         currencyRates.loadCache()
         currencyRates.onUpdate = { [weak self] in self?.panel.model.refreshForCurrencyRates() }
         panel.model.onCalculationQuery = { [weak self] query in self?.currencyRates.noteQuery(query) }
         updater.start()
         installApplicationMenu()
         installStatusItem()
+        startFocus()
+        startBreaks()
         indexObserver = index.$apps.sink { [weak self] apps in self?.settingsPanel.state.apps = apps }
         index.start()
         clipboardMonitor.start()
@@ -277,6 +304,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        breaks.stop()
+        breakPresenter.close()
         panel.model.caffeinate.stop()
         panel.model.restoreDictationVolume()
         clipboardMonitor.stop()
@@ -297,6 +326,44 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let menu = StatusMenu.make(target: self, show: #selector(togglePanel), settings: #selector(showSettings), update: #selector(checkForUpdates))
         item.menu = menu
         statusItem = item
+    }
+
+    /// Creates the focus bar, reminder and menu bar item, which follow the controller from then on,
+    /// and celebrates completed sessions.
+    private func startFocus() {
+        focus.onComplete = { ConfettiWindow.celebrate() }
+        focusActions.edit = { [weak self] in self?.panel.showFocusForm(editing: true) }
+        focusActions.resetPosition = { [weak self] in self?.focusBar.resetPosition() }
+        focusBar.refresh()
+        focusStatusItem.refresh()
+        focusNotch.refresh()
+        focusReminder.shownElsewhere = { [weak self] in self?.focusNotch.isShowingSession == true }
+    }
+
+    /// Starts the Break schedule and its windows. A break pauses a running Focus session and resumes
+    /// it afterward; a session the owner had already paused is left paused.
+    private func startBreaks() {
+        breaks.pauseFocus = { [weak self] in
+            guard let self, let session = self.focus.session, !session.isPaused else { return false }
+            self.focus.pause()
+            self.focus.dismissReminder()
+            return true
+        }
+        breaks.resumeFocus = { [weak self] in
+            guard let self, self.focus.session?.isPaused == true else { return }
+            self.focus.resume()
+        }
+        _ = breakPresenter
+        breaks.start()
+    }
+
+    /// The Toggle Focus Session shortcut: ends the running session, or starts one with the last
+    /// setup, opening the form instead when that setup blocks nothing.
+    private func toggleFocus() {
+        if focus.isRunning { focus.end(); return }
+        let setup = config.focus.lastSetup
+        guard setup.blocksAnything else { panel.showFocusForm(editing: false); return }
+        focus.start(setup)
     }
 
     private func registerHotKeys() {
@@ -328,6 +395,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }, onRelease: { [weak self] in
                 self?.endDictationFromHotkey()
             }) == nil { failures.append(String(localized: "Dictate Text shortcut unavailable: \(KeyCombo.display(config.talkHotKey))", comment: "Settings error when a global shortcut can't be registered; the value is the key combination")) }
+        }
+        if let combo = KeyCombo(parsing: config.focusHotKey) {
+            if HotKeyCenter.shared.register(combo, handler: { [weak self] in self?.toggleFocus() }) == nil {
+                failures.append(String(localized: "Toggle Focus Session shortcut unavailable: \(KeyCombo.display(config.focusHotKey))", comment: "Settings error when a global shortcut can't be registered; the value is the key combination"))
+            }
         }
         for (value, action) in [(config.lockScreenHotKey, SystemAction.lockScreen), (config.sleepDisplaysHotKey, .sleepDisplays)] {
             guard let combo = KeyCombo(parsing: value) else { continue }
@@ -463,6 +535,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     @objc private func togglePanel() { panel.toggle(source: .menu) }
 
+    /// Created on first use, so the camera is never touched before Open Camera is chosen.
+    private lazy var cameraWindow: CameraPreviewWindow = {
+        let window = CameraPreviewWindow()
+        window.onFailure = { [weak self] message in
+            guard let self else { return }
+            if !self.panel.isVisible { self.panel.toggle() }
+            self.panel.model.actionFeedback = message
+        }
+        return window
+    }()
+
+    private func showCamera() { cameraWindow.present() }
+
     /// One path for the launcher and the hotkeys. The launcher is hidden first and the action
     /// runs a moment later, so it is not on screen when the Mac locks or a dialog appears. A
     /// failure reopens the launcher with the reason rather than failing silently.
@@ -492,7 +577,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         config = loaded
-        if config.dictationOutput == .copy, !panel.model.dictationTypesAtCursor { inputHost.disconnect() }
+        breaks.apply(config.breaks)
+        if config.dictationOutput == .copy, !config.searchMenuItems, !panel.model.dictationTypesAtCursor { inputHost.disconnect() }
         NSApp.setActivationPolicy(config.showInDock ? .regular : .accessory)
         applyTheme()
         settingsPanel.refresh(config, apps: index.apps)
@@ -503,6 +589,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let ai = try? AIConfiguration.load() { panel.model.conversations.apply(ai) }
         clipboardStore.retention = config.clipboardRetention
         settingsSync.update(enabled: config.syncSettingsWithICloud)
+        notesSync.update(enabled: config.syncSettingsWithICloud)
         currencyRates.keyChanged()
     }
 }

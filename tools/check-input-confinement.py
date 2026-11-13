@@ -3,7 +3,9 @@
 
 Phase 0 showed that once the owner grants Accessibility to Volant, the sandboxed main app also reads
 as trusted and can create a listen-only event tap. The sandbox does not stop that, so this check
-does: only the input helper may call these APIs. The Phase 0 spike sources and the installed-
+does: only the input helper may call these APIs, for Type at the cursor and for Search Menu Items' menu
+reads and presses (AXUIElementCopyMultipleAttributeValues, AXUIElementPerformAction), so the main app
+never reads another app's menus or presses them itself. The Phase 0 spike sources and the installed-
 acceptance guest tools are exempt because they are not part of any target; the guest tools run only
 inside a disposable VM to read Volant's accessibility tree the way VoiceOver does. Run with --self-test to check the matcher itself.
 """
@@ -16,7 +18,7 @@ import unittest
 ALLOWED_PREFIXES = ("VolantInputHost/", "tools/input-spike/", "tools/installed-acceptance/guest/")
 SOURCE_SUFFIXES = (".swift", ".m", ".mm", ".c", ".h")
 FORBIDDEN = re.compile(
-    r"AXUIElement\w*|AXIsProcessTrusted\w*|kAXTrustedCheckOption\w*|"
+    r"AXUIElement\w*|AXIsProcessTrusted\w*|kAXTrustedCheckOption\w*|AXObserver\w*|AXAPIEnabled|AXMakeProcessTrusted|"
     r"CGEventPost\w*|CGEventCreateKeyboardEvent|CGEventTapCreate\w*|CGEventKeyboardSetUnicodeString|"
     r"\btapCreate\s*\(|CGEvent\s*\(\s*keyboardEventSource|\.post\s*\(\s*tap\s*:|\.postToPid\s*\(|"
     r"keyboardSetUnicodeString"
@@ -80,6 +82,10 @@ class ConfinementTests(unittest.TestCase):
             "event?.post(tap: .cghidEventTap)",
             "event.postToPid(pid)",
             "event.keyboardSetUnicodeString(stringLength: 1, unicodeString: p)",
+            "AXUIElementCopyMultipleAttributeValues(item, names, AXCopyMultipleAttributeOptions(), &values)",
+            "AXUIElementPerformAction(item, kAXPressAction as CFString)",
+            "AXObserverCreate(pid, callback, &observer)",
+            "if AXAPIEnabled() { }",
         ]
         for sample in samples:
             for path in ["Volant/App/AppDelegate.swift", "Shared/Thing.swift", "VolantAgentHost/main.swift", "Core/Sources/VolantCore/X.swift", "tools/launcher/check.swift"]:
@@ -88,6 +94,9 @@ class ConfinementTests(unittest.TestCase):
     def test_helper_and_spike_are_exempt(self):
         text = "AXUIElementCreateSystemWide(); event.post(tap: .cghidEventTap)"
         self.assertEqual(list(violations({"VolantInputHost/SystemInput.swift": text, "tools/input-spike/service.swift": text})), [])
+        menus = "AXUIElementPerformAction(item, kAXPressAction as CFString)"
+        self.assertEqual(list(violations({"VolantInputHost/SystemMenus.swift": menus})), [])
+        self.assertEqual(len(list(violations({"Volant/MenuItems/MenuItemsModel.swift": menus}))), 1)
 
     def test_ignores_docs_scripts_and_harmless_code(self):
         self.assertEqual(list(violations({"docs/design.md": "AXUIElementCreateSystemWide()", "tools/check.py": "CGEventPost"})), [])

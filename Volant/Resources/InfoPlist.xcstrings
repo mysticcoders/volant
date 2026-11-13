@@ -8,91 +8,91 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Volant asks macOS to show its restart, shut down and log out confirmations when you choose those commands."
+            "value": "Volant asks macOS to show its restart, shut down and log out confirmations and asks System Events to switch appearance or menu bar hiding, only when you choose those commands. During a Focus session that blocks websites, it asks the browser in front for its current tab’s address."
           }
         },
         "es": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Volant pide a macOS que muestre sus confirmaciones de reinicio, apagado y cierre de sesión cuando eliges esos comandos."
+            "value": "Volant pide a macOS que muestre sus confirmaciones de reinicio, apagado y cierre de sesión y pide a System Events que cambie el aspecto o la ocultación de la barra de menús, solo cuando eliges esos comandos. Durante una sesión de concentración que bloquea sitios web, pide al navegador en primer plano la dirección de su pestaña actual."
           }
         },
         "de": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Volant bittet macOS, die Bestätigungen für Neustart, Ausschalten und Abmelden anzuzeigen, wenn du diese Befehle wählst."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Volant chiede a macOS di mostrare le conferme di riavvio, spegnimento e logout quando scegli quei comandi."
+            "value": "Volant bittet macOS, die Bestätigungen für Neustart, Ausschalten und Abmelden anzuzeigen, und bittet System Events, das Erscheinungsbild oder das Ausblenden der Menüleiste zu wechseln, nur wenn du diese Befehle wählst. Während einer Fokussitzung, die Websites blockiert, fragt es den Browser im Vordergrund nach der Adresse seines aktuellen Tabs."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Volant demande à macOS d’afficher ses confirmations de redémarrage, d’extinction et de fermeture de session lorsque vous choisissez ces commandes."
+            "value": "Volant demande à macOS d’afficher ses confirmations de redémarrage, d’extinction et de déconnexion, et demande à System Events de changer l’apparence ou le masquage de la barre des menus, uniquement lorsque vous choisissez ces commandes. Pendant une session de concentration qui bloque des sites web, il demande au navigateur au premier plan l’adresse de son onglet actuel."
           }
         },
-        "zh-Hans": {
+        "it": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "当你选择重新启动、关机和退出登录命令时，Volant会请求macOS显示相应的确认信息。"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Volant просит macOS показывать подтверждения перезагрузки, выключения и выхода из системы, когда вы выбираете эти команды."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "O Volant pede ao macOS para mostrar as confirmações de reiniciar, desligar e encerrar sessão quando você escolhe esses comandos."
+            "value": "Volant chiede a macOS di mostrare le conferme di riavvio, spegnimento e logout e chiede a System Events di cambiare l’aspetto o la scomparsa della barra dei menu, solo quando scegli questi comandi. Durante una sessione di concentrazione che blocca siti web, chiede al browser in primo piano l’indirizzo della sua scheda attuale."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "再起動、システム終了、ログアウトのコマンドを選択したときに、Volantはその確認を表示するようmacOSに依頼します。"
+            "value": "Volantは、それらのコマンドを選んだときだけ、再起動・システム終了・ログアウトの確認の表示をmacOSに、外観やメニューバーの自動非表示の切り替えをSystem Eventsに依頼します。Webサイトをブロックする集中セッション中は、前面のブラウザに現在のタブのアドレスを問い合わせます。"
           }
         },
-        "nl": {
+        "zh-Hans": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "Volant vraagt macOS om de bevestigingen voor opnieuw opstarten, uitschakelen en afmelden te tonen wanneer je die commando's kiest."
+            "value": "仅当你选择相应命令时，Volant 才会请 macOS 显示重新启动、关机和注销确认，并请 System Events 切换外观或菜单栏自动隐藏。在阻止网站的专注时段中，它会向最前面的浏览器询问当前标签页的地址。"
           }
         },
-        "ko": {
+        "pt-BR": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "재시동, 시스템 종료 및 로그아웃 명령을 선택하면 Volant가 macOS에 해당 확인 창을 표시하도록 요청합니다."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Volant просить macOS показувати підтвердження перезавантаження, вимкнення та завершення сеансу, коли ви вибираєте ці команди."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Volant prosi macOS o wyświetlenie potwierdzeń ponownego uruchomienia, wyłączenia i wylogowania, gdy wybierzesz te polecenia."
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Volant, siz yeniden başlatma, kapatma ve oturumu kapatma komutlarını seçtiğinizde macOS’ten bunların onay pencerelerini göstermesini ister."
+            "value": "O Volant pede ao macOS que mostre as confirmações de reiniciar, desligar e encerrar sessão e pede ao System Events que alterne a aparência ou a ocultação da barra de menus, somente quando você escolhe esses comandos. Durante uma sessão de foco que bloqueia sites, ele pergunta ao navegador em primeiro plano o endereço da aba atual."
           }
         },
         "pt-PT": {
           "stringUnit": {
             "state": "needs_review",
-            "value": "O Volant pede ao macOS que mostre as confirmações de reiniciar, desligar e terminar sessão quando escolhe esses comandos."
+            "value": "O Volant pede ao macOS que mostre as confirmações de reiniciar, desligar e terminar sessão e pede ao System Events que alterne o aspeto ou a ocultação da barra de menus, apenas quando escolhe esses comandos. Durante uma sessão de foco que bloqueia sites, pergunta ao navegador em primeiro plano o endereço do separador atual."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant은 해당 명령을 선택할 때만 macOS에 재시동, 시스템 종료, 로그아웃 확인을 표시하도록, System Events에 화면 모드나 메뉴 막대 자동 가리기를 전환하도록 요청합니다. 웹사이트를 차단하는 집중 세션 중에는 앞에 있는 브라우저에 현재 탭의 주소를 묻습니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant vraagt macOS de bevestigingen voor herstarten, uitschakelen en afmelden te tonen en vraagt System Events de weergave of het verbergen van de menubalk te wisselen, alleen als je die opdrachten kiest. Tijdens een focussessie die websites blokkeert, vraagt het de browser op de voorgrond naar het adres van het huidige tabblad."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant prosi macOS o wyświetlenie potwierdzeń ponownego uruchomienia, wyłączenia i wylogowania oraz prosi System Events o przełączenie wyglądu lub ukrywania paska menu, tylko gdy wybierzesz te polecenia. Podczas sesji skupienia, która blokuje witryny, pyta przeglądarkę na pierwszym planie o adres bieżącej karty."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant просит macOS показать подтверждения перезагрузки, выключения и выхода из системы и просит System Events переключить оформление или скрытие строки меню, только когда вы выбираете эти команды. Во время сеанса фокусировки, блокирующего сайты, он запрашивает у браузера на переднем плане адрес текущей вкладки."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant просить macOS показати підтвердження перезапуску, вимкнення й виходу із системи та просить System Events перемкнути вигляд або приховування рядка меню, лише коли ви вибираєте ці команди. Під час сеансу зосередження, що блокує сайти, він запитує в браузера на передньому плані адресу поточної вкладки."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant, yalnızca bu komutları seçtiğinizde macOS’ten yeniden başlatma, kapatma ve oturumu kapatma onaylarını göstermesini, System Events’ten de görünümü veya menü çubuğunun gizlenmesini değiştirmesini ister. Web sitelerini engelleyen bir odak oturumu sırasında öndeki tarayıcıdan geçerli sekmesinin adresini ister."
           }
         }
       }
@@ -381,6 +381,102 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "O Volant mostra os eventos de hoje e as respetivas ligações de reunião. Apenas leitura."
+          }
+        }
+      }
+    },
+    "NSCameraUsageDescription": {
+      "comment": "Permission prompt macOS shows the first time Volant asks for this access.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volant shows a live preview from your camera only while the Open Camera window is open. Nothing is recorded, saved or sent."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant muestra una vista previa en vivo de tu cámara solo mientras la ventana Abrir cámara está abierta. No se graba, guarda ni envía nada."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant zeigt eine Live-Vorschau deiner Kamera nur, solange das Fenster „Kamera öffnen“ geöffnet ist. Nichts wird aufgezeichnet, gespeichert oder gesendet."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant affiche un aperçu en direct de votre caméra uniquement pendant que la fenêtre Ouvrir la caméra est ouverte. Rien n’est enregistré, conservé ni envoyé."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant mostra un’anteprima dal vivo della fotocamera solo mentre la finestra Apri fotocamera è aperta. Nulla viene registrato, salvato o inviato."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volantは「カメラを開く」ウインドウが開いている間だけカメラのライブプレビューを表示します。録画、保存、送信は一切行いません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "仅在“打开相机”窗口打开时，Volant 才会显示相机的实时预览。不会录制、保存或发送任何内容。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Volant mostra uma pré-visualização ao vivo da sua câmera apenas enquanto a janela Abrir câmera está aberta. Nada é gravado, salvo ou enviado."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Volant mostra uma pré-visualização em direto da sua câmara apenas enquanto a janela Abrir câmara está aberta. Nada é gravado, guardado ou enviado."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant는 카메라 열기 윈도우가 열려 있는 동안에만 카메라의 실시간 미리보기를 표시합니다. 아무것도 녹화, 저장 또는 전송하지 않습니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant toont alleen een live voorvertoning van je camera zolang het venster Camera openen open is. Er wordt niets opgenomen, bewaard of verstuurd."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant pokazuje podgląd na żywo z kamery tylko wtedy, gdy okno Otwórz kamerę jest otwarte. Nic nie jest nagrywane, zapisywane ani wysyłane."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant показывает живой предпросмотр камеры, только пока открыто окно «Открыть камеру». Ничего не записывается, не сохраняется и не отправляется."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant показує живий попередній перегляд камери, лише поки відкрите вікно «Відкрити камеру». Нічого не записується, не зберігається й не надсилається."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant, kameranızın canlı önizlemesini yalnızca Kamerayı Aç penceresi açıkken gösterir. Hiçbir şey kaydedilmez, saklanmaz veya gönderilmez."
           }
         }
       }

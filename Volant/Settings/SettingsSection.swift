@@ -73,9 +73,9 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 
     var keywords: [String] {
         switch self {
-        case .general: ["login", "startup", "dock", "launch", "caffeinate", "display", "awake", "sleep"]
+        case .general: ["login", "startup", "dock", "launch", "caffeinate", "display", "awake", "sleep", "focus", "snooze", "block", "distraction", "breaks", "rest", "stretch", "eye strain", "menu items", "menus", "accessibility"]
         case .appearance: ["theme", "color", "dark", "light", "size", "opacity", "raycast theme"]
-        case .keyboardShortcuts: ["hotkey", "shortcut", "notes", "emoji", "lock screen", "sleep displays", "dictate"]
+        case .keyboardShortcuts: ["hotkey", "shortcut", "notes", "emoji", "lock screen", "sleep displays", "dictate", "focus"]
         case .appShortcuts: ["alias", "hotkey", "application"]
         case .data: ["config", "json", "icloud", "sync", "backup", "import", "export", "raycast", "coingecko", "crypto"]
         case .yourVolant: ["stats", "statistics", "usage", "activity", "streak", "most used", "history"]

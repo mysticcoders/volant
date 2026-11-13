@@ -18,10 +18,13 @@ class ScopeTests(unittest.TestCase):
         for path in ["Volant/Search/AppIndex.swift", "Volant/Search/IconCache.swift", "Volant/Files/FileSearch.swift", "Volant/Notes/NotesStore.swift", "Volant/Clipboard/ClipboardStore.swift", "Volant/Clipboard/KeychainKey.swift", "Volant/Panel/LauncherModel.swift", "Core/Sources/VolantCore/Calculator/TimeCalculator.swift", "Volant/Usage/UsageStore.swift", "Volant/Settings/SettingsWindowController.swift",
                      "Core/Sources/VolantCore/Settings/Preferences.swift", "Core/Sources/VolantCore/AI/AIConfiguration.swift", "Volant/Settings/AISettingsView.swift", "Volant/Settings/ACPAccountsSection.swift",
                      "Volant/Resources/Assets.xcassets/AccentColor.colorset/Contents.json",
-                     "Volant/Extensions/ExtensionApproval.swift", "Core/Sources/VolantCore/Extensions/ExtensionProtocol.swift", "VolantExtensionHost/ExtensionHost.swift", "extensions/hello-rust/hello.wasm", "Volant/Notes/LiveMarkdownEditor.swift", "Core/Sources/VolantCore/AI/AIHTTPTypes.swift", "Core/Sources/VolantCore/AI/AIHTTPTransport.swift", "Volant/Settings/AIModelDiscovery.swift", "Core/Sources/VolantCore/Launcher/LauncherRouting.swift", "Core/Sources/VolantCore/Agents/ACPTypes.swift", "Core/Sources/VolantCore/Herdr/HerdrMachines.swift", "Core/Sources/VolantCore/Herdr/HerdrAttention.swift", "Shared/HerdrQuestion.swift", "Shared/HerdrClaudeQuestion.swift", "Shared/HerdrResponseController.swift", "Core/Sources/VolantCore/Agents/AgentProtocol.swift", "Volant/Agents/ACPConversations.swift", "Volant/Agents/RexModel.swift", "Volant/Agents/RexFooterStatus.swift", "Core/Sources/VolantCore/Rex/RexInventory.swift",
+                     "Volant/Extensions/ExtensionApproval.swift", "Core/Sources/VolantCore/Extensions/ExtensionProtocol.swift", "VolantExtensionHost/ExtensionHost.swift", "extensions/hello-rust/hello.wasm", "Volant/Notes/LiveMarkdownEditor.swift", "Core/Sources/VolantCore/AI/AIHTTPTypes.swift", "Core/Sources/VolantCore/AI/AIHTTPTransport.swift", "Volant/Settings/AIModelDiscovery.swift", "Core/Sources/VolantCore/Launcher/LauncherRouting.swift", "Core/Sources/VolantCore/Agents/ACPTypes.swift", "Core/Sources/VolantCore/Herdr/HerdrMachines.swift", "Core/Sources/VolantCore/Herdr/HerdrAttention.swift", "Shared/HerdrQuestion.swift", "Shared/HerdrClaudeQuestion.swift", "Shared/HerdrResponseController.swift", "Shared/ExtensionImageDecoding.swift", "Core/Sources/VolantCore/Agents/AgentProtocol.swift", "Volant/Agents/ACPConversations.swift", "Volant/Agents/RexModel.swift", "Volant/Agents/RexFooterStatus.swift", "Core/Sources/VolantCore/Rex/RexInventory.swift",
                      "Volant/Appearance/ThemeStore.swift", "Volant/Dictionary/DictionaryModel.swift", "Volant/Dictionary/DictionaryView.swift", "Volant/Translation/TranslationModel.swift", "Volant/Translation/TranslationView.swift", "tools/launcher/check.swift", "tools/check-launcher-actions.sh", "tools/launcher/actions.swift", "tools/launcher/dictation-hud.swift", "tools/check-dictation-hud.sh", "Volant/Dictation/DictationIndicator.swift", "Volant/Dictation/DictationIndicatorPanel.swift", "Volant/HotKeys/DictationEscapeKey.swift", "Volant/Settings/DictationSettingsView.swift", "Volant/Settings/SettingsSection.swift", "Volant/Dictation/DictationTypingAccess.swift", "tools/run-bounded-check.py", "tools/app-module.sh",
-                     "Volant/SystemControl/VolumeControl.swift", "Volant/SystemControl/Connectivity.swift", "Volant/SystemControl/Caffeinate.swift",
-                     "Volant/Snippets/Snippets.swift", "Volant/Quicklinks/Quicklinks.swift", "Volant/Settings/AppBindingStore.swift"]:
+                     "Volant/SystemControl/VolumeControl.swift", "Volant/SystemControl/Connectivity.swift", "Volant/SystemControl/Caffeinate.swift", "Volant/SystemControl/SystemEvents.swift", "Volant/SystemControl/ColorSampling.swift", "Volant/Camera/CameraPreviewWindow.swift",
+                     "Volant/Snippets/Snippets.swift", "Volant/Quicklinks/Quicklinks.swift", "Volant/Settings/AppBindingStore.swift",
+                     "Volant/MenuItems/MenuItemsModel.swift", "Core/Sources/VolantCore/MenuItems/MenuItems.swift", "Volant/Settings/MenuItemsSettingsSection.swift",
+                     "Volant/Focus/FocusController.swift", "Volant/Focus/FocusLauncher.swift", "Core/Sources/VolantCore/Focus/FocusSession.swift", "Volant/Settings/FocusSettingsSection.swift",
+                     "Volant/Breaks/BreakController.swift", "Volant/Breaks/BreakPanels.swift", "Core/Sources/VolantCore/Breaks/BreakSchedule.swift", "Volant/Settings/BreakSettingsSection.swift"]:
             self.assertEqual(scope.classify([path]), {"native": True, "ui": True}, path)
 
     def test_current_swiftui_surfaces_are_classified(self):
@@ -57,6 +60,9 @@ class ScopeTests(unittest.TestCase):
         for path in ["tools/build-raycast-example.sh", "tools/raycast-wasm/build.mjs",
                      "tools/raycast-wasm/bound-memory.mjs", "tools/extensions/wasi-fixtures/streams.wasm"]:
             self.assertEqual(scope.classify([path]), {"native": True, "ui": False}, path)
+
+    def test_svg_row_previews_need_the_actions_fixture(self):
+        self.assertEqual(scope.classify(["Shared/ExtensionSVGRasterizer.swift"]), {"native": True, "ui": True})
 
 
 unittest.main()

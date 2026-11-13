@@ -20,18 +20,30 @@ struct InstalledExtension: Identifiable, Hashable {
     }
     var accessDescription: String {
         Self.accessDescription(capabilities: manifest.capabilities, hosts: manifest.declaredHosts, storage: manifest.usesStorage, secrets: manifest.declaredSecrets,
-                               appLinks: manifest.declaredAppLinks, location: manifest.wantsLocation, clipboard: manifest.wantsClipboard)
+                               appLinks: manifest.declaredAppLinks, location: manifest.wantsLocation, clipboard: manifest.wantsClipboard,
+                               clipboardWrite: manifest.wantsClipboardWrite, rowImages: manifest.wantsRowImages)
     }
     static func accessDescription(capabilities: [String], hosts: [String], storage: Bool = false, secrets: [ExtensionSecret] = [],
-                                  appLinks: [String] = [], location: Bool = false, clipboard: Bool = false) -> String {
+                                  appLinks: [String] = [], location: Bool = false, clipboard: Bool = false, clipboardWrite: Bool = false,
+                                  rowImages: Bool = false) -> String {
         var access: [String] = capabilities.sorted().map { $0 == "clipboard.write" ? String(localized: "Write to clipboard", comment: "Extension permission summary item, joined with commas") : String(localized: "Send diagnostic messages", comment: "Extension permission summary item, joined with commas") }
         if clipboard { access.append(String(localized: "Read your clipboard’s text when you run it", comment: "Extension permission summary item, joined with commas")) }
+        if clipboardWrite { access.append(Self.clipboardWriteDescription) }
+        if rowImages { access.append(Self.rowImagesDescription) }
         if !hosts.isEmpty { access.append(String(localized: "Read \(hosts.joined(separator: ", "))", comment: "Extension permission summary item; the value lists the web hosts it reads")) }
         if storage { access.append(String(localized: "Remember settings and lists on this Mac", comment: "Extension permission summary item, joined with commas")) }
         access += secrets.map { String(localized: "Uses your \($0.title)", comment: "Extension permission summary item; the value names an access token, such as GitHub token") }
         access += appLinks.map { String(localized: "Opens \($0): links", comment: "Extension permission summary item; the value is a URL scheme") }
         if location { access.append(String(localized: "Share your approximate location with the sites it reads", comment: "Extension permission summary item, joined with commas")) }
         return access.isEmpty ? String(localized: "No permissions required", comment: "Extension permission summary") : access.joined(separator: ", ")
+    }
+    /// What the `clipboard-write` permission allows, in the approval prompt and Settings.
+    static var clipboardWriteDescription: String {
+        String(localized: "Copy text and images to your clipboard when you choose them", comment: "Extension permission summary item, joined with commas")
+    }
+    /// What the `row-images` permission allows, in the approval prompt and Settings.
+    static var rowImagesDescription: String {
+        String(localized: "Show images from its sites in its rows", comment: "Extension permission summary item, joined with commas")
     }
 }
 
@@ -51,6 +63,14 @@ final class ExtensionManager {
         let board = NSPasteboard.general
         return ExtensionClipboard.text(board.string(forType: .string), types: board.types?.map(\.rawValue) ?? [])
     }
+    /// Puts a row's copy on the clipboard; tests replace it.
+    var writeClipboard: (ExtensionCopyContent) -> Void = { $0.write(to: .general) }
+    /// Downloads a row's copy through the fetch helper; tests replace it.
+    var fetchCopy: (ExtensionRequest, [String], @escaping (Data?, Int) -> Void) -> Void = ExtensionFetcher.fetchData
+    /// Asks the fetch helper for a row image's thumbnail; tests replace it.
+    var fetchRowImage: (ExtensionRequest, [String], @escaping (ExtensionFetcher.RowImageReply) -> Void) -> Void = ExtensionFetcher.fetchRowImage
+    /// Hands checked SVG markup to the extension helper to draw a row image preview; tests replace it.
+    var rasterizeSVG: (Data, @escaping (ExtensionSVGRendering.Reply) -> Void) -> Void = ExtensionSVGRendering.rasterize
     /// Finds the owner's rounded location for extensions allowed to receive it; tests replace it.
     var locate: (@escaping (ExtensionLocation?) -> Void) -> Void = { completion in
         MainActor.assumeIsolated { ExtensionLocationProvider.shared.locate(completion) }
@@ -493,7 +513,7 @@ final class ExtensionManager {
                 invoke(ext, input, phase: "render", invocation: sequence, run: run) { [self] result in
                     do {
                         let output = try result.get()
-                        if let reply = try? ExtensionNetwork.reply(from: output, appLinks: Set(ext.manifest.declaredAppLinks)) {
+                        if let reply = try? ExtensionNetwork.reply(from: output, for: ext.manifest) {
                             try self.save(reply.storage, for: ext, run: sequence)
                             guard let items = reply.items else { throw ExtensionNetworkError.malformedItems }
                             completion(.success(items)); return
@@ -519,7 +539,7 @@ final class ExtensionManager {
                                                      preferences: preferences, clipboard: clipboard), phase: "plan", invocation: sequence, run: run) { [self] result in
                 do {
                     let output = try result.get()
-                    if let reply = try? ExtensionNetwork.reply(from: output, appLinks: Set(ext.manifest.declaredAppLinks)), let items = reply.items {
+                    if let reply = try? ExtensionNetwork.reply(from: output, for: ext.manifest), let items = reply.items {
                         try self.save(reply.storage, for: ext, run: sequence)
                         completion(.success(items)); return
                     }
@@ -553,7 +573,7 @@ final class ExtensionManager {
         let preferences = preferenceValues(ext)
         let clipboard = runClipboard(ext, invocation: sequence)
         func outcome(_ output: String) throws -> ActionOutcome {
-            let reply = try ExtensionNetwork.reply(from: output, appLinks: Set(ext.manifest.declaredAppLinks))
+            let reply = try ExtensionNetwork.reply(from: output, for: ext.manifest)
             try save(reply.storage, for: ext, run: sequence)
             return ActionOutcome(items: reply.items, notice: reply.notice)
         }
@@ -585,6 +605,124 @@ final class ExtensionManager {
                 } catch { completion(.failure(error)) }
             }
         } catch { completion(.failure(error)) }
+    }
+
+    /// Copies a row's `copy` because the owner chose it, never while listing, and returns the confirmation
+    /// to show. Nothing reaches the module. The extension must declare `clipboard-write` and still be
+    /// enabled, unchanged, not revoked and not blocked by the community switch, checked again after any
+    /// download. Text is copied as it is. A URL must still be https on a host the manifest declares and the
+    /// owner allows; it is fetched once through the fetch helper (no redirects, at most 512 KB, with that
+    /// host's declared token), and the bytes must be the declared type before anything is copied: SVG and
+    /// text as plain text, images decoded by ImageIO and copied as PNG and TIFF. Each copy is recorded as
+    /// a clipboard write naming only the host, never the content.
+    func copy(_ ext: InstalledExtension, item: ExtensionItem, completion: @escaping (Result<String, Error>) -> Void) {
+        let sequence = beginRun(ext)
+        let host = item.copy?.url.flatMap(ExtensionActivity.host(of:))
+        func refusal() -> Error? {
+            if !ext.manifest.wantsClipboardWrite { return ExtensionCopyError.notAllowed }
+            if isBlocked(ext) { return ExtensionError.communityDisabled }
+            if let revocation = revocation(for: ext.manifest, in: ext.directory) { return ExtensionError.revoked(ext.name, revocation.reason) }
+            if !ExtensionApproval.enabled(ext.manifest, at: configURL) { return ExtensionError.disabled }
+            if (try? readManifest(ext.directory)) != ext.manifest { return ExtensionError.changed }
+            return nil
+        }
+        func fail(_ error: Error, _ outcome: ExtensionActivity.Outcome) {
+            record(ext, sequence, .clipboardWrite, outcome, detail: host)
+            completion(.failure(error))
+        }
+        guard let copy = item.copy?.sanitized(hosts: ext.manifest.rowCopyHosts ?? []) else { fail(ExtensionCopyError.notAllowed, .denied); return }
+        if let error = refusal() { fail(error, .denied); return }
+        if let text = copy.text {
+            writeClipboard(.text(text))
+            record(ext, sequence, .clipboardWrite, .completed)
+            completion(.success(copy.confirmation)); return
+        }
+        guard let link = copy.url, let kind = copy.kind else { fail(ExtensionCopyError.notAllowed, .denied); return }
+        let approved = Set(ext.manifest.declaredHosts).intersection(ExtensionHostApprovals.approved(at: configURL))
+        guard let url = ExtensionNetwork.permittedURL(link, hosts: approved) else { fail(ExtensionCopyError.hostNotApproved(host ?? link), .denied); return }
+        let start = Date()
+        fetchCopy(authorized(ExtensionRequest(url: url), for: ext), approved.sorted()) { [self] data, status in
+            record(ext, sequence, .fetch, data == nil ? .failed : .completed, detail: host, since: start)
+            if let error = refusal() { fail(error, .denied); return }
+            guard ExtensionHostApprovals.approved(at: configURL).contains(url.host?.lowercased() ?? "") else {
+                fail(ExtensionCopyError.hostNotApproved(host ?? link), .denied); return
+            }
+            guard let data, (200...299).contains(status) else { fail(ExtensionCopyError.unavailable(status), .failed); return }
+            guard data.count <= ExtensionItemCopy.maximumDownloadBytes else { fail(ExtensionCopyError.tooLarge, .failed); return }
+            guard let content = ExtensionCopyContent(data, kind: kind) else { fail(ExtensionCopyError.wrongType(kind), .failed); return }
+            writeClipboard(content)
+            record(ext, sequence, .clipboardWrite, .completed, detail: host)
+            completion(.success(copy.confirmation))
+        }
+    }
+
+    /// How loading a row image ended. `failed` stays failed for the session; `refused` (the extension or
+    /// host is not allowed right now) and `stopped` (cancelled, or the helper went away) may load later.
+    enum RowImageOutcome {
+        case image(NSImage)
+        case failed, refused, stopped
+    }
+
+    /// The URL a row's image may load from right now, or nil: the extension declares `row-images` and is
+    /// enabled, unchanged, not revoked and not blocked by the community switch, and the URL is https on
+    /// the default port to a host its manifest declares and the owner allows.
+    func rowImageURL(_ ext: InstalledExtension, _ link: String) -> URL? {
+        guard ext.manifest.wantsRowImages, !isBlocked(ext), revocation(for: ext.manifest, in: ext.directory) == nil,
+              ExtensionApproval.enabled(ext.manifest, at: configURL), (try? readManifest(ext.directory)) == ext.manifest else { return nil }
+        return ExtensionNetwork.permittedURL(link, hosts: Set(ext.manifest.declaredHosts).intersection(ExtensionHostApprovals.approved(at: configURL)))
+    }
+
+    /// Loads one row image for a row on screen. Nothing reaches the module. The URL must pass
+    /// `rowImageURL` before the fetch and again after it; the fetch helper downloads it (no redirects, at
+    /// most 256 KB, with the host's declared token) and returns a PNG thumbnail it drew, which must pass
+    /// `ExtensionRowImages.thumbnail` before it is shown. SVG the fetch helper checked goes, unread, to
+    /// the extension helper to draw (`drawSVG`). Each load is recorded as a GET naming only the host.
+    func loadRowImage(_ ext: InstalledExtension, url link: String, completion: @escaping (RowImageOutcome) -> Void) {
+        let sequence = beginRun(ext)
+        let host = ExtensionActivity.host(of: link)
+        guard let url = rowImageURL(ext, link) else { record(ext, sequence, .fetch, .denied, detail: host); completion(.refused); return }
+        let approved = Set(ext.manifest.declaredHosts).intersection(ExtensionHostApprovals.approved(at: configURL))
+        let start = Date()
+        fetchRowImage(authorized(ExtensionRequest(url: url), for: ext), approved.sorted()) { [self] reply in
+            let image: NSImage?
+            switch reply {
+            case .stopped:
+                record(ext, sequence, .fetch, .cancelled, detail: host, since: start); completion(.stopped); return
+            case .svg(let markup):
+                record(ext, sequence, .fetch, .completed, detail: host, since: start)
+                drawSVG(markup, ext, link, sequence, completion: completion); return
+            case .svgRefused:
+                record(ext, sequence, .fetch, .completed, detail: host, since: start)
+                record(ext, sequence, .svgRender, .denied)
+                completion(rowImageURL(ext, link) == nil ? .refused : .failed); return
+            case .failed: image = nil
+            case .thumbnail(let data): image = ExtensionRowImages.thumbnail(data)
+            }
+            record(ext, sequence, .fetch, image == nil ? .failed : .completed, detail: host, since: start)
+            guard rowImageURL(ext, link) != nil else { completion(.refused); return }
+            completion(image.map(RowImageOutcome.image) ?? .failed)
+        }
+    }
+
+    /// Has the extension helper draw a row image's SVG preview, after checking the extension and host are
+    /// still allowed, and accepts only its PNG under the usual thumbnail checks. The outcome (drawn,
+    /// refused, timed out or failed) is recorded without any of the markup.
+    private func drawSVG(_ markup: Data, _ ext: InstalledExtension, _ link: String, _ sequence: Int, completion: @escaping (RowImageOutcome) -> Void) {
+        guard rowImageURL(ext, link) != nil else { completion(.refused); return }
+        let start = Date()
+        rasterizeSVG(markup) { [self] reply in
+            let image: NSImage?
+            let outcome: ExtensionActivity.Outcome
+            switch reply {
+            case .png(let png): image = ExtensionRowImages.thumbnail(png); outcome = image == nil ? .failed : .completed
+            case .refused: image = nil; outcome = .denied
+            case .timedOut: image = nil; outcome = .timedOut
+            case .failed: image = nil; outcome = .failed
+            }
+            record(ext, sequence, .svgRender, outcome, since: start)
+            guard rowImageURL(ext, link) != nil else { completion(.refused); return }
+            completion(image.map(RowImageOutcome.image) ?? .failed)
+        }
     }
 
     /// What a text extension produced: its text, a short confirmation, or both.

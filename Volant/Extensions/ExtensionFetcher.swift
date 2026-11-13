@@ -42,6 +42,56 @@ enum ExtensionFetcher {
         }
     }
 
+    /// Downloads a row's copy as raw bytes, which may be an image, for `ExtensionManager.copy`. The owner
+    /// asked for it, so a newer query never cancels it. Completes with no data and the HTTP status (0 when
+    /// none) when the helper refused it, failed or stopped past the size limit.
+    static func fetchData(_ request: ExtensionRequest, hosts: [String], completion: @escaping (Data?, Int) -> Void) {
+        call(timeout: 35, { proxy, reply in
+            proxy.request(url: request.url.absoluteString, method: request.method, body: request.body, headers: request.headers,
+                          allowedHosts: hosts, maximumBytes: ExtensionItemCopy.maximumDownloadBytes, reply: reply)
+        }) { data, status, error in completion(error == nil ? data : nil, status) }
+    }
+
+    /// How a row image fetch ended: the helper's PNG thumbnail, SVG markup the helper checked and Volant
+    /// only forwards to the extension helper to draw (`svg`), SVG the helper refused (`svgRefused`), a
+    /// failure the helper reported (an HTTP error, a download that is not an image, a timeout), or a stop
+    /// with no answer (a newer query cancelled it, or the connection ended), which may be tried again later.
+    enum RowImageReply: Equatable {
+        case thumbnail(Data)
+        case svg(Data)
+        case svgRefused
+        case failed(status: Int)
+        case stopped
+    }
+
+    /// Asks the fetch helper for a row image's thumbnail. It runs among the cancellable reads, so a newer
+    /// query in the extension stops it along with that run's fetches.
+    static func fetchRowImage(_ request: ExtensionRequest, hosts: [String], completion: @escaping (RowImageReply) -> Void) {
+        let marked = SVGMark()
+        call(timeout: 35, cancellable: true, { proxy, reply in
+            proxy.rowImage(url: request.url.absoluteString, headers: request.headers, allowedHosts: hosts) { data, isSVG, status, error in
+                marked.set(isSVG)
+                reply(data, status, error)
+            }
+        }) { data, status, error in
+            let isSVG = marked.value
+            switch (data, error) {
+            case (let data?, nil): completion(isSVG ? .svg(data) : .thumbnail(data))
+            case (nil, _?) where isSVG: completion(.svgRefused)
+            case _ where error != nil || status != 0: completion(.failed(status: status))
+            default: completion(.stopped)
+            }
+        }
+    }
+
+    /// Whether the fetch helper marked its reply as SVG, set on the reply's queue and read on the main queue.
+    private final class SVGMark: @unchecked Sendable {
+        private let lock = NSLock()
+        private var marked = false
+        var value: Bool { lock.lock(); defer { lock.unlock() }; return marked }
+        func set(_ value: Bool) { lock.lock(); marked = value; lock.unlock() }
+    }
+
     /// Reads one extension catalog file through the helper's fixed-location method. Anything other than
     /// a complete 200 response is an error; the caller verifies signatures and hashes.
     static func catalogFile(_ path: String, maximumBytes: Int, completion: @escaping (Result<Data, Error>) -> Void) {

@@ -37,6 +37,7 @@ timed python3 tools/interaction-speed/check.py
 timed python3 tools/ui-vm-dispatch-tests.py
 timed xcodegen generate --quiet
 timed python3 tools/check-dev-entitlements.py
+timed python3 tools/check-sandbox-reads.py
 build_options=(-project Volant.xcodeproj -scheme Volant -derivedDataPath build -destination 'platform=macOS')
 if [[ "$ci" == true ]]; then
     build_options+=(CODE_SIGNING_ALLOWED=NO ENABLE_APP_SANDBOX=NO)

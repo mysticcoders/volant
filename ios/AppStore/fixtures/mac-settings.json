@@ -1,0 +1,17 @@
+{
+  "snippets": [
+    {"name": "Email signature", "keyword": ";sig", "body": "Best,\nAlex Rivera\nStudio Northwind"},
+    {"name": "Meeting link", "keyword": ";meet", "body": "Join here: https://meet.example.com/alex"},
+    {"name": "Today's date", "keyword": ";date", "body": "{date}"},
+    {"name": "Address", "keyword": ";addr", "body": "1 Market Street, Suite 200\nSan Francisco, CA 94105"},
+    {"name": "Thanks reply", "keyword": ";ty", "body": "Thanks so much for the quick reply, that helps a lot."},
+    {"name": "Out of office", "keyword": ";ooo", "body": "I'm away until Monday with limited email. For anything urgent, call the studio."}
+  ],
+  "quicklinks": [
+    {"name": "Search GitHub", "url": "https://github.com/search?q={query}"},
+    {"name": "Maps", "url": "https://maps.apple.com/?q={query}"},
+    {"name": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Special:Search?search={query}"},
+    {"name": "Team calendar", "url": "https://calendar.example.com/team"},
+    {"name": "Translate", "url": "https://translate.google.com/?text={query}"}
+  ]
+}

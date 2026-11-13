@@ -1,4 +1,6 @@
+import AppKit
 import Foundation
+import Network
 import VolantCore
 let root = URL(fileURLWithPath: CommandLine.arguments[1])
 let module = try Data(contentsOf: root.appendingPathComponent("extensions/hello-rust/hello.wasm"))
@@ -18,7 +20,94 @@ if CommandLine.arguments.contains("--command-spin") {
     engine.runCommand(module: spin, input: "", timeout: 0.5) { _, _ in fatalError("Command watchdog failed") }
     fatalError("Command watchdog failed to terminate")
 }
+/// Draws `svg` through the production helper's `rasterizeSVG`, waiting up to `wait` seconds for its reply.
+func rasterize(_ svg: String, wait: TimeInterval = 10) -> (Data?, String?) {
+    var result: (Data?, String?) = (nil, "No reply")
+    let done = DispatchSemaphore(value: 0)
+    engine.rasterizeSVG(data: Data(svg.utf8), maximumPixels: ExtensionItemImage.thumbnailPixels) { result = ($0, $1); done.signal() }
+    _ = done.wait(timeout: .now() + wait)
+    return result
+}
+/// A file the SVG check accepts that the renderer needs seconds for: one evenodd path of 3,000 long,
+/// crossing segments.
+func slowSVG() -> String {
+    var path = "M0 0"
+    for index in 0..<3000 { path += "L\((index * 7919) % 16384) \((index * 104729) % 16384)" }
+    return #"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16384 16384"><path fill-rule="evenodd" d=""# + path + #""/></svg>"#
+}
+/// Draws markup full of external references with the check bypassed (`ExtensionSVGRasterizer.draw`) in
+/// this unsandboxed process while a loopback listener counts connections, then proves the listener
+/// works with one real request. A local PNG referenced by path must not appear in the drawing either.
+func checkRendererFetchesNothing() throws {
+    let lock = NSLock()
+    var connections = 0
+    let parameters = NWParameters.tcp
+    parameters.requiredLocalEndpoint = .hostPort(host: "127.0.0.1", port: .any)
+    let listener = try NWListener(using: parameters)
+    let ready = DispatchSemaphore(value: 0)
+    listener.newConnectionHandler = { connection in lock.lock(); connections += 1; lock.unlock(); connection.cancel() }
+    listener.stateUpdateHandler = { if case .ready = $0 { ready.signal() } }
+    listener.start(queue: .global())
+    defer { listener.cancel() }
+    check(ready.wait(timeout: .now() + 5) == .success, "Loopback listener starts")
+    let base = "http://127.0.0.1:\(listener.port!.rawValue)"
+    let png = FileManager.default.temporaryDirectory.appendingPathComponent("volant-svg-green-\(UUID().uuidString).png")
+    let pixels = ExtensionImageDecoding.redrawnPNG(width: 24, height: 24) { $0.setFillColor(red: 0, green: 1, blue: 0, alpha: 1); $0.fill(CGRect(x: 0, y: 0, width: 24, height: 24)) }
+    try pixels!.write(to: png)
+    defer { try? FileManager.default.removeItem(at: png) }
+    let open = #"<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" width="24" height="24">"#
+    let documents = [
+        open + #"<image href="\#(base)/image.png" width="24" height="24"/><image xlink:href="\#(base)/xlink.png" width="24" height="24"/></svg>"#,
+        open + #"<use href="\#(base)/sprite.svg#a"/><use xlink:href="\#(base)/sprite-xlink.svg#a"/></svg>"#,
+        open + #"<style>@import url(\#(base)/import.css); rect { fill: url(\#(base)/paint.svg#g) }</style><rect width="24" height="24"/></svg>"#,
+        open + #"<style>@font-face { font-family: f; src: url(\#(base)/font.woff) }</style><text font-family="f" y="20">A</text></svg>"#,
+        open + #"<filter id="f"><feImage href="\#(base)/feimage.png"/></filter><rect width="24" height="24" filter="url(#f)"/></svg>"#,
+        #"<?xml version="1.0"?><!DOCTYPE svg [<!ENTITY x SYSTEM "\#(base)/xxe.txt"><!ENTITY y SYSTEM "\#(png.absoluteString)">]>"# + open + "<text y=\"20\">&x;&y;</text></svg>",
+        #"<?xml version="1.0"?><!DOCTYPE svg SYSTEM "\#(base)/svg.dtd">"# + open + "</svg>",
+        open + #"<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="\#(base)/include.svg"/></svg>"#,
+        open + #"<script>fetch('\#(base)/script')</script><rect width="24" height="24" onload="fetch('\#(base)/onload')"/></svg>"#,
+        open + #"<foreignObject width="24" height="24"><img xmlns="http://www.w3.org/1999/xhtml" src="\#(base)/fo.png"/></foreignObject></svg>"#
+    ]
+    for svg in documents {
+        check(ExtensionSVGPreview.check(Data(svg.utf8)) != nil, "The check refuses \(svg)")
+        _ = ExtensionSVGRasterizer.draw(Data(svg.utf8), maximumPixels: 64)
+    }
+    for href in [png.absoluteString, png.path] {
+        let svg = open + #"<image href="\#(href)" width="24" height="24"/><image xlink:href="\#(href)" width="24" height="24"/></svg>"#
+        if case .png(let drawn) = ExtensionSVGRasterizer.draw(Data(svg.utf8), maximumPixels: 64), let image = NSBitmapImageRep(data: drawn),
+           let center = image.colorAt(x: 12, y: 12)?.usingColorSpace(.sRGB) {
+            check(!(center.greenComponent > 0.8 && center.redComponent < 0.2), "The renderer drew a local file referenced by \(href)")
+        }
+    }
+    Thread.sleep(forTimeInterval: 1)
+    lock.lock(); let seen = connections; lock.unlock()
+    check(seen == 0, "The renderer opened \(seen) connections")
+    let probe = DispatchSemaphore(value: 0)
+    URLSession(configuration: .ephemeral).dataTask(with: URL(string: base + "/probe")!) { _, _, _ in probe.signal() }.resume()
+    _ = probe.wait(timeout: .now() + 10)
+    lock.lock(); let probed = connections; lock.unlock()
+    check(probed > 0, "The listener sees a real request, so zero connections above is meaningful")
+}
+if CommandLine.arguments.contains("--svg-spin") {
+    guard ExtensionSVGRasterizer.representationClass != nil else { print("SKIP: this macOS has no SVG image representation"); exit(4) }
+    guard ExtensionSVGPreview.check(Data(slowSVG().utf8)) == nil else { fatalError("The slow SVG must pass the check") }
+    _ = rasterize(slowSVG(), wait: 30)
+    fatalError("SVG watchdog failed to terminate a slow render")
+}
 func check(_ condition: Bool, _ message: String) { if !condition { fputs("FAIL: \(message)\n", stderr); exit(1) } }
+if ExtensionSVGRasterizer.representationClass != nil {
+    let logo = ##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 222" width="256" height="222"><path fill="#000" d="m128 0 128 221.705H0z"/></svg>"##
+    let drawn = rasterize(logo)
+    check(drawn.1 == nil && drawn.0.map(ExtensionItemImage.looksLikeThumbnail) == true, "The helper draws a checked SVG into a small PNG: \(String(describing: drawn.1))")
+    let hostile = rasterize(#"<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>"#)
+    check(hostile.0 == nil && hostile.1 == "refused.forbiddenElement", "The helper checks the markup again: \(String(describing: hostile.1))")
+    check(rasterize("<html></html>").1 == "refused.notSVG", "The helper draws only SVG")
+    print("PASS: the extension helper checks SVG again and draws it into a PNG")
+    try checkRendererFetchesNothing()
+    print("PASS: the SVG renderer opened no connection and read no file for external references, with the check bypassed and no sandbox")
+} else {
+    print("SKIP: this macOS has no SVG image representation; SVG previews show the placeholder")
+}
 let hello = evaluate(module, input: "Andrew")
 check(hello.0 == "Hello, Andrew!" && hello.1 == nil, "WASM returns real greeting: \(String(describing: hello))")
 check(evaluate(module).0 == "Hello, world!", "Empty input")

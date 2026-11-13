@@ -12,6 +12,14 @@ public protocol InputHostClient: AnyObject {
     func disconnect()
 }
 
+/// The app's side of the input helper's two menu calls, used by Search Menu Items only while the
+/// owner has it turned on. Completions arrive on the main queue; nil means the helper could not be
+/// reached, did not answer in time or sent a reply that did not decode.
+public protocol MenuItemsClient: AnyObject {
+    func menuItems(pid: Int32, bundleID: String, completion: @escaping (MenuItemsReply?) -> Void)
+    func pressMenuItem(pid: Int32, path: [String], bundleID: String, completion: @escaping (MenuPressReply?) -> Void)
+}
+
 /// One dictation typed at the cursor. While speaking, each finalized phrase is sent as it arrives;
 /// when finished, the whole transcript is sent once. Phrases go one at a time and in order. The
 /// first refusal stops typing for the rest of the dictation, and the caller then copies the

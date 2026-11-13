@@ -1,0 +1,10 @@
+{
+  "id": "com.mysticcoders.volant.hello",
+  "name": "Hello World",
+  "version": "1.0.0",
+  "module": "hello.wasm",
+  "capabilities": [],
+  "timeoutSeconds": 2,
+  "sha256": "c097b726ecd7cc19ddc5a3b3e35e812b4d9aeadeb1d88d474e887e804c7905de",
+  "abiVersion": 1
+}

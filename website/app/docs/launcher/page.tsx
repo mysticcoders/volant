@@ -165,6 +165,26 @@ export default function Launcher() {
         works at once.
       </p>
 
+      <h2>Searching the menus of the app you were using</h2>
+      <p>
+        Turn on <strong>Search Menu Items</strong>{' '}
+        in Settings → General, then type <code>menus</code> (or{' '}
+        <code>menu items</code>) followed by a few letters to search the menu
+        bar of the app that was in front when you opened Volant. Each row shows
+        the item, the menus that lead to it, such as File › Export, and its
+        keyboard shortcut. Items the app has disabled are dimmed and listed
+        last. Press Return to choose one: Volant hides, brings the app back to
+        the front and presses the item. If the app changed or the item is gone,
+        nothing is pressed and Volant tells you why. <code>menu bar</code> still
+        turns menu bar hiding on or off.
+      </p>
+      <p>
+        Search Menu Items uses Volant&rsquo;s Accessibility permission, the
+        same one as Type at the cursor, and never touches the Apple menu. Menu
+        names stay in memory only while the launcher is open. See{' '}
+        <a href="/docs/privacy-and-security">Privacy and security</a>.
+      </p>
+
       <h2>The footer tells you the action</h2>
       <p>
         The footer names the Return action for whichever row is selected.

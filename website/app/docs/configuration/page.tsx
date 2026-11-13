@@ -120,7 +120,8 @@ export default function Configuration() {
         Global hotkeys are registered through Carbon, which needs no
         permission — shortcuts need neither Accessibility nor Input
         Monitoring. Volant asks for Accessibility only if you choose to have
-        dictation typed at the cursor.
+        dictation typed at the cursor or turn on
+        Search Menu Items.
       </p>
 
       <h2>Example</h2>

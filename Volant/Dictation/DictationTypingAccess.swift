@@ -63,7 +63,11 @@ final class DictationTypingAccess: ObservableObject {
     }
 
     /// Opens Privacy & Security → Accessibility, or Privacy & Security if that link fails.
-    func openAccessibilitySettings() {
+    func openAccessibilitySettings() { Self.openAccessibilitySettings() }
+
+    /// Opens Privacy & Security → Accessibility, or Privacy & Security if that link fails. Search
+    /// Menu Items uses it too, since both features share Volant's one Accessibility entry.
+    static func openAccessibilitySettings() {
         if !NSWorkspace.shared.open(Self.accessibilitySettings),
            let privacy = URL(string: "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension") {
             NSWorkspace.shared.open(privacy)

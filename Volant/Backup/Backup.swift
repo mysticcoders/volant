@@ -17,7 +17,7 @@ enum Backup {
             try fm.createDirectory(at: dest, withIntermediateDirectories: true)
             try? fm.removeItem(at: dest.appendingPathComponent("config.json"))
             try fm.copyItem(at: Preferences.configURL, to: dest.appendingPathComponent("config.json"))
-            let notes = Preferences.supportDirectory.appendingPathComponent("Notes")
+            let notes = NotesLocation.current
             if fm.fileExists(atPath: notes.path) {
                 try? fm.removeItem(at: dest.appendingPathComponent("Notes"))
                 try fm.copyItem(at: notes, to: dest.appendingPathComponent("Notes"))
@@ -35,7 +35,7 @@ enum Backup {
         panel.prompt = String(localized: "Import", comment: "Backup import folder picker button")
         panel.message = String(localized: "Choose a Volant-Backup folder.", comment: "Backup import folder picker message; Volant-Backup is the folder name and stays as is")
         guard panel.runModal() == .OK, let src = panel.url else { return false }
-        let notesDestination = Preferences.supportDirectory.appendingPathComponent("Notes", isDirectory: true)
+        let notesDestination = NotesLocation.current
         let plan: BackupPlan
         do {
             plan = try BackupFolder.plan(source: src, notesDestination: notesDestination)

@@ -22,8 +22,8 @@ settings:
     DEVELOPMENT_TEAM: REMBT6JY4N
     CODE_SIGN_STYLE: Automatic
     ENABLE_HARDENED_RUNTIME: YES
-    MARKETING_VERSION: "0.3.34"
-    CURRENT_PROJECT_VERSION: "48"
+    MARKETING_VERSION: "0.4.0"
+    CURRENT_PROJECT_VERSION: "54"
     SWIFT_TREAT_WARNINGS_AS_ERRORS: NO
 packages:
   VolantCore:
@@ -44,7 +44,9 @@ targets:
       - path: docs/releases
         type: folder
         buildPhase: resources
+      # Extension SVG previews are drawn only in VolantExtensionHost; the app never draws extension SVG.
       - path: Shared
+        excludes: ["ExtensionSVGRasterizer.swift"]
     info:
       path: Volant/Info.plist
       properties:
@@ -56,6 +58,12 @@ targets:
         SUFeedURL: $(VOLANT_UPDATE_FEED_URL)
         SUPublicEDKey: $(VOLANT_UPDATE_PUBLIC_KEY)
         SUEnableInstallerLauncherService: true
+        # Volant for iPhone shares this container; public so notes show in Finder as iCloud Drive > Volant.
+        NSUbiquitousContainers:
+          iCloud.com.mysticcoders.volant:
+            NSUbiquitousContainerIsDocumentScopePublic: true
+            NSUbiquitousContainerName: Volant
+            NSUbiquitousContainerSupportedFolderLevels: Any
         SUEnableDownloaderService: true
         LSUIElement: true
         LSMinimumSystemVersion: "15.0"
@@ -68,7 +76,8 @@ targets:
         NSLocationUsageDescription: "macOS requires Location access to show Wi-Fi network names. Volant also uses your approximate location (about 11 km) only for extensions you allow, which share it with the sites they read; it is never saved."
         NSCalendarsFullAccessUsageDescription: "Volant shows today's events and their meeting links. Read-only."
         NSMicrophoneUsageDescription: "Volant transcribes dictation on this Mac. Audio is never sent anywhere and is not saved."
-        NSAppleEventsUsageDescription: "Volant asks macOS to show its restart, shut down and log out confirmations when you choose those commands."
+        NSAppleEventsUsageDescription: "Volant asks macOS to show its restart, shut down and log out confirmations and asks System Events to switch appearance or menu bar hiding, only when you choose those commands. During a Focus session that blocks websites, it asks the browser in front for its current tab’s address."
+        NSCameraUsageDescription: "Volant shows a live preview from your camera only while the Open Camera window is open. Nothing is recorded, saved or sent."
     dependencies:
       - package: VolantCore
       - package: Sparkle
@@ -191,6 +200,9 @@ targets:
     platform: macOS
     sources:
       - path: VolantFetchHost
+      # Decodes row image downloads into PNG thumbnails here, so the app never decodes them; the app
+      # uses the same format checks only for a copy the owner chose.
+      - path: Shared/ExtensionImageDecoding.swift
     dependencies:
       - package: VolantCore
     entitlements:

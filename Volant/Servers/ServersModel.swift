@@ -16,9 +16,8 @@ final class ServersModel: ObservableObject {
 
     deinit { connection?.invalidate() }
 
-    /// The owner's real home folder for shortening paths. Inside the sandbox `NSHomeDirectory()`
-    /// is the app's container, which no server's working folder is in.
-    static let home: String = getpwuid(getuid()).flatMap { $0.pointee.pw_dir.map { String(cString: $0) } } ?? NSHomeDirectory()
+    /// The owner's real home folder for shortening paths; see `UserHome`.
+    static let home: String = UserHome.path
 
     /// The servers for a Servers query: runtimes first, macOS services only after `all`.
     func matches(_ query: String) -> [ListeningServer] {

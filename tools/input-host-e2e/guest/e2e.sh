@@ -28,11 +28,17 @@ printf 'SENTINEL-1' | pbcopy
 volant type finished 0 "Should not be typed."
 echo "TextEdit holds: [$(textedit_text)]"
 clipboard
+step "before the grant: Search Menu Items is refused"
+new_textedit 7
+volant menus com.apple.TextEdit
 
 step "grant Accessibility to Volant in System Settings"
 bash "$A/grant.sh"
 fi
 volant status
+
+# E2E_ONLY=menus (run-vm.py --only menus) skips the typing checks after the grant.
+if [ "${E2E_ONLY:-}" != menus ]; then
 
 step "TextEdit, live: three phrases 0.4 s apart"
 new_textedit 2
@@ -143,6 +149,34 @@ echo "Safari title: [$(window_title Safari)]"
 clipboard
 shot safari-password
 osascript -e 'quit app "Safari"' >/dev/null 2>&1
+fi
+
+# Search Menu Items against TextEdit. The document is a .txt file, so it opens as plain text and
+# Format offers Make Rich Text; the menu is read back by UI scripting from SSH, not by the helper.
+format_menu() { osascript -e 'tell application "System Events" to tell process "TextEdit" to get name of menu items of menu 1 of menu bar item "Format" of menu bar 1' 2>&1; }
+step "Search Menu Items: list TextEdit's menus"
+new_textedit 8
+echo "frontmost: $(front)"
+volant menus com.apple.TextEdit
+step "Search Menu Items: press Format › Make Rich Text"
+echo "Format menu before: $(format_menu)"
+volant press com.apple.TextEdit Format "Make Rich Text"
+sleep 1
+echo "Format menu after: $(format_menu)"
+echo "frontmost: $(front)"
+shot menus-textedit
+step "Search Menu Items: a changed title, the Apple menu, a submenu and Volant itself are refused"
+volant press com.apple.TextEdit Format "Make Rich Text"
+volant press com.apple.TextEdit Apple "About This Mac"
+volant press com.apple.TextEdit Format Font
+volant menus-self
+step "Search Menu Items: another app in front"
+open -a Finder; sleep 1
+echo "frontmost now: $(front)"
+volant press com.apple.TextEdit Format "Make Plain Text"
+volant menus com.apple.TextEdit
+echo "Format menu at the end: $(format_menu)"
+osascript -e 'quit app "TextEdit" saving no' >/dev/null 2>&1
 
 step "after all runs"
 pgrep -x VolantInputHost >/dev/null && echo "helper: STILL RUNNING" || echo "helper: not running"

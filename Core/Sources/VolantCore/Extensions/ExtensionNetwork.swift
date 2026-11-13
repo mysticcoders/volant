@@ -103,23 +103,33 @@ public enum ExtensionNetwork {
     /// The longest confirmation Volant shows, such as "Completed “Ship 0.3.3”".
     public static let maximumNoticeLength = 120
 
-    public static func reply(from output: String, appLinks: Set<String> = []) throws -> Reply {
+    public static func reply(from output: String, appLinks: Set<String> = [], copyHosts: Set<String>? = nil,
+                             imageHosts: Set<String>? = nil) throws -> Reply {
         guard let data = output.data(using: .utf8), let raw = try? JSONDecoder().decode(RawReply.self, from: data) else {
             throw ExtensionNetworkError.malformedItems
         }
         let notice = raw.notice.map { String($0.trimmingCharacters(in: .whitespacesAndNewlines).prefix(maximumNoticeLength)) }.flatMap { $0.isEmpty ? nil : $0 }
         guard raw.items != nil || raw.storage != nil || notice != nil || raw.text != nil else { throw ExtensionNetworkError.malformedItems }
-        return Reply(items: raw.items.map { Array($0.prefix(maximumItems)).compactMap { $0.sanitized(appLinks: appLinks) } }, storage: raw.storage, notice: notice,
-                     text: raw.text)
+        let items = raw.items.map { Array($0.prefix(maximumItems)).compactMap { $0.sanitized(appLinks: appLinks, copyHosts: copyHosts, imageHosts: imageHosts) } }
+        return Reply(items: items, storage: raw.storage, notice: notice, text: raw.text)
+    }
+
+    /// A reply sanitized for `manifest`: links limited to its declared app links, and rows' copies and
+    /// images kept only when it declares `clipboard-write` and `row-images`.
+    public static func reply(from output: String, for manifest: ExtensionManifest) throws -> Reply {
+        try reply(from: output, appLinks: Set(manifest.declaredAppLinks), copyHosts: manifest.rowCopyHosts, imageHosts: manifest.rowImageHosts)
     }
 
     /// The rows a render returned, trimmed to the launcher's limits. Links other than http, https and the
-    /// manifest's declared `appLinks` schemes are dropped, so a row can never open anything else.
-    public static func items(from output: String, appLinks: Set<String> = []) throws -> [ExtensionItem] {
+    /// manifest's declared `appLinks` schemes are dropped, so a row can never open anything else. A row's
+    /// `copy` is kept only when `copyHosts` is given, which it is for a manifest declaring `clipboard-write`,
+    /// and its `image` only when `imageHosts` is, for a manifest declaring `row-images`.
+    public static func items(from output: String, appLinks: Set<String> = [], copyHosts: Set<String>? = nil,
+                             imageHosts: Set<String>? = nil) throws -> [ExtensionItem] {
         guard let data = output.data(using: .utf8), let list = try? JSONDecoder().decode(ItemList.self, from: data) else {
             throw ExtensionNetworkError.malformedItems
         }
-        return list.items.prefix(maximumItems).compactMap { $0.sanitized(appLinks: appLinks) }
+        return list.items.prefix(maximumItems).compactMap { $0.sanitized(appLinks: appLinks, copyHosts: copyHosts, imageHosts: imageHosts) }
     }
 
     private struct Plan: Decodable { let fetch: [String]; let state: String? }
@@ -169,17 +179,26 @@ public struct ExtensionItem: Codable, Hashable {
     /// Up to three short facts shown at the row's end in place of the extension's name, such as points
     /// and comments (see `ExtensionItemBadge`).
     public var badges: [ExtensionItemBadge]?
+    /// Text or a downloadable image the row copies when the owner chooses it (see `ExtensionItemCopy`),
+    /// kept only for an extension that declares `clipboard-write`.
+    public var copy: ExtensionItemCopy?
+    /// A picture from one of the extension's hosts shown in place of its icon (see `ExtensionItemImage`),
+    /// kept only for an extension that declares `row-images`.
+    public var image: ExtensionItemImage?
 
     public init(title: String, subtitle: String? = nil, url: String? = nil, secondaryURL: String? = nil, secondaryTitle: String? = nil,
                 actions: [ExtensionItemAction]? = nil, onOpen: Bool? = nil, primaryAction: String? = nil, symbol: String? = nil,
-                badges: [ExtensionItemBadge]? = nil) {
+                badges: [ExtensionItemBadge]? = nil, copy: ExtensionItemCopy? = nil, image: ExtensionItemImage? = nil) {
         self.title = title; self.subtitle = subtitle; self.url = url; self.secondaryURL = secondaryURL; self.secondaryTitle = secondaryTitle
         self.actions = actions; self.onOpen = onOpen; self.primaryAction = primaryAction; self.symbol = symbol; self.badges = badges
+        self.copy = copy; self.image = image
     }
 
     /// Trims text to display limits and drops links that are not http or https, or a scheme from
-    /// `appLinks`, the manifest's declared app links. A row without a title is dropped.
-    func sanitized(appLinks: Set<String> = []) -> ExtensionItem? {
+    /// `appLinks`, the manifest's declared app links. A row without a title is dropped. Its `copy` survives
+    /// only when `copyHosts`, the declared hosts of a manifest with `clipboard-write`, is given, and its
+    /// `image` only when `imageHosts`, those of a manifest with `row-images`, is.
+    func sanitized(appLinks: Set<String> = [], copyHosts: Set<String>? = nil, imageHosts: Set<String>? = nil) -> ExtensionItem? {
         let title = String(title.prefix(300)).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return nil }
         func link(_ value: String?) -> String? {
@@ -197,7 +216,9 @@ public struct ExtensionItem: Codable, Hashable {
                              actions: unique.isEmpty ? nil : Array(unique), onOpen: onOpen == true ? true : nil,
                              primaryAction: primaryAction.flatMap { ExtensionItemAction(id: $0, title: $0).sanitized()?.id },
                              symbol: symbol.flatMap(ExtensionItemSymbol.init(rawValue:))?.rawValue,
-                             badges: badges.isEmpty ? nil : Array(badges))
+                             badges: badges.isEmpty ? nil : Array(badges),
+                             copy: copyHosts.flatMap { hosts in copy?.sanitized(hosts: hosts) },
+                             image: imageHosts.flatMap { hosts in image?.sanitized(hosts: hosts) })
     }
 }
 
@@ -290,9 +311,15 @@ public enum ExtensionHostApprovals {
 /// `allowedHosts`, refuses redirects, sends no cookies and stops reading past `maximumBytes`. `request`
 /// sends GET, or POST with a JSON body, with only the headers `ExtensionRequest.isAllowed` accepts, which
 /// are those an extension's declared secrets add. `fetchCatalogFile` reads only the fixed extension
-/// catalog paths that `ExtensionCatalog.url(for:)` accepts.
+/// catalog paths that `ExtensionCatalog.url(for:)` accepts. `rowImage` GETs a row's image under the same
+/// URL rules, at most `ExtensionItemImage.maximumDownloadBytes`, decodes a raster image inside the helper,
+/// and replies with a PNG thumbnail it drew itself, never the downloaded bytes. A download that is SVG
+/// markup is not drawn there: the reply's `isSVG` is true, with the markup when it passes
+/// `ExtensionSVGPreview.check` (for Volant to hand, unread, to the extension helper to draw) and no data
+/// when it does not.
 @objc public protocol VolantFetchHostProtocol {
     func request(url: String, method: String, body: Data?, headers: [String: String], allowedHosts: [String], maximumBytes: Int,
                  reply: @escaping (Data?, Int, String?) -> Void)
     func fetchCatalogFile(path: String, maximumBytes: Int, reply: @escaping (Data?, Int, String?) -> Void)
+    func rowImage(url: String, headers: [String: String], allowedHosts: [String], reply: @escaping (Data?, Bool, Int, String?) -> Void)
 }

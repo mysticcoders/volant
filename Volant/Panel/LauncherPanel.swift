@@ -21,12 +21,21 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
     /// The notes panel, when it exists; a fronted launcher is ordered above it.
     weak var floatingPeer: NSWindow?
 
-    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), positionStore: UserDefaults = .standard, caffeinate: CaffeinateService = CaffeinateService(), preparesWhenHidden: Bool = true, files: FileSearch = FileSearch(), onNote: @escaping (LauncherAction) -> Void) {
+    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), positionStore: UserDefaults = .standard, caffeinate: CaffeinateService = CaffeinateService(), focus: FocusController? = nil, breaks: BreakController? = nil, preparesWhenHidden: Bool = true, files: FileSearch = FileSearch(), onNote: @escaping (LauncherAction) -> Void) {
         self.positionStore = positionStore
         self.preparesWhenHidden = preparesWhenHidden
         LauncherPanel.scale = config.appearance.clampedScale
         LauncherPanel.opacity = config.appearance.clampedOpacity
-        model = LauncherModel(index: index, clipboard: clipboard, notes: notes, config: config, usage: usage, caffeinate: caffeinate, files: files, onNote: onNote)
+        switch (focus, breaks) {
+        case let (focus?, breaks?):
+            model = LauncherModel(index: index, clipboard: clipboard, notes: notes, config: config, usage: usage, caffeinate: caffeinate, focus: focus, breaks: breaks, files: files, onNote: onNote)
+        case let (focus?, nil):
+            model = LauncherModel(index: index, clipboard: clipboard, notes: notes, config: config, usage: usage, caffeinate: caffeinate, focus: focus, files: files, onNote: onNote)
+        case let (nil, breaks?):
+            model = LauncherModel(index: index, clipboard: clipboard, notes: notes, config: config, usage: usage, caffeinate: caffeinate, breaks: breaks, files: files, onNote: onNote)
+        case (nil, nil):
+            model = LauncherModel(index: index, clipboard: clipboard, notes: notes, config: config, usage: usage, caffeinate: caffeinate, files: files, onNote: onNote)
+        }
         super.init(contentRect: NSRect(origin: .zero, size: LauncherPanel.size),
                    styleMask: [.nonactivatingPanel, .borderless, .fullSizeContentView],
                    backing: .buffered, defer: false)
@@ -41,6 +50,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         isReleasedWhenClosed = false
         hidesOnDeactivate = false
         model.dismiss = { [weak self] in self?.orderOut(nil) }
+        model.reopen = { [weak self] in if self?.isVisible == false { self?.toggle() } }
         model.restoreSearchEditor = { [weak self] in self?.restoreSearchEditorAfterForm() }
         model.focusEntryName = { [weak self] in self?.focusEntryNameField() }
         contentView = NSHostingView(rootView: ThemedRoot { ThemedLauncher(model: model) })
@@ -127,6 +137,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         let previousQuery = model.query
         let previousSections = model.sections
         let previousSelection = model.selection
+        model.captureMenuTarget(NSWorkspace.shared.frontmostApplication)
         model.isPresented = true
         observeOutsideInteraction()
         // After a click-away, Translate comes back with its text; after Escape, Back or the shortcut it
@@ -251,6 +262,15 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         model.searchFocusRequest = UUID()
     }
 
+    /// Opens the launcher on the Focus form, to edit the running session or start a new one.
+    func showFocusForm(editing: Bool) {
+        if NSApp.modalWindow != nil { toggle(); return }
+        if !isVisible { toggle() } else { makeKeyAndOrderFront(nil) }
+        guard isVisible else { return }
+        model.query = "focus"
+        model.openFocusForm(editing: editing)
+    }
+
     func showAgents() {
         if !isVisible { toggle() }
         model.query = "agents"
@@ -277,6 +297,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
         presentationGeneration += 1
         endDragging()
         model.dictionary.clear()
+        model.menuItemsDismissed()
         model.actionTarget = nil
         model.isPresented = false
         model.agents.disconnect()

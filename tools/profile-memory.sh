@@ -20,7 +20,7 @@ codesign --force --sign - "$profile_output/Volant Memory Profile.app"
 # The extension helper's production engine on its own, signed with the helper's JIT entitlement.
 [[ -f extensions/raycast-base64/encode.wasm ]] || bash tools/build-raycast-example.sh
 extension_fixture="$profile_output/VolantExtensionMemoryProfile"
-swiftc -O -g -target "$(uname -m)-apple-macosx15.0" "${VOLANT_CORE_FLAGS[@]}" VolantExtensionHost/ExtensionHost.swift VolantExtensionHost/WASICommand.swift tools/memory/measure.swift tools/memory/extension-host/main.swift -o "$extension_fixture"
+swiftc -O -g -target "$(uname -m)-apple-macosx15.0" "${VOLANT_CORE_FLAGS[@]}" VolantExtensionHost/ExtensionHost.swift VolantExtensionHost/WASICommand.swift Shared/ExtensionSVGRasterizer.swift Shared/ExtensionImageDecoding.swift tools/memory/measure.swift tools/memory/extension-host/main.swift -o "$extension_fixture"
 cat > "$profile_output/jit.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>com.apple.security.cs.allow-jit</key><true/></dict></plist>
 PLIST

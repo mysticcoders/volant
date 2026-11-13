@@ -1,0 +1,79 @@
+import Foundation
+#if canImport(FoundationXML)
+import FoundationXML
+#endif
+
+// A copy of VolantCore/Currency/CurrencyRates.swift for WASI: XMLParser lives in FoundationXML there,
+// and the helper protocol drops @objc, since the browser has no XPC.
+
+/// The rates-only XPC helper's interface: it fetches the ECB daily reference feed, ExchangeRate-API's
+/// daily rates for the currencies ECB lacks, and CoinGecko prices for a fixed coin list, replying
+/// with validated data or an error message. Its only input is the owner's optional CoinGecko key,
+/// so no query ever leaves Volant.
+public protocol VolantRatesHostProtocol {
+    func fetchRates(reply: @escaping (Data?, String?) -> Void)
+    /// ExchangeRate-API's euro-based open access rates, from the fixed URL in `WorldRates`.
+    func fetchWorldRates(reply: @escaping (Data?, String?) -> Void)
+    /// CoinGecko euro prices for the fixed coin list in `CryptoPrices`, keyless unless the owner saved a key.
+    func fetchCrypto(key: String?, reply: @escaping (Data?, String?) -> Void)
+}
+
+/// European Central Bank daily reference rates: units of each currency per euro, for one
+/// business day. Parsed from the public eurofxref feed; nothing else about the response is used.
+public struct CurrencyRates: Codable, Equatable {
+    public static let feed = URL(string: "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml")!
+    /// The feed is about 1.5 KB; anything far larger is not the feed.
+    public static let maximumBytes = 65_536
+
+    /// The currencies the ECB publishes, for deciding before its rates are loaded whether a
+    /// conversion also needs another source.
+    public static let referenceCodes: Set<String> = [
+        "USD", "JPY", "CZK", "DKK", "GBP", "HUF", "PLN", "RON", "SEK", "CHF", "ISK", "NOK", "TRY", "AUD", "BRL",
+        "CAD", "CNY", "HKD", "IDR", "ILS", "INR", "KRW", "MXN", "MYR", "NZD", "PHP", "SGD", "THB", "ZAR"
+    ]
+
+    /// The ECB business day the rates are for, as yyyy-MM-dd.
+    public let date: String
+    public let perEuro: [String: Double]
+
+    public init(date: String, perEuro: [String: Double]) {
+        self.date = date
+        self.perEuro = perEuro
+    }
+
+    /// Installed by the app once rates are loaded or fetched; nil until the owner first converts
+    /// currency.
+    public static var current: CurrencyRates?
+
+    /// Units of `code` per euro; the euro itself is 1.
+    public func rate(_ code: String) -> Double? {
+        code == "EUR" ? 1 : perEuro[code]
+    }
+
+    /// Parses the ECB feed. Requires a date and at least a handful of positive rates with
+    /// three-letter codes, so an error page or a truncated response is rejected.
+    public static func parse(_ data: Data) -> CurrencyRates? {
+        guard data.count <= maximumBytes else { return nil }
+        let reader = Reader()
+        let parser = XMLParser(data: data)
+        parser.delegate = reader
+        guard parser.parse(), let date = reader.date, reader.rates.count >= 5,
+              date.range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil else { return nil }
+        return CurrencyRates(date: date, perEuro: reader.rates)
+    }
+
+    private final class Reader: NSObject, XMLParserDelegate {
+        var date: String?
+        var rates: [String: Double] = [:]
+
+        func parser(_ parser: XMLParser, didStartElement name: String, namespaceURI: String?, qualifiedName: String?,
+                    attributes: [String: String] = [:]) {
+            guard name == "Cube" else { return }
+            if let time = attributes["time"] { date = time }
+            if let code = attributes["currency"], let text = attributes["rate"], let rate = Double(text),
+               rate > 0, code.count == 3, code.allSatisfy({ $0.isASCII && $0.isUppercase }) {
+                rates[code] = rate
+            }
+        }
+    }
+}

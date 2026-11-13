@@ -449,6 +449,20 @@ private struct CommandTile: View {
     }
 }
 
+/// A picked color as a tile the size of a command tile, outlined so white and near-background
+/// colors stay visible in both appearances.
+private struct ColorSwatchTile: View {
+    let color: PickedColor
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 5.5, style: .continuous)
+            .fill(Color(.sRGB, red: color.red, green: color.green, blue: color.blue, opacity: 1))
+            .frame(width: 22, height: 22)
+            .overlay(RoundedRectangle(cornerRadius: 5.5, style: .continuous).strokeBorder(Color.primary.opacity(0.2), lineWidth: 0.5))
+            .accessibilityHidden(true)
+    }
+}
+
 /// A server's runtime logo, in its brand color on a white tile like an app icon, so a brand color
 /// is never altered and reads the same in light and dark appearance. Callers fall back to the
 /// generic tile when the logo isn't in the bundle, so a tile is never left blank.
@@ -502,8 +516,13 @@ private extension CoreCommand {
         case .servers: return Color(red: 0.2, green: 0.55, blue: 0.35)
         case .wifi, .bluetooth: return .blue
         case .audio: return .mint
+        case .colorPicker: return Color(red: 0.85, green: 0.35, blue: 0.55)
+        case .camera: return Color(white: 0.35)
         case .newSnippet, .newQuicklink: return .cyan
         case .catalog: return Color(red: 0.95, green: 0.42, blue: 0.29)
+        case .menuItems: return Color(red: 0.35, green: 0.4, blue: 0.85)
+        case .focus: return Color(red: 0.0, green: 0.55, blue: 0.5)
+        case .breaks: return Color(red: 0.2, green: 0.6, blue: 0.3)
         case .welcome: return .yellow
         }
     }
@@ -540,6 +559,7 @@ private struct RowView: View {
         HStack(spacing: 12) {
             icon.frame(width: 24, height: 24)
             Text(title).font(.system(size: 15)).lineLimit(1)
+                .foregroundStyle(dimmed ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.primary))
             if let subtitle {
                 Text(subtitle).font(.system(size: 14)).foregroundStyle(.secondary).lineLimit(1)
             }
@@ -551,6 +571,13 @@ private struct RowView: View {
             }
             if case .extensionItem(let item, _) = row, let badges = item.badges {
                 ExtensionRowBadges(badges: badges)
+            } else if case .menuItem(let entry) = row {
+                if let shortcut = entry.item.shortcut {
+                    Text(shortcut.display).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+                        .padding(.horizontal, 6).frame(minHeight: 20)
+                        .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 5))
+                        .accessibilityLabel(String(localized: "Shortcut \(shortcut.display, format: .verbatim)", comment: "Accessibility label for a menu item's keyboard shortcut"))
+                }
             } else {
                 Text(row.kind).font(.system(size: 14)).foregroundStyle(.secondary)
             }
@@ -561,13 +588,27 @@ private struct RowView: View {
         .background(selected ? theme.selection : AnyShapeStyle(Color.clear), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
+    /// A disabled menu item, drawn dimmed; Return on it explains instead of pressing.
+    private var dimmed: Bool {
+        if case .menuItem(let entry) = row { return !entry.item.enabled }
+        return false
+    }
+
     private var title: String {
         switch row {
         case .appleShortcut(let shortcut): return shortcut.name
+        case .menuItem(let entry): return entry.item.title
+        case .menuItemsOff: return String(localized: "Turn On Search Menu Items", comment: "Launcher row title while Search Menu Items is off")
         case .server(let server): return "\(server.port) · " + (server.folderName.map { server.displayName + " · " + $0 } ?? server.displayName)
         case .core(let command): return command.title
         case .systemAction(let action): return action.title
+        case .systemToggle(let toggle, _): return toggle.title
+        case .pickedColor(let color, let format): return color.value(format)
+        case .pickAnotherColor: return String(localized: "Pick Another Color", comment: "Launcher row title after a color was picked: open the loupe again")
+        case .privacySettings(let pane): return pane.title
         case .caffeinate(let command): return command.title
+        case .focus(let row, _): return row.title
+        case .breaks(let row, _): return row.title
         case .agentSession(let session): return session.project
         case .herdrMachine(let machine, _, _): return machine?.label ?? String(localized: "Local", comment: "Herdr machine row title for this Mac")
         case .rexPane(let pane): return pane.project
@@ -601,8 +642,16 @@ private struct RowView: View {
         switch row {
         case .core(let command): return command.detail
         case .server(let server): return server.detail(home: ServersModel.home)
+        case .menuItem(let entry): return entry.item.location
+        case .menuItemsOff: return String(localized: "Off in Settings. Lets Volant read and press the menus of the app you were using.", comment: "Launcher row subtitle while Search Menu Items is off")
         case .systemAction(let action): return action.detail
+        case .systemToggle(let toggle, let on): return toggle.detail(on: on)
+        case .pickedColor(_, let format): return format.label
+        case .pickAnotherColor: return String(localized: "Open the loupe again", comment: "Launcher row subtitle for Pick Another Color")
+        case .privacySettings(let pane): return pane.detail
         case .caffeinate(let command): return command.detail
+        case .focus(_, let detail): return detail
+        case .breaks(_, let detail): return detail
         case .systemSettings: return String(localized: "Open this pane in System Settings", comment: "Launcher row subtitle")
         case .settings: return String(localized: "Preferences, app shortcuts and backups", comment: "Launcher row subtitle for Volant Settings")
         case .reloadConfig: return String(localized: "Apply changes from config.json", comment: "Launcher row subtitle for Reload Configuration")
@@ -618,7 +667,7 @@ private struct RowView: View {
         case .agents: return String(localized: "Find Herdr sessions and focus a pane", comment: "Launcher row subtitle for Open Agents")
         case .extensionUpdates(let names): return names
         case .appleShortcut, .calculation, .app: return nil
-        case .file(let f): return f.url.deletingLastPathComponent().path.replacingOccurrences(of: NSHomeDirectory(), with: "~")
+        case .file(let f): return f.url.deletingLastPathComponent().path.replacingOccurrences(of: UserHome.path, with: "~")
         case .contact(let c): return c.email ?? c.phone ?? (c.organization.isEmpty ? nil : c.organization)
         case .event(let e):
             return e.isAllDay ? String(localized: "All day", comment: "Calendar event row subtitle") : "\(e.start.formatted(date: .omitted, time: .shortened)) – \(e.end.formatted(date: .omitted, time: .shortened))"
@@ -649,12 +698,22 @@ private struct RowView: View {
     @ViewBuilder private var icon: some View {
         switch row {
         case .appleShortcut: CommandTile(symbol: "square.stack.3d.up", tint: CoreCommand.shortcuts.tint)
+        case .menuItem(let entry):
+            if let path = entry.appPath { Image(nsImage: state.icon(forFile: path)).resizable().opacity(dimmed ? 0.5 : 1) }
+            else { CommandTile(symbol: CoreCommand.menuItems.symbol, tint: CoreCommand.menuItems.tint) }
+        case .menuItemsOff: CommandTile(symbol: CoreCommand.menuItems.symbol, tint: CoreCommand.menuItems.tint)
         case .server(let server):
             if let logo = server.kind.logo, let image = NSImage(named: "Runtimes/" + logo.asset) { RuntimeTile(image: image, hex: logo.hex) }
             else { CommandTile(symbol: CoreCommand.servers.symbol, tint: CoreCommand.servers.tint) }
         case .core(let command): CommandTile(symbol: command.symbol, tint: command.tint)
+        case .pickAnotherColor: CommandTile(symbol: CoreCommand.colorPicker.symbol, tint: CoreCommand.colorPicker.tint)
         case .systemAction(let action): CommandTile(symbol: action.symbol, tint: action.tint)
+        case .systemToggle(let toggle, _): CommandTile(symbol: toggle.symbol, tint: .indigo)
+        case .pickedColor(let color, _): ColorSwatchTile(color: color)
+        case .privacySettings(let pane): CommandTile(symbol: pane.symbol, tint: .gray)
         case .caffeinate: CommandTile(symbol: "cup.and.saucer", tint: CoreCommand.caffeinate.tint)
+        case .focus(let row, _): CommandTile(symbol: row.symbol, tint: CoreCommand.focus.tint)
+        case .breaks(let row, _): CommandTile(symbol: row.symbol, tint: CoreCommand.breaks.tint)
         case .agentSession(let session):
             Image(systemName: session.agentStatus == "blocked" ? "exclamationmark.bubble" : "terminal").font(.system(size: 20))
                 .foregroundStyle(session.agentStatus == "blocked" ? Color.orange : Color.secondary)
@@ -703,11 +762,55 @@ private struct RowView: View {
             else { Image(systemName: "puzzlepiece.extension").font(.system(size: 20)).foregroundStyle(.secondary) }
         case .extensionResult: Image(systemName: "checkmark.circle").font(.system(size: 20)).foregroundStyle(.secondary)
         case .extensionItem(let item, let source):
-            if let symbol = item.symbol.flatMap(ExtensionItemSymbol.init(rawValue:)) {
-                ExtensionRowSymbol(symbol: symbol)
-            } else if let icon = ExtensionIcon.image(for: source) { Image(nsImage: icon).resizable().clipShape(RoundedRectangle(cornerRadius: 5)) }
-            else { Image(systemName: "newspaper").font(.system(size: 20)).foregroundStyle(.secondary) }
+            if let image = item.image {
+                ExtensionRowImage(url: image.url, source: source, images: state.extensionImages) { ExtensionItemIcon(item: item, source: source) }
+            } else {
+                ExtensionItemIcon(item: item, source: source)
+            }
         }
+    }
+}
+
+/// A list extension row's own icon: the symbol it chose, otherwise the extension's icon, otherwise a
+/// generic symbol. Also the placeholder while a row image loads and when it fails.
+struct ExtensionItemIcon: View {
+    let item: ExtensionItem
+    let source: InstalledExtension
+
+    var body: some View {
+        if let symbol = item.symbol.flatMap(ExtensionItemSymbol.init(rawValue:)) {
+            ExtensionRowSymbol(symbol: symbol)
+        } else if let icon = ExtensionIcon.image(for: source) {
+            Image(nsImage: icon).resizable().clipShape(RoundedRectangle(cornerRadius: 5))
+        } else {
+            Image(systemName: "newspaper").font(.system(size: 20)).foregroundStyle(.secondary)
+        }
+    }
+}
+
+/// A list extension row's image preview, such as a favicon, drawn aspect-fit and rounded at the row's
+/// 24-point icon size. It asks for its image when the row appears, and again when a new list keeps the
+/// row on screen, so only rows on screen load. It shows `placeholder` until the image arrives, or for
+/// good when it fails.
+struct ExtensionRowImage<Placeholder: View>: View {
+    let url: String
+    let source: InstalledExtension
+    @ObservedObject var images: ExtensionRowImages
+    @ViewBuilder let placeholder: () -> Placeholder
+
+    var body: some View {
+        Group {
+            if let image = images.image(url, for: source) {
+                Image(nsImage: image).resizable().interpolation(.high).aspectRatio(contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                    .accessibilityHidden(true)
+            } else {
+                placeholder()
+            }
+        }
+        .frame(width: 24, height: 24)
+        .onAppear { images.request(url, for: source) }
+        .onChange(of: images.list) { images.request(url, for: source) }
     }
 }
 

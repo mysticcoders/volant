@@ -71,6 +71,38 @@ final class UnitConverterTests: XCTestCase {
         XCTAssertEqual(try result("1 tb in gb"), 1000, accuracy: 1e-9)
     }
 
+    func testStorageAliasesWorkAsSourceAndTarget() throws {
+        let cases: [(aliases: [String], symbol: String, smaller: String, factor: Double)] = [
+            (["kib", "kibibyte", "kibibytes"], "KiB", "b", 1024),
+            (["mib", "mebibyte", "mebibytes"], "MiB", "kib", 1024),
+            (["gib", "gibibyte", "gibibytes"], "GiB", "mib", 1024),
+            (["tib", "tebibyte", "tebibytes"], "TiB", "gib", 1024),
+            (["pb", "petabyte", "petabytes"], "PB", "tb", 1000),
+            (["pib", "pebibyte", "pebibytes"], "PiB", "tib", 1024)
+        ]
+        for entry in cases {
+            for alias in entry.aliases {
+                let query = "1 \(alias) in \(entry.smaller)"
+                let forward = try XCTUnwrap(UnitConverter.convert(query, locale: Self.english), query)
+                XCTAssertEqual(forward.result, entry.factor, accuracy: 1e-9, query)
+                XCTAssertEqual(forward.fromSymbol, entry.symbol, query)
+                let reverseQuery = "\(Int(entry.factor)) \(entry.smaller) in \(alias)"
+                let reverse = try XCTUnwrap(UnitConverter.convert(reverseQuery, locale: Self.english), reverseQuery)
+                XCTAssertEqual(reverse.result, 1, accuracy: 1e-9, reverseQuery)
+                XCTAssertEqual(reverse.toSymbol, entry.symbol, reverseQuery)
+            }
+        }
+    }
+
+    func testNewStorageUnitsConvertBetweenBinaryAndDecimal() throws {
+        XCTAssertEqual(try result("512 mebibytes in mb"), 536.870912, accuracy: 1e-9)
+        XCTAssertEqual(try result("2 TiB in TB"), 2.199023255552, accuracy: 1e-12)
+        XCTAssertEqual(try result("1 PiB in PB"), 1.125899906842624, accuracy: 1e-12)
+        XCTAssertEqual(converted("1 petabyte in tebibytes"), "909.494702 TiB")
+        XCTAssertEqual(converted("1 pebibyte in petabytes"), "1.1259 PB")
+        XCTAssertNil(UnitConverter.convert("1 pib in km", locale: Self.english))
+    }
+
     func testLongNamesPluralsAndCase() throws {
         XCTAssertEqual(try result("5 Kilometres to Miles"), try result("5 km in mi"), accuracy: 1e-12)
         XCTAssertEqual(try result("2 feet as meters"), 0.6096, accuracy: 1e-9)
@@ -88,6 +120,14 @@ final class UnitConverterTests: XCTestCase {
         XCTAssertEqual(try result("5 in in cm"), 12.7, accuracy: 1e-9)
         XCTAssertEqual(try result("12 in to ft"), 1, accuracy: 1e-9)
         XCTAssertEqual(try result("5 nautical miles in km"), 9.26, accuracy: 1e-9)
+    }
+
+    /// The international mile is exactly 1609.344 m and mph exactly 0.44704 m/s, whatever the
+    /// platform's Foundation rounds them to (swift-corelibs uses 1609.34 m).
+    func testMilesUseTheExactInternationalMile() throws {
+        XCTAssertEqual(try result("5 km in miles"), 5000 / 1609.344, accuracy: 1e-12)
+        XCTAssertEqual(try result("1 mi in m"), 1609.344, accuracy: 1e-9)
+        XCTAssertEqual(try result("25 mph in km/h"), 40.2336, accuracy: 1e-9)
     }
 
     func testNumbersFollowTheLocaleWithoutMagnitudes() throws {

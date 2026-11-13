@@ -681,6 +681,165 @@ func extensionRowsScenario() throws {
     print("PASS: storage list extension receives and saves data, and row actions run from Actions")
 }
 
+/// A list extension with `clipboard-write`: the first-run prompt says it copies text and images when
+/// the owner chooses them, the row's Actions lists its copy after the links, and choosing it copies to
+/// a fake clipboard and confirms in the footer. Nothing is downloaded or written to the real clipboard.
+func extensionRowCopyScenario() throws {
+    let (copyDirectory, _) = try copyExtension("copy-logos") { manifest in
+        manifest.id = "fixture.logos"; manifest.name = "Fixture Logos"; manifest.output = "items"
+        manifest.hosts = ["assets.example.com"]; manifest.permissions = ["clipboard-write"]
+    }
+    let copyManager = ExtensionManager(configURL: panel.model.actionConfigURL, roots: [copyDirectory], dataDirectory: root.appendingPathComponent("CopyData-" + UUID().uuidString))
+    copyManager.reload()
+    try copyManager.setCommunityAllowed(true, expected: copyManager.communityAllowed)
+    let prompt = NSHostingView(rootView: ExtensionPermissionView(
+        request: ExtensionPermissionRequest(extensionItem: copyManager.extensions.first!, input: "", hosts: ["assets.example.com"]), enable: { _ in }, cancel: {}))
+    prompt.frame = NSRect(x: 0, y: 0, width: 390, height: 330); prompt.layoutSubtreeIfNeeded(); settle()
+    try render("extension-copy-prompt", view: prompt)
+    try copyManager.setEnabled(copyManager.extensions.first!, true)
+    var copied: [ExtensionCopyContent] = []
+    copyManager.writeClipboard = { copied.append($0) }
+    copyManager.fetchCopy = { _, _, _ in verify(false, "Listing and text copies never download") }
+    copyManager.invokeOverride = { _, _, completion in
+        completion(.success(#"{"items":[{"title":"Fictional logo","subtitle":"assets.example.com","url":"https://assets.example.com/logo","copy":{"text":"<svg xmlns=\"http://www.w3.org/2000/svg\"/>","title":"Copy SVG"},"actions":[{"id":"pin","title":"Pin Logo"}]}]}"#))
+    }
+    panel.model.extensions = copyManager
+    panel.toggle(); panel.model.query = "Fixture Logos"; settle()
+    key("\r", 36)
+    verify(waitUntil { panel.model.rows.first.map { if case .extensionItem = $0 { return true }; return false } == true }, "The copy extension shows its row")
+    key("k", 40, .command); settle()
+    verify(panel.model.actionTarget?.menuEntries == [.item(.open), .item(.copyPath), .copy("Copy SVG"), .custom(ExtensionItemAction(id: "pin", title: "Pin Logo"))],
+           "A row's copy follows its links in Actions")
+    key("\u{F701}", 125); key("\u{F701}", 125); settle()
+    try render("extension-row-copy-actions")
+    key("\r", 36); settle()
+    verify(copied == [.text(#"<svg xmlns="http://www.w3.org/2000/svg"/>"#)] && panel.model.actionFeedback == "Copied SVG", "Choosing the copy copies and confirms")
+    try render("extension-row-copied")
+    panel.orderOut(nil)
+    try copyManager.setCommunityAllowed(false, expected: true)
+    print("PASS: a clipboard-write extension asks first, lists its copy after the links, and copies only when chosen")
+}
+
+/// A fictional logo for a row image: a filled shape of `color` on a transparent `width` by `height`
+/// canvas, encoded as `type`, the way a site might serve its favicon.
+func fixtureLogo(width: Int, height: Int, red: CGFloat, green: CGFloat, blue: CGFloat, circle: Bool, type: String = "public.png") -> Data {
+    let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+                            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+    context.setFillColor(red: red, green: green, blue: blue, alpha: 1)
+    let rect = CGRect(x: 0, y: 0, width: width, height: height)
+    if circle { context.fillEllipse(in: rect) } else { context.addPath(CGPath(roundedRect: rect, cornerWidth: CGFloat(height) / 5, cornerHeight: CGFloat(height) / 5, transform: nil)); context.fillPath() }
+    context.setFillColor(red: 1, green: 1, blue: 1, alpha: 1)
+    context.fill(rect.insetBy(dx: CGFloat(width) * 0.38, dy: CGFloat(height) * 0.2))
+    let data = NSMutableData()
+    let destination = CGImageDestinationCreateWithData(data, type as CFString, 1, nil)!
+    CGImageDestinationAddImage(destination, context.makeImage()!, nil)
+    CGImageDestinationFinalize(destination)
+    return data as Data
+}
+
+/// A list extension with `row-images`: the first-run prompt says it shows images from its sites, rows
+/// whose images loaded show them in place of the extension's icon, a row still loading and rows whose
+/// image failed (an HTTP error, or a page that is not an image) keep the placeholder, and rows without
+/// an image are unchanged. Logos go through the real thumbnail code the fetch helper runs; nothing is
+/// downloaded. SVG previews have their own scenario.
+func extensionRowImagesScenario() throws {
+    let (imageDirectory, _) = try copyExtension("row-images") { manifest in
+        manifest.id = "fixture.favicons"; manifest.name = "Fixture Favicons"; manifest.output = "items"
+        manifest.hosts = ["icons.example.com"]; manifest.permissions = ["row-images"]
+    }
+    let imageManager = ExtensionManager(configURL: panel.model.actionConfigURL, roots: [imageDirectory], dataDirectory: root.appendingPathComponent("ImageData-" + UUID().uuidString))
+    imageManager.reload()
+    try imageManager.setCommunityAllowed(true, expected: imageManager.communityAllowed)
+    let prompt = NSHostingView(rootView: ExtensionPermissionView(
+        request: ExtensionPermissionRequest(extensionItem: imageManager.extensions.first!, input: "", hosts: ["icons.example.com"]), enable: { _ in }, cancel: {}))
+    prompt.frame = NSRect(x: 0, y: 0, width: 390, height: 330); prompt.layoutSubtreeIfNeeded(); settle()
+    try render("extension-row-images-prompt", view: prompt)
+    try imageManager.setEnabled(imageManager.extensions.first!, true)
+    let downloads: [String: Data] = [
+        "/coffee.ico": fixtureLogo(width: 48, height: 48, red: 0.55, green: 0.32, blue: 0.18, circle: true, type: "com.microsoft.ico"),
+        "/maps.png": fixtureLogo(width: 128, height: 64, red: 0.16, green: 0.6, blue: 0.32, circle: false),
+        "/books.gif": fixtureLogo(width: 32, height: 32, red: 0.2, green: 0.38, blue: 0.85, circle: false, type: "com.compuserve.gif")
+    ]
+    var waiting: [(ExtensionFetcher.RowImageReply) -> Void] = []
+    imageManager.fetchRowImage = { request, _, completion in
+        switch request.url.path {
+        case "/loading.png": waiting.append(completion)
+        case "/page.html": completion(.failed(status: 200))
+        case let path: completion(downloads[path].flatMap { ExtensionImageDecoding.thumbnailPNG($0) }.map { .thumbnail($0) } ?? .failed(status: 404))
+        }
+    }
+    let rows = [("Fictional Coffee", "coffee.ico", "ICO favicon"), ("Fictional Maps", "maps.png", "Wide PNG logo, fitted"),
+                ("Fictional Books", "books.gif", "GIF favicon"), ("Fictional Weather", "loading.png", "Still loading: extension icon"),
+                ("Fictional Archive", "missing.png", "Server answered 404: extension icon"), ("Fictional Pages", "page.html", "Not an image: extension icon")]
+    let items = rows.map { #"{"title":"\#($0.0)","subtitle":"\#($0.2)","url":"https://site.example.com/\#($0.1)","image":{"url":"https://icons.example.com/\#($0.1)"}}"# }
+        + [#"{"title":"Fictional Plain","subtitle":"No image","url":"https://site.example.com/plain"}"#]
+    imageManager.invokeOverride = { _, _, completion in completion(.success(#"{"items":[\#(items.joined(separator: ","))]}"#)) }
+    panel.model.extensions = imageManager
+    panel.toggle(); panel.model.query = "Fixture Favicons"; settle()
+    key("\r", 36)
+    verify(waitUntil { panel.model.rows.count == 7 }, "The image extension shows its rows")
+    let images = panel.model.rowState.extensionImages
+    verify(waitUntil { images.shown.count == 3 }, "The three valid images load: \(images.shown.count)")
+    verify(waiting.count == 1, "The loading row waits for its image")
+    try render("extension-row-images")
+    panel.orderOut(nil)
+    try imageManager.setCommunityAllowed(false, expected: true)
+    print("PASS: a row-images extension asks first, shows loaded images, and keeps the placeholder while loading or after a failure")
+}
+
+/// SVG row previews: logos as svgl and Simple Icons publish them go through the fetch helper's check
+/// (`ExtensionSVGPreview.sanitized`) and the extension helper's real drawing code
+/// (`ExtensionSVGRasterizer.rasterize`), and hostile files (a script, a remote image, a huge canvas) keep
+/// the extension's icon. Nothing is downloaded and no helper process runs.
+func extensionRowSVGImagesScenario() throws {
+    let (imageDirectory, _) = try copyExtension("row-svg") { manifest in
+        manifest.id = "fixture.logos"; manifest.name = "Fixture Logos"; manifest.output = "items"
+        manifest.hosts = ["logos.example.com"]; manifest.permissions = ["row-images"]
+    }
+    let manager = ExtensionManager(configURL: panel.model.actionConfigURL, roots: [imageDirectory], dataDirectory: root.appendingPathComponent("SVGData-" + UUID().uuidString))
+    manager.reload()
+    try manager.setCommunityAllowed(true, expected: manager.communityAllowed)
+    try manager.setEnabled(manager.extensions.first!, true)
+    let svgl = "xmlns=\"http://www.w3.org/2000/svg\""
+    let downloads: [String: String] = [
+        "/figma.svg": ##"<svg width="54" height="80" viewBox="0 0 54 80" fill="none" "## + svgl + ##"><g clip-path="url(#c)"><path d="M13.3333 80.0002C20.6933 80.0002 26.6667 74.0268 26.6667 66.6668V53.3335H13.3333C5.97333 53.3335 0 59.3068 0 66.6668C0 74.0268 5.97333 80.0002 13.3333 80.0002Z" fill="#0ACF83"/><path d="M0 39.9998C0 32.6398 5.97333 26.6665 13.3333 26.6665H26.6667V53.3332H13.3333C5.97333 53.3332 0 47.3598 0 39.9998Z" fill="#A259FF"/><path d="M0 13.3333C0 5.97333 5.97333 0 13.3333 0H26.6667V26.6667H13.3333C5.97333 26.6667 0 20.6933 0 13.3333Z" fill="#F24E1E"/><path d="M26.6667 0H40.0001C47.3601 0 53.3334 5.97333 53.3334 13.3333C53.3334 20.6933 47.3601 26.6667 40.0001 26.6667H26.6667V0Z" fill="#FF7262"/><path d="M53.3334 39.9998C53.3334 47.3598 47.3601 53.3332 40.0001 53.3332C32.6401 53.3332 26.6667 47.3598 26.6667 39.9998C26.6667 32.6398 32.6401 26.6665 40.0001 26.6665C47.3601 26.6665 53.3334 32.6398 53.3334 39.9998Z" fill="#1ABCFE"/></g><defs><clipPath id="c"><rect width="53.3333" height="80" fill="white"/></clipPath></defs></svg>"##,
+        "/vercel.svg": ##"<svg viewBox="0 0 256 222" width="256" height="222" "## + svgl + ##" preserveAspectRatio="xMidYMid"><path fill="#000" d="m128 0 128 221.705H0z"/></svg>"##,
+        "/github.svg": ##"<svg role="img" viewBox="0 0 24 24" "## + svgl + ##"><title>GitHub</title><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>"##,
+        "/script.svg": #"<svg viewBox="0 0 24 24" "# + svgl + #"><script>fetch('https://evil.example/')</script><rect width="24" height="24" fill="red"/></svg>"#,
+        "/remote.svg": #"<svg viewBox="0 0 24 24" "# + svgl + #"><image href="https://evil.example/a.png" width="24" height="24"/></svg>"#,
+        "/huge.svg": #"<svg viewBox="0 0 100000 100000" "# + svgl + #"><rect width="100000" height="100000" fill="red"/></svg>"#
+    ]
+    var drawn = 0
+    manager.fetchRowImage = { request, _, completion in
+        guard let markup = downloads[request.url.path].map({ Data($0.utf8) }) else { completion(.failed(status: 404)); return }
+        switch ExtensionSVGPreview.sanitized(markup) {
+        case .success(let checked): completion(.svg(checked))
+        case .failure: completion(.svgRefused)
+        }
+    }
+    manager.rasterizeSVG = { markup, completion in
+        drawn += 1
+        if case .png(let png) = ExtensionSVGRasterizer.rasterize(markup) { completion(.png(png)) } else { completion(.refused) }
+    }
+    let rows = [("Figma logo", "figma.svg", "svgl, colors and a clip path"), ("Vercel logo", "vercel.svg", "svgl, wide, fitted"),
+                ("GitHub mark", "github.svg", "Simple Icons, no fill: draws black"), ("Fictional Script", "script.svg", "SVG with a script: refused, extension icon"),
+                ("Fictional Remote", "remote.svg", "SVG with a remote image: refused, extension icon"), ("Fictional Canvas", "huge.svg", "100,000-unit canvas: refused, extension icon")]
+    let items = rows.map { #"{"title":"\#($0.0)","subtitle":"\#($0.2)","url":"https://site.example.com/\#($0.1)","image":{"url":"https://logos.example.com/\#($0.1)"}}"# }
+        + [#"{"title":"Fictional Plain","subtitle":"No image","url":"https://site.example.com/plain"}"#]
+    manager.invokeOverride = { _, _, completion in completion(.success(#"{"items":[\#(items.joined(separator: ","))]}"#)) }
+    panel.model.extensions = manager
+    panel.toggle(); panel.model.query = "Fixture Logos"; settle()
+    key("\r", 36)
+    verify(waitUntil { panel.model.rows.count == 7 }, "The logo extension shows its rows")
+    let images = panel.model.rowState.extensionImages
+    verify(waitUntil { images.shown.count == 3 }, "The three checked logos are drawn: \(images.shown.count)")
+    verify(drawn == 3, "Only checked SVG reaches the drawing code: \(drawn)")
+    try render("extension-row-images-svg")
+    panel.orderOut(nil)
+    try manager.setCommunityAllowed(false, expected: true)
+    print("PASS: SVG row previews draw checked logos and keep the extension icon for refused files")
+}
+
 /// Dictation Settings with a fictional vocabulary, and the sheet that adds a word. Output stays on
 /// Copy, so the input helper is never started.
 func dictationVocabularyScenario() throws {
@@ -1487,6 +1646,7 @@ struct Scenario {
 /// - herdr: question cards clicked at fixed offsets from the panel height, machine rows and the footer.
 /// - translate: the Translate screen drawn in the panel, and its draft across focus loss and dismissal.
 /// - rex: Rex pane rows and the footer status drawn in the panel.
+/// - menu-items: Search Menu Items' setting row, menu item rows with shortcut badges, and Return.
 /// - search-scopes: the Contacts, Files and Clipboard scopes' Back chip and rows drawn in the panel.
 /// - clipboard-recovery, spotlight-recovery: error, progress and Retry states drawn in the panel.
 /// Default size only, because they draw standalone windows that ignore the launcher size:
@@ -1524,6 +1684,57 @@ func serversScenario() throws {
     copied = []
     focusActionSearch(); key("\r", 36, .command)
     verify(copied == ["http://localhost:3000"], "Command-Return in the menu copies the URL: \(copied)")
+}
+
+/// Search Menu Items' helper calls, answered with fictional menus so no input helper runs and no
+/// real app is read or pressed.
+final class FixtureMenuClient: MenuItemsClient {
+    var presses: [[String]] = []
+    func menuItems(pid: Int32, bundleID: String, completion: @escaping (MenuItemsReply?) -> Void) {
+        completion(MenuItemsReply(items: [
+            MenuItem(path: ["Quill", "Quit Quill"], shortcut: MenuShortcut(key: "Q", modifiers: 0)),
+            MenuItem(path: ["File", "New Draft"], shortcut: MenuShortcut(key: "N", modifiers: 0)),
+            MenuItem(path: ["File", "Open Recent", "Harbor Notes.quill"]),
+            MenuItem(path: ["File", "Export", "PDF…"], shortcut: MenuShortcut(key: "E", modifiers: MenuShortcut.shift)),
+            MenuItem(path: ["File", "Export", "Plain Text…"]),
+            MenuItem(path: ["Format", "Make Plain Text"], shortcut: MenuShortcut(key: "T", modifiers: MenuShortcut.shift)),
+            MenuItem(path: ["Format", "Font", "Show Fonts"], shortcut: MenuShortcut(key: "T", modifiers: 0)),
+            MenuItem(path: ["Format", "Make Rich Text"], enabled: false),
+            MenuItem(path: ["View", "Enter Full Screen"], shortcut: MenuShortcut(key: "F", modifiers: MenuShortcut.control)),
+        ]))
+    }
+    func pressMenuItem(pid: Int32, path: [String], bundleID: String, completion: @escaping (MenuPressReply?) -> Void) {
+        presses.append(path)
+        completion(MenuPressReply(pressed: true))
+    }
+}
+
+/// Search Menu Items: the row that opens the setting while the switch is off, a fictional app's
+/// menu items with paths, shortcut badges and a dimmed disabled item, filtering, and Return hiding
+/// the launcher and pressing the item by its path through the fake helper.
+func menuItemsScenario() throws {
+    summon()
+    panel.model.query = "menus"; settle()
+    verify(panel.model.rows.map(\.id) == ["command:menu-items-off"], "With the switch off, menus offers the setting: \(panel.model.rows.map(\.id))")
+    try render("menu-items-off")
+    let client = FixtureMenuClient()
+    panel.model.config.searchMenuItems = true
+    panel.model.menuItems.client = client
+    panel.model.menuItems.pressDelay = 0
+    panel.model.menuItems.activate = { _ in }
+    panel.model.menuItems.capture(MenuTarget(pid: 4242, bundleID: "com.example.quill", name: "Quill", path: nil))
+    panel.model.query = ""; settle()
+    panel.model.query = "menus"; settle()
+    verify(waitUntil { panel.model.rows.count == 9 }, "menus lists the fictional menu items: \(panel.model.rows.map(\.id))")
+    verify(panel.model.sections.map(\.title) == ["Quill Menus"] || language != nil, "The section names the app")
+    try render("menu-items")
+    panel.model.query = "menus export"; settle()
+    verify(waitUntil { panel.model.rows.count == 2 }, "Typing filters the menu items: \(panel.model.rows.map(\.id))")
+    try render("menu-items-filtered")
+    key("\r", 36)
+    verify(waitUntil { client.presses == [["File", "Export", "PDF…"]] && !panel.isVisible }, "Return hides the launcher and presses the item by path: \(client.presses)")
+    verify(panel.model.menuItems.items.isEmpty && panel.model.menuItems.target == nil, "Dismissing forgets the menu titles")
+    print("PASS: Search Menu Items offers its setting while off, lists and filters fictional menus, and presses by path")
 }
 
 /// Volant's own Contacts, Files and Clipboard scopes, entered from their command rows with Return
@@ -1614,12 +1825,16 @@ let scenarios: [Scenario] = [
     Scenario(name: "community-launcher", sizeSensitive: true, run: communityLauncherScenario),
     Scenario(name: "community-settings", sizeSensitive: false, run: communitySettingsScenario),
     Scenario(name: "extension-rows", sizeSensitive: true, run: extensionRowsScenario),
+    Scenario(name: "extension-row-copy", sizeSensitive: false, run: extensionRowCopyScenario),
+    Scenario(name: "extension-row-images", sizeSensitive: false, run: extensionRowImagesScenario),
+    Scenario(name: "extension-row-images-svg", sizeSensitive: false, run: extensionRowSVGImagesScenario),
     Scenario(name: "extension-settings", sizeSensitive: false, run: extensionSettingsScenario),
     Scenario(name: "dictation-vocabulary", sizeSensitive: false, run: dictationVocabularyScenario),
     Scenario(name: "catalog", sizeSensitive: true, run: catalogScenario),
     Scenario(name: "herdr", sizeSensitive: true, run: herdrScenario),
     Scenario(name: "rex", sizeSensitive: true, run: rexScenario),
     Scenario(name: "servers", sizeSensitive: true, run: serversScenario),
+    Scenario(name: "menu-items", sizeSensitive: true, run: menuItemsScenario),
     Scenario(name: "search-scopes", sizeSensitive: true, run: searchScopesScenario),
     Scenario(name: "rex-overview", sizeSensitive: false, run: rexOverviewScenario),
     Scenario(name: "api-settings", sizeSensitive: false, run: apiSettingsScenario),

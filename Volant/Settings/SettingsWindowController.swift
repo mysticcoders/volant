@@ -11,6 +11,7 @@ final class SettingsState: ObservableObject {
     @Published var editing: AppEntry?
     @Published var registrationErrors: [String] = []
     @Published var iCloudStatus = ICloudSettingsSync.Status.off.text
+    @Published var notesICloudStatus: String?
 }
 
 /// Native settings; the injected configuration URL also supports isolated UI fixtures.
@@ -25,10 +26,11 @@ final class SettingsWindowController: NSWindowController {
     /// rebuilt after each change.
     private var sectionChanges: AnyCancellable?
 
-    /// `dictationAccess` defaults to a real helper connection, which connects only when typing is
-    /// chosen; fixtures pass one with a fake client.
+    /// `dictationAccess` and `menuItemsAccess` default to a real helper connection, which connects
+    /// only when typing is chosen or Search Menu Items is on; fixtures pass ones with a fake client.
     init(configURL: URL = Preferences.configURL, usageURL: URL = UsageStore.defaultURL, conversations: ACPConversations = ACPConversations(),
          dictationAccess: DictationTypingAccess = DictationTypingAccess(client: InputHostConnection()),
+         menuItemsAccess: MenuItemsAccess = MenuItemsAccess(client: InputHostConnection()),
          openAI: @escaping (AIConfiguration) -> Void = { _ in }, showWelcome: (() -> Void)? = nil, onChange: @escaping () -> Void) {
         self.onChange = onChange
         self.configURL = configURL
@@ -48,7 +50,7 @@ final class SettingsWindowController: NSWindowController {
         window.setFrameAutosaveName("VolantSettings")
         super.init(window: window)
         let hosting = NSHostingView(rootView: ThemedRoot(paletteText: false) {
-            SettingsView(state: state, conversations: conversations, dictationAccess: dictationAccess, configURL: configURL, usageURL: usageURL, onChange: onChange, openAI: openAI, showWelcome: showWelcome,
+            SettingsView(state: state, conversations: conversations, dictationAccess: dictationAccess, menuItemsAccess: menuItemsAccess, configURL: configURL, usageURL: usageURL, onChange: onChange, openAI: openAI, showWelcome: showWelcome,
                          chooseAIProject: { [weak self] completion in self?.chooseAIProject(completion) },
                          chooseAccountFolder: { [weak self] completion in self?.chooseAccountFolder(completion) },
                          importRaycast: { [weak self] in self?.showRaycastImport() })
@@ -105,6 +107,7 @@ private struct SettingsView: View {
     @ObservedObject var state: SettingsState
     @ObservedObject var conversations: ACPConversations
     let dictationAccess: DictationTypingAccess
+    let menuItemsAccess: MenuItemsAccess
     let configURL: URL
     let usageURL: URL
     let onChange: () -> Void
@@ -243,6 +246,9 @@ private struct SettingsView: View {
             } header: {
                 Text("Caffeinate")
             }
+            FocusSettingsSection(config: state.config, configURL: configURL, apply: apply)
+            BreakSettingsSection(config: state.config, configURL: configURL, apply: apply)
+            MenuItemsSettingsSection(config: state.config, access: menuItemsAccess, apply: apply, configURL: configURL)
         }
         .formStyle(.settings)
         .onAppear { loginStatus = SMAppService.mainApp.status }
@@ -258,6 +264,7 @@ private struct SettingsView: View {
                 GlobalShortcutRow(title: String(localized: "Dictate Text", comment: "Keyboard Shortcuts settings row"), key: "talkHotKey", value: state.config.talkHotKey, configURL: configURL, onChange: onChange)
                 GlobalShortcutRow(title: String(localized: "Lock Screen", comment: "Keyboard Shortcuts settings row"), key: "lockScreenHotKey", value: state.config.lockScreenHotKey, configURL: configURL, onChange: onChange)
                 GlobalShortcutRow(title: String(localized: "Sleep Displays", comment: "Keyboard Shortcuts settings row"), key: "sleepDisplaysHotKey", value: state.config.sleepDisplaysHotKey, configURL: configURL, onChange: onChange)
+                GlobalShortcutRow(title: String(localized: "Toggle Focus Session", comment: "Keyboard Shortcuts settings row: start a Focus session with the last setup, or end the running one"), key: "focusHotKey", value: state.config.focusHotKey, configURL: configURL, onChange: onChange)
             } footer: {
                 SettingsFooter(String(localized: "Click a shortcut and press a new combination; it saves immediately. Hold Dictate Text while you speak, or tap it to start and again to stop."))
             }
@@ -362,14 +369,17 @@ private struct SettingsView: View {
                 SettingsFooter(String(localized: "Aliases, shortcuts and preferences live in one portable JSON file."))
             }
             Section {
-                Toggle("Sync settings with iCloud", isOn: boolean("syncSettingsWithICloud", state.config.syncSettingsWithICloud))
+                Toggle("Sync settings and notes with iCloud", isOn: boolean("syncSettingsWithICloud", state.config.syncSettingsWithICloud))
                 if state.config.syncSettingsWithICloud {
                     LabeledContent("Status") { Text(state.iCloudStatus).foregroundStyle(.secondary).multilineTextAlignment(.trailing) }
+                }
+                if let notes = state.notesICloudStatus {
+                    LabeledContent("Notes") { Text(notes).foregroundStyle(.secondary).multilineTextAlignment(.trailing) }
                 }
             } header: {
                 Text("iCloud")
             } footer: {
-                SettingsFooter(String(localized: "Keyboard shortcuts, snippets, quicklinks, aliases, appearance and clipboard history length follow you to Macs signed in to the same Apple Account. App shortcuts, favorites, Dock, status bar, dictation, AI and extension settings stay on this Mac. When turned on, settings already in iCloud replace these, and a copy of this Mac's config.json is kept beside it."))
+                SettingsFooter(String(localized: "Keyboard shortcuts, snippets, quicklinks, aliases, appearance and clipboard history length follow you to Macs signed in to the same Apple Account. App shortcuts, favorites, Dock, status bar, dictation, AI and extension settings stay on this Mac. When turned on, settings already in iCloud replace these, and a copy of this Mac's config.json is kept beside it. Notes move to iCloud Drive › Volant › Notes, where Volant for iPhone reads them, and this Mac's notes folder is kept as a dated backup. Turning sync off copies your notes back to this Mac."))
             }
             Section {
                 LabeledContent("Raycast") {

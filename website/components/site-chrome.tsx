@@ -8,7 +8,7 @@ import { StarButton } from '@/components/star-button';
 
 export const repositoryURL = 'https://github.com/mysticcoders/volant';
 export const socialURL = 'https://x.com/mysticcoders';
-export const appVersion = '0.3.34';
+export const appVersion = '0.4.0';
 export const downloadURL = `/updates/Volant-${appVersion}.dmg`;
 
 export function Brand() {
@@ -27,6 +27,7 @@ export function SiteHeader({ children }: { children?: ReactNode }) {
         <Brand />
       </a>
       <nav aria-label="Main navigation">
+        <a href="/try">Try it</a>
         <a href="/#answers">Answers</a>
         <a href="/#agents">Agents</a>
         <a href="/#launcher">Launcher</a>

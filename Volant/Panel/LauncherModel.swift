@@ -15,7 +15,10 @@ enum LauncherAction {
     case open(String)
     case create(String)
     case confetti
+    case camera
     case systemAction(SystemAction)
+    /// Settings › General, where Search Menu Items is turned on.
+    case menuItemsSettings
     case checkForUpdates, whatsNew, about, quit
     case welcome
 }
@@ -29,9 +32,25 @@ enum LauncherScope: Hashable {
 enum ResultRow: Identifiable, Hashable {
     case core(CoreCommand)
     case systemAction(SystemAction)
+    /// Appearance or menu bar hiding, with its current state when it could be read.
+    case systemToggle(SystemToggle, on: Bool?)
+    /// The last color picked from the screen, in one format.
+    case pickedColor(PickedColor, PickedColor.Format)
+    /// Opens the loupe again, listed after the picked color's formats.
+    case pickAnotherColor
+    /// Opens the Privacy & Security pane a refused command needs.
+    case privacySettings(PrivacyPane)
     case appleShortcut(AppleShortcut)
     case server(ListeningServer)
+    /// A menu item of the app that was in front, for Search Menu Items.
+    case menuItem(MenuItemEntry)
+    /// Search Menu Items while its switch is off: opens the setting.
+    case menuItemsOff
     case caffeinate(CaffeinateCommand)
+    /// A Focus row and its subtitle, worked out when the rows are built.
+    case focus(FocusRow, detail: String)
+    /// A Break row and its subtitle, worked out when the rows are built.
+    case breaks(BreakRow, detail: String)
     case systemSettings(SystemSettingsDestination)
     case settings
     case reloadConfig
@@ -64,9 +83,17 @@ enum ResultRow: Identifiable, Hashable {
         switch self {
         case .appleShortcut(let shortcut): return "apple-shortcut:" + shortcut.id
         case .server(let server): return "server:" + server.id
+        case .menuItem(let entry): return "menu-item:" + entry.item.id
+        case .menuItemsOff: return "command:menu-items-off"
         case .core(let command): return "core:" + command.rawValue
         case .systemAction(let action): return "system-action:" + action.rawValue
+        case .systemToggle(let toggle, _): return "system-toggle:" + toggle.rawValue
+        case .pickedColor(_, let format): return "picked-color:" + format.rawValue
+        case .pickAnotherColor: return "picked-color:another"
+        case .privacySettings(let pane): return "privacy:" + pane.rawValue
         case .caffeinate(let command): return "caffeinate:" + command.id
+        case .focus(let row, _): return "focus:" + row.id
+        case .breaks(let row, _): return "break:" + row.id
         case .agentSession(let session): return "agent:" + session.id
         case .herdrMachine(let machine, _, _): return "herdr-machine:" + (machine?.id ?? "local")
         case .rexPane(let pane): return "rex:" + pane.id
@@ -103,7 +130,11 @@ enum ResultRow: Identifiable, Hashable {
         case .server(let server):
             return server.exposed ? String(localized: "Network", comment: "Server row label: other machines can connect")
                 : String(localized: "Local", comment: "Server row label: only this Mac can connect")
-        case .core, .caffeinate, .systemAction: return String(localized: "Command", comment: "Result row kind label")
+        case .menuItem(let entry): return entry.item.shortcut?.display ?? String(localized: "Menu Item", comment: "Result row kind label for a menu item without a keyboard shortcut")
+        case .core, .caffeinate, .focus, .breaks, .systemAction, .systemToggle, .menuItemsOff: return String(localized: "Command", comment: "Result row kind label")
+        case .pickedColor: return String(localized: "Color", comment: "Result row kind label: a color picked from the screen")
+        case .pickAnotherColor: return String(localized: "Command", comment: "Result row kind label")
+        case .privacySettings: return String(localized: "System Settings", comment: "Result row kind label")
         case .agentSession(let session): return session.status
         case .herdrMachine(_, let enabled, _): return enabled ? String(localized: "Enabled", comment: "Result row kind label: a Herdr machine that is on") : String(localized: "Disabled", comment: "Result row kind label: a Herdr machine that is off")
         case .rexPane(let pane): return pane.state.title
@@ -133,7 +164,7 @@ enum ResultRow: Identifiable, Hashable {
 
     var isCoreCommand: Bool {
         switch self {
-        case .core, .caffeinate, .settings, .reloadConfig, .agents, .volume, .audioRoute, .connectivity, .systemSettings, .systemAction: return true
+        case .core, .caffeinate, .focus, .breaks, .settings, .reloadConfig, .agents, .volume, .audioRoute, .connectivity, .systemSettings, .systemAction, .systemToggle, .pickedColor, .pickAnotherColor, .privacySettings, .menuItemsOff: return true
         default: return false
         }
     }
@@ -143,9 +174,18 @@ enum ResultRow: Identifiable, Hashable {
         switch self {
         case .appleShortcut: return String(localized: "Run Shortcut", comment: "Footer and Actions label for Return")
         case .server: return String(localized: "Open in Browser", comment: "Footer and Actions label for Return on a server row")
+        case .menuItem(let entry): return entry.item.enabled ? String(localized: "Choose Menu Item", comment: "Footer label for Return on a menu item row")
+            : String(localized: "Not Available Now", comment: "Footer label for Return on a disabled menu item row")
+        case .menuItemsOff: return String(localized: "Open Settings", comment: "Footer and Actions label for Return")
         case .core: return String(localized: "Open Command", comment: "Footer and Actions label for Return")
         case .systemAction(let action): return action.title.replacingOccurrences(of: "…", with: "")
+        case .systemToggle(let toggle, let on): return toggle.actionTitle(on: on)
+        case .pickedColor(_, let format): return String(localized: "Copy as \(format.label, format: .verbatim)", comment: "Footer and Actions label for Return on a picked color; the value is a format such as HEX or RGB")
+        case .pickAnotherColor: return String(localized: "Pick Color", comment: "Footer and Actions label for Return on Pick Another Color")
+        case .privacySettings: return String(localized: "Open Settings", comment: "Footer and Actions label for Return")
         case .caffeinate(let command): return command.stop ? String(localized: "Stop", comment: "Footer label for Return: stop Caffeinate") : String(localized: "Start", comment: "Footer label for Return: start Caffeinate")
+        case .focus(let row, _): return row.primaryAction
+        case .breaks(let row, _): return row.primaryAction
         case .agentSession: return String(localized: "Focus in Herdr", comment: "Footer and Actions label for Return")
         case .herdrMachine(let machine, let enabled, let busy):
             if busy { return String(localized: "Working…", comment: "Footer and Actions label for Return") }
@@ -174,7 +214,9 @@ enum ResultRow: Identifiable, Hashable {
         case .newNote: return String(localized: "Create Note", comment: "Footer and Actions label for Return")
         case .extensionRun(let ext, _): return ext.communityBlocked ? String(localized: "Open Extension Settings", comment: "Footer and Actions label for Return") : (ext.enabled ? String(localized: "Run Extension", comment: "Footer and Actions label for Return") : String(localized: "Enable and Run…", comment: "Footer and Actions label for Return"))
         case .extensionResult: return String(localized: "Copy Result", comment: "Footer and Actions label for Return")
-        case .extensionItem(let item, _): return item.url == nil ? String(localized: "Copy Title", comment: "Footer and Actions label for Return") : String(localized: "Open Link", comment: "Footer and Actions label for Return")
+        case .extensionItem(let item, _):
+            if item.returnCopies, let copy = item.copy { return copy.displayTitle }
+            return item.url == nil ? String(localized: "Copy Title", comment: "Footer and Actions label for Return") : String(localized: "Open Link", comment: "Footer and Actions label for Return")
         case .snippet: return String(localized: "Copy Snippet", comment: "Footer and Actions label for Return")
         case .emoji: return String(localized: "Copy Emoji", comment: "Footer and Actions label for Return")
         case .quicklink: return String(localized: "Open Link", comment: "Footer and Actions label for Return")
@@ -203,6 +245,7 @@ struct ResultSection: Identifiable, Equatable {
     /// Titles the launcher also finds sections by, so building and finding use the same text.
     static let calculatorTitle = String(localized: "Calculator", comment: "Launcher section title for calculator answers")
     static let appleShortcutsTitle = String(localized: "Apple Shortcuts", comment: "Launcher section title for shortcuts from the Shortcuts app")
+    static let pickedColorTitle = String(localized: "Picked Color", comment: "Launcher section title for the color picked from the screen")
 }
 
 /// What a result row draws besides its own payload: the selected identity, the current row for
@@ -213,6 +256,8 @@ final class LauncherRowState: ObservableObject {
     @Published fileprivate(set) var selectedID: String?
     @Published fileprivate(set) var rowsByID: [String: ResultRow] = [:]
     @Published fileprivate(set) var contactImages: [String: NSImage] = [:]
+    /// Image previews for list extension rows; only rows that carry an image observe it.
+    let extensionImages = ExtensionRowImages()
     private let icons: IconCache
     private let clipImages = NSCache<NSNumber, NSImage>()
 
@@ -311,6 +356,10 @@ final class LauncherModel: ObservableObject {
     var showingTranslation: Bool { ["translate", "translation", "translator"].contains(routedQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()) }
     let caffeinate: CaffeinateService
     private var caffeinateSubscription: AnyCancellable?
+    let focus: FocusController
+    private var focusSubscription: AnyCancellable?
+    let breaks: BreakController
+    private var breaksSubscription: AnyCancellable?
     var showingEmoji: Bool { routedQuery.trimmingCharacters(in: .whitespaces).hasPrefix(":") }
     var emojiSearch: (String) -> [EmojiEntry] = { EmojiIndex.search($0, limit: Int.max) }
     var searchText: String {
@@ -327,6 +376,21 @@ final class LauncherModel: ObservableObject {
     @Published var connectivityBusy = false
     @Published var notice: String? = nil
     var dismiss: () -> Void = {}
+    /// Shows the launcher again after something hid it to work, such as Pick Color's loupe.
+    var reopen: () -> Void = {}
+    /// The screen sampler behind Pick Color; tests supply a fake.
+    var colorSampler: ColorSampling = ScreenColorSampler()
+    /// The last color picked this session, kept in memory only and shown under the Pick Color phrases.
+    @Published private(set) var pickedColor: PickedColor?
+    private(set) var samplingColor = false
+    var cameraAccess: CameraAccess = SystemCameraAccess()
+    var systemToggles = SystemToggleService()
+    private(set) var systemToggleBusy = false
+    /// States written by a toggle this session, preferred over the global preferences, which can
+    /// lag a moment behind System Events.
+    private var systemToggleStates: [SystemToggle: Bool] = [:]
+    /// A fresh read of the global preferences domain, for the toggles' row descriptions.
+    var globalDefaults: () -> [String: Any]? = { UserDefaults.standard.persistentDomain(forName: UserDefaults.globalDomain) }
     let appleShortcuts = AppleShortcutsModel()
     private var shortcutsSubscription: AnyCancellable?
     private var shortcutRunQuery: String?
@@ -334,6 +398,10 @@ final class LauncherModel: ObservableObject {
     let servers = ServersModel()
     private var serversSubscription: AnyCancellable?
     var showingServers: Bool { ListeningServers.queryTerm(routedQuery) != nil }
+    /// Search Menu Items' items for this launcher session, cleared when the launcher is dismissed.
+    let menuItems = MenuItemsModel()
+    private var menuItemsSubscription: AnyCancellable?
+    var showingMenuItems: Bool { MenuItemsQuery.term(routedQuery) != nil }
     let agents: AgentsModel
     let conversations = ACPConversations()
     /// The conversation AI Chat shows; everything that acts on "the" conversation acts on this one.
@@ -577,11 +645,13 @@ final class LauncherModel: ObservableObject {
     @Published private(set) var heldCalculation: CalculationAnswer?
     var calculationHoldDuration: TimeInterval = 0.6
 
-    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), caffeinate: CaffeinateService = CaffeinateService(), files: FileSearch = FileSearch(), agents: AgentsModel = AgentsModel(), rex: RexModel = RexModel(), onNote: @escaping (LauncherAction) -> Void) {
+    init(index: AppIndex, clipboard: ClipboardStore, notes: NotesStore, config: Preferences, usage: UsageStore = UsageStore(), caffeinate: CaffeinateService = CaffeinateService(), focus: FocusController = FocusController(stateURL: FileManager.default.temporaryDirectory.appendingPathComponent("volant-focus-\(UUID().uuidString).json"), automaticTimer: false, restore: false), breaks: BreakController = BreakController(stateURL: FileManager.default.temporaryDirectory.appendingPathComponent("volant-breaks-\(UUID().uuidString).json"), idleSeconds: { 0 }, inCall: { false }, automaticTimer: false, restore: false), files: FileSearch = FileSearch(), agents: AgentsModel = AgentsModel(), rex: RexModel = RexModel(), onNote: @escaping (LauncherAction) -> Void) {
         self.agents = agents
         self.rex = rex
         self.files = files
         self.caffeinate = caffeinate
+        self.focus = focus
+        self.breaks = breaks
         self.usage = usage
         self.index = index
         self.clipboard = clipboard
@@ -589,6 +659,11 @@ final class LauncherModel: ObservableObject {
         self.config = config
         self.onNote = onNote
         self.promotedHarness = config.promotedHarness
+        rowState.extensionImages.load = { [weak self] ext, url, done in
+            guard let self else { done(.stopped); return }
+            self.extensions.loadRowImage(ext, url: url, completion: done)
+        }
+        rowState.extensionImages.authorize = { [weak self] ext, url in self?.extensions.rowImageURL(ext, url) != nil }
         useFSearch()
         clipboardSubscription = clipboard.changes.receive(on: DispatchQueue.main).sink { [weak self] in
             guard let self, self.showingClipboard else { return }
@@ -602,6 +677,19 @@ final class LauncherModel: ObservableObject {
             guard let self, self.dictationSurface == .indicator else { return }
             self.dictationIndicator.heard(text)
         }
+        focusSubscription = focus.$session.map { $0.map { [$0.isPaused] } }.removeDuplicates().dropFirst().sink { [weak self] _ in
+            DispatchQueue.main.async {
+                guard let self, FocusCommand.parse(self.query) != nil, self.entryForm == nil else { return }
+                self.refreshFocusResults()
+            }
+        }
+        breaksSubscription = breaks.$schedule.map { "\($0.phase.rawValue)/\($0.pausedUntil == nil)" }
+            .combineLatest(breaks.$preferences.map(\.enabled)).map { "\($0)/\($1)" }.removeDuplicates().dropFirst().sink { [weak self] _ in
+                DispatchQueue.main.async {
+                    guard let self, BreakCommand.parse(self.query) != nil else { return }
+                    self.refreshBreakResults()
+                }
+            }
         caffeinateSubscription = caffeinate.$command.dropFirst().sink { [weak self] _ in
             DispatchQueue.main.async {
                 guard let self else { return }
@@ -626,6 +714,9 @@ final class LauncherModel: ObservableObject {
         }
         serversSubscription = servers.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.refreshServerResults() }
+        }
+        menuItemsSubscription = menuItems.objectWillChange.sink { [weak self] _ in
+            DispatchQueue.main.async { self?.refreshMenuResults(keepingSelection: true) }
         }
         agentSubscription = agents.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.refreshAgentResults() }
@@ -673,7 +764,7 @@ final class LauncherModel: ObservableObject {
                 switch result {
                 case .success(let items):
                     self.notice = items.isEmpty ? String(localized: "\(ext.name) returned nothing.", comment: "Launcher notice when an extension returns no rows") : nil
-                    self.sections = [ResultSection(title: ext.name, rows: items.map { .extensionItem($0, source: ext) })]
+                    self.showExtensionItems(items, from: ext)
                     self.selection = selectedID.flatMap { id in self.rows.firstIndex { $0.id == id } } ?? 0
                 case .failure(let error):
                     guard !ExtensionManager.ExtensionError.isCancellation(error) else { return }
@@ -748,10 +839,18 @@ final class LauncherModel: ObservableObject {
         scopeRun?.cancel()
         scopeRerun = false
         extensions.cancelItemsRun()
+        rowState.extensionImages.reset()
         scope = nil
         scopeFilter = nil
         if query.isEmpty { refresh() } else { query = "" }
         searchFocusRequest = UUID()
+    }
+
+    /// Shows a list extension's rows as a new list, so image previews still loading for the rows it
+    /// replaces are dropped when they arrive.
+    private func showExtensionItems(_ items: [ExtensionItem], from ext: InstalledExtension) {
+        rowState.extensionImages.reset()
+        sections = [ResultSection(title: ext.name, rows: items.map { .extensionItem($0, source: ext) })]
     }
 
     /// Chooses an entry in the scoped extension's dropdown and runs it at once for the field's text.
@@ -809,6 +908,7 @@ final class LauncherModel: ObservableObject {
         scopeRun?.cancel()
         scopeRerun = false
         extensions.cancelItemsRun()
+        rowState.extensionImages.reset()
         scope = nil
         scopeFilter = nil
         pendingExtension = nil
@@ -818,6 +918,7 @@ final class LauncherModel: ObservableObject {
         wifiJoin = nil
         entryForm = nil
         actionFeedback = nil
+        systemToggleStates = [:]
         files.cancel()
         notesSearch?.cancel()
         if showingTranslation { translation.clear() }
@@ -899,6 +1000,71 @@ final class LauncherModel: ObservableObject {
                          comment: "Servers notice; servers all is a typed command and stays in English")) : nil)
         if !rows.isEmpty { actionFeedback = servers.message }
         selection = selectedID.flatMap { id in rows.firstIndex { $0.id == id } } ?? 0
+    }
+
+    /// Shows Search Menu Items: a row that opens the setting while it is off; otherwise the captured
+    /// app's menu items for the typed filter, with a notice while they load, when no app was in front
+    /// or when the helper refused, and a row to Privacy & Security when Accessibility is off.
+    private func refreshMenuResults(keepingSelection: Bool) {
+        guard showingMenuItems else { return }
+        let selectedID = keepingSelection ? selectedRow?.id : nil
+        defer { selection = selectedID.flatMap { id in rows.firstIndex { $0.id == id } } ?? 0 }
+        notice = nil
+        guard config.searchMenuItems else {
+            sections = [ResultSection(title: CoreCommand.menuItems.title, rows: [.menuItemsOff])]
+            return
+        }
+        guard let target = menuItems.target else {
+            sections = []
+            notice = MenuItemsModel.noTarget
+            return
+        }
+        if menuItems.refusal == .notTrusted {
+            sections = [ResultSection(title: PrivacyPane.accessibility.sectionTitle, rows: [.privacySettings(.accessibility)])]
+            actionFeedback = MenuRefusal.notTrusted.message
+            return
+        }
+        let ranked = MenuItemSearch.rank(menuItems.items, term: MenuItemsQuery.term(routedQuery) ?? "")
+        sections = ranked.isEmpty ? [] : [ResultSection(title: String(localized: "\(target.name, format: .verbatim) Menus", comment: "Search Menu Items section title; the value is an app name such as TextEdit"),
+                                                        rows: ranked.map { .menuItem(MenuItemEntry(item: $0, appPath: target.path)) })]
+        if menuItems.loading {
+            notice = String(localized: "Reading \(target.name, format: .verbatim)’s menus…", comment: "Search Menu Items notice while reading an app's menus; the value is an app name")
+        } else if let refusal = menuItems.refusal {
+            notice = refusal.message
+        } else if menuItems.unavailable {
+            notice = MenuItemsModel.helperUnavailable
+        } else if ranked.isEmpty {
+            notice = menuItems.items.isEmpty ? String(localized: "No menu items found.", comment: "Search Menu Items notice when the app's menus are empty")
+                : String(localized: "No matching menu items", comment: "Search Menu Items notice when nothing matches the typed filter")
+        }
+        if !ranked.isEmpty, menuItems.truncated {
+            actionFeedback = String(localized: "Showing the first \(menuItems.items.count, specifier: "%lld") menu items.", comment: "Search Menu Items footer when a limit cut the list short")
+        }
+    }
+
+    /// The launcher is about to appear: remembers the app in front for Search Menu Items, only while
+    /// its switch is on, and drops anything read for the previous session.
+    func captureMenuTarget(_ app: NSRunningApplication?) {
+        menuItems.capture(config.searchMenuItems ? MenuTarget.capture(app) : nil)
+    }
+
+    /// The launcher was dismissed: forgets the menu titles and the rows that show them.
+    func menuItemsDismissed() {
+        menuItems.clear()
+        if showingMenuItems { sections = [] }
+    }
+
+    /// Return on a menu item: asks the helper to press it once the launcher is hidden and the app is in
+    /// front again. A refusal brings the launcher back on Search Menu Items with the reason.
+    private func pressMenuItem(_ item: MenuItem) {
+        guard item.enabled else { actionFeedback = MenuRefusal.disabled.message; return }
+        menuItems.press(item) { [weak self] message in
+            guard let self, let message else { return }
+            self.reopen()
+            self.query = CoreCommand.menuItems.query
+            self.actionFeedback = message
+        }
+        dismiss()
     }
 
     /// Updates for installed extensions in the catalog this Mac last accepted; the app connects it to
@@ -1104,6 +1270,12 @@ final class LauncherModel: ObservableObject {
             refreshServerResults()
             return
         }
+        if showingMenuItems {
+            sections = []
+            if config.searchMenuItems { menuItems.loadIfNeeded() }
+            refreshMenuResults(keepingSelection: false)
+            return
+        }
         if showingAppleShortcuts {
             sections = []
             if searchesSecondarySources { appleShortcuts.refresh() }
@@ -1130,6 +1302,8 @@ final class LauncherModel: ObservableObject {
         }
         if showingTranslation { sections = []; return }
         if CaffeinateCommand.matches(q) { refreshCaffeinateResults(); return }
+        if FocusCommand.parse(q) != nil { refreshFocusResults(); return }
+        if BreakCommand.parse(q) != nil { refreshBreakResults(); return }
         if q.lowercased() == "emoji" {
             sections = []
             DispatchQueue.main.async { [weak self] in
@@ -1276,6 +1450,11 @@ final class LauncherModel: ObservableObject {
             immediate.append(ResultSection(title: String(localized: "Alias", comment: "Launcher section title for the app an alias opens"), rows: [.app(app)]))
         }
         if !answers.isEmpty { immediate.append(ResultSection(title: ResultSection.calculatorTitle, rows: answers)) }
+        let showsPickedColor = pickedColor != nil && LauncherRouting.colorPickerPhrases.contains(q.lowercased())
+        if let pickedColor, showsPickedColor {
+            immediate.append(ResultSection(title: ResultSection.pickedColorTitle,
+                                           rows: PickedColor.Format.allCases.map { .pickedColor(pickedColor, $0) } + [.pickAnotherColor]))
+        }
         let snips = config.snippets.filter { $0.keyword.lowercased() == q.lowercased() }.map { ResultRow.snippet($0) }
         if !snips.isEmpty { immediate.append(ResultSection(title: String(localized: "Snippets", comment: "Launcher section title"), rows: snips)) }
         let links = QuicklinkResolver.search(config.quicklinks, head).map { ResultRow.quicklink($0, query: tail) }
@@ -1288,11 +1467,16 @@ final class LauncherModel: ObservableObject {
         let aliased = Set(immediate.flatMap(\.rows).map(\.id))
         let apps = index.search(q, limit: 6, usage: usage).map { ResultRow.app($0) }.filter { !aliased.contains($0.id) }
         if !apps.isEmpty { immediate.append(ResultSection(title: String(localized: "Applications", comment: "Launcher section title"), rows: apps)) }
+        let toggles = SystemToggle.search(q)
+        let defaults = toggles.isEmpty ? nil : globalDefaults()
         let actions = SystemAction.search(q).map(ResultRow.systemAction)
+            + toggles.map { ResultRow.systemToggle($0, on: systemToggleStates[$0] ?? $0.state(inGlobalDefaults: defaults)) }
         if !actions.isEmpty { immediate.append(ResultSection(title: String(localized: "System", comment: "Launcher section title for system actions such as Lock Screen"), rows: actions)) }
         let panes = SystemSettingsDestination.search(q).map { ResultRow.systemSettings($0) }
         if !panes.isEmpty { immediate.append(ResultSection(title: String(localized: "System Settings", comment: "Launcher section title for System Settings panes"), rows: panes)) }
-        if !matchingCommands.isEmpty { immediate.append(ResultSection(title: "Volant", rows: matchingCommands)) }
+        // After a pick, Pick Another Color below the formats stands in for the Pick Color command.
+        let commandRows = showsPickedColor ? matchingCommands.filter { $0 != .core(.colorPicker) } : matchingCommands
+        if !commandRows.isEmpty { immediate.append(ResultSection(title: "Volant", rows: commandRows)) }
         let shortcuts = appleShortcuts.matches(q).prefix(6).map(ResultRow.appleShortcut)
         if !shortcuts.isEmpty { immediate.append(ResultSection(title: ResultSection.appleShortcutsTitle, rows: shortcuts)) }
         return immediate
@@ -1628,6 +1812,155 @@ final class LauncherModel: ObservableObject {
         }
     }
 
+    /// The query the Focus rows were last built for, so only a same-query update keeps the selection.
+    private var focusRowsQuery: String?
+
+    /// The Focus rows for the query: starting a session when none runs, or controlling the one that does.
+    /// A new query selects the first row; a session change under the same query keeps the selected row.
+    private func refreshFocusResults() {
+        guard let command = FocusCommand.parse(query) else { return }
+        let selectedID = focusRowsQuery == query ? selectedRow?.id : nil
+        focusRowsQuery = query
+        let rows = FocusRow.rows(for: command, session: focus.session)
+        sections = [ResultSection(title: String(localized: "Focus", comment: "Launcher section title; the Focus command"), rows: rows.map { ResultRow.focus($0, detail: $0.detail(remembered: config.focus.lastSetup, session: focus.session)) })]
+        notice = nil
+        if let selectedID, let index = self.rows.firstIndex(where: { $0.id == selectedID }) { selection = index }
+        else { selection = 0 }
+    }
+
+    /// The query the Break rows were last built for, so only a same-query update keeps the selection.
+    private var breakRowsQuery: String?
+
+    /// The Break rows for the query and the schedule's state. A new query selects the first row; a
+    /// state change under the same query keeps the selected row when it is still there.
+    private func refreshBreakResults() {
+        guard let command = BreakCommand.parse(query) else { return }
+        let selectedID = breakRowsQuery == query ? selectedRow?.id : nil
+        breakRowsQuery = query
+        let rows = BreakRow.rows(for: command, controller: breaks)
+        sections = [ResultSection(title: String(localized: "Breaks", comment: "Launcher section title; the Breaks command"),
+                                  rows: rows.map { ResultRow.breaks($0, detail: $0.detail(controller: breaks)) })]
+        notice = nil
+        if let selectedID, let index = self.rows.firstIndex(where: { $0.id == selectedID }) { selection = index }
+        else { selection = 0 }
+    }
+
+    /// Acts on a Break row. Taking a break closes the launcher; the other rows stay so the owner
+    /// sees the new state.
+    private func performBreak(_ row: BreakRow) {
+        switch row {
+        case .takeNow:
+            breaks.takeBreakNow()
+            query = ""
+            dismiss()
+            return
+        case .endBreak: breaks.endBreak()
+        case .skipNext: breaks.skip()
+        case .pause: breaks.pauseForAnHour()
+        case .resume: breaks.resume()
+        case .turnOn, .turnOff: setBreaksEnabled(row == .turnOn)
+        }
+        refreshBreakResults()
+    }
+
+    /// Turns breaks on or off in config.json against the settings the launcher holds, retrying once
+    /// against a newer file, then applies the change and asks the app to reload its settings.
+    private func setBreaksEnabled(_ enabled: Bool) {
+        for attempt in 0..<2 {
+            var current = config.breaks
+            if attempt == 1, let latest = try? JSONDecoder().decode(Preferences.self, from: Data(contentsOf: actionConfigURL)) {
+                config = latest
+                current = latest.breaks
+            }
+            var updated = current
+            updated.enabled = enabled
+            if (try? Preferences.updateBreaks(updated, expected: current, at: actionConfigURL)) != nil {
+                config.breaks = updated
+                breaks.apply(updated)
+                onNote(.reloadConfig)
+                return
+            }
+        }
+        actionFeedback = String(localized: "Couldn’t change Breaks. Check config.json.", comment: "Launcher message when turning breaks on or off can't be saved")
+    }
+
+    /// Acts on a Focus row. Starting or editing closes the launcher so the owner can get to work.
+    private func performFocus(_ row: FocusRow) {
+        switch row {
+        case .setUp: openFocusForm(editing: false)
+        case .edit: openFocusForm(editing: true)
+        case .quickStart(let minutes, let goal):
+            var setup = config.focus.lastSetup
+            if let minutes { setup.minutes = minutes }
+            if let goal { setup.goal = goal }
+            setup = FocusSetup(goal: setup.goal, minutes: setup.minutes, apps: setup.apps, websites: setup.websites, categories: setup.categories)
+            focus.start(setup)
+            rememberFocusSetup(setup)
+            query = ""
+            dismiss()
+        case .pause: focus.pause(); refreshFocusResults()
+        case .resume: focus.resume(); refreshFocusResults()
+        case .complete: focus.complete(); query = ""; dismiss()
+        case .end: focus.end(); refreshFocusResults()
+        }
+    }
+
+    /// Apps whose names match, for the Focus form's add field.
+    func searchApps(_ text: String) -> [AppEntry] { index.search(text, limit: 6) }
+
+    /// Opens the Focus form, filled from the running session when editing and from the last setup otherwise.
+    func openFocusForm(editing: Bool) {
+        let setup = editing ? (focus.session?.setup ?? config.focus.lastSetup) : config.focus.lastSetup
+        actionTarget = nil
+        showingAppMenu = false
+        actionFeedback = nil
+        let draft = LauncherEntryDraft(kind: editing && focus.isRunning ? .focusEdit : .focus, snapshot: LauncherEntries.Snapshot(config),
+                                       focus: FocusDraft(setup: setup, expected: config.focus))
+        draft.name = setup.goal
+        entryForm = draft
+        focusEntryName()
+    }
+
+    /// Saves the setup as the one new sessions start from. A failure is reported, not fatal: the
+    /// session itself is already running.
+    private func rememberFocusSetup(_ setup: FocusSetup) {
+        var updated = config.focus
+        updated.lastSetup = setup
+        do {
+            try Preferences.updateFocus(updated, expected: config.focus, at: actionConfigURL)
+            config.focus = updated
+        } catch {
+            if let latest = try? JSONDecoder().decode(Preferences.self, from: Data(contentsOf: actionConfigURL)) {
+                var retried = latest.focus
+                retried.lastSetup = setup
+                if (try? Preferences.updateFocus(retried, expected: latest.focus, at: actionConfigURL)) != nil {
+                    config = latest
+                    config.focus = retried
+                    return
+                }
+            }
+            actionFeedback = String(localized: "Couldn’t remember this Focus setup. Check config.json.", comment: "Launcher message when the Focus setup can't be saved")
+        }
+    }
+
+    /// Starts or updates the session from the Focus form, then closes the launcher.
+    private func saveFocus(_ draft: LauncherEntryDraft) -> Bool {
+        guard let form = draft.focus else { return false }
+        let setup = form.setup(goal: draft.name)
+        guard setup.blocksAnything else {
+            draft.error = String(localized: "Add at least one app, website or category to block.", comment: "Focus form error")
+            return false
+        }
+        if draft.kind == .focusEdit, focus.isRunning { focus.edit(setup) } else { focus.start(setup) }
+        rememberFocusSetup(setup)
+        entryForm = nil
+        query = ""
+        searchFocusRequest = UUID()
+        restoreSearchEditor()
+        dismiss()
+        return true
+    }
+
     private func refreshCaffeinateResults() {
         let selectedID = selectedRow?.id
         var commands = CaffeinateCommand.parse(query, keepsDisplayAwake: config.caffeinateKeepsDisplayAwake)
@@ -1668,23 +2001,37 @@ final class LauncherModel: ObservableObject {
     func activateSelection() {
         guard let row = selectedRow else { return }
         switch row {
-        case .appleShortcut, .server, .connectivity, .audioRoute, .volume, .extensionResult, .extensionItem, .newNote, .calculation: break
+        case .appleShortcut, .server, .connectivity, .audioRoute, .volume, .extensionResult, .extensionItem, .newNote, .calculation, .pickedColor, .pickAnotherColor, .privacySettings, .menuItem, .menuItemsOff: break
         default: usage.record(key: row.id, query: query)
         }
         switch row {
         case .appleShortcut(let shortcut): shortcutRunQuery = query; appleShortcuts.run(shortcut); return
         case .server(let server): openURL(server.url)
+        case .menuItem(let entry): pressMenuItem(entry.item); return
+        case .menuItemsOff: dismiss(); onNote(.menuItemsSettings); return
         case .systemAction(let action): onNote(.systemAction(action)); return
+        case .systemToggle(let toggle, _): toggleSystemSetting(toggle); return
+        case .pickedColor(let color, let format): copy(color.value(format))
+        case .pickAnotherColor: pickColor(); return
+        case .privacySettings(let pane): openURL(pane.url)
         case .core(let command):
             if let source = SearchScope(command: command) { enterSearchScope(source); return }
             if command == .catalog { query = command.query + " "; catalog.load(); return }
             if command == .ai { presentAIChat() }
             else if command == .talk { toggleDictation() }
             else if command == .confetti { onNote(.confetti); dismiss(); return }
+            else if command == .colorPicker { pickColor() }
+            else if command == .camera { openCamera() }
             else if command == .welcome { dismiss(); onNote(.welcome); return }
             else if command == .newSnippet { openEntryForm(.snippet) }
             else if command == .newQuicklink { openEntryForm(.quicklink) }
             else { query = command.query }
+            return
+        case .focus(let row, _):
+            performFocus(row)
+            return
+        case .breaks(let row, _):
+            performBreak(row)
             return
         case .caffeinate(let command):
             let succeeded = caffeinate.perform(command)
@@ -1769,6 +2116,7 @@ final class LauncherModel: ObservableObject {
         case .extensionResult(let text): copy(text)
         case .extensionItem(let item, let source):
             if let primary = item.primaryAction { runItemAction(source, item: item, action: primary); return }
+            if item.returnCopies { copyItem(source, item: item); return }
             guard let link = item.url, let url = URL(string: link) else { copy(item.title); return }
             _ = Self.openExtensionLink(url, fallback: item.secondaryURL.flatMap(URL.init(string:)))
             if item.onOpen == true { runItemAction(source, item: item, action: nil) }
@@ -1792,6 +2140,93 @@ final class LauncherModel: ObservableObject {
             }
         }
         dismiss()
+    }
+
+    /// Hides the launcher, shows macOS's color loupe, and reopens on the Pick Color results with
+    /// the new color's formats, HEX selected. Escape in the loupe reopens without a new color.
+    func pickColor() {
+        guard !samplingColor else { return }
+        samplingColor = true
+        let typed = query.trimmingCharacters(in: .whitespaces).lowercased()
+        let phrase = LauncherRouting.colorPickerPhrases.contains(typed) ? typed : Self.colorPickerQuery
+        dismiss()
+        colorSampler.sample { [weak self] color in
+            guard let self else { return }
+            self.samplingColor = false
+            if let color { self.pickedColor = color }
+            self.reopen()
+            if self.query == phrase { self.refresh() } else { self.query = phrase }
+            if let color, let index = self.rows.firstIndex(where: { $0.id == ResultRow.pickedColor(color, .hex).id }) { self.selection = index }
+        }
+    }
+    static let colorPickerQuery = "color picker"
+
+    /// Opens the camera preview when macOS allows it, asking for permission the first time;
+    /// otherwise explains why not, with the Camera privacy pane one Return away.
+    func openCamera() {
+        guard cameraAccess.hasCamera else {
+            actionFeedback = String(localized: "No camera is connected to this Mac.", comment: "Footer feedback when Open Camera finds no camera")
+            return
+        }
+        switch cameraAccess.authorization {
+        case .authorized: dismiss(); onNote(.camera)
+        case .notDetermined:
+            let gen = generation
+            PermissionGate.begin()
+            cameraAccess.requestAccess { [weak self] granted in
+                PermissionGate.end()
+                guard let self else { return }
+                if granted { self.dismiss(); self.onNote(.camera) }
+                else if gen == self.generation { self.showPrivacyProblem(.camera, message: Self.cameraDeniedMessage) }
+            }
+        case .denied: showPrivacyProblem(.camera, message: Self.cameraDeniedMessage)
+        case .restricted:
+            showPrivacyProblem(.camera, message: String(localized: "Camera access is restricted on this Mac, for example by a configuration profile or Screen Time.", comment: "Launcher message when camera access is restricted"))
+        }
+    }
+    static let cameraDeniedMessage = String(localized: "Volant isn’t allowed to use the camera. Turn it on in System Settings › Privacy & Security › Camera.", comment: "Launcher message when camera access was denied")
+
+    /// Flips appearance or menu bar hiding through System Events and keeps the launcher open with
+    /// the row showing the new state. A refused Automation request offers its privacy pane.
+    func toggleSystemSetting(_ toggle: SystemToggle) {
+        guard !systemToggleBusy else { return }
+        systemToggleBusy = true
+        let gen = generation
+        systemToggles.toggle(toggle) { [weak self] result in
+            guard let self else { return }
+            self.systemToggleBusy = false
+            switch result {
+            case .success(let on):
+                self.systemToggleStates[toggle] = on
+                guard gen == self.generation else { return }
+                self.replaceRows { row in
+                    if case .systemToggle(let shown, _) = row, shown == toggle { return .systemToggle(toggle, on: on) }
+                    return row
+                }
+                self.actionFeedback = toggle.confirmation(on: on)
+            case .failure(let failure):
+                guard gen == self.generation else { return }
+                if failure.needsPrivacySettings { self.showPrivacyProblem(.automation, message: failure.message) }
+                else { self.actionFeedback = failure.message }
+            }
+        }
+    }
+
+    /// Rewrites visible rows in place, keeping their identities and the selection.
+    private func replaceRows(_ transform: (ResultRow) -> ResultRow) {
+        immediate = immediate.map { ResultSection(title: $0.title, rows: $0.rows.map(transform)) }
+        sections = sections.map { ResultSection(title: $0.title, rows: $0.rows.map(transform)) }
+    }
+
+    /// Replaces the results with the one row that opens the privacy pane, and says why.
+    private func showPrivacyProblem(_ pane: PrivacyPane, message: String) {
+        generation += 1
+        files.cancel()
+        immediate = []; contactRows = []; fileRows = []
+        sections = [ResultSection(title: pane.sectionTitle, rows: [.privacySettings(pane)])]
+        selection = 0
+        notice = message
+        actionFeedback = message
     }
 
     var canTabToAIChat: Bool {
@@ -1829,6 +2264,7 @@ final class LauncherModel: ObservableObject {
     @discardableResult
     func saveEntry(_ draft: LauncherEntryDraft) -> Bool {
         guard entryForm === draft else { return false }
+        if draft.kind.isFocus { return saveFocus(draft) }
         do {
             let saved: Preferences
             let search: String
@@ -1842,6 +2278,8 @@ final class LauncherModel: ObservableObject {
                 saved = try LauncherEntries.appendQuicklink(Quicklink(name: draft.name, url: draft.text),
                                                             expected: draft.snapshot, at: actionConfigURL)
                 search = saved.quicklinks.last.map { String($0.name.split(separator: " ").first ?? "") } ?? ""
+            case .focus, .focusEdit:
+                return false
             }
             config = saved
             entryForm = nil
@@ -1958,11 +2396,27 @@ final class LauncherModel: ObservableObject {
             case .item(.copyPath): if let link = item.url { copy(link) }
             case .item: activate(rowID: target.id)
             case .custom(let action): runItemAction(source, item: item, action: action.id)
+            case .copy: copyItem(source, item: item)
             }
             return
         }
         guard case .item(let action) = entry else { actionTarget = nil; return }
         performAction(action, target: snapshot)
+    }
+
+    /// Copies an extension row's `copy` because the owner chose it, from Return or the Actions menu. The
+    /// launcher stays open and shows "Copied SVG" or why nothing was copied; a download that finishes after
+    /// the launcher moved on still copies but shows nothing.
+    func copyItem(_ ext: InstalledExtension, item: ExtensionItem) {
+        let gen = generation
+        extensions.copy(ext, item: item) { [weak self] result in
+            guard let self, gen == self.generation else { return }
+            switch result {
+            case .success(let confirmation): self.actionFeedback = confirmation
+            case .failure(let error): self.actionFeedback = "\(ext.name): \(error.localizedDescription)"
+            }
+        }
+        searchFocusRequest = UUID()
     }
 
     /// Runs a list extension's row action, or tells it a row was opened when `action` is nil, and shows
@@ -1982,7 +2436,7 @@ final class LauncherModel: ObservableObject {
                 if let notice = outcome.notice { self.actionFeedback = notice }
                 guard let items = outcome.items else { self.runExtension(ext, input: self.extensionItemsQuery, keepingSelection: true); return }
                 let selectedID = self.selectedRow?.id
-                self.sections = [ResultSection(title: ext.name, rows: items.map { .extensionItem($0, source: ext) })]
+                self.showExtensionItems(items, from: ext)
                 self.notice = items.isEmpty ? String(localized: "\(ext.name) returned nothing.", comment: "Launcher notice when an extension returns no rows") : nil
                 self.selection = selectedID.flatMap { id in self.rows.firstIndex { $0.id == id } } ?? 0
             case .failure(let error):

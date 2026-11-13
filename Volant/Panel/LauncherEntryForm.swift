@@ -3,11 +3,34 @@ import VolantCore
 
 enum LauncherEntryKind: String {
     case snippet, quicklink
+    /// Starts a Focus session, or changes the running one.
+    case focus, focusEdit
 
-    var title: String { self == .snippet ? String(localized: "Create Snippet", comment: "Launcher form title") : String(localized: "Create Quicklink", comment: "Launcher form title") }
-    var savedMessage: String { self == .snippet ? String(localized: "Snippet saved.") : String(localized: "Quicklink saved.") }
+    var title: String {
+        switch self {
+        case .snippet: return String(localized: "Create Snippet", comment: "Launcher form title")
+        case .quicklink: return String(localized: "Create Quicklink", comment: "Launcher form title")
+        case .focus: return String(localized: "Start Focus Session", comment: "Launcher form title")
+        case .focusEdit: return String(localized: "Edit Focus Session", comment: "Launcher form title")
+        }
+    }
+    var savedMessage: String {
+        switch self {
+        case .snippet: return String(localized: "Snippet saved.")
+        case .quicklink: return String(localized: "Quicklink saved.")
+        case .focus: return String(localized: "Focus session started.", comment: "Launcher message after starting a Focus session")
+        case .focusEdit: return String(localized: "Focus session updated.", comment: "Launcher message after editing a Focus session")
+        }
+    }
     /// The name field's placeholder, which also lets the panel find that field to focus it.
-    var namePlaceholder: String { self == .snippet ? String(localized: "Email signature", comment: "Example snippet name shown as the name field placeholder") : String(localized: "Search Docs", comment: "Example quicklink name shown as the name field placeholder") }
+    var namePlaceholder: String {
+        switch self {
+        case .snippet: return String(localized: "Email signature", comment: "Example snippet name shown as the name field placeholder")
+        case .quicklink: return String(localized: "Search Docs", comment: "Example quicklink name shown as the name field placeholder")
+        case .focus, .focusEdit: return String(localized: "Write the newsletter", comment: "Example Focus goal shown as the goal field placeholder")
+        }
+    }
+    var isFocus: Bool { self == .focus || self == .focusEdit }
 }
 
 /// The in-panel form's fields. It is observed by the form alone, so typing does not redraw the
@@ -21,10 +44,13 @@ final class LauncherEntryDraft: ObservableObject, Identifiable {
     /// The snippet text or the quicklink URL.
     @Published var text = ""
     @Published var error: String?
+    /// The length and block list, for the Focus kinds; the goal is `name`.
+    let focus: FocusDraft?
 
-    init(kind: LauncherEntryKind, snapshot: LauncherEntries.Snapshot) {
+    init(kind: LauncherEntryKind, snapshot: LauncherEntries.Snapshot, focus: FocusDraft? = nil) {
         self.kind = kind
         self.snapshot = snapshot
+        self.focus = focus
     }
 }
 
@@ -51,6 +77,16 @@ struct LauncherEntryFormView: View {
     }
 
     @ViewBuilder private var fields: some View {
+        if let focus = draft.focus {
+            FocusFormFields(focus: focus, appSearch: { model.searchApps($0) }, goalField: TextField(draft.kind.namePlaceholder, text: $draft.name)
+                .focused($field, equals: .name).onSubmit(save)
+                .accessibilityIdentifier("launcher-entry-name"))
+        } else {
+            entryFields
+        }
+    }
+
+    @ViewBuilder private var entryFields: some View {
         labeled(String(localized: "Name", comment: "Snippet or quicklink form field label")) {
             TextField(draft.kind.namePlaceholder, text: $draft.name)
                 .focused($field, equals: .name).onSubmit(save)
@@ -99,7 +135,7 @@ struct LauncherEntryFormView: View {
                     .accessibilityLabel(String(localized: "Error: \(error)", comment: "Accessibility label for a snippet or quicklink save error"))
             }
             Spacer(minLength: 8)
-            Button("Save") { save() }
+            Button(draft.kind == .focus ? String(localized: "Start", comment: "Focus form button: start the session") : String(localized: "Save")) { save() }
                 .keyboardShortcut(.return, modifiers: .command)
                 .accessibilityIdentifier("launcher-entry-save")
         }
@@ -120,6 +156,7 @@ struct LauncherEntryFormView: View {
     /// Saves, or moves focus to the first field that needs attention when saving fails.
     private func save() {
         guard !model.saveEntry(draft) else { return }
+        guard !draft.kind.isFocus else { return }
         if draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { field = .name }
         else if draft.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { field = .text }
     }

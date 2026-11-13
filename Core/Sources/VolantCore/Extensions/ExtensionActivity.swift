@@ -11,6 +11,9 @@ public struct ExtensionActivity: Equatable, Sendable {
         /// A GET or a row action's POST; `detail` is the host.
         case fetch, post
         case clipboardRead, clipboardWrite, log, location, storageSave
+        /// Drawing a row image's SVG preview in the extension helper: completed, denied (the markup was
+        /// refused), timedOut or failed. Never carries any of the markup.
+        case svgRender
     }
 
     public enum Outcome: String, Sendable {

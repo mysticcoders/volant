@@ -7,7 +7,7 @@ const slugs = readdirSync(docs, { withFileTypes: true })
   .filter((entry) => entry.isDirectory() && existsSync(new URL(`${entry.name}/page.tsx`, docs)))
   .map((entry) => entry.name)
   .sort();
-const urls = ['/', '/docs', ...slugs.map((slug) => `/docs/${slug}`)];
+const urls = ['/', '/try', '/iphone', '/docs', ...slugs.map((slug) => `/docs/${slug}`)];
 
 writeFileSync(new URL('../public/sitemap.xml', import.meta.url), [
   '<?xml version="1.0" encoding="UTF-8"?>',

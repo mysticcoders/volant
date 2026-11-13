@@ -12,13 +12,21 @@ UI_PATTERNS = (
     "Core/Sources/VolantCore/Settings/*", "Core/Sources/VolantCore/AI/*", "Volant/Settings/AppBindingEditor.swift", "Volant/Settings/LanguageSetting.swift", "Volant/Settings/AppBindingRow.swift", "Volant/HotKeys/KeyCombo.swift", "Volant/Settings/StatusMenu.swift", "Volant/Settings/SettingsStyle.swift", "Volant/Settings/ICloudSettingsSync.swift", "Volant/Settings/CryptoKeySection.swift", "Volant/Settings/ACPAccountsSection.swift",
     "Volant/Notes/LiveMarkdown*.swift", "Volant/Agents/*Model.swift", "Volant/Agents/HerdrFooterStatus.swift", "Volant/Agents/RexFooterStatus.swift", "Volant/Agents/HerdrQueryHeader.swift", "Volant/Agents/ChatContextPicker.swift", "Volant/Agents/ACPConversations.swift",
     "Volant/App/main.swift", "Volant/App/AppDelegate.swift", "Volant/Resources/*", "Volant/Appearance/*",
-    "Volant/Settings/AIModelDiscovery.swift", "Volant/Settings/ACPAgentDetection.swift", "Volant/Settings/AICredentials.swift", "Core/Sources/VolantCore/Clipboard/*", "Core/Sources/VolantCore/Emoji/*", "Core/Sources/VolantCore/Launcher/*", "Core/Sources/VolantCore/Agents/*", "Core/Sources/VolantCore/Herdr/*", "Core/Sources/VolantCore/Rex/*", "Shared/HerdrQuestion.swift", "Shared/HerdrClaudeQuestion.swift", "Shared/HerdrResponseController.swift", "Volant/SystemControl/SystemSettingsDestination.swift",
+    "Volant/Settings/AIModelDiscovery.swift", "Volant/Settings/ACPAgentDetection.swift", "Volant/Settings/AICredentials.swift", "Core/Sources/VolantCore/Clipboard/*", "Core/Sources/VolantCore/Emoji/*", "Core/Sources/VolantCore/Launcher/*", "Core/Sources/VolantCore/Agents/*", "Core/Sources/VolantCore/Herdr/*", "Core/Sources/VolantCore/Rex/*", "Shared/HerdrQuestion.swift", "Shared/HerdrClaudeQuestion.swift", "Shared/HerdrResponseController.swift", "Shared/ExtensionImageDecoding.swift", "Volant/SystemControl/SystemSettingsDestination.swift",
     "tools/launcher/*", "Volant/Settings/SettingsSection.swift",
+    # Search Menu Items: the launcher fixture drives its model; Settings shows its switch.
+    "Volant/MenuItems/*", "Core/Sources/VolantCore/MenuItems/*", "Volant/Settings/MenuItemsSettingsSection.swift",
+    # Focus: the launcher rows and form, the focus bar, reminder and menu bar item, and its Settings section.
+    "Volant/Focus/*", "Core/Sources/VolantCore/Focus/*", "Volant/Settings/FocusSettingsSection.swift",
+    # Breaks: the launcher rows, heads-up and Gentle panel, the full-screen overlays, and its Settings section.
+    "Volant/Breaks/*", "Core/Sources/VolantCore/Breaks/*", "Volant/Settings/BreakSettingsSection.swift",
     "tools/check-launcher.sh", "tools/check-launcher-actions.sh", "tools/app-module.sh", "tools/check-dictation-hud.sh", "tools/run-bounded-check.py",
     # Launcher fixtures drive these directly: volume and audio routes, Wi-Fi and Bluetooth, system actions,
     # Caffeinate, snippet and quicklink forms, and app shortcut bindings.
-    "Volant/SystemControl/*", "Volant/Snippets/*", "Volant/Quicklinks/*", "Volant/Settings/AppBindingStore.swift",
+    "Volant/SystemControl/*", "Volant/Camera/*", "Volant/Snippets/*", "Volant/Quicklinks/*", "Volant/Settings/AppBindingStore.swift",
     "VolantTests/LiveMarkdownTests.swift", "VolantTests/NotesStoreTests.swift",
+    # The Actions fixture draws SVG row previews with the extension helper's code.
+    "Shared/ExtensionSVGRasterizer.swift",
 )
 NATIVE_PATTERNS = ("Volant/*", "VolantTests/*", "VolantAgentHost/*", "VolantExtensionHost/*", "VolantAIHost/*", "VolantInputHost/*", "VolantFetchHost/*", "VolantRatesHost/*", "Integrations/*",
                    "Shared/*", "Core/*", "extensions/*", "docs/releases/*", "Scripts/*", "tools/*", "project.yml", ".swiftlint.yml", ".github/workflows/*")

@@ -1,0 +1,11 @@
+[
+  { "folder": "hackernews", "keywords": ["hn", "hacker news", "news"] },
+  { "folder": "lobsters", "keywords": ["lobsters", "lobste.rs", "news"] },
+  { "folder": "wikipedia", "keywords": ["wiki", "wikipedia"] },
+  { "folder": "case", "keywords": ["case", "camel", "snake", "kebab"] },
+  { "folder": "encode", "keywords": ["encode", "base64", "url"] },
+  { "folder": "fancytext", "keywords": ["fancy", "unicode", "bold"] },
+  { "folder": "characters", "keywords": ["characters", "chars", "symbol", "unicode"] },
+  { "folder": "wordcount", "keywords": ["count", "words", "wordcount"] },
+  { "folder": "hello", "keywords": ["hello", "hi"] }
+]

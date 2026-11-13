@@ -61,6 +61,12 @@ export const docGroups: DocGroup[] = [
           'Audio, connectivity, keep-awake, Settings, and upcoming system commands.',
       },
       {
+        slug: 'focus-and-breaks',
+        title: 'Focus and Breaks',
+        summary:
+          'Block distracting apps and websites while you work, and get reminded to step away.',
+      },
+      {
         slug: 'shortcuts',
         title: 'Apple Shortcuts',
         summary:

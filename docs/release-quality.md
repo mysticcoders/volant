@@ -736,3 +736,81 @@ Later the same day the owner installed a reader from Settings → Catalog in the
 - **Feed:** the signed build-48 appcast generated with this DMG passes `sign_update --verify`.
 
 **Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
+
+## 0.3.35 build 49 — November 7, 2026
+
+**What's in it.** See the [release notes](releases/0.3.35.md).
+
+**Build.** Built from `284520c` on `release/0.3.35` by `Scripts/ship.sh`.
+
+- **Notarization:** Apple accepted app submission `fb9d4d72-b447-4eca-ac96-e95f7182d8f9` and DMG submission `014d72cf-02dc-422a-ba19-9ae17796fdf1`. Both were stapled and passed Gatekeeper as Notarized Developer ID.
+- **Mounted DMG:** `Volant.app` 0.3.35, build 49, `arm64`, valid deep strict signature, stapled, Applications link present.
+- **DMG SHA-256:** `b4a13010a147572bdfb8756c41a261652735db3fcb7dcf5aea33be12e03e871f` (10223929 bytes).
+- **Feed:** the signed build-49 appcast generated with this DMG passes `sign_update --verify`.
+
+**Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
+
+## 0.3.36 build 50 — November 7, 2026
+
+**What's in it.** See the [release notes](releases/0.3.36.md).
+
+**Build.** Built from `9cc77fe` on `release/0.3.36` by `Scripts/ship.sh`.
+
+- **Notarization:** Apple accepted app submission `caaff97a-4942-48da-934c-75d585143c38` and DMG submission `8bdfbd34-0d34-4333-b8be-fc4dad24ea44`. Both were stapled and passed Gatekeeper as Notarized Developer ID.
+- **Mounted DMG:** `Volant.app` 0.3.36, build 50, `arm64`, valid deep strict signature, stapled, Applications link present.
+- **DMG SHA-256:** `f650686ec07de74a79f502f342106065c237fe5e4fe6d8291bd86e3e962ba838` (10336116 bytes).
+- **Feed:** the signed build-50 appcast generated with this DMG passes `sign_update --verify`.
+
+**Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
+
+## 0.3.37 build 51 — November 7, 2026
+
+**What's in it.** See the [release notes](releases/0.3.37.md).
+
+**Build.** Built from `39018a7` on `release/0.3.37` by `Scripts/ship.sh`.
+
+- **Notarization:** Apple accepted app submission `55445ef9-9064-432b-8b9c-936987a18d9f` and DMG submission `964bfae4-fd30-44e9-9299-0d86930390a6`. Both were stapled and passed Gatekeeper as Notarized Developer ID.
+- **Mounted DMG:** `Volant.app` 0.3.37, build 51, `arm64`, valid deep strict signature, stapled, Applications link present.
+- **DMG SHA-256:** `af405b1420c564243572f4f94b0a4409a107b2a81474d882f4832545ff00a661` (10008366 bytes).
+- **Feed:** the signed build-51 appcast generated with this DMG passes `sign_update --verify`.
+
+**Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
+
+## 0.3.38 build 52 — November 7, 2026
+
+**What's in it.** See the [release notes](releases/0.3.38.md).
+
+**Build.** Built from `0ee34b3` on `release/0.3.38` by `Scripts/ship.sh`.
+
+- **Notarization:** Apple accepted app submission `e2375996-3c13-457f-a409-42b206fdaa07` and DMG submission `87dcbd95-dd23-4850-887a-f56520a16310`. Both were stapled and passed Gatekeeper as Notarized Developer ID.
+- **Mounted DMG:** `Volant.app` 0.3.38, build 52, `arm64`, valid deep strict signature, stapled, Applications link present.
+- **DMG SHA-256:** `5710f46a8f2724625055297aaa8b62dbbee8b145b650b4872598384a990016be` (10010474 bytes).
+- **Feed:** the signed build-52 appcast generated with this DMG passes `sign_update --verify`.
+
+**Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
+
+## 0.3.39 build 53 — November 8, 2026
+
+**What's in it.** See the [release notes](releases/0.3.39.md).
+
+**Build.** Built from `8fd1cde` on `release/0.3.39` by `Scripts/ship.sh`.
+
+- **Notarization:** Apple accepted app submission `c529c566-446a-47ce-8b29-0a30f45066ff` and DMG submission `10c708a9-5bb1-41b9-afdd-d956846488fb`. Both were stapled and passed Gatekeeper as Notarized Developer ID.
+- **Mounted DMG:** `Volant.app` 0.3.39, build 53, `arm64`, valid deep strict signature, stapled, Applications link present.
+- **DMG SHA-256:** `ba3ec9d2cda97749f7722450a58a9d058c01d58004c2340f0a2700889d774308` (10053090 bytes).
+- **Feed:** the signed build-53 appcast generated with this DMG passes `sign_update --verify`.
+
+**Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
+
+## 0.4.0 build 54 — November 11, 2026
+
+**What's in it.** See the [release notes](releases/0.4.0.md).
+
+**Build.** Built from `235e962` on `release/0.4.0` by `Scripts/ship.sh`.
+
+- **Notarization:** Apple accepted app submission `8307ce65-1593-4f11-8917-40aa5e5bfe00` and DMG submission `d2224eb6-433f-407d-83a9-8b9aa8be4e99`. Both were stapled and passed Gatekeeper as Notarized Developer ID.
+- **Mounted DMG:** `Volant.app` 0.4.0, build 54, `arm64`, valid deep strict signature, stapled, Applications link present.
+- **DMG SHA-256:** `4aa8caeaed9bd763357225e7862a8a19792eec4f5978cf63eff91b78dfe478e4` (11216876 bytes).
+- **Feed:** the signed build-54 appcast generated with this DMG passes `sign_update --verify`.
+
+**Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.

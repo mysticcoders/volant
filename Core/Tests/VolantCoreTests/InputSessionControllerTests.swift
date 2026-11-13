@@ -240,8 +240,9 @@ final class InputSessionControllerTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(InputHostStatus.self, from: JSONEncoder().encode(status)), status)
     }
 
-    /// The XPC protocol stays narrow: exactly these four methods, none taking key codes, pids or
-    /// attribute names, and none replying with text from another app.
+    /// The XPC protocol stays narrow: exactly these six methods, none taking key codes, attribute
+    /// names or element references, and none replying with field or window text. Only the two menu
+    /// calls take a pid, always with the bundle identifier the helper checks it against.
     func testProtocolShape() {
         var count: UInt32 = 0
         guard let list = protocol_copyMethodDescriptionList(VolantInputHostProtocol.self, true, true, &count) else {
@@ -250,7 +251,8 @@ final class InputSessionControllerTests: XCTestCase {
         defer { free(list) }
         let names = Set((0..<Int(count)).compactMap { list[$0].name.map(NSStringFromSelector) })
         XCTAssertEqual(names, ["accessibilityStatusWithPrompt:reply:", "beginSessionWithReply:",
-                               "insertWithPhrase:token:reply:", "endSessionWithToken:"])
+                               "insertWithPhrase:token:reply:", "endSessionWithToken:",
+                               "menuItemsWithPid:bundleID:reply:", "pressMenuItemWithPid:path:bundleID:reply:"])
         XCTAssertEqual(InputHostService.name, "com.mysticcoders.volant.InputHost")
         XCTAssertTrue(InputHostService.callerRequirement.contains("identifier \"com.mysticcoders.volant\""))
         XCTAssertTrue(InputHostService.callerRequirement.contains("REMBT6JY4N"))

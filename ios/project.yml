@@ -1,0 +1,94 @@
+name: VolantMobile
+options:
+  bundleIdPrefix: com.mysticcoders
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+packages:
+  VolantCore:
+    path: ../Core
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "2"
+    DEVELOPMENT_TEAM: REMBT6JY4N
+    CODE_SIGN_STYLE: Automatic
+targets:
+  VolantMobile:
+    type: application
+    platform: iOS
+    sources:
+      - path: VolantMobile
+        excludes:
+          - App/Info.plist
+          - App/VolantMobile.entitlements
+      - path: Shared
+    dependencies:
+      - package: VolantCore
+      - target: VolantWidgets
+        embed: true
+      - target: VolantShare
+        embed: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.mobile
+        PROVISIONING_PROFILE_SPECIFIER: $(VOLANT_APP_PROFILE)
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
+        PRODUCT_NAME: Volant
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: VolantMobile/App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: VolantMobile/App/VolantMobile.entitlements
+        INFOPLIST_KEY_CFBundleDisplayName: Volant
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UIFileSharingEnabled: YES
+        INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+  VolantWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: VolantWidgets
+        excludes:
+          - Info.plist
+          - VolantWidgets.entitlements
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.mobile.widgets
+        PROVISIONING_PROFILE_SPECIFIER: $(VOLANT_WIDGETS_PROFILE)
+        PRODUCT_NAME: VolantWidgets
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: VolantWidgets/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: Volant
+        CODE_SIGN_ENTITLEMENTS: VolantWidgets/VolantWidgets.entitlements
+        SKIP_INSTALL: YES
+  VolantShare:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: VolantShare
+        excludes:
+          - Info.plist
+          - VolantShare.entitlements
+      - path: Shared
+        excludes:
+          - WidgetViews.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.mobile.share
+        PROVISIONING_PROFILE_SPECIFIER: $(VOLANT_SHARE_PROFILE)
+        PRODUCT_NAME: VolantShare
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: VolantShare/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: Volant
+        CODE_SIGN_ENTITLEMENTS: VolantShare/VolantShare.entitlements
+        SKIP_INSTALL: YES

@@ -53,6 +53,37 @@ final class FetchHost: NSObject, VolantFetchHostProtocol, URLSessionDataDelegate
         start(URLRequest(url: target), limit: min(max(maximumBytes, 0), ExtensionCatalog.maximumModuleBytes), reply: reply)
     }
 
+    /// GETs a list extension row's image under the same URL rules as `request`, at most
+    /// `ExtensionItemImage.maximumDownloadBytes`, and replies with a small PNG thumbnail drawn here
+    /// (`ExtensionImageDecoding.thumbnailPNG`), so the untrusted bytes are decoded only in this sandboxed
+    /// helper and never reach Volant. SVG markup is never drawn here: it is checked
+    /// (`ExtensionSVGPreview.check`) and returned as it is, marked as SVG, for Volant to pass to the
+    /// extension helper, which has no network access, to draw; refused markup returns no data, still
+    /// marked as SVG. A non-2xx answer or anything else that is not an accepted image replies with no data
+    /// and a reason for diagnostics.
+    func rowImage(url: String, headers: [String: String], allowedHosts: [String], reply: @escaping (Data?, Bool, Int, String?) -> Void) {
+        let hosts = Set(allowedHosts.filter(ExtensionNetwork.isValidHost))
+        guard let target = ExtensionNetwork.permittedURL(url, hosts: hosts) else {
+            reply(nil, false, 0, "This URL is not on a host the extension may reach."); return
+        }
+        guard ExtensionRequest.isAllowed(method: "GET", body: nil, headers: headers) else {
+            reply(nil, false, 0, "This request is not one an extension may send."); return
+        }
+        var request = URLRequest(url: target)
+        for (name, value) in headers { request.setValue(value, forHTTPHeaderField: name) }
+        start(request, limit: ExtensionItemImage.maximumDownloadBytes) { data, status, error in
+            guard let data, error == nil, (200...299).contains(status) else {
+                reply(nil, false, status, error ?? "The server did not return the image."); return
+            }
+            if let thumbnail = ExtensionImageDecoding.thumbnailPNG(data) { reply(thumbnail, false, status, nil); return }
+            guard ExtensionSVGPreview.isSVG(data) else { reply(nil, false, status, "The download is not an image Volant shows."); return }
+            switch ExtensionSVGPreview.sanitized(data) {
+            case .success(let markup): reply(markup, true, status, nil)
+            case .failure(let refusal): reply(nil, true, status, "refused." + refusal.rawValue)
+            }
+        }
+    }
+
     private func start(_ request: URLRequest, limit: Int, reply: @escaping (Data?, Int, String?) -> Void) {
         let task = session.dataTask(with: request)
         lock.lock(); pending[task.taskIdentifier] = Pending(limit: limit, reply: reply); lock.unlock()

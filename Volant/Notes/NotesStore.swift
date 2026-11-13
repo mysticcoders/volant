@@ -18,6 +18,8 @@ struct Note: Identifiable, Hashable {
     var modified: Date
     var readError: String?
     var stamp: NoteStamp?
+    /// An iCloud note whose contents are not on this Mac yet. It is listed but never read until it arrives.
+    var downloading = false
     private var heading = ""
     private var snippet = ""
 
@@ -30,9 +32,18 @@ struct Note: Identifiable, Hashable {
         if let text { load(text) }
     }
 
-    var title: String { readError != nil ? url.lastPathComponent : heading.isEmpty ? String(localized: "Untitled", comment: "Title of a note with no heading") : heading }
+    var title: String {
+        if readError != nil { return url.lastPathComponent }
+        if heading.isEmpty {
+            return downloading ? String(localized: "Downloading…", comment: "Title of an iCloud note not yet on this Mac")
+                               : String(localized: "Untitled", comment: "Title of a note with no heading")
+        }
+        return heading
+    }
 
-    var preview: String { readError ?? snippet }
+    var preview: String {
+        readError ?? (downloading && snippet.isEmpty ? String(localized: "From iCloud", comment: "Preview of an iCloud note not yet on this Mac") : snippet)
+    }
 
     /// Makes the full text resident and refreshes the title and preview derived from it.
     mutating func load(_ text: String) {
@@ -80,7 +91,8 @@ final class NotesSearchTask {
 /// Plain Markdown files in a folder, one per note. Writes go through one serial queue; reload never
 /// discards an edit that has not reached disk yet. Only the open note and dirty notes keep their full
 /// text in memory; reload reuses notes whose modification date and size are unchanged. Search answers
-/// at once from what is resident and reads other files on a background queue, one at a time.
+/// at once from what is resident and reads other files on a background queue, one at a time. The folder
+/// is the local one in Application Support, or Volant's iCloud Drive folder while notes sync is on.
 final class NotesStore: ObservableObject {
     static let unreadableMessage = String(localized: "This note couldn’t be read as UTF-8 Markdown. Check the file’s access and encoding, then retry.")
     @Published private(set) var notes: [Note] = [] { didSet { generation += 1 } }
@@ -94,7 +106,7 @@ final class NotesStore: ObservableObject {
         let count = notes.filter { $0.readError != nil }.count
         return count == 0 ? nil : String(localized: "\(count) unreadable notes. Files and pins have been kept.", comment: "Notes load status; needs a plural variant for one note")
     }
-    let directory: URL
+    @Published private(set) var directory: URL
     private let io = DispatchQueue(label: "com.mysticcoders.volant.notes", qos: .utility)
     private var pendingSave: [String: DispatchWorkItem] = [:]
     @Published private(set) var dirtyText: [String: String] = [:]
@@ -105,11 +117,13 @@ final class NotesStore: ObservableObject {
     private var scannedTerms: [String] = []
     private static let rememberedTerms = 4
     private static let stampKeys: Set<URLResourceKey> = [.contentModificationDateKey, .fileSizeKey]
+    private static let listingKeys: [URLResourceKey] = [.contentModificationDateKey, .fileSizeKey, .ubiquitousItemDownloadingStatusKey]
+    private static let placeholderSuffix = ".icloud"
 
     /// `searchReader` reads files for background search only; tests inject a slow or gated reader.
     init(directory: URL? = nil, searchReader: @escaping (URL) -> String? = { try? String(contentsOf: $0, encoding: .utf8) }) {
         self.searchReader = searchReader
-        self.directory = directory ?? Preferences.supportDirectory.appendingPathComponent("Notes", isDirectory: true)
+        self.directory = directory ?? NotesLocation.local
         try? FileManager.default.createDirectory(at: self.directory, withIntermediateDirectories: true)
         reload()
     }
@@ -121,23 +135,38 @@ final class NotesStore: ObservableObject {
         let fm = FileManager.default
         let urls: [URL]
         do {
-            urls = try fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: Array(Self.stampKeys), options: [.skipsHiddenFiles])
+            urls = try fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: Self.listingKeys, options: [])
             loadError = nil
         } catch {
             loadError = String(localized: "The notes folder couldn’t be read. Existing notes and unsaved edits have been kept. Check folder access, then retry.")
             return
         }
         let previous = Dictionary(notes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        var seen = Set<String>()
         var fresh = urls
-            .filter { $0.pathExtension == "md" }
-            .map { url -> Note in
+            .compactMap { Self.listing(of: $0, in: directory) }
+            .filter { seen.insert($0.url.lastPathComponent).inserted }
+            .map { listed -> Note in
+                let url = listed.url
                 let id = url.lastPathComponent
                 if let dirty = dirtyText[id] {
                     return Note(id: id, url: url, text: dirty, modified: Date())
                 }
+                if listed.pending {
+                    try? fm.startDownloadingUbiquitousItem(at: url)
+                    if var known = previous[id], known.readError == nil {
+                        known.downloading = true
+                        known.unload()
+                        return known
+                    }
+                    var note = Note(id: id, url: url, text: nil, modified: listed.modified ?? previous[id]?.modified ?? .distantPast)
+                    note.downloading = true
+                    return note
+                }
                 let stamp = Self.stamp(of: url)
                 if var known = previous[id], known.readError == nil, let stamp, known.stamp == stamp {
                     known.url = url
+                    known.downloading = false
                     if id != openID { known.unload() }
                     return known
                 }
@@ -151,6 +180,22 @@ final class NotesStore: ObservableObject {
         let known = Set(fresh.map(\.id))
         for note in notes where dirtyText[note.id] != nil && !known.contains(note.id) { fresh.append(note) }
         notes = fresh.sorted { $0.modified > $1.modified }
+    }
+
+    /// The note a directory entry stands for: a Markdown file, or an iCloud placeholder (`.name.md.icloud`) for a
+    /// note not downloaded yet. `pending` marks notes whose contents are not on this Mac, so reading them would block
+    /// until iCloud delivers them; with Optimize Mac Storage, evicted notes are dataless files that report it too.
+    /// Other hidden files, such as .DS_Store, are not notes.
+    private static func listing(of url: URL, in directory: URL) -> (url: URL, pending: Bool, modified: Date?)? {
+        let name = url.lastPathComponent
+        let values = try? url.resourceValues(forKeys: Set(listingKeys))
+        if name.hasPrefix("."), name.hasSuffix(".md" + placeholderSuffix) {
+            let real = String(name.dropFirst().dropLast(placeholderSuffix.count))
+            return (directory.appendingPathComponent(real), true, values?.contentModificationDate)
+        }
+        guard !name.hasPrefix("."), url.pathExtension == "md" else { return nil }
+        let status = values?.ubiquitousItemDownloadingStatus
+        return (url, status != nil && status != .current, values?.contentModificationDate)
     }
 
     /// Reads a file's modification date and size; taken before reading so a later change is never masked.
@@ -170,7 +215,7 @@ final class NotesStore: ObservableObject {
             updated[index].unload()
             changed = true
         }
-        if let id, let index = updated.firstIndex(where: { $0.id == id }), updated[index].readError == nil, updated[index].text == nil {
+        if let id, let index = updated.firstIndex(where: { $0.id == id }), updated[index].readError == nil, !updated[index].downloading, updated[index].text == nil {
             var url = updated[index].url
             url.removeAllCachedResourceValues()
             let stamp = Self.stamp(of: url)
@@ -187,7 +232,7 @@ final class NotesStore: ObservableObject {
 
     /// Full Markdown for a note: resident text when loaded, otherwise read from disk without retaining it.
     func text(of id: String) -> String? {
-        guard let note = notes.first(where: { $0.id == id }), note.readError == nil else { return nil }
+        guard let note = notes.first(where: { $0.id == id }), note.readError == nil, !note.downloading || dirtyText[id] != nil else { return nil }
         return dirtyText[id] ?? note.text ?? searchReader(note.url)
     }
 
@@ -211,7 +256,7 @@ final class NotesStore: ObservableObject {
     }
 
     func update(_ id: String, text: String) {
-        guard let i = notes.firstIndex(where: { $0.id == id }), notes[i].readError == nil else { return }
+        guard let i = notes.firstIndex(where: { $0.id == id }), notes[i].readError == nil, !notes[i].downloading else { return }
         notes[i].load(text)
         notes[i].modified = Date()
         notes[i].stamp = nil
@@ -227,13 +272,32 @@ final class NotesStore: ObservableObject {
         io.asyncAfter(deadline: .now() + 0.4, execute: work)
     }
 
+    /// Writes through a file coordinator so iCloud never uploads or replaces a half-written note.
     private func write(_ text: String, to url: URL) -> String? {
-        do {
-            try text.write(to: url, atomically: true, encoding: .utf8)
-            return nil
-        } catch {
-            return String(localized: "Could not save note: \(error.localizedDescription)")
+        var coordinationError: NSError?
+        var writeError: Error?
+        NSFileCoordinator().coordinate(writingItemAt: url, options: .forReplacing, error: &coordinationError) { target in
+            do { try text.write(to: target, atomically: true, encoding: .utf8) } catch { writeError = error }
         }
+        guard let error = writeError ?? coordinationError else { return nil }
+        return String(localized: "Could not save note: \(error.localizedDescription)")
+    }
+
+    /// Switches to another notes folder after every edit has reached disk. Returns false, and stays put,
+    /// while any save is failing, so an unsaved edit is never left behind in the old folder.
+    @discardableResult
+    func relocate(to folder: URL) -> Bool {
+        guard folder.standardizedFileURL != directory.standardizedFileURL else { return true }
+        flush()
+        guard dirtyText.isEmpty else { return false }
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        scanned.removeAll()
+        scannedTerms.removeAll()
+        notes = []
+        directory = folder
+        reload()
+        open(openID)
+        return true
     }
 
     /// Clears dirty state once the latest text reached disk; a saved note that is not open releases its text.
@@ -339,6 +403,7 @@ final class NotesStore: ObservableObject {
     /// An exact match decided without reading a file, or nil when the file must be read.
     private func knownMatch(_ note: Note, _ term: String) -> Bool? {
         if note.readError != nil { return note.id.localizedCaseInsensitiveContains(term) }
+        if note.downloading { return note.summaryContains(term) }
         if let text = note.text { return text.localizedCaseInsensitiveContains(term) }
         if let stamp = note.stamp, let cached = scanned[term]?[note.id], cached.stamp == stamp { return cached.matched }
         return nil

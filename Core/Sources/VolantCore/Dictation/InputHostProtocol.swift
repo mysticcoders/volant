@@ -2,10 +2,13 @@ import Foundation
 
 /// The input helper's whole interface. `VolantInputHost` is the only part of Volant that uses
 /// Accessibility, and this is everything it accepts: a permission check, a dictation session bound
-/// to the app that was in front when dictation started, and one phrase at a time to type into that
-/// app. No method takes key codes, modifier flags, attribute names, process identifiers or bundle
-/// identifiers, and none returns text from another app. Every reply is a small JSON value in `Data`
-/// so both sides validate what they receive.
+/// to the app that was in front when dictation started, one phrase at a time to type into that app,
+/// and, for Search Menu Items, a read of the front app's menu titles and a press of one of them.
+/// No method takes key codes, modifier flags, attribute names or element references, and none
+/// returns text from a field or window. The two menu calls take a pid and the bundle identifier
+/// Volant captured for it, which the helper re-validates against the running process and the app in
+/// front; they return only menu titles, shortcuts and enabled states. Every reply is a JSON value in
+/// `Data` so both sides validate what they receive.
 @objc public protocol VolantInputHostProtocol {
     /// `InputHostStatus`. With `prompt` true, macOS shows its Accessibility request once; it is sent
     /// only after the owner chooses Type at the cursor.
@@ -16,6 +19,12 @@ import Foundation
     func insert(phrase: String, token: Data, reply: @escaping (Data) -> Void)
     /// Forgets the session. Unknown or stale tokens are ignored.
     func endSession(token: Data)
+    /// `MenuItemsReply`: the menu items of the app `pid`, which must be in front and still be
+    /// `bundleID`, within `MenuItemPolicy`'s limits and without the Apple menu, or a refusal.
+    func menuItems(pid: Int32, bundleID: String, reply: @escaping (Data) -> Void)
+    /// `MenuPressReply`: presses the item whose titles are `path`, a JSON array of strings, in the
+    /// app `pid` after the same checks, or refuses.
+    func pressMenuItem(pid: Int32, path: Data, bundleID: String, reply: @escaping (Data) -> Void)
 }
 
 /// The service name the app connects to; the helper's bundle identifier.

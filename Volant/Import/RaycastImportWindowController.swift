@@ -127,7 +127,7 @@ final class RaycastImportWindowController: NSWindowController, NSWindowDelegate 
         choose.isEnabled = false; unlock.isEnabled = false; password.isEnabled = false
         details.string = ""; status.stringValue = String(localized: "Unlocking locally…", comment: "Raycast import window status"); progress.startAnimation(nil)
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let result = Result { try RaycastImportPlan.make(payload: RaycastArchive.decode(data, password: secret)) }
+            let result = Result { try RaycastImportPlan.make(payload: RaycastArchive.decode(data, password: secret), notesURL: NotesLocation.current) }
             DispatchQueue.main.async {
                 guard let self, self.generation == token else { return }
                 self.progress.stopAnimation(nil); self.choose.isEnabled = true; self.unlock.isEnabled = true; self.password.isEnabled = true

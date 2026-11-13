@@ -28,8 +28,11 @@ public struct ExtensionManifest: Codable, Hashable {
     /// the approval fingerprint when present; system and file schemes are never allowed.
     public var appLinks: [String]?
     /// Owner data the extension asks for, beyond its hosts: `"location"` for list extensions (see
-    /// `ExtensionLocation`) and `"clipboard"` for any extension that receives JSON requests (see
-    /// `ExtensionClipboard`). Part of the approval fingerprint when present.
+    /// `ExtensionLocation`), `"clipboard"` for any extension that receives JSON requests (see
+    /// `ExtensionClipboard`), `"clipboard-write"` for list extensions whose rows copy text or images
+    /// when the owner chooses them (see `ExtensionItemCopy`), and `"row-images"` for list extensions whose
+    /// rows show pictures from their hosts (see `ExtensionItemImage`). Part of the approval fingerprint
+    /// when present.
     public var permissions: [String]?
     /// How a text extension reads its input: `"text"` (the default), the typed text as it is, or `"json"`,
     /// the same JSON request a list extension gets, so it can use preferences, storage and the clipboard
@@ -54,7 +57,9 @@ public struct ExtensionManifest: Codable, Hashable {
     public var declaredPermissions: [String] { permissions ?? [] }
     public var wantsLocation: Bool { declaredPermissions.contains(ExtensionLocation.permission) }
     public var wantsClipboard: Bool { declaredPermissions.contains(ExtensionClipboard.permission) }
-    public static let knownPermissions: Set<String> = [ExtensionLocation.permission, ExtensionClipboard.permission]
+    public var wantsClipboardWrite: Bool { declaredPermissions.contains(ExtensionItemCopy.permission) }
+    public static let knownPermissions: Set<String> = [ExtensionLocation.permission, ExtensionClipboard.permission, ExtensionItemCopy.permission,
+                                                       ExtensionItemImage.permission]
     public var declaredHosts: [String] { hosts ?? [] }
     public var listsItems: Bool { output == "items" }
     public var takesJSON: Bool { input == "json" }
@@ -82,7 +87,8 @@ public struct ExtensionManifest: Codable, Hashable {
               declaredAppLinks.count <= Self.maximumAppLinks, Set(declaredAppLinks).count == declaredAppLinks.count,
               declaredAppLinks.allSatisfy(Self.isAllowedAppLink), declaredAppLinks.isEmpty || listsItems,
               Set(declaredPermissions).isSubset(of: Self.knownPermissions), Set(declaredPermissions).count == declaredPermissions.count,
-              declaredPermissions.isEmpty || receivesRequests, !wantsLocation || listsItems, [nil, "list", "search"].contains(mode), mode == nil || listsItems,
+              declaredPermissions.isEmpty || receivesRequests, !wantsLocation || listsItems,
+              !wantsClipboardWrite || listsItems, !wantsRowImages || listsItems, [nil, "list", "search"].contains(mode), mode == nil || listsItems,
               placeholder.map({ (1...Self.maximumPlaceholderLength).contains($0.count) && listsItems }) ?? true,
               filters == nil || (listsItems && (2...ExtensionFilter.maximumCount).contains(declaredFilters.count)),
               declaredFilters.allSatisfy(\.isValid), Set(declaredFilters.map(\.id)).count == declaredFilters.count,
@@ -178,6 +184,11 @@ public struct ExtensionFilter: Codable, Hashable, Sendable {
     func run(module: Data, capabilities: [String], input: String, timeout: Double, reply: @escaping (String?, String?) -> Void)
     /// ABI 2: restricted WASI command with in-memory stdin/stdout only.
     func runCommand(module: Data, input: String, timeout: Double, reply: @escaping (String?, String?) -> Void)
+    /// Draws a row image preview from SVG markup the fetch helper downloaded and checked: checks it again
+    /// (`ExtensionSVGPreview`), draws it at most `maximumPixels` on a side, and replies with a fresh PNG, or
+    /// nil and a short code. No module runs, and the helper stops itself if drawing passes
+    /// `ExtensionSVGPreview.renderTimeout`.
+    func rasterizeSVG(data: Data, maximumPixels: Int, reply: @escaping (Data?, String?) -> Void)
 }
 
 /// What the service may ask the app to do on the extension's behalf. Every call is re-checked against the manifest by the app.

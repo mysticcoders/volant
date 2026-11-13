@@ -9,7 +9,8 @@ enum GlobalShortcutStore {
     static func bindings(_ config: Preferences) -> [String: String] {
         ["summonHotKey": config.summonHotKey, "notesHotKey": config.notesHotKey,
          "emojiHotKey": config.emojiHotKey, "talkHotKey": config.talkHotKey,
-         "lockScreenHotKey": config.lockScreenHotKey, "sleepDisplaysHotKey": config.sleepDisplaysHotKey]
+         "lockScreenHotKey": config.lockScreenHotKey, "sleepDisplaysHotKey": config.sleepDisplaysHotKey,
+         "focusHotKey": config.focusHotKey]
     }
 
     static func save(key: String, value: String, expectedValue: String, at url: URL,

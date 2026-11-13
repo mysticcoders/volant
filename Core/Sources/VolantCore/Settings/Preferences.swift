@@ -10,6 +10,8 @@ public struct Preferences: Codable {
     /// System actions that are useful as instant global shortcuts. Unset until the owner picks one.
     public var lockScreenHotKey: String = ""
     public var sleepDisplaysHotKey: String = ""
+    /// Starts a Focus session with the remembered setup, or ends the running one.
+    public var focusHotKey: String = ""
     public var appHotKeys: [AppHotKey] = []
     public var clipboardRetention: Int = 500
     public var showOnLaunch: Bool = true
@@ -39,10 +41,16 @@ public struct Preferences: Codable {
     /// Check the extension catalog for updates once a day in the background. Off until the owner turns
     /// it on, per Mac and never synced, because it contacts the catalog without being asked each time.
     public var extensionUpdateChecks: Bool = false
+    /// Let the launcher's Search Menu Items command read and press the front app's menu items through
+    /// the input helper. Off until the owner turns it on, per Mac and never synced, because it needs
+    /// Accessibility.
+    public var searchMenuItems: Bool = false
     /// Whether this Mac has finished or closed the Welcome window. Absent in installs from before it
     /// existed; per Mac and never synced, since every new Mac needs its own shortcut and access.
     public var welcomeCompleted: Bool?
     public var statusBar = StatusBarConfiguration()
+    public var focus = FocusPreferences()
+    public var breaks = BreakPreferences()
     // Compatibility for existing callers and older configuration files.
     public var promotedHarness: String? {
         get { statusBar.sources.contains("herdr") ? statusBar.herdrFilter : nil }
@@ -60,7 +68,7 @@ public struct Preferences: Codable {
     public var help: String = "Edit and choose Reload Configuration in Settings. Hotkeys: cmd|ctrl|option|shift|meh|hyper + key. App hotkeys use the bundle identifier. Snippets: {date} {isodate} {time} {datetime} {clipboard} {uuid}. Quicklinks: {query}. Aliases map a word to an app name or query. Appearance: theme system|light|dark, colorTheme system|volant|catppuccin-mocha|nord|…|custom-<name> (named themes set their own light or dark; customThemes holds imported Raycast themes), scale 0.8–1.4, opacity 0.5–1.0."
 
     public enum CodingKeys: String, CodingKey {
-        case favoriteApps, summonHotKey, notesHotKey, emojiHotKey, talkHotKey, lockScreenHotKey, sleepDisplaysHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, caffeinateKeepsDisplayAwake, dictationLowersVolume, dictationOutput, dictationTypesWhileSpeaking, dictationRemovesFillers, dictationPlaysSounds, dictationVocabulary, dictationFixesCloseMatches, fileSearchUsesFSearch, syncSettingsWithICloud, rexPanePreviews, extensionUpdateChecks, welcomeCompleted, statusBar, snippets, quicklinks, aliases, appearance
+        case favoriteApps, summonHotKey, notesHotKey, emojiHotKey, talkHotKey, lockScreenHotKey, sleepDisplaysHotKey, focusHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, caffeinateKeepsDisplayAwake, dictationLowersVolume, dictationOutput, dictationTypesWhileSpeaking, dictationRemovesFillers, dictationPlaysSounds, dictationVocabulary, dictationFixesCloseMatches, fileSearchUsesFSearch, syncSettingsWithICloud, rexPanePreviews, extensionUpdateChecks, welcomeCompleted, searchMenuItems, statusBar, focus, breaks, snippets, quicklinks, aliases, appearance
         case help = "_help"
     }
 
@@ -85,6 +93,7 @@ public struct Preferences: Codable {
         talkHotKey = try c.decodeIfPresent(String.self, forKey: .talkHotKey) ?? d.talkHotKey
         lockScreenHotKey = try c.decodeIfPresent(String.self, forKey: .lockScreenHotKey) ?? d.lockScreenHotKey
         sleepDisplaysHotKey = try c.decodeIfPresent(String.self, forKey: .sleepDisplaysHotKey) ?? d.sleepDisplaysHotKey
+        focusHotKey = try c.decodeIfPresent(String.self, forKey: .focusHotKey) ?? d.focusHotKey
         emojiHotKey = try c.decodeIfPresent(String.self, forKey: .emojiHotKey) ?? d.emojiHotKey
         appHotKeys = try c.decodeIfPresent([AppHotKey].self, forKey: .appHotKeys) ?? d.appHotKeys
         clipboardRetention = try c.decodeIfPresent(Int.self, forKey: .clipboardRetention) ?? d.clipboardRetention
@@ -103,6 +112,7 @@ public struct Preferences: Codable {
         syncSettingsWithICloud = try c.decodeIfPresent(Bool.self, forKey: .syncSettingsWithICloud) ?? d.syncSettingsWithICloud
         rexPanePreviews = try c.decodeIfPresent(Bool.self, forKey: .rexPanePreviews) ?? d.rexPanePreviews
         extensionUpdateChecks = try c.decodeIfPresent(Bool.self, forKey: .extensionUpdateChecks) ?? d.extensionUpdateChecks
+        searchMenuItems = try c.decodeIfPresent(Bool.self, forKey: .searchMenuItems) ?? d.searchMenuItems
         welcomeCompleted = try c.decodeIfPresent(Bool.self, forKey: .welcomeCompleted)
         statusBar = try c.decodeIfPresent(StatusBarConfiguration.self, forKey: .statusBar) ?? StatusBarConfiguration()
         if !c.contains(.statusBar) {
@@ -110,6 +120,8 @@ public struct Preferences: Codable {
             if let id = try legacy.decodeIfPresent(String.self, forKey: .promotedHarness), Self.harnessOptions.contains(where: { $0.id == id }) { promotedHarness = id }
         }
         if !Self.harnessOptions.contains(where: { $0.id == statusBar.herdrFilter }) { statusBar.herdrFilter = "all" }
+        focus = (try? c.decodeIfPresent(FocusPreferences.self, forKey: .focus)) ?? d.focus
+        breaks = (try? c.decodeIfPresent(BreakPreferences.self, forKey: .breaks)) ?? d.breaks
         snippets = try c.decodeIfPresent([Snippet].self, forKey: .snippets) ?? d.snippets
         quicklinks = try c.decodeIfPresent([Quicklink].self, forKey: .quicklinks) ?? d.quicklinks
         favoriteApps = try c.decodeIfPresent([String].self, forKey: .favoriteApps) ?? []
@@ -122,7 +134,7 @@ public struct Preferences: Codable {
 
     /// Patch a single setting, preserving externally edited and unknown configuration fields.
     public static func updateBoolean(_ key: String, value: Bool, at url: URL = configURL) throws {
-        precondition(["showInDock", "showOnLaunch", "caffeinateKeepsDisplayAwake", "dictationLowersVolume", "dictationTypesWhileSpeaking", "dictationRemovesFillers", "dictationPlaysSounds", "dictationFixesCloseMatches", "fileSearchUsesFSearch", "syncSettingsWithICloud", "rexPanePreviews", "extensionUpdateChecks", "welcomeCompleted"].contains(key))
+        precondition(["showInDock", "showOnLaunch", "caffeinateKeepsDisplayAwake", "dictationLowersVolume", "dictationTypesWhileSpeaking", "dictationRemovesFillers", "dictationPlaysSounds", "dictationFixesCloseMatches", "fileSearchUsesFSearch", "syncSettingsWithICloud", "rexPanePreviews", "extensionUpdateChecks", "welcomeCompleted", "searchMenuItems"].contains(key))
         let data = try Data(contentsOf: url)
         guard var object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw CocoaError(.fileReadCorruptFile)
@@ -141,6 +153,44 @@ public struct Preferences: Codable {
             throw CocoaError(.fileReadCorruptFile)
         }
         object["dictationOutput"] = output.rawValue
+        let updated = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
+        _ = try JSONDecoder().decode(Preferences.self, from: updated)
+        try updated.write(to: url, options: .atomic)
+    }
+
+    /// Replace the Focus settings against an expected snapshot, keeping unknown keys inside the
+    /// `focus` block and everywhere else, so an edit made from a stale copy is refused.
+    public static func updateFocus(_ focus: FocusPreferences, expected: FocusPreferences, at url: URL = configURL) throws {
+        let data = try Data(contentsOf: url)
+        guard var object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        guard try JSONDecoder().decode(Preferences.self, from: data).focus == expected else {
+            throw CocoaError(.fileWriteFileExists)
+        }
+        var block = object["focus"] as? [String: Any] ?? [:]
+        let encoded = try JSONSerialization.jsonObject(with: JSONEncoder().encode(focus)) as? [String: Any] ?? [:]
+        block.merge(encoded) { _, new in new }
+        object["focus"] = block
+        let updated = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
+        _ = try JSONDecoder().decode(Preferences.self, from: updated)
+        try updated.write(to: url, options: .atomic)
+    }
+
+    /// Replace the Break settings against an expected snapshot, keeping unknown keys inside the
+    /// `breaks` block and everywhere else, so an edit made from a stale copy is refused.
+    public static func updateBreaks(_ breaks: BreakPreferences, expected: BreakPreferences, at url: URL = configURL) throws {
+        let data = try Data(contentsOf: url)
+        guard var object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        guard try JSONDecoder().decode(Preferences.self, from: data).breaks == expected else {
+            throw CocoaError(.fileWriteFileExists)
+        }
+        var block = object["breaks"] as? [String: Any] ?? [:]
+        let encoded = try JSONSerialization.jsonObject(with: JSONEncoder().encode(breaks)) as? [String: Any] ?? [:]
+        block.merge(encoded) { _, new in new }
+        object["breaks"] = block
         let updated = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
         _ = try JSONDecoder().decode(Preferences.self, from: updated)
         try updated.write(to: url, options: .atomic)

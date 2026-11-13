@@ -104,7 +104,11 @@ export default function Notes() {
       <h2>Your words, your files</h2>
       <p>
         Each note is an ordinary <code>.md</code> file in the app container.
-        Open them in another editor whenever you like.
+        Open them in another editor whenever you like. Turn on{' '}
+        <strong>Sync settings and notes with iCloud</strong> in Settings →
+        Data &amp; Configuration and the same files move to iCloud Drive ›
+        Volant › Notes, where Finder and your other Macs can reach them. Your
+        Mac’s notes folder is kept as a dated backup.
       </p>
       <p>
         Pinning and your last selection are local interface preferences, so they

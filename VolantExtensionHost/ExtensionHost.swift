@@ -87,6 +87,23 @@ final class ExtensionHost: NSObject, VolantExtensionHostProtocol {
         reply(text, nil)
     }
 
+    /// Draws an SVG row image preview (`ExtensionSVGRasterizer`) off the connection's queue. A watchdog
+    /// ends this process if drawing outlasts `ExtensionSVGPreview.renderTimeout`, as for a runaway module,
+    /// since a renderer stuck in a pathological file cannot be interrupted; launchd starts a fresh helper
+    /// for the next request.
+    func rasterizeSVG(data: Data, maximumPixels: Int, reply: @escaping (Data?, String?) -> Void) {
+        guard data.count <= ExtensionSVGPreview.maximumBytes, (1...ExtensionItemImage.thumbnailPixels).contains(maximumPixels) else {
+            reply(nil, "invalid"); return
+        }
+        DispatchQueue.global(qos: .userInitiated).async {
+            let watchdog = DispatchWorkItem { exit(3) }
+            DispatchQueue.global().asyncAfter(deadline: .now() + ExtensionSVGPreview.renderTimeout, execute: watchdog)
+            let outcome = autoreleasepool { ExtensionSVGRasterizer.rasterize(data, maximumPixels: maximumPixels) }
+            watchdog.cancel()
+            if case .png(let png) = outcome { reply(png, nil) } else { reply(nil, outcome.code) }
+        }
+    }
+
     /// Hands bytes to JavaScript as one `Uint8Array` copy. Bridging `[UInt8]` instead builds an array of
     /// boxed numbers, which for a 1.4 MB module cost about 12 MiB of allocations and 40 ms a run.
     static func bytes(_ data: Data, in ctx: JSContext) -> JSValue? {

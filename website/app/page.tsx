@@ -2,13 +2,15 @@
 // oxlint-disable next/no-html-link-for-pages -- Plain anchors preserve production navigation; see QUALITY.md.
 import Image from 'next/image';
 import { useState } from 'react';
-import { LauncherDemo } from '@/components/launcher-demo';
+import { HeroLauncher } from '@/components/hero-launcher';
+import { AppearanceButton } from '@/components/site-shell';
 import {
   ArrowRight,
   ArrowUpRight,
   Search,
   Calculator,
   Clipboard,
+  Target,
   FileText,
   Code2,
   SlidersHorizontal,
@@ -40,11 +42,11 @@ const questions = [
   ],
   [
     'Where does my data live?',
-    'Notes are plain Markdown files on your Mac. Clipboard history is encrypted locally with a Keychain key. You choose what to attach to AI prompts; cloud providers receive the messages you send. Updates, optional AI connections, and exchange rates use separate helpers. Opt-in iCloud settings sync carries selected settings between your Macs and excludes notes, clipboard history, and keys.',
+    'Notes are plain Markdown files on your Mac, or in your own iCloud Drive when you turn on iCloud sync. Clipboard history is encrypted locally with a Keychain key. You choose what to attach to AI prompts; cloud providers receive the messages you send. Updates, optional AI connections, and exchange rates use separate helpers. Opt-in iCloud sync carries selected settings and your notes between your Macs and excludes clipboard history and keys.',
   ],
   [
     'Are all the features here in the download?',
-    `Yes. Everything on this page is in the current download, Volant ${appVersion}, including the expanded calculator, color themes and theme import, the system commands, and iCloud settings sync.`,
+    `Yes. Everything on this page is in the current download, Volant ${appVersion}, including Focus with app and website blocking, Breaks, the expanded calculator, color themes and theme import, the system commands, and iCloud settings sync.`,
   ],
   [
     'Does it work with Shortcuts?',
@@ -81,8 +83,17 @@ const benefits = [
     link: '/docs/clipboard-and-snippets',
     label: 'Explore clipboard & snippets',
   },
+  {
+    id: 'focus',
+    icon: Target,
+    title: 'Keep distractions out of reach.',
+    text: 'New in 0.4.0: Focus hides distracting apps and blanks blocked sites in Safari, Chrome, Brave and Vivaldi. Breaks reminds you to step away.',
+    link: '/docs/focus-and-breaks',
+    label: 'Explore Focus & Breaks',
+  },
 ];
 
+/** The homepage: the headline, intro and Download above the in-browser launcher card. */
 export default function Home() {
   const [appearance, setAppearance] = useState('system');
   return (
@@ -91,21 +102,14 @@ export default function Home() {
         Skip to content
       </a>
       <SiteHeader>
-        <label className="home-appearance">
-          <span className="sr-only">Site appearance</span>
-          <select
-            value={appearance}
-            onChange={(event) => setAppearance(event.target.value)}
-          >
-            <option value="system">System</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </select>
-        </label>
+        <AppearanceButton value={appearance} onChange={setAppearance} />
       </SiteHeader>
       <main id="main">
-        <section className="home-hero wrap">
+        <section className="home-hero wrap home-hero-try">
           <div className="home-hero-copy">
+            <a className="home-announce" href="/iphone">
+              Volant for iPhone is in public beta <ArrowRight size={14} />
+            </a>
             <p className="home-kicker">
               A LITTLE LESS FRICTION. A LOT MORE FLOW.
             </p>
@@ -123,15 +127,15 @@ export default function Home() {
               <a className="button" href={downloadURL} download>
                 Download for Mac <ArrowRight size={18} />
               </a>
-              <a className="home-secondary" href="#features">
-                See what it can do <ArrowUpRight size={16} />
+              <a className="home-secondary" href="/try">
+                Try it now <ArrowUpRight size={16} />
               </a>
             </div>
             <p className="home-requirements">
               Free & open source · macOS 15+ · Apple silicon
             </p>
           </div>
-          <LauncherDemo />
+          <HeroLauncher />
         </section>
         <div className="home-proof wrap">
           <span>
@@ -233,6 +237,28 @@ export default function Home() {
             <ArrowUpRight size={16} />
           </a>
         </section>
+        <section className="home-wasm wrap" aria-labelledby="wasm-title">
+          <p className="home-kicker">EXTENSIONS ARE WEBASSEMBLY</p>
+          <h2 id="wasm-title">One module. Your Mac and your browser.</h2>
+          <p>
+            A Volant extension is a small WebAssembly module. The file you
+            install in Volant runs in its sandboxed helper on your Mac, and
+            the very same file runs on the Try it page in a modern browser.
+            The module never reaches the network itself: Volant fetches only
+            the addresses you approve and hands it the answer.
+          </p>
+          <div className="home-wasm-links">
+            <a href="/try">
+              Run one in your browser <ArrowUpRight size={15} />
+            </a>
+            <a href="/docs/extensions">
+              How extensions work <ArrowUpRight size={15} />
+            </a>
+            <a href="https://github.com/mysticcoders/volant-extensions">
+              Browse the catalog <ArrowUpRight size={15} />
+            </a>
+          </div>
+        </section>
         <section className="home-bottom wrap">
           <div className="home-privacy">
             <Code2 size={25} aria-hidden="true" />
@@ -242,8 +268,9 @@ export default function Home() {
               Your say.
             </h2>
             <p>
-              Your notes and encrypted clipboard history stay on your Mac. You
-              choose what to send to AI. No Volant account. No telemetry.
+              Your notes stay on your Mac, or in your own iCloud when you turn
+              on sync. Clipboard history stays encrypted on your Mac. You choose
+              what to send to AI. No Volant account. No telemetry.
             </p>
             <a href="/docs/privacy-and-security">
               Read the privacy details <ArrowUpRight size={15} />

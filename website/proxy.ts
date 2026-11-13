@@ -5,9 +5,13 @@ export function proxy(request: NextRequest) {
   // Never reuse or accept a nonce supplied by a visitor, and never cache nonce-bearing HTML.
   const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(24))));
   const development = process.env.NODE_ENV === 'development';
+  // Only the /try demo may compile WebAssembly, and only in its same-origin module worker. This is
+  // the one scoped exception to the script policy; no other page gets 'wasm-unsafe-eval'.
+  const tryDemo = request.nextUrl.pathname === '/try' || request.nextUrl.pathname.startsWith('/try/');
   const csp = [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${development ? " 'unsafe-eval'" : ''}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${tryDemo ? " 'wasm-unsafe-eval'" : ''}${development ? " 'unsafe-eval'" : ''}`,
+    ...(tryDemo ? ["worker-src 'self'"] : []),
     // Existing component libraries inject styles and use style attributes during hydration.
     // This exception applies only to CSS; scripts still require the per-request nonce.
     "style-src 'self' 'unsafe-inline'",
@@ -28,5 +32,6 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static/|images/|icons/|fonts/|updates/|favicon\\.svg).*)'],
+  // /try/calculator/ serves the content-hashed calculator module with a year-long cache; it isn't HTML.
+  matcher: ['/((?!_next/static/|images/|icons/|fonts/|updates/|try/calculator/|favicon\\.svg).*)'],
 };

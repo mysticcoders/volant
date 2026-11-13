@@ -56,8 +56,8 @@ Kingdom's mixed system reads as metric).
 - **Row symbols.** A row's `"symbol"` names one of Volant's row icons: `sun`, `moon`, `cloud-sun`,
   `cloud-moon`, `cloud`, `fog`, `drizzle`, `rain`, `heavy-rain`, `sleet`, `snow`, `thunderstorm`,
   `wind`, `hot` and `cold` (`ExtensionItemSymbol`). Volant draws the matching SF Symbol in color in
-  place of the extension's icon. Extensions never supply row images; an unknown name is dropped and
-  the row shows the extension's icon. Older Volant versions ignore the field.
+  place of the extension's icon. An unknown name is dropped and the row shows the extension's icon.
+  Older Volant versions ignore the field. A row image (below) takes the symbol's place once it loads.
 - **Row badges.** A row's `"badges"`, up to three `{"symbol","text"}` pairs, show at its end in place of
   the extension's name, such as a story's points, comments and site. `symbol` is one of `points`,
   `comments`, `site`, `author` and `time` (`ExtensionItemBadge.Symbol`), drawn by Volant; an unknown
@@ -66,6 +66,145 @@ Kingdom's mixed system reads as metric).
 - **Link actions.** A row's Actions menu (Command-K) lists Open Link, its second link under the row's
   `secondaryTitle` (Command-Return), and Copy Link, each only when the row has that link, before the
   row's own `actions`.
+- **Copying.** A list extension that declares `"permissions": ["clipboard-write"]` can give a row a
+  `"copy"`: `{"text": "<svg …>…</svg>", "title": "Copy SVG"}`, up to 64 KB of UTF-8 copied as plain
+  text, or `{"url": "https://cdn.example.com/logo.png", "type": "png", "title": "Copy Image"}` with
+  `type` one of `svg`, `png`, `jpeg`, `webp`, `ico`, `gif`, `bmp`, `avif`, `image` or `text`. `title` is one line of at most 40
+  characters, "Copy" when absent. Without the permission, or with a text over 64 KB, an unknown type, or
+  a URL that is not https on the default port to a declared host, the copy is dropped while sanitizing
+  and the row stays. The prompt and Settings say "Copy text and images to your clipboard when you
+  choose them"; the permission is part of the approval fingerprint, so adding it needs enabling again
+  and a catalog update that adds it turns the extension off (`ExtensionItemCopy`).
+  - The Actions menu lists the copy right after the link entries. Return performs it when the row has
+    no `url` (and no `primaryAction`); otherwise Return still opens the link. The launcher stays open
+    and confirms "Copied SVG" in the footer.
+  - A URL copy is fetched only when the owner chooses it, never while listing: Volant checks the
+    extension is still enabled, unchanged, not revoked and not blocked by the community switch, and that
+    the host is declared and allowed, then fetches it once through `VolantFetchHost` with the same rules
+    as a plan (https, no redirects, at most 512 KB, the host's declared token). It checks the bytes
+    match `type` before copying: `svg` and `text` must be UTF-8 without NUL characters, and SVG's root
+    element must be `<svg`. Before the root it may have whitespace and up to 16 of an XML prolog,
+    `<!-- … -->` comments and a `<!DOCTYPE svg …>` that names `svg` as its root, as svgl's files do. A
+    DOCTYPE with an internal subset (`<!DOCTYPE svg [ … ]>`) is refused, since it can declare entities for
+    whatever later reads the copy, and so is any other DOCTYPE, such as `<!DOCTYPE html><svg>`. This is a
+    text scan; the markup is never parsed or rendered.
+    Images must carry the signature of a format the type accepts, be reported by ImageIO as that format,
+    be at most 8192 pixels on a side and 32 megapixels, and decode; they are copied as PNG and TIFF. A GIF
+    copies its first frame and an ICO its largest entry. Approval and the host are checked again after
+    the download. An unapproved host, a failed or non-2xx fetch, a wrong type or an oversized file shows
+    why in the footer and copies nothing.
+  - **Any image.** An extension often cannot know a service's format: DuckDuckGo's icon service answers
+    the same URL pattern with ICO or PNG. `"type": "image"` accepts any raster image Volant decodes (PNG,
+    JPEG, GIF, WebP, ICO with PNG or BMP entries, BMP, TIFF, AVIF and HEIC), identified by its signature
+    and confirmed by ImageIO, so no other ImageIO decoder (PDF, PSD, camera raw) is reachable. Bytes that
+    are SVG markup instead are copied as text under the SVG rules above. The explicit types stay strict:
+    `png` accepts only PNG, `gif` only GIF, and so on (`ExtensionImageFormat`).
+  - **Older Volant.** 0.3.35 drops a copy whose `type` it does not know (`image`, `gif`, `bmp`, `avif`)
+    while sanitizing and keeps the row, so an extension that must work on 0.3.35 keeps the explicit
+    0.3.35 types (`svg`, `png`, `jpeg`, `webp`, `ico`, `text`). Checked against the v0.3.35 sources.
+  - The module never sees the downloaded bytes. Each copy is recorded as a clipboard write in
+    `ExtensionActivity`, with the host for a URL copy and its GET, never the content.
+  - Older Volant versions ignore `copy`, so give such rows a `url` or a title that is useful to copy.
+- **Row images.** A list extension that declares `"permissions": ["row-images"]` can give a row an
+  `"image": {"url": "https://icons.example.com/ip3/example.com.ico"}`, such as a site's favicon or a
+  company's logo. Volant shows it at the row's leading edge in place of the row's symbol or the
+  extension's icon: 24 points, aspect-fit, rounded corners. The row's symbol, or the extension's icon,
+  shows while it loads and stays when it fails. The URL must be https on the default port to a declared
+  host, with no credentials or fragment; otherwise, or without the permission, the image is dropped while
+  sanitizing and the row stays. `image` must be an object. The prompt and Settings say "Show images from
+  its sites in its rows"; the permission is part of the approval fingerprint, so adding it needs enabling
+  again and a catalog update that adds it turns the extension off (`ExtensionItemImage`).
+  - *When it loads.* Only rows that appear on screen ask for their image, never while listing. Each list
+    starts at most 30 fetches and at most 4 run at once across lists; rows past the thirtieth keep the
+    placeholder. A new list, a new query, leaving the extension or closing the launcher drops results
+    still loading.
+  - *Checks.* Before each fetch and again after it, Volant checks that the extension declares
+    `row-images` and is enabled, unchanged, not revoked and not blocked by the community switch, and that
+    the host is declared and allowed. A cached image is shown in a new list only after the same checks.
+  - *Decoding outside the app.* `VolantFetchHost.rowImage` fetches the URL under the plan rules (no
+    redirects, no cookies, the host's declared token) and at most 256 KB. Inside that sandboxed helper,
+    ImageIO opens it only when its signature is PNG, JPEG, GIF, WebP, ICO, BMP, TIFF, AVIF or HEIC and
+    ImageIO agrees, the source is at most 4096 pixels on a side and 16 megapixels, and it draws a
+    thumbnail of at most 64 pixels (`CGImageSourceCreateThumbnailAtIndex`, no caching) into a fresh 8-bit
+    sRGB bitmap, so no metadata, color profile or animation survives, and replies with that PNG. A GIF
+    shows its first frame and an ICO its largest entry. The app decodes only that reply, and only when it
+    is a single-frame PNG of at most 64 KB and 64 by 64 pixels.
+  - *SVG (after 0.3.36).* An image URL that returns SVG markup (detected as for a copy: no raster
+    signature, UTF-8 without NUL, an `<svg` root after the allowed preamble) is drawn after checking, in
+    the extension helper, never in the app or the fetch helper. Before that change it showed the
+    placeholder, as it still does on 0.3.36. The steps:
+    1. `VolantFetchHost.rowImage` downloads it under the rules above, does not draw it, and checks it
+       with `ExtensionSVGPreview` (VolantCore). Accepted markup goes back to Volant unchanged, marked as
+       SVG; refused markup goes back as no data, still marked.
+    2. Volant does not parse or draw the markup. It forwards the bytes to `VolantExtensionHost`
+       (sandboxed, no `network.client`, no file access outside its container) through one call,
+       `rasterizeSVG(data:maximumPixels:reply:)`, on a fresh connection.
+    3. The extension helper checks the markup again, then draws it with AppKit's own SVG image
+       representation (`NSImage(data:)`, which must open it with the class AppKit registers for
+       `public.svg-image`, CoreSVG; not WebKit) into the same fresh 8-bit sRGB bitmap the raster path
+       uses, at most 64 pixels on its longer side, and replies with that PNG. The renderer's own bitmap
+       never leaves the helper. ImageIO has no SVG decoder on macOS 27 (`CGImageSourceCreateWithData`
+       reports no type), so AppKit's representation is the only native non-browser renderer.
+    4. A watchdog ends the helper if drawing passes 1 second (`ExtensionSVGPreview.renderTimeout`), as
+       for a runaway module, and launchd starts a fresh one for the next request. Volant gives up 1.5
+       seconds after sending the markup (10 seconds to start the helper) and shows the placeholder.
+       A helper stopped this way also stops any extension run it was doing at that moment, which then
+       reports that it stopped.
+    5. The app accepts only that PNG, under the usual thumbnail checks, and caches it like any row image.
+       Refusals, timeouts and failures are cached as failures for the session, so a file that stops the
+       helper is not sent again. `ExtensionActivity` records the GET by host and the drawing as
+       `svgRender` (completed, denied, timedOut or failed), never any markup.
+
+    `ExtensionSVGPreview` is a token scan, not an XML parser: it never resolves entities, reads a DTD or
+    follows a reference, and it refuses rather than rewrites. It refuses:
+    - a DOCTYPE or any other `<!` declaration (so no entities, billion laughs or XXE), and processing
+      instructions other than a leading `<?xml … ?>`;
+    - `<script>`, `<foreignObject>`, `<image>`, `<feImage>`, `iframe`, `object`, `embed`, `audio`,
+      `video`, `canvas`, `img`, `link`, `meta`, `base`, `xi:include` and the other embedding elements,
+      and animation elements (`set`, `animate…`), which can change attributes after the check;
+    - `on…` event attributes, `src`, `xml:base`, and any `href` or `xlink:href` (any prefix) not starting
+      with `#`;
+    - CSS in a `<style>` element or any attribute with `@import`, `@font-face`, a backslash escape, an
+      unterminated comment, a `url(` other than `url(#…)`, or `image(`, `image-set(`, `cross-fade(` or
+      `src(`; character references are decoded before these checks, so `&#117;rl(` is caught;
+    - filters and masks (`<filter>`, any `fe…` primitive, `<mask>`, the `filter` and `mask` attributes,
+      and CSS naming either). CoreSVG draws them at the document's own resolution before scaling down:
+      measured on macOS 27, one blurred rectangle on a 16,384-unit canvas, or on a 64-unit canvas under
+      `scale(256)`, used about 7 GB; a mask on a 16,384 canvas used about 3 GB. Clip paths, gradients,
+      patterns and group opacity under the same scale stayed near 15 MB, so they are allowed. Logos that
+      use a blur, such as svgl's Google logo, keep the placeholder;
+    - a `<use>` pointing at something that itself contains a `<use>` (exponential drawing), including a
+      `<use>` that draws itself or an ancestor;
+    - more than 256 KB, 5,000 elements or 64 levels of nesting, and any `width`, `height` (in px, pt,
+      pc, mm, cm, in, em or ex) or `viewBox` value above 16,384;
+    - malformed markup: unbalanced or unterminated tags, unquoted attributes, `<` in an attribute value,
+      undefined entities, a bare `&`, and text or another element after the root.
+
+    Checked against real logos: svgl's GitHub, Vercel, Figma (clip path) and Instagram (gradients linked
+    by `xlink:href="#…"`) and Simple Icons 16's GitHub, Nike and Airbus pass unchanged. What the check
+    cannot bound is drawing time: one evenodd path of 2,000 long crossing segments (21 KB) took 2.6
+    seconds, which is what the 1-second watchdog is for. With the check bypassed, CoreSVG opened no
+    connection to a loopback listener and drew no local file for `<image>`, `<use>`, CSS `@import` and
+    `url()`, `@font-face`, `feImage`, external DTDs and entities, XInclude, script and `foreignObject`
+    references, in an unsandboxed process; an unresolved `<image>` draws as a red box, and `data:` images
+    do draw, which is one reason `<image>` is refused outright. Simple Icons marks have no fill and draw
+    black, which is hard to see in Dark appearance; extension authors should prefer a colored or
+    appearance-appropriate variant. Volant does not tint previews.
+  - *Memory only.* Thumbnails, and failures, are cached in memory by extension and URL for the session,
+    at most 200 entries and 4 MB of pixels, least recently used first out; nothing is written to disk,
+    and Volant forgets them when it quits. Each fetch is recorded as a GET in `ExtensionActivity`, naming
+    only the host.
+  - *Why a permission.* The URLs are the extension's choice on hosts the owner already allowed, and its
+    own fetches reveal the owner's address, timing and query to those hosts. Row images add three
+    things those fetches don't: requests that follow what the owner scrolls to (which rows were on
+    screen, like a read receipt per row), up to 30 more requests per list without any owner choice
+    beyond opening it, and an image decoder (and, for SVG, a renderer) fed from the network
+    automatically, even if only in sandboxed helpers. That is a small but real step beyond reading data,
+    so the owner opts in. SVG previews add no permission: they fall under `row-images`.
+  - *Older Volant.* Versions before row images ignore `image`, and the row keeps its symbol or the
+    extension's icon. But 0.3.35 refuses a manifest whose `permissions` names one it does not know, so
+    an extension that declares `row-images` does not load there at all; publish it only for a Volant
+    release that supports it.
 
 `VolantFetchHost` is the only process with network access for this. It is a sandboxed XPC service
 with just `network.client`, built like `VolantRatesHost`: it re-checks each URL against the hosts it
@@ -75,7 +214,8 @@ response past 512 KB. Requests to the module are limited to 1 MiB and its replie
 at 16 MiB. In the production host a 730 KB render request parses in about 60 ms.
 
 Items are trimmed before display: at most 100 rows, titles and subtitles cut to 300 characters, and
-any link that is not http, https or a declared app link dropped.
+any link that is not http, https or a declared app link dropped. A row's `copy` carries longer text,
+such as an SVG logo, without changing the 300-character title limit.
 
 **Location.** A list extension may declare `"permissions": ["location"]`. The first-run prompt
 then also asks to share the owner's approximate location (about 11 km) with that extension and the
@@ -170,6 +310,40 @@ from their row, without a scope.
 
 - `swift test --package-path Core --filter ExtensionNetworkTests`: host names, URL permission, plans,
   item trimming and shared host approvals.
+- `swift test --package-path Core --filter ExtensionItemCopyTests`: the `clipboard-write` permission,
+  dropping copies while sanitizing, size, type, title and host limits, and the SVG and image checks,
+  including the `image` type, each format's signature and SVG preambles. `ExtensionItemImageTests`: the
+  `row-images` permission, dropping images while sanitizing, host rules and limits.
+- `VolantTests/ExtensionRowImageThumbnailTests`: thumbnails from generated PNG, JPEG, GIF (first
+  frame), BMP, TIFF and ICO with PNG and BMP entries (largest entry), a WebP fixture (ImageIO cannot
+  write WebP), and AVIF and HEIC when the Mac can write them; SVG, HTML, PDF, garbage, truncated and
+  oversized sources refused; the app's PNG-only acceptance. `ExtensionRowImageTests` (a fake fetch
+  helper): loads, failures, refusals before and after the fetch, activity, the fingerprint, and the
+  loader's concurrency, per-list cap, stale-list dropping and cache bounds. `LauncherExtensionImageTests`:
+  rows keep images, nothing loads until a row asks, leaving drops loads, and the row view's placeholder.
+  The Actions fixture's `extension-row-images` scenario renders the prompt and rows with loaded, loading
+  and failed images in light and dark. A row image through the signed fetch helper and real services
+  are not verified.
+- SVG previews: `swift test --package-path Core --filter ExtensionSVGPreviewTests` runs the check over
+  real svgl and Simple Icons logos and a hostile corpus (DOCTYPE, billion laughs, XXE, script, event
+  attributes, `foreignObject`, external `href`/`xlink:href`, `<image>`, `@import`, `url(http…)`, escapes,
+  filters, masks, nested `<use>`, oversized, deep and huge-canvas files). `VolantTests/ExtensionSVGRasterizerTests`:
+  logos become small PNGs of the right size and color, refused markup is never drawn, a pathological
+  file that passes the check outlasts the timeout, and, where a loopback listener is allowed (CI, not
+  the sandboxed local test host), the renderer fetches nothing with the check bypassed.
+  `ExtensionRowImageSVGTests` (fake helpers): the markup reaches the extension helper unchanged, only
+  its PNG is shown, refusals, timeouts and failures keep the placeholder and are cached, a change while
+  drawing drops the result, and activity. `tools/check-extensions.sh` drives the production
+  `ExtensionHost.rasterizeSVG`, confirms its watchdog exits on the pathological file, and repeats the
+  loopback and local-file check unsandboxed. The Actions fixture's `extension-row-images-svg` scenario
+  renders svgl and Simple Icons logos and refused files in light and dark. Not verified: the signed
+  `VolantExtensionHost` XPC call (`tools/check-extensions-xpc.sh` needs the exported app), real
+  servers, and macOS versions before 27 beyond CI's build and tests.
+- `VolantTests/ExtensionRowCopyTests` (a fake fetch helper and clipboard): text, SVG, text and each image
+  type; wrong types, oversized and failed downloads, unapproved hosts, a host removed mid-download,
+  and disabled, blocked, revoked or unpermitted extensions; the fingerprint. `LauncherExtensionCopyTests`:
+  Actions entries and Return. The Actions fixture's `extension-row-copy` scenario renders the prompt and
+  the menu. Pasting into real apps and a copy through the signed fetch helper are not verified.
 - `VolantTests/ExtensionTests`: enabling allows hosts, a removed host asks again, uninstall prunes only
   orphaned hosts, and a cancelled run stops its reads and never renders.
 - `tools/check-extensions.sh`: the list fixture runs in the production JavaScriptCore host, plans only

@@ -65,6 +65,55 @@
   align-items: center;
   padding-block: 68px 58px;
 }
+/* "Extensions are WebAssembly": a compact section after the feature links. */
+.home-wasm {
+  margin-block: 56px;
+  padding: 36px 40px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.home-wasm h2 {
+  margin-bottom: 14px;
+}
+.home-wasm p:not(.home-kicker) {
+  max-width: 680px;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--muted-foreground);
+  margin: 0 0 20px;
+}
+.home-wasm-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+}
+.home-wasm-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+@media (max-width: 760px) {
+  .home-wasm {
+    padding: 26px 22px;
+  }
+}
+
+/* The header hides its Star button on small screens; the one on /try stays. */
+.home-refresh .try-page .home-actions .nav-star {
+  display: inline-flex;
+}
+
+/* The hero with the in-browser launcher: copy above, the card across the full hero width. */
+.home-hero-try {
+  grid-template-columns: 1fr;
+  gap: 36px;
+}
+.home-hero-try .home-intro {
+  max-width: 620px;
+}
 .home-hero h1 {
   font-size: clamp(54px, 5.4vw, 78px);
   letter-spacing: -4px;
@@ -171,7 +220,7 @@
 }
 .home-benefit-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 35px;
   margin-top: 35px;
 }
@@ -343,6 +392,9 @@
   .home-refresh .nav nav {
     gap: 15px;
   }
+  .home-benefit-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
   .home-hero {
     gap: 24px;
   }
@@ -482,7 +534,37 @@
 .home-refresh[data-theme='dark'] {
   color-scheme: dark;
 }
-.home-appearance select,
+.home-appearance {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  color: var(--muted-foreground);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+.home-appearance:hover {
+  color: var(--foreground);
+  background: var(--card);
+  border-color: var(--border);
+}
+.home-appearance:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-appearance {
+    transition: none;
+  }
+}
 .home-demo-control {
   font: inherit;
   font-size: 12px;
@@ -491,10 +573,6 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 8px;
-}
-.home-appearance select:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 3px;
 }
 .home-demo-caption {
   display: flex;
@@ -518,4 +596,24 @@
   .home-refresh .nav-actions {
     gap: 10px;
   }
+}
+
+/* The homepage hero's announcement link, above the kicker. */
+.home-announce {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 18px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.home-announce:hover,
+.home-announce:focus-visible {
+  border-color: var(--primary);
 }

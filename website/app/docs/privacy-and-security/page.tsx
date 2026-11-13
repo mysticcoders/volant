@@ -51,13 +51,16 @@ export default function PrivacyAndSecurity() {
           <a href="/docs/agents">AI connections</a>.
         </li>
         <li>
-          <strong>iCloud settings sync</strong> uses Apple’s
-          key-value service only when enabled. It shares selected global
-          shortcuts, snippets, quicklinks, aliases, appearance, and
-          clipboard-retention settings. Notes, clipboard history, API keys, AI
-          configuration, app-specific shortcuts, and extension approvals are
-          excluded. It is off until you turn it on in Settings → Data &amp;
-          Configuration.
+          <strong>iCloud sync</strong> is off until you turn on Sync settings
+          and notes with iCloud in Settings → Data &amp; Configuration. It uses
+          Apple’s key-value service for selected global shortcuts, snippets,
+          quicklinks, aliases, appearance, and clipboard-retention settings,
+          and moves your notes to iCloud Drive › Volant › Notes in your own
+          iCloud account, still as Markdown files. Your Mac’s notes folder is
+          kept as a dated backup, and turning sync off copies notes back.
+          Clipboard history, API keys, AI configuration, app-specific
+          shortcuts, and extension approvals are excluded. Volant has no
+          server of its own.
         </li>
         <li>
           <strong>Network extensions</strong> never reach the network
@@ -93,6 +96,14 @@ export default function PrivacyAndSecurity() {
           convert a coin. An optional CoinGecko key stays in your Keychain and
           is sent only to CoinGecko. Nothing you type is included in any of
           these requests. See <a href="/docs/calculator">The calculator</a>.
+        </li>
+        <li>
+          <strong>The in-browser demo</strong> at{' '}
+          <a href="/try">usevolant.com/try</a> runs in your browser, and
+          nothing you type there leaves the page. For currency answers, this
+          website refreshes the same three public exchange-rate feeds on a
+          schedule and keeps a copy; the demo reads that copy, so your queries
+          never reach the providers, and the site doesn&rsquo;t record them.
         </li>
       </ul>
       <p>
@@ -178,6 +189,36 @@ export default function PrivacyAndSecurity() {
                 and removes these.
               </td>
             </tr>
+            <tr>
+              <td>Camera</td>
+              <td>
+                Only for the <code>camera</code> preview window, asked the
+                first time you open it. The camera runs only while that window
+                is open; nothing is recorded, saved or sent.
+              </td>
+            </tr>
+            <tr>
+              <td>Automation (System Events)</td>
+              <td>
+                Only for <code>dark mode</code> and <code>menu bar</code>,
+                asked the first time you use one. Volant asks System Events to
+                switch Light and Dark or menu bar hiding. Restart, Shut Down
+                and Log Out ask macOS&rsquo;s own loginwindow to show its
+                confirmation, which needs no prompt.
+              </td>
+            </tr>
+            <tr>
+              <td>Automation (browsers)</td>
+              <td>
+                Only during a Focus session that blocks websites, asked once
+                per browser the first time it&rsquo;s in front. Volant asks
+                only the browser in front for its current tab&rsquo;s address,
+                compares it on your Mac, and swaps a blocked tab for a blank
+                page. Addresses are never saved, logged or synced; Volant keeps
+                a blanked tab&rsquo;s address in memory only to put it back.
+                Volant never opens a browser to ask it anything.
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -199,8 +240,17 @@ export default function PrivacyAndSecurity() {
         Carbon&rsquo;s hotkey registration, which needs no permission at all.
       </p>
       <p>
-        <strong>No Accessibility grant unless you choose Type at the cursor.</strong>{' '}
-        Unless you choose it, Volant never asks for it: results are copied to
+        <strong>No permission for Breaks.</strong> When you turn Breaks on, it
+        reads how long your Mac has been idle and whether any camera or
+        microphone is in use, so a break never interrupts a call. It never
+        opens a camera or microphone, and saves none of this.
+      </p>
+      <p>
+        <strong>
+          No Accessibility grant unless you choose Type at the cursor or Search
+          Menu Items.
+        </strong>{' '}
+        Unless you choose one of them, Volant never asks for it: results are copied to
         the clipboard instead of pasted, so no keystroke is synthesized. Window
         management and system-wide text expansion stay absent.
       </p>
@@ -211,12 +261,32 @@ export default function PrivacyAndSecurity() {
         separate helper inside the app, which asks macOS once for Accessibility
         (System Settings lists it as Volant). The helper can only type text you
         just dictated into the app that was in front when you started; it has
-        no command for reading what is on screen or typing anything else. It
+        no command for typing anything else, and apart from Search Menu Items
+        below, none for reading what is on screen. It
         never reads the text of the field it types into. It refuses to type
         into password fields or while secure input is on, and copies instead.
         The main app stays sandboxed and never uses Accessibility itself.
         Choosing Copy to clipboard again stops the helper; macOS keeps the grant
         until you turn Volant off in Privacy &amp; Security → Accessibility.
+      </p>
+      <p>
+        <strong>Search Menu Items</strong> is in
+        Settings → General, off until you turn it on. Type{' '}
+        <code>menus</code> in the launcher to search the menu bar of the app
+        you were using, and press Return to choose an item. The same helper
+        does the work, with the same single Volant entry in Privacy &amp;
+        Security → Accessibility; turning the switch on asks for the permission
+        only if Volant doesn&rsquo;t have it yet. The helper reads only menu
+        titles, keyboard shortcuts and whether each item is enabled, never
+        window contents or the text of fields, and only from the app in front.
+        It presses the item you chose only after checking that the same app is
+        still in front and the item still has the same name. It never reads
+        or presses the Apple menu, which holds Shut Down, Restart and Log Out,
+        and refuses Volant itself, the login window and password prompts. Menu
+        titles can include document names, so they stay in memory only while
+        the launcher is open and are never saved, synced or logged. Turning
+        the switch off stops the helper unless Type at the cursor still uses
+        it.
       </p>
 
       <h2>Your data at rest</h2>

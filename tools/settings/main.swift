@@ -16,12 +16,12 @@ let configURL = root.appendingPathComponent("config.json")
 try Data(#"{"aliases":{"safari":"/Applications/Safari.app"},"appHotKeys":[],"syncSettingsWithICloud":true}"#.utf8).write(to: configURL)
 let apps = [AppEntry(id: "/System/Applications/Calculator.app", name: "Calculator", url: URL(fileURLWithPath: "/System/Applications/Calculator.app"), lastUsed: nil), AppEntry(id: "/Applications/Safari.app", name: "Safari", url: URL(fileURLWithPath: "/Applications/Safari.app"), lastUsed: nil)]
 /// Stands in for the input helper so the preview never launches it or prompts for Accessibility.
-/// It reports Accessibility as not allowed until `trusted` is set.
+/// It reports Accessibility as not allowed until `trusted` is set, answering at once: the renders run
+/// inside a main-queue block, where a reply queued on the main queue would arrive only after them.
 final class PreviewInputHost: InputHostClient {
     var trusted = false
     func status(prompt: Bool, completion: @escaping (InputHostStatus?) -> Void) {
-        let trusted = self.trusted
-        DispatchQueue.main.async { completion(InputHostStatus(trusted: trusted, secureInput: false)) }
+        completion(InputHostStatus(trusted: trusted, secureInput: false))
     }
     func beginSession(completion: @escaping (InputSessionStart?) -> Void) { completion(InputSessionStart(refusal: .notTrusted)) }
     func insert(phrase: String, token: Data, completion: @escaping (InputInsertion?) -> Void) { completion(.refused(.notTrusted)) }
@@ -30,6 +30,7 @@ final class PreviewInputHost: InputHostClient {
 }
 let previewInputHost = PreviewInputHost()
 let dictationAccess = DictationTypingAccess(client: previewInputHost)
+let menuItemsAccess = MenuItemsAccess(client: previewInputHost)
 /// Fictional usage for Settings › Your Volant: a fixed pattern of daily counts over the last 30 days
 /// and ranking rows for system apps, commands and the bundled Hello extension.
 func seedFictionalUsage(at url: URL) {
@@ -54,7 +55,7 @@ func seedFictionalUsage(at url: URL) {
 let usageURL = root.appendingPathComponent("settings-usage.sqlite")
 seedFictionalUsage(at: usageURL)
 var controller: SettingsWindowController!
-controller = SettingsWindowController(configURL: configURL, usageURL: usageURL, dictationAccess: dictationAccess) {
+controller = SettingsWindowController(configURL: configURL, usageURL: usageURL, dictationAccess: dictationAccess, menuItemsAccess: menuItemsAccess) {
     HotKeyCenter.shared.unregisterAll()
     AppHotKeys.register((try? JSONDecoder().decode(Preferences.self, from: Data(contentsOf: configURL)))?.appHotKeys ?? [])
     controller.refresh(try! JSONDecoder().decode(Preferences.self, from: Data(contentsOf: configURL)), apps: apps)
@@ -351,6 +352,34 @@ if CommandLine.arguments.contains("--render") {
                 print("Rendered \(theme) Dictation \(name)")
             }
         }
+        // Search Menu Items in General, with the fake input host: off, on but not allowed, and on and
+        // allowed, scrolled to the section at the bottom. No helper runs and nothing prompts.
+        for theme in ["light", "dark"] {
+            app.appearance = NSAppearance(named: theme == "dark" ? .darkAqua : .aqua)
+            controller.state.section = .general
+            for (name, enabled, trusted) in [("menu-items-off", false, false), ("menu-items-not-allowed", true, false), ("menu-items-allowed", true, true)] {
+                previewInputHost.trusted = trusted
+                try! Preferences.updateBoolean("searchMenuItems", value: enabled, at: configURL)
+                controller.refresh(try! JSONDecoder().decode(Preferences.self, from: Data(contentsOf: configURL)), apps: apps)
+                menuItemsAccess.chose(enabled)
+                RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+                func scrollViews(_ view: NSView) -> [NSScrollView] {
+                    (view as? NSScrollView).map { [$0] } ?? view.subviews.flatMap(scrollViews)
+                }
+                let view = controller.window!.contentView!
+                for scroll in scrollViews(view) where scroll.convert(scroll.bounds, to: nil).minX > 200 {
+                    guard let document = scroll.documentView else { continue }
+                    document.scroll(NSPoint(x: 0, y: document.isFlipped ? document.bounds.height : 0))
+                }
+                let deadline = Date().addingTimeInterval(2)
+                repeat { RunLoop.main.run(until: Date().addingTimeInterval(0.1)) } while menuItemsAccess.state == .checking && Date() < deadline
+                RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+                precondition(!enabled || menuItemsAccess.state == (trusted ? .allowed : .notAllowed), "Search Menu Items shows \(menuItemsAccess.state)")
+                capture(theme + "-General-" + name)
+                print("Rendered \(theme) General \(name)")
+            }
+        }
+        try! Preferences.updateBoolean("searchMenuItems", value: false, at: configURL)
         controller.refresh(try! JSONDecoder().decode(Preferences.self, from: Data(contentsOf: configURL)), apps: apps)
         for (colorTheme, mode) in [("volant", Appearance.Theme.light), ("catppuccin-mocha", .dark), ("rose-pine-dawn", .light)] {
             ThemeStore.shared.apply(Appearance(theme: mode, colorTheme: colorTheme))

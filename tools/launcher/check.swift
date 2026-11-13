@@ -924,9 +924,11 @@ final class FixtureCaffeinateAssertions: CaffeinateAssertions {
 let power = FixtureCaffeinateAssertions()
 let awake = CaffeinateService(assertions: power, automaticTimer: false)
 var requestedSystemActions: [SystemAction] = []
+var cameraOpenings = 0
 let corePanel = LauncherPanel(index: AppIndex(entries: []), clipboard: clipboard, notes: notes,
     config: Preferences(), usage: usage, positionStore: positionDefaults, caffeinate: awake, onNote: { action in
         if case .systemAction(let system) = action { requestedSystemActions.append(system) }
+        if case .camera = action { cameraOpenings += 1 }
     })
 corePanel.model.searchesSecondarySources = false
 var copiedEmoji: [String] = []
@@ -1036,6 +1038,92 @@ verify(corePanel.makeFirstResponder(coreSearchField(in: corePanel.contentView!)!
 sendCoreKey("\r", code: 36)
 verify(requestedSystemActions == [.lockScreen], "Return hands Lock Screen to the app delegate once")
 print("PASS: system actions are searchable, render as commands, and run only on Return")
+// Pick Color, Open Camera and the System Events toggles with a fake loupe, camera and System Events:
+// no magnifier, camera, consent prompt or Apple Event in the fixture.
+final class FixtureSampler: ColorSampling {
+    var requests = 0
+    var next: PickedColor? = PickedColor(red: 1, green: 99.0 / 255, blue: 99.0 / 255)
+    func sample(_ completion: @escaping (PickedColor?) -> Void) {
+        requests += 1
+        let color = next
+        DispatchQueue.main.async { completion(color) }
+    }
+}
+final class FixtureCamera: CameraAccess {
+    var hasCamera = true
+    var authorization = CameraAuthorization.denied
+    var requests = 0
+    func requestAccess(_ completion: @escaping (Bool) -> Void) { requests += 1; completion(false) }
+}
+final class FixtureSystemEvents: SystemEventsRunning {
+    var values = ["aprp/thme": false, "dpas/dahm": false]
+    var refuses = false
+    func prepare() throws { if refuses { throw SystemEventsFailure.denied } }
+    func readBoolean(container: String, property: String) throws -> Bool { values[container + "/" + property] ?? false }
+    func writeBoolean(container: String, property: String, value: Bool) throws { values[container + "/" + property] = value }
+}
+let fixtureSampler = FixtureSampler()
+corePanel.model.colorSampler = fixtureSampler
+var copiedColors: [String] = []
+corePanel.model.copyText = { copiedColors.append($0) }
+corePanel.model.query = "color picker"
+verify(waitUntil { corePanel.model.selectedRow?.id == "core:colorPicker" }, "Pick Color is offered for its name")
+try renderCore("color-picker-command")
+verify(corePanel.makeFirstResponder(coreSearchField(in: corePanel.contentView!)!), "Restore native editor before Pick Color")
+sendCoreKey("\r", code: 36)
+verify(fixtureSampler.requests == 1, "Return starts one sample")
+verify(waitUntil { corePanel.isVisible && corePanel.model.selectedRow?.id == "picked-color:hex" }, "The launcher returns with HEX selected")
+verify(corePanel.model.rows.filter { $0.id.hasPrefix("picked-color:") }.count == 5, "HEX, RGB, HSL and OKLCH rows, then Pick Another Color")
+verify(corePanel.model.rows.last?.id == "picked-color:another" && !corePanel.model.rows.contains { $0.id == "core:colorPicker" },
+       "Pick Another Color follows the formats in place of the Pick Color command")
+try renderCore("color-card")
+corePanel.model.moveSelection(1)
+verify(corePanel.makeFirstResponder(coreSearchField(in: corePanel.contentView!)!), "Restore native editor before copying")
+sendCoreKey("\r", code: 36)
+verify(copiedColors == ["rgb(255 99 99)"], "Return copies the selected format: \(copiedColors)")
+corePanel.toggle()
+fixtureSampler.next = nil
+corePanel.model.query = "pick color"
+verify(waitUntil { corePanel.model.rows.contains { $0.id == "picked-color:hex" } }, "The last picked color shows under its phrase")
+corePanel.model.selection = corePanel.model.rows.firstIndex { $0.id == "picked-color:another" }!
+verify(corePanel.makeFirstResponder(coreSearchField(in: corePanel.contentView!)!))
+sendCoreKey("\r", code: 36)
+verify(waitUntil { corePanel.isVisible && corePanel.model.query == "pick color" }, "Escape in the loupe returns to Pick Color")
+verify(copiedColors.count == 1, "Cancelling copies nothing")
+let fixtureCamera = FixtureCamera()
+corePanel.model.cameraAccess = fixtureCamera
+corePanel.model.query = "open camera"
+verify(waitUntil { corePanel.model.rows.contains { $0.id == "core:camera" } }, "Open Camera is offered for its name")
+corePanel.model.activate(rowID: "core:camera")
+verify(fixtureCamera.requests == 0 && cameraOpenings == 0, "A denied camera never asks or opens")
+verify(corePanel.model.selectedRow?.id == "privacy:camera", "Denied camera offers its privacy pane")
+try renderCore("camera-denied")
+fixtureCamera.authorization = .authorized
+corePanel.model.query = "camera"
+corePanel.model.activate(rowID: "core:camera")
+verify(cameraOpenings == 1 && !corePanel.isVisible, "An allowed camera opens its window and hides the launcher")
+corePanel.toggle()
+let fixtureEvents = FixtureSystemEvents()
+corePanel.model.systemToggles = SystemToggleService(runner: fixtureEvents, queue: nil)
+corePanel.model.globalDefaults = { [:] }
+corePanel.model.query = "dark mode"
+verify(waitUntil { corePanel.model.rows.contains { $0.id == "system-toggle:appearance" } }, "Dark mode finds the appearance toggle")
+corePanel.model.query = "toggle appearance"
+verify(waitUntil { corePanel.model.selectedRow?.id == "system-toggle:appearance" }, "Toggle appearance selects the toggle")
+try renderCore("appearance-toggle")
+verify(corePanel.makeFirstResponder(coreSearchField(in: corePanel.contentView!)!))
+sendCoreKey("\r", code: 36)
+verify(fixtureEvents.values["aprp/thme"] == true && corePanel.isVisible, "Return switches to Dark and keeps the launcher open")
+try renderCore("appearance-toggled")
+corePanel.model.query = "menu bar"
+verify(waitUntil { corePanel.model.selectedRow?.id == "system-toggle:menuBar" }, "Menu bar selects its toggle")
+fixtureEvents.refuses = true
+corePanel.model.activate(rowID: "system-toggle:menuBar")
+verify(corePanel.model.selectedRow?.id == "privacy:automation" && fixtureEvents.values["dpas/dahm"] == false, "Refused Automation offers its privacy pane")
+try renderCore("automation-denied")
+corePanel.model.query = ""
+corePanel.model.copyText = { copiedEmoji.append($0) }
+print("PASS: Pick Color, Open Camera and System Events toggles, including denied permissions")
 // Fictional Apple Shortcuts: native Return uses stable IDs and late catalogs keep selection.
 let recipe = AppleShortcut(id: "11111111-1111-4111-8111-111111111111", name: "Leftover Recipes")
 let volumeShortcut = AppleShortcut(id: "22222222-2222-4222-8222-222222222222", name: "Set Volume to 50%")
@@ -1122,6 +1210,154 @@ verify(!awake.isActive && power.released == 1, "Return stops a Caffeinate sessio
 corePanel.model.query = "caffeinate nonsense"
 verify(corePanel.model.rows.isEmpty && corePanel.model.notice != nil)
 try renderCore("invalid")
+// Focus: idle rows, the setup form, running controls, the floating bar and a blocked-app reminder,
+// all with a fictional session that is never saved and an app that is never really hidden.
+corePanel.model.query = "focus"
+verify(waitUntil { corePanel.model.rows.map(\.id) == ["focus:set-up", "focus:start:-:"] }, "Idle Focus offers setup and the last setup")
+try renderCore("focus-idle")
+sendCoreKey("\r", code: 36)
+verify(waitUntil { corePanel.model.entryForm?.kind == .focus }, "Return on Start Focus Session opens the form")
+corePanel.model.entryForm?.name = "Write the launch post"
+corePanel.model.entryForm?.focus?.add(.app(bundleIdentifier: "com.example.chat", name: "Chat"))
+corePanel.model.entryForm?.focus?.add(.website("news.example.com"))
+try renderCore("focus-form")
+corePanel.model.cancelEntryForm()
+let focusFixture = corePanel.model.focus
+focusFixture.start(FocusSetup(goal: "Write the launch post", minutes: 25, apps: ["com.example.chat"], websites: ["news.example.com"], categories: [.social]))
+corePanel.model.query = "focus "
+verify(waitUntil { corePanel.model.rows.map(\.id) == ["focus:pause", "focus:complete", "focus:edit", "focus:end"] }, "A running session offers its controls")
+try renderCore("focus-running")
+/// Renders a Focus window's content where the UI VM runner collects launcher captures.
+func renderFocusWindow(_ window: NSWindow, _ name: String) throws {
+    RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+    let view = window.contentView!
+    view.layoutSubtreeIfNeeded()
+    let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
+    view.cacheDisplay(in: view.bounds, to: bitmap)
+    try bitmap.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: "/tmp/volant-core-\(name)-\(dark ? "dark" : "light").png"))
+}
+let focusBar = FocusBarPanel(controller: focusFixture, actions: FocusBarActions(), positions: positionDefaults)
+focusBar.appearance = corePanel.appearance
+focusBar.refresh()
+verify(focusBar.isVisible && !focusBar.isKeyWindow, "The focus bar shows for an undocked session without taking focus")
+try renderFocusWindow(focusBar, "focus-bar")
+let fakeScreen = NSScreen.main ?? NSScreen.screens[0]
+let fakeNotch = NSRect(x: fakeScreen.frame.midX - 95, y: fakeScreen.frame.maxY - 32, width: 190, height: 32)
+let focusNotch = FocusNotchPanel(controller: focusFixture, actions: FocusBarActions(), snoozeMinutes: { 3 }, geometry: { (fakeScreen, fakeNotch) })
+focusNotch.appearance = corePanel.appearance
+focusNotch.refresh()
+verify(waitUntil { focusNotch.isVisible } && focusNotch.isShowingSession && !focusNotch.isKeyWindow, "The notch shows the session without taking focus")
+verify(abs(focusNotch.frame.midX - fakeNotch.midX) < 1 && focusNotch.frame.maxY == fakeNotch.maxY && focusNotch.frame.width == fakeNotch.width + 2 * FocusNotchPanel.wing,
+       "The collapsed notch is centered on the notch and only as wide as its wings: \(focusNotch.frame)")
+try renderFocusWindow(focusNotch, "focus-notch")
+focusNotch.state.expanded = true
+verify(waitUntil { focusNotch.frame.height > fakeNotch.height }, "Expanding grows the notch downward")
+try renderFocusWindow(focusNotch, "focus-notch-expanded")
+focusNotch.state.expanded = false
+verify(waitUntil { focusNotch.frame.height == fakeNotch.height }, "Collapsing returns to the notch's height")
+let focusReminder = FocusReminderPanel(controller: focusFixture, snoozeMinutes: { 3 })
+focusReminder.appearance = corePanel.appearance
+var fixtureHidden = 0
+focusFixture.handleActivation(bundleIdentifier: "com.example.chat", name: "Chat") { fixtureHidden += 1; return true }
+verify(fixtureHidden == 1 && focusFixture.reminder?.name == "Chat", "A blocked app is hidden and named in the reminder")
+verify(waitUntil { focusReminder.isVisible }, "The reminder appears")
+try renderFocusWindow(focusReminder, "focus-reminder")
+verify(waitUntil { focusNotch.frame.height > fakeNotch.height }, "A reminder drops out of the notch")
+try renderFocusWindow(focusNotch, "focus-notch-reminder")
+focusFixture.dismissReminder()
+focusFixture.end()
+verify(waitUntil { !focusBar.isVisible && !focusReminder.isVisible && !focusNotch.isVisible }, "Ending the session removes the bar, reminder and notch")
+corePanel.model.query = ""
+print("PASS: Focus rows, form, bar and reminder render with a fictional session")
+// Breaks: the launcher rows off and on, the heads-up, the Gentle reminder and countdown, and the
+// Standard and Strict overlays, with a fictional schedule on a fixture clock that is never saved
+// to the owner's support folder. No real idle time, camera or microphone is read.
+corePanel.model.query = "break"
+verify(waitUntil { corePanel.model.rows.map(\.id) == ["break:on", "break:now"] }, "Breaks off offers Turn On and Take a Break Now")
+verify(corePanel.model.selection == 0, "A new break query selects its first row")
+try renderCore("break-off")
+corePanel.model.breaks.apply(BreakPreferences(enabled: true))
+corePanel.model.query = "breaks "
+verify(waitUntil { corePanel.model.rows.map(\.id) == ["break:now", "break:skip", "break:pause", "break:off"] }, "Breaks on offers its controls")
+try renderCore("break-rows")
+corePanel.model.breaks.apply(BreakPreferences())
+corePanel.model.query = ""
+var breakClock = Date(timeIntervalSince1970: 1_800_000_000)
+let breakFixture = BreakController(preferences: BreakPreferences(enabled: true),
+                                   stateURL: root.appendingPathComponent("break-schedule.json"), clock: { breakClock },
+                                   idleSeconds: { 0 }, inCall: { false }, automaticTimer: false, restore: false)
+breakFixture.start()
+/// Moves the fixture clock forward one second at a time, ticking the Break schedule each time.
+func advanceBreaks(_ seconds: Int) {
+    for _ in 0..<seconds {
+        breakClock += 1
+        breakFixture.tick()
+    }
+}
+let breakPresenter = BreakPresenter(controller: breakFixture)
+breakPresenter.notice.appearance = corePanel.appearance
+advanceBreaks(44 * 60)
+verify(breakFixture.schedule.phase == .headsUp, "The heads-up comes a minute before the break")
+breakPresenter.refresh()
+verify(waitUntil { breakPresenter.notice.isVisible && !breakPresenter.notice.isKeyWindow }, "The heads-up shows without taking focus")
+try renderFocusWindow(breakPresenter.notice, "break-heads-up")
+breakFixture.apply(BreakPreferences(enabled: true, strictness: .gentle))
+advanceBreaks(60)
+verify(breakFixture.schedule.phase == .reminding, "A Gentle break reminds instead of covering the screen")
+breakPresenter.refresh()
+verify(waitUntil { breakPresenter.notice.isVisible } && breakPresenter.overlays.isEmpty, "The Gentle reminder is a panel, not an overlay")
+try renderFocusWindow(breakPresenter.notice, "break-gentle")
+breakFixture.takeBreakNow()
+advanceBreaks(15)
+breakPresenter.refresh()
+verify(waitUntil { breakPresenter.notice.isVisible } && breakPresenter.overlays.isEmpty, "A Gentle break counts down in the panel")
+try renderFocusWindow(breakPresenter.notice, "break-gentle-running")
+breakFixture.endBreak()
+breakFixture.apply(BreakPreferences(enabled: true))
+breakFixture.takeBreakNow()
+advanceBreaks(2)
+breakPresenter.refresh()
+verify(waitUntil { !breakPresenter.overlays.isEmpty && breakPresenter.overlays.allSatisfy(\.isVisible) }, "A Standard break covers every display")
+verify(!breakPresenter.notice.isVisible, "The overlay replaces the notice")
+verify(breakPresenter.overlays.count == NSScreen.screens.count, "One overlay per display")
+verify(breakPresenter.overlays.allSatisfy { $0.collectionBehavior.contains(.canJoinAllSpaces) && $0.collectionBehavior.contains(.fullScreenAuxiliary) }, "Overlays join every Space and full-screen apps")
+breakPresenter.overlays.forEach { $0.appearance = corePanel.appearance }
+try renderFocusWindow(breakPresenter.overlays[0], "break-standard")
+breakFixture.apply(BreakPreferences(enabled: true, strictness: .strict))
+breakPresenter.refresh()
+verify(waitUntil { !breakPresenter.overlays.isEmpty }, "A Strict break covers the screen")
+breakPresenter.overlays.forEach { $0.appearance = corePanel.appearance }
+try renderFocusWindow(breakPresenter.overlays[0], "break-strict-waiting")
+let strictOverlay = breakPresenter.overlays[0]
+/// Sends Return down or up to a Strict overlay, as holding the key would.
+func sendReturn(_ type: NSEvent.EventType, to window: NSWindow) {
+    let event = NSEvent.keyEvent(with: type, location: .zero, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+        windowNumber: window.windowNumber, context: nil, characters: "\r", charactersIgnoringModifiers: "\r", isARepeat: false, keyCode: 36)!
+    if type == .keyDown { window.keyDown(with: event) } else { window.keyUp(with: event) }
+}
+sendReturn(.keyDown, to: strictOverlay)
+verify(!strictOverlay.hold.isHolding, "Return can't start skipping a Strict break before Skip appears")
+sendReturn(.keyUp, to: strictOverlay)
+advanceBreaks(12)
+try renderFocusWindow(breakPresenter.overlays[0], "break-strict")
+sendReturn(.keyDown, to: strictOverlay)
+RunLoop.main.run(until: Date().addingTimeInterval(1))
+sendReturn(.keyUp, to: strictOverlay)
+verify(breakFixture.isOnBreak && strictOverlay.hold.progress == 0, "Letting go of Return early keeps the Strict break")
+sendReturn(.keyDown, to: strictOverlay)
+verify(waitUntil(timeout: 5) { !breakFixture.isOnBreak }, "Holding Return for three seconds skips a Strict break")
+sendReturn(.keyUp, to: strictOverlay)
+breakPresenter.refresh()
+verify(waitUntil { breakPresenter.overlays.isEmpty && !strictOverlay.isVisible }, "Skipping removes every overlay")
+let orphan = BreakOverlayWindow(controller: breakFixture, screen: NSScreen.screens[0], strict: false)
+orphan.orderFrontRegardless()
+orphan.arm(until: Date())
+verify(waitUntil(timeout: BreakOverlayWindow.watchdogSlack + 2) { !orphan.isVisible }, "An overlay's watchdog removes it after the break's end even if nothing else does")
+breakPresenter.close()
+orphan.close()
+corePanel.makeKeyAndOrderFront(nil)
+verify(waitUntil { corePanel.isKeyWindow }, "The launcher is key again once the overlays are gone")
+print("PASS: Break rows, heads-up, Gentle reminder and Standard and Strict overlays render with a fictional schedule")
 /// Describes the emoji grid's keyboard state for failure messages.
 func emojiGridState() -> String {
     "selection=\(corePanel.model.selection), rows=\(corePanel.model.rows.count), query=\(corePanel.model.query), key=\(corePanel.isKeyWindow), responder=\(String(describing: corePanel.firstResponder)), delegate=\(String(describing: (corePanel.firstResponder as? NSTextView)?.delegate)), placeholder=\(String(describing: ((corePanel.firstResponder as? NSTextView)?.delegate as? NSTextField)?.placeholderString))"

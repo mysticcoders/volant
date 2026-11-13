@@ -41,26 +41,31 @@ enum LauncherItemAction: String, CaseIterable, Identifiable {
     }
 }
 
-/// One entry in the Actions menu: a built-in action, or an action a list extension's row offers.
+/// One entry in the Actions menu: a built-in action, an action a list extension's row offers, or that
+/// row's copy, titled by the extension.
 enum LauncherMenuEntry: Hashable, Identifiable {
     case item(LauncherItemAction)
     case custom(ExtensionItemAction)
+    case copy(String)
     var id: String {
         switch self {
         case .item(let action): return action.rawValue
         case .custom(let action): return "extension-" + action.id
+        case .copy: return "extension-copy"
         }
     }
     var symbol: String {
         switch self {
         case .item(let action): return action.symbol
         case .custom: return "puzzlepiece.extension"
+        case .copy: return "doc.on.clipboard"
         }
     }
     var group: Int {
         switch self {
         case .item(let action): return action.group
         case .custom: return 1
+        case .copy: return 2
         }
     }
 }
@@ -75,7 +80,7 @@ extension ResultRow {
         }
     }
     var supportsActions: Bool {
-        if case .extensionItem(let item, _) = self { return !(item.actions ?? []).isEmpty || item.url != nil || item.secondaryURL != nil }
+        if case .extensionItem(let item, _) = self { return !(item.actions ?? []).isEmpty || item.url != nil || item.secondaryURL != nil || item.copy != nil }
         return actionURL != nil
     }
     var actionTitle: String {
@@ -87,11 +92,13 @@ extension ResultRow {
         default: return ""
         }
     }
-    /// What the Actions menu lists for this row: built-in actions, then an extension row's own.
+    /// What the Actions menu lists for this row: built-in actions, then an extension row's own. A row's
+    /// copy follows its links, unless Return already performs it, in which case the first entry is the copy.
     var menuEntries: [LauncherMenuEntry] {
         if case .extensionItem(let item, _) = self {
             let links: [LauncherMenuEntry] = (item.secondaryURL == nil ? [] : [.item(.reveal)]) + (item.url == nil ? [] : [.item(.copyPath)])
-            return [.item(.open)] + links + (item.actions ?? []).map { .custom($0) }
+            let copy: [LauncherMenuEntry] = item.copy.map { item.returnCopies ? [] : [.copy($0.displayTitle)] } ?? []
+            return [.item(.open)] + links + copy + (item.actions ?? []).map { .custom($0) }
         }
         return itemActions.map { .item($0) }
     }
@@ -120,6 +127,7 @@ struct LauncherActionsView: View {
     @Environment(\.volantTheme) private var theme
 
     private func title(_ entry: LauncherMenuEntry) -> String {
+        if case .copy(let copy) = entry { return copy }
         guard case .item(let action) = entry else { if case .custom(let custom) = entry { return custom.title }; return "" }
         if action == .open { return target.primaryAction }
         if case .extensionItem = target {
