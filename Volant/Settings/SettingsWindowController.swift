@@ -31,7 +31,7 @@ final class SettingsWindowController: NSWindowController {
     init(configURL: URL = Preferences.configURL, usageURL: URL = UsageStore.defaultURL, conversations: ACPConversations = ACPConversations(),
          dictationAccess: DictationTypingAccess = DictationTypingAccess(client: InputHostConnection()),
          menuItemsAccess: MenuItemsAccess = MenuItemsAccess(client: InputHostConnection()),
-         openAI: @escaping (AIConfiguration) -> Void = { _ in }, onChange: @escaping () -> Void) {
+         openAI: @escaping (AIConfiguration) -> Void = { _ in }, showWelcome: (() -> Void)? = nil, onChange: @escaping () -> Void) {
         self.onChange = onChange
         self.configURL = configURL
         self.usageURL = usageURL
@@ -50,7 +50,7 @@ final class SettingsWindowController: NSWindowController {
         window.setFrameAutosaveName("VolantSettings")
         super.init(window: window)
         let hosting = NSHostingView(rootView: ThemedRoot(paletteText: false) {
-            SettingsView(state: state, conversations: conversations, dictationAccess: dictationAccess, menuItemsAccess: menuItemsAccess, configURL: configURL, usageURL: usageURL, onChange: onChange, openAI: openAI,
+            SettingsView(state: state, conversations: conversations, dictationAccess: dictationAccess, menuItemsAccess: menuItemsAccess, configURL: configURL, usageURL: usageURL, onChange: onChange, openAI: openAI, showWelcome: showWelcome,
                          chooseAIProject: { [weak self] completion in self?.chooseAIProject(completion) },
                          chooseAccountFolder: { [weak self] completion in self?.chooseAccountFolder(completion) },
                          importRaycast: { [weak self] in self?.showRaycastImport() })
@@ -112,6 +112,7 @@ private struct SettingsView: View {
     let usageURL: URL
     let onChange: () -> Void
     let openAI: (AIConfiguration) -> Void
+    let showWelcome: (() -> Void)?
     let chooseAIProject: (@escaping (URL?) -> Void) -> Void
     let chooseAccountFolder: (@escaping (URL?) -> Void) -> Void
     let importRaycast: () -> Void
@@ -207,7 +208,7 @@ private struct SettingsView: View {
         case .data: data
         case .yourVolant: YourVolantSettingsView(usageURL: usageURL)
         case .whatsNew: WhatsNewSettingsView()
-        case .about: AboutSettingsView()
+        case .about: AboutSettingsView(showWelcome: showWelcome)
         case .ai: AISettingsView(conversations: conversations, configURL: configURL, onChange: onChange, openConversation: openAI, chooseProject: chooseAIProject,
                                  chooseAccountFolder: chooseAccountFolder)
         case .dictation: DictationSettingsView(config: state.config, access: dictationAccess, apply: apply, configURL: configURL)

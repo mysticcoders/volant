@@ -527,6 +527,7 @@ private extension CoreCommand {
         case .menuItems: return Color(red: 0.35, green: 0.4, blue: 0.85)
         case .focus: return Color(red: 0.0, green: 0.55, blue: 0.5)
         case .breaks: return Color(red: 0.2, green: 0.6, blue: 0.3)
+        case .welcome: return .yellow
         }
     }
 }
