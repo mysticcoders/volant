@@ -703,6 +703,29 @@ func extensionRowsScenario() throws {
     panel.orderOut(nil)
     panel.model.reset()
     verify(!panel.model.rowState.forecastShowsWeek, "Dismissing the launcher returns the card to Today")
+
+    // The built-in weather command, with a fake helper: it answers only after typing pauses and the
+    // card leads the results, with Apple's legal link.
+    let weatherForecast = try JSONDecoder().decode(ExtensionItemForecast.self, from: Data(#"{"place":"Fictionville, Exampleland","condition":"Mostly Cloudy","symbol":"cloud","temperature":13.2,"high":19,"low":9,"hours":[\#(hours)],"days":[\#(days)]}"#.utf8))
+    var weatherAsked: [WeatherQuery] = []
+    panel.model.weatherStore = WeatherStore(fetch: { query, _, completion in
+        weatherAsked.append(query)
+        completion(try? JSONEncoder().encode(WeatherReport(forecast: weatherForecast, legalURL: "https://developer.apple.com/weatherkit/data-source-attribution/")), nil)
+    }, locate: { $0(nil) })
+    panel.model.weatherStore.onUpdate = { panel.model.refreshForWeather() }
+    panel.toggle(); panel.model.query = "weather in fictionville"; settle()
+    verify(weatherAsked.isEmpty, "The weather command asks nothing while typing")
+    verify(waitUntil { if case .weather(_, .report)? = panel.model.rows.first { return true }; return false }, "The weather card leads the results once its forecast arrives")
+    verify(weatherAsked == [.place("fictionville")], "The weather command asks once for the typed place")
+    try render("weather-card")
+    key("\t", 48); settle()
+    verify(panel.model.rowState.forecastShowsWeek, "Tab on the built-in weather card shows This Week")
+    try render("weather-card-week")
+    panel.model.query = "weather"; settle()
+    verify(waitUntil { panel.model.rows.first == .privacySettings(.location) }, "Without Location, weather offers Location Services settings")
+    try render("weather-no-location")
+    panel.orderOut(nil)
+    panel.model.reset()
     try storageManager.setCommunityAllowed(false, expected: true)
     print("PASS: storage list extension receives and saves data, and row actions run from Actions")
 }

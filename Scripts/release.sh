@@ -43,7 +43,7 @@ xcodegen generate --quiet
 xcodebuild -project Volant.xcodeproj -scheme Volant -configuration Release \
   -derivedDataPath "$ROOT/build" -archivePath "$OUT/Volant.xcarchive" archive \
   CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$IDENTITY" DEVELOPMENT_TEAM=REMBT6JY4N \
-  VOLANT_PROVISIONING_PROFILE="Volant Developer ID" \
+  VOLANT_PROVISIONING_PROFILE="Volant Developer ID" VOLANT_WEATHER_PROVISIONING_PROFILE="Volant WeatherHost Developer ID" \
   VOLANT_UPDATE_PUBLIC_KEY="$VOLANT_UPDATE_PUBLIC_KEY" VOLANT_UPDATE_FEED_URL="$FEED" \
   OTHER_CODE_SIGN_FLAGS="--timestamp --options runtime" > "$OUT/archive.log" 2>&1
 # Export re-signs Sparkle's nested tools and XPC services, not just the framework.
@@ -66,6 +66,16 @@ assert ent.get('com.apple.developer.ubiquity-container-identifiers') == ['iCloud
 assert ent.get('com.apple.developer.icloud-container-environment') == 'Production'
 PY
 test -f "$APP/Contents/embedded.provisionprofile"
+# The weather helper alone has network access beside the other network helpers, plus WeatherKit.
+WEATHER="$APP/Contents/XPCServices/VolantWeatherHost.xpc"
+test -f "$WEATHER/Contents/embedded.provisionprofile"
+codesign -d --entitlements - --xml "$WEATHER" > "$OUT/weather-entitlements.plist" 2>/dev/null
+python3 - "$OUT/weather-entitlements.plist" <<'PY'
+import plistlib, sys
+with open(sys.argv[1], 'rb') as f: ent = plistlib.load(f)
+granted = {key for key, value in ent.items() if value is True}
+assert granted == {'com.apple.security.app-sandbox', 'com.apple.security.network.client', 'com.apple.developer.weatherkit'}, granted
+PY
 codesign -dvvv "$APP" 2> "$OUT/signature.txt"
 grep -q 'Authority=Developer ID Application' "$OUT/signature.txt"
 ditto -c -k --keepParent "$APP" "$OUT/notarize.zip"

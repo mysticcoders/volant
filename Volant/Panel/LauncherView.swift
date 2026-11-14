@@ -308,6 +308,8 @@ struct LauncherView: View {
                 CalculatorCard(rowID: row.id, fallback: answer, state: model.rowState)
             } else if case .extensionItem(let item, _) = row, let forecast = item.forecast {
                 ForecastCard(rowID: row.id, fallback: forecast, state: model.rowState)
+            } else if case .weather(_, .report(let report)) = row {
+                ForecastCard(rowID: row.id, fallback: report.forecast, attribution: report, state: model.rowState)
             } else if case .agentSession = row {
                 AgentRowView(initialRow: row, state: model.rowState, agents: agents)
                     .contentShape(Rectangle())
@@ -633,6 +635,9 @@ private struct RowView: View {
         case .extensionRun(let e, let i): return i.isEmpty ? e.name : "\(e.name) — \(i)"
         case .extensionResult(let s): return s
         case .extensionItem(let item, _): return item.title
+        case .weather(_, .report(let report)): return report.forecast.place
+        case .weather(_, .message(let message)): return message
+        case .weather(_, .needsLocation): return PrivacyPane.location.title
         case .snippet(let s): return s.name
         case .emoji(let e): return "\(e.symbol)  \(e.name)"
         case .quicklink(let q, let t): return t.isEmpty ? q.name : "\(q.name) — \(t)"
@@ -680,6 +685,8 @@ private struct RowView: View {
                 : (e.enabled ? String(localized: "Enabled · \(e.accessDescription)", comment: "Extension row subtitle; the value describes the extension's access") : String(localized: "Off · \(e.accessDescription)", comment: "Extension row subtitle; the value describes the extension's access"))
         case .extensionResult: return String(localized: "Press return to copy", comment: "Extension result row subtitle")
         case .extensionItem(let item, _): return item.subtitle ?? item.url ?? ""
+        case .weather(_, .report(let report)): return report.forecast.condition
+        case .weather(_, .message), .weather(_, .needsLocation): return nil
         case .snippet(let s): return s.body.replacingOccurrences(of: "\n", with: " ")
         case .emoji: return nil
         case .quicklink(let q, _): return q.url
@@ -762,6 +769,7 @@ private struct RowView: View {
             if let icon = ExtensionIcon.image(for: ext) { Image(nsImage: icon).resizable().clipShape(RoundedRectangle(cornerRadius: 5)) }
             else { Image(systemName: "puzzlepiece.extension").font(.system(size: 20)).foregroundStyle(.secondary) }
         case .extensionResult: Image(systemName: "checkmark.circle").font(.system(size: 20)).foregroundStyle(.secondary)
+        case .weather: Image(systemName: "cloud.sun.fill").symbolRenderingMode(.multicolor).font(.system(size: 18))
         case .extensionItem(let item, let source):
             if let image = item.image {
                 ExtensionRowImage(url: image.url, source: source, images: state.extensionImages) { ExtensionItemIcon(item: item, source: source) }

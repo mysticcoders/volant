@@ -65,6 +65,8 @@ public struct HostMessage: Error, LocalizedError, Equatable, Sendable {
         case aiReady = "ai-ready"
         case aiResponding = "ai-responding"
         case aiStopped = "ai-stopped"
+        case weatherUnavailable = "weather-unavailable"
+        case weatherNoPlace = "weather-no-place"
     }
 
     /// What every code starts with, so a reply can't be mistaken for one by accident.
@@ -189,6 +191,8 @@ public struct HostMessage: Error, LocalizedError, Equatable, Sendable {
         case .aiReady: return String(localized: "Ready", table: "Core", comment: "AI Chat status for an API connection")
         case .aiResponding: return String(localized: "Responding…", table: "Core", comment: "AI Chat status for an API connection")
         case .aiStopped: return String(localized: "Stopped", table: "Core", comment: "AI Chat status for an API connection")
+        case .weatherUnavailable: return String(localized: "Apple Weather is unavailable. Try again.", table: "Core", comment: "Weather card error when Apple Weather does not answer")
+        case .weatherNoPlace: return String(localized: "No place called \(value, format: .verbatim) was found.", table: "Core", comment: "Weather card error when no place matches what the owner typed")
         }
     }
 }

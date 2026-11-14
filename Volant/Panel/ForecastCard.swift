@@ -1,21 +1,27 @@
 import SwiftUI
 import VolantCore
 
-/// A list extension row that carries an `ExtensionItemForecast`, drawn as a weather card: the current
-/// temperature, conditions, place and the day's range on the leading side, and an hourly or daily strip
-/// beside it. Today and This Week switch the strip, by clicking or with Tab while the card is selected.
-/// Return still opens the row's link, as on any extension row.
+/// A forecast drawn as a weather card, for the built-in weather command or a list extension row that
+/// carries an `ExtensionItemForecast`: the current temperature, conditions, place and the day's range on
+/// the leading side, and an hourly or daily strip beside it. Today and This Week switch the strip, by
+/// clicking or with Tab while the card is selected. The built-in card adds the Apple Weather mark and
+/// legal link that WeatherKit requires.
 struct ForecastCard: View {
     let rowID: String
     let fallback: ExtensionItemForecast
+    var attribution: WeatherReport?
     @ObservedObject var state: LauncherRowState
     @Environment(\.volantTheme) private var theme
+    @Environment(\.colorScheme) private var colorScheme
     private static let hourColumns = 8
     private static let dayColumns = 7
 
     private var forecast: ExtensionItemForecast {
-        if case .extensionItem(let item, _)? = state.rowsByID[rowID], let current = item.forecast { return current }
-        return fallback
+        switch state.rowsByID[rowID] {
+        case .extensionItem(let item, _)?: return item.forecast ?? fallback
+        case .weather(_, .report(let report))?: return report.forecast
+        default: return fallback
+        }
     }
     private var selected: Bool { state.selectedID == rowID }
     private var hours: [ExtensionItemForecast.Hour] { Array((forecast.hours ?? []).prefix(Self.hourColumns)) }
@@ -28,12 +34,13 @@ struct ForecastCard: View {
             VStack(alignment: .leading, spacing: 10) {
                 if !hours.isEmpty && !days.isEmpty { tabs }
                 if showsWeek { dayStrip } else { hourStrip }
+                if let attribution { attributionLine(attribution) }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
-        .frame(height: 132, alignment: .top)
+        .frame(height: attribution == nil ? 132 : 156, alignment: .top)
         .background(theme.card(selected: selected), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
@@ -65,6 +72,22 @@ struct ForecastCard: View {
         let highText = ExtensionItemForecast.degrees(high), lowText = ExtensionItemForecast.degrees(low)
         return String(localized: "H: \(highText, format: .verbatim)  L: \(lowText, format: .verbatim)",
                       comment: "Weather card: today's high and low temperatures, such as H: 19° L: 9°")
+    }
+
+    /// The Apple Weather mark for this appearance and the link to Apple's data sources, as WeatherKit's
+    /// terms require wherever its data shows.
+    private func attributionLine(_ report: WeatherReport) -> some View {
+        HStack(spacing: 8) {
+            Spacer(minLength: 0)
+            if let data = colorScheme == .dark ? report.markDark : report.markLight, let mark = NSImage(data: data) {
+                Image(nsImage: mark).resizable().scaledToFit().frame(height: 12)
+                    .accessibilityLabel(String(localized: "Apple Weather", comment: "Accessibility label for the Apple Weather mark on the weather card"))
+            }
+            if let legal = report.legalURL.flatMap(URL.init(string:)) {
+                Button(String(localized: "Data Sources", comment: "Weather card link to Apple Weather's legal attribution page")) { NSWorkspace.shared.open(legal) }
+                    .buttonStyle(.link).font(.system(size: 11))
+            }
+        }
     }
 
     private var tabs: some View {
