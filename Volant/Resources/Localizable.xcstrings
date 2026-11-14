@@ -121530,95 +121530,6 @@
         }
       }
     },
-    "Privacy & Security › Location Services, or type a place": {
-      "comment": "Launcher row subtitle for the Location privacy settings row; the owner can also type weather and a place",
-      "localizations": {
-        "es": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Privacidad y seguridad › Localización, o escribe un lugar"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Datenschutz & Sicherheit › Ortungsdienste, oder gib einen Ort ein"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Confidentialité et sécurité › Service de localisation, ou saisissez un lieu"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Privacy e sicurezza › Localizzazione, oppure digita un luogo"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "プライバシーとセキュリティ › 位置情報サービス、または場所を入力"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "隐私与安全性 › 定位服务，或输入一个地点"
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Privacidade e Segurança › Serviços de Localização, ou digite um lugar"
-          }
-        },
-        "pt-PT": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Privacidade e segurança › Serviços de localização, ou escreva um local"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "개인정보 보호 및 보안 › 위치 서비스 또는 장소 입력"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Privacy en beveiliging › Locatievoorzieningen, of typ een plaats"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Prywatność i ochrona › Usługi lokalizacji, lub wpisz miejsce"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Конфиденциальность и безопасность › Службы геолокации, или введите место"
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Приватність і безпека › Служби локації, або введіть місце"
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Gizlilik ve Güvenlik › Konum Servisleri veya bir yer yazın"
-          }
-        }
-      }
-    },
     "Weather": {
       "comment": "Launcher section title for the weather card\nResult row kind label for the weather card",
       "localizations": {
@@ -121704,6 +121615,95 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "天气"
+          }
+        }
+      }
+    },
+    "Privacy & Security › Location Services": {
+      "comment": "Launcher row subtitle for the Location privacy settings row: where to turn on Volant",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Privacidad y seguridad › Localización"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Datenschutz & Sicherheit › Ortungsdienste"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Confidentialité et sécurité › Service de localisation"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Privacy e sicurezza › Localizzazione"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "プライバシーとセキュリティ › 位置情報サービス"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "隐私与安全性 › 定位服务"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Privacidade e Segurança › Serviços de Localização"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Privacidade e segurança › Serviços de localização"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "개인정보 보호 및 보안 › 위치 서비스"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Privacy en beveiliging › Locatievoorzieningen"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Prywatność i ochrona › Usługi lokalizacji"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Конфиденциальность и безопасность › Службы геолокации"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Приватність і безпека › Служби локації"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gizlilik ve Güvenlik › Konum Servisleri"
           }
         }
       }

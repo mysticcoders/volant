@@ -32,7 +32,7 @@ enum PrivacyPane: String, Hashable {
         case .camera: return String(localized: "Privacy & Security › Camera", comment: "Launcher row subtitle for the Camera privacy settings row: where to turn on Volant")
         case .automation: return String(localized: "Privacy & Security › Automation", comment: "Launcher row subtitle for the Automation privacy settings row: where to turn on System Events for Volant")
         case .accessibility: return String(localized: "Privacy & Security › Accessibility", comment: "Launcher row subtitle for the Accessibility privacy settings row: where to turn on Volant")
-        case .location: return String(localized: "Privacy & Security › Location Services, or type a place", comment: "Launcher row subtitle for the Location privacy settings row; the owner can also type weather and a place")
+        case .location: return String(localized: "Privacy & Security › Location Services", comment: "Launcher row subtitle for the Location privacy settings row: where to turn on Volant")
         }
     }
 
