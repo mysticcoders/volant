@@ -69,6 +69,8 @@ enum ResultRow: Identifiable, Hashable {
     case extensionRun(InstalledExtension, input: String)
     case extensionResult(String)
     case extensionItem(ExtensionItem, source: InstalledExtension)
+    /// The weather command's card, or the reason it has none, for `weather` or `weather <place>`.
+    case weather(WeatherQuery, WeatherStore.Answer)
     case note(Note)
     case newNote(String)
     case calculation(CalculationAnswer, slot: Int)
@@ -116,6 +118,7 @@ enum ResultRow: Identifiable, Hashable {
         case .extensionRun(let e, let i): return "ext:\(e.id):\(i)"
         case .extensionResult(let s): return "extresult:\(s)"
         case .extensionItem(let item, let source): return "extitem:\(source.id):\(item.url ?? item.title)"
+        case .weather(let query, _): return "weather:" + query.key
         case .snippet(let s): return "snip:\(s.name.utf8.count):\(s.name)\(s.keyword.utf8.count):\(s.keyword)\(s.body)"
         case .emoji(let e): return "emoji:\(e.symbol)"
         case .quicklink(let q, let t): return "ql:\(q.name):\(t)"
@@ -155,6 +158,7 @@ enum ResultRow: Identifiable, Hashable {
         case .extensionRun: return String(localized: "Extension", comment: "Result row kind label")
         case .extensionResult: return String(localized: "Result", comment: "Result row kind label")
         case .extensionItem(_, let source): return source.name
+        case .weather: return String(localized: "Weather", comment: "Result row kind label for the weather card")
         case .snippet: return String(localized: "Snippet", comment: "Result row kind label")
         case .emoji: return String(localized: "Emoji", comment: "Result row kind label")
         case .quicklink: return String(localized: "Quicklink", comment: "Result row kind label")
@@ -215,7 +219,9 @@ enum ResultRow: Identifiable, Hashable {
         case .extensionResult: return String(localized: "Copy Result", comment: "Footer and Actions label for Return")
         case .extensionItem(let item, _):
             if item.returnCopies, let copy = item.copy { return copy.displayTitle }
+            if item.forecast != nil && item.url == nil { return String(localized: "Open Weather", comment: "Footer and Actions label for Return on the weather card: opens Apple's Weather app") }
             return item.url == nil ? String(localized: "Copy Title", comment: "Footer and Actions label for Return") : String(localized: "Open Link", comment: "Footer and Actions label for Return")
+        case .weather: return String(localized: "Open Weather", comment: "Footer and Actions label for Return on the weather card: opens Apple's Weather app")
         case .snippet: return String(localized: "Copy Snippet", comment: "Footer and Actions label for Return")
         case .emoji: return String(localized: "Copy Emoji", comment: "Footer and Actions label for Return")
         case .quicklink: return String(localized: "Open Link", comment: "Footer and Actions label for Return")
@@ -257,8 +263,15 @@ final class LauncherRowState: ObservableObject {
     @Published fileprivate(set) var contactImages: [String: NSImage] = [:]
     /// Image previews for list extension rows; only rows that carry an image observe it.
     let extensionImages = ExtensionRowImages()
+    /// Whether a weather card shows the week rather than today's hours, until the launcher is dismissed.
+    @Published private(set) var forecastShowsWeek = false
     private let icons: IconCache
     private let clipImages = NSCache<NSNumber, NSImage>()
+
+    /// Chooses the weather card's Today or This Week strip.
+    func setForecastShowsWeek(_ week: Bool) {
+        if forecastShowsWeek != week { forecastShowsWeek = week }
+    }
 
     /// Uses the icon cache shared with Settings unless a test supplies its own.
     init(icons: IconCache = .shared) {
@@ -825,6 +838,33 @@ final class LauncherModel: ObservableObject {
     }
 
     /// Tab on a scope's command row enters it, as Return does. False when the selected row is not one.
+    /// Whether Tab switches the selected row: a weather card with both a Today and a This Week strip.
+    var selectedForecastToggles: Bool {
+        guard actionTarget == nil, entryForm == nil else { return false }
+        let forecast: ExtensionItemForecast?
+        switch selectedRow {
+        case .extensionItem(let item, _)?: forecast = item.forecast
+        case .weather(_, .report(let report))?: forecast = report.forecast
+        default: forecast = nil
+        }
+        guard let forecast else { return false }
+        return !(forecast.hours ?? []).isEmpty && !(forecast.days ?? []).isEmpty
+    }
+
+    /// Switches the selected weather card between Today and This Week, for Tab.
+    func toggleSelectedForecast() {
+        guard selectedForecastToggles else { return }
+        rowState.setForecastShowsWeek(!rowState.forecastShowsWeek)
+    }
+
+    /// Opens Apple's Weather app and closes the launcher, for Return on a weather card.
+    private func openWeatherApp() {
+        if let weatherApp = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.weather") {
+            NSWorkspace.shared.openApplication(at: weatherApp, configuration: NSWorkspace.OpenConfiguration())
+        }
+        dismiss()
+    }
+
     func enterSelectedSearchScope() -> Bool {
         guard scope == nil, case .core(let command)? = selectedRow, let source = SearchScope(command: command) else { return false }
         usage.record(key: "core:" + command.rawValue, query: query)
@@ -908,6 +948,8 @@ final class LauncherModel: ObservableObject {
         scopeRerun = false
         extensions.cancelItemsRun()
         rowState.extensionImages.reset()
+        rowState.setForecastShowsWeek(false)
+        weatherStore.cancel()
         scope = nil
         scopeFilter = nil
         pendingExtension = nil
@@ -941,6 +983,21 @@ final class LauncherModel: ObservableObject {
         rebuildMergedResults()
     }
 
+    /// Forecasts for the weather command, asked for once typing pauses.
+    lazy var weatherStore: WeatherStore = {
+        let store = WeatherStore()
+        store.onUpdate = { [weak self] in self?.refreshForWeather() }
+        return store
+    }()
+
+    /// Redraws the results when a forecast arrives for the weather query still typed. The card takes
+    /// the selection when the owner has not moved it from the first row; otherwise the selected row is
+    /// kept, as same-query asynchronous updates do.
+    func refreshForWeather() {
+        guard isPresented, searchesAppIndex, WeatherQuery.parse(query.trimmingCharacters(in: .whitespaces)) != nil else { return }
+        rebuildMergedResults(preservingSelection: selection != 0)
+    }
+
     func refreshForAppIndex() {
         rowState.clearIcons()
         guard isPresented, scope == nil, query.isEmpty || searchesAppIndex else { return }
@@ -956,10 +1013,10 @@ final class LauncherModel: ObservableObject {
 
     /// Recomputes the synchronous sections for the current query and merges them with the
     /// asynchronous ones already delivered, keeping the selected row by identity.
-    private func rebuildMergedResults() {
+    private func rebuildMergedResults(preservingSelection: Bool = true) {
         immediate = mergedSections(for: query.trimmingCharacters(in: .whitespaces))
         if immediate.contains(where: { $0.title == ResultSection.calculatorTitle }) { releaseHeldCalculation() }
-        compose()
+        compose(preservingSelection: preservingSelection)
     }
 
     private func refreshShortcutResults() {
@@ -1436,6 +1493,14 @@ final class LauncherModel: ObservableObject {
     /// quicklinks, extensions, applications, System Settings panes, Volant commands and shortcuts.
     private func mergedSections(for q: String) -> [ResultSection] {
         var immediate: [ResultSection] = []
+        if let weatherQuery = WeatherQuery.parse(q) {
+            if let answer = weatherStore.answer(for: weatherQuery) {
+                immediate.append(ResultSection(title: String(localized: "Weather", comment: "Launcher section title for the weather card"),
+                                               rows: [answer == .needsLocation ? .privacySettings(.location) : .weather(weatherQuery, answer)]))
+            }
+        } else {
+            weatherStore.cancel()
+        }
         let answers = CalculationAnswer.answers(for: q).enumerated().map { ResultRow.calculation($0.element, slot: $0.offset) }
         let builtins: [(String, ResultRow)] = [("Volant Settings", .settings), ("Reload Configuration", .reloadConfig)]
         // A query that names a scope, such as `people`, puts its command first so Return or Tab enters it.
@@ -2000,7 +2065,7 @@ final class LauncherModel: ObservableObject {
     func activateSelection() {
         guard let row = selectedRow else { return }
         switch row {
-        case .appleShortcut, .server, .connectivity, .audioRoute, .volume, .extensionResult, .extensionItem, .newNote, .calculation, .pickedColor, .pickAnotherColor, .privacySettings, .menuItem, .menuItemsOff: break
+        case .appleShortcut, .server, .connectivity, .audioRoute, .volume, .extensionResult, .extensionItem, .newNote, .calculation, .pickedColor, .pickAnotherColor, .privacySettings, .menuItem, .menuItemsOff, .weather: break
         default: usage.record(key: row.id, query: query)
         }
         switch row {
@@ -2008,6 +2073,7 @@ final class LauncherModel: ObservableObject {
         case .server(let server): openURL(server.url)
         case .menuItem(let entry): pressMenuItem(entry.item); return
         case .menuItemsOff: dismiss(); onNote(.menuItemsSettings); return
+        case .weather: openWeatherApp(); return
         case .systemAction(let action): onNote(.systemAction(action)); return
         case .systemToggle(let toggle, _): toggleSystemSetting(toggle); return
         case .pickedColor(let color, let format): copy(color.value(format))
@@ -2115,6 +2181,7 @@ final class LauncherModel: ObservableObject {
         case .extensionItem(let item, let source):
             if let primary = item.primaryAction { runItemAction(source, item: item, action: primary); return }
             if item.returnCopies { copyItem(source, item: item); return }
+            if item.forecast != nil && item.url == nil { openWeatherApp(); return }
             guard let link = item.url, let url = URL(string: link) else { copy(item.title); return }
             _ = Self.openExtensionLink(url, fallback: item.secondaryURL.flatMap(URL.init(string:)))
             if item.onOpen == true { runItemAction(source, item: item, action: nil) }

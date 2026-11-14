@@ -381,6 +381,14 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
             if !event.isARepeat { model.exitScope() }
             return
         }
+        // Tab on a weather card switches it between Today and This Week.
+        if event.type == .keyDown, event.keyCode == 48,
+           event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
+           let editor = searchInput(in: contentView)?.currentEditor() as? NSTextView, firstResponder === editor,
+           !editor.hasMarkedText(), model.selectedForecastToggles {
+            if !event.isARepeat { model.toggleSelectedForecast() }
+            return
+        }
         // Tab on a Contacts, Files or Clipboard command row enters that scope, as Return does.
         if event.type == .keyDown, event.keyCode == 48,
            event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,

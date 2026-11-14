@@ -89,6 +89,8 @@ targets:
         embed: true
       - target: VolantRatesHost
         embed: true
+      - target: VolantWeatherHost
+        embed: true
       - target: VolantFetchHost
         embed: true
       - target: VolantInputHost
@@ -194,6 +196,36 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.RatesHost
+        GENERATE_INFOPLIST_FILE: NO
+  VolantWeatherHost:
+    type: xpc-service
+    platform: macOS
+    sources:
+      - path: VolantWeatherHost
+    dependencies:
+      - package: VolantCore
+    entitlements:
+      path: VolantWeatherHost/VolantWeatherHost.entitlements
+      properties:
+        com.apple.developer.weatherkit: true
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+    info:
+      path: VolantWeatherHost/Info.plist
+      properties:
+        CFBundleIdentifier: com.mysticcoders.volant.WeatherHost
+        CFBundleName: VolantWeatherHost
+        # WeatherKit words conditions in the owner's language only when the helper allows it.
+        CFBundleAllowMixedLocalizations: true
+        XPCService:
+          ServiceType: Application
+    # WeatherKit is a restricted entitlement, so this helper needs a provisioning profile: automatic
+    # signing makes a development one, and release builds use the "Volant mobile weather Developer ID"
+    # profile that Scripts/release.sh names (docs/weather.md).
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.WeatherHost
+        PROVISIONING_PROFILE_SPECIFIER: $(VOLANT_WEATHER_PROVISIONING_PROFILE)
         GENERATE_INFOPLIST_FILE: NO
   VolantFetchHost:
     type: xpc-service
