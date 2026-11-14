@@ -4,16 +4,16 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <channel>
         <title>Volant</title>
         <item>
-            <title>0.4.0</title>
-            <pubDate>Wed, 11 Nov 2026 13:45:42 -0800</pubDate>
-            <sparkle:version>54</sparkle:version>
-            <sparkle:shortVersionString>0.4.0</sparkle:shortVersionString>
+            <title>0.4.1</title>
+            <pubDate>Fri, 13 Nov 2026 17:46:55 -0800</pubDate>
+            <sparkle:version>55</sparkle:version>
+            <sparkle:shortVersionString>0.4.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <enclosure url="https://usevolant.com/updates/Volant-0.4.0.dmg" length="11216876" type="application/octet-stream" sparkle:edSignature="0hAaCmUJQLo6p7027JeWk3Tb8eSpAt8Njcotk/a8rqiwrKcYfNQC+Rh9ofLM1MZ/rXAvRYETCF0NEusjpRsFAw=="></enclosure>
+            <enclosure url="https://usevolant.com/updates/Volant-0.4.1.dmg" length="11141641" type="application/octet-stream" sparkle:edSignature="B1LuwOpIjdoezSBcxvHaod9yUS+2icspaIQ5efOJzJS1+Nt7qX61/HSg5P5E2iWNl6xfsnFT/sm29B2Gy/CTBw=="></enclosure>
         </item>
     </channel>
 </rss><!-- sparkle-signatures:
-edSignature: nbAx+r5TBdNJ7E5tXKIpontrdJpO/jNlV4/EJGTzktwb946waXkr8JxNH3LH0OdXO8c1qBHLUiWInRa6xAw9Cg==
+edSignature: GDgxy5e2mGtFpjp9riw/rU1qcAn6ArQFZSYmpNxPJ9Lbx6P91HCrWDU1PYyriUqp/6ilaiLB0t8O/MT2XEYJAg==
 length: 1086
 -->
