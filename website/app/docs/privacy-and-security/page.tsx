@@ -51,6 +51,14 @@ export default function PrivacyAndSecurity() {
           <a href="/docs/agents">AI connections</a>.
         </li>
         <li>
+          <strong>Weather</strong> runs through its own sandboxed helper, which
+          asks Apple Weather for a forecast and Apple&rsquo;s geocoder for the
+          place. It receives only the place you typed, or your location rounded
+          to about 11&nbsp;km, and only after you pause typing{' '}
+          <code>weather</code>. Forecasts stay in memory for ten minutes and
+          are never saved.
+        </li>
+        <li>
           <strong>iCloud sync</strong> is off until you turn on Sync settings
           and notes with iCloud in Settings → Data &amp; Configuration. It uses
           Apple’s key-value service for selected global shortcuts, snippets,
@@ -181,7 +189,9 @@ export default function PrivacyAndSecurity() {
               <td>Location</td>
               <td>
                 macOS requires it to read Wi-Fi network <em>names</em>, which
-                never requests coordinates. An extension you allow can receive
+                never requests coordinates. <code>weather</code> on its own asks
+                for it the first time, rounds it to about 11&nbsp;km and keeps it
+                in memory only. An extension you allow can receive
                 your approximate location, rounded to about 11&nbsp;km, and so
                 can the sites it reads. You allow each extension separately;
                 Volant asks macOS for the location only when that extension
