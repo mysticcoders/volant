@@ -454,36 +454,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func toggleNotes() { notesPanel.toggle() }
 
+    /// Runs a Welcome button's action over the Welcome window, which stays open so setup can continue
+    /// after the launcher or Settings is done. Closing it first handed keyboard focus away just as the
+    /// launcher appeared, and the launcher hides itself when it loses focus. The action waits for the
+    /// button's click to finish, so the launcher becomes key after the Welcome window has handled it.
+    private func overWelcome(_ next: @escaping (AppDelegate) -> Void) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            next(self)
+        }
+    }
+
+    /// Shows the launcher if it is hidden, then runs `then` on it.
+    private func showLauncher(then: (AppDelegate) -> Void) {
+        if !panel.isVisible { panel.toggle() }
+        then(self)
+    }
+
     /// Opens the Welcome window, from the first launch, the `welcome` command or Settings › About.
-    /// Its buttons close it before showing the launcher, AI Chat or Settings, and closing it records it
-    /// as done on this Mac.
+    /// Its buttons show the launcher, AI Chat or Settings over it and leave it open; closing it records
+    /// it as done on this Mac.
     @objc func showWelcome() {
         panel.orderOut(nil)
         if let welcome { welcome.present(); return }
         let actions = WelcomeActions(
-            tryQuery: { [weak self] text in
-                guard let self else { return }
-                self.welcome?.close()
-                if !self.panel.isVisible { self.panel.toggle() }
-                self.panel.setQuery(text)
-            },
-            connectAgent: { [weak self] provider in
-                guard let self else { return }
-                self.welcome?.close()
-                if !self.panel.isVisible { self.panel.toggle() }
-                self.panel.model.chooseAIProvider(provider)
-            },
-            browseCatalog: { [weak self] in
-                guard let self else { return }
-                self.welcome?.close()
-                if !self.panel.isVisible { self.panel.toggle() }
-                self.panel.model.openExtensionCatalog()
-            },
-            openDictationSettings: { [weak self] in
-                self?.showSettings()
-                self?.settingsPanel.state.section = .dictation
-            },
-            openAISettings: { [weak self] in self?.showAISettings() },
+            tryQuery: { [weak self] text in self?.overWelcome { $0.showLauncher { $0.panel.setQuery(text) } } },
+            connectAgent: { [weak self] provider in self?.overWelcome { $0.showLauncher { $0.panel.model.chooseAIProvider(provider) } } },
+            browseCatalog: { [weak self] in self?.overWelcome { $0.showLauncher { $0.panel.model.openExtensionCatalog() } } },
+            openDictationSettings: { [weak self] in self?.overWelcome { $0.showSettings(); $0.settingsPanel.state.section = .dictation } },
+            openAISettings: { [weak self] in self?.overWelcome { $0.showAISettings() } },
+            openGeneralSettings: { [weak self] in self?.overWelcome { $0.showSettings(); $0.settingsPanel.state.section = .general } },
             configChanged: { [weak self] in self?.reloadConfig() })
         let model = WelcomeModel(config: config, summonRegistered: summonRegistered, actions: actions)
         let controller = WelcomeWindowController(model: model) { [weak self] in

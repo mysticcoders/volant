@@ -121,16 +121,20 @@ struct WelcomeAgent: Identifiable, Equatable {
 /// What the Welcome window asks the rest of the app to do. The window never connects, enables or
 /// fetches on its own; each of these follows a click.
 struct WelcomeActions {
-    /// Closes Welcome and shows the launcher with this text in the search field.
+    /// Shows the launcher over Welcome with this text in the search field.
     var tryQuery: (String) -> Void = { _ in }
-    /// Closes Welcome and opens AI Chat with this provider, as the chat's own setup card does.
+    /// Opens AI Chat over Welcome with this provider, as the chat's own setup card does.
     var connectAgent: (String) -> Void = { _ in }
-    /// Closes Welcome and shows the extension catalog in the launcher, fetching it then.
+    /// Shows the extension catalog in the launcher over Welcome, fetching it then.
     var browseCatalog: () -> Void = {}
     /// Opens Settings at Dictation, where Type at the Cursor is set up.
     var openDictationSettings: () -> Void = {}
     /// Opens Settings at AI, for agents that need an adapter or Node.
     var openAISettings: () -> Void = {}
+    /// Opens Settings at General, where Search Menu Items is turned on.
+    var openGeneralSettings: () -> Void = {}
+    /// Opens Login Items in System Settings, where macOS asks the owner to approve Open at Login.
+    var openLoginItems: () -> Void = { SMAppService.openSystemSettingsLoginItems() }
     /// Reloads the configuration after the window patches it.
     var configChanged: () -> Void = {}
     var openURL: (URL) -> Void = { NSWorkspace.shared.open($0) }
@@ -145,6 +149,7 @@ final class WelcomeModel: ObservableObject {
     @Published var summonRegistered: Bool
     @Published private(set) var permissions: [WelcomePermission: WelcomePermissionStatus] = [:]
     @Published private(set) var loginStatus: SMAppService.Status = .notRegistered
+    private var activation: NSObjectProtocol?
     @Published private(set) var agents: [WelcomeAgent] = []
     @Published private(set) var detectingAgents = false
     @Published private(set) var extensions: [InstalledExtension] = []
@@ -208,6 +213,16 @@ final class WelcomeModel: ObservableObject {
         loginStatus = loginItem.status
         reloadExtensions()
         findAgents()
+        activation = NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.refreshAccess() }
+        }
+    }
+
+    /// Reads the permissions and Open at Login again, for coming back from System Settings, where the
+    /// owner may have changed them. Reading never prompts.
+    func refreshAccess() {
+        refreshPermissions()
+        loginStatus = loginItem.status
     }
 
     func next() {
@@ -282,6 +297,8 @@ final class WelcomeModel: ObservableObject {
     func stop() {
         detection?.cancel()
         detectionDone = nil
+        if let activation { NotificationCenter.default.removeObserver(activation) }
+        activation = nil
     }
 
     /// Whether this agent's status already shows in the launcher's status bar.

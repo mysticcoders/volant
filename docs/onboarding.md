@@ -32,23 +32,31 @@ Reopen it by typing `welcome` (also `onboarding` or `getting started`, all reser
    it says so; if Raycast or Alfred is running (checked by bundle identifier only), it says they may
    hold the same shortcut.
 2. **What you can type.** `WelcomeTip.all`: `@`/`contacts`, `/`/`files`, `clip`/`clipboard`, `:`,
-   `cal`/`today`, `notes`, `translate`, `define`, `talk`, `ai`/`agents`/`rex`, `ext` and `servers`. Try
-   It closes Welcome and opens the launcher with that text typed.
+   `cal`/`today`, `notes`, `translate`, `define`, `talk`, `ai`/`agents`/`rex`, `ext`, `servers`,
+   `weather`, `focus` and `breaks`, in a list that scrolls. Try It opens the launcher over Welcome with
+   that text typed; Welcome stays open, so setup continues when the launcher is dismissed. Closing
+   Welcome first handed keyboard focus away as the launcher appeared, and the launcher hid itself.
+   Search Menu Items has no tip: from Welcome, the app in front is Volant, which it refuses.
 3. **Allow access.** Contacts, Calendars and, on macOS 26 and later, Microphone, each Allowed, Allow
    (the system prompt appears only on that click) or Open System Settings at its Privacy pane when
-   denied. Open at Login uses the same `SMAppService` call as Settings › General. Typing dictation at
+   denied. Statuses are read again whenever Volant becomes active, so a permission turned on in System
+   Settings shows as Allowed on return. Open at Login uses the same `SMAppService` call as Settings ›
+   General; when macOS answers that it needs approval, the switch becomes Approve in Login Items…, which
+   opens that pane, instead of turning itself back off. Typing dictation at
    the cursor shows no status, because asking for Accessibility status adds a Privacy entry on
-   macOS 15 (see the input helper rules in AGENTS.md); Set Up… opens Settings › Dictation. Location and
-   Bluetooth have no button: they are asked only on first use of their commands.
+   macOS 15 (see the input helper rules in AGENTS.md); Set Up… opens Settings › Dictation. Search menu
+   items works the same way, with Set Up… opening Settings › General. Location and Bluetooth have no
+   button: they are asked only on first use of `weather`, Wi-Fi or Bluetooth. Focus's browser access
+   is asked by macOS the first time a session checks a browser, so it has no row either.
 4. **Your agents**, only when something is found: ACP agents from the helper's `detectACPAgents` (the
    same detection AI Chat's setup card uses), the Rex app by bundle identifier, and Herdr in
-   `/opt/homebrew/bin` or `/usr/local/bin`. Nothing connects on its own: Chat opens AI Chat with that
+   `/opt/homebrew/bin` or `/usr/local/bin`. Nothing connects on its own: Chat opens AI Chat over Welcome with that
    provider, Set Up… opens Settings › AI, and Show Status turns on the agent's status bar source with
    the same patch as Settings › Status Bar.
 5. **Extensions.** Built-in extensions (community ones too, once the owner has allowed community
    extensions in Settings) with their usual switches; an extension that declares hosts asks for them
-   before it turns on, as in Settings. Browse the Catalog… closes Welcome and opens the catalog in the
-   launcher, which is when it is fetched. Star on GitHub opens the project page in the browser.
+   before it turns on, as in Settings. Browse the Catalog… opens the catalog in the
+   launcher over Welcome, which is when it is fetched. Star on GitHub opens the project page in the browser.
 
 There is no Featured list: there are too few extensions for one, and without telemetry there is no
 measure of what is popular.

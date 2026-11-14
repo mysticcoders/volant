@@ -134,10 +134,15 @@ private struct WelcomeTypingPage: View {
         VStack(alignment: .leading, spacing: 0) {
             WelcomeHeader(title: String(localized: "What you can type", comment: "Welcome window page title"),
                           detail: String(localized: "Type to find apps or calculate. These words and characters jump straight to one thing.", comment: "Welcome window page introduction"))
-            ForEach(WelcomeTip.all) { tip in
-                WelcomeTipRow(tip: tip) { model.actions.tryQuery(tip.tryQuery) }
-                if tip != WelcomeTip.all.last { Divider() }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(WelcomeTip.all) { tip in
+                        WelcomeTipRow(tip: tip) { model.actions.tryQuery(tip.tryQuery) }
+                        if tip != WelcomeTip.all.last { Divider() }
+                    }
+                }
             }
+            .scrollIndicators(.automatic)
         }
     }
 }
@@ -173,7 +178,12 @@ private struct WelcomeAccessPage: View {
             }
             WelcomeAccessRow(symbol: "power", title: String(localized: "Open at Login", comment: "Welcome window access row"),
                              detail: String(localized: "Volant is ready after you restart your Mac.", comment: "Welcome window access row detail")) {
-                Toggle("", isOn: Binding(get: { model.loginStatus == .enabled }, set: model.setOpenAtLogin)).labelsHidden().toggleStyle(.switch)
+                if model.loginStatus == .requiresApproval {
+                    Button(String(localized: "Approve in Login Items…", comment: "Welcome window button: macOS needs the owner to approve Volant in System Settings › Login Items"),
+                           action: model.actions.openLoginItems)
+                } else {
+                    Toggle("", isOn: Binding(get: { model.loginStatus == .enabled }, set: model.setOpenAtLogin)).labelsHidden().toggleStyle(.switch)
+                }
             }
             Divider()
             WelcomeAccessRow(symbol: "keyboard", title: String(localized: "Type dictation at the cursor", comment: "Welcome window access row"),
@@ -181,8 +191,13 @@ private struct WelcomeAccessPage: View {
                 Button(String(localized: "Set Up…", comment: "Welcome window button opening Settings › Dictation"), action: model.actions.openDictationSettings)
             }
             Divider()
-            WelcomeAccessRow(symbol: "wifi", title: String(localized: "Location and Bluetooth", comment: "Welcome window access row"),
-                             detail: String(localized: "Asked the first time you use Wi-Fi or Bluetooth.", comment: "Welcome window access row detail")) { EmptyView() }
+            WelcomeAccessRow(symbol: "filemenu.and.selection", title: String(localized: "Search menu items", comment: "Welcome window access row"),
+                             detail: String(localized: "Optional. Needs Accessibility, set up in Settings › General.", comment: "Welcome window access row detail for Search Menu Items")) {
+                Button(String(localized: "Set Up…", comment: "Welcome window button opening Settings › General for Search Menu Items"), action: model.actions.openGeneralSettings)
+            }
+            Divider()
+            WelcomeAccessRow(symbol: "location", title: String(localized: "Location and Bluetooth", comment: "Welcome window access row"),
+                             detail: String(localized: "Asked the first time you use weather, Wi-Fi or Bluetooth.", comment: "Welcome window access row detail")) { EmptyView() }
         }
     }
 }

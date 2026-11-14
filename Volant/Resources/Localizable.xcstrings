@@ -83974,7 +83974,7 @@
           }
         }
       },
-      "comment": "Welcome window button opening Settings › AI\nWelcome window button opening Settings › Dictation"
+      "comment": "Welcome window button opening Settings › AI\nWelcome window button opening Settings › Dictation\nWelcome window button opening Settings › General for Search Menu Items"
     },
     "Set Volume to %lld%%": {
       "localizations": {
@@ -122244,95 +122244,6 @@
         }
       }
     },
-    "Asked the first time you use Wi-Fi or Bluetooth.": {
-      "comment": "Welcome window access row detail",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Wird beim ersten Verwenden von WLAN oder Bluetooth abgefragt."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Se pide la primera vez que usas Wi-Fi o Bluetooth."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Demandé la première fois que vous utilisez le Wi-Fi ou le Bluetooth."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Richiesto la prima volta che usi Wi-Fi o Bluetooth."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Wi-Fi または Bluetooth を初めて使うときに確認されます。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Wi-Fi나 Bluetooth를 처음 사용할 때 요청합니다."
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Gevraagd de eerste keer dat je wifi of Bluetooth gebruikt."
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Pytanie pojawi się przy pierwszym użyciu Wi-Fi lub Bluetooth."
-          }
-        },
-        "pt-BR": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Pedido na primeira vez que você usar Wi-Fi ou Bluetooth."
-          }
-        },
-        "pt-PT": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Pedido na primeira vez que usar Wi-Fi ou Bluetooth."
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Запрашивается при первом использовании Wi-Fi или Bluetooth."
-          }
-        },
-        "tr": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Wi-Fi veya Bluetooth’u ilk kullandığınızda sorulur."
-          }
-        },
-        "uk": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "Запитується під час першого використання Wi-Fi або Bluetooth."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "needs_review",
-            "value": "首次使用 Wi-Fi 或蓝牙时会询问。"
-          }
-        }
-      }
-    },
     "Back": {
       "localizations": {
         "de": {
@@ -125890,6 +125801,362 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "macOS 或其他应用已在使用此快捷键，因此它还无法打开 Volant。请在上方选择其他快捷键。"
+          }
+        }
+      }
+    },
+    "Approve in Login Items…": {
+      "comment": "Welcome window button: macOS needs the owner to approve Volant in System Settings › Login Items",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aprobar en Ítems de inicio…"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "In Anmeldeobjekten erlauben …"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Approuver dans Ouverture…"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Approva in Elementi login…"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "ログイン項目で許可…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "在“登录项”中批准…"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aprovar em Itens de Início…"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aprovar em Elementos de início…"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "로그인 항목에서 승인…"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Goedkeuren bij Inlogonderdelen…"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Zatwierdź w Rzeczach otwieranych…"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Одобрить в объектах входа…"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Схвалити в об’єктах входу…"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Giriş Öğeleri’nde onayla…"
+          }
+        }
+      }
+    },
+    "Asked the first time you use weather, Wi-Fi or Bluetooth.": {
+      "comment": "Welcome window access row detail",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Se pide la primera vez que usas el tiempo, Wi-Fi o Bluetooth."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wird beim ersten Verwenden von Wetter, WLAN oder Bluetooth abgefragt."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Demandé la première fois que vous utilisez la météo, le Wi-Fi ou le Bluetooth."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Richiesto la prima volta che usi il meteo, il Wi-Fi o il Bluetooth."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "天気、Wi-Fi、Bluetoothを初めて使うときに確認されます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "首次使用天气、Wi-Fi 或蓝牙时询问。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Solicitado na primeira vez que você usa o tempo, Wi-Fi ou Bluetooth."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pedido na primeira vez que usa o tempo, Wi-Fi ou Bluetooth."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "날씨, Wi-Fi 또는 Bluetooth를 처음 사용할 때 요청됩니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wordt gevraagd wanneer je voor het eerst het weer, wifi of Bluetooth gebruikt."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pytanie pojawia się przy pierwszym użyciu pogody, Wi-Fi lub Bluetooth."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Запрашивается при первом использовании погоды, Wi-Fi или Bluetooth."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Запитується під час першого використання погоди, Wi-Fi чи Bluetooth."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hava durumu, Wi-Fi veya Bluetooth’u ilk kullandığınızda sorulur."
+          }
+        }
+      }
+    },
+    "Optional. Needs Accessibility, set up in Settings › General.": {
+      "comment": "Welcome window access row detail for Search Menu Items",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Opcional. Requiere Accesibilidad; configúralo en Ajustes › General."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Optional. Benötigt Bedienungshilfen, einrichten unter Einstellungen › Allgemein."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Facultatif. Nécessite l’accessibilité ; à configurer dans Réglages › Général."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Facoltativo. Richiede Accessibilità; si configura in Impostazioni › Generali."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "オプション。アクセシビリティが必要です。設定 › 一般で設定します。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "可选。需要辅助功能权限，在“设置 › 通用”中设置。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Opcional. Requer Acessibilidade; configure em Ajustes › Geral."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Opcional. Requer Acessibilidade; configure em Definições › Geral."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "선택 사항. 손쉬운 사용 권한이 필요하며 설정 › 일반에서 설정합니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Optioneel. Vereist Toegankelijkheid, in te stellen via Instellingen › Algemeen."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Opcjonalne. Wymaga dostępności; skonfiguruj w Ustawieniach › Ogólne."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Необязательно. Нужен Универсальный доступ; настройте в Настройках › Основные."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Необов’язково. Потрібен Універсальний доступ; налаштуйте в Параметрах › Загальні."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "İsteğe bağlı. Erişilebilirlik gerekir; Ayarlar › Genel’den kurun."
+          }
+        }
+      }
+    },
+    "Search menu items": {
+      "comment": "Welcome window access row",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Buscar ítems de menú"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Menüeinträge durchsuchen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rechercher dans les menus"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cerca voci di menu"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "メニュー項目を検索"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "搜索菜单项"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Buscar itens de menu"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pesquisar itens de menu"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "메뉴 항목 검색"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Zoek in menu-onderdelen"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Szukaj w menu"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Поиск по пунктам меню"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Пошук пунктів меню"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Menü öğelerinde ara"
           }
         }
       }

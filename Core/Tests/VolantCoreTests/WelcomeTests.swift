@@ -25,7 +25,7 @@ final class WelcomeTests: XCTestCase {
         let tips = WelcomeTip.all
         XCTAssertEqual(Set(tips.map(\.id)).count, tips.count)
         XCTAssertTrue(tips.allSatisfy { !$0.tryQuery.isEmpty && !$0.detail.isEmpty })
-        for word in ["contacts", "files", "clipboard", "notes", "translate", "servers", "today"] {
+        for word in ["contacts", "files", "clipboard", "notes", "translate", "servers", "today", "weather", "focus", "breaks"] {
             XCTAssertTrue(tips.contains { $0.tryQuery == word }, word)
             XCTAssertTrue(LauncherRouting.isReserved(word), word)
         }

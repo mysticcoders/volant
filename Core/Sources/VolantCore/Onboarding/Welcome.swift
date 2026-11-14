@@ -86,7 +86,13 @@ public struct WelcomeTip: Identifiable, Equatable, Sendable {
         WelcomeTip(id: "extensions", typed: "ext", symbol: "puzzlepiece.extension", tryQuery: "ext ",
                    detailResource: LocalizedStringResource("Run your extensions", table: "Core", comment: "Welcome window: what typing ext does")),
         WelcomeTip(id: "servers", typed: "servers", symbol: "server.rack", tryQuery: "servers",
-                   detailResource: LocalizedStringResource("See local servers that are listening", table: "Core", comment: "Welcome window: what typing servers does"))
+                   detailResource: LocalizedStringResource("See local servers that are listening", table: "Core", comment: "Welcome window: what typing servers does")),
+        WelcomeTip(id: "weather", typed: "weather · weather tokyo", symbol: "cloud.sun", tryQuery: "weather",
+                   detailResource: LocalizedStringResource("See the forecast here or anywhere", table: "Core", comment: "Welcome window: what typing weather does")),
+        WelcomeTip(id: "focus", typed: "focus 25m write", symbol: "target", tryQuery: "focus",
+                   detailResource: LocalizedStringResource("Block distracting apps and websites", table: "Core", comment: "Welcome window: what typing focus does")),
+        WelcomeTip(id: "breaks", typed: "breaks", symbol: "figure.walk", tryQuery: "breaks",
+                   detailResource: LocalizedStringResource("Get reminded to step away", table: "Core", comment: "Welcome window: what typing breaks does"))
     ]
 }
 

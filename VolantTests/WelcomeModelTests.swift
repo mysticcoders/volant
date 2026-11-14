@@ -136,6 +136,27 @@ final class WelcomeModelTests: XCTestCase {
         XCTAssertEqual(makeModel().competingLaunchers, [])
     }
 
+    /// Coming back from System Settings reads permissions and Open at Login again, without prompting,
+    /// so a row turned on there no longer offers Open System Settings.
+    func testReturningToVolantRereadsAccess() {
+        let permissions = FakePermissions()
+        permissions.statuses[.contacts] = .denied
+        let login = FakeLoginItem()
+        let model = makeModel(permissions: permissions, loginItem: login)
+        model.start()
+        XCTAssertEqual(model.permissions[.contacts], .denied)
+        permissions.statuses[.contacts] = .allowed
+        login.status = .requiresApproval
+        NotificationCenter.default.post(name: NSApplication.didBecomeActiveNotification, object: NSApp)
+        XCTAssertEqual(model.permissions[.contacts], .allowed)
+        XCTAssertEqual(model.loginStatus, .requiresApproval)
+        XCTAssertTrue(permissions.requested.isEmpty, "Reading access never prompts")
+        model.stop()
+        permissions.statuses[.contacts] = .denied
+        NotificationCenter.default.post(name: NSApplication.didBecomeActiveNotification, object: NSApp)
+        XCTAssertEqual(model.permissions[.contacts], .allowed, "A closed Welcome window stops listening")
+    }
+
     func testOpenAtLoginUsesTheLoginItem() {
         let login = FakeLoginItem()
         let model = makeModel(loginItem: login)
