@@ -306,6 +306,8 @@ struct LauncherView: View {
         Button { model.activate(rowID: row.id) } label: {
             if case .calculation(let answer, _) = row {
                 CalculatorCard(rowID: row.id, fallback: answer, state: model.rowState)
+            } else if case .extensionItem(let item, _) = row, let forecast = item.forecast {
+                ForecastCard(rowID: row.id, fallback: forecast, state: model.rowState)
             } else if case .agentSession = row {
                 AgentRowView(initialRow: row, state: model.rowState, agents: agents)
                     .contentShape(Rectangle())

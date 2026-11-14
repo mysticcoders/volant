@@ -257,8 +257,15 @@ final class LauncherRowState: ObservableObject {
     @Published fileprivate(set) var contactImages: [String: NSImage] = [:]
     /// Image previews for list extension rows; only rows that carry an image observe it.
     let extensionImages = ExtensionRowImages()
+    /// Whether a weather card shows the week rather than today's hours, until the launcher is dismissed.
+    @Published private(set) var forecastShowsWeek = false
     private let icons: IconCache
     private let clipImages = NSCache<NSNumber, NSImage>()
+
+    /// Chooses the weather card's Today or This Week strip.
+    func setForecastShowsWeek(_ week: Bool) {
+        if forecastShowsWeek != week { forecastShowsWeek = week }
+    }
 
     /// Uses the icon cache shared with Settings unless a test supplies its own.
     init(icons: IconCache = .shared) {
@@ -825,6 +832,18 @@ final class LauncherModel: ObservableObject {
     }
 
     /// Tab on a scope's command row enters it, as Return does. False when the selected row is not one.
+    /// Whether Tab switches the selected row: a weather card with both a Today and a This Week strip.
+    var selectedForecastToggles: Bool {
+        guard actionTarget == nil, entryForm == nil, case .extensionItem(let item, _)? = selectedRow, let forecast = item.forecast else { return false }
+        return !(forecast.hours ?? []).isEmpty && !(forecast.days ?? []).isEmpty
+    }
+
+    /// Switches the selected weather card between Today and This Week, for Tab.
+    func toggleSelectedForecast() {
+        guard selectedForecastToggles else { return }
+        rowState.setForecastShowsWeek(!rowState.forecastShowsWeek)
+    }
+
     func enterSelectedSearchScope() -> Bool {
         guard scope == nil, case .core(let command)? = selectedRow, let source = SearchScope(command: command) else { return false }
         usage.record(key: "core:" + command.rawValue, query: query)
@@ -908,6 +927,7 @@ final class LauncherModel: ObservableObject {
         scopeRerun = false
         extensions.cancelItemsRun()
         rowState.extensionImages.reset()
+        rowState.setForecastShowsWeek(false)
         scope = nil
         scopeFilter = nil
         pendingExtension = nil

@@ -677,6 +677,32 @@ func extensionRowsScenario() throws {
     verify(symbolRows.map(\.symbol) == ["sun", "cloud-moon", "rain", "snow", "thunderstorm", nil], "Rows keep known symbols and drop unknown ones")
     try render("extension-row-symbols")
     panel.orderOut(nil)
+
+    let hours = [(9, 13.0, "cloud"), (10, 15.0, "cloud-sun"), (11, 16.0, "sun"), (12, 18.0, "sun"), (13, 19.0, "sun"), (14, 19.0, "sun"),
+                 (15, 19.0, "cloud-sun"), (16, 18.0, "cloud"), (17, 16.0, "rain")]
+        .map { #"{"time":"2026-11-14T\#(String(format: "%02d", $0.0)):00","temperature":\#($0.1),"symbol":"\#($0.2)"}"# }.joined(separator: ",")
+    let days = [(14, 19.0, 9.0, "cloud"), (15, 17.0, 8.0, "rain"), (16, 15.0, 6.0, "heavy-rain"), (17, 12.0, 3.0, "snow"), (18, 14.0, 5.0, "cloud-sun"),
+                (19, 18.0, 7.0, "sun"), (20, 20.0, 10.0, "sun"), (21, 21.0, 11.0, "thunderstorm")]
+        .map { #"{"date":"2026-11-\#($0.0)","high":\#($0.1),"low":\#($0.2),"symbol":"\#($0.3)"}"# }.joined(separator: ",")
+    symbolManager.invokeOverride = { _, _, completion in
+        completion(.success(#"{"items":[{"title":"Fictionville · 13° · Cloudy","url":"https://weather.example.com/now","symbol":"cloud","forecast":{"place":"Fictionville, Exampleland","condition":"Cloudy","symbol":"cloud","temperature":13.2,"high":19,"low":9,"hours":[\#(hours)],"days":[\#(days)]}},{"title":"Tomorrow · Rain","subtitle":"17° / 8°","url":"https://weather.example.com/tomorrow","symbol":"rain"},{"title":"Mon, Nov 16 · Heavy rain","subtitle":"15° / 6°","symbol":"heavy-rain"}]}"#))
+    }
+    panel.toggle(); panel.model.query = "Fixture Weather"; settle()
+    key("\r", 36); settle()
+    let forecastRow = panel.model.rows.first.flatMap { row -> ExtensionItem? in if case .extensionItem(let item, _) = row { return item }; return nil }
+    verify(forecastRow?.forecast?.hours?.count == 9 && forecastRow?.forecast?.days?.count == 8, "A forecast row keeps its hours and days")
+    verify(!panel.model.rowState.forecastShowsWeek, "The weather card opens on Today")
+    try render("extension-forecast-today")
+    key("\t", 48); settle()
+    verify(panel.model.rowState.forecastShowsWeek, "Tab on the weather card shows This Week")
+    verify(!panel.model.showingACP, "Tab on the weather card does not open AI Chat")
+    try render("extension-forecast-week")
+    key("\u{F701}", 125); settle()
+    key("\t", 48); settle()
+    verify(panel.model.rowState.forecastShowsWeek, "Tab on an ordinary row leaves the card as it was")
+    panel.orderOut(nil)
+    panel.model.reset()
+    verify(!panel.model.rowState.forecastShowsWeek, "Dismissing the launcher returns the card to Today")
     try storageManager.setCommunityAllowed(false, expected: true)
     print("PASS: storage list extension receives and saves data, and row actions run from Actions")
 }

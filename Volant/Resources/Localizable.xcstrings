@@ -96938,7 +96938,7 @@
       }
     },
     "Today": {
-      "comment": "Launcher section title for today's calendar events",
+      "comment": "Launcher section title for today's calendar events\nWeather card tab showing the hourly forecast",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -120986,6 +120986,190 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Şurada göster"
+          }
+        }
+      }
+    },
+    "H: %@  L: %@": {
+      "comment": "Weather card: today's high and low temperatures, such as H: 19° L: 9°",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "H: %1$@  L: %2$@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Máx.: %1$@  Mín.: %2$@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "H: %1$@  T: %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Max : %1$@  Min : %2$@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Max: %1$@  Min: %2$@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "最高: %1$@  最低: %2$@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "最高：%1$@  最低：%2$@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Máx.: %1$@  Mín.: %2$@"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Máx.: %1$@  Mín.: %2$@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "최고: %1$@  최저: %2$@"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "H: %1$@  L: %2$@"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Maks.: %1$@  Min.: %2$@"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Макс.: %1$@  Мин.: %2$@"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Макс.: %1$@  Мін.: %2$@"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Y: %1$@  D: %2$@"
+          }
+        }
+      }
+    },
+    "This Week": {
+      "comment": "Weather card tab showing the daily forecast",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Esta semana"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Diese Woche"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cette semaine"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Questa settimana"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "今週"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "本周"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Esta semana"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Esta semana"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "이번 주"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Deze week"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ten tydzień"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Эта неделя"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Цей тиждень"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bu hafta"
           }
         }
       }

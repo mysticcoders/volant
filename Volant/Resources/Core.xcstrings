@@ -25980,7 +25980,7 @@
       }
     },
     "Today": {
-      "comment": "Calculator date answer detail",
+      "comment": "Calculator date answer detail\nWeather card: the first day of the week's forecast",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -30154,7 +30154,7 @@
       }
     },
     "Now": {
-      "comment": "Calculator time answer label: the conversion is for the current moment",
+      "comment": "Calculator time answer label: the conversion is for the current moment\nWeather card: the current hour in the hourly forecast",
       "localizations": {
         "es": {
           "stringUnit": {

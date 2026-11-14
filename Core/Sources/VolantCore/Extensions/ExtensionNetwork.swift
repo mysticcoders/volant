@@ -185,13 +185,16 @@ public struct ExtensionItem: Codable, Hashable {
     /// A picture from one of the extension's hosts shown in place of its icon (see `ExtensionItemImage`),
     /// kept only for an extension that declares `row-images`.
     public var image: ExtensionItemImage?
+    /// A weather forecast the launcher draws as a card in place of the row (see `ExtensionItemForecast`).
+    public var forecast: ExtensionItemForecast?
 
     public init(title: String, subtitle: String? = nil, url: String? = nil, secondaryURL: String? = nil, secondaryTitle: String? = nil,
                 actions: [ExtensionItemAction]? = nil, onOpen: Bool? = nil, primaryAction: String? = nil, symbol: String? = nil,
-                badges: [ExtensionItemBadge]? = nil, copy: ExtensionItemCopy? = nil, image: ExtensionItemImage? = nil) {
+                badges: [ExtensionItemBadge]? = nil, copy: ExtensionItemCopy? = nil, image: ExtensionItemImage? = nil,
+                forecast: ExtensionItemForecast? = nil) {
         self.title = title; self.subtitle = subtitle; self.url = url; self.secondaryURL = secondaryURL; self.secondaryTitle = secondaryTitle
         self.actions = actions; self.onOpen = onOpen; self.primaryAction = primaryAction; self.symbol = symbol; self.badges = badges
-        self.copy = copy; self.image = image
+        self.copy = copy; self.image = image; self.forecast = forecast
     }
 
     /// Trims text to display limits and drops links that are not http or https, or a scheme from
@@ -218,7 +221,8 @@ public struct ExtensionItem: Codable, Hashable {
                              symbol: symbol.flatMap(ExtensionItemSymbol.init(rawValue:))?.rawValue,
                              badges: badges.isEmpty ? nil : Array(badges),
                              copy: copyHosts.flatMap { hosts in copy?.sanitized(hosts: hosts) },
-                             image: imageHosts.flatMap { hosts in image?.sanitized(hosts: hosts) })
+                             image: imageHosts.flatMap { hosts in image?.sanitized(hosts: hosts) },
+                             forecast: forecast?.sanitized())
     }
 }
 
