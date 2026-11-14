@@ -40,7 +40,7 @@ class ScopeTests(unittest.TestCase):
             self.assertTrue(scope.classify([path])["native"], path)
 
     def test_tools_the_ui_job_never_runs_do_not_trigger_it(self):
-        for path in ["tools/settings/main.swift", "tools/themes/render.swift", "tools/marketing/main.swift", "tools/render-vm.py",
+        for path in ["tools/settings/main.swift", "tools/welcome/main.swift", "tools/themes/render.swift", "tools/marketing/main.swift", "tools/render-vm.py",
                      "tools/render-marketing.sh", "tools/preview-settings.sh", "tools/test-ui-vm.py", "tools/interaction-speed/main.swift"]:
             self.assertEqual(scope.classify([path]), {"native": True, "ui": False}, path)
 

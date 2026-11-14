@@ -47,6 +47,7 @@ FIXTURES = [
     ("VolantLauncherFixture", "tools/launcher/check.swift"),
     ("VolantActionsFixture", "tools/launcher/actions.swift"),
     ("VolantSettingsPreview", "tools/settings/main.swift"),
+    ("VolantWelcomePreview", "tools/welcome/main.swift"),
     ("VolantThemeFixture", "tools/themes/render.swift"),
 ]
 if args.demo:
@@ -104,6 +105,7 @@ runs = [("VolantDemo", "dark", "\"$work\"")] if args.demo else [("VolantVideo", 
     ("VolantLauncherFixture", "light", "\"$work\""), ("VolantLauncherFixture", "dark", "\"$work\" dark"),
     ("VolantActionsFixture", "light", "\"$work\""), ("VolantActionsFixture", "dark", "\"$work\" dark"),
     ("VolantSettingsPreview", "both", "--render"),
+    ("VolantWelcomePreview", "both", "\"$work\""),
     ("VolantThemeFixture", "all", "\"$work\""),
 ]
 # A layout run passes `language=<layout>`, which limits the Actions fixture to scenarios that compare

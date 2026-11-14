@@ -2,7 +2,7 @@ import Foundation
 
 /// Discoverable entry points. Data rows keep their own identity and aren't branded as apps.
 public enum CoreCommand: String, CaseIterable, Hashable {
-    case define, translate, caffeinate, emoji, notes, clipboard, contacts, files, shortcuts, agents, servers, ai, talk, confetti, wifi, bluetooth, audio, colorPicker, camera, newSnippet, newQuicklink, catalog, menuItems, focus, breaks
+    case define, translate, caffeinate, emoji, notes, clipboard, contacts, files, shortcuts, agents, servers, ai, talk, confetti, wifi, bluetooth, audio, colorPicker, camera, newSnippet, newQuicklink, catalog, welcome, menuItems, focus, breaks
     /// The command's name in the launcher, translated in the Core table.
     public var titleResource: LocalizedStringResource {
         switch self {
@@ -31,6 +31,7 @@ public enum CoreCommand: String, CaseIterable, Hashable {
         case .menuItems: return LocalizedStringResource("Search Menu Items", table: "Core", comment: "Launcher command name: search the menu bar of the app that was in front")
         case .focus: return LocalizedStringResource("Focus Session", table: "Core", comment: "Launcher command name: start or control a session that blocks distracting apps and websites")
         case .breaks: return LocalizedStringResource("Breaks", table: "Core", comment: "Launcher command name: reminders to step away from the Mac after a stretch of work")
+        case .welcome: return LocalizedStringResource("Show Welcome", table: "Core", comment: "Launcher command name; opens the first-run Welcome window again")
         }
     }
     public var query: String {
@@ -72,6 +73,7 @@ public enum CoreCommand: String, CaseIterable, Hashable {
         case .menuItems: return "filemenu.and.selection"
         case .focus: return "target"
         case .breaks: return "figure.walk"
+        case .welcome: return "hand.wave"
         }
     }
     /// The command's one-line description, translated in the Core table.
@@ -94,6 +96,7 @@ public enum CoreCommand: String, CaseIterable, Hashable {
         case .menuItems: return LocalizedStringResource("Find and choose a menu command in the app you were using", table: "Core", comment: "Launcher command description, shown under its name")
         case .focus: return LocalizedStringResource("Block distracting apps and websites while you work", table: "Core", comment: "Launcher command description, shown under its name")
         case .breaks: return LocalizedStringResource("Remind you to step away after a stretch of work", table: "Core", comment: "Launcher command description, shown under its name")
+        case .welcome: return LocalizedStringResource("Set up your shortcut, access and extensions again", table: "Core", comment: "Launcher command description, shown under its name")
         default: return LocalizedStringResource("Built into Volant", table: "Core", comment: "Launcher command description, shown under its name")
         }
     }
@@ -117,6 +120,7 @@ public enum CoreCommand: String, CaseIterable, Hashable {
         case .servers: return "ports | localhost | listening | dev server"
         case .colorPicker: return LauncherRouting.colorPickerPhrases.sorted().joined(separator: " | ") + " | eyedropper | colour"
         case .camera: return "webcam | facetime camera | mirror | open camera"
+        case .welcome: return "getting started | onboarding | setup | tour"
         case .newSnippet: return LauncherRouting.snippetCreatePhrases.sorted().joined(separator: " | ")
         case .newQuicklink: return LauncherRouting.quicklinkCreatePhrases.sorted().joined(separator: " | ") + " | new link"
         case .focus: return "start focus session | toggle focus session | block apps | block websites | distractions | pomodoro"
