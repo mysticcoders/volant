@@ -726,6 +726,15 @@ func extensionRowsScenario() throws {
     try render("weather-no-location")
     panel.orderOut(nil)
     panel.model.reset()
+
+    // A Volant update a scheduled check left to the launcher leads the suggestions; 9.9.9 is fictional.
+    panel.model.appUpdate = { "9.9.9" }
+    panel.toggle(); panel.model.query = "x"; panel.model.query = ""; settle()
+    verify(panel.model.rows.first == .appUpdate("9.9.9"), "A waiting Volant update is the first suggestion")
+    try render("app-update-row")
+    panel.orderOut(nil)
+    panel.model.appUpdate = { nil }
+    panel.model.reset()
     try storageManager.setCommunityAllowed(false, expected: true)
     print("PASS: storage list extension receives and saves data, and row actions run from Actions")
 }

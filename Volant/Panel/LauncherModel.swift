@@ -60,6 +60,8 @@ enum ResultRow: Identifiable, Hashable {
     case agents
     /// Installed extensions with newer versions in the catalog this Mac last accepted, named for the row.
     case extensionUpdates(String)
+    /// A newer Volant that Sparkle's scheduled check found and left to the launcher, named by version.
+    case appUpdate(String)
     case agentSession(AgentSession)
     case herdrMachine(HerdrMachine?, enabled: Bool, busy: Bool)
     case rexPane(RexPane)
@@ -108,6 +110,7 @@ enum ResultRow: Identifiable, Hashable {
         case .reloadConfig: return "command:reload"
         case .agents: return "command:agents"
         case .extensionUpdates: return "command:extension-updates"
+        case .appUpdate: return "command:app-update"
         case .calculation(_, let slot): return "calc:\(slot)"
         case .app(let a): return "app:\(a.id)"
         case .file(let f): return "file:\(f.id)"
@@ -149,6 +152,7 @@ enum ResultRow: Identifiable, Hashable {
         case .settings, .reloadConfig: return String(localized: "Command", comment: "Result row kind label")
         case .agents: return String(localized: "Command", comment: "Result row kind label")
         case .extensionUpdates: return String(localized: "Extensions", comment: "Result row kind label")
+        case .appUpdate: return "Volant"
         case .calculation: return String(localized: "Calculation", comment: "Result row kind label")
         case .app: return String(localized: "Application", comment: "Result row kind label")
         case .file: return String(localized: "File", comment: "Result row kind label")
@@ -208,6 +212,7 @@ enum ResultRow: Identifiable, Hashable {
         case .reloadConfig: return String(localized: "Reload Configuration", comment: "Footer and Actions label for Return")
         case .agents: return String(localized: "Open Agents", comment: "Footer and Actions label for Return")
         case .extensionUpdates: return String(localized: "Open Extension Settings", comment: "Footer and Actions label for Return")
+        case .appUpdate: return String(localized: "Update Volant", comment: "Footer and Actions label for Return on the Volant update row: opens the update window")
         case .calculation: return String(localized: "Copy Result", comment: "Footer and Actions label for Return")
         case .app: return String(localized: "Open Application", comment: "Footer and Actions label for Return")
         case .file: return String(localized: "Open File", comment: "Footer and Actions label for Return")
@@ -1128,6 +1133,16 @@ final class LauncherModel: ObservableObject {
     /// `ExtensionUpdateChecker.available`, which never contacts the catalog.
     var extensionUpdates: () -> [ExtensionUpdateChecker.Update] = { [] }
 
+    /// The Volant version a scheduled update check found and left to the launcher; the app connects it
+    /// to `AppUpdater.availableVersion`, which never checks by itself.
+    var appUpdate: () -> String? = { nil }
+
+    /// The suggestions' first row while a newer Volant is waiting, so it is seen without opening a menu.
+    private var appUpdateRows: [ResultSection] {
+        guard let version = appUpdate() else { return [] }
+        return [ResultSection(title: String(localized: "Updates", comment: "Launcher section title for extension updates"), rows: [.appUpdate(version)])]
+    }
+
     /// The suggestions' row naming extensions with updates, such as "Hacker News 0.6.0 and Lobsters
     /// 1.2.0"; none when every installed extension is current.
     private var extensionUpdateRows: [ResultSection] {
@@ -1140,7 +1155,7 @@ final class LauncherModel: ObservableObject {
     private func showSuggestions() {
         let favorites = config.favoriteApps.compactMap { id in index.apps.first { $0.id == id } }.map(ResultRow.app)
         let apps = index.suggestions(usage: usage).filter { !config.favoriteApps.contains($0.id) }.map(ResultRow.app)
-        sections = extensionUpdateRows + (favorites.isEmpty ? [] : [ResultSection(title: String(localized: "Favorites", comment: "Launcher section title for favorite apps"), rows: favorites)]) + (apps.isEmpty ? [] : [ResultSection(title: String(localized: "Suggestions", comment: "Launcher section title for suggested apps"), rows: apps)]) + [ResultSection(title: String(localized: "Commands", comment: "Launcher section title for Volant commands"), rows: CoreCommand.allCases.map(ResultRow.core) + [.settings, .reloadConfig])]
+        sections = appUpdateRows + extensionUpdateRows + (favorites.isEmpty ? [] : [ResultSection(title: String(localized: "Favorites", comment: "Launcher section title for favorite apps"), rows: favorites)]) + (apps.isEmpty ? [] : [ResultSection(title: String(localized: "Suggestions", comment: "Launcher section title for suggested apps"), rows: apps)]) + [ResultSection(title: String(localized: "Commands", comment: "Launcher section title for Volant commands"), rows: CoreCommand.allCases.map(ResultRow.core) + [.settings, .reloadConfig])]
     }
 
     var showingNotes: Bool {
@@ -2152,6 +2167,7 @@ final class LauncherModel: ObservableObject {
             return
         case .agents: query = "agents"; return
         case .extensionUpdates: dismiss(); onNote(.extensionSettings); return
+        case .appUpdate: dismiss(); onNote(.checkForUpdates); return
         case .rexOverview: dismiss(); onNote(.rexOverview); return
         case .calculation(let answer, _): copy(answer.copyText)
         case .clip(let clip):
