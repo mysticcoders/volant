@@ -43,14 +43,15 @@ and a Data Sources link.
 WeatherKit is a restricted entitlement, so `VolantWeatherHost` needs a provisioning profile, and its App
 ID (`com.mysticcoders.volant.WeatherHost`) must have WeatherKit on in both Capabilities and App Services.
 Debug builds use the automatic development profile. Release builds use a Developer ID profile named
-**Volant mobile weather development profile**, which `Scripts/release.sh` and `Scripts/ExportOptions.plist` name;
+**Volant mobile weather Developer ID**, which `Scripts/release.sh` and `Scripts/ExportOptions.plist` name;
 the release script checks that the helper has exactly the sandbox, network client and WeatherKit
 entitlements.
 
 ## Extension forecasts
 
 A list extension row may carry a `forecast` with the same fields, which the launcher draws as the same
-card without the Apple attribution. The catalog's Weather extension does this for Open-Meteo forecasts.
+card without the Apple attribution; Return opens the Weather app unless the row has a link of its own. The
+catalog's Weather extension does this for Open-Meteo forecasts.
 VolantCore drops unknown symbols, implausible temperatures and unparsable times, and keeps at most 24
 hours and 10 days.
 

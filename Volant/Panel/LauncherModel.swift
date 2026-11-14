@@ -219,6 +219,7 @@ enum ResultRow: Identifiable, Hashable {
         case .extensionResult: return String(localized: "Copy Result", comment: "Footer and Actions label for Return")
         case .extensionItem(let item, _):
             if item.returnCopies, let copy = item.copy { return copy.displayTitle }
+            if item.forecast != nil && item.url == nil { return String(localized: "Open Weather", comment: "Footer and Actions label for Return on the weather card: opens Apple's Weather app") }
             return item.url == nil ? String(localized: "Copy Title", comment: "Footer and Actions label for Return") : String(localized: "Open Link", comment: "Footer and Actions label for Return")
         case .weather: return String(localized: "Open Weather", comment: "Footer and Actions label for Return on the weather card: opens Apple's Weather app")
         case .snippet: return String(localized: "Copy Snippet", comment: "Footer and Actions label for Return")
@@ -854,6 +855,14 @@ final class LauncherModel: ObservableObject {
     func toggleSelectedForecast() {
         guard selectedForecastToggles else { return }
         rowState.setForecastShowsWeek(!rowState.forecastShowsWeek)
+    }
+
+    /// Opens Apple's Weather app and closes the launcher, for Return on a weather card.
+    private func openWeatherApp() {
+        if let weatherApp = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.weather") {
+            NSWorkspace.shared.openApplication(at: weatherApp, configuration: NSWorkspace.OpenConfiguration())
+        }
+        dismiss()
     }
 
     func enterSelectedSearchScope() -> Bool {
@@ -2064,11 +2073,7 @@ final class LauncherModel: ObservableObject {
         case .server(let server): openURL(server.url)
         case .menuItem(let entry): pressMenuItem(entry.item); return
         case .menuItemsOff: dismiss(); onNote(.menuItemsSettings); return
-        case .weather:
-            if let weatherApp = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.weather") {
-                NSWorkspace.shared.openApplication(at: weatherApp, configuration: NSWorkspace.OpenConfiguration())
-            }
-            dismiss(); return
+        case .weather: openWeatherApp(); return
         case .systemAction(let action): onNote(.systemAction(action)); return
         case .systemToggle(let toggle, _): toggleSystemSetting(toggle); return
         case .pickedColor(let color, let format): copy(color.value(format))
@@ -2176,6 +2181,7 @@ final class LauncherModel: ObservableObject {
         case .extensionItem(let item, let source):
             if let primary = item.primaryAction { runItemAction(source, item: item, action: primary); return }
             if item.returnCopies { copyItem(source, item: item); return }
+            if item.forecast != nil && item.url == nil { openWeatherApp(); return }
             guard let link = item.url, let url = URL(string: link) else { copy(item.title); return }
             _ = Self.openExtensionLink(url, fallback: item.secondaryURL.flatMap(URL.init(string:)))
             if item.onOpen == true { runItemAction(source, item: item, action: nil) }
