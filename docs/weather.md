@@ -51,7 +51,7 @@ entitlements.
 
 A list extension row may carry a `forecast` with the same fields, which the launcher draws as the same
 card without the Apple attribution; Return opens the Weather app unless the row has a link of its own. The
-catalog's Weather extension does this for Open-Meteo forecasts.
+catalog's Meteo Weather extension (`meteo`) does this for Open-Meteo forecasts.
 VolantCore drops unknown symbols, implausible temperatures and unparsable times, and keeps at most 24
 hours and 10 days.
 
