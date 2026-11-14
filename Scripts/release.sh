@@ -43,7 +43,7 @@ xcodegen generate --quiet
 xcodebuild -project Volant.xcodeproj -scheme Volant -configuration Release \
   -derivedDataPath "$ROOT/build" -archivePath "$OUT/Volant.xcarchive" archive \
   CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$IDENTITY" DEVELOPMENT_TEAM=REMBT6JY4N \
-  VOLANT_PROVISIONING_PROFILE="Volant Developer ID" VOLANT_WEATHER_PROVISIONING_PROFILE="Volant WeatherHost Developer ID" \
+  VOLANT_PROVISIONING_PROFILE="Volant Developer ID" VOLANT_WEATHER_PROVISIONING_PROFILE="Volant mobile weather development profile" \
   VOLANT_UPDATE_PUBLIC_KEY="$VOLANT_UPDATE_PUBLIC_KEY" VOLANT_UPDATE_FEED_URL="$FEED" \
   OTHER_CODE_SIGN_FLAGS="--timestamp --options runtime" > "$OUT/archive.log" 2>&1
 # Export re-signs Sparkle's nested tools and XPC services, not just the framework.

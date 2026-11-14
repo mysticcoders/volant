@@ -43,7 +43,7 @@ and a Data Sources link.
 WeatherKit is a restricted entitlement, so `VolantWeatherHost` needs a provisioning profile, and its App
 ID (`com.mysticcoders.volant.WeatherHost`) must have WeatherKit on in both Capabilities and App Services.
 Debug builds use the automatic development profile. Release builds use a Developer ID profile named
-**Volant WeatherHost Developer ID**, which `Scripts/release.sh` and `Scripts/ExportOptions.plist` name;
+**Volant mobile weather development profile**, which `Scripts/release.sh` and `Scripts/ExportOptions.plist` name;
 the release script checks that the helper has exactly the sandbox, network client and WeatherKit
 entitlements.
 

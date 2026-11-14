@@ -220,7 +220,7 @@ targets:
         XPCService:
           ServiceType: Application
     # WeatherKit is a restricted entitlement, so this helper needs a provisioning profile: automatic
-    # signing makes a development one, and release builds use the "Volant WeatherHost Developer ID"
+    # signing makes a development one, and release builds use the "Volant mobile weather development profile"
     # profile that Scripts/release.sh names (docs/weather.md).
     settings:
       base:
