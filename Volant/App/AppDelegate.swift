@@ -206,6 +206,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         currencyRates.loadCache()
         currencyRates.onUpdate = { [weak self] in self?.panel.model.refreshForCurrencyRates() }
         panel.model.onCalculationQuery = { [weak self] query in self?.currencyRates.noteQuery(query) }
+        updater.onChange = { [weak self] in self?.panel.model.refreshForAppIndex() }
+        panel.model.appUpdate = { [weak self] in self?.updater.availableVersion }
         updater.start()
         installApplicationMenu()
         installStatusItem()

@@ -178,4 +178,27 @@ final class LauncherCatalogTests: XCTestCase {
         model.activate(rowID: model.rows[0].id)
         XCTAssertTrue(actions.contains { if case .extensionSettings = $0 { return true }; return false }, "Return opens Settings › Extensions")
     }
+
+    /// A Volant update a scheduled check left to the launcher is the first row, above extension updates,
+    /// and Return opens Sparkle's update window through Check for Updates.
+    func testAVolantUpdateIsTheFirstSuggestionAndOpensTheUpdateWindow() async throws {
+        var actions: [LauncherAction] = []
+        let model = model { actions.append($0) }
+        model.extensionUpdates = { [.init(name: "Fictional Reader", version: "2.0.0")] }
+        model.query = "x"
+        model.query = ""
+        XCTAssertFalse(model.rows.contains { if case .appUpdate = $0 { return true }; return false }, "No row without an update")
+        var waiting: String? = "9.9.9"
+        model.appUpdate = { waiting }
+        model.query = "x"
+        model.query = ""
+        XCTAssertEqual(model.rows.first, .appUpdate("9.9.9"), "The Volant update leads the suggestions")
+        guard case .extensionUpdates? = model.rows.dropFirst().first else { return XCTFail("Extension updates follow it") }
+        model.activate(rowID: model.rows[0].id)
+        XCTAssertTrue(actions.contains { if case .checkForUpdates = $0 { return true }; return false }, "Return asks Sparkle to show the update")
+        waiting = nil
+        model.query = "x"
+        model.query = ""
+        XCTAssertFalse(model.rows.contains { if case .appUpdate = $0 { return true }; return false }, "The row goes once Sparkle has the owner's attention")
+    }
 }
