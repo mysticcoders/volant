@@ -25980,7 +25980,7 @@
       }
     },
     "Today": {
-      "comment": "Calculator date answer detail",
+      "comment": "Calculator date answer detail\nWeather card: the first day of the week's forecast",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -30154,7 +30154,7 @@
       }
     },
     "Now": {
-      "comment": "Calculator time answer label: the conversion is for the current moment",
+      "comment": "Calculator time answer label: the conversion is for the current moment\nWeather card: the current hour in the hourly forecast",
       "localizations": {
         "es": {
           "stringUnit": {
@@ -37898,6 +37898,184 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Odak oturumu"
+          }
+        }
+      }
+    },
+    "Apple Weather is unavailable. Try again.": {
+      "comment": "Weather card error when Apple Weather does not answer",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apple Tiempo no está disponible. Inténtalo de nuevo."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apple Wetter ist nicht verfügbar. Versuche es erneut."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apple Météo n’est pas disponible. Réessayez."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apple Meteo non è disponibile. Riprova."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apple 天気を利用できません。もう一度お試しください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apple 天气不可用。请重试。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Apple Tempo não está disponível. Tente novamente."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Apple Tempo não está disponível. Tente novamente."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apple 날씨를 사용할 수 없습니다. 다시 시도하세요."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apple Weer is niet beschikbaar. Probeer het opnieuw."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apple Pogoda jest niedostępna. Spróbuj ponownie."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apple Погода недоступна. Повторите попытку."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apple Погода недоступна. Спробуйте ще раз."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apple Hava Durumu kullanılamıyor. Yeniden deneyin."
+          }
+        }
+      }
+    },
+    "No place called %@ was found.": {
+      "comment": "Weather card error when no place matches what the owner typed",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No se encontró ningún lugar llamado %@."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Kein Ort namens %@ gefunden."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aucun lieu nommé %@ n’a été trouvé."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nessun luogo chiamato %@ trovato."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@ という場所は見つかりませんでした。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "未找到名为 %@ 的地点。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nenhum lugar chamado %@ foi encontrado."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Não foi encontrado nenhum local chamado %@."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@(이)라는 장소를 찾을 수 없습니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Geen plaats met de naam %@ gevonden."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nie znaleziono miejsca o nazwie %@."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Место с названием %@ не найдено."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Місце з назвою %@ не знайдено."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@ adlı bir yer bulunamadı."
           }
         }
       }

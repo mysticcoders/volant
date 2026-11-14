@@ -21,7 +21,7 @@ export default function FocusAndBreaks() {
       <h1>Focus and Breaks</h1>
       <p className="docs-lede">
         Focus keeps distracting apps and websites out of reach while you work
-        on one thing. Breaks reminds you to step away. Both are new in 0.4.0.
+        on one thing. Breaks reminds you to step away. Both arrived in 0.4.0.
       </p>
 
       <h2>Start a Focus session</h2>

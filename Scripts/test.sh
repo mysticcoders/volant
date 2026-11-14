@@ -21,6 +21,10 @@ if [[ "$ui_mode" == auto ]]; then
 elif [[ "$ui_mode" != never ]]; then
     run_ui=true
 fi
+# Prefer the project environment from tools/python-env.sh; CI sets VOLANT_TEST_PYTHON itself.
+if [[ -z "${VOLANT_TEST_PYTHON:-}" && -x .venv/bin/python ]]; then
+    export VOLANT_TEST_PYTHON="$PWD/.venv/bin/python"
+fi
 printf 'UI verification: %s (mode: %s)\n' "$run_ui" "$ui_mode"
 # Runs one step and reports how long it took, so slow steps show up in CI logs.
 timed() {

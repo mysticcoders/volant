@@ -136,6 +136,18 @@ export default function Launcher() {
         calculator</a> for everything it understands.
       </p>
 
+      <h2>Weather</h2>
+      <p>
+        <code>weather</code> shows a forecast card for where you are, and{' '}
+        <code>weather tokyo</code> or <code>weather in tokyo</code> for
+        anywhere else, once you pause typing. The card has the current
+        temperature and conditions, today&rsquo;s high and low, the next hours
+        and the week; Tab switches between them and Return opens the Weather
+        app. Forecasts come from Apple Weather. Volant asks for your location
+        the first time you use <code>weather</code> on its own, rounds it to
+        about 11&nbsp;km and never saves it.
+      </p>
+
       <h2>Today&rsquo;s agenda</h2>
       <p>
         <code>cal</code> shows Today and Tomorrow. Select a meeting and press
