@@ -336,3 +336,10 @@ Added in 0.4.1:
 | Forecast cards for list extensions | Yes, for extensions that send one | #408; Core limits tests and fixture renders; Meteo Weather (volant-extensions#30) is the first user and is not yet published | Extensions docs only once Meteo Weather is in the catalog |
 | Tonnes, short and long tons, micrometers, nanometers, tebibytes, petabytes, pebibytes and long binary unit names; Swap reads them back | Yes | #397, #404; UnitConverterTests including a Swap round trip for every new name | Calculator docs' unit list; `nm` stays nautical miles |
 | Apps in the home folder's Applications appear in the installed app | Yes, fix | #403; a sandbox probe signed with the release entitlements; the 0.4.0 fix (#393) worked only in Debug builds; a Developer ID build listing those apps is first verified by this release | Release notes only |
+
+Added in 0.4.2:
+
+| Story | In 0.4.2 | Evidence and limits | Website treatment |
+| --- | --- | --- | --- |
+| A Welcome window on a new Mac: shortcut, what you can type with Try It, access, found agents and extensions; reopened with `welcome` or Settings › About; existing installs never see it unasked | Yes | #365; WelcomeTests and WelcomeModelTests (launch decision table, re-reading access on return, Open at Login needing approval), VM renders of every page in light and dark; the owner used Try It, Chat and Set Up… in signed Volant Dev on November 14, 2026; a fresh-install first launch and real Login Items approval are not separately recorded | Getting Started "New in 0.4.2"; "the first time Volant opens on a Mac"; never that it migrates or imports anything |
+| A waiting Volant update is the launcher's first row, and Return installs it | Yes | #410; AppUpdaterTests and LauncherCatalogTests, VM renders in light and dark; uses Sparkle's gentle reminders and only Sparkle's own scheduled checks; first exercised for real by the update after 0.4.2 | Getting Started Updates; "when Sparkle finds an update while you are in another app"; never that Volant checks more often or installs on its own |

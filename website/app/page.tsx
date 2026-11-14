@@ -46,7 +46,7 @@ const questions = [
   ],
   [
     'Are all the features here in the download?',
-    `Yes. Everything on this page is in the current download, Volant ${appVersion}, including weather from Apple Weather, Focus with app and website blocking, Breaks, the expanded calculator, color themes and theme import, the system commands, and iCloud settings sync.`,
+    `Yes. Everything on this page is in the current download, Volant ${appVersion}, including the Welcome window, weather from Apple Weather, Focus with app and website blocking, Breaks, the expanded calculator, color themes and theme import, the system commands, and iCloud settings sync.`,
   ],
   [
     'Does it work with Shortcuts?',
@@ -71,7 +71,7 @@ const benefits = [
     id: 'answers',
     icon: Calculator,
     title: 'An answer. Then back to work.',
-    text: 'Calculate, convert units and currencies, or check a time zone right where you search. New in 0.4.1: type weather for an Apple Weather forecast, here or anywhere.',
+    text: 'Calculate, convert units and currencies, or check a time zone right where you search. Type weather for an Apple Weather forecast, here or anywhere.',
     link: '/docs/calculator',
     label: 'Explore the calculator',
   },

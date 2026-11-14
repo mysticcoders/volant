@@ -70,6 +70,12 @@ export default function GettingStarted() {
         Type to fuzzy-search your apps and press Return to launch. That is the
         whole first interaction; everything else builds on it.
       </p>
+      <p>
+        New in 0.4.2: the first time Volant opens on a Mac, a Welcome window
+        sets up your shortcut, shows what you can type with Try It for each,
+        and offers the access and extensions Volant can use. Open it again any
+        time by typing <code>welcome</code> or from Settings &rsaquo; About.
+      </p>
 
       <h2>Try these first</h2>
       <div className="docs-table-scroll">
@@ -130,7 +136,9 @@ export default function GettingStarted() {
       <p>
         Volant includes <strong>Check for Updates</strong> in its menu. Updates
         are delivered through Sparkle, which uses its own helper process for
-        network access; the main app has no network entitlement at all.
+        network access; the main app has no network entitlement at all. When
+        Sparkle finds an update while you are in another app, the first row in
+        the launcher offers it, and Return installs it.
       </p>
 
       <DocFooterNav {...adjacentDocs('getting-started')} />
