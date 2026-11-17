@@ -1,4 +1,5 @@
 import importlib.util
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -83,6 +84,9 @@ class ScopeTests(unittest.TestCase):
         self.assertEqual(scope.reason([], full=True), "full run requested")
 
     def test_every_tracked_path_is_classified(self):
+        """Needs a git checkout; the UI VM receives a source archive and skips it."""
+        if subprocess.run(["git", "rev-parse", "--is-inside-work-tree"], capture_output=True).returncode != 0:
+            self.skipTest("not a git checkout")
         tracked = [p for p in scope.git("ls-files", "-z") if p]
         self.assertEqual(scope.unclassified(tracked), [])
 
