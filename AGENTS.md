@@ -11,7 +11,7 @@
 
 # Project working notes
 
-- Security jobs are independent of native/UI change selection. Keep scanner/Action pins current, scan tracked dependency lockfiles (not local worktrees), redact secret findings, and use only individually reviewed secret exceptions. Initial dependency debt was cleared on 2026-10-28; keep the baseline empty, never auto-renew exceptions, and do not describe a green scan as proof of absence of vulnerabilities. See [security review](docs/security-review-2026-10-27.md).
+- Security jobs are independent of native/UI change selection. Keep scanner/Action pins current, scan tracked dependency lockfiles (not local worktrees), redact secret findings, and use only individually reviewed secret exceptions. Initial dependency debt was cleared on 2026-10-28; keep the baseline empty apart from exceptions the owner reviewed (picomatch GHSA-fc5q-39xc-vjpf, build-time only, expires 2026-12-01; remove it when a fixed release exists), never auto-renew exceptions, and do not describe a green scan as proof of absence of vulnerabilities. See [security review](docs/security-review-2026-10-27.md).
 
 - `Core/` is the `VolantCore` package: Foundation only, no AppKit, SwiftUI, Carbon, CryptoKit or Combine, linked statically so it adds no embedded framework to sign. Code needing a platform framework belongs in the app target. Run its tests with `swift test --package-path Core`; ad-hoc `swiftc` checks link it through `tools/core-module.sh` rather than listing core files by path. See [cross-platform core](docs/cross-platform-core.md).
 
