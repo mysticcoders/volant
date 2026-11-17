@@ -59,6 +59,8 @@ public struct BreakSchedule: Codable, Equatable, Sendable {
     public var pausedFocusSession = false
     private var lastObserved: Date?
     private var awaySince: Date?
+    /// When a stretch away that counted as a break began; recorded once the owner is back.
+    private var awayBreakSince: Date?
 
     public init(at now: Date) {
         cycleStart = now
@@ -102,7 +104,10 @@ public struct BreakSchedule: Codable, Equatable, Sendable {
 
     /// Moves the schedule to `input.now`: counts active time, notices time away, and starts,
     /// defers or ends breaks. The app calls it once a second while breaks are on or one runs.
-    public mutating func advance(_ input: BreakInput, settings: BreakPreferences) {
+    /// Returns a record when a break finished on time, or when the owner came back from time away
+    /// that counted as a break.
+    @discardableResult
+    public mutating func advance(_ input: BreakInput, settings: BreakPreferences) -> BreakRecord? {
         let now = input.now
         let previous = lastObserved ?? now
         let gap = max(0, now.timeIntervalSince(previous))
@@ -116,51 +121,61 @@ public struct BreakSchedule: Codable, Equatable, Sendable {
         var idle: TimeInterval = input.inCall ? 0 : input.idleSeconds
         if let awaySince { idle = max(idle, now.timeIntervalSince(awaySince)) }
         idle = max(idle, missed)
+        var returned: BreakRecord?
+        if let since = awayBreakSince, idle < settings.length {
+            awayBreakSince = nil
+            let end = max(since, now.addingTimeInterval(-idle))
+            returned = BreakRecord(kind: .away, start: since, seconds: end.timeIntervalSince(since))
+        }
 
         if phase == .onBreak {
-            if let breakEndsAt, now >= breakEndsAt {
+            if let breakStartedAt, let breakEndsAt, now >= breakEndsAt {
+                let length = breakEndsAt.timeIntervalSince(breakStartedAt)
                 restartCycle(at: now)
+                return BreakRecord(kind: .taken, start: breakStartedAt, seconds: length, planned: length)
             } else if input.inCall {
                 clearBreak()
                 phase = .waitingForCall
             }
-            return
+            return returned
         }
         guard settings.enabled else {
             phase = .working
-            return
+            return returned
         }
         if let pausedUntil {
             guard now >= pausedUntil else {
                 phase = .working
-                return
+                return returned
             }
             restartCycle(at: now)
-            return
+            return returned
         }
         let tookBreak = idle >= settings.length
         if tookBreak, settings.mode == .activeTime || phase == .reminding || phase == .waitingForCall {
+            beginAwayBreak(at: now, idle: idle)
             restartCycle(at: now)
-            return
+            return returned
         }
         if settings.mode == .activeTime, missed == 0, idle < Self.activeIdleLimit, !input.away {
             activeSeconds += gap
         }
-        guard let due = secondsUntilDue(at: now, settings: settings) else { return }
+        guard let due = secondsUntilDue(at: now, settings: settings) else { return returned }
         if due <= 0 {
             if tookBreak {
+                beginAwayBreak(at: now, idle: idle)
                 restartCycle(at: now)
-                return
+                return returned
             }
-            if input.away { return }
+            if input.away { return returned }
             if input.inCall {
                 phase = .waitingForCall
-                return
+                return returned
             }
             if phase == .waitingForCall, settings.headsUp {
                 postponedUntil = now.addingTimeInterval(BreakPreferences.headsUpSeconds)
                 phase = .headsUp
-                return
+                return returned
             }
             if settings.strictness == .gentle {
                 phase = .reminding
@@ -172,6 +187,7 @@ public struct BreakSchedule: Codable, Equatable, Sendable {
         } else {
             phase = .working
         }
+        return returned
     }
 
     /// Starts a break now, whether or not one is due, for the break length in the settings.
@@ -191,21 +207,32 @@ public struct BreakSchedule: Codable, Equatable, Sendable {
         postponedUntil = now.addingTimeInterval(TimeInterval(max(1, minutes)) * 60)
     }
 
-    /// Skips the next or running break: the stretch of work starts over without one.
-    public mutating func skip(at now: Date) {
+    /// Skips the next or running break: the stretch of work starts over without one. Returns the
+    /// skip, with the time already spent on a running break.
+    @discardableResult
+    public mutating func skip(at now: Date) -> BreakRecord {
+        let record = BreakRecord(kind: .skipped, start: breakStartedAt ?? now, seconds: spentOnBreak(at: now), planned: plannedBreak)
         restartCycle(at: now)
+        return record
     }
 
-    /// Ends a running break early, counting it as taken.
-    public mutating func endBreak(at now: Date) {
-        guard phase == .onBreak else { return }
+    /// Ends a running break early, counting it as taken. Returns the break, or nil when none ran.
+    @discardableResult
+    public mutating func endBreak(at now: Date) -> BreakRecord? {
+        guard phase == .onBreak else { return nil }
+        let record = takenSoFar(at: now)
         restartCycle(at: now)
+        return record
     }
 
     /// Stops breaks until `until`; any running break or reminder ends. Work starts over afterward.
-    public mutating func pause(until: Date, at now: Date) {
+    /// Returns a running break, which counts as taken for the time it ran.
+    @discardableResult
+    public mutating func pause(until: Date, at now: Date) -> BreakRecord? {
+        let record = takenSoFar(at: now)
         restartCycle(at: now)
         pausedUntil = until
+        return record
     }
 
     /// Ends a pause early and starts a fresh stretch of work.
@@ -223,13 +250,41 @@ public struct BreakSchedule: Codable, Equatable, Sendable {
     }
 
     /// Prepares a schedule saved before relaunch. A break that was running counts as taken, so a
-    /// restart never covers the screen again; notices are recomputed on the next `advance`.
-    public mutating func restored(at now: Date) {
+    /// restart never covers the screen again; notices are recomputed on the next `advance`. Returns
+    /// that break, up to its planned end.
+    @discardableResult
+    public mutating func restored(at now: Date) -> BreakRecord? {
         if phase == .onBreak {
+            let record = takenSoFar(at: now)
             restartCycle(at: now)
-        } else {
-            phase = .working
+            return record
         }
+        phase = .working
+        return nil
+    }
+
+    /// The running break as taken until `now`, capped at its planned end, or nil when none runs.
+    private func takenSoFar(at now: Date) -> BreakRecord? {
+        guard phase == .onBreak, let breakStartedAt else { return nil }
+        return BreakRecord(kind: .taken, start: breakStartedAt, seconds: spentOnBreak(at: now), planned: plannedBreak)
+    }
+
+    /// Seconds the running break has lasted, up to its planned end; zero when none runs.
+    private func spentOnBreak(at now: Date) -> TimeInterval {
+        guard phase == .onBreak, let breakStartedAt else { return 0 }
+        let end = min(now, breakEndsAt ?? now)
+        return max(0, end.timeIntervalSince(breakStartedAt))
+    }
+
+    /// The running break's planned length; zero when none runs.
+    private var plannedBreak: TimeInterval {
+        guard phase == .onBreak, let breakStartedAt, let breakEndsAt else { return 0 }
+        return breakEndsAt.timeIntervalSince(breakStartedAt)
+    }
+
+    /// Notes when a stretch away that counts as a break began, the first time it does.
+    private mutating func beginAwayBreak(at now: Date, idle: TimeInterval) {
+        if awayBreakSince == nil { awayBreakSince = now.addingTimeInterval(-idle) }
     }
 
     private mutating func restartCycle(at now: Date) {

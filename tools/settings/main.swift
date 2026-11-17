@@ -54,6 +54,22 @@ func seedFictionalUsage(at url: URL) {
 }
 let usageURL = root.appendingPathComponent("settings-usage.sqlite")
 seedFictionalUsage(at: usageURL)
+/// Fictional breaks for Settings › Your Volant: today two taken, one time away and one skip, and a
+/// varied week before it, beside the fictional usage file where Settings looks for them.
+func seedFictionalBreaks(in folder: URL) {
+    let today = Calendar.current.startOfDay(for: Date())
+    func at(_ day: Int, _ hour: Double) -> Date { Calendar.current.date(byAdding: .day, value: day, to: today)!.addingTimeInterval(hour * 3600) }
+    var records = [BreakRecord(kind: .taken, start: at(0, 9.8), seconds: 300, planned: 300), BreakRecord(kind: .away, start: at(0, 11.2), seconds: 840),
+                   BreakRecord(kind: .skipped, start: at(0, 12.1), seconds: 0), BreakRecord(kind: .taken, start: at(0, 13.4), seconds: 190, planned: 300)]
+    for (offset, minutes) in [(-6, [5, 5, 12]), (-5, [5]), (-4, [5, 5, 5, 20]), (-3, []), (-2, [5, 3]), (-1, [5, 5, 5])] {
+        for (index, length) in minutes.enumerated() {
+            records.append(BreakRecord(kind: length > 5 ? .away : .taken, start: at(offset, 10 + Double(index) * 1.5), seconds: TimeInterval(length * 60), planned: length > 5 ? 0 : 300))
+        }
+    }
+    records.append(BreakRecord(kind: .skipped, start: at(-2, 15), seconds: 0))
+    _ = try? JSONEncoder().encode(records).write(to: folder.appendingPathComponent("break-history.json"))
+}
+seedFictionalBreaks(in: root)
 var controller: SettingsWindowController!
 controller = SettingsWindowController(configURL: configURL, usageURL: usageURL, dictationAccess: dictationAccess, menuItemsAccess: menuItemsAccess) {
     HotKeyCenter.shared.unregisterAll()

@@ -5,7 +5,8 @@ import VolantCore
 /// Runs the owner's Break schedule: ticks once a second while breaks are on or one runs, reads
 /// idle time and camera or microphone use through injected closures, notices sleep and screen
 /// lock, saves the schedule so it survives relaunch, and pauses a running Focus session for the
-/// length of a break. Only times and counts are saved, never what the owner was doing.
+/// length of a break. Only times and counts are saved, never what the owner was doing. Each break
+/// taken, skipped or spent away is added to the break history beside the schedule.
 final class BreakController: ObservableObject {
     /// Why the owner is away right now, as the system reported it.
     enum AwayReason: Hashable {
@@ -27,6 +28,7 @@ final class BreakController: ObservableObject {
     private let idleSeconds: () -> TimeInterval
     private let inCall: () -> Bool
     private let stateURL: URL
+    private let historyURL: URL
     private let automaticTimer: Bool
     private var timer: Timer?
     private var awayReasons = Set<AwayReason>()
@@ -38,9 +40,10 @@ final class BreakController: ObservableObject {
 
     init(preferences: BreakPreferences = BreakPreferences(), stateURL: URL = BreakController.defaultStateURL, clock: @escaping () -> Date = Date.init,
          idleSeconds: @escaping () -> TimeInterval = BreakSignals.idleSeconds, inCall: @escaping () -> Bool = BreakSignals.cameraOrMicrophoneInUse,
-         automaticTimer: Bool = true, restore: Bool = true) {
+         automaticTimer: Bool = true, restore: Bool = true, historyURL: URL? = nil) {
         self.preferences = preferences
         self.stateURL = stateURL
+        self.historyURL = historyURL ?? stateURL.deletingLastPathComponent().appendingPathComponent("break-history.json")
         self.clock = clock
         self.idleSeconds = idleSeconds
         self.inCall = inCall
@@ -48,11 +51,13 @@ final class BreakController: ObservableObject {
         let at = clock()
         now = at
         var schedule = BreakSchedule(at: at)
+        var restoredBreak: BreakRecord?
         if restore, let data = try? Data(contentsOf: stateURL), let saved = try? JSONDecoder().decode(BreakSchedule.self, from: data) {
             schedule = saved
-            schedule.restored(at: at)
+            restoredBreak = schedule.restored(at: at)
         }
         self.schedule = schedule
+        record(restoredBreak)
     }
 
     /// Starts following the system and the clock, once the Focus hooks are set. A schedule
@@ -79,7 +84,10 @@ final class BreakController: ObservableObject {
         let at = clock()
         if updated.enabled != previous.enabled || updated.mode != previous.mode {
             if !updated.enabled, schedule.isOnBreak { update { $0.endBreak(at: at) } }
-            update { $0.restart(at: at) }
+            update {
+                $0.restart(at: at)
+                return nil
+            }
         } else {
             changed(saving: true)
         }
@@ -87,7 +95,10 @@ final class BreakController: ObservableObject {
 
     /// Starts a break now, whether or not breaks are on.
     func takeBreakNow() {
-        update { [preferences] in $0.startBreak(at: clock(), settings: preferences) }
+        update { [preferences] in
+            $0.startBreak(at: clock(), settings: preferences)
+            return nil
+        }
     }
 
     /// Ends the running break early; it counts as taken.
@@ -97,7 +108,12 @@ final class BreakController: ObservableObject {
     func skip() { update { $0.skip(at: clock()) } }
 
     /// Moves the break five minutes later and closes whatever showed it.
-    func postpone() { update { $0.postpone(at: clock()) } }
+    func postpone() {
+        update {
+            $0.postpone(at: clock())
+            return nil
+        }
+    }
 
     /// Holds breaks for an hour.
     func pauseForAnHour() {
@@ -105,7 +121,12 @@ final class BreakController: ObservableObject {
         update { $0.pause(until: at.addingTimeInterval(Self.pauseLength), at: at) }
     }
 
-    func resume() { update { $0.resume(at: clock()) } }
+    func resume() {
+        update {
+            $0.resume(at: clock())
+            return nil
+        }
+    }
 
     /// Records that the owner went away or came back for one reason, such as screen lock.
     func setAway(_ reason: AwayReason, _ away: Bool) {
@@ -127,7 +148,8 @@ final class BreakController: ObservableObject {
         let input = BreakInput(now: at, idleSeconds: away ? 0 : idleSeconds(), away: away, inCall: call)
         let before = schedule
         var next = schedule
-        next.advance(input, settings: preferences)
+        let finished = next.advance(input, settings: preferences)
+        record(finished)
         guard next != before else { return }
         let phaseChanged = next.phase != before.phase || next.cycleStart != before.cycleStart
         schedule = next
@@ -190,11 +212,19 @@ final class BreakController: ObservableObject {
         observers = []
     }
 
-    private func update(_ change: (inout BreakSchedule) -> Void) {
+    /// Applies an owner action and records the break it finished, if any.
+    private func update(_ change: (inout BreakSchedule) -> BreakRecord?) {
         var next = schedule
-        change(&next)
+        let finished = change(&next)
         schedule = next
+        record(finished)
         changed(saving: true)
+    }
+
+    /// Adds a finished break to the history on this Mac. A failed write loses only that record.
+    private func record(_ finished: BreakRecord?) {
+        guard let finished else { return }
+        BreakHistoryStore.append(finished, url: historyURL, now: clock())
     }
 
     /// Saves the schedule, pauses or resumes Focus to match a break, and starts or stops the timer.

@@ -130,6 +130,63 @@ final class BreakControllerTests: XCTestCase {
         XCTAssertEqual(breaks.secondsUntilDue(), 45 * 60)
     }
 
+    func testRecordsBreaksBesideTheScheduleFile() {
+        let breaks = controller()
+        advance(breaks, seconds: 45 * 60)
+        XCTAssertTrue(breaks.isOnBreak)
+        let began = now
+        advance(breaks, seconds: 300)
+        breaks.takeBreakNow()
+        advance(breaks, seconds: 30)
+        breaks.endBreak()
+        breaks.skip()
+        breaks.postpone()
+        let history = BreakHistoryStore.load(url: root.appendingPathComponent("break-history.json"))
+        XCTAssertEqual(history.map(\.kind), [.taken, .taken, .skipped])
+        XCTAssertEqual(history.first, BreakRecord(kind: .taken, start: began, seconds: 300, planned: 300))
+        XCTAssertEqual(history[1].seconds, 30)
+        XCTAssertEqual(history[1].planned, 300)
+        let summary = BreakHistory.summary(history, now: now)
+        XCTAssertEqual(summary.today.breaks, 2)
+        XCTAssertEqual(summary.today.skipped, 1)
+        XCTAssertEqual(summary.today.seconds, 330)
+    }
+
+    func testABreakRunningAtRelaunchIsRecordedOnce() throws {
+        let breaks = controller()
+        breaks.takeBreakNow()
+        advance(breaks, seconds: 60)
+        now += 3600
+        _ = controller(restore: true)
+        _ = controller(restore: true)
+        let history = BreakHistoryStore.load(url: root.appendingPathComponent("break-history.json"))
+        XCTAssertEqual(history.count, 1)
+        XCTAssertEqual(history.first?.kind, .taken)
+        XCTAssertEqual(history.first?.seconds, 300)
+    }
+
+    func testHistoryWriteFailureLeavesBreaksRunning() throws {
+        let blocked = root.appendingPathComponent("blocked")
+        try FileManager.default.createDirectory(at: blocked.appendingPathComponent("break-history.json"), withIntermediateDirectories: true)
+        let breaks = BreakController(preferences: BreakPreferences(enabled: true), stateURL: blocked.appendingPathComponent("break-schedule.json"),
+                                     clock: { [unowned self] in self.now }, idleSeconds: { 0 }, inCall: { false }, automaticTimer: false, restore: false)
+        breaks.start()
+        breaks.takeBreakNow()
+        breaks.skip()
+        XCTAssertFalse(breaks.isOnBreak)
+        XCTAssertNil(breaks.error)
+        XCTAssertEqual(BreakHistoryStore.load(url: blocked.appendingPathComponent("break-history.json")), [])
+    }
+
+    func testClearingHistoryForgetsEveryRecord() {
+        let url = root.appendingPathComponent("break-history.json")
+        XCTAssertTrue(BreakHistoryStore.clear(url: url), "Nothing to clear is success")
+        XCTAssertTrue(BreakHistoryStore.append(BreakRecord(kind: .skipped, start: now, seconds: 0), url: url, now: now))
+        XCTAssertEqual(BreakHistoryStore.load(url: url).count, 1)
+        XCTAssertTrue(BreakHistoryStore.clear(url: url))
+        XCTAssertEqual(BreakHistoryStore.load(url: url), [])
+    }
+
     func testTurningOffEndsABreakAndStopsCounting() {
         let breaks = controller()
         breaks.takeBreakNow()

@@ -206,7 +206,7 @@ private struct SettingsView: View {
         case .keyboardShortcuts: keyboardShortcuts
         case .appShortcuts: shortcuts
         case .data: data
-        case .yourVolant: YourVolantSettingsView(usageURL: usageURL)
+        case .yourVolant: YourVolantSettingsView(usageURL: usageURL, breakHistoryURL: usageURL.deletingLastPathComponent().appendingPathComponent("break-history.json"))
         case .whatsNew: WhatsNewSettingsView()
         case .about: AboutSettingsView(showWelcome: showWelcome)
         case .ai: AISettingsView(conversations: conversations, configURL: configURL, onChange: onChange, openConversation: openAI, chooseProject: chooseAIProject,

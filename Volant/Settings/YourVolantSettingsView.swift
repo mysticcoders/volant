@@ -2,14 +2,17 @@ import AppKit
 import SwiftUI
 import VolantCore
 
-/// Settings › Your Volant: the owner's own usage, read from `usage.sqlite` on this Mac and shown only
-/// here. Nothing is sent anywhere, logged or kept beyond the counts `UsageStore` already holds.
+/// Settings › Your Volant: the owner's own usage, read from `usage.sqlite` and `break-history.json` on
+/// this Mac and shown only here. Nothing is sent anywhere, logged or kept beyond what `UsageStore` and
+/// `BreakHistoryStore` already hold.
 struct YourVolantSettingsView: View {
     var usageURL: URL = UsageStore.defaultURL
+    var breakHistoryURL: URL = BreakHistoryStore.defaultURL
     var now: () -> Date = Date.init
 
     @Environment(\.volantTheme) private var theme
     @State private var summary: UsageStats.Summary?
+    @State private var breaks: BreakHistory.Summary?
     @State private var lists: [(kind: UsageStats.Kind, entries: [Entry])] = []
     @State private var confirmingClear = false
     @State private var clearFailed = false
@@ -27,6 +30,7 @@ struct YourVolantSettingsView: View {
             VStack(alignment: .leading, spacing: 24) {
                 if let summary {
                     activity(summary)
+                    if let breaks, breaks.weekBreaks + breaks.weekSkipped > 0 { breaksCard(breaks) }
                     favorites
                     footer(summary)
                 }
@@ -36,11 +40,12 @@ struct YourVolantSettingsView: View {
         .onAppear(perform: load)
         .confirmationDialog("Clear activity history?", isPresented: $confirmingClear) {
             Button("Clear", role: .destructive) {
-                if UsageStore.clearActivity(url: usageURL) { load() } else { clearFailed = true }
+                let cleared = UsageStore.clearActivity(url: usageURL) && BreakHistoryStore.clear(url: breakHistoryURL)
+                if cleared { load() } else { clearFailed = true }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This forgets the daily counts on this Mac. App and command rankings stay.")
+            Text("This forgets the daily counts and break history on this Mac. App and command rankings stay.")
         }
         .alert("Couldn’t clear activity history.", isPresented: $clearFailed) {
             Button("OK") {}
@@ -99,6 +104,62 @@ struct YourVolantSettingsView: View {
         .accessibilityLabel(Text("Launcher choices per day"))
     }
 
+    /// Today's breaks as three numbers, then the time spent on breaks each day of the last week.
+    private func breaksCard(_ breaks: BreakHistory.Summary) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Breaks").font(.system(size: 13, weight: .semibold)).padding(.horizontal, 16)
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Today").font(.callout.weight(.semibold)).foregroundStyle(.secondary)
+                    HStack(alignment: .top, spacing: 12) {
+                        tile(value: breaks.today.breaks.formatted(), label: Text("Breaks"))
+                        tile(value: breaks.today.skipped.formatted(), label: Text("Skipped"))
+                        tile(value: Self.duration(breaks.today.seconds), label: Text("Break time"))
+                    }
+                }
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Last 7 days").font(.callout.weight(.semibold)).foregroundStyle(.secondary)
+                    breakBars(breaks.week)
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.settingsCard, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+    }
+
+    /// One bar per day of break time, scaled to the longest day, with each day's short weekday under it.
+    private func breakBars(_ days: [BreakHistory.Day]) -> some View {
+        let peak = max(days.map(\.seconds).max() ?? 0, 1)
+        return HStack(alignment: .bottom, spacing: 8) {
+            ForEach(days, id: \.day) { day in
+                VStack(spacing: 4) {
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .fill(day.seconds > 0 ? Color.accentColor : Color.primary.opacity(0.08))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: day.seconds > 0 ? max(4, 48 * CGFloat(day.seconds / peak)) : 4)
+                        .frame(height: 48, alignment: .bottom)
+                    Text(verbatim: Self.date(day.day)?.formatted(.dateTime.weekday(.abbreviated)) ?? day.day)
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: Self.longDate(day.day)))
+                .accessibilityValue(Text(verbatim: Self.duration(day.seconds)))
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text("Break time per day"))
+    }
+
+    /// A break length as Settings shows it: `12 min`, `1 hr, 5 min`, or `40 sec` under a minute.
+    static func duration(_ seconds: TimeInterval) -> String {
+        let whole = Int(seconds.rounded())
+        if whole > 0, whole < 60 {
+            return Duration.seconds(whole).formatted(.units(allowed: [.seconds], width: .abbreviated))
+        }
+        return Duration.seconds(whole).formatted(.units(allowed: [.hours, .minutes], width: .abbreviated, zeroValueUnits: .hide, fractionalPart: .hide))
+    }
+
     /// Apps, commands and extensions by recent use, each its own card; kinds with nothing are left out.
     @ViewBuilder private var favorites: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -138,11 +199,14 @@ struct YourVolantSettingsView: View {
     private func footer(_ summary: UsageStats.Summary) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             SettingsFooter(String(localized: "Counted only on this Mac, from what you choose in the launcher, and never sent anywhere. Rankings fade over about a week, so they show what you use lately.", comment: "Settings › Your Volant footer"))
+            if let breaks, breaks.weekBreaks + breaks.weekSkipped > 0 {
+                SettingsFooter(String(localized: "Breaks are kept on this Mac for 90 days. Time away that lasts a whole break counts as one.", comment: "Settings › Your Volant footer about break history"))
+            }
             if let since = summary.since {
                 SettingsFooter(String(localized: "Daily counts began \(Self.longDate(since), format: .verbatim).", comment: "Settings › Your Volant footer; the value is a date"))
             }
             Button("Clear Activity History…") { confirmingClear = true }
-                .disabled(summary.since == nil)
+                .disabled(summary.since == nil && (breaks?.weekBreaks ?? 0) + (breaks?.weekSkipped ?? 0) == 0)
         }
         .padding(.horizontal, 16)
     }
@@ -155,6 +219,7 @@ struct YourVolantSettingsView: View {
         manager.reload()
         let extensions = manager.extensions
         summary = UsageStats.summary(daily: snapshot.daily, now: date)
+        breaks = BreakHistory.summary(BreakHistoryStore.load(url: breakHistoryURL), now: date)
         lists = UsageStats.Kind.allCases.compactMap { kind in
             let entries = UsageStats.top(kind, records: snapshot.records, now: date, limit: 10).compactMap { Self.entry($0, extensions: extensions) }.prefix(5)
             return entries.isEmpty ? nil : (kind, Array(entries))
