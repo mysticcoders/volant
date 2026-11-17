@@ -1,6 +1,21 @@
 {
-  "recorded": "2026-10-27",
-  "expires": "2026-11-10",
-  "reason": "All initial dependency findings remediated on 2026-10-28. Empty baseline: every new package/version/advisory match blocks. Original expiry retained; never auto-renew.",
-  "findings": []
+  "recorded": "2026-11-17",
+  "expires": "2026-12-01",
+  "reason": "picomatch GHSA-fc5q-39xc-vjpf (ReDoS through repeated extglobs): no fixed release exists; every version through 4.0.7 is affected. Reviewed by the owner on 2026-11-17. Reached only through vinext's Vite build plugins (tinyglobby, fast-glob/micromatch), which match the project's own glob patterns at build time; not imported by website source or vinext's shipped code and absent from the built client and server output. Remove these entries when a fixed picomatch is released; never auto-renew.",
+  "findings": [
+    [
+      "website/package-lock.json",
+      "npm",
+      "picomatch",
+      "2.3.2",
+      "GHSA-fc5q-39xc-vjpf"
+    ],
+    [
+      "website/package-lock.json",
+      "npm",
+      "picomatch",
+      "4.0.7",
+      "GHSA-fc5q-39xc-vjpf"
+    ]
+  ]
 }
