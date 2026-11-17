@@ -5,6 +5,11 @@ name: PR checks
 on:
   pull_request:
   workflow_dispatch:
+    inputs:
+      full:
+        description: Run the native and UI jobs whatever files changed
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -32,7 +37,12 @@ jobs:
         env:
           BASE: ${{ github.event.pull_request.base.sha || 'origin/main' }}
           HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: python3 tools/test-scope.py --base "$BASE" --head "$HEAD" --github-output "$GITHUB_OUTPUT"
+          FULL: ${{ inputs.full }}
+        run: |
+          options=(--base "$BASE" --head "$HEAD" --github-output "$GITHUB_OUTPUT")
+          if [ "$FULL" = true ]; then options+=(--full); fi
+          python3 tools/test-scope.py "${options[@]}" | tee /tmp/volant-scope.json
+          python3 -c 'import json; s = json.load(open("/tmp/volant-scope.json")); print("Scope: native=%s ui=%s (%s)" % (s["native"], s["ui"], s["reason"]))' >> "$GITHUB_STEP_SUMMARY"
       - run: git diff --check
   native:
     needs: scope
