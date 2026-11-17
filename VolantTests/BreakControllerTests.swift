@@ -1,4 +1,5 @@
 import XCTest
+import CloudKit
 import CryptoKit
 import VolantCore
 @testable import Volant
@@ -185,6 +186,41 @@ final class BreakControllerTests: XCTestCase {
         XCTAssertEqual(BreakHistoryStore.load(url: url).count, 1)
         XCTAssertTrue(BreakHistoryStore.clear(url: url))
         XCTAssertEqual(BreakHistoryStore.load(url: url), [])
+    }
+
+    func testPhoneAlertsGoOutOnlyWhenTurnedOn() {
+        var sent: [BreakAlert] = []
+        let quiet = controller()
+        quiet.alertPhone = { sent.append($0) }
+        advance(quiet, seconds: 50 * 60)
+        XCTAssertEqual(sent, [], "Phone alerts are off by default")
+        let breaks = controller(BreakPreferences(enabled: true, phoneAlerts: true))
+        breaks.alertPhone = { sent.append($0) }
+        advance(breaks, seconds: 50 * 60)
+        XCTAssertEqual(sent, [.started, .over])
+        breaks.takeBreakNow()
+        breaks.endBreak()
+        breaks.takeBreakNow()
+        breaks.skip()
+        XCTAssertEqual(sent, [.started, .over, .started, .started], "Ending early or skipping sends no over alert")
+    }
+
+    func testPhoneAlertSenderKeepsOnlyAReasonForAFailure() {
+        var failure: Error? = CKError(.notAuthenticated)
+        var saved: [BreakAlert] = []
+        let alerts = BreakPhoneAlerts { alert, _, done in
+            saved.append(alert)
+            done(failure)
+        }
+        alerts.send(.started, at: now)
+        RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+        XCTAssertEqual(saved, [.started])
+        XCTAssertEqual(alerts.problem, "Sign in to iCloud on this Mac to alert your iPhone.")
+        failure = nil
+        alerts.send(.over, at: now)
+        RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+        XCTAssertNil(alerts.problem)
+        XCTAssertFalse(BreakPhoneAlerts.isAvailable, "The test host is Volant Dev, which has no iCloud entitlement")
     }
 
     func testTurningOffEndsABreakAndStopsCounting() {

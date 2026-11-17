@@ -8,6 +8,7 @@ struct SettingsView: View {
     let store: NotesStore
     let location: NotesLocation.Resolved
     @EnvironmentObject private var mac: MacSettings
+    @EnvironmentObject private var breakAlerts: BreakAlerts
     @AppStorage("onboardingComplete") private var onboardingComplete = true
     @Environment(\.dismiss) private var dismiss
 
@@ -42,6 +43,8 @@ struct SettingsView: View {
                          ? "Notes are in iCloud Drive › Volant › Notes, shared with Volant on your Mac. Snippets and quicklinks you add or edit here reach your Mac when Sync settings and notes with iCloud is on there."
                          : "iCloud Drive is off for Volant, so notes stay on this iPhone. Turn it on in Settings › Apple Account › iCloud, then reopen Volant to move them.")
                 }
+
+                BreakAlertsSection(alerts: breakAlerts)
 
                 Section("Appearance") {
                     NavigationLink {

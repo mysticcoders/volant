@@ -46,6 +46,7 @@ struct BreakSettingsSection: View {
                 Text("A small notice with Postpone and Skip.", comment: "Breaks setting description for the heads-up")
             }
             .accessibilityIdentifier("settings-breaks-heads-up")
+            BreakPhoneAlertsToggle(isOn: binding(\.phoneAlerts))
         } header: {
             Text("Breaks", comment: "Settings section header")
         } footer: {
@@ -70,5 +71,27 @@ struct BreakSettingsSection: View {
             let expected = config.breaks
             apply { try Preferences.updateBreaks(updated, expected: expected, at: configURL) }
         })
+    }
+}
+
+/// The phone alerts switch, with what it sends and, after a failed alert, why it didn't arrive. A
+/// build without CloudKit (Volant Dev) shows the switch off and disabled.
+private struct BreakPhoneAlertsToggle: View {
+    @Binding var isOn: Bool
+    @ObservedObject private var alerts = BreakPhoneAlerts.shared
+
+    var body: some View {
+        Toggle(isOn: BreakPhoneAlerts.isAvailable ? $isOn : .constant(false)) {
+            Text("Alert my iPhone and Apple Watch", comment: "Breaks setting: notify Volant for iPhone when a break starts and ends")
+            if !BreakPhoneAlerts.isAvailable {
+                Text("Available in the release version of Volant.", comment: "Breaks phone alerts description in builds without iCloud")
+            } else if isOn, let problem = alerts.problem {
+                Text(verbatim: problem).foregroundStyle(.red)
+            } else {
+                Text("When a break starts and when it’s over, through your iCloud. Turn on Break Alerts in Volant for iPhone too.", comment: "Breaks phone alerts description")
+            }
+        }
+        .disabled(!BreakPhoneAlerts.isAvailable)
+        .accessibilityIdentifier("settings-breaks-phone-alerts")
     }
 }

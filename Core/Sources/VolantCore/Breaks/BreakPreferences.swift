@@ -57,15 +57,19 @@ public struct BreakPreferences: Codable, Equatable, Sendable {
     public var strictness: BreakStrictness
     /// Whether a notice appears a minute before each break.
     public var headsUp: Bool
+    /// Whether Volant for iPhone hears when a break starts and when one is over, through the
+    /// owner's iCloud, so the iPhone and a paired Apple Watch can alert. Off by default.
+    public var phoneAlerts: Bool
 
     public init(enabled: Bool = false, mode: BreakMode = .activeTime, intervalMinutes: Int = 45, breakMinutes: Int = 5,
-                strictness: BreakStrictness = .standard, headsUp: Bool = true) {
+                strictness: BreakStrictness = .standard, headsUp: Bool = true, phoneAlerts: Bool = false) {
         self.enabled = enabled
         self.mode = mode
         self.intervalMinutes = min(max(intervalMinutes, Self.intervalRange.lowerBound), Self.intervalRange.upperBound)
         self.breakMinutes = min(max(breakMinutes, Self.lengthRange.lowerBound), Self.lengthRange.upperBound)
         self.strictness = strictness
         self.headsUp = headsUp
+        self.phoneAlerts = phoneAlerts
     }
 
     /// Missing, unknown or out-of-range values fall back to defaults or are clamped, so a
@@ -78,7 +82,8 @@ public struct BreakPreferences: Codable, Equatable, Sendable {
                   intervalMinutes: (try? c.decodeIfPresent(Int.self, forKey: .intervalMinutes)) ?? d.intervalMinutes,
                   breakMinutes: (try? c.decodeIfPresent(Int.self, forKey: .breakMinutes)) ?? d.breakMinutes,
                   strictness: (try? c.decodeIfPresent(String.self, forKey: .strictness)).flatMap(BreakStrictness.init(rawValue:)) ?? d.strictness,
-                  headsUp: (try? c.decodeIfPresent(Bool.self, forKey: .headsUp)) ?? d.headsUp)
+                  headsUp: (try? c.decodeIfPresent(Bool.self, forKey: .headsUp)) ?? d.headsUp,
+                  phoneAlerts: (try? c.decodeIfPresent(Bool.self, forKey: .phoneAlerts)) ?? d.phoneAlerts)
     }
 
     var interval: TimeInterval { TimeInterval(intervalMinutes) * 60 }

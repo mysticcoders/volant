@@ -11881,6 +11881,95 @@
         }
       }
     },
+    "Alert my iPhone and Apple Watch": {
+      "comment": "Breaks setting: notify Volant for iPhone when a break starts and ends",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Avisar en mi iPhone y Apple Watch"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mein iPhone und meine Apple Watch benachrichtigen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Alerter mon iPhone et mon Apple Watch"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Avvisa iPhone e Apple Watch"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "iPhoneとApple Watchに通知"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "在 iPhone 和 Apple Watch 上提醒"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Alertar meu iPhone e Apple Watch"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Alertar o meu iPhone e Apple Watch"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "iPhone 및 Apple Watch에 알림"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mijn iPhone en Apple Watch waarschuwen"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Powiadamiaj iPhone’a i Apple Watch"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Уведомлять iPhone и Apple Watch"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Сповіщати iPhone і Apple Watch"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "iPhone ve Apple Watch’uma bildir"
+          }
+        }
+      }
+    },
     "Alias": {
       "comment": "Launcher section title for the app an alias opens",
       "localizations": {
@@ -16589,6 +16678,95 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "自动 · %@"
+          }
+        }
+      }
+    },
+    "Available in the release version of Volant.": {
+      "comment": "Breaks phone alerts description in builds without iCloud",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Disponible en la versión publicada de Volant."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "In der veröffentlichten Version von Volant verfügbar."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Disponible dans la version publiée de Volant."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Disponibile nella versione pubblicata di Volant."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volantのリリース版で利用できます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "在 Volant 正式版中可用。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Disponível na versão publicada do Volant."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Disponível na versão publicada do Volant."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant 정식 버전에서 사용할 수 있습니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Beschikbaar in de uitgebrachte versie van Volant."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dostępne w wydanej wersji Volant."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Доступно в выпущенной версии Volant."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Доступно у випущеній версії Volant."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant’ın yayımlanan sürümünde kullanılabilir."
           }
         }
       }
@@ -86819,6 +86997,95 @@
         }
       }
     },
+    "Sign in to iCloud on this Mac to alert your iPhone.": {
+      "comment": "Breaks phone alerts error: no iCloud account",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Inicia sesión en iCloud en este Mac para avisar a tu iPhone."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Melde dich auf diesem Mac bei iCloud an, um dein iPhone zu benachrichtigen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Connectez-vous à iCloud sur ce Mac pour alerter votre iPhone."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Accedi a iCloud su questo Mac per avvisare il tuo iPhone."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "iPhoneに通知するには、このMacでiCloudにサインインしてください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "在这台 Mac 上登录 iCloud 才能提醒你的 iPhone。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Inicie sessão no iCloud neste Mac para alertar seu iPhone."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Inicie sessão no iCloud neste Mac para alertar o seu iPhone."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "iPhone에 알리려면 이 Mac에서 iCloud에 로그인하세요."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Log op deze Mac in bij iCloud om je iPhone te waarschuwen."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Zaloguj się do iCloud na tym Macu, aby powiadamiać iPhone’a."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Войдите в iCloud на этом Mac, чтобы уведомлять iPhone."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Увійдіть в iCloud на цьому Mac, щоб сповіщати iPhone."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "iPhone’unuza bildirmek için bu Mac’te iCloud’a giriş yapın."
+          }
+        }
+      }
+    },
     "Simple Icons": {
       "localizations": {
         "de": {
@@ -93648,6 +93915,95 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "获取助手没有应答。"
+          }
+        }
+      }
+    },
+    "The last alert didn’t reach your iPhone.": {
+      "comment": "Breaks phone alerts error: any other failure",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "El último aviso no llegó a tu iPhone."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Die letzte Benachrichtigung hat dein iPhone nicht erreicht."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La dernière alerte n’a pas atteint votre iPhone."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "L’ultimo avviso non è arrivato al tuo iPhone."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "最後の通知はiPhoneに届きませんでした。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "上一条提醒没有送达你的 iPhone。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O último alerta não chegou ao seu iPhone."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O último alerta não chegou ao seu iPhone."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "마지막 알림이 iPhone에 전달되지 않았습니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "De laatste waarschuwing heeft je iPhone niet bereikt."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ostatnie powiadomienie nie dotarło do iPhone’a."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Последнее уведомление не дошло до iPhone."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Останнє сповіщення не дійшло до iPhone."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Son bildirim iPhone’unuza ulaşmadı."
           }
         }
       }
@@ -108370,6 +108726,95 @@
         }
       }
     },
+    "When a break starts and when it’s over, through your iCloud. Turn on Break Alerts in Volant for iPhone too.": {
+      "comment": "Breaks phone alerts description",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cuando empieza una pausa y cuando termina, a través de tu iCloud. Activa también Avisos de pausa en Volant para iPhone."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wenn eine Pause beginnt und wenn sie vorbei ist, über dein iCloud. Schalte auch „Break Alerts“ in Volant für iPhone ein."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quand une pause commence et quand elle se termine, via votre iCloud. Activez aussi Break Alerts dans Volant pour iPhone."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quando inizia una pausa e quando finisce, tramite il tuo iCloud. Attiva anche Break Alerts in Volant per iPhone."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "休憩の開始時と終了時に、iCloud経由でお知らせします。iPhone版Volantでも「Break Alerts」をオンにしてください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "休息开始和结束时，通过你的 iCloud 提醒。也请在 iPhone 版 Volant 中打开“Break Alerts”。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quando uma pausa começa e quando termina, pelo seu iCloud. Ative também Break Alerts no Volant para iPhone."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quando uma pausa começa e quando termina, através do seu iCloud. Ative também Break Alerts no Volant para iPhone."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "휴식이 시작될 때와 끝날 때 iCloud를 통해 알립니다. iPhone용 Volant에서도 Break Alerts를 켜세요."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wanneer een pauze begint en wanneer die voorbij is, via je iCloud. Zet ook Break Alerts aan in Volant voor iPhone."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gdy przerwa się zaczyna i gdy się kończy, przez Twój iCloud. Włącz też Break Alerts w Volant na iPhone’a."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Когда перерыв начинается и когда заканчивается, через ваш iCloud. Включите также Break Alerts в Volant для iPhone."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Коли перерва починається і коли закінчується, через ваш iCloud. Увімкніть також Break Alerts у Volant для iPhone."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bir mola başladığında ve bittiğinde, iCloud’unuz üzerinden. iPhone için Volant’ta Break Alerts’i de açın."
+          }
+        }
+      }
+    },
     "When finished": {
       "localizations": {
         "de": {
@@ -110502,6 +110947,95 @@
         }
       }
     },
+    "Your iCloud storage is full, so the last alert didn’t reach your iPhone.": {
+      "comment": "Breaks phone alerts error: iCloud full",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tu almacenamiento de iCloud está lleno, así que el último aviso no llegó a tu iPhone."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dein iCloud-Speicher ist voll, daher hat die letzte Benachrichtigung dein iPhone nicht erreicht."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Votre stockage iCloud est plein, la dernière alerte n’a donc pas atteint votre iPhone."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lo spazio iCloud è pieno, quindi l’ultimo avviso non è arrivato al tuo iPhone."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "iCloudストレージがいっぱいのため、最後の通知はiPhoneに届きませんでした。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "你的 iCloud 储存空间已满，因此上一条提醒没有送达你的 iPhone。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Seu armazenamento do iCloud está cheio, então o último alerta não chegou ao seu iPhone."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O seu armazenamento iCloud está cheio, por isso o último alerta não chegou ao seu iPhone."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "iCloud 저장 공간이 가득 차서 마지막 알림이 iPhone에 전달되지 않았습니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Je iCloud-opslag is vol, dus de laatste waarschuwing heeft je iPhone niet bereikt."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Miejsce w iCloud jest pełne, więc ostatnie powiadomienie nie dotarło do iPhone’a."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Хранилище iCloud заполнено, поэтому последнее уведомление не дошло до iPhone."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Сховище iCloud заповнене, тому останнє сповіщення не дійшло до iPhone."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "iCloud depolama alanınız dolu, bu yüzden son bildirim iPhone’unuza ulaşmadı."
+          }
+        }
+      }
+    },
     "Your messages and this conversation’s completed turns are sent to the configured server. This connection has no agent tools.": {
       "localizations": {
         "de": {
@@ -111380,6 +111914,95 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "iCloud"
+          }
+        }
+      }
+    },
+    "iCloud couldn’t be reached, so the last alert didn’t reach your iPhone.": {
+      "comment": "Breaks phone alerts error: iCloud unreachable",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No se pudo conectar con iCloud, así que el último aviso no llegó a tu iPhone."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "iCloud war nicht erreichbar, daher hat die letzte Benachrichtigung dein iPhone nicht erreicht."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "iCloud est injoignable, la dernière alerte n’a donc pas atteint votre iPhone."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Impossibile raggiungere iCloud, quindi l’ultimo avviso non è arrivato al tuo iPhone."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "iCloudに接続できなかったため、最後の通知はiPhoneに届きませんでした。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "无法连接 iCloud，因此上一条提醒没有送达你的 iPhone。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Não foi possível acessar o iCloud, então o último alerta não chegou ao seu iPhone."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Não foi possível contactar o iCloud, por isso o último alerta não chegou ao seu iPhone."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "iCloud에 연결할 수 없어 마지막 알림이 iPhone에 전달되지 않았습니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "iCloud was niet bereikbaar, dus de laatste waarschuwing heeft je iPhone niet bereikt."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nie udało się połączyć z iCloud, więc ostatnie powiadomienie nie dotarło do iPhone’a."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Не удалось связаться с iCloud, поэтому последнее уведомление не дошло до iPhone."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Не вдалося зв’язатися з iCloud, тому останнє сповіщення не дійшло до iPhone."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "iCloud’a ulaşılamadı, bu yüzden son bildirim iPhone’unuza ulaşmadı."
           }
         }
       }
