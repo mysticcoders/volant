@@ -1,3 +1,6 @@
+# Jobs check out without the release DMGs in website/public/updates (about 770 MB): no check reads
+# them, and a shallow fetch that includes them takes 60 to 90 seconds. Keep the sparse-checkout
+# block on new jobs. The secrets job scans full history and stays a full checkout.
 name: Security checks
 on:
   workflow_call:
@@ -33,6 +36,10 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/website/public/updates/*.dmg
+          sparse-checkout-cone-mode: false
       - name: Install checksum-verified OSV
         run: |
           curl --fail --silent --show-error --location https://github.com/google/osv-scanner/releases/download/v2.7.0/osv-scanner_linux_amd64 -o /tmp/osv-scanner
@@ -61,6 +68,10 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/website/public/updates/*.dmg
+          sparse-checkout-cone-mode: false
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
@@ -74,6 +85,10 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/website/public/updates/*.dmg
+          sparse-checkout-cone-mode: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
