@@ -1,19 +1,24 @@
 #!/bin/bash
 # Select UI verification from the diff; --ui always/never/only is an explicit override.
+# --ui-shard launcher/actions runs half of the UI checks, so CI can run the halves on two runners;
+# the default, all, runs both in one process sequence.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 ui_mode=auto
+ui_shard=all
 base=origin/main
 ci=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --ui) ui_mode="$2"; shift 2 ;;
+        --ui-shard) ui_shard="$2"; shift 2 ;;
         --base) base="$2"; shift 2 ;;
         --ci) ci=true; shift ;;
         *) echo "Unknown argument: $1" >&2; exit 2 ;;
     esac
 done
 case "$ui_mode" in auto|always|never|only) ;; *) echo 'Invalid --ui mode' >&2; exit 2 ;; esac
+case "$ui_shard" in all|launcher|actions) ;; *) echo 'Invalid --ui-shard' >&2; exit 2 ;; esac
 run_ui=false
 if [[ "$ui_mode" == auto ]]; then
     scope_json=$(python3 tools/test-scope.py --base "$base" --include-working-tree)
@@ -43,12 +48,16 @@ timed xcodegen generate --quiet
 timed python3 tools/check-dev-entitlements.py
 timed python3 tools/check-sandbox-reads.py
 build_options=(-project Volant.xcodeproj -scheme Volant -derivedDataPath build -destination 'platform=macOS')
+# The Actions shard compiles its fixture with swiftc and never runs xcodebuild, so it needs no packages.
+needs_xcodebuild=true
+if [[ "$ui_mode" == only && "$ui_shard" == actions ]]; then needs_xcodebuild=false; fi
 if [[ "$ci" == true ]]; then
     build_options+=(CODE_SIGNING_ALLOWED=NO ENABLE_APP_SANDBOX=NO)
     # A hosted runner can drop Sparkle's binary download partway; SwiftPM's own retry then finds the
     # partial file and fails with "already exists in file system". Resolve up front, clearing the
     # partial artifact between attempts, so the builds below start with packages in place.
     for attempt in 1 2 3; do
+        [[ "$needs_xcodebuild" == true ]] || break
         xcodebuild -project Volant.xcodeproj -scheme Volant -derivedDataPath build -resolvePackageDependencies > /dev/null 2>&1 && break
         [[ "$attempt" == 3 ]] && { echo "Package resolution failed three times" >&2; exit 1; }
         echo "Package resolution failed (attempt $attempt); clearing the partial download and retrying" >&2
@@ -77,12 +86,18 @@ if [[ "$run_ui" == true ]]; then
         python3 tools/test-ui-vm.py
         exit 0
     fi
-    timed ./tools/check-launcher.sh
-    timed ./tools/check-launcher-actions.sh
-    timed ./tools/check-dictation-hud.sh
-    timed xcodebuild "${build_options[@]}" test -only-testing:VolantTests/NotesRenderTests \
-        -only-testing:VolantTests/LiveMarkdownTests/testLanguageChangePreservesContentSelectionAndUndo \
-        -only-testing:VolantTests/LiveMarkdownTests/testTypingFenceAndChangingModesDoNotRewriteSource
+    if [[ "$ui_shard" != actions ]]; then
+        timed ./tools/check-launcher.sh
+    fi
+    if [[ "$ui_shard" != launcher ]]; then
+        timed ./tools/check-launcher-actions.sh
+    fi
+    if [[ "$ui_shard" != actions ]]; then
+        timed ./tools/check-dictation-hud.sh
+        timed xcodebuild "${build_options[@]}" test -only-testing:VolantTests/NotesRenderTests \
+            -only-testing:VolantTests/LiveMarkdownTests/testLanguageChangePreservesContentSelectionAndUndo \
+            -only-testing:VolantTests/LiveMarkdownTests/testTypingFenceAndChangingModesDoNotRewriteSource
+    fi
 else
     echo 'Skipped native UI/keyboard/render fixtures: no UI changes, or explicitly disabled.'
 fi
