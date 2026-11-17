@@ -1,3 +1,6 @@
+# Jobs check out without the release DMGs in website/public/updates (about 770 MB): no check reads
+# them, and a shallow fetch that includes them takes 60 to 90 seconds. Keep the sparse-checkout
+# block on new jobs. The secrets job scans full history and stays a full checkout.
 name: PR checks
 on:
   pull_request:
@@ -20,6 +23,10 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/website/public/updates/*.dmg
+          sparse-checkout-cone-mode: false
       - run: python3 tools/test-scope-tests.py
       - id: scope
         env:
@@ -36,6 +43,10 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/website/public/updates/*.dmg
+          sparse-checkout-cone-mode: false
       - run: brew install xcodegen swiftlint
       - run: |
           python3 -m venv /tmp/volant-ci-python
@@ -60,6 +71,10 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
+          sparse-checkout: |
+            /*
+            !/website/public/updates/*.dmg
+          sparse-checkout-cone-mode: false
       - run: brew install xcodegen
       - name: Native UI fixtures
         run: |
