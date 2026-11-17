@@ -6,8 +6,10 @@ import SwiftUI
 /// return; while running, iCloud changes reload the list as they arrive.
 @main
 struct VolantMobileApp: App {
+    @UIApplicationDelegateAdaptor(BreakAlertsAppDelegate.self) private var appDelegate
     @StateObject private var themes = ThemeStore()
     @StateObject private var mac = MacSettings()
+    @StateObject private var breakAlerts = BreakAlerts()
     @State private var model: NotesModel?
     @State private var sync: NotesSync?
     @State private var bridge: ExtensionBridge?
@@ -23,7 +25,11 @@ struct VolantMobileApp: App {
                 }
             }
             .environmentObject(mac)
-            .task { await start() }
+            .environmentObject(breakAlerts)
+            .task {
+                breakAlerts.refreshRegistration()
+                await start()
+            }
             .onChange(of: scenePhase) { _, phase in
                 switch phase {
                 case .active:

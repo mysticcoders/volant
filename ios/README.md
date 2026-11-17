@@ -34,8 +34,8 @@ Fixture launch arguments for simulator review: `-notesDirectory <path>` (fiction
 `Scripts/device.sh <device-udid>` builds with the development profiles and installs it
 (`xcrun devicectl list devices` lists UDIDs). It needs, under team REMBT6JY4N:
 
-- App IDs `com.mysticcoders.volant.mobile` (iCloud with `iCloud.com.mysticcoders.volant`, App
-  Groups), `.mobile.widgets` (App Groups) and `.mobile.share` (iCloud with the container, App Groups).
+- App IDs `com.mysticcoders.volant.mobile` (iCloud with `iCloud.com.mysticcoders.volant` and
+  CloudKit, Push Notifications for Break Alerts, App Groups), `.mobile.widgets` (App Groups) and `.mobile.share` (iCloud with the container, App Groups).
 - App Group `group.com.mysticcoders.volant` on all three. The portal adds `group.` itself, so the
   identifier is typed as `com.mysticcoders.volant`.
 - iOS App Development profiles "Volant mobile development profile", "Volant mobile widget

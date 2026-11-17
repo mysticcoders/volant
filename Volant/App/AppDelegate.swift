@@ -355,6 +355,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self, self.focus.session?.isPaused == true else { return }
             self.focus.resume()
         }
+        breaks.alertPhone = { BreakPhoneAlerts.shared.send($0) }
         _ = breakPresenter
         breaks.start()
     }

@@ -70,6 +70,19 @@ Added on November 17, 2026, at the owner's request: how many breaks each day, wh
 
 Tests: `BreakRecordTests` and `BreakHistoryTests` (`swift test --package-path Core --filter Break`) cover each kind, time away recorded once, relaunch, old-file decoding, the daily summary and pruning. `BreakControllerTests` cover recording beside the schedule file, a running break at relaunch recorded once, a failed history write and clearing. The Settings preview (`tools/settings/main.swift`) seeds a fictional week for the light and dark renders.
 
+## iPhone and Apple Watch alerts
+
+Added on November 17, 2026, at the owner's request: when a break starts and when one is over, Volant for iPhone shows a notification, and a paired Apple Watch shows it too. The owner approved sending those two moments through their own iCloud, off by default.
+
+- **Mac.** Settings › General › Breaks › Alert my iPhone and Apple Watch (`breaks.phoneAlerts`, per-Mac, off by default, never synced). `BreakAlert.between` (VolantCore) decides: `started` when a break begins, however it began; `over` only when a break ran its full length. Ending early, skipping, postponing and a break counted at relaunch send nothing, since the owner is at the Mac or the moment has passed. `BreakPhoneAlerts` overwrites one CloudKit record per kind (`BreakStarted` or `BreakOver`, named `latest`, one field `at`) in the owner's private database in `iCloud.com.mysticcoders.volant`. CloudKit runs through the system's iCloud daemon, as notes and settings sync do, so the app gains no network entitlement. The release entitlements list `CloudKit` beside `CloudDocuments`; Volant Dev has no iCloud, so the switch is off and disabled there. A failure shows a short reason under the switch and is never logged.
+- **iPhone.** Settings › Mac Breaks › Break Alerts (per device, off by default) asks for notification permission, registers for pushes and saves two `CKQuerySubscription`s, one per record type, firing on creation and update with fixed English text. CloudKit pushes the notification itself, so Volant doesn't need to be running; iOS mirrors it to Apple Watch when the iPhone is locked and the watch is worn. Turning it off deletes both subscriptions. While Volant is open, alerts show as banners.
+- **What leaves the Mac.** Only the two records, each holding the time of its last write. No history, settings, durations or anything about what the owner was doing. The database never holds more than two break records.
+- **Setup outside the code.**
+  - App ID `com.mysticcoders.volant.mobile` needs Push Notifications, and its development and App Store profiles must be regenerated to carry `aps-environment`. Both app IDs already had iCloud with CloudKit support, and the existing Mac Developer ID profile already grants every iCloud service, so the Mac needs no new profile.
+  - The `BreakStarted` and `BreakOver` record types must exist in the container's production schema before release builds can save records or subscriptions. Saving once from a development build creates them in development; deploy them to production in the CloudKit Console.
+
+Tests: `BreakAlertTests` (VolantCore) cover the default, decoding and which transitions alert. `BreakControllerTests` cover that nothing is sent while off, the alerts sent while on, and the sender's failure reason with a fake save. They don't reach CloudKit or APNs.
+
 ## What was verified, and what needs the installed app
 
 - **Verified in the sandboxed test host:** `BreakControllerTests.testSystemSignalsAnswerInsideTheSandbox` runs inside Volant Dev's sandbox (`APP_SANDBOX_CONTAINER_ID` set), with Volant's entitlements and no new ones.

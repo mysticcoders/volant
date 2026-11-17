@@ -23,6 +23,8 @@ final class BreakController: ObservableObject {
     var pauseFocus: () -> Bool = { false }
     /// Resumes the Focus session a break paused.
     var resumeFocus: () -> Void = {}
+    /// Tells Volant for iPhone a break started or ran out, while the owner has phone alerts on.
+    var alertPhone: (BreakAlert) -> Void = { _ in }
 
     private let clock: () -> Date
     private let idleSeconds: () -> TimeInterval
@@ -151,6 +153,7 @@ final class BreakController: ObservableObject {
         let finished = next.advance(input, settings: preferences)
         record(finished)
         guard next != before else { return }
+        notifyPhone(before, next, finished)
         let phaseChanged = next.phase != before.phase || next.cycleStart != before.cycleStart
         schedule = next
         if phaseChanged || lastSaved.map({ at.timeIntervalSince($0) >= 60 }) ?? true {
@@ -214,11 +217,19 @@ final class BreakController: ObservableObject {
 
     /// Applies an owner action and records the break it finished, if any.
     private func update(_ change: (inout BreakSchedule) -> BreakRecord?) {
+        let before = schedule
         var next = schedule
         let finished = change(&next)
         schedule = next
         record(finished)
+        notifyPhone(before, next, finished)
         changed(saving: true)
+    }
+
+    /// Sends the phone alert a schedule change calls for, when the owner turned phone alerts on.
+    private func notifyPhone(_ before: BreakSchedule, _ after: BreakSchedule, _ finished: BreakRecord?) {
+        guard preferences.phoneAlerts, let alert = BreakAlert.between(before, after, finished: finished) else { return }
+        alertPhone(alert)
     }
 
     /// Adds a finished break to the history on this Mac. A failed write loses only that record.

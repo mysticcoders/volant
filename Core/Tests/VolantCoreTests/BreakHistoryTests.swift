@@ -125,3 +125,49 @@ final class BreakHistoryTests: XCTestCase {
         XCTAssertNil(BreakHistory.summary([], now: moment(), calendar: calendar).averageSeconds)
     }
 }
+
+final class BreakAlertTests: XCTestCase {
+    private let start = Date(timeIntervalSince1970: 1_800_000_000)
+    private let settings = BreakPreferences(enabled: true, phoneAlerts: true)
+
+    func testPhoneAlertsAreOffByDefaultAndDecode() throws {
+        XCTAssertFalse(BreakPreferences().phoneAlerts)
+        XCTAssertFalse(try JSONDecoder().decode(BreakPreferences.self, from: Data(#"{"phoneAlerts":"yes"}"#.utf8)).phoneAlerts)
+        XCTAssertTrue(try JSONDecoder().decode(BreakPreferences.self, from: Data(#"{"phoneAlerts":true}"#.utf8)).phoneAlerts)
+        XCTAssertFalse(SettingsSync.keys.contains("breaks"))
+    }
+
+    func testAlertsWhenABreakStartsAndWhenItRunsOut() {
+        var schedule = BreakSchedule(at: start)
+        var now = start
+        var alerts: [BreakAlert] = []
+        for _ in 1...(50 * 60) {
+            now += 1
+            let before = schedule
+            let finished = schedule.advance(BreakInput(now: now), settings: settings)
+            if let alert = BreakAlert.between(before, schedule, finished: finished) { alerts.append(alert) }
+        }
+        XCTAssertEqual(alerts, [.started, .over])
+    }
+
+    func testEndingEarlySkippingAndRelaunchSendNothing() {
+        var schedule = BreakSchedule(at: start)
+        schedule.startBreak(at: start, settings: settings)
+        var before = schedule
+        var finished = schedule.endBreak(at: start + 60)
+        XCTAssertNil(BreakAlert.between(before, schedule, finished: finished))
+        schedule.startBreak(at: start + 100, settings: settings)
+        before = schedule
+        finished = schedule.skip(at: start + 120)
+        XCTAssertNil(BreakAlert.between(before, schedule, finished: finished))
+        let idle = BreakSchedule(at: start)
+        let relaunchRecord = BreakRecord(kind: .taken, start: start, seconds: 300, planned: 300)
+        XCTAssertNil(BreakAlert.between(idle, idle, finished: relaunchRecord))
+    }
+
+    func testRecordTypesAndSubscriptionsAreDistinct() {
+        XCTAssertNotEqual(BreakAlert.started.recordType, BreakAlert.over.recordType)
+        XCTAssertNotEqual(BreakAlert.started.subscriptionID, BreakAlert.over.subscriptionID)
+        XCTAssertEqual(BreakAlert.containerIdentifier, "iCloud.com.mysticcoders.volant")
+    }
+}
