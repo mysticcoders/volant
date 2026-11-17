@@ -64,5 +64,27 @@ class ScopeTests(unittest.TestCase):
     def test_svg_row_previews_need_the_actions_fixture(self):
         self.assertEqual(scope.classify(["Shared/ExtensionSVGRasterizer.swift"]), {"native": True, "ui": True})
 
+    def test_unrecognized_paths_widen_to_native_and_ui(self):
+        for path in ["VolantNewHost/main.swift", "Package.swift", "newdir/notes.md", ".tool-versions"]:
+            self.assertEqual(scope.unclassified([path]), [path], path)
+            self.assertEqual(scope.classify([path]), {"native": True, "ui": True}, path)
+            self.assertEqual(scope.classify(["docs/a.md", path]), {"native": True, "ui": True}, path)
+            self.assertIn(path, scope.reason([path]))
+
+    def test_known_other_paths_select_no_macos_job(self):
+        for path in ["docs/roadmap.md", "website/app/page.tsx", "ios/README.md", "AGENTS.md", "README.md", "justfile",
+                     ".gitignore", ".github/dependabot.yml"]:
+            self.assertEqual(scope.unclassified([path]), [], path)
+            self.assertEqual(scope.classify([path]), {"native": False, "ui": False}, path)
+
+    def test_full_selects_everything(self):
+        for paths in [[], ["docs/a.md"], ["VolantAIHost/AIHTTPHost.swift"]]:
+            self.assertEqual(scope.classify(paths, full=True), {"native": True, "ui": True}, paths)
+        self.assertEqual(scope.reason([], full=True), "full run requested")
+
+    def test_every_tracked_path_is_classified(self):
+        tracked = [p for p in scope.git("ls-files", "-z") if p]
+        self.assertEqual(scope.unclassified(tracked), [])
+
 
 unittest.main()

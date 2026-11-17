@@ -31,10 +31,37 @@ UI_PATTERNS = (
 NATIVE_PATTERNS = ("Volant/*", "VolantTests/*", "VolantAgentHost/*", "VolantExtensionHost/*", "VolantAIHost/*", "VolantInputHost/*", "VolantFetchHost/*", "VolantRatesHost/*", "VolantWeatherHost/*", "Integrations/*",
                    "Shared/*", "Core/*", "extensions/*", "docs/releases/*", "Scripts/*", "tools/*", "project.yml", ".swiftlint.yml", ".github/workflows/*")
 
+# Paths known to need no macOS job: documentation, the website (its own job always runs), the iOS app
+# (not built in CI yet) and repository housekeeping. Anything in neither list is unrecognized.
+OTHER_PATTERNS = ("docs/*", "website/*", "ios/*", ".github/*", "AGENTS.md", "README.md", "CONTRIBUTING.md", "LICENSE",
+                  "justfile", ".gitignore", ".gitleaksignore")
 
-def classify(paths):
-    return {"native": any(fnmatch.fnmatch(p, pattern) for p in paths for pattern in NATIVE_PATTERNS),
-            "ui": any(fnmatch.fnmatch(p, pattern) for p in paths for pattern in UI_PATTERNS)}
+
+def matches(path, patterns):
+    """Whether any pattern in the list covers the path."""
+    return any(fnmatch.fnmatch(path, pattern) for pattern in patterns)
+
+
+def unclassified(paths):
+    """Paths neither list recognizes. They widen the run to native and UI; they never justify a skip."""
+    return [p for p in paths if not matches(p, NATIVE_PATTERNS) and not matches(p, OTHER_PATTERNS)]
+
+
+def classify(paths, full=False):
+    """Select the macOS jobs for the changed paths; `full` or an unrecognized path selects both."""
+    widen = full or bool(unclassified(paths))
+    return {"native": widen or any(matches(p, NATIVE_PATTERNS) for p in paths),
+            "ui": widen or any(matches(p, UI_PATTERNS) for p in paths)}
+
+
+def reason(paths, full=False):
+    """One line for the job log saying why the selection is what it is."""
+    unknown = unclassified(paths)
+    if full:
+        return "full run requested"
+    if unknown:
+        return "unrecognized paths widen the run to native and UI: " + ", ".join(unknown[:10])
+    return "selected from the changed paths"
 
 
 def git(*args):
@@ -55,10 +82,11 @@ if __name__ == "__main__":
     parser.add_argument("--head", default="HEAD")
     parser.add_argument("--include-working-tree", action="store_true")
     parser.add_argument("--github-output")
+    parser.add_argument("--full", action="store_true", help="select native and UI regardless of the changed paths")
     args = parser.parse_args()
     paths = changed(args.base, args.head, args.include_working_tree)
-    scope = classify(paths)
-    print(json.dumps({**scope, "files": paths}, indent=2))
+    scope = classify(paths, args.full)
+    print(json.dumps({**scope, "reason": reason(paths, args.full), "files": paths}, indent=2))
     if args.github_output:
         with Path(args.github_output).open("a") as output:
             for key, value in scope.items():
