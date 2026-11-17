@@ -17830,6 +17830,182 @@
         }
       }
     },
+    "Break time": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tiempo de pausa"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pausenzeit"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Temps de pause"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tempo di pausa"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "休憩時間"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "休息时长"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tempo de pausa"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tempo de pausa"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "휴식 시간"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pauzetijd"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Czas przerw"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Время перерывов"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Час перерв"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mola süresi"
+          }
+        }
+      }
+    },
+    "Break time per day": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tiempo de pausa por día"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pausenzeit pro Tag"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Temps de pause par jour"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tempo di pausa al giorno"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "1日ごとの休憩時間"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "每天的休息时长"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tempo de pausa por dia"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tempo de pausa por dia"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "일별 휴식 시간"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pauzetijd per dag"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Czas przerw dziennie"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Время перерывов по дням"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Час перерв за днями"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Günlük mola süresi"
+          }
+        }
+      }
+    },
     "Breaks": {
       "comment": "Launcher section title; the Breaks command\nSettings section header",
       "localizations": {
@@ -17915,6 +18091,95 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Molalar"
+          }
+        }
+      }
+    },
+    "Breaks are kept on this Mac for 90 days. Time away that lasts a whole break counts as one.": {
+      "comment": "Settings › Your Volant footer about break history",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Las pausas se guardan en este Mac durante 90 días. Ausentarse durante una pausa completa cuenta como una."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pausen werden 90 Tage lang auf diesem Mac gespeichert. Abwesenheit, die eine ganze Pause dauert, zählt als eine."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Les pauses sont conservées sur ce Mac pendant 90 jours. Une absence qui dure une pause entière compte comme une pause."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Le pause restano su questo Mac per 90 giorni. Un’assenza che dura un’intera pausa conta come una pausa."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "休憩はこのMacに90日間保存されます。休憩1回分以上離れていた時間も1回の休憩として数えます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "休息记录会在这台 Mac 上保留 90 天。离开时间达到一次完整休息的时长，也算作一次休息。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "As pausas ficam neste Mac por 90 dias. Ficar ausente por uma pausa inteira conta como uma."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "As pausas ficam guardadas neste Mac durante 90 dias. Estar ausente durante uma pausa inteira conta como uma."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "휴식 기록은 이 Mac에 90일 동안 보관됩니다. 휴식 한 번만큼 자리를 비운 시간도 휴식 한 번으로 셉니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pauzes worden 90 dagen op deze Mac bewaard. Afwezigheid die een hele pauze duurt, telt als een pauze."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Przerwy są przechowywane na tym Macu przez 90 dni. Nieobecność trwająca całą przerwę liczy się jako przerwa."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Перерывы хранятся на этом Mac 90 дней. Отсутствие длиной в целый перерыв считается перерывом."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Перерви зберігаються на цьому Mac 90 днів. Відсутність тривалістю в цілу перерву вважається перервою."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Molalar bu Mac’te 90 gün saklanır. Tam bir mola süresince uzakta kalmak bir mola sayılır."
           }
         }
       }
@@ -54868,6 +55133,94 @@
         }
       }
     },
+    "Last 7 days": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Últimos 7 días"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Letzte 7 Tage"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "7 derniers jours"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ultimi 7 giorni"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "過去7日間"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "过去 7 天"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Últimos 7 dias"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Últimos 7 dias"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "지난 7일"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Afgelopen 7 dagen"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ostatnie 7 dni"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Последние 7 дней"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Останні 7 днів"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Son 7 gün"
+          }
+        }
+      }
+    },
     "Launch at Login": {
       "localizations": {
         "de": {
@@ -86820,6 +87173,94 @@
         }
       }
     },
+    "Skipped": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Omitidas"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Übersprungen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ignorées"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Saltate"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "スキップ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "已跳过"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Puladas"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Saltadas"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "건너뜀"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Overgeslagen"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pominięte"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Пропущено"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Пропущено"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Atlanan"
+          }
+        }
+      }
+    },
     "Sleep Displays": {
       "comment": "Keyboard Shortcuts settings row",
       "localizations": {
@@ -95427,6 +95868,94 @@
         }
       }
     },
+    "This forgets the daily counts and break history on this Mac. App and command rankings stay.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Se olvidarán los recuentos diarios y el historial de pausas de este Mac. Las clasificaciones de apps y comandos se mantienen."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dadurch werden die täglichen Zählungen und der Pausenverlauf auf diesem Mac vergessen. Die Ranglisten für Apps und Befehle bleiben erhalten."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Les comptages quotidiens et l’historique des pauses de ce Mac seront oubliés. Les classements des apps et des commandes sont conservés."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "I conteggi giornalieri e la cronologia delle pause su questo Mac verranno dimenticati. Le classifiche di app e comandi restano."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "このMacの日ごとの集計と休憩の履歴を消去します。Appとコマンドのランキングは残ります。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "这会清除这台 Mac 上的每日统计和休息记录。App 和命令的排名会保留。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Isso esquece as contagens diárias e o histórico de pausas deste Mac. As classificações de apps e comandos permanecem."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Isto esquece as contagens diárias e o histórico de pausas deste Mac. As classificações de apps e comandos mantêm-se."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "이 Mac의 일별 집계와 휴식 기록이 삭제됩니다. 앱과 명령 순위는 유지됩니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hiermee worden de dagelijkse tellingen en de pauzegeschiedenis op deze Mac vergeten. Ranglijsten van apps en commando's blijven."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Spowoduje to usunięcie dziennych liczników i historii przerw na tym Macu. Rankingi aplikacji i poleceń pozostaną."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ежедневные счётчики и история перерывов на этом Mac будут забыты. Рейтинги приложений и команд сохранятся."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Щоденні лічильники та історію перерв на цьому Mac буде забуто. Рейтинги програм і команд збережуться."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bu, bu Mac’teki günlük sayımları ve mola geçmişini siler. Uygulama ve komut sıralamaları kalır."
+          }
+        }
+      }
+    },
     "This forgets the daily counts on this Mac. App and command rankings stay.": {
       "localizations": {
         "de": {
@@ -95513,7 +96042,8 @@
             "value": "这会清除这台 Mac 上的每日统计。App 和命令的排名会保留。"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "This is not a supported schema 3 Raycast export.": {
       "comment": "Raycast import error",

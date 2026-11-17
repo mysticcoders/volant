@@ -56,6 +56,20 @@ Tests: `BreakControllerTests`, `BreakRowTests` and `LauncherBreakTests` use a fa
 
 It also checks that Return can't start Skip early, that letting go cancels it, that a three-second hold skips the break and removes every overlay, and that an orphaned overlay's watchdog removes it.
 
+## History
+
+Added on November 17, 2026, at the owner's request: how many breaks each day, which were skipped, and how long they lasted, shown in Settings › Your Volant.
+
+- **What counts.** `BreakSchedule`'s owner actions and `advance` return a `BreakRecord` (`Core/Sources/VolantCore/Breaks/BreakHistory.swift`) when a break finishes:
+  - **taken:** a break that ran to its end, or ended early with End Break, Pause, turning breaks off, quitting or relaunch, with the time it actually ran and its planned length.
+  - **skipped:** Skip from the heads-up, the overlay, the Gentle panel or the launcher, with any time already spent on a running break.
+  - **away:** time away from the Mac that counted as a break, recorded once, when the owner comes back, for the whole stretch. A stretch longer than an hour (`BreakHistory.longestAway`), such as a night, isn't a break and isn't kept.
+  - Postponing records nothing; the break comes back later. A break a call interrupts records nothing; it runs again once the call ends.
+- **Storage.** `BreakHistoryStore` keeps the records in `break-history.json` beside `break-schedule.json`, pruned to 90 days. Settings derives the path from the usage file's folder, and the controller from the schedule file's, so fixtures with temporary files never touch the owner's history. A failed write loses only that record and never stops breaks.
+- **Settings › Your Volant** shows a Breaks card when the last week holds any record: today's breaks (taken and away), skips and break time, and break time for each of the last seven days. Clear Activity History also clears break history.
+
+Tests: `BreakRecordTests` and `BreakHistoryTests` (`swift test --package-path Core --filter Break`) cover each kind, time away recorded once, relaunch, old-file decoding, the daily summary and pruning. `BreakControllerTests` cover recording beside the schedule file, a running break at relaunch recorded once, a failed history write and clearing. The Settings preview (`tools/settings/main.swift`) seeds a fictional week for the light and dark renders.
+
 ## What was verified, and what needs the installed app
 
 - **Verified in the sandboxed test host:** `BreakControllerTests.testSystemSignalsAnswerInsideTheSandbox` runs inside Volant Dev's sandbox (`APP_SANDBOX_CONTAINER_ID` set), with Volant's entitlements and no new ones.
@@ -79,4 +93,4 @@ It also checks that Return can't start Skip early, that letting go cancels it, t
 
 ## Privacy
 
-`break-schedule.json` holds only the phase, times, the active seconds counted, and whether a break paused Focus. Idle time, device state and lock state are read in memory each second and never logged, persisted or synced. Volant doesn't record which app uses a camera or microphone, what the owner was doing, or any input.
+`break-schedule.json` holds only the phase, times, the active seconds counted, and whether a break paused Focus. `break-history.json` holds only each break's kind, start time, length and planned length, for 90 days on this Mac; it's never synced or sent anywhere. Idle time, device state and lock state are read in memory each second and never logged, persisted or synced. Volant doesn't record which app uses a camera or microphone, what the owner was doing, or any input.
