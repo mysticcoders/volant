@@ -253,7 +253,12 @@ export default function PrivacyAndSecurity() {
         <strong>No permission for Breaks.</strong> When you turn Breaks on, it
         reads how long your Mac has been idle and whether any camera or
         microphone is in use, so a break never interrupts a call. It never
-        opens a camera or microphone, and saves none of this.
+        opens a camera or microphone, and saves none of this. It keeps a list
+        of your breaks, when each started, how long it lasted or that you
+        skipped it, on your Mac for 90 days. If you turn on Alert my iPhone and
+        Apple Watch, the time each break starts and ends goes through your own
+        iCloud to Volant for iPhone, and nothing else about your breaks
+        does.
       </p>
       <p>
         <strong>

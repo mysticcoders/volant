@@ -104,6 +104,15 @@ export default function FocusAndBreaks() {
           the break.
         </li>
       </ul>
+      <p>
+        New in 0.4.3: Settings &rsaquo; Your Volant shows your breaks, with
+        how many you took and skipped today, how long they lasted, and your
+        break time for each of the last seven days. History stays on your Mac
+        for 90 days. Turn on Alert my iPhone and Apple Watch, and Volant for
+        iPhone tells you when a break starts and when it&rsquo;s over, on your
+        watch too, through your own iCloud. That needs the next Volant for
+        iPhone beta build.
+      </p>
 
       <h2>Privacy</h2>
       <p>
@@ -112,7 +121,9 @@ export default function FocusAndBreaks() {
         websites, and are never saved, logged or synced; only the address of a
         tab Volant blanked is kept, in memory, to put it back. Breaks reads how
         long your Mac has been idle and whether a camera or microphone is in
-        use, never what they capture. See{' '}
+        use, never what they capture. Break history keeps only when each break
+        started and how long it lasted, on your Mac, and phone alerts send only
+        a break&rsquo;s start and end time through your iCloud. See{' '}
         <a href="/docs/privacy-and-security">Privacy and security</a>.
       </p>
 
