@@ -168,6 +168,7 @@ final class BreakAlertTests: XCTestCase {
     func testRecordTypesAndSubscriptionsAreDistinct() {
         XCTAssertNotEqual(BreakAlert.started.recordType, BreakAlert.over.recordType)
         XCTAssertNotEqual(BreakAlert.started.subscriptionID, BreakAlert.over.subscriptionID)
+        XCTAssertNotEqual(BreakAlert.started.recordName, BreakAlert.over.recordName, "One record name per zone, whatever the type")
         XCTAssertEqual(BreakAlert.containerIdentifier, "iCloud.com.mysticcoders.volant")
     }
 }
