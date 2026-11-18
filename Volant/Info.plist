@@ -66,5 +66,7 @@
 	<string>$(VOLANT_UPDATE_FEED_URL)</string>
 	<key>SUPublicEDKey</key>
 	<string>$(VOLANT_UPDATE_PUBLIC_KEY)</string>
+	<key>SUScheduledCheckInterval</key>
+	<integer>14400</integer>
 </dict>
 </plist>
