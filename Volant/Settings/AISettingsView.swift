@@ -35,6 +35,7 @@ struct AISettingsView: View {
             if config.connection == .acp { detectedAgents; acpControls; accountControls }
             else if config.connection == .apple { appleControls }
             else { apiControls }
+            MCPSettingsSection(configURL: configURL, onChange: onChange)
             Section {
                 conversationRow
             } footer: {
