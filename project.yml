@@ -58,6 +58,9 @@ targets:
         SUFeedURL: $(VOLANT_UPDATE_FEED_URL)
         SUPublicEDKey: $(VOLANT_UPDATE_PUBLIC_KEY)
         SUEnableInstallerLauncherService: true
+        # Scheduled update checks every 4 hours (Sparkle's default is a day, its floor an hour), so a
+        # release reaches the launcher's Update Volant row the same day.
+        SUScheduledCheckInterval: 14400
         # Volant for iPhone shares this container; public so notes show in Finder as iCloud Drive > Volant.
         NSUbiquitousContainers:
           iCloud.com.mysticcoders.volant:
