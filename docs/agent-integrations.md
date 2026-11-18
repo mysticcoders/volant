@@ -137,7 +137,7 @@ afterwards.
 value would be agents without their own configuration. Gemini CLI and Qwen Code both keep their
 own settings files, which have not been checked here. Revisit only if an agent is found that
 ignores its own configuration under ACP, or if Volant itself should be offered to agents as an MCP
-server, which is a separate design with sandbox implications.
+server, which is a separate design with sandbox implications: see [Volant as an MCP server](mcp-server-design.md).
 
 ## Resuming an ACP conversation
 
