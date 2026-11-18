@@ -202,6 +202,87 @@ final class MCPToolboxTests: XCTestCase {
     }
 }
 
+@MainActor
+final class MCPToolboxPhaseTwoTests: XCTestCase {
+    private var root: URL!
+    private var notes: NotesStore!
+    private var focusRequests: [MCPToolbox.FocusControl] = []
+    private var breakRequests: [MCPToolbox.BreakControl] = []
+
+    override func setUpWithError() throws {
+        root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root.appendingPathComponent("Notes"), withIntermediateDirectories: true)
+        try Data(#"{"snippets":[{"name":"Address","keyword":"addr","body":"1 Main St"}],"quicklinks":[]}"#.utf8).write(to: root.appendingPathComponent("config.json"))
+        notes = NotesStore(directory: root.appendingPathComponent("Notes"))
+    }
+
+    override func tearDownWithError() throws {
+        notes.flush()
+        try? FileManager.default.removeItem(at: root)
+    }
+
+    private func toolbox() -> MCPToolbox {
+        MCPToolbox(notes: notes, configURL: root.appendingPathComponent("config.json"), breakHistoryURL: root.appendingPathComponent("h.json"),
+                   breakStatus: { (true, "Next break in 3 min · active time") }, focusStatus: { ("Write", false, "24:00") },
+                   focusControl: { [unowned self] control in
+                       self.focusRequests.append(control)
+                       return control == .resume ? "No Focus session is paused." : nil
+                   },
+                   breakControl: { [unowned self] control in self.breakRequests.append(control); return nil })
+    }
+
+    func testControlsAppearOnlyWithTheirSwitches() {
+        let names = toolbox().tools(MCPPreferences(enabled: true, controlsFocus: true, controlsBreaks: true)).map(\.name)
+        XCTAssertTrue(names.contains("start_focus") && names.contains("take_break") && names.contains("resume_breaks"))
+        XCTAssertFalse(toolbox().tools(MCPPreferences(enabled: true)).map(\.name).contains("start_focus"))
+        XCTAssertFalse(toolbox().tools(MCPPreferences(enabled: true, controlsFocus: true)).map(\.name).contains("take_break"))
+    }
+
+    private func call(_ name: String, _ arguments: [String: MCPValue] = [:]) async -> MCPToolResult? {
+        let tool = toolbox().tools(MCPPreferences(enabled: true, controlsFocus: true, controlsBreaks: true)).first { $0.name == name }
+        return await tool?.call(arguments)
+    }
+
+    func testFocusAndBreakControlsRunThroughTheControllers() async {
+        let started = await call("start_focus", ["goal": .string("Ship phase 2"), "minutes": .int(45)])
+        XCTAssertEqual(started?.isError, false)
+        XCTAssertEqual(started?.structured?["goal"], .string("Write"), "The reply is the state after the change")
+        XCTAssertEqual(focusRequests, [.start(goal: "Ship phase 2", minutes: 45)])
+        let tooLong = await call("start_focus", ["minutes": .int(FocusSetup.maximumMinutes + 1)])
+        XCTAssertEqual(tooLong?.isError, true)
+        XCTAssertEqual(focusRequests.count, 1, "An invalid length never reaches Focus")
+        let refused = await call("resume_focus")
+        XCTAssertEqual(refused?.isError, true)
+        XCTAssertEqual(refused?.text, "No Focus session is paused.")
+        _ = await call("take_break")
+        _ = await call("pause_breaks")
+        XCTAssertEqual(breakRequests, [.takeNow, .pauseHour])
+    }
+
+    func testResourcesListPagesAndReadNotesSnippetsAndQuicklinks() async throws {
+        let note = notes.create(initialText: "# Plan\nphase 2")
+        let resources = toolbox().resources()
+        let first = await resources.list(nil)
+        XCTAssertEqual(first.resources.compactMap { $0["uri"]?.string }, ["volant://snippets", "volant://quicklinks", MCPToolbox.noteURI(note.id)])
+        XCTAssertNil(first.nextCursor)
+        let snippets = await resources.read("volant://snippets")
+        XCTAssertEqual(snippets?.first?["text"], .string(#"[{"keyword":"addr","name":"Address","text":"1 Main St"}]"#))
+        let read = await resources.read(MCPToolbox.noteURI(note.id))
+        XCTAssertEqual(read?.first?["text"], .string("# Plan\nphase 2"))
+        XCTAssertEqual(read?.first?["mimeType"], .string("text/markdown"))
+        let traversal = await resources.read("volant://notes/..%2F..%2Fconfig.json")
+        XCTAssertNil(traversal, "Only ids in the notes list resolve; nothing builds a path")
+        let unknown = await resources.read("volant://notes/missing.md")
+        XCTAssertNil(unknown)
+        for index in 0..<60 { notes.create(initialText: "# Note \(index)") }
+        let paged = await resources.list(nil)
+        XCTAssertEqual(paged.resources.count, MCPToolbox.resourcePage)
+        let next = await resources.list(paged.nextCursor)
+        XCTAssertEqual(next.resources.count, 63 - MCPToolbox.resourcePage)
+        XCTAssertNil(next.nextCursor)
+    }
+}
+
 extension MCPTool {
     /// The listing `tools/list` sends, for comparing in tests.
     var listingForTests: MCPValue {

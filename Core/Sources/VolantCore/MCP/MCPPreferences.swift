@@ -11,17 +11,23 @@ public struct MCPPreferences: Codable, Equatable, Sendable {
     public var writesSnippets: Bool
     /// Lets AI apps add quicklinks.
     public var writesQuicklinks: Bool
+    /// Lets AI apps start, pause, resume and end Focus sessions.
+    public var controlsFocus: Bool
+    /// Lets AI apps take, end, skip and pause breaks.
+    public var controlsBreaks: Bool
     /// Client names that have connected, in the order they first did, for Settings.
     public var knownClients: [String]
     /// Client names the owner disconnected; their requests are refused until allowed again.
     public var disconnectedClients: [String]
 
     public init(enabled: Bool = false, writesNotes: Bool = false, writesSnippets: Bool = false, writesQuicklinks: Bool = false,
-                knownClients: [String] = [], disconnectedClients: [String] = []) {
+                controlsFocus: Bool = false, controlsBreaks: Bool = false, knownClients: [String] = [], disconnectedClients: [String] = []) {
         self.enabled = enabled
         self.writesNotes = writesNotes
         self.writesSnippets = writesSnippets
         self.writesQuicklinks = writesQuicklinks
+        self.controlsFocus = controlsFocus
+        self.controlsBreaks = controlsBreaks
         self.knownClients = knownClients
         self.disconnectedClients = disconnectedClients
     }
@@ -36,7 +42,7 @@ public struct MCPPreferences: Codable, Equatable, Sendable {
             return ((try? c.decodeIfPresent([String].self, forKey: key)) ?? []).compactMap(MCPEndpoint.clientName).filter { seen.insert($0).inserted }
         }
         self.init(enabled: flag(.enabled), writesNotes: flag(.writesNotes), writesSnippets: flag(.writesSnippets),
-                  writesQuicklinks: flag(.writesQuicklinks), knownClients: names(.knownClients), disconnectedClients: names(.disconnectedClients))
+                  writesQuicklinks: flag(.writesQuicklinks), controlsFocus: flag(.controlsFocus), controlsBreaks: flag(.controlsBreaks), knownClients: names(.knownClients), disconnectedClients: names(.disconnectedClients))
     }
 
     /// Whether a client may use the server: it is on and the owner hasn't disconnected that app.
