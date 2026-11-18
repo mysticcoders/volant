@@ -71,7 +71,7 @@ export default function GettingStarted() {
         whole first interaction; everything else builds on it.
       </p>
       <p>
-        New in 0.4.2: the first time Volant opens on a Mac, a Welcome window
+        The first time Volant opens on a Mac, a Welcome window
         sets up your shortcut, shows what you can type with Try It for each,
         and offers the access and extensions Volant can use. Open it again any
         time by typing <code>welcome</code> or from Settings &rsaquo; About.
