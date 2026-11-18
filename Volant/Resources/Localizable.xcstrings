@@ -8404,6 +8404,95 @@
         }
       }
     },
+    "AI apps start Volant’s bridge themselves and reach Volant only through it. Apps appear above after they connect.": {
+      "comment": "Settings › AI › Connected Apps footer",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Las apps de IA abren el puente de Volant por su cuenta y solo acceden a Volant a través de él. Las apps aparecen arriba cuando se conectan."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "KI-Apps starten Volants Brücke selbst und erreichen Volant nur darüber. Apps erscheinen oben, sobald sie sich verbinden."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Les apps d’IA lancent elles-mêmes le pont de Volant et n’accèdent à Volant que par lui. Les apps apparaissent ci-dessus une fois connectées."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Le app di IA avviano da sole il ponte di Volant e raggiungono Volant solo tramite esso. Le app compaiono qui sopra dopo la connessione."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "AIアプリはVolantのブリッジを自分で起動し、それを通してのみVolantにアクセスします。接続したアプリは上に表示されます。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "AI App 会自行启动 Volant 的桥接程序，并且只通过它访问 Volant。App 连接后会显示在上方。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Os apps de IA iniciam a ponte do Volant por conta própria e só acessam o Volant por ela. Os apps aparecem acima depois de se conectarem."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "As apps de IA iniciam a ponte do Volant por si e só acedem ao Volant através dela. As apps aparecem acima depois de se ligarem."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "AI 앱은 Volant 브리지를 직접 실행하고 이를 통해서만 Volant에 접근합니다. 연결된 앱은 위에 표시됩니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "AI-apps starten de brug van Volant zelf en bereiken Volant alleen via die brug. Apps verschijnen hierboven zodra ze verbinding maken."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aplikacje AI same uruchamiają most Volant i łączą się z Volant tylko przez niego. Aplikacje pojawiają się powyżej po połączeniu."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Приложения ИИ сами запускают мост Volant и обращаются к Volant только через него. Подключившиеся приложения появятся выше."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Програми ШІ самі запускають міст Volant і звертаються до Volant лише через нього. Підключені програми з’являться вище."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Yapay zekâ uygulamaları Volant köprüsünü kendileri başlatır ve Volant’a yalnızca onun üzerinden ulaşır. Bağlanan uygulamalar yukarıda görünür."
+          }
+        }
+      }
+    },
     "AI connection ended. Connect again to start a new conversation.": {
       "localizations": {
         "de": {
@@ -10341,6 +10430,540 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "添加账户"
+          }
+        }
+      }
+    },
+    "Add quicklinks": {
+      "comment": "Settings › AI › Connected Apps write permission",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Añadir enlaces rápidos"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Quicklinks hinzufügen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ajouter des liens rapides"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aggiungere quicklink"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "クイックリンクを追加"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "添加快捷链接"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Adicionar links rápidos"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Adicionar ligações rápidas"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "빠른 링크 추가"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Snelkoppelingen toevoegen"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dodawanie szybkich linków"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Добавлять быстрые ссылки"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Додавати швидкі посилання"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Hızlı bağlantı ekleme"
+          }
+        }
+      }
+    },
+    "Add snippets": {
+      "comment": "Settings › AI › Connected Apps write permission",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Añadir fragmentos"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Snippets hinzufügen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ajouter des extraits"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aggiungere snippet"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "スニペットを追加"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "添加片段"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Adicionar snippets"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Adicionar excertos"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "스니펫 추가"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Fragmenten toevoegen"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dodawanie fragmentów"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Добавлять фрагменты"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Додавати фрагменти"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Parçacık ekleme"
+          }
+        }
+      }
+    },
+    "Add this as a stdio MCP server in the app’s settings, and rename other-app.": {
+      "comment": "Settings › AI › Connected Apps setup instructions; other-app is not translated",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Añade esto como servidor MCP de tipo stdio en los ajustes de la app y cambia el nombre other-app."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Füge dies in den Einstellungen der App als stdio-MCP-Server hinzu und benenne other-app um."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ajoutez ceci comme serveur MCP stdio dans les réglages de l’app, et renommez other-app."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aggiungilo come server MCP stdio nelle impostazioni dell’app e rinomina other-app."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "アプリの設定でこれをstdio MCPサーバとして追加し、other-appの名前を変更してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "在该 App 的设置中将其添加为 stdio MCP 服务器，并重命名 other-app。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Adicione isto como servidor MCP stdio nos ajustes do app e renomeie other-app."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Adicione isto como servidor MCP stdio nas definições da app e mude o nome other-app."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "앱 설정에서 이것을 stdio MCP 서버로 추가하고 other-app의 이름을 바꾸세요."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Voeg dit toe als stdio-MCP-server in de instellingen van de app en wijzig de naam other-app."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dodaj to jako serwer MCP stdio w ustawieniach aplikacji i zmień nazwę other-app."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Добавьте это как MCP-сервер stdio в настройках приложения и переименуйте other-app."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Додайте це як MCP-сервер stdio у налаштуваннях програми та перейменуйте other-app."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bunu uygulamanın ayarlarında stdio MCP sunucusu olarak ekleyin ve other-app adını değiştirin."
+          }
+        }
+      }
+    },
+    "Add this to claude_desktop_config.json, then restart Claude.": {
+      "comment": "Settings › AI › Connected Apps setup instructions; the file name is not translated",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Añade esto a claude_desktop_config.json y reinicia Claude."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Füge dies zu claude_desktop_config.json hinzu und starte Claude neu."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ajoutez ceci à claude_desktop_config.json, puis redémarrez Claude."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aggiungilo a claude_desktop_config.json, poi riavvia Claude."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "これをclaude_desktop_config.jsonに追加して、Claudeを再起動してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "将其添加到 claude_desktop_config.json，然后重新启动 Claude。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Adicione isto a claude_desktop_config.json e reinicie o Claude."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Adicione isto a claude_desktop_config.json e reinicie o Claude."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "이것을 claude_desktop_config.json에 추가한 다음 Claude를 다시 시작하세요."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Voeg dit toe aan claude_desktop_config.json en start Claude opnieuw."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dodaj to do claude_desktop_config.json, a następnie uruchom ponownie Claude."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Добавьте это в claude_desktop_config.json, затем перезапустите Claude."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Додайте це в claude_desktop_config.json, потім перезапустіть Claude."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bunu claude_desktop_config.json dosyasına ekleyin, sonra Claude’u yeniden başlatın."
+          }
+        }
+      }
+    },
+    "Add this to ~/.codex/config.toml.": {
+      "comment": "Settings › AI › Connected Apps setup instructions; the path is not translated",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Añade esto a ~/.codex/config.toml."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Füge dies zu ~/.codex/config.toml hinzu."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ajoutez ceci à ~/.codex/config.toml."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aggiungilo a ~/.codex/config.toml."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "これを~/.codex/config.tomlに追加してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "将其添加到 ~/.codex/config.toml。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Adicione isto a ~/.codex/config.toml."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Adicione isto a ~/.codex/config.toml."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "이것을 ~/.codex/config.toml에 추가하세요."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Voeg dit toe aan ~/.codex/config.toml."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dodaj to do ~/.codex/config.toml."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Добавьте это в ~/.codex/config.toml."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Додайте це в ~/.codex/config.toml."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bunu ~/.codex/config.toml dosyasına ekleyin."
+          }
+        }
+      }
+    },
+    "Add this to ~/.cursor/mcp.json.": {
+      "comment": "Settings › AI › Connected Apps setup instructions; the path is not translated",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Añade esto a ~/.cursor/mcp.json."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Füge dies zu ~/.cursor/mcp.json hinzu."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ajoutez ceci à ~/.cursor/mcp.json."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aggiungilo a ~/.cursor/mcp.json."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "これを~/.cursor/mcp.jsonに追加してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "将其添加到 ~/.cursor/mcp.json。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Adicione isto a ~/.cursor/mcp.json."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Adicione isto a ~/.cursor/mcp.json."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "이것을 ~/.cursor/mcp.json에 추가하세요."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Voeg dit toe aan ~/.cursor/mcp.json."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dodaj to do ~/.cursor/mcp.json."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Добавьте это в ~/.cursor/mcp.json."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Додайте це в ~/.cursor/mcp.json."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bunu ~/.cursor/mcp.json dosyasına ekleyin."
           }
         }
       }
@@ -12504,6 +13127,95 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "允许%@联网？"
+          }
+        }
+      }
+    },
+    "Allow Again": {
+      "comment": "Lets a disconnected AI app use Volant again",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Permitir de nuevo"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Wieder erlauben"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Autoriser à nouveau"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Consenti di nuovo"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "再度許可"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "再次允许"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Permitir novamente"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Permitir novamente"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "다시 허용"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Weer toestaan"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Zezwól ponownie"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Разрешить снова"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Дозволити знову"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Yeniden İzin Ver"
           }
         }
       }
@@ -15793,6 +16505,95 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "App"
+          }
+        }
+      }
+    },
+    "Apps such as Claude, Codex and Cursor can search your notes, snippets and quicklinks, calculate, and check Breaks and Focus. It all stays on this Mac.": {
+      "comment": "Settings › AI › Connected Apps switch description",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apps como Claude, Codex y Cursor pueden buscar en tus notas, fragmentos y enlaces rápidos, hacer cálculos y consultar Pausas y Concentración. Todo se queda en este Mac."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apps wie Claude, Codex und Cursor können deine Notizen, Snippets und Quicklinks durchsuchen, rechnen und Pausen und Fokus abfragen. Alles bleibt auf diesem Mac."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Des apps comme Claude, Codex et Cursor peuvent chercher dans vos notes, extraits et liens rapides, calculer, et consulter Pauses et Concentration. Tout reste sur ce Mac."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "App come Claude, Codex e Cursor possono cercare nelle tue note, snippet e quicklink, fare calcoli e controllare Pause e Focus. Tutto resta su questo Mac."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Claude、Codex、Cursorなどのアプリが、メモ、スニペット、クイックリンクを検索し、計算し、休憩と集中モードを確認できます。すべてこのMacの中で完結します。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Claude、Codex 和 Cursor 等 App 可以搜索你的笔记、片段和快捷链接，进行计算，并查看休息和专注状态。所有内容都留在这台 Mac 上。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apps como Claude, Codex e Cursor podem buscar suas notas, snippets e links rápidos, calcular e consultar Pausas e Foco. Tudo fica neste Mac."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apps como Claude, Codex e Cursor podem pesquisar as suas notas, excertos e ligações rápidas, calcular e consultar Pausas e Foco. Tudo fica neste Mac."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Claude, Codex, Cursor 같은 앱이 메모, 스니펫, 빠른 링크를 검색하고, 계산하고, 휴식과 집중 상태를 확인할 수 있습니다. 모두 이 Mac 안에서만 이루어집니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apps zoals Claude, Codex en Cursor kunnen je notities, fragmenten en snelkoppelingen doorzoeken, rekenen, en Pauzes en Focus bekijken. Alles blijft op deze Mac."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Aplikacje takie jak Claude, Codex i Cursor mogą przeszukiwać notatki, fragmenty i szybkie linki, liczyć oraz sprawdzać Przerwy i Skupienie. Wszystko zostaje na tym Macu."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Такие приложения, как Claude, Codex и Cursor, могут искать в заметках, фрагментах и быстрых ссылках, считать и проверять Перерывы и Фокус. Всё остаётся на этом Mac."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Такі програми, як Claude, Codex і Cursor, можуть шукати в нотатках, фрагментах і швидких посиланнях, рахувати й перевіряти Перерви та Фокус. Усе залишається на цьому Mac."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Claude, Codex ve Cursor gibi uygulamalar notlarınızda, parçacıklarınızda ve hızlı bağlantılarınızda arama yapabilir, hesaplayabilir, Molalar ve Odak durumunu görebilir. Her şey bu Mac’te kalır."
           }
         }
       }
@@ -27736,6 +28537,95 @@
         }
       }
     },
+    "Connect an app": {
+      "comment": "Settings › AI › Connected Apps: choose which AI app to set up",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Conectar una app"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "App verbinden"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Connecter une app"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Collega un’app"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "アプリを接続"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "连接 App"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Conectar um app"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ligar uma app"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "앱 연결"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Een app verbinden"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Połącz aplikację"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Подключить приложение"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Підключити програму"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Uygulama bağla"
+          }
+        }
+      }
+    },
     "Connect to Local and enabled machines saved in Herdr.": {
       "localizations": {
         "de": {
@@ -27909,6 +28799,95 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "已连接"
+          }
+        }
+      }
+    },
+    "Connected Apps": {
+      "comment": "Settings › AI section header for the MCP server",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apps conectadas"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Verbundene Apps"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apps connectées"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "App collegate"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "接続されたアプリ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "已连接的 App"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apps conectados"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apps ligadas"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "연결된 앱"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Verbonden apps"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Połączone aplikacje"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Подключённые приложения"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Підключені програми"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bağlı Uygulamalar"
           }
         }
       }
@@ -29968,7 +30947,7 @@
       }
     },
     "Copy": {
-      "comment": "Edit menu item",
+      "comment": "Copies the Connected Apps setup text\nEdit menu item",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -37848,6 +38827,95 @@
         }
       }
     },
+    "Create and add to notes": {
+      "comment": "Settings › AI › Connected Apps write permission",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Crear notas y añadir texto"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Notizen erstellen und ergänzen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Créer des notes et y ajouter du texte"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Creare note e aggiungervi testo"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "メモの作成と追記"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "创建和补充笔记"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Criar notas e adicionar a elas"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Criar notas e acrescentar-lhes texto"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "메모 만들기 및 추가"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Notities maken en aanvullen"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tworzenie i uzupełnianie notatek"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Создавать и дополнять заметки"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Створювати й доповнювати нотатки"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Not oluşturma ve not ekleme"
+          }
+        }
+      }
+    },
     "Crypto prices": {
       "localizations": {
         "de": {
@@ -41041,6 +42109,96 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "断开连接"
+          }
+        }
+      },
+      "comment": "Stops an AI app from using Volant"
+    },
+    "Disconnected": {
+      "comment": "Settings › AI › Connected Apps: an app the owner disconnected",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Desconectada"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Getrennt"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Déconnectée"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Scollegata"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "接続解除済み"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "已断开连接"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Desconectado"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Desligada"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "연결 해제됨"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Verbinding verbroken"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rozłączona"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Отключено"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Відключено"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bağlantı kesildi"
           }
         }
       }
@@ -55923,6 +57081,95 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "已重置学习的排序。"
+          }
+        }
+      }
+    },
+    "Let AI apps use Volant": {
+      "comment": "Settings › AI › Connected Apps switch",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Permitir que las apps de IA usen Volant"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "KI-Apps Volant verwenden lassen"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Autoriser les apps d’IA à utiliser Volant"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Consenti alle app di IA di usare Volant"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "AIアプリにVolantの使用を許可"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "允许 AI App 使用 Volant"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Permitir que apps de IA usem o Volant"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Permitir que apps de IA usem o Volant"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "AI 앱이 Volant를 사용하도록 허용"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "AI-apps Volant laten gebruiken"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pozwól aplikacjom AI korzystać z Volant"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Разрешить приложениям ИИ использовать Volant"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Дозволити програмам ШІ використовувати Volant"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Yapay zekâ uygulamalarının Volant’ı kullanmasına izin ver"
           }
         }
       }
@@ -71133,6 +72380,95 @@
         }
       }
     },
+    "Other App": {
+      "comment": "Settings › AI › Connected Apps: an AI app not listed",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Otra app"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Andere App"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Autre app"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Altra app"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "その他のアプリ"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "其他 App"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Outro app"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Outra app"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "기타 앱"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Andere app"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Inna aplikacja"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Другое приложение"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Інша програма"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Diğer Uygulama"
+          }
+        }
+      }
+    },
     "Other Processes": {
       "comment": "Servers section: other apps of the user's listening on a port",
       "localizations": {
@@ -80609,6 +81945,95 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "运行快捷指令"
+          }
+        }
+      }
+    },
+    "Run this in Terminal.": {
+      "comment": "Settings › AI › Connected Apps setup instructions",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ejecuta esto en Terminal."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Führe dies im Terminal aus."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Exécutez ceci dans Terminal."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Eseguilo nel Terminale."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "これをターミナルで実行してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "在“终端”中运行此命令。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Execute isto no Terminal."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Execute isto no Terminal."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "터미널에서 실행하세요."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Voer dit uit in Terminal."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Uruchom to w Terminalu."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Выполните это в Терминале."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Виконайте це в Терміналі."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bunu Terminal’de çalıştırın."
           }
         }
       }
@@ -106159,6 +107584,95 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Volant mola programını kaydedemedi; yeniden başlatmanın ardından sayım baştan başlayacak."
+          }
+        }
+      }
+    },
+    "Volant couldn’t save this change because the configuration changed. Try again.": {
+      "comment": "Settings › AI › Connected Apps save error",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant no pudo guardar este cambio porque la configuración cambió. Inténtalo de nuevo."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant konnte diese Änderung nicht sichern, weil sich die Konfiguration geändert hat. Versuche es erneut."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant n’a pas pu enregistrer ce changement, car la configuration a changé. Réessayez."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant non è riuscito a salvare questa modifica perché la configurazione è cambiata. Riprova."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "設定が変更されたため、Volantはこの変更を保存できませんでした。もう一度試してください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "由于配置已更改，Volant 无法保存此更改。请重试。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Volant não conseguiu salvar esta alteração porque a configuração mudou. Tente novamente."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O Volant não conseguiu guardar esta alteração porque a configuração mudou. Tente novamente."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "설정이 변경되어 Volant가 이 변경 사항을 저장하지 못했습니다. 다시 시도하세요."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant kon deze wijziging niet bewaren omdat de configuratie is gewijzigd. Probeer het opnieuw."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant nie mógł zapisać tej zmiany, ponieważ konfiguracja się zmieniła. Spróbuj ponownie."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant не удалось сохранить это изменение, так как конфигурация изменилась. Попробуйте ещё раз."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant не вдалося зберегти цю зміну, бо конфігурація змінилася. Спробуйте ще раз."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Yapılandırma değiştiği için Volant bu değişikliği kaydedemedi. Yeniden deneyin."
           }
         }
       }

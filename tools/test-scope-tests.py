@@ -37,7 +37,7 @@ class ScopeTests(unittest.TestCase):
         self.assertEqual(scope.classify(["docs/releases/0.3.3.md"]), {"native": True, "ui": False})
 
     def test_every_helper_requires_native_checks(self):
-        for path in ["VolantRatesHost/main.swift", "VolantFetchHost/main.swift", "VolantAgentHost/main.swift", "Integrations/acp/package.json"]:
+        for path in ["VolantMCPBridge/main.swift", "VolantRatesHost/main.swift", "VolantFetchHost/main.swift", "VolantAgentHost/main.swift", "Integrations/acp/package.json"]:
             self.assertTrue(scope.classify([path])["native"], path)
 
     def test_tools_the_ui_job_never_runs_do_not_trigger_it(self):

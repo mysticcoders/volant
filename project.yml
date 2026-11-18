@@ -98,6 +98,11 @@ targets:
         embed: true
       - target: VolantInputHost
         embed: true
+      # The MCP bridge AI apps start (docs/mcp-server-design.md), as Contents/MacOS/volant-mcp.
+      - target: VolantMCPBridge
+        embed: true
+        copy:
+          destination: executables
     # Debug builds are "Volant Dev" with their own bundle ID, so macOS keeps their Accessibility,
     # Microphone and Location grants, sandbox container, Keychain items and iCloud store apart from
     # the installed app. A same-ID build with a different signature leaves the installed app's
@@ -305,6 +310,30 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.InputHost
         GENERATE_INFOPLIST_FILE: NO
         ENABLE_APP_SANDBOX: NO
+  # volant-mcp: the stdio MCP server AI apps start. It only relays bytes to the running app over a
+  # Unix socket in the shared app group container; the app checks its signature (identifier
+  # com.mysticcoders.volant.mcp, our team) before reading anything. Sandboxed, with only the app group.
+  VolantMCPBridge:
+    type: tool
+    platform: macOS
+    sources:
+      - path: VolantMCPBridge
+    dependencies:
+      - package: VolantCore
+    entitlements:
+      path: VolantMCPBridge/VolantMCPBridge.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.application-groups:
+          - REMBT6JY4N.com.mysticcoders.volant
+    settings:
+      base:
+        PRODUCT_NAME: volant-mcp
+        PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.mcp
+        # A sandboxed command-line tool needs its Info.plist in the binary, or it traps at launch.
+        GENERATE_INFOPLIST_FILE: YES
+        CREATE_INFOPLIST_SECTION_IN_BINARY: YES
+        SKIP_INSTALL: YES
   VolantTests:
     type: bundle.unit-test
     platform: macOS

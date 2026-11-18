@@ -397,6 +397,31 @@ if CommandLine.arguments.contains("--render") {
         }
         try! Preferences.updateBoolean("searchMenuItems", value: false, at: configURL)
         controller.refresh(try! JSONDecoder().decode(Preferences.self, from: Data(contentsOf: configURL)), apps: apps)
+        // Connected Apps, turned on, with fictional connected apps (one disconnected). The AI page is wider
+        // than this window, so the section is drawn on its own, in Settings' form style. Nothing listens:
+        // the preview has no MCP listener.
+        let mcpOff = try! JSONDecoder().decode(Preferences.self, from: Data(contentsOf: configURL)).mcpServer
+        let mcpOn = MCPPreferences(enabled: true, writesNotes: true, knownClients: ["claude-code", "cursor"], disconnectedClients: ["cursor"])
+        try! Preferences.updateMCPServer(mcpOn, expected: mcpOff, at: configURL)
+        for theme in ["light", "dark"] {
+            let section = NSWindow(contentRect: NSRect(x: 100, y: 100, width: 620, height: 640), styleMask: [.titled], backing: .buffered, defer: false)
+            app.appearance = NSAppearance(named: theme == "dark" ? .darkAqua : .aqua)
+            section.appearance = app.appearance
+            section.contentView = NSHostingView(rootView: ThemedRoot(paletteText: false) {
+                Form { MCPSettingsSection(configURL: configURL, onChange: {}) }.formStyle(.settings)
+                    .background(Color(nsColor: .windowBackgroundColor))
+            })
+            section.orderFront(nil)
+            RunLoop.main.run(until: Date().addingTimeInterval(0.6))
+            let view = section.contentView!
+            view.layoutSubtreeIfNeeded()
+            let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
+            view.cacheDisplay(in: view.bounds, to: rep)
+            try! rep.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent(theme + "-AI-connected-apps.png"))
+            section.orderOut(nil)
+            print("Rendered \(theme) AI connected apps")
+        }
+        try! Preferences.updateMCPServer(mcpOff, expected: mcpOn, at: configURL)
         for (colorTheme, mode) in [("volant", Appearance.Theme.light), ("catppuccin-mocha", .dark), ("rose-pine-dawn", .light)] {
             ThemeStore.shared.apply(Appearance(theme: mode, colorTheme: colorTheme))
             controller.state.section = .appearance

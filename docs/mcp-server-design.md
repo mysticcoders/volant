@@ -1,7 +1,7 @@
 # Volant as an MCP server
 
-Draft, November 18, 2026. The owner asked how Raycast 2.13 lets AI apps use Raycast, and whether Volant
-can do the same. This is the design and the transport spike; nothing is built yet.
+November 18, 2026. The owner asked how Raycast 2.13 lets AI apps use Raycast, and whether Volant can do
+the same. This is the design, the transport spike, and what phase 1 built (see "Phase 1 as built").
 
 ## What Raycast shipped
 
@@ -84,20 +84,47 @@ privacy grants may be broader than a typical app's, but the design must assume a
 
 Recommendation: option 1. Option 2 stays the fallback if the signed release app can't hold the app group.
 
+## Protocol
+
+MCP changed shape in revision 2026-07-28 ([spec](https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning)).
+Revisions up to 2025-11-25 ("legacy") open with an `initialize` handshake; 2026-07-28 ("modern") has
+none: every request carries `_meta` with `io.modelcontextprotocol/protocolVersion` and
+`io.modelcontextprotocol/clientCapabilities`, servers must answer `server/discover`, and every result
+carries `resultType`. AI apps in use today may speak either, so Volant is a dual-era server, which the
+spec allows on one stdio connection:
+
+- A request whose `_meta` names a modern version is served statelessly under 2026-07-28. One that names
+  an unknown version gets `UnsupportedProtocolVersionError` (`-32022`) listing the supported versions.
+  One missing a required `_meta` field gets `-32602`.
+- `initialize` selects legacy semantics for that connection: the reply names 2025-11-25 (the newest
+  legacy revision) unless the client asked for another legacy revision Volant also speaks, and
+  `notifications/initialized` is accepted.
+- Methods: `server/discover`, `ping`, `tools/list`, `tools/call`, and `initialize` with
+  `notifications/initialized`. Unknown methods get `-32601`. Unknown tools get `-32602`; a tool's own
+  failure is a result with `isError: true`, so the model can correct itself.
+- Framing is the stdio binding's: one JSON-RPC message per line, no embedded newlines, UTF-8. The
+  bridge writes nothing else to stdout; the socket uses the same framing, as the spec recommends for
+  custom transports. Lines over 1 MB are refused.
+- `tools/list` is deterministic, tools without parameters use
+  `{"type": "object", "additionalProperties": false}`, and results that return data also return it as
+  `structuredContent` with the same JSON in a text block.
+
 ## Clients and setup
 
-- **Settings › Connected Apps** (or a section in AI): one switch, off by default, per Mac, never in
-  `SettingsSync.keys`. Below it, a capability list (the tiers below), and one row per connected app with
-  Revoke.
+- **Settings › AI › Connected Apps:** one switch, off by default, per Mac, never in
+  `SettingsSync.keys`. Turning it on shows the capability list (the tiers below) with clipboard history
+  as its own unchecked choice to approve. Below it, one row per connected app with Revoke.
 - **Connect App** shows the configuration to copy, because the sandbox can't write other apps' files:
   `claude mcp add volant -- /Applications/Volant.app/Contents/Helpers/volant-mcp --client claude-code`
   for Claude Code and Codex, and the JSON entry for Claude Desktop, Cursor and others.
-- **Per-app identity.** Each configuration names its client (`--client`), and the app records a token for
-  it the first time that client connects, shown in Settings. Revoke removes it and refuses that client.
-  A local process can read another app's configuration, so this is for attribution and revocation, not
-  a security boundary; the peer signature check is the boundary.
-- **Volant not running.** The bridge answers `initialize` with an error saying Volant isn't running.
-  Launching Volant from the bridge is an open question for the owner.
+- **Per-app identity.** Each configuration names its client (`--client`), and the app records the name
+  the first time that client connects, shown in Settings with Disconnect. Raycast gives each app a
+  token because its HTTP port is open to any local process; here the peer signature check is the
+  boundary, and any local process could read another app's token from its configuration anyway, so
+  names are for attribution and disconnection only.
+- **Volant not running.** The bridge launches Volant (by its bundle identifier, the copy it ships
+  inside) and waits briefly for the socket. If Volant doesn't come up, or the server is off in Settings,
+  it answers `initialize` with an error that says which.
 
 ## Tools
 
@@ -108,7 +135,8 @@ response, and errors say what to do next. Arguments and results are never logged
 | Tier | Tools | Default |
 | --- | --- | --- |
 | Read | calculate (units, time zones, dates); search notes, read a note; list snippets and quicklinks; break and Focus status, break history; app search | on with the server |
-| Write | create a note, append to a note; add or edit a snippet or quicklink; start, pause or end Focus; take, skip or pause a break | off, per capability |
+| Write: notes, snippets, quicklinks | create a note, append to a note; add a snippet or quicklink | off, one switch each (phase 1) |
+| Write: Focus and Breaks | start, pause or end Focus; take, skip or pause a break | off, per capability (phase 2) |
 | Sensitive | clipboard history search (excluded items never returned); home file search; currency conversion (rates helper); weather for a named place (weather helper); listening servers | off, per capability, and each call asks in Volant |
 | Never | typing at the cursor, menu presses, anything through Accessibility; Rex or Herdr pane input; Wi-Fi, Bluetooth and system actions; AI keys; Location; extension installs or approvals | not offered |
 
@@ -124,12 +152,49 @@ is shared.
 `NotesStore` with its dirty-write rules, snippets and quicklinks through the narrow, stale-checked config
 patches, Focus and Breaks through their controllers. No tool gets a second write path.
 
+## Phase 1 as built
+
+- **VolantCore `MCP/`:** `MCPSession` (the dual-era protocol for one connection, a 1 MB line limit, 30
+  tool calls per 10 seconds per connection, errors as the spec defines them, refusals coded -31001 off
+  and -31002 disconnected), `MCPValue` (JSON that keeps integer ids integers; the extensions'
+  `JSONValue` stores every number as a double), `MCPPreferences` (`mcpServer` in config.json), and
+  `MCPEndpoint` (app group, bridge identifier, socket names `mcp` and `mcp-dev`, client names).
+- **`VolantMCPBridge`:** `Contents/MacOS/volant-mcp`, sandboxed with only the app group. It launches
+  Volant hidden when the socket isn't there and waits up to 10 seconds; if Volant never answers, it
+  answers each request with an error that says to turn on Connected Apps. Only MCP lines reach stdout.
+- **`Volant/MCP/MCPListener`:** listens only while the switch is on, removes the socket when turned
+  off, keeps the socket mode 0600, admits at most 8 connections, and serves only a peer whose audit
+  token resolves to `com.mysticcoders.volant.mcp` signed by the app's own team. An unsigned build serves
+  no one.
+- **`Volant/MCP/MCPToolbox`:** `calculate`, `search_notes`, `read_note` (100,000 characters per call
+  with `nextOffset`), `list_snippets`, `list_quicklinks`, `break_status`, `focus_status`; with their
+  switches, `create_note`, `append_to_note`, `add_snippet`, `add_quicklink`. Snippets and quicklinks can
+  only be added: there is no existing edit path, and MCP gets no second one. Every write tool is
+  `destructiveHint: false`.
+- **Settings › AI › Connected Apps:** the switch, the three write switches, Connect App with the text
+  for Claude Code, Claude Desktop, Codex, Cursor and others, and connected apps with Disconnect and
+  Allow Again.
+
+Verified: `MCPSessionTests` and `MCPPreferencesTests` (VolantCore), `MCPListenerTests` (a real socket
+with an injected peer check: the bridge is served, other teams, other identifiers, unsigned peers and
+an unsigned Volant are refused, bad handshakes close, disconnected apps get -31002, turning off
+removes the socket) and `MCPToolboxTests` (each tool against a temporary notes folder and config).
+A Developer ID archive and export signs the app and `volant-mcp` with the hardened runtime and the app
+group, under the existing profile, with no network entitlements.
+
+Not verified yet: a real AI app through the bridge against a running signed Volant. Running the bridge
+from the sandboxed unit-test host made macOS ask the owner for container consent (a child of a
+sandboxed process inherits its container), so that test was removed; real use launches the bridge
+from an unsandboxed AI app, as the spike did without any prompt. That check needs a window the owner
+agrees to.
+
 ## Phases
 
-1. **Transport and read tools.** The app group entitlement and its signed-release check, `volant-mcp`,
-   the socket listener with the peer signature check, MCP `initialize`, `tools/list` and `tools/call` in
-   VolantCore, the read tier, and Settings with the switch, Connect App and Revoke.
-2. **Writes and resources.** The write tier and notes, snippets and quicklinks as resources.
+1. **Transport, read tools, and note, snippet and quicklink writes.** The app group entitlement and its
+   signed-release check, `volant-mcp`, the socket listener with the peer signature check, the dual-era
+   protocol in VolantCore, the read tier, the note, snippet and quicklink write switches (the owner asked
+   for these first, as Raycast offers them), and Settings with the switch, Connect App and Revoke.
+2. **Focus and Breaks writes, and resources.** Notes, snippets and quicklinks as MCP resources.
 3. **Sensitive tier.** The Volant approval panel and the sensitive tools.
 
 ## Tests and evidence
@@ -141,8 +206,11 @@ patches, Focus and Breaks through their controllers. No tool gets a second write
 - Signed release app: the app group entitlement under the Developer ID profile, and a real session from
   Claude Code and Claude Desktop. Fixtures don't establish either.
 
-## Open questions for the owner
+## Owner decisions, November 18, 2026
 
-- Should the bridge launch Volant when it isn't running?
-- Is the clipboard worth offering at all? It is the most sensitive thing Volant holds.
-- Settings placement: its own section, or inside AI.
+- **Settings placement:** inside Settings › AI, not a section of its own.
+- **Clipboard history:** offered, but only as a choice shown and approved when the owner turns the
+  server on, and off unless approved there. It stays in the sensitive tier, so each call also asks in
+  Volant.
+- **Volant not running:** the bridge launches Volant and waits for its socket, instead of returning an
+  error.

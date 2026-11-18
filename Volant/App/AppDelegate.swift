@@ -97,6 +97,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var focusNotch = FocusNotchPanel(controller: focus, actions: focusActions, snoozeMinutes: { [weak self] in self?.config.focus.snoozeMinutes ?? 3 })
     private lazy var breaks = BreakController(preferences: config.breaks)
     private lazy var breakPresenter = BreakPresenter(controller: breaks)
+    /// The MCP server AI apps reach through volant-mcp; listens only while Connected Apps is on.
+    private lazy var mcp: MCPListener = {
+        let listener = MCPListener()
+        let toolbox = MCPToolbox(notes: notesStore, configURL: Preferences.configURL, breakHistoryURL: BreakHistoryStore.defaultURL,
+                                 breakStatus: { [weak self] in (self?.config.breaks.enabled ?? false, self?.breaks.statusText() ?? "") },
+                                 focusStatus: { [weak self] in
+                                     guard let self, let session = self.focus.session else { return nil }
+                                     return (session.setup.goal, session.isPaused, self.focus.timeText())
+                                 },
+                                 configChanged: { [weak self] in self?.reloadConfig() })
+        listener.makeTools = { toolbox.tools($0) }
+        listener.onNewClient = { [weak self] client in self?.recordMCPClient(client) }
+        return listener
+    }()
     private lazy var panel: LauncherPanel = LauncherPanel(index: index, clipboard: clipboardStore, notes: notesStore, config: config, focus: focus, breaks: breaks) { [weak self] action in
         switch action {
         case .settings: self?.showSettings()
@@ -222,6 +236,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         installStatusItem()
         startFocus()
         startBreaks()
+        mcp.apply(config.mcpServer)
         indexObserver = index.$apps.sink { [weak self] apps in self?.settingsPanel.state.apps = apps }
         index.start()
         clipboardMonitor.start()
@@ -307,6 +322,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         breaks.stop()
+        mcp.stop()
         breakPresenter.close()
         panel.model.caffeinate.stop()
         panel.model.restoreDictationVolume()
@@ -340,6 +356,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         focusStatusItem.refresh()
         focusNotch.refresh()
         focusReminder.shownElsewhere = { [weak self] in self?.focusNotch.isShowingSession == true }
+    }
+
+    /// Remembers an AI app's name the first time its bridge connects, so Settings can list it with
+    /// Disconnect. The patch is checked against the file as it is now, so it never overwrites an edit.
+    private func recordMCPClient(_ client: String) {
+        guard let data = try? Data(contentsOf: Preferences.configURL),
+              let current = try? JSONDecoder().decode(Preferences.self, from: data).mcpServer,
+              !current.knownClients.contains(client) else { return }
+        var updated = current
+        updated.knownClients.append(client)
+        guard (try? Preferences.updateMCPServer(updated, expected: current)) != nil else { return }
+        reloadConfig()
     }
 
     /// Starts the Break schedule and its windows. A break pauses a running Focus session and resumes
@@ -581,6 +609,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         config = loaded
         breaks.apply(config.breaks)
+        mcp.apply(config.mcpServer)
         if config.dictationOutput == .copy, !config.searchMenuItems, !panel.model.dictationTypesAtCursor { inputHost.disconnect() }
         NSApp.setActivationPolicy(config.showInDock ? .regular : .accessory)
         applyTheme()
