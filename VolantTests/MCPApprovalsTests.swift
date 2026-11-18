@@ -78,6 +78,13 @@ final class MCPApprovalsTests: XCTestCase {
         XCTAssertTrue(secondAllowed)
     }
 
+    func testKnownAppsShowTheirProductNames() {
+        XCTAssertEqual(MCPClientSetup.displayName("claude-code"), "Claude Code")
+        XCTAssertEqual(MCPClientSetup.displayName("cursor"), "Cursor")
+        XCTAssertEqual(MCPClientSetup.displayName("other-app"), "other-app", "The placeholder name isn't dressed up")
+        XCTAssertEqual(MCPClientSetup.displayName("zed"), "zed")
+    }
+
     func testAnUnansweredPromptIsDenied() async {
         let approvals = approvals(timeout: 0.1)
         let request = start(approvals)

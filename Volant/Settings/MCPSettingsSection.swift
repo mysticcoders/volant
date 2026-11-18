@@ -71,7 +71,7 @@ struct MCPSettingsSection: View {
                 ForEach(server.knownClients, id: \.self) { name in
                     let disconnected = server.disconnectedClients.contains(name)
                     HStack {
-                        Text(verbatim: name)
+                        Text(verbatim: MCPClientSetup.displayName(name))
                         if disconnected {
                             Text("Disconnected", comment: "Settings › AI › Connected Apps: an app the owner disconnected").foregroundStyle(.secondary)
                         }
@@ -144,6 +144,12 @@ enum MCPClientSetup: String, CaseIterable, Identifiable {
         case .cursor: return "Cursor"
         case .other: return String(localized: "Other App", comment: "Settings › AI › Connected Apps: an AI app not listed")
         }
+    }
+
+    /// A connected client's name as Settings and the approval prompt show it: the product name for the
+    /// apps Volant offers setup for, the bridge's client name otherwise.
+    static func displayName(_ client: String) -> String {
+        allCases.first { $0 != .other && $0.clientName == client }?.title ?? client
     }
 
     /// The client name the bridge reports, shown in Settings once it connects.

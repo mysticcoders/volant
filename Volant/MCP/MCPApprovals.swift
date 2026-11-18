@@ -132,7 +132,7 @@ struct MCPApprovalView: View {
             if let request = approvals.current {
                 HStack(spacing: 8) {
                     Image(systemName: "hand.raised").foregroundStyle(Color.accentColor).accessibilityHidden(true)
-                    Text("\(request.client, format: .verbatim) wants to", comment: "Connected Apps approval prompt title; the value is the AI app's name")
+                    Text("\(MCPClientSetup.displayName(request.client), format: .verbatim) wants to", comment: "Connected Apps approval prompt title; the value is the AI app's name")
                         .font(.headline).lineLimit(1)
                 }
                 Text(verbatim: request.summary).font(.callout).fixedSize(horizontal: false, vertical: true)
