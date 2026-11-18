@@ -196,3 +196,38 @@ final class MCPPreferencesTests: XCTestCase {
         XCTAssertThrowsError(try Preferences.updateMCPServer(MCPPreferences(), expected: loaded.mcpServer, at: url))
     }
 }
+
+final class MCPBridgeReplayTests: XCTestCase {
+    private func line(_ value: MCPValue) -> Data { value.line() }
+
+    func testModernClientsNeedNoReplay() {
+        var replay = MCPBridgeReplay()
+        replay.observe(line(.object(["jsonrpc": .string("2.0"), "id": .int(1), "method": .string("tools/list"),
+                                     "params": .object(["_meta": .object(["io.modelcontextprotocol/protocolVersion": .string("2026-07-28")])])])))
+        XCTAssertEqual(replay.lines(), [])
+    }
+
+    func testLegacyHandshakeIsReplayedUnderTheBridgesIdAndItsReplyDropped() async throws {
+        var replay = MCPBridgeReplay()
+        let params: MCPValue = .object(["protocolVersion": .string("2025-06-18"), "capabilities": .object([:])])
+        replay.observe(line(.object(["jsonrpc": .string("2.0"), "id": .int(0), "method": .string("initialize"), "params": params])))
+        XCTAssertEqual(replay.lines().count, 1, "Before initialized, only initialize is replayed")
+        replay.observe(line(.object(["jsonrpc": .string("2.0"), "method": .string("notifications/initialized")])))
+        let lines = replay.lines()
+        XCTAssertEqual(lines.count, 2)
+        let replayed = try JSONDecoder().decode(MCPValue.self, from: lines[0])
+        XCTAssertEqual(replayed["id"], .string(MCPBridgeReplay.replayID))
+        XCTAssertEqual(replayed["params"], params)
+
+        let session = MCPSession(version: "1", instructions: "", tools: { [] })
+        let replyLine = await session.handle(lines[0])
+        let reply = try XCTUnwrap(replyLine)
+        XCTAssertTrue(MCPBridgeReplay.isReplayReply(reply))
+        let initializedReply = await session.handle(lines[1])
+        XCTAssertNil(initializedReply)
+        let listLine = await session.handle(line(.object(["jsonrpc": .string("2.0"), "id": .int(5), "method": .string("tools/list")])))
+        let list = try XCTUnwrap(listLine)
+        XCTAssertFalse(MCPBridgeReplay.isReplayReply(list))
+        XCTAssertNotNil(try JSONDecoder().decode(MCPValue.self, from: list)["result"], "A fresh session accepts the client's legacy requests after the replay")
+    }
+}

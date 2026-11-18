@@ -161,7 +161,11 @@ patches, Focus and Breaks through their controllers. No tool gets a second write
   `MCPEndpoint` (app group, bridge identifier, socket names `mcp` and `mcp-dev`, client names).
 - **`VolantMCPBridge`:** `Contents/MacOS/volant-mcp`, sandboxed with only the app group. It launches
   Volant hidden when the socket isn't there and waits up to 10 seconds; if Volant never answers, it
-  answers each request with an error that says to turn on Connected Apps. Only MCP lines reach stdout.
+  answers each request with an error that says to turn on Connected Apps. When Volant quits or restarts
+  mid-session it stays running, and the next request relaunches Volant and reconnects, first replaying
+  a legacy client's `initialize` under its own id and dropping the reply (`MCPBridgeReplay`), so the
+  AI app never has to reconnect. A request in flight when Volant quits is lost; the client's timeout
+  covers it. Only MCP lines reach stdout.
 - **`Volant/MCP/MCPListener`:** listens only while the switch is on, removes the socket when turned
   off, keeps the socket mode 0600, admits at most 8 connections, and serves only a peer whose audit
   token resolves to `com.mysticcoders.volant.mcp` signed by the app's own team. An unsigned build serves
@@ -182,11 +186,20 @@ removes the socket) and `MCPToolboxTests` (each tool against a temporary notes f
 A Developer ID archive and export signs the app and `volant-mcp` with the hardened runtime and the app
 group, under the existing profile, with no network entitlements.
 
-Not verified yet: a real AI app through the bridge against a running signed Volant. Running the bridge
-from the sandboxed unit-test host made macOS ask the owner for container consent (a child of a
-sandboxed process inherits its container), so that test was removed; real use launches the bridge
-from an unsandboxed AI app, as the spike did without any prompt. That check needs a window the owner
-agrees to.
+Verified with a real AI app on November 18, 2026, on the owner's Mac, with a signed Volant Dev built
+from main:
+
+- The owner added Volant to Claude Code with the Connect App line; Claude Code listed the tools,
+  created a note ("Rivian R2: Bingo") and found it. Volant Dev was already running.
+- With Volant Dev quit, reconnecting in Claude Code started a new bridge, which launched Volant Dev
+  and answered.
+- Driving the installed bridge from a terminal (unsandboxed, as an AI app is) like a legacy client:
+  `initialize` launched Volant Dev and answered in 1.1 seconds; after Volant Dev was quit mid-session,
+  the next `tools/call` relaunched it and answered in 0.3 seconds, with no stray reply from the
+  replayed handshake.
+- No macOS prompt was reported. Running the bridge from the sandboxed unit-test host had made macOS
+  ask the owner for container consent (a child of a sandboxed process inherits its container), so that
+  test was removed; AI apps aren't sandboxed, and none appeared in real use.
 
 ## Phases
 
