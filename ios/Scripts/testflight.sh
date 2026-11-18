@@ -56,6 +56,9 @@ for path, wants_icloud in [(app, True), (f"{app}/PlugIns/VolantWidgets.appex", F
     if wants_icloud:
         assert ent.get("com.apple.developer.icloud-container-identifiers") == [container], f"{path} lacks {container}"
         assert ent.get("com.apple.developer.icloud-container-environment") == "Production", f"{path} is not on the Production iCloud environment"
+app_ent = entitlements(app)
+assert app_ent.get("aps-environment") == "production", f"{app} lacks production push, which Break Alerts need"
+assert "CloudKit" in app_ent.get("com.apple.developer.icloud-services", []), f"{app} lacks CloudKit, which Break Alerts need"
 print("Signed entitlements check passed")
 import json, re
 actions = json.load(open(f"{app}/Metadata.appintents/extract.actionsdata"))["actions"]
