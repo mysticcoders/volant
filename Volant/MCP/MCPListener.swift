@@ -18,7 +18,8 @@ final class MCPListener {
 
     /// The tools to offer, the current settings, and what to do when a new client connects. Set by
     /// the app; read on the listener's threads.
-    var makeTools: (MCPPreferences) -> [MCPTool] = { _ in [] }
+    /// The tools for one client, so sensitive tools can name it when they ask the owner.
+    var makeTools: (MCPPreferences, String) -> [MCPTool] = { _, _ in [] }
     var makeResources: (MCPPreferences) -> MCPResources? = { _ in nil }
     var onNewClient: (String) -> Void = { _ in }
 
@@ -144,7 +145,7 @@ final class MCPListener {
         if !current().knownClients.contains(client) { DispatchQueue.main.async { [onNewClient] in onNewClient(client) } }
         let session = MCPSession(version: version, instructions: Self.instructions, tools: { [weak self] in
             guard let self else { return [] }
-            return self.makeTools(self.current())
+            return self.makeTools(self.current(), client)
         }, resources: { [weak self] in
             guard let self else { return nil }
             return self.makeResources(self.current())

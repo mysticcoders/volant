@@ -220,6 +220,38 @@ offered while not shared) and `MCPToolboxPhaseTwoTests` (switches, controls thro
 an out-of-range length never reaching Focus, refusals, resource paging, a traversal URI resolving to
 nothing). Real Focus and Breaks behavior is the controllers' own, covered by their tests.
 
+## Phase 3 as built
+
+- **Sensitive tools**, each behind its own switch (`sharesClipboard`, `searchesFiles`, `convertsCurrency`,
+  `checksWeather`), shown as soon as the server is on, so turning it on is where the owner approves
+  clipboard access:
+  - `search_clipboard`: text entries containing the query, newest first, up to 20, each cut to 2,000
+    characters (`truncated` when cut), through `ClipboardStore.recent`; images are never returned, and
+    items Volant doesn't keep are never there.
+  - `search_files`: up to 8 names and paths in the home folder, through the same helper search the
+    launcher uses (`HomeFileSearchClient`), with `HomeFileSearch.term`'s rules; never file contents.
+  - `convert_currency`: `MoneyCalculator` with the cached rates; the query is noted with the rates store
+    as a launcher query would be, which may fetch through the rates helper, and the tool waits up to
+    eight seconds for rates. The result's detail carries the rate source.
+  - `get_weather`: a named place through the weather helper, never the owner's location, with
+    "Weather data from Apple Weather" and the legal URL in every result.
+- **Approval in Volant** (`MCPApprovals`): every sensitive call asks unless the owner chose Always Allow
+  for that app and tool. A non-activating prompt in the top corner names the app and the exact request
+  ("Search your clipboard history for “invoice”") with Deny, Always Allow and Allow Once; no button is a
+  default action, one prompt shows at a time in order, and an unanswered prompt is denied after 60
+  seconds. A denied call returns an error asking the model not to retry, and reads nothing. Input is
+  validated before asking, so the owner is never asked about a request that would fail.
+- **Always Allow** is saved as `client/tool` in `alwaysAllowed`; Ask Again forgets an app's choices, and
+  Disconnect forgets them too.
+
+Verified by `MCPPreferencesTests` (grants decode strictly, disconnect and Ask Again clear them),
+`MCPApprovalsTests` (Allow Once, Always Allow, Deny, no prompt for an always-allowed tool, one prompt at a
+time in order, timeout denies, all with the prompt stubbed so no window opens) and
+`MCPSensitiveToolTests` (switches, the prompt names the app and request, denied calls read nothing,
+invalid input never reaches the owner, truncation, weather attribution). The prompt and Connected Apps
+were rendered in light and dark. Real clipboard, file, rates and weather calls are the existing stores'
+and helpers', covered by their own tests; a real AI app run comes before release.
+
 ## Phases
 
 1. **Transport, read tools, and note, snippet and quicklink writes.** The app group entitlement and its

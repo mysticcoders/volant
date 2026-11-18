@@ -232,6 +232,19 @@ final class MCPPreferencesTests: XCTestCase {
         XCTAssertFalse(SettingsSync.keys.contains("mcpServer"))
     }
 
+    func testAlwaysAllowIsPerClientAndToolAndDisconnectClearsIt() throws {
+        var preferences = try JSONDecoder().decode(MCPPreferences.self, from: Data(#"{"alwaysAllowed":["cursor/search_clipboard","bad","Bad Name/x","cursor/","codex/search_files","cursor/search_clipboard"]}"#.utf8))
+        XCTAssertEqual(preferences.alwaysAllowed, ["cursor/search_clipboard", "codex/search_files"])
+        XCTAssertTrue(preferences.alwaysAllows(client: "cursor", tool: "search_clipboard"))
+        XCTAssertFalse(preferences.alwaysAllows(client: "cursor", tool: "search_files"))
+        XCTAssertFalse(preferences.sharesClipboard, "Sensitive switches are off by default")
+        preferences.disconnect("cursor")
+        XCTAssertEqual(preferences.alwaysAllowed, ["codex/search_files"])
+        XCTAssertEqual(preferences.disconnectedClients, ["cursor"])
+        preferences.askAgain("codex")
+        XCTAssertEqual(preferences.alwaysAllowed, [])
+    }
+
     func testRefusalFollowsTheSwitchAndDisconnectedApps() {
         XCTAssertEqual(MCPPreferences().refusal(for: "cursor"), .serverOff)
         let on = MCPPreferences(enabled: true, disconnectedClients: ["codex"])

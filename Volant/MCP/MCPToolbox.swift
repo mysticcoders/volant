@@ -26,8 +26,15 @@ struct MCPToolbox {
     /// Runs a Focus or Breaks control through its controller; returns why it couldn't, or nil when done.
     var focusControl: @MainActor (FocusControl) -> String? = { _ in "Focus isn't available." }
     var breakControl: @MainActor (BreakControl) -> String? = { _ in "Breaks aren't available." }
+    /// Asks the owner in Volant before a sensitive tool runs; true when allowed.
+    var approve: (_ client: String, _ tool: String, _ summary: String) async -> Bool = { _, _, _ in false }
+    /// The sensitive tools' sources, the same code the launcher uses; nil means unavailable.
+    var clipboard: @MainActor (_ query: String, _ limit: Int) -> [(text: String, copiedAt: Date)]? = { _, _ in nil }
+    var files: (_ term: String) async -> [FileEntry]? = { _ in nil }
+    var currency: (_ query: String) async -> CalculationAnswer? = { _ in nil }
+    var weather: (_ place: String) async -> (report: WeatherReport?, message: String?) = { _ in (nil, nil) }
 
-    func tools(_ preferences: MCPPreferences) -> [MCPTool] {
+    func tools(_ preferences: MCPPreferences, client: String = "") -> [MCPTool] {
         var tools = [calculate, searchNotes, readNote, listSnippets, listQuicklinks, breakStatusTool, focusStatusTool]
         if preferences.writesNotes { tools += [createNote, appendToNote] }
         if preferences.writesSnippets { tools.append(addSnippet) }
@@ -45,7 +52,96 @@ struct MCPToolbox {
                       breakTool("pause_breaks", "Pause breaks for an hour", "Holds Volant's break reminders for an hour.", .pauseHour),
                       breakTool("resume_breaks", "Resume breaks", "Ends a pause of Volant's break reminders.", .resume)]
         }
+        if preferences.sharesClipboard { tools.append(searchClipboard(client)) }
+        if preferences.searchesFiles { tools.append(searchFiles(client)) }
+        if preferences.convertsCurrency { tools.append(convertCurrency(client)) }
+        if preferences.checksWeather { tools.append(checkWeather(client)) }
         return tools
+    }
+
+    /// The text every sensitive tool returns when the owner says no or doesn't answer.
+    static let denied = "The owner didn't allow this in Volant. Don't retry unless they ask you to."
+
+    private func searchClipboard(_ client: String) -> MCPTool {
+        MCPTool(name: "search_clipboard", title: "Search clipboard history",
+                description: "Searches the owner's Volant clipboard history for text containing the query and returns matching entries, newest first, with when each was copied. Volant asks the owner before every search unless they chose Always Allow; items Volant doesn't keep, such as passwords from password managers, are never there.",
+                inputSchema: MCPTool.schema(["query": MCPTool.string("Text to find.", maxLength: 200),
+                                             "limit": MCPTool.integer("How many entries to return.", minimum: 1, maximum: 20)], required: ["query"]),
+                readOnly: true, idempotent: true) { [approve, clipboard] arguments in
+            guard let query = arguments["query"]?.string?.trimmingCharacters(in: .whitespacesAndNewlines), (1...200).contains(query.count) else {
+                return .failure("Give a query of 1 to 200 characters.")
+            }
+            let limit = min(max(arguments["limit"]?.int ?? 10, 1), 20)
+            guard await approve(client, "search_clipboard", String(localized: "Search your clipboard history for “\(query, format: .verbatim)”", comment: "Connected Apps approval prompt: what the AI app asks to do; the value is its search text")) else {
+                return .failure(Self.denied)
+            }
+            guard let found = await MainActor.run(body: { clipboard(query, limit) }) else { return .failure("Volant's clipboard history isn't available right now.") }
+            return .data(.object(["entries": .array(found.map { entry in
+                var fields: [String: MCPValue] = ["text": .string(String(entry.text.prefix(2_000))), "copied": .string(entry.copiedAt.formatted(.iso8601))]
+                if entry.text.count > 2_000 { fields["truncated"] = .bool(true) }
+                return .object(fields)
+            })]))
+        }
+    }
+
+    private func searchFiles(_ client: String) -> MCPTool {
+        MCPTool(name: "search_files", title: "Search file names",
+                description: "Finds files in the owner's home folder whose names contain the term, newest first, and returns up to 8 names and paths. It never reads file contents. Volant asks the owner before every search unless they chose Always Allow.",
+                inputSchema: MCPTool.schema(["term": MCPTool.string("Part of a file name, 3 to 200 characters.", maxLength: 200)], required: ["term"]),
+                readOnly: true, idempotent: true) { [approve, files] arguments in
+            guard let raw = arguments["term"]?.string, let term = HomeFileSearch.term(raw) else {
+                return .failure("Give part of a file name, 3 to 200 characters.")
+            }
+            guard await approve(client, "search_files", String(localized: "Search file names in your home folder for “\(term, format: .verbatim)”", comment: "Connected Apps approval prompt: what the AI app asks to do; the value is its search term")) else {
+                return .failure(Self.denied)
+            }
+            guard let found = await files(term) else { return .failure("Volant's file search isn't available right now.") }
+            return .data(.object(["files": .array(found.map { .object(["name": .string($0.name), "path": .string($0.url.path)]) })]))
+        }
+    }
+
+    private func convertCurrency(_ client: String) -> MCPTool {
+        MCPTool(name: "convert_currency", title: "Convert currency",
+                description: "Volant's currency converter: amounts and arithmetic in currencies and crypto, such as `120 USD in EUR` or `0.5 BTC to USD`. Rates come from the European Central Bank, with ExchangeRate-API for currencies the ECB doesn't publish and CoinGecko for crypto, fetched by Volant's rates helper when they're out of date. Volant asks the owner before every conversion unless they chose Always Allow.",
+                inputSchema: MCPTool.schema(["query": MCPTool.string("The conversion, as you would type it in Volant's launcher.", maxLength: 120)], required: ["query"]),
+                readOnly: true) { [approve, currency] arguments in
+            guard let query = arguments["query"]?.string?.trimmingCharacters(in: .whitespacesAndNewlines), (1...120).contains(query.utf8.count) else {
+                return .failure("Give a conversion of 1 to 120 characters, such as `120 USD in EUR`.")
+            }
+            guard await approve(client, "convert_currency", String(localized: "Convert “\(query, format: .verbatim)”, fetching exchange rates if needed", comment: "Connected Apps approval prompt: what the AI app asks to do; the value is its conversion")) else {
+                return .failure(Self.denied)
+            }
+            guard let answer = await currency(query) else {
+                return .failure("Volant couldn't convert that. Name the currencies by code, such as `120 USD in EUR`, or try again if rates were still loading.")
+            }
+            var fields: [String: MCPValue] = ["input": .string(answer.input), "result": .string(answer.result)]
+            if let detail = answer.resultDetail { fields["detail"] = .string(detail) }
+            return .data(.object(fields))
+        }
+    }
+
+    private func checkWeather(_ client: String) -> MCPTool {
+        MCPTool(name: "get_weather", title: "Check the weather",
+                description: "The current conditions and today's forecast for a named place, from Apple Weather through Volant's weather helper. It never uses the owner's location. Temperatures are Celsius. Show the attribution with the forecast. Volant asks the owner before every request unless they chose Always Allow.",
+                inputSchema: MCPTool.schema(["place": MCPTool.string("A city or place name.", maxLength: WeatherQuery.maximumPlaceLength)], required: ["place"]),
+                readOnly: true) { [approve, weather] arguments in
+            guard let place = arguments["place"]?.string?.trimmingCharacters(in: .whitespacesAndNewlines), WeatherQuery.validPlace(place) else {
+                return .failure("Give a place name of 1 to \(WeatherQuery.maximumPlaceLength) characters.")
+            }
+            guard await approve(client, "get_weather", String(localized: "Check the weather in “\(place, format: .verbatim)”", comment: "Connected Apps approval prompt: what the AI app asks to do; the value is the place")) else {
+                return .failure(Self.denied)
+            }
+            let (report, message) = await weather(place)
+            guard let report else { return .failure(message ?? "Apple Weather didn't answer. Try again in a moment.") }
+            let forecast = report.forecast
+            var fields: [String: MCPValue] = ["place": .string(forecast.place), "attribution": .string("Weather data from Apple Weather")]
+            if let legal = report.legalURL { fields["legalURL"] = .string(legal) }
+            if let condition = forecast.condition { fields["condition"] = .string(condition) }
+            if let value = forecast.temperature { fields["temperatureCelsius"] = .double(value) }
+            if let value = forecast.high { fields["highCelsius"] = .double(value) }
+            if let value = forecast.low { fields["lowCelsius"] = .double(value) }
+            return .data(.object(fields))
+        }
     }
 
     /// Notes, snippets and quicklinks as resources: `volant://snippets`, `volant://quicklinks` and

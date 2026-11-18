@@ -38,6 +38,20 @@ struct MCPSettingsSection: View {
                 Toggle(isOn: binding(\.controlsBreaks)) {
                     Text("Take, skip and pause breaks", comment: "Settings › AI › Connected Apps permission to control Breaks")
                 }
+                Toggle(isOn: binding(\.sharesClipboard)) {
+                    Text("Search clipboard history", comment: "Settings › AI › Connected Apps sensitive permission")
+                    Text("Volant asks you before every search, unless you choose Always Allow for that app.", comment: "Settings › AI › Connected Apps: explains that sensitive permissions ask each time")
+                }
+                .accessibilityIdentifier("settings-mcp-clipboard")
+                Toggle(isOn: binding(\.searchesFiles)) {
+                    Text("Search file names", comment: "Settings › AI › Connected Apps sensitive permission: search names of files in the home folder")
+                }
+                Toggle(isOn: binding(\.convertsCurrency)) {
+                    Text("Convert currency", comment: "Settings › AI › Connected Apps sensitive permission")
+                }
+                Toggle(isOn: binding(\.checksWeather)) {
+                    Text("Check the weather", comment: "Settings › AI › Connected Apps sensitive permission")
+                }
                 Picker(selection: $client) {
                     ForEach(MCPClientSetup.allCases) { Text(verbatim: $0.title).tag($0) }
                 } label: {
@@ -62,9 +76,14 @@ struct MCPSettingsSection: View {
                             Text("Disconnected", comment: "Settings › AI › Connected Apps: an app the owner disconnected").foregroundStyle(.secondary)
                         }
                         Spacer()
+                        if !disconnected, server.alwaysAllowed.contains(where: { $0.hasPrefix(name + "/") }) {
+                            Button(String(localized: "Ask Again", comment: "Forgets an AI app's Always Allow choices, so Volant asks before each sensitive request")) {
+                                update { $0.askAgain(name) }
+                            }
+                        }
                         Button(disconnected ? String(localized: "Allow Again", comment: "Lets a disconnected AI app use Volant again")
                                             : String(localized: "Disconnect", comment: "Stops an AI app from using Volant")) {
-                            update { $0.disconnectedClients = disconnected ? $0.disconnectedClients.filter { $0 != name } : $0.disconnectedClients + [name] }
+                            update { if disconnected { $0.disconnectedClients.removeAll { $0 == name } } else { $0.disconnect(name) } }
                         }
                     }
                 }
