@@ -46,7 +46,7 @@ Fixture launch arguments for simulator review: `-notesDirectory <path>` (fiction
 
 `Scripts/testflight.sh` archives with the Apple Distribution certificate and App Store profiles,
 checks that the app and both extensions are signed for the App Group and the Production iCloud
-environment, and exports `build/testflight/<build>/export/Volant.ipa`. The build number is the time
+environment, that the app carries production push and CloudKit for Break Alerts, and exports `build/testflight/<build>/export/Volant.ipa`. The build number is the time
 (yyyymmddHHMM); the version is `MARKETING_VERSION` in project.yml. With `ASC_KEY_ID` set and the
 key at `~/.appstoreconnect/private_keys/AuthKey_<id>.p8` it uploads, taking the issuer from
 `ASC_ISSUER_ID` or `~/.appstoreconnect/issuer_id`; otherwise upload the .ipa with Transporter.

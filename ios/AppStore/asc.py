@@ -262,10 +262,14 @@ BETA_DESCRIPTION = ("Volant for iPhone and iPad: plain Markdown notes in iCloud,
                     "Shortcuts actions. No account and no telemetry.")
 WHAT_TO_TEST = ("Write and preview notes, pin and search them. Try the widgets, the New Volant Note control, Save to "
                 "Volant from Safari's share sheet, and the Volant actions in Shortcuts. If you use Volant on a Mac with "
-                "Sync settings and notes with iCloud on, check that snippets and quicklinks match and that edits sync.")
+                "Sync settings and notes with iCloud on, check that snippets and quicklinks match and that edits sync. "
+                "New: with Volant 0.4.3 on your Mac, turn on Alert my iPhone and Apple Watch in its Breaks settings and "
+                "Break Alerts in Settings here; you should get a notification, on your Apple Watch too, when a break "
+                "starts and when it's over.")
 REVIEW_NOTES = ("No sign-in or account is needed. Notes are stored in the tester's own iCloud Drive; with iCloud off they "
                 "stay on the device. Snippets and quicklinks start empty unless the tester uses Volant on a Mac; tap + "
-                "in Snippets or Quicklinks to add one.")
+                "in Snippets or Quicklinks to add one. Break Alerts (Settings › Mac Breaks) ask for notification "
+                "permission and show alerts only when Volant on the tester's Mac starts or ends a break.")
 
 
 @cli.command("beta-external")
