@@ -44,6 +44,13 @@ export default function PrivacyAndSecurity() {
           helper. See <a href="/docs/agents">Agents</a>.
         </li>
         <li>
+          <strong>Connected Apps</strong>, off by default, let AI apps on your
+          Mac use Volant through a bridge inside Volant over a local socket that
+          only that signed bridge may use; no network listener is involved. What
+          a tool returns goes to the AI app and the model it uses. See{' '}
+          <a href="/docs/agents">Agents</a>.
+        </li>
+        <li>
           <strong>API and local-model chat</strong> use a separate sandboxed AI
           helper. Your selected server receives submitted prompts, chosen
           attachments, and completed turns. Keys stay in Keychain. Apple

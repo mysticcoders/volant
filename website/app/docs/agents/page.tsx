@@ -323,6 +323,33 @@ export default function Agents() {
         </li>
       </ul>
 
+      <h2>Let AI apps use Volant</h2>
+      <p>
+        New in 0.4.4: turn on Connected Apps in Settings &rsaquo; AI, and AI
+        apps that support MCP, such as Claude Code, Claude Desktop, Codex and
+        Cursor, can use Volant as a tool. They can search and read your notes,
+        list your snippets and quicklinks, use Volant&rsquo;s calculator, and
+        check Breaks and Focus. Creating notes, adding to a note, and adding
+        snippets and quicklinks each have their own switch, off until you turn
+        it on. Connect an app shows the line to copy for each app.
+      </p>
+      <ul>
+        <li>
+          It&rsquo;s off by default and stays on your Mac. The AI app starts a
+          small bridge inside Volant, and Volant answers only that bridge,
+          checked by its code signature. Nothing listens on the network, and
+          the main app still has no network entitlement.
+        </li>
+        <li>
+          Each app that connects is listed under Connected Apps, where you can
+          disconnect it.
+        </li>
+        <li>
+          What a tool returns goes to the AI app and, from there, to whatever
+          model it uses. Volant doesn&rsquo;t log tool requests or results.
+        </li>
+      </ul>
+
       <h2>Not yet</h2>
       <p>
         Snippet and file attachments, ACP model and mode selection, choosing

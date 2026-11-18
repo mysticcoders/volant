@@ -855,3 +855,16 @@ Later the same day the owner installed a reader from Settings → Catalog in the
 - **Feed:** the signed build-57 appcast generated with this DMG passes `sign_update --verify`.
 
 **Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.
+
+## 0.4.4 build 58 — November 18, 2026
+
+**What's in it.** See the [release notes](releases/0.4.4.md).
+
+**Build.** Built from `cac473f` on `release/0.4.4` by `Scripts/ship.sh`.
+
+- **Notarization:** Apple accepted app submission `6792ca2c-2448-4b7e-af67-782b5bbae069` and DMG submission `720178f6-b740-4a16-a743-127a3fc567b9`. Both were stapled and passed Gatekeeper as Notarized Developer ID.
+- **Mounted DMG:** `Volant.app` 0.4.4, build 58, `arm64`, valid deep strict signature, stapled, Applications link present.
+- **DMG SHA-256:** `9a772482b695fe0e737a9d68886b222b063e5080750dd246616ca68b7b5f7088` (12747382 bytes).
+- **Feed:** the signed build-58 appcast generated with this DMG passes `sign_update --verify`.
+
+**Publishing.** After the owner merged this release, `Scripts/ship.sh` deployed the download while the previous feed stayed live, verified the public DMG, then deployed the feed and compared it byte for byte. Its results are posted on the release pull request.

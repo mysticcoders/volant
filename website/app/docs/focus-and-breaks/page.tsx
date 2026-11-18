@@ -105,13 +105,13 @@ export default function FocusAndBreaks() {
         </li>
       </ul>
       <p>
-        New in 0.4.3: Settings &rsaquo; Your Volant shows your breaks, with
+        Settings &rsaquo; Your Volant shows your breaks, with
         how many you took and skipped today, how long they lasted, and your
         break time for each of the last seven days. History stays on your Mac
         for 90 days. Turn on Alert my iPhone and Apple Watch, and Volant for
         iPhone tells you when a break starts and when it&rsquo;s over, on your
-        watch too, through your own iCloud. That needs the next Volant for
-        iPhone beta build.
+        watch too, through your own iCloud. It works with the Volant for iPhone
+        public beta on TestFlight.
       </p>
 
       <h2>Privacy</h2>
