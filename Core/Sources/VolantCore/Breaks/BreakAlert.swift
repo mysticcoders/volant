@@ -1,7 +1,7 @@
 import Foundation
 
 /// What Volant for iPhone hears about a break: that one started on the Mac, or that one ran to its
-/// end. The Mac writes one CloudKit record per kind, always under the same name, to the owner's
+/// end. The Mac writes one CloudKit record per kind, always under that kind's own name, to the owner's
 /// private database in the shared container; the iPhone's subscriptions turn each write into a
 /// notification, which a paired Apple Watch shows too. A record holds only the moment, never the
 /// owner's settings, history or what they were doing.
@@ -10,8 +10,6 @@ public enum BreakAlert: Equatable, Sendable {
     case over
 
     public static let containerIdentifier = "iCloud.com.mysticcoders.volant"
-    /// Every alert overwrites the record of its kind, so the database never holds more than two.
-    public static let recordName = "latest"
     /// The record's only field: when the break started or ended.
     public static let timeField = "at"
 
@@ -20,6 +18,15 @@ public enum BreakAlert: Equatable, Sendable {
         switch self {
         case .started: return "BreakStarted"
         case .over: return "BreakOver"
+        }
+    }
+
+    /// The record each alert overwrites, so the database never holds more than two. A record name
+    /// identifies one record in a zone whatever its type, so each kind needs its own.
+    public var recordName: String {
+        switch self {
+        case .started: return "latest-break-started"
+        case .over: return "latest-break-over"
         }
     }
 

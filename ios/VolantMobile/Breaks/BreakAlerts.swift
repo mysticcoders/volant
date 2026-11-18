@@ -33,7 +33,8 @@ final class BreakAlerts: ObservableObject {
                 return fail(String(localized: "Allow notifications for Volant in Settings › Notifications, then try again."))
             }
             UIApplication.shared.registerForRemoteNotifications()
-            _ = try await database.modifySubscriptions(saving: [BreakAlert.started, .over].map(Self.subscription), deleting: [])
+            let (saved, _) = try await database.modifySubscriptions(saving: [BreakAlert.started, .over].map(Self.subscription), deleting: [])
+            for result in saved.values { _ = try result.get() }
             enabled = true
             state = .on
         } catch {
@@ -45,7 +46,10 @@ final class BreakAlerts: ObservableObject {
     func turnOff() async {
         state = .working
         do {
-            _ = try await database.modifySubscriptions(saving: [], deleting: [BreakAlert.started.subscriptionID, BreakAlert.over.subscriptionID])
+            let (_, deleted) = try await database.modifySubscriptions(saving: [], deleting: [BreakAlert.started.subscriptionID, BreakAlert.over.subscriptionID])
+            for result in deleted.values {
+                if case .failure(let error) = result, (error as? CKError)?.code != .unknownItem { throw error }
+            }
             enabled = false
             state = .off
         } catch let error as CKError where error.code == .unknownItem {
@@ -79,10 +83,17 @@ final class BreakAlerts: ObservableObject {
         return subscription
     }
 
-    private static func describe(_ error: Error) -> String {
-        switch (error as? CKError)?.code {
+    /// A short reason for Settings. When iCloud asks Volant to wait, it says for how long.
+    static func describe(_ error: Error) -> String {
+        let ckError = error as? CKError
+        if let seconds = ckError?.retryAfterSeconds, seconds > 60 {
+            let minutes = Int((seconds / 60).rounded(.up))
+            return String(localized: "iCloud asked Volant to wait. Try again in about \(minutes) minutes.")
+        }
+        switch ckError?.code {
         case .notAuthenticated: return String(localized: "Sign in to iCloud on this iPhone to get break alerts.")
-        case .networkUnavailable, .networkFailure, .serviceUnavailable: return String(localized: "iCloud couldn’t be reached. Try again in a moment.")
+        case .networkUnavailable, .networkFailure, .serviceUnavailable, .requestRateLimited, .zoneBusy:
+            return String(localized: "iCloud couldn’t be reached. Try again in a moment.")
         default: return String(localized: "Break alerts couldn’t be turned on. Try again in a moment.")
         }
     }

@@ -42,13 +42,17 @@ final class BreakPhoneAlerts: ObservableObject {
     /// Overwrites the alert's record, so the iPhone's subscription fires on every write.
     private static func cloudKitSave(_ alert: BreakAlert, at: Date, done: @escaping (Error?) -> Void) {
         guard isAvailable else { return done(nil) }
-        let record = CKRecord(recordType: alert.recordType, recordID: CKRecord.ID(recordName: BreakAlert.recordName))
+        let record = CKRecord(recordType: alert.recordType, recordID: CKRecord.ID(recordName: alert.recordName))
         record[BreakAlert.timeField] = at as NSDate
         let operation = CKModifyRecordsOperation(recordsToSave: [record], recordIDsToDelete: nil)
         operation.savePolicy = .allKeys
         operation.qualityOfService = .userInitiated
+        var recordError: Error?
+        operation.perRecordSaveBlock = { _, result in
+            if case .failure(let error) = result { recordError = error }
+        }
         operation.modifyRecordsResultBlock = { result in
-            if case .failure(let error) = result { done(error) } else { done(nil) }
+            if case .failure(let error) = result { done(recordError ?? error) } else { done(recordError) }
         }
         CKContainer(identifier: BreakAlert.containerIdentifier).privateCloudDatabase.add(operation)
     }
