@@ -427,8 +427,7 @@ if CommandLine.arguments.contains("--render") {
         let approvals = MCPApprovals()
         approvals.show = { _ in }
         approvals.hide = { _ in }
-        Task { _ = await approvals.ask(client: "claude-code", tool: "search_clipboard", summary: "Search your clipboard history for “invoice”") }
-        RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+        approvals.showForFixture(client: "claude-code", tool: "search_clipboard", summary: "Search your clipboard history for “invoice”")
         for theme in ["light", "dark"] {
             app.appearance = NSAppearance(named: theme == "dark" ? .darkAqua : .aqua)
             let prompt = NSWindow(contentRect: NSRect(x: 100, y: 100, width: MCPApprovalPanel.width + 40, height: 180), styleMask: [.titled], backing: .buffered, defer: false)
@@ -446,7 +445,6 @@ if CommandLine.arguments.contains("--render") {
             prompt.orderOut(nil)
             print("Rendered \(theme) AI approval prompt")
         }
-        approvals.decide(.deny)
         for (colorTheme, mode) in [("volant", Appearance.Theme.light), ("catppuccin-mocha", .dark), ("rose-pine-dawn", .light)] {
             ThemeStore.shared.apply(Appearance(theme: mode, colorTheme: colorTheme))
             controller.state.section = .appearance

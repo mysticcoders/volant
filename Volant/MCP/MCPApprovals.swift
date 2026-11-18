@@ -48,6 +48,12 @@ final class MCPApprovals: ObservableObject {
         }
     }
 
+    /// Puts a request on screen without anyone waiting on the answer, for render fixtures that run
+    /// inside a main-queue block, where `ask`'s hop to the main queue would arrive only afterwards.
+    func showForFixture(client: String, tool: String, summary: String) {
+        current = Request(client: client, tool: tool, summary: summary)
+    }
+
     /// The owner's answer to the request on screen.
     func decide(_ decision: Decision) {
         guard let request = current, let answer else { return }
