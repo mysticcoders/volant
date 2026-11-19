@@ -77,6 +77,22 @@ public struct MCPToolResult: Equatable, Sendable {
     }
 }
 
+/// The resources a session offers: `resources/list` pages, `resources/read` contents, and URI
+/// templates. Each listing and content block is already in the spec's shape.
+public struct MCPResources: Sendable {
+    public var list: @Sendable (_ cursor: String?) async -> (resources: [MCPValue], nextCursor: String?)
+    /// The contents for a URI, or nil when no such resource exists.
+    public var read: @Sendable (_ uri: String) async -> [MCPValue]?
+    public var templates: [MCPValue]
+
+    public init(list: @escaping @Sendable (String?) async -> (resources: [MCPValue], nextCursor: String?),
+                read: @escaping @Sendable (String) async -> [MCPValue]?, templates: [MCPValue] = []) {
+        self.list = list
+        self.read = read
+        self.templates = templates
+    }
+}
+
 /// Why Volant refuses every request on a connection: the server was turned off, or the owner
 /// disconnected this app in Settings. Codes are outside JSON-RPC's reserved range, as the spec asks.
 public struct MCPRefusal: Equatable, Sendable {
@@ -108,6 +124,7 @@ public final class MCPSession {
     private let version: String
     private let instructions: String
     private let tools: () -> [MCPTool]
+    private let resources: () -> MCPResources?
     private let refusal: () -> MCPRefusal?
     private let clock: () -> Date
     private var legacyVersion: String?
@@ -115,11 +132,12 @@ public final class MCPSession {
 
     /// `tools` returns the tools the owner shares right now; `refusal` says whether to refuse
     /// everything, and both are read on every request so a Settings change applies at once.
-    public init(version: String, instructions: String, tools: @escaping () -> [MCPTool], refusal: @escaping () -> MCPRefusal? = { nil },
-                clock: @escaping () -> Date = Date.init) {
+    public init(version: String, instructions: String, tools: @escaping () -> [MCPTool], resources: @escaping () -> MCPResources? = { nil },
+                refusal: @escaping () -> MCPRefusal? = { nil }, clock: @escaping () -> Date = Date.init) {
         self.version = version
         self.instructions = instructions
         self.tools = tools
+        self.resources = resources
         self.refusal = refusal
         self.clock = clock
     }
@@ -172,7 +190,7 @@ public final class MCPSession {
         case "server/discover":
             return result(id: id, modern: modern, [
                 "supportedVersions": .array(Self.modernVersions.map(MCPValue.string)),
-                "capabilities": .object(["tools": .object([:])]),
+                "capabilities": capabilities(legacy: false),
                 "instructions": .string(instructions)
             ])
         case "ping":
@@ -181,6 +199,9 @@ public final class MCPSession {
             return result(id: id, modern: modern, ["tools": .array(tools().map(\.listing))])
         case "tools/call":
             return await call(id: id, modern: modern, params: params)
+        case "resources/list", "resources/read", "resources/templates/list":
+            guard let resources = resources() else { return error(id: id, code: -32601, message: "Method not found: \(method)") }
+            return await resource(method, id: id, modern: modern, params: params, resources: resources)
         default:
             return error(id: id, code: -32601, message: "Method not found: \(method)")
         }
@@ -194,7 +215,7 @@ public final class MCPSession {
         legacyVersion = chosen
         return result(id: id, modern: false, [
             "protocolVersion": .string(chosen),
-            "capabilities": .object(["tools": .object(["listChanged": .bool(false)])]),
+            "capabilities": capabilities(legacy: true),
             "serverInfo": serverInfo,
             "instructions": .string(instructions)
         ])
@@ -224,6 +245,33 @@ public final class MCPSession {
                                            "isError": .bool(outcome.isError)]
         if let structured = outcome.structured { fields["structuredContent"] = structured }
         return result(id: id, modern: modern, fields)
+    }
+
+    /// Tools always; resources while the owner shares them.
+    private func capabilities(legacy: Bool) -> MCPValue {
+        var fields: [String: MCPValue] = ["tools": legacy ? .object(["listChanged": .bool(false)]) : .object([:])]
+        if resources() != nil { fields["resources"] = .object([:]) }
+        return .object(fields)
+    }
+
+    /// Lists, reads or lists templates. An unknown resource is `-32602` in 2026-07-28 and `-32002`
+    /// in the legacy revisions, and never an empty `contents`.
+    private func resource(_ method: String, id: MCPValue, modern: Bool, params: MCPValue?, resources: MCPResources) async -> Data {
+        switch method {
+        case "resources/list":
+            let page = await resources.list(params?["cursor"]?.string)
+            var fields: [String: MCPValue] = ["resources": .array(page.resources)]
+            if let next = page.nextCursor { fields["nextCursor"] = .string(next) }
+            return result(id: id, modern: modern, fields)
+        case "resources/templates/list":
+            return result(id: id, modern: modern, ["resourceTemplates": .array(resources.templates)])
+        default:
+            guard let uri = params?["uri"]?.string, !uri.isEmpty else { return error(id: id, code: -32602, message: "Missing resource uri") }
+            guard let contents = await resources.read(uri), !contents.isEmpty else {
+                return error(id: id, code: modern ? -32602 : -32002, message: "Resource not found", data: .object(["uri": .string(uri)]))
+            }
+            return result(id: id, modern: modern, ["contents": .array(contents)])
+        }
     }
 
     private var serverInfo: MCPValue { .object(["name": .string("Volant"), "version": .string(version)]) }

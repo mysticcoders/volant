@@ -32,6 +32,12 @@ struct MCPSettingsSection: View {
                 Toggle(isOn: binding(\.writesQuicklinks)) {
                     Text("Add quicklinks", comment: "Settings › AI › Connected Apps write permission")
                 }
+                Toggle(isOn: binding(\.controlsFocus)) {
+                    Text("Start, pause and end Focus", comment: "Settings › AI › Connected Apps permission to control Focus sessions")
+                }
+                Toggle(isOn: binding(\.controlsBreaks)) {
+                    Text("Take, skip and pause breaks", comment: "Settings › AI › Connected Apps permission to control Breaks")
+                }
                 Picker(selection: $client) {
                     ForEach(MCPClientSetup.allCases) { Text(verbatim: $0.title).tag($0) }
                 } label: {

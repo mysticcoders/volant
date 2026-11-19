@@ -164,6 +164,63 @@ final class MCPSessionTests: XCTestCase {
     }
 }
 
+final class MCPResourceSessionTests: XCTestCase {
+    private let meta: MCPValue = .object(["io.modelcontextprotocol/protocolVersion": .string("2026-07-28"),
+                                          "io.modelcontextprotocol/clientCapabilities": .object([:])])
+
+    private func session(sharing: Bool = true) -> MCPSession {
+        let resources = MCPResources(list: { cursor in
+            cursor == nil ? ([.object(["uri": .string("volant://snippets"), "name": .string("snippets")])], "page-2")
+                          : ([.object(["uri": .string("volant://notes/a.md"), "name": .string("a.md")])], nil)
+        }, read: { uri in
+            uri == "volant://snippets" ? [.object(["uri": .string(uri), "mimeType": .string("application/json"), "text": .string("[]")])] : nil
+        }, templates: [.object(["uriTemplate": .string("volant://notes/{id}"), "name": .string("note")])])
+        return MCPSession(version: "1", instructions: "", tools: { [] }, resources: { sharing ? resources : nil })
+    }
+
+    private func send(_ session: MCPSession, _ method: String, _ params: [String: MCPValue] = [:], legacy: Bool = false) async throws -> MCPValue? {
+        var params = params
+        if !legacy { params["_meta"] = meta }
+        let reply = await session.handle(MCPValue.object(["jsonrpc": .string("2.0"), "id": .int(1), "method": .string(method), "params": .object(params)]).line())
+        return try reply.map { try JSONDecoder().decode(MCPValue.self, from: $0) }
+    }
+
+    func testListPagesReadsAndTemplates() async throws {
+        let session = session()
+        let discover = try await send(session, "server/discover")
+        XCTAssertEqual(discover?["result"]?["capabilities"]?["resources"], .object([:]))
+        let first = try await send(session, "resources/list")
+        XCTAssertEqual(first?["result"]?["nextCursor"], .string("page-2"))
+        let second = try await send(session, "resources/list", ["cursor": .string("page-2")])
+        XCTAssertNil(second?["result"]?["nextCursor"])
+        let read = try await send(session, "resources/read", ["uri": .string("volant://snippets")])
+        XCTAssertEqual(read?["result"]?["contents"], .array([.object(["uri": .string("volant://snippets"), "mimeType": .string("application/json"), "text": .string("[]")])]))
+        let templates = try await send(session, "resources/templates/list")
+        XCTAssertNotNil(templates?["result"]?["resourceTemplates"])
+    }
+
+    func testUnknownResourcesUseEachRevisionsCode() async throws {
+        let modern = try await send(session(), "resources/read", ["uri": .string("volant://notes/missing.md")])
+        XCTAssertEqual(modern?["error"]?["code"], .int(-32602))
+        XCTAssertEqual(modern?["error"]?["data"]?["uri"], .string("volant://notes/missing.md"))
+        let legacy = session()
+        _ = await legacy.handle(MCPValue.object(["jsonrpc": .string("2.0"), "id": .int(0), "method": .string("initialize"),
+                                                 "params": .object(["protocolVersion": .string("2025-06-18")])]).line())
+        let old = try await send(legacy, "resources/read", ["uri": .string("volant://nope")], legacy: true)
+        XCTAssertEqual(old?["error"]?["code"], .int(-32002))
+        let noURI = try await send(session(), "resources/read")
+        XCTAssertEqual(noURI?["error"]?["code"], .int(-32602))
+    }
+
+    func testNoResourcesWhenNotShared() async throws {
+        let session = session(sharing: false)
+        let discover = try await send(session, "server/discover")
+        XCTAssertNil(discover?["result"]?["capabilities"]?["resources"])
+        let list = try await send(session, "resources/list")
+        XCTAssertEqual(list?["error"]?["code"], .int(-32601))
+    }
+}
+
 final class MCPPreferencesTests: XCTestCase {
     func testOffByDefaultTolerantAndNeverSynced() throws {
         XCTAssertEqual(Preferences().mcpServer, MCPPreferences())

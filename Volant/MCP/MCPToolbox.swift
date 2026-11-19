@@ -8,6 +8,12 @@ import VolantCore
 struct MCPToolbox {
     /// The longest text one call returns or accepts.
     static let maximumText = 100_000
+    /// Resources per `resources/list` page.
+    static let resourcePage = 50
+
+    /// What an AI app can ask Focus and Breaks to do.
+    enum FocusControl: Equatable { case start(goal: String?, minutes: Int?), pause, resume, end }
+    enum BreakControl: Equatable { case takeNow, end, skip, pauseHour, resume }
 
     let notes: NotesStore
     let configURL: URL
@@ -17,13 +23,109 @@ struct MCPToolbox {
     var focusStatus: @MainActor () -> (goal: String, paused: Bool, time: String)? = { nil }
     /// Reloads the configuration after a snippet or quicklink was added.
     var configChanged: @MainActor () -> Void = {}
+    /// Runs a Focus or Breaks control through its controller; returns why it couldn't, or nil when done.
+    var focusControl: @MainActor (FocusControl) -> String? = { _ in "Focus isn't available." }
+    var breakControl: @MainActor (BreakControl) -> String? = { _ in "Breaks aren't available." }
 
     func tools(_ preferences: MCPPreferences) -> [MCPTool] {
         var tools = [calculate, searchNotes, readNote, listSnippets, listQuicklinks, breakStatusTool, focusStatusTool]
         if preferences.writesNotes { tools += [createNote, appendToNote] }
         if preferences.writesSnippets { tools.append(addSnippet) }
         if preferences.writesQuicklinks { tools.append(addQuicklink) }
+        if preferences.controlsFocus {
+            tools += [startFocus,
+                      focusTool("pause_focus", "Pause Focus", "Pauses the running Volant Focus session; blocked apps and sites are allowed until it resumes.", .pause),
+                      focusTool("resume_focus", "Resume Focus", "Resumes a paused Volant Focus session.", .resume),
+                      focusTool("end_focus", "End Focus", "Ends the running Volant Focus session early.", .end)]
+        }
+        if preferences.controlsBreaks {
+            tools += [breakTool("take_break", "Take a break now", "Starts a Volant break now, for the owner's break length.", .takeNow),
+                      breakTool("end_break", "End the break", "Ends the running Volant break early.", .end),
+                      breakTool("skip_break", "Skip the next break", "Skips the next or running Volant break; the stretch of work starts over.", .skip),
+                      breakTool("pause_breaks", "Pause breaks for an hour", "Holds Volant's break reminders for an hour.", .pauseHour),
+                      breakTool("resume_breaks", "Resume breaks", "Ends a pause of Volant's break reminders.", .resume)]
+        }
         return tools
+    }
+
+    /// Notes, snippets and quicklinks as resources: `volant://snippets`, `volant://quicklinks` and
+    /// `volant://notes/<id>`. A note is found by its id in the notes list, never by building a path.
+    func resources() -> MCPResources {
+        let notes = notes, configURL = configURL
+        return MCPResources(list: { cursor in
+            let offset = cursor.flatMap(Int.init) ?? 0
+            let listed: [Note] = await MainActor.run { notes.notes }
+            var all: [MCPValue] = [
+                .object(["uri": .string("volant://snippets"), "name": .string("snippets"), "title": .string("Snippets"), "mimeType": .string("application/json")]),
+                .object(["uri": .string("volant://quicklinks"), "name": .string("quicklinks"), "title": .string("Quicklinks"), "mimeType": .string("application/json")])
+            ]
+            all += listed.filter { $0.readError == nil && !$0.downloading }.map { note in
+                .object(["uri": .string(Self.noteURI(note.id)), "name": .string(note.id), "title": .string(note.title), "mimeType": .string("text/markdown"),
+                         "annotations": .object(["lastModified": .string(note.modified.formatted(.iso8601))])])
+            }
+            guard offset >= 0, offset <= all.count else { return ([], nil) }
+            let end = min(offset + Self.resourcePage, all.count)
+            return (Array(all[offset..<end]), end < all.count ? String(end) : nil)
+        }, read: { uri in
+            if uri == "volant://snippets" || uri == "volant://quicklinks" {
+                guard let config = Self.load(configURL) else { return nil }
+                let value: MCPValue = uri == "volant://snippets"
+                    ? .array(config.snippets.map { .object(["name": .string($0.name), "keyword": .string($0.keyword), "text": .string($0.body)]) })
+                    : .array(config.quicklinks.map { .object(["name": .string($0.name), "url": .string($0.url)]) })
+                return [.object(["uri": .string(uri), "mimeType": .string("application/json"), "text": .string(String(decoding: value.line(), as: UTF8.self))])]
+            }
+            guard uri.hasPrefix("volant://notes/"), let id = String(uri.dropFirst("volant://notes/".count)).removingPercentEncoding else { return nil }
+            let text: String? = await MainActor.run { notes.notes.contains { $0.id == id } ? notes.text(of: id) : nil }
+            guard let text else { return nil }
+            return [.object(["uri": .string(uri), "mimeType": .string("text/markdown"), "text": .string(String(text.prefix(1_000_000)))])]
+        }, templates: [.object(["uriTemplate": .string("volant://notes/{id}"), "name": .string("note"), "title": .string("A Volant note"),
+                                "description": .string("A note's Markdown by the id search_notes returns."), "mimeType": .string("text/markdown")])])
+    }
+
+    static func noteURI(_ id: String) -> String {
+        "volant://notes/" + (id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed.subtracting(CharacterSet(charactersIn: "/"))) ?? id)
+    }
+
+    private var startFocus: MCPTool {
+        MCPTool(name: "start_focus", title: "Start Focus",
+                description: "Starts a Volant Focus session with the owner's remembered block list, replacing any running one. Optionally sets a goal and a length in minutes; otherwise the remembered ones apply. The owner's saved setup isn't changed.",
+                inputSchema: MCPTool.schema(["goal": MCPTool.string("What the session is for.", maxLength: 200),
+                                             "minutes": MCPTool.integer("How long, in minutes.", minimum: 1, maximum: FocusSetup.maximumMinutes)]),
+                readOnly: false) { [focusControl, focusStatus] arguments in
+            let goal = arguments["goal"]?.string?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let minutes = arguments["minutes"]?.int
+            if let minutes, !(1...FocusSetup.maximumMinutes).contains(minutes) { return .failure("Give a length from 1 to \(FocusSetup.maximumMinutes) minutes.") }
+            if let goal, goal.count > 200 { return .failure("Keep the goal under 200 characters.") }
+            return await Self.run({ focusControl(.start(goal: goal?.isEmpty == true ? nil : goal, minutes: minutes)) }, then: { Self.describeFocus(focusStatus()) })
+        }
+    }
+
+    private func focusTool(_ name: String, _ title: String, _ description: String, _ control: FocusControl) -> MCPTool {
+        MCPTool(name: name, title: title, description: description, inputSchema: MCPTool.noArguments, readOnly: false) { [focusControl, focusStatus] _ in
+            await Self.run({ focusControl(control) }, then: { Self.describeFocus(focusStatus()) })
+        }
+    }
+
+    private func breakTool(_ name: String, _ title: String, _ description: String, _ control: BreakControl) -> MCPTool {
+        MCPTool(name: name, title: title, description: description, inputSchema: MCPTool.noArguments, readOnly: false) { [breakControl, breakStatus] _ in
+            await Self.run({ breakControl(control) }, then: {
+                let status = breakStatus()
+                return .object(["enabled": .bool(status.enabled), "status": .string(status.status)])
+            })
+        }
+    }
+
+    /// Runs a control on the main queue and returns the state after it, or why it couldn't run.
+    private static func run(_ control: @escaping @MainActor () -> String?, then state: @escaping @MainActor () -> MCPValue) async -> MCPToolResult {
+        await MainActor.run {
+            if let problem = control() { return .failure(problem) }
+            return .data(state())
+        }
+    }
+
+    private static func describeFocus(_ session: (goal: String, paused: Bool, time: String)?) -> MCPValue {
+        guard let session else { return .object(["active": .bool(false)]) }
+        return .object(["active": .bool(true), "goal": .string(session.goal), "paused": .bool(session.paused), "time": .string(session.time)])
     }
 
     private var calculate: MCPTool {

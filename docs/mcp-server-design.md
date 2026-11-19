@@ -201,6 +201,25 @@ from main:
   ask the owner for container consent (a child of a sandboxed process inherits its container), so that
   test was removed; AI apps aren't sandboxed, and none appeared in real use.
 
+## Phase 2 as built
+
+- **Focus and Breaks controls**, each behind its own switch (`controlsFocus`, `controlsBreaks`):
+  `start_focus` (the remembered block list, with an optional goal and 1 to 720 minutes; the owner's
+  remembered setup isn't changed, unlike the launcher's quick start), `pause_focus`, `resume_focus`,
+  `end_focus`, `take_break`, `end_break`, `skip_break`, `pause_breaks` (an hour) and `resume_breaks`.
+  Each runs through the Focus or Break controller, refuses with a reason the model can use when it
+  doesn't apply ("No Focus session is paused."), and returns the state afterwards.
+- **Resources** while the server is on: `volant://snippets` and `volant://quicklinks` (JSON),
+  `volant://notes/<id>` (Markdown, up to 1,000,000 characters), listed 50 per page with an offset
+  cursor, and the template `volant://notes/{id}`. A note is found by its id in the notes list; no path
+  is ever built from a URI. An unknown resource is `-32602` (2026-07-28) or `-32002` (legacy), never
+  empty contents.
+
+Verified by `MCPResourceSessionTests` (paging, reads, templates, each revision's error code, nothing
+offered while not shared) and `MCPToolboxPhaseTwoTests` (switches, controls through fake controllers,
+an out-of-range length never reaching Focus, refusals, resource paging, a traversal URI resolving to
+nothing). Real Focus and Breaks behavior is the controllers' own, covered by their tests.
+
 ## Phases
 
 1. **Transport, read tools, and note, snippet and quicklink writes.** The app group entitlement and its

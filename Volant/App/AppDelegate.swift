@@ -106,8 +106,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                      guard let self, let session = self.focus.session else { return nil }
                                      return (session.setup.goal, session.isPaused, self.focus.timeText())
                                  },
-                                 configChanged: { [weak self] in self?.reloadConfig() })
+                                 configChanged: { [weak self] in self?.reloadConfig() },
+                                 focusControl: { [weak self] control in self?.controlFocus(control) ?? "Focus isn't available." },
+                                 breakControl: { [weak self] control in self?.controlBreaks(control) ?? "Breaks aren't available." })
         listener.makeTools = { toolbox.tools($0) }
+        listener.makeResources = { _ in toolbox.resources() }
         listener.onNewClient = { [weak self] client in self?.recordMCPClient(client) }
         return listener
     }()
@@ -356,6 +359,50 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         focusStatusItem.refresh()
         focusNotch.refresh()
         focusReminder.shownElsewhere = { [weak self] in self?.focusNotch.isShowingSession == true }
+    }
+
+    /// Runs an AI app's Focus request the way the launcher's quick start does, with the remembered block
+    /// list and an optional goal and length, without changing the remembered setup. Returns why it
+    /// couldn't, or nil.
+    private func controlFocus(_ control: MCPToolbox.FocusControl) -> String? {
+        switch control {
+        case .start(let goal, let minutes):
+            let remembered = config.focus.lastSetup
+            focus.start(FocusSetup(goal: goal ?? remembered.goal, minutes: minutes ?? remembered.minutes, apps: remembered.apps,
+                                   websites: remembered.websites, categories: remembered.categories))
+        case .pause:
+            guard let session = focus.session, !session.isPaused else { return "No Focus session is running." }
+            focus.pause()
+        case .resume:
+            guard focus.session?.isPaused == true else { return "No Focus session is paused." }
+            focus.resume()
+        case .end:
+            guard focus.isRunning else { return "No Focus session is running." }
+            focus.end()
+        }
+        return nil
+    }
+
+    /// Runs an AI app's Breaks request through the break controller. Returns why it couldn't, or nil.
+    private func controlBreaks(_ control: MCPToolbox.BreakControl) -> String? {
+        switch control {
+        case .takeNow:
+            guard !breaks.isOnBreak else { return "A break is already running." }
+            breaks.takeBreakNow()
+        case .end:
+            guard breaks.isOnBreak else { return "No break is running." }
+            breaks.endBreak()
+        case .skip:
+            guard config.breaks.enabled || breaks.isOnBreak else { return "Break reminders are off, so there's no break to skip." }
+            breaks.skip()
+        case .pauseHour:
+            guard config.breaks.enabled else { return "Break reminders are off." }
+            breaks.pauseForAnHour()
+        case .resume:
+            guard breaks.isPaused else { return "Break reminders aren't paused." }
+            breaks.resume()
+        }
+        return nil
     }
 
     /// Remembers an AI app's name the first time its bridge connects, so Settings can list it with

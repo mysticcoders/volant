@@ -401,7 +401,7 @@ if CommandLine.arguments.contains("--render") {
         // than this window, so the section is drawn on its own, in Settings' form style. Nothing listens:
         // the preview has no MCP listener.
         let mcpOff = try! JSONDecoder().decode(Preferences.self, from: Data(contentsOf: configURL)).mcpServer
-        let mcpOn = MCPPreferences(enabled: true, writesNotes: true, knownClients: ["claude-code", "cursor"], disconnectedClients: ["cursor"])
+        let mcpOn = MCPPreferences(enabled: true, writesNotes: true, controlsFocus: true, knownClients: ["claude-code", "cursor"], disconnectedClients: ["cursor"])
         try! Preferences.updateMCPServer(mcpOn, expected: mcpOff, at: configURL)
         for theme in ["light", "dark"] {
             let section = NSWindow(contentRect: NSRect(x: 100, y: 100, width: 620, height: 640), styleMask: [.titled], backing: .buffered, defer: false)

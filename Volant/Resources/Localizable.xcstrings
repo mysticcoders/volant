@@ -91452,6 +91452,95 @@
         }
       }
     },
+    "Start, pause and end Focus": {
+      "comment": "Settings › AI › Connected Apps permission to control Focus sessions",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Iniciar, pausar y terminar Concentración"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Fokus starten, pausieren und beenden"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Démarrer, suspendre et terminer Concentration"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Avviare, mettere in pausa e terminare Focus"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "集中モードの開始、一時停止、終了"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "开始、暂停和结束专注"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Iniciar, pausar e encerrar o Foco"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Iniciar, pausar e terminar o Foco"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "집중 시작, 일시 정지 및 종료"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Focus starten, pauzeren en beëindigen"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rozpoczynanie, wstrzymywanie i kończenie Skupienia"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Запускать, приостанавливать и завершать Фокус"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Запускати, призупиняти й завершувати Фокус"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Odak başlatma, duraklatma ve bitirme"
+          }
+        }
+      }
+    },
     "Status": {
       "localizations": {
         "de": {
@@ -93396,6 +93485,95 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Şimdi mola ver"
+          }
+        }
+      }
+    },
+    "Take, skip and pause breaks": {
+      "comment": "Settings › AI › Connected Apps permission to control Breaks",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tomar, omitir y pausar pausas"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pausen machen, überspringen und anhalten"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Prendre, ignorer et suspendre les pauses"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Fare, saltare e sospendere le pause"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "休憩の開始、スキップ、一時停止"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "开始、跳过和暂停休息"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Fazer, pular e pausar pausas"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Fazer, saltar e pausar pausas"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "휴식 시작, 건너뛰기 및 일시 정지"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pauzes nemen, overslaan en onderbreken"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Rozpoczynanie, pomijanie i wstrzymywanie przerw"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Начинать, пропускать и приостанавливать перерывы"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Починати, пропускати й призупиняти перерви"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mola verme, atlama ve duraklatma"
           }
         }
       }

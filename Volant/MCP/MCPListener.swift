@@ -19,6 +19,7 @@ final class MCPListener {
     /// The tools to offer, the current settings, and what to do when a new client connects. Set by
     /// the app; read on the listener's threads.
     var makeTools: (MCPPreferences) -> [MCPTool] = { _ in [] }
+    var makeResources: (MCPPreferences) -> MCPResources? = { _ in nil }
     var onNewClient: (String) -> Void = { _ in }
 
     private let socketURL: URL?
@@ -144,6 +145,9 @@ final class MCPListener {
         let session = MCPSession(version: version, instructions: Self.instructions, tools: { [weak self] in
             guard let self else { return [] }
             return self.makeTools(self.current())
+        }, resources: { [weak self] in
+            guard let self else { return nil }
+            return self.makeResources(self.current())
         }, refusal: { [weak self] in
             guard let self else { return .serverOff }
             return self.current().refusal(for: client)
@@ -172,8 +176,9 @@ final class MCPListener {
     }
 
     static let instructions = "Volant is a Mac launcher. These tools read the owner's Volant notes (Markdown files), snippets and quicklinks, "
-        + "calculate units, time zones, dates and arithmetic, and report Breaks and Focus. Tools that add notes, snippets or quicklinks "
-        + "appear only when the owner allowed them in Volant Settings › AI › Connected Apps."
+        + "calculate units, time zones, dates and arithmetic, and report Breaks and Focus. Notes, snippets and quicklinks are also resources "
+        + "(volant://notes/<id>, volant://snippets, volant://quicklinks). Tools that add notes, snippets or quicklinks, or control Focus and "
+        + "Breaks, appear only when the owner allowed them in Volant Settings › AI › Connected Apps."
 
     /// The connected peer's signing team and identifier, read from its audit token.
     static func peer(_ connection: Int32) -> Peer? {
