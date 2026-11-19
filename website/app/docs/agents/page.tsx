@@ -325,28 +325,49 @@ export default function Agents() {
 
       <h2>Let AI apps use Volant</h2>
       <p>
-        New in 0.4.4: turn on Connected Apps in Settings &rsaquo; AI, and AI
-        apps that support MCP, such as Claude Code, Claude Desktop, Codex and
-        Cursor, can use Volant as a tool. They can search and read your notes,
-        list your snippets and quicklinks, use Volant&rsquo;s calculator, and
-        check Breaks and Focus. Creating notes, adding to a note, and adding
-        snippets and quicklinks each have their own switch, off until you turn
-        it on. Connect an app shows the line to copy for each app.
+        Turn on Connected Apps in Settings &rsaquo; AI, and AI apps that
+        support MCP, such as Claude Code, Codex, Cursor and Claude Desktop,
+        can use what you keep in Volant. They can search and read your notes,
+        list your snippets and quicklinks, use the calculator, and check Focus
+        and Breaks. New in 0.4.5: with their own switches, they can also start,
+        pause or end Focus and take, skip or pause breaks. Anything that
+        creates or takes control is off until you turn it on. Connect an app
+        shows the line to copy for each app.
+      </p>
+      <p>
+        Sensitive tools ask first. Also new in 0.4.5, searching your clipboard
+        history, searching file names in your home folder, converting currency
+        and checking the weather for a place are each off by default. When an
+        app calls one, Volant shows which app is asking and exactly what it
+        wants, such as &ldquo;Claude Code wants to: Search your clipboard
+        history for &lsquo;invoice&rsquo;&rdquo;, with Deny, Allow Once and
+        Always Allow. No button is preselected, and a request you don&rsquo;t
+        answer is denied after 60 seconds. Ask Again forgets an app&rsquo;s
+        Always Allow choices.
       </p>
       <ul>
         <li>
-          It&rsquo;s off by default and stays on your Mac. The AI app starts a
-          small bridge inside Volant, and Volant answers only that bridge,
-          checked by its code signature. Nothing listens on the network, and
-          the main app still has no network entitlement.
+          The connection never leaves your Mac. The AI app starts a small
+          bridge inside Volant, and Volant answers only that bridge, checked by
+          its code signature. Nothing listens on the network, and the main app
+          still has no network entitlement.
+        </li>
+        <li>
+          What a tool returns goes to the AI app and, from there, to whatever
+          model it uses. Volant never logs what was asked or what came back.
+        </li>
+        <li>
+          Clipboard search returns text only. File search returns names and
+          paths, never contents. Weather is for a place the app names, never
+          your location.
+        </li>
+        <li>
+          Typing, Accessibility, Wi-Fi, AI keys and your location are never
+          offered.
         </li>
         <li>
           Each app that connects is listed under Connected Apps, where you can
           disconnect it.
-        </li>
-        <li>
-          What a tool returns goes to the AI app and, from there, to whatever
-          model it uses. Volant doesn&rsquo;t log tool requests or results.
         </li>
       </ul>
 
