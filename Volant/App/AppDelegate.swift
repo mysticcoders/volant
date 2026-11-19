@@ -115,8 +115,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                      return (session.setup.goal, session.isPaused, self.focus.timeText())
                                  },
                                  configChanged: { [weak self] in self?.reloadConfig() },
-                                 focusControl: { [weak self] control in self?.controlFocus(control) ?? "Focus isn't available." },
-                                 breakControl: { [weak self] control in self?.controlBreaks(control) ?? "Breaks aren't available." },
+                                 focusControl: { [weak self] control in
+                                     MCPToolbox.relay(self, control, unavailable: "Focus isn't available.") { $0.controlFocus($1) }
+                                 },
+                                 breakControl: { [weak self] control in
+                                     MCPToolbox.relay(self, control, unavailable: "Breaks aren't available.") { $0.controlBreaks($1) }
+                                 },
                                  approve: { client, tool, summary in await approvals.ask(client: client, tool: tool, summary: summary) },
                                  clipboard: { [weak self] query, limit in
                                      guard let self, self.clipboardStore.state != .retrying else { return nil }

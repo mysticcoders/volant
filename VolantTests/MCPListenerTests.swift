@@ -259,6 +259,39 @@ final class MCPToolboxPhaseTwoTests: XCTestCase {
         XCTAssertEqual(breakRequests, [.takeNow, .pauseHour])
     }
 
+    private final class ControlOwner {
+        var requests: [MCPToolbox.FocusControl] = []
+        var problem: String?
+
+        @MainActor func control(_ control: MCPToolbox.FocusControl) -> String? {
+            requests.append(control)
+            return problem
+        }
+    }
+
+    /// A control that succeeds returns nil; relaying it through a live owner must stay a success,
+    /// which `owner?.control(c) ?? "unavailable"` turned into a failure after starting Focus.
+    @MainActor func testRelayReportsUnavailableOnlyWhenTheOwnerIsGone() async {
+        let owner = ControlOwner()
+        let relayed: @MainActor (MCPToolbox.FocusControl) -> String? = { [weak owner] control in
+            MCPToolbox.relay(owner, control, unavailable: "Focus isn't available.") { $0.control($1) }
+        }
+        XCTAssertNil(relayed(.start(goal: "Test", minutes: 5)))
+        owner.problem = "No Focus session is paused."
+        XCTAssertEqual(relayed(.resume), "No Focus session is paused.")
+        XCTAssertEqual(owner.requests, [.start(goal: "Test", minutes: 5), .resume])
+        XCTAssertEqual(MCPToolbox.relay(nil as ControlOwner?, .end, unavailable: "Focus isn't available.") { $0.control($1) },
+                       "Focus isn't available.")
+
+        owner.problem = nil
+        let box = MCPToolbox(notes: notes, configURL: root.appendingPathComponent("config.json"), breakHistoryURL: root.appendingPathComponent("h.json"),
+                             focusStatus: { ("Test", false, "5:00") }, focusControl: relayed)
+        let started = await box.tools(MCPPreferences(enabled: true, controlsFocus: true)).first { $0.name == "start_focus" }?
+            .call(["goal": .string("Test"), "minutes": .int(5)])
+        XCTAssertEqual(started?.isError, false, "A Focus session that started is reported as started")
+        XCTAssertEqual(started?.structured?["active"], .bool(true))
+    }
+
     func testResourcesListPagesAndReadNotesSnippetsAndQuicklinks() async throws {
         let note = notes.create(initialText: "# Plan\nphase 2")
         let resources = toolbox().resources()
