@@ -47,7 +47,10 @@ export default function PrivacyAndSecurity() {
           <strong>Connected Apps</strong>, off by default, let AI apps on your
           Mac use Volant through a bridge inside Volant over a local socket that
           only that signed bridge may use; no network listener is involved. What
-          a tool returns goes to the AI app and the model it uses. See{' '}
+          a tool returns goes to the AI app and the model it uses. Clipboard,
+          file name, currency and weather requests each have their own switch
+          and ask you in Volant before anything is read, unless you chose Always
+          Allow for that app. See{' '}
           <a href="/docs/agents">Agents</a>.
         </li>
         <li>
