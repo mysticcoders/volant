@@ -153,6 +153,13 @@ final class MCPSessionTests: XCTestCase {
         XCTAssertEqual(afterWindow?["result"]?["isError"], .bool(false))
     }
 
+    func testServerInfoNamesTheBuild() async throws {
+        let session = MCPSession(version: "1", title: "Volant Dev", instructions: "", tools: { [] })
+        let reply = try await send(session, .object(["jsonrpc": .string("2.0"), "id": .int(0), "method": .string("initialize"), "params": .object([:])]))
+        XCTAssertEqual(reply?["result"]?["serverInfo"]?["title"], .string("Volant Dev"))
+        XCTAssertEqual(reply?["result"]?["serverInfo"]?["name"], .string("Volant"))
+    }
+
     func testEndpointNames() {
         XCTAssertEqual(MCPEndpoint.socketName(appBundleID: "com.mysticcoders.volant"), "mcp")
         XCTAssertEqual(MCPEndpoint.socketName(appBundleID: "com.mysticcoders.volant.dev"), "mcp-dev")

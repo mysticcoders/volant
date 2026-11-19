@@ -252,6 +252,16 @@ invalid input never reaches the owner, truncation, weather attribution). The pro
 were rendered in light and dark. Real clipboard, file, rates and weather calls are the existing stores'
 and helpers', covered by their own tests; a real AI app run comes before release.
 
+## Being found by the AI app
+
+In the owner's first Claude Code run, asked to "list the notes in Volant Dev", the model tried shell
+commands on Volant Dev's folders before using the server; the sandbox blocked them. So the server now
+reports the build's display name (`serverInfo.title`, such as Volant Dev), its instructions say to use
+these tools for anything about that build's notes, snippets, quicklinks, Focus and breaks, and say that
+reading its folders is blocked by the sandbox, and Connect App registers the server as `volant`, or
+`volant-dev` for Volant Dev, so a request naming the build matches the server and both can be set up
+side by side.
+
 ## Phases
 
 1. **Transport, read tools, and note, snippet and quicklink writes.** The app group entitlement and its

@@ -143,7 +143,7 @@ final class MCPListener {
         guard let first = reader.next(), let handshake = try? JSONDecoder().decode(MCPValue.self, from: first),
               handshake["volantBridge"]?.int == MCPEndpoint.handshakeVersion, let client = handshake["client"]?.string.flatMap(MCPEndpoint.clientName) else { return }
         if !current().knownClients.contains(client) { DispatchQueue.main.async { [onNewClient] in onNewClient(client) } }
-        let session = MCPSession(version: version, instructions: Self.instructions, tools: { [weak self] in
+        let session = MCPSession(version: version, title: Self.displayName, instructions: Self.instructions(for: Self.displayName), tools: { [weak self] in
             guard let self else { return [] }
             return self.makeTools(self.current(), client)
         }, resources: { [weak self] in
@@ -176,10 +176,22 @@ final class MCPListener {
         }
     }
 
-    static let instructions = "Volant is a Mac launcher. These tools read the owner's Volant notes (Markdown files), snippets and quicklinks, "
-        + "calculate units, time zones, dates and arithmetic, and report Breaks and Focus. Notes, snippets and quicklinks are also resources "
-        + "(volant://notes/<id>, volant://snippets, volant://quicklinks). Tools that add notes, snippets or quicklinks, or control Focus and "
-        + "Breaks, appear only when the owner allowed them in Volant Settings › AI › Connected Apps."
+    /// This build's name as the owner sees it: Volant, or Volant Dev for development builds.
+    static var displayName: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "Volant"
+    }
+
+    /// What the AI app's model is told about this server. It says plainly to use these tools, because
+    /// asked about Volant's notes a model otherwise tries to read Volant's folders, which the macOS
+    /// sandbox blocks.
+    static func instructions(for name: String) -> String {
+        "This server is \(name), the owner's Mac launcher. Use these tools and resources for anything about the owner's \(name) "
+            + "notes, snippets, quicklinks, Focus sessions and breaks, and for its calculator. \(name) keeps its data inside its macOS "
+            + "sandbox, so reading its folders with shell commands or file tools is blocked; don't try. Notes, snippets and quicklinks are "
+            + "also resources (volant://notes/<id>, volant://snippets, volant://quicklinks). Tools that change things or read sensitive "
+            + "data, such as the clipboard, appear only when the owner allowed them in \(name) Settings › AI › Connected Apps, and the "
+            + "sensitive ones ask the owner in \(name) before each use."
+    }
 
     /// The connected peer's signing team and identifier, read from its audit token.
     static func peer(_ connection: Int32) -> Peer? {

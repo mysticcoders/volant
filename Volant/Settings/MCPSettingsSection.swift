@@ -173,15 +173,19 @@ enum MCPClientSetup: String, CaseIterable, Identifiable {
         }
     }
 
+    /// The name the AI app registers the server under: `volant`, or `volant-dev` for Volant Dev, so
+    /// both can be set up side by side and a request about Volant Dev matches its server.
+    static var serverName: String { Bundle.main.bundleIdentifier == "com.mysticcoders.volant" ? "volant" : "volant-dev" }
+
     /// The exact text to copy.
-    func configuration(bridge: String) -> String {
+    func configuration(bridge: String, server: String = MCPClientSetup.serverName) -> String {
         switch self {
         case .claudeCode:
-            return "claude mcp add volant -- \"\(bridge)\" --client \(clientName)"
+            return "claude mcp add \(server) -- \"\(bridge)\" --client \(clientName)"
         case .codex:
-            return "[mcp_servers.volant]\ncommand = \"\(bridge)\"\nargs = [\"--client\", \"\(clientName)\"]"
+            return "[mcp_servers.\(server)]\ncommand = \"\(bridge)\"\nargs = [\"--client\", \"\(clientName)\"]"
         case .claudeDesktop, .cursor, .other:
-            let entry = MCPValue.object(["mcpServers": .object(["volant": .object(["command": .string(bridge),
+            let entry = MCPValue.object(["mcpServers": .object([server: .object(["command": .string(bridge),
                                                                                   "args": .array([.string("--client"), .string(clientName)])])])])
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]

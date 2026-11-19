@@ -85,6 +85,16 @@ final class MCPApprovalsTests: XCTestCase {
         XCTAssertEqual(MCPClientSetup.displayName("zed"), "zed")
     }
 
+    func testSetupNamesTheServerAfterTheBuildAndInstructionsSteerAwayFromFiles() {
+        XCTAssertTrue(MCPClientSetup.claudeCode.configuration(bridge: "/x/volant-mcp", server: "volant-dev").hasPrefix("claude mcp add volant-dev -- "))
+        XCTAssertTrue(MCPClientSetup.codex.configuration(bridge: "/x/volant-mcp", server: "volant").hasPrefix("[mcp_servers.volant]"))
+        XCTAssertTrue(MCPClientSetup.cursor.configuration(bridge: "/x/volant-mcp", server: "volant-dev").contains("\"volant-dev\""))
+        XCTAssertEqual(MCPClientSetup.serverName, "volant-dev", "The test host is Volant Dev")
+        let instructions = MCPListener.instructions(for: "Volant Dev")
+        XCTAssertTrue(instructions.hasPrefix("This server is Volant Dev"))
+        XCTAssertTrue(instructions.contains("sandbox") && instructions.contains("don't try"))
+    }
+
     func testAnUnansweredPromptIsDenied() async {
         let approvals = approvals(timeout: 0.1)
         let request = start(approvals)
