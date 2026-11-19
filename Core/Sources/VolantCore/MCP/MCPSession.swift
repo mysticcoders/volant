@@ -122,6 +122,7 @@ public final class MCPSession {
     public static let rateWindow: TimeInterval = 10
 
     private let version: String
+    private let title: String
     private let instructions: String
     private let tools: () -> [MCPTool]
     private let resources: () -> MCPResources?
@@ -132,9 +133,12 @@ public final class MCPSession {
 
     /// `tools` returns the tools the owner shares right now; `refusal` says whether to refuse
     /// everything, and both are read on every request so a Settings change applies at once.
-    public init(version: String, instructions: String, tools: @escaping () -> [MCPTool], resources: @escaping () -> MCPResources? = { nil },
-                refusal: @escaping () -> MCPRefusal? = { nil }, clock: @escaping () -> Date = Date.init) {
+    /// `title` is the build's display name, such as Volant Dev, so an AI app asked about that build can
+    /// tell this server is the one to use.
+    public init(version: String, title: String = "Volant", instructions: String, tools: @escaping () -> [MCPTool],
+                resources: @escaping () -> MCPResources? = { nil }, refusal: @escaping () -> MCPRefusal? = { nil }, clock: @escaping () -> Date = Date.init) {
         self.version = version
+        self.title = title
         self.instructions = instructions
         self.tools = tools
         self.resources = resources
@@ -274,7 +278,7 @@ public final class MCPSession {
         }
     }
 
-    private var serverInfo: MCPValue { .object(["name": .string("Volant"), "version": .string(version)]) }
+    private var serverInfo: MCPValue { .object(["name": .string("Volant"), "title": .string(title), "version": .string(version)]) }
 
     /// A result line, marked complete, naming the server in `_meta` for modern requests.
     private func result(id: MCPValue, modern: Bool, _ fields: [String: MCPValue]) -> Data {

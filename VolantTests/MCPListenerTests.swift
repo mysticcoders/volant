@@ -23,7 +23,7 @@ final class MCPListenerTests: XCTestCase {
     /// A listener whose signature check reports `peer`, with one read tool.
     private func listener(peer: MCPListener.Peer?, preferences: MCPPreferences = MCPPreferences(enabled: true)) -> MCPListener {
         let listener = MCPListener(socketURL: socketURL, identify: { _ in peer }, ownTeam: "TEAM", version: "9.9")
-        listener.makeTools = { _ in
+        listener.makeTools = { _, _ in
             [MCPTool(name: "calculate", title: "Calculate", description: "", inputSchema: MCPTool.noArguments, readOnly: true) { _ in .data(.int(4)) }]
         }
         listener.apply(preferences)

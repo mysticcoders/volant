@@ -153,6 +153,13 @@ final class MCPSessionTests: XCTestCase {
         XCTAssertEqual(afterWindow?["result"]?["isError"], .bool(false))
     }
 
+    func testServerInfoNamesTheBuild() async throws {
+        let session = MCPSession(version: "1", title: "Volant Dev", instructions: "", tools: { [] })
+        let reply = try await send(session, .object(["jsonrpc": .string("2.0"), "id": .int(0), "method": .string("initialize"), "params": .object([:])]))
+        XCTAssertEqual(reply?["result"]?["serverInfo"]?["title"], .string("Volant Dev"))
+        XCTAssertEqual(reply?["result"]?["serverInfo"]?["name"], .string("Volant"))
+    }
+
     func testEndpointNames() {
         XCTAssertEqual(MCPEndpoint.socketName(appBundleID: "com.mysticcoders.volant"), "mcp")
         XCTAssertEqual(MCPEndpoint.socketName(appBundleID: "com.mysticcoders.volant.dev"), "mcp-dev")
@@ -230,6 +237,19 @@ final class MCPPreferencesTests: XCTestCase {
         XCTAssertTrue(decoded.writesNotes)
         XCTAssertEqual(decoded.knownClients, ["cursor"])
         XCTAssertFalse(SettingsSync.keys.contains("mcpServer"))
+    }
+
+    func testAlwaysAllowIsPerClientAndToolAndDisconnectClearsIt() throws {
+        var preferences = try JSONDecoder().decode(MCPPreferences.self, from: Data(#"{"alwaysAllowed":["cursor/search_clipboard","bad","Bad Name/x","cursor/","codex/search_files","cursor/search_clipboard"]}"#.utf8))
+        XCTAssertEqual(preferences.alwaysAllowed, ["cursor/search_clipboard", "codex/search_files"])
+        XCTAssertTrue(preferences.alwaysAllows(client: "cursor", tool: "search_clipboard"))
+        XCTAssertFalse(preferences.alwaysAllows(client: "cursor", tool: "search_files"))
+        XCTAssertFalse(preferences.sharesClipboard, "Sensitive switches are off by default")
+        preferences.disconnect("cursor")
+        XCTAssertEqual(preferences.alwaysAllowed, ["codex/search_files"])
+        XCTAssertEqual(preferences.disconnectedClients, ["cursor"])
+        preferences.askAgain("codex")
+        XCTAssertEqual(preferences.alwaysAllowed, [])
     }
 
     func testRefusalFollowsTheSwitchAndDisconnectedApps() {

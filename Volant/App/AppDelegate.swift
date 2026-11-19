@@ -98,8 +98,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var breaks = BreakController(preferences: config.breaks)
     private lazy var breakPresenter = BreakPresenter(controller: breaks)
     /// The MCP server AI apps reach through volant-mcp; listens only while Connected Apps is on.
+    /// Asks the owner before an AI app's sensitive request; Always Allow is saved per app and tool.
+    private lazy var mcpApprovals: MCPApprovals = {
+        let approvals = MCPApprovals()
+        approvals.preferences = { [weak self] in self?.config.mcpServer ?? MCPPreferences() }
+        approvals.remember = { [weak self] client, tool in self?.alwaysAllowMCP(client: client, tool: tool) }
+        return approvals
+    }()
     private lazy var mcp: MCPListener = {
         let listener = MCPListener()
+        let approvals = mcpApprovals
         let toolbox = MCPToolbox(notes: notesStore, configURL: Preferences.configURL, breakHistoryURL: BreakHistoryStore.defaultURL,
                                  breakStatus: { [weak self] in (self?.config.breaks.enabled ?? false, self?.breaks.statusText() ?? "") },
                                  focusStatus: { [weak self] in
@@ -108,8 +116,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                  },
                                  configChanged: { [weak self] in self?.reloadConfig() },
                                  focusControl: { [weak self] control in self?.controlFocus(control) ?? "Focus isn't available." },
-                                 breakControl: { [weak self] control in self?.controlBreaks(control) ?? "Breaks aren't available." })
-        listener.makeTools = { toolbox.tools($0) }
+                                 breakControl: { [weak self] control in self?.controlBreaks(control) ?? "Breaks aren't available." },
+                                 approve: { client, tool, summary in await approvals.ask(client: client, tool: tool, summary: summary) },
+                                 clipboard: { [weak self] query, limit in
+                                     guard let self, self.clipboardStore.state != .retrying else { return nil }
+                                     return self.clipboardStore.recent(limit: limit, matching: query).filter { $0.kind == .text }.map { ($0.text, $0.copiedAt) }
+                                 },
+                                 files: { term in
+                                     await withCheckedContinuation { continuation in
+                                         _ = HomeFileSearchClient.shared.search(term) { result in
+                                             if case .success(let entries) = result { continuation.resume(returning: entries) } else { continuation.resume(returning: nil) }
+                                         }
+                                     }
+                                 },
+                                 currency: { [weak self] query in await self?.convertForMCP(query) },
+                                 weather: { place in
+                                     await withCheckedContinuation { continuation in
+                                         WeatherStore.throughHelper(.place(place), nil) { data, message in
+                                             let report = data.flatMap(WeatherReport.decode)
+                                             continuation.resume(returning: (report, report == nil ? (HostMessage.display(message) ?? HostMessage(.weatherUnavailable).text) : nil))
+                                         }
+                                     }
+                                 })
+        listener.makeTools = { toolbox.tools($0, client: $1) }
         listener.makeResources = { _ in toolbox.resources() }
         listener.onNewClient = { [weak self] client in self?.recordMCPClient(client) }
         return listener
@@ -403,6 +432,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             breaks.resume()
         }
         return nil
+    }
+
+    /// Converts currency for an AI app the way the launcher does: noting the query may fetch rates
+    /// through the rates helper, and the conversion waits up to eight seconds for them.
+    private func convertForMCP(_ query: String) async -> CalculationAnswer? {
+        currencyRates.noteQuery(query)
+        for _ in 0..<32 {
+            if let answer = MoneyCalculator.evaluate(query) { return answer }
+            try? await Task.sleep(nanoseconds: 250_000_000)
+        }
+        return nil
+    }
+
+    /// Saves Always Allow for one AI app and sensitive tool, checked against the file as it is now.
+    private func alwaysAllowMCP(client: String, tool: String) {
+        guard let data = try? Data(contentsOf: Preferences.configURL),
+              let current = try? JSONDecoder().decode(Preferences.self, from: data).mcpServer,
+              !current.alwaysAllows(client: client, tool: tool) else { return }
+        var updated = current
+        updated.alwaysAllowed.append(MCPPreferences.grant(client: client, tool: tool))
+        guard (try? Preferences.updateMCPServer(updated, expected: current)) != nil else { return }
+        reloadConfig()
     }
 
     /// Remembers an AI app's name the first time its bridge connects, so Settings can list it with

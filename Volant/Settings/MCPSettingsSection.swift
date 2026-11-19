@@ -38,6 +38,20 @@ struct MCPSettingsSection: View {
                 Toggle(isOn: binding(\.controlsBreaks)) {
                     Text("Take, skip and pause breaks", comment: "Settings › AI › Connected Apps permission to control Breaks")
                 }
+                Toggle(isOn: binding(\.sharesClipboard)) {
+                    Text("Search clipboard history", comment: "Settings › AI › Connected Apps sensitive permission")
+                    Text("Volant asks you before every search, unless you choose Always Allow for that app.", comment: "Settings › AI › Connected Apps: explains that sensitive permissions ask each time")
+                }
+                .accessibilityIdentifier("settings-mcp-clipboard")
+                Toggle(isOn: binding(\.searchesFiles)) {
+                    Text("Search file names", comment: "Settings › AI › Connected Apps sensitive permission: search names of files in the home folder")
+                }
+                Toggle(isOn: binding(\.convertsCurrency)) {
+                    Text("Convert currency", comment: "Settings › AI › Connected Apps sensitive permission")
+                }
+                Toggle(isOn: binding(\.checksWeather)) {
+                    Text("Check the weather", comment: "Settings › AI › Connected Apps sensitive permission")
+                }
                 Picker(selection: $client) {
                     ForEach(MCPClientSetup.allCases) { Text(verbatim: $0.title).tag($0) }
                 } label: {
@@ -57,14 +71,19 @@ struct MCPSettingsSection: View {
                 ForEach(server.knownClients, id: \.self) { name in
                     let disconnected = server.disconnectedClients.contains(name)
                     HStack {
-                        Text(verbatim: name)
+                        Text(verbatim: MCPClientSetup.displayName(name))
                         if disconnected {
                             Text("Disconnected", comment: "Settings › AI › Connected Apps: an app the owner disconnected").foregroundStyle(.secondary)
                         }
                         Spacer()
+                        if !disconnected, server.alwaysAllowed.contains(where: { $0.hasPrefix(name + "/") }) {
+                            Button(String(localized: "Ask Again", comment: "Forgets an AI app's Always Allow choices, so Volant asks before each sensitive request")) {
+                                update { $0.askAgain(name) }
+                            }
+                        }
                         Button(disconnected ? String(localized: "Allow Again", comment: "Lets a disconnected AI app use Volant again")
                                             : String(localized: "Disconnect", comment: "Stops an AI app from using Volant")) {
-                            update { $0.disconnectedClients = disconnected ? $0.disconnectedClients.filter { $0 != name } : $0.disconnectedClients + [name] }
+                            update { if disconnected { $0.disconnectedClients.removeAll { $0 == name } } else { $0.disconnect(name) } }
                         }
                     }
                 }
@@ -127,6 +146,12 @@ enum MCPClientSetup: String, CaseIterable, Identifiable {
         }
     }
 
+    /// A connected client's name as Settings and the approval prompt show it: the product name for the
+    /// apps Volant offers setup for, the bridge's client name otherwise.
+    static func displayName(_ client: String) -> String {
+        allCases.first { $0 != .other && $0.clientName == client }?.title ?? client
+    }
+
     /// The client name the bridge reports, shown in Settings once it connects.
     var clientName: String {
         switch self {
@@ -148,15 +173,19 @@ enum MCPClientSetup: String, CaseIterable, Identifiable {
         }
     }
 
+    /// The name the AI app registers the server under: `volant`, or `volant-dev` for Volant Dev, so
+    /// both can be set up side by side and a request about Volant Dev matches its server.
+    static var serverName: String { Bundle.main.bundleIdentifier == "com.mysticcoders.volant" ? "volant" : "volant-dev" }
+
     /// The exact text to copy.
-    func configuration(bridge: String) -> String {
+    func configuration(bridge: String, server: String = MCPClientSetup.serverName) -> String {
         switch self {
         case .claudeCode:
-            return "claude mcp add volant -- \"\(bridge)\" --client \(clientName)"
+            return "claude mcp add \(server) -- \"\(bridge)\" --client \(clientName)"
         case .codex:
-            return "[mcp_servers.volant]\ncommand = \"\(bridge)\"\nargs = [\"--client\", \"\(clientName)\"]"
+            return "[mcp_servers.\(server)]\ncommand = \"\(bridge)\"\nargs = [\"--client\", \"\(clientName)\"]"
         case .claudeDesktop, .cursor, .other:
-            let entry = MCPValue.object(["mcpServers": .object(["volant": .object(["command": .string(bridge),
+            let entry = MCPValue.object(["mcpServers": .object([server: .object(["command": .string(bridge),
                                                                                   "args": .array([.string("--client"), .string(clientName)])])])])
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]

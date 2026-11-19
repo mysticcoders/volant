@@ -401,10 +401,11 @@ if CommandLine.arguments.contains("--render") {
         // than this window, so the section is drawn on its own, in Settings' form style. Nothing listens:
         // the preview has no MCP listener.
         let mcpOff = try! JSONDecoder().decode(Preferences.self, from: Data(contentsOf: configURL)).mcpServer
-        let mcpOn = MCPPreferences(enabled: true, writesNotes: true, controlsFocus: true, knownClients: ["claude-code", "cursor"], disconnectedClients: ["cursor"])
+        let mcpOn = MCPPreferences(enabled: true, writesNotes: true, controlsFocus: true, sharesClipboard: true, alwaysAllowed: ["claude-code/search_clipboard"],
+                                   knownClients: ["claude-code", "cursor"], disconnectedClients: ["cursor"])
         try! Preferences.updateMCPServer(mcpOn, expected: mcpOff, at: configURL)
         for theme in ["light", "dark"] {
-            let section = NSWindow(contentRect: NSRect(x: 100, y: 100, width: 620, height: 640), styleMask: [.titled], backing: .buffered, defer: false)
+            let section = NSWindow(contentRect: NSRect(x: 100, y: 100, width: 620, height: 1000), styleMask: [.titled], backing: .buffered, defer: false)
             app.appearance = NSAppearance(named: theme == "dark" ? .darkAqua : .aqua)
             section.appearance = app.appearance
             section.contentView = NSHostingView(rootView: ThemedRoot(paletteText: false) {
@@ -422,6 +423,28 @@ if CommandLine.arguments.contains("--render") {
             print("Rendered \(theme) AI connected apps")
         }
         try! Preferences.updateMCPServer(mcpOff, expected: mcpOn, at: configURL)
+        // The approval prompt for a fictional clipboard search, drawn on its own. Nothing runs a tool.
+        let approvals = MCPApprovals()
+        approvals.show = { _ in }
+        approvals.hide = { _ in }
+        approvals.showForFixture(client: "claude-code", tool: "search_clipboard", summary: "Search your clipboard history for “invoice”")
+        for theme in ["light", "dark"] {
+            app.appearance = NSAppearance(named: theme == "dark" ? .darkAqua : .aqua)
+            let prompt = NSWindow(contentRect: NSRect(x: 100, y: 100, width: MCPApprovalPanel.width + 40, height: 180), styleMask: [.titled], backing: .buffered, defer: false)
+            prompt.appearance = app.appearance
+            prompt.contentView = NSHostingView(rootView: ThemedRoot(paletteText: false) {
+                MCPApprovalView(approvals: approvals).padding(20).background(Color(nsColor: .windowBackgroundColor))
+            })
+            prompt.orderFront(nil)
+            RunLoop.main.run(until: Date().addingTimeInterval(0.5))
+            let view = prompt.contentView!
+            view.layoutSubtreeIfNeeded()
+            let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
+            view.cacheDisplay(in: view.bounds, to: rep)
+            try! rep.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent(theme + "-AI-approval-prompt.png"))
+            prompt.orderOut(nil)
+            print("Rendered \(theme) AI approval prompt")
+        }
         for (colorTheme, mode) in [("volant", Appearance.Theme.light), ("catppuccin-mocha", .dark), ("rose-pine-dawn", .light)] {
             ThemeStore.shared.apply(Appearance(theme: mode, colorTheme: colorTheme))
             controller.state.section = .appearance
