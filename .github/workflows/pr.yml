@@ -44,6 +44,7 @@ jobs:
           python3 tools/test-scope.py "${options[@]}" | tee /tmp/volant-scope.json
           python3 -c 'import json; s = json.load(open("/tmp/volant-scope.json")); print("Scope: native=%s ui=%s (%s)" % (s["native"], s["ui"], s["reason"]))' >> "$GITHUB_STEP_SUMMARY"
       - run: git diff --check
+      - run: python3 tools/ratchets.py --self-test && python3 tools/ratchets.py
   native:
     needs: scope
     if: needs.scope.outputs.native == 'true'

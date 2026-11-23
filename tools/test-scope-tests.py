@@ -74,7 +74,7 @@ class ScopeTests(unittest.TestCase):
 
     def test_known_other_paths_select_no_macos_job(self):
         for path in ["docs/roadmap.md", "website/app/page.tsx", "ios/README.md", "AGENTS.md", "README.md", "justfile",
-                     ".gitignore", ".github/dependabot.yml"]:
+                     ".gitignore", ".github/dependabot.yml", ".claude/settings.json"]:
             self.assertEqual(scope.unclassified([path]), [], path)
             self.assertEqual(scope.classify([path]), {"native": False, "ui": False}, path)
 
