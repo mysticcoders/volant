@@ -35,6 +35,20 @@ step() { printf '\n==> %s\n' "$*"; }
 fail() { printf '\nShip stopped: %s\nState: %s\n' "$*" "$STATE" >&2; exit 1; }
 trap 'fail "command failed at line $LINENO"' ERR
 
+# Removes the temporary worktree on every exit, success or not, so failed and interrupted runs
+# don't leave a full checkout behind (--publish adds it again when resuming). After a full
+# publish it also deletes the bulky copies in the logs folder that the merged commit or the
+# public site already holds, keeping logs, the report and the archive with its debug symbols.
+cleanup() {
+  if [[ -n "${WT:-}" && -d "$WT" ]]; then
+    git -C "$ROOT" worktree remove --force "$WT" 2> /dev/null || rm -rf "$WT"
+    git -C "$ROOT" worktree prune 2> /dev/null || true
+  fi
+  if [[ "$STATE" == "fully published" || "$STATE" == "website published and verified; app distribution unchanged" ]]; then
+    rm -rf "$LOGS/public.dmg" "$LOGS/release/dmg" "$LOGS/release/export" "$LOGS/release/notarize.zip" "$LOGS/release/updates"/*.dmg
+  fi
+}
+
 # Pushes the worktree's branch, opens a pull request with the given title and body file, and
 # prints its number.
 open_pr() {
@@ -103,6 +117,7 @@ gh auth status > /dev/null 2>&1 || fail "gh is not signed in"
 git -C "$ROOT" fetch -q origin
 LOGS="$(mktemp -d "$ROOT/dist-release.ship-$VERSION.XXXXXX")"
 WT="$LOGS/worktree"
+trap cleanup EXIT
 if [[ "$VERSION" != --site-only ]]; then
   gh release view "v$VERSION" > /dev/null 2>&1 && fail "GitHub release v$VERSION already exists"
 fi
@@ -152,7 +167,6 @@ Production browser/security smoke passed. Appcast and SHA256SUMS are byte-for-by
 Logs and browser captures: $LOGS
 EOF
   trap - ERR
-  git -C "$ROOT" worktree remove --force "$WT"
   cat "$LOGS/report.md"
   exit 0
 fi
@@ -330,7 +344,7 @@ EOF
 gh pr comment "$PR" --body-file "$LOGS/report.md" > /dev/null
 
 trap - ERR
-git -C "$ROOT" worktree remove --force "$WT"
+cleanup
 git -C "$ROOT" branch -D "$BRANCH" > /dev/null 2>&1 || true
 printf '\nShipped Volant %s.\n' "$VERSION"
 cat "$LOGS/report.md"
