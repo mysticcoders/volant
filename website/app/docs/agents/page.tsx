@@ -335,7 +335,7 @@ export default function Agents() {
         shows the line to copy for each app.
       </p>
       <p>
-        Sensitive tools ask first. Also new in 0.4.5, searching your clipboard
+        Sensitive tools ask first. Searching your clipboard
         history, searching file names in your home folder, converting currency
         and checking the weather for a place are each off by default. When an
         app calls one, Volant shows which app is asking and exactly what it
