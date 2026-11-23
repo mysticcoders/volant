@@ -1,0 +1,91 @@
+{
+  "about": "Counts for tools/ratchets.py. They may only go down; see that file before editing.",
+  "patterns": {
+    "dispatch_main_async": {
+      "total": 118,
+      "files": {
+        "Volant/Agents/ACPConversationView.swift": 1,
+        "Volant/Agents/ACPModel.swift": 10,
+        "Volant/Agents/ACPPromptView.swift": 2,
+        "Volant/Agents/AgentsModel.swift": 11,
+        "Volant/Agents/RexModel.swift": 4,
+        "Volant/Agents/RexOverviewModel.swift": 4,
+        "Volant/App/AppDelegate.swift": 6,
+        "Volant/Breaks/BreakPanels.swift": 1,
+        "Volant/Breaks/BreakPhoneAlerts.swift": 1,
+        "Volant/Camera/CameraAccess.swift": 1,
+        "Volant/Camera/CameraPreviewWindow.swift": 2,
+        "Volant/Dictation/DictationIndicatorPanel.swift": 1,
+        "Volant/Dictation/InputHostConnection.swift": 2,
+        "Volant/Dictation/SpeechDictation.swift": 1,
+        "Volant/Extensions/ExtensionCatalogClient.swift": 2,
+        "Volant/Extensions/ExtensionCatalogView.swift": 1,
+        "Volant/Extensions/ExtensionFetcher.swift": 1,
+        "Volant/Extensions/ExtensionIcon.swift": 1,
+        "Volant/Extensions/ExtensionManager.swift": 5,
+        "Volant/Extensions/ExtensionSVGRendering.swift": 1,
+        "Volant/Files/FSearchClient.swift": 1,
+        "Volant/Files/FileSearch.swift": 2,
+        "Volant/Focus/FocusBarPanel.swift": 1,
+        "Volant/Focus/FocusController.swift": 1,
+        "Volant/Focus/FocusNotch.swift": 3,
+        "Volant/Focus/FocusReminderPanel.swift": 1,
+        "Volant/Focus/FocusStatusItem.swift": 1,
+        "Volant/HotKeys/AppHotKeys.swift": 1,
+        "Volant/Import/RaycastImportWindowController.swift": 1,
+        "Volant/MCP/MCPApprovals.swift": 1,
+        "Volant/MCP/MCPListener.swift": 1,
+        "Volant/MCP/MCPToolbox.swift": 1,
+        "Volant/Notes/LiveMarkdownEditor.swift": 2,
+        "Volant/Notes/NotesICloud.swift": 3,
+        "Volant/Notes/NotesStore.swift": 2,
+        "Volant/Onboarding/WelcomeModel.swift": 1,
+        "Volant/Panel/LauncherModel.swift": 9,
+        "Volant/Panel/LauncherPanel.swift": 3,
+        "Volant/Panel/LauncherView.swift": 1,
+        "Volant/People/CalendarAgenda.swift": 1,
+        "Volant/People/ContactSearch.swift": 2,
+        "Volant/Search/CurrencyRatesStore.swift": 3,
+        "Volant/Search/WeatherStore.swift": 1,
+        "Volant/Servers/ServersModel.swift": 2,
+        "Volant/Settings/ACPAgentDetection.swift": 1,
+        "Volant/Settings/AIModelDiscovery.swift": 1,
+        "Volant/Settings/LanguageSetting.swift": 1,
+        "Volant/Settings/SettingsWindowController.swift": 1,
+        "Volant/Shortcuts/AppleShortcutsModel.swift": 3,
+        "Volant/SystemControl/ColorSampling.swift": 1,
+        "Volant/SystemControl/Connectivity.swift": 2,
+        "Volant/SystemControl/SystemEvents.swift": 1,
+        "VolantInputHost/main.swift": 2,
+        "ios/VolantMobile/Notes/NotesStore.swift": 2
+      }
+    },
+    "try_bang": {
+      "total": 0,
+      "files": {}
+    },
+    "force_cast": {
+      "total": 4,
+      "files": {
+        "Core/Sources/VolantCore/Units/UnitConverter.swift": 1,
+        "VolantInputHost/SystemInput.swift": 2,
+        "VolantInputHost/SystemMenus.swift": 1
+      }
+    },
+    "unchecked_sendable": {
+      "total": 6,
+      "files": {
+        "Core/Sources/VolantCore/Herdr/HerdrMachines.swift": 1,
+        "Core/Sources/VolantCore/Units/UnitConverter.swift": 2,
+        "Shared/HerdrProcess.swift": 1,
+        "Volant/Extensions/ExtensionFetcher.swift": 1,
+        "Volant/Extensions/ExtensionSVGRendering.swift": 1
+      }
+    },
+    "nonisolated_unsafe": {
+      "total": 0,
+      "files": {}
+    }
+  },
+  "raised": []
+}

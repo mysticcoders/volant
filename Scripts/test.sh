@@ -33,6 +33,8 @@ timed() {
     printf 'step time: %4ss  %s\n' "$((SECONDS - start))" "$*"
 }
 timed python3 tools/test-scope-tests.py
+timed python3 tools/ratchets.py --self-test
+timed python3 tools/ratchets.py
 timed python3 tools/check-input-confinement.py --self-test
 timed python3 tools/check-release-copy.py --self-test
 timed python3 tools/ship-site-tests.py
