@@ -1744,6 +1744,43 @@ func serversScenario() throws {
     verify(copied == ["http://localhost:3000"], "Command-Return in the menu copies the URL: \(copied)")
 }
 
+/// Git worktrees from a scripted helper: a fictional dev server holds one (In Use), the rest by
+/// size with change counts, a stale entry last, and a worktree's Actions. Every path is fictional.
+func worktreesScenario() throws {
+    let repo = "/Users/fictional/workspace/orbit"
+    panel.model.servers.loadOverride = { $0([
+        ListeningServer(pid: 4101, port: 5173, process: "node", executable: "/opt/fictional/bin/node", directory: repo + "/.claude/worktrees/checkout-flow", exposed: false),
+    ], nil) }
+    panel.model.worktrees.loadOverride = { _, finish in finish([
+        Worktree(repository: repo, path: repo + "/.claude/worktrees/checkout-flow", branch: "feat/checkout-flow", head: "a1b2c3d4e5"),
+        Worktree(repository: repo, path: repo + "/dist-release.ship-2.1.0.Qx7a/worktree", branch: nil, head: "9f8e7d6c5b"),
+        Worktree(repository: repo, path: repo + "/.claude/worktrees/search-index", branch: "fix/search-index", head: "1029384756"),
+        Worktree(repository: "/Users/fictional/workspace/atlas", path: "/Users/fictional/workspace/atlas-docs", branch: "docs/api", head: "5647382910"),
+        Worktree(repository: repo, path: repo + "/.claude/worktrees/old-spike", branch: "spike/old", head: "0011223344", stale: true),
+    ], nil) }
+    let sizes: [String: Int64] = [repo + "/.claude/worktrees/checkout-flow": 3_100_000_000, repo + "/dist-release.ship-2.1.0.Qx7a/worktree": 2_300_000_000,
+                                  repo + "/.claude/worktrees/search-index": 1_800_000_000, "/Users/fictional/workspace/atlas-docs": 412_000_000]
+    let ages: [String: Double] = [repo + "/.claude/worktrees/checkout-flow": 3600, repo + "/dist-release.ship-2.1.0.Qx7a/worktree": 86400 * 12,
+                                  repo + "/.claude/worktrees/search-index": 86400 * 3, "/Users/fictional/workspace/atlas-docs": 86400 * 30]
+    panel.model.worktrees.detailsOverride = { paths, finish in
+        finish(Dictionary(uniqueKeysWithValues: paths.map { ($0, WorktreeDetails(size: sizes[$0], lastCommit: Date().addingTimeInterval(-(ages[$0] ?? 0)))) }))
+    }
+    panel.model.worktrees.changesOverride = { paths, finish in
+        finish(Dictionary(uniqueKeysWithValues: paths.map { ($0, RepositoryState(changed: $0.hasSuffix("search-index") ? 4 : 0)) }))
+    }
+    summon()
+    panel.model.query = "worktrees"; settle()
+    verify(waitUntil { panel.model.rows.count == 5 && panel.model.rows.allSatisfy { $0.kind != "" } }, "Worktrees shows the fictional worktrees with labels: \(panel.model.rows.map(\.kind))")
+    verify(panel.model.sections.map(\.title) == ["In Use", "Worktrees", "Stale"], "Worktrees groups In Use, the rest and Stale: \(panel.model.sections.map(\.title))")
+    try render("worktrees")
+    key("k", 40, .command)
+    verify(waitUntil { panel.model.actionTarget != nil }, "Command K opens a worktree's Actions")
+    verify(panel.model.actionTarget?.menuEntries == [.item(.reveal), .item(.openInTerminal), .item(.copyPath), .item(.copyBranch)],
+           "A worktree offers Reveal, Open in Terminal and the copies: \(String(describing: panel.model.actionTarget?.menuEntries))")
+    verify(panel.model.actionTarget?.commandReturnEntry == .item(.copyPath), "Command-Return in a worktree's Actions copies the path")
+    try render("worktrees-actions")
+}
+
 /// Search Menu Items' helper calls, answered with fictional menus so no input helper runs and no
 /// real app is read or pressed.
 final class FixtureMenuClient: MenuItemsClient {
@@ -1892,6 +1929,7 @@ let scenarios: [Scenario] = [
     Scenario(name: "herdr", sizeSensitive: true, run: herdrScenario),
     Scenario(name: "rex", sizeSensitive: true, run: rexScenario),
     Scenario(name: "servers", sizeSensitive: true, run: serversScenario),
+    Scenario(name: "worktrees", sizeSensitive: true, run: worktreesScenario),
     Scenario(name: "menu-items", sizeSensitive: true, run: menuItemsScenario),
     Scenario(name: "search-scopes", sizeSensitive: true, run: searchScopesScenario),
     Scenario(name: "rex-overview", sizeSensitive: false, run: rexOverviewScenario),

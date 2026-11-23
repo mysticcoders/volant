@@ -66,6 +66,19 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
             catch { reply(nil, HostMessage(.serversUnreadable).wire) }
         }
     }
+    private let worktreeQueue = DispatchQueue(label: "com.mysticcoders.volant.worktrees")
+    func listWorktrees(folders data: Data, reply: @escaping (Data?, String?) -> Void) {
+        worktreeQueue.async {
+            do { reply(try JSONEncoder().encode(WorktreeInspector.list(folders: data)), nil) }
+            catch { reply(nil, HostMessage(.worktreesUnreadable).wire) }
+        }
+    }
+    func worktreeDetails(paths data: Data, reply: @escaping (Data?, String?) -> Void) {
+        worktreeQueue.async {
+            do { reply(try JSONEncoder().encode(WorktreeInspector.details(paths: data)), nil) }
+            catch { reply(nil, HostMessage(.worktreesUnreadable).wire) }
+        }
+    }
     func repositoryStates(paths data: Data, reply: @escaping (Data?, String?) -> Void) {
         inspectionQueue.async {
             do {

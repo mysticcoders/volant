@@ -1,6 +1,6 @@
 # Worktrees command
 
-Status: proposal, 2026-11-23. Not started; waiting on the owner's go-ahead. Reviewed against `servers` and `VolantAgentHost` the same day (see Review notes).
+Status: phase 1 (read-only) built on 2026-11-23 at the owner's go-ahead; phase 2 not started and still needs approval. Reviewed against `servers` and `VolantAgentHost` the same day (see Review notes).
 
 Two phases. **Phase 1 is read-only**, like `servers`: list, reveal, copy, open. **Phase 2 adds Remove and Prune** and needs the owner's separate approval, the same way stopping servers waits on `docs/process-control-spike.md`.
 
@@ -113,3 +113,11 @@ Changes from the first draft, after reading `servers` and `VolantAgentHost`:
 - Sizes are measured in Swift and labeled as estimates.
 - No Open in Rex.
 - When this ships, add an `AGENTS.md` entry like the `servers` one.
+
+## Phase 1 as built
+
+- Query words `worktrees`, `worktree`, `wt`; `stale` filters. Sections In Use, Worktrees (largest first) and Stale. Return reveals in Finder (copies the path for a missing folder), Command-Return copies the path, and the Actions menu adds Open in Terminal and Copy Branch Name.
+- Helper: `listWorktrees(folders:)` and `worktreeDetails(paths:)` (four paths per call, 6 s size budget each). Folder hints are Rex and local Herdr pane folders the launcher already has; the helper adds listening servers' folders itself. The `~/.claude/projects` source and a Settings list of roots are not built; roots are the existing `Worktrees.rootNames` folders.
+- In Use comes from listening servers and those agent folders. An agent in a plain terminal, or a Rex pane that never reported its folder, isn't seen.
+- Measured on this Mac: a detached Volant worktree (1,513 files) measured 871.9 MB, the same as `du -sk`, in 0.01 s; discovery of three roots took 0.16 s.
+

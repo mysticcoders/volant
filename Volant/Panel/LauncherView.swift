@@ -58,6 +58,14 @@ struct LauncherView: View {
                         .disabled(model.servers.loading)
                 }.font(.system(size: 12)).padding(.horizontal, 20).padding(.vertical, 6)
             }
+            if model.showingWorktrees {
+                HStack {
+                    Text("Git Worktrees").foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Refresh") { model.refreshWorktrees() }
+                        .disabled(model.worktrees.loading)
+                }.font(.system(size: 12)).padding(.horizontal, 20).padding(.vertical, 6)
+            }
             if let network = model.wifiJoin {
                 WiFiJoinView(model: model, network: network).id(network.id)
                 Divider().opacity(0.6)
@@ -518,6 +526,7 @@ private extension CoreCommand {
         case .files: return .cyan
         case .agents: return Color(white: 0.22)
         case .servers: return Color(red: 0.2, green: 0.55, blue: 0.35)
+        case .worktrees: return Color(red: 0.94, green: 0.36, blue: 0.2)
         case .wifi, .bluetooth: return .blue
         case .audio: return .mint
         case .colorPicker: return Color(red: 0.85, green: 0.35, blue: 0.55)
@@ -604,6 +613,7 @@ private struct RowView: View {
         case .menuItem(let entry): return entry.item.title
         case .menuItemsOff: return String(localized: "Turn On Search Menu Items", comment: "Launcher row title while Search Menu Items is off")
         case .server(let server): return "\(server.port) · " + (server.folderName.map { server.displayName + " · " + $0 } ?? server.displayName)
+        case .worktree(let item, _, _): return item.title
         case .core(let command): return command.title
         case .systemAction(let action): return action.title
         case .systemToggle(let toggle, _): return toggle.title
@@ -650,6 +660,7 @@ private struct RowView: View {
         switch row {
         case .core(let command): return command.detail
         case .server(let server): return server.detail(home: ServersModel.home)
+        case .worktree(_, _, let detail): return detail
         case .menuItem(let entry): return entry.item.location
         case .menuItemsOff: return String(localized: "Off in Settings. Lets Volant read and press the menus of the app you were using.", comment: "Launcher row subtitle while Search Menu Items is off")
         case .systemAction(let action): return action.detail
@@ -716,6 +727,7 @@ private struct RowView: View {
         case .server(let server):
             if let logo = server.kind.logo, let image = NSImage(named: "Runtimes/" + logo.asset) { RuntimeTile(image: image, hex: logo.hex) }
             else { CommandTile(symbol: CoreCommand.servers.symbol, tint: CoreCommand.servers.tint) }
+        case .worktree(let item, _, _): CommandTile(symbol: item.stale ? "questionmark.folder" : CoreCommand.worktrees.symbol, tint: item.stale ? .gray : CoreCommand.worktrees.tint)
         case .core(let command): CommandTile(symbol: command.symbol, tint: command.tint)
         case .pickAnotherColor: CommandTile(symbol: CoreCommand.colorPicker.symbol, tint: CoreCommand.colorPicker.tint)
         case .systemAction(let action): CommandTile(symbol: action.symbol, tint: action.tint)
