@@ -1791,7 +1791,8 @@ func worktreesScenario() throws {
     verify(panel.model.actionTarget?.menuEntries.last == .item(.removeWorktree), "Remove Worktree is the last action")
     try render("worktrees-remove-menu")
     if let target = panel.model.actionTarget { panel.model.performAction(.removeWorktree, target: target) }
-    verify(waitUntil { panel.model.worktreeRemoval != nil }, "Remove Worktree asks first")
+    verify(waitUntil { panel.model.worktreeRemoval != nil && panel.model.actionTarget == nil }, "Remove Worktree asks first")
+    settle()
     try render("worktrees-remove")
     key("\r", 36)
     settle()
