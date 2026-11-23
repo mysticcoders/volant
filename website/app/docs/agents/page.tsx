@@ -329,7 +329,7 @@ export default function Agents() {
         support MCP, such as Claude Code, Codex, Cursor and Claude Desktop,
         can use what you keep in Volant. They can search and read your notes,
         list your snippets and quicklinks, use the calculator, and check Focus
-        and Breaks. New in 0.4.5: with their own switches, they can also start,
+        and Breaks. With their own switches, they can also start,
         pause or end Focus and take, skip or pause breaks. Anything that
         creates or takes control is off until you turn it on. Connect an app
         shows the line to copy for each app.

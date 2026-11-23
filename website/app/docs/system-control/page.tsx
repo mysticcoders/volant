@@ -188,6 +188,33 @@ export default function SystemControl() {
         <code>servers all</code>. Volant only lists servers; it doesn&rsquo;t
         stop them.
       </p>
+      <h2>Git worktrees</h2>
+      <p>
+        New in 0.4.6: type <code>worktrees</code> or <code>wt</code> to see
+        the git worktrees on your Mac, largest first, with each one&rsquo;s
+        size, uncommitted changes and the age of its last commit. Worktrees a
+        dev server or agent is working in come first under{' '}
+        <strong>In Use</strong>; ones whose folder is gone are listed under{' '}
+        <strong>Stale</strong>. Volant looks in folders such as{' '}
+        <code>~/workspace</code>, <code>~/Developer</code>, <code>~/src</code>{' '}
+        and <code>~/code</code>, and in the folders your servers and agents
+        are working in. Type more to filter by repository, branch or path, or{' '}
+        <code>worktrees stale</code> for stale ones only.
+      </p>
+      <p>
+        Return shows a worktree in Finder and Command-Return copies its path.
+        Actions (Command-K) open it in Terminal, copy its branch name, or{' '}
+        <strong>Remove Worktree&hellip;</strong>, which asks first; Return
+        never removes anything. Right before removing, Volant checks again
+        that the worktree hasn&rsquo;t changed, isn&rsquo;t locked, has no
+        program working inside it, and has no commits only it holds. It saves
+        uncommitted changes and new files to Application Support &rsaquo;
+        Volant &rsaquo; Worktree Backups, keeps the branch, and removes the
+        folder. Files git ignores, such as build output or a{' '}
+        <code>.env</code> file, are deleted with it. On a stale row,{' '}
+        <strong>Prune Stale Worktrees</strong> clears git&rsquo;s records of
+        folders that are already gone.
+      </p>
       <h2>System Settings</h2>
       <p>
         Search for a settings pane, such as Displays or Login Items, and press
