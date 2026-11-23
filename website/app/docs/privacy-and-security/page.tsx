@@ -156,6 +156,14 @@ export default function PrivacyAndSecurity() {
         which is why the helper does this. See{' '}
         <a href="/docs/system-control">System control</a>.
       </p>
+      <p>
+        When you type <code>worktrees</code>, the same helper finds your git
+        worktrees with <code>git worktree list</code> and measures their size.
+        It reads git&rsquo;s records and file sizes, never file contents, and
+        keeps the list only in memory. It removes a worktree only after you
+        confirm, saving uncommitted work to a folder on your Mac first. Nothing
+        about your repositories is logged, synced or sent anywhere.
+      </p>
 
       <h2>Permissions Volant asks for</h2>
       <div className="docs-table-scroll">
