@@ -73,10 +73,18 @@ def is_counted(path):
 
 
 def source_files(root):
-    """List counted Swift files: tracked files plus untracked, unignored ones, so new files count too."""
-    output = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z", "--", "*.swift"],
-                            cwd=root, check=True, capture_output=True).stdout.decode()
-    return sorted(p for p in set(output.split("\0")) if p and is_counted(p) and (root / p).is_file())
+    """List counted Swift files: tracked files plus untracked, unignored ones, so new files count too.
+    Outside a git checkout, such as the source copy tools/test-ui-vm.py sends to the UI VM (which holds
+    exactly those files), every Swift file under the root is listed instead."""
+    listed = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z", "--", "*.swift"],
+                            cwd=root, capture_output=True)
+    if listed.returncode == 0:
+        paths = listed.stdout.decode().split("\0")
+    elif subprocess.run(["git", "rev-parse", "--git-dir"], cwd=root, capture_output=True).returncode != 0:
+        paths = [str(path.relative_to(root)) for path in root.rglob("*.swift")]
+    else:
+        raise subprocess.CalledProcessError(listed.returncode, listed.args, listed.stdout, listed.stderr)
+    return sorted(p for p in set(paths) if p and is_counted(p) and (root / p).is_file())
 
 
 def code_lines(text):
