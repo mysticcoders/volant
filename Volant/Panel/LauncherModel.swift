@@ -42,6 +42,8 @@ enum ResultRow: Identifiable, Hashable {
     case privacySettings(PrivacyPane)
     case appleShortcut(AppleShortcut)
     case server(ListeningServer)
+    /// A linked git worktree, with its label and second line worked out when the rows are built.
+    case worktree(Worktree, label: String, detail: String)
     /// A menu item of the app that was in front, for Search Menu Items.
     case menuItem(MenuItemEntry)
     /// Search Menu Items while its switch is off: opens the setting.
@@ -87,6 +89,7 @@ enum ResultRow: Identifiable, Hashable {
         switch self {
         case .appleShortcut(let shortcut): return "apple-shortcut:" + shortcut.id
         case .server(let server): return "server:" + server.id
+        case .worktree(let item, _, _): return "worktree:" + item.id
         case .menuItem(let entry): return "menu-item:" + entry.item.id
         case .menuItemsOff: return "command:menu-items-off"
         case .core(let command): return "core:" + command.rawValue
@@ -136,6 +139,7 @@ enum ResultRow: Identifiable, Hashable {
         case .server(let server):
             return server.exposed ? String(localized: "Network", comment: "Server row label: other machines can connect")
                 : String(localized: "Local", comment: "Server row label: only this Mac can connect")
+        case .worktree(_, let label, _): return label
         case .menuItem(let entry): return entry.item.shortcut?.display ?? String(localized: "Menu Item", comment: "Result row kind label for a menu item without a keyboard shortcut")
         case .core, .caffeinate, .focus, .breaks, .systemAction, .systemToggle, .menuItemsOff: return String(localized: "Command", comment: "Result row kind label")
         case .pickedColor: return String(localized: "Color", comment: "Result row kind label: a color picked from the screen")
@@ -182,6 +186,8 @@ enum ResultRow: Identifiable, Hashable {
         switch self {
         case .appleShortcut: return String(localized: "Run Shortcut", comment: "Footer and Actions label for Return")
         case .server: return String(localized: "Open in Browser", comment: "Footer and Actions label for Return on a server row")
+        case .worktree(let item, _, _): return item.stale ? String(localized: "Copy Path", comment: "Footer label for Return on a stale worktree row")
+            : String(localized: "Reveal in Finder", comment: "Footer label for Return on a worktree row")
         case .menuItem(let entry): return entry.item.enabled ? String(localized: "Choose Menu Item", comment: "Footer label for Return on a menu item row")
             : String(localized: "Not Available Now", comment: "Footer label for Return on a disabled menu item row")
         case .menuItemsOff: return String(localized: "Open Settings", comment: "Footer and Actions label for Return")
@@ -240,6 +246,7 @@ enum ResultRow: Identifiable, Hashable {
         case .file: return String(localized: "Reveal in Finder", comment: "Footer label for Command-Return")
         case .app: return String(localized: "Reveal in Finder", comment: "Footer label for Command-Return")
         case .server: return String(localized: "Copy URL", comment: "Footer label for Command-Return on a server row")
+        case .worktree(let item, _, _): return item.stale ? nil : String(localized: "Copy Path", comment: "Footer label for Command-Return on a worktree row")
         case .contact(let c): return c.secondaryField?.copyTitle
         case .calculation: return String(localized: "Use Answer", comment: "Footer label for Command-Return: put the calculator answer in the search field")
         case .extensionItem(let item, _): return item.secondaryURL == nil ? nil : (item.secondaryTitle ?? String(localized: "Open Second Link", comment: "Footer label for Command-Return"))
@@ -416,6 +423,9 @@ final class LauncherModel: ObservableObject {
     let servers = ServersModel()
     private var serversSubscription: AnyCancellable?
     var showingServers: Bool { ListeningServers.queryTerm(routedQuery) != nil }
+    let worktrees = WorktreesModel()
+    private var worktreesSubscription: AnyCancellable?
+    var showingWorktrees: Bool { Worktrees.queryTerm(routedQuery) != nil }
     /// Search Menu Items' items for this launcher session, cleared when the launcher is dismissed.
     let menuItems = MenuItemsModel()
     private var menuItemsSubscription: AnyCancellable?
@@ -731,7 +741,10 @@ final class LauncherModel: ObservableObject {
             }
         }
         serversSubscription = servers.objectWillChange.sink { [weak self] _ in
-            DispatchQueue.main.async { self?.refreshServerResults() }
+            DispatchQueue.main.async { self?.refreshServerResults(); self?.refreshWorktreeResults() }
+        }
+        worktreesSubscription = worktrees.objectWillChange.sink { [weak self] _ in
+            Task { @MainActor in self?.refreshWorktreeResults() }
         }
         menuItemsSubscription = menuItems.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.refreshMenuResults(keepingSelection: true) }
@@ -1064,6 +1077,77 @@ final class LauncherModel: ObservableObject {
         selection = selectedID.flatMap { id in rows.firstIndex { $0.id == id } } ?? 0
     }
 
+    /// Agent working folders the launcher already has from Rex and local Herdr panes, with a label
+    /// naming who works there. Nothing is read for this; a list that isn't loaded adds nothing.
+    private var agentFolders: [(folder: String, label: String)] {
+        rex.panes.compactMap { pane in pane.cwd.map { ($0, "Rex: " + pane.label) } }
+            + agents.sessions.filter { $0.machine == nil }.compactMap { session in session.cwd.map { ($0, session.agent) } }
+    }
+
+    /// Who holds each worktree: listening servers first, then agent panes.
+    private var worktreeHolders: [(folder: String, label: String)] {
+        servers.servers.compactMap { server in
+            server.directory.map { ($0, String(localized: "\(server.displayName, format: .verbatim) on \(String(server.port), format: .verbatim)", comment: "Worktree In Use holder: a runtime name and its port number")) }
+        } + agentFolders
+    }
+
+    /// Shows the Worktrees command: In Use, then the rest largest first, then stale entries, keeping
+    /// the selected worktree by identity as sizes arrive.
+    private func refreshWorktreeResults() {
+        guard showingWorktrees, let term = Worktrees.queryTerm(routedQuery) else { return }
+        let selectedID = selectedRow?.id
+        let holders = worktreeHolders
+        let arranged = Worktrees.arrange(worktrees.worktrees, sizes: worktrees.sizes, matching: term.text, staleOnly: term.staleOnly)
+        func row(_ item: Worktree) -> ResultRow {
+            let holder = item.stale ? nil : Worktrees.holder(of: item, among: holders)
+            var detail = worktrees.detail(for: item)
+            if let holder { detail = holder + " · " + detail }
+            return .worktree(item, label: worktrees.label(for: item, holder: holder), detail: detail)
+        }
+        let inUse = arranged.filter { !$0.stale && Worktrees.holder(of: $0, among: holders) != nil }
+        let groups: [(title: String, items: [Worktree])] = [
+            (String(localized: "In Use", comment: "Worktrees section: a server or agent is working inside these"), inUse),
+            (String(localized: "Worktrees", comment: "Worktrees section: the rest, largest first"), arranged.filter { !$0.stale && !inUse.contains($0) }),
+            (String(localized: "Stale", comment: "Worktrees section: registered with git, folder gone"), arranged.filter(\.stale)),
+        ]
+        sections = groups.filter { !$0.items.isEmpty }.map { ResultSection(title: $0.title, rows: $0.items.map(row)) }
+        let total = worktrees.sizes.filter { path, _ in arranged.contains { $0.path == path } }.values.reduce(0, +)
+        notice = worktrees.loading && worktrees.worktrees.isEmpty ? String(localized: "Looking for git worktrees…") : worktrees.message
+            ?? (rows.isEmpty ? (term.staleOnly ? String(localized: "No stale worktrees.", comment: "Worktrees notice for worktrees stale with nothing stale")
+                : String(localized: "No git worktrees found.", comment: "Worktrees notice when none were found")) : nil)
+        if !rows.isEmpty {
+            actionFeedback = worktrees.message ?? (total > 0 ? String(localized: "\(Worktrees.formatSize(total, complete: !worktrees.measuring), format: .verbatim) in these worktrees", comment: "Worktrees total size, such as 41 GB in these worktrees") : nil)
+        }
+        selection = selectedID.flatMap { id in rows.firstIndex { $0.id == id } } ?? 0
+    }
+
+    /// Lists worktrees and servers again and measures every worktree afresh, for the Refresh button.
+    func refreshWorktrees() {
+        servers.refresh(force: true)
+        worktrees.refresh(folders: agentFolders.map(\.folder), force: true)
+    }
+
+    /// Reveals a worktree in Finder, or copies a stale one's path since its folder is gone.
+    private func revealWorktree(_ item: Worktree) {
+        guard !item.stale, FileManager.default.fileExists(atPath: item.path) else {
+            copy(item.path); actionFeedback = String(localized: "Path copied."); return
+        }
+        NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: item.path, isDirectory: true)])
+        dismiss()
+    }
+
+    /// Opens a worktree's folder in Terminal.
+    private func openWorktreeInTerminal(_ item: Worktree) {
+        guard !item.stale, let terminal = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Terminal") else {
+            actionFeedback = String(localized: "Couldn’t open Terminal."); return
+        }
+        NSWorkspace.shared.open([URL(fileURLWithPath: item.path, isDirectory: true)], withApplicationAt: terminal, configuration: NSWorkspace.OpenConfiguration()) { [weak self] _, error in
+            Task { @MainActor in
+                if error == nil { self?.dismiss() } else { self?.actionFeedback = String(localized: "Couldn’t open Terminal.") }
+            }
+        }
+    }
+
     /// Shows Search Menu Items: a row that opens the setting while it is off; otherwise the captured
     /// app's menu items for the typed filter, with a notice while they load, when no app was in front
     /// or when the helper refused, and a row to Privacy & Security when Accessibility is off.
@@ -1340,6 +1424,13 @@ final class LauncherModel: ObservableObject {
             sections = []
             servers.refresh()
             refreshServerResults()
+            return
+        }
+        if showingWorktrees {
+            sections = []
+            servers.refresh()
+            worktrees.refresh(folders: agentFolders.map(\.folder))
+            refreshWorktreeResults()
             return
         }
         if showingMenuItems {
@@ -2081,12 +2172,13 @@ final class LauncherModel: ObservableObject {
     func activateSelection() {
         guard let row = selectedRow else { return }
         switch row {
-        case .appleShortcut, .server, .connectivity, .audioRoute, .volume, .extensionResult, .extensionItem, .newNote, .calculation, .pickedColor, .pickAnotherColor, .privacySettings, .menuItem, .menuItemsOff, .weather: break
+        case .appleShortcut, .server, .worktree, .connectivity, .audioRoute, .volume, .extensionResult, .extensionItem, .newNote, .calculation, .pickedColor, .pickAnotherColor, .privacySettings, .menuItem, .menuItemsOff, .weather: break
         default: usage.record(key: row.id, query: query)
         }
         switch row {
         case .appleShortcut(let shortcut): shortcutRunQuery = query; appleShortcuts.run(shortcut); return
         case .server(let server): openURL(server.url)
+        case .worktree(let item, _, _): revealWorktree(item); return
         case .menuItem(let entry): pressMenuItem(entry.item); return
         case .menuItemsOff: dismiss(); onNote(.menuItemsSettings); return
         case .weather: openWeatherApp(); return
@@ -2314,7 +2406,7 @@ final class LauncherModel: ObservableObject {
 
     var canTabToAIChat: Bool {
         scope == nil && !showingACP && !showingDictionary && !showingCatalog && !showingTranslation && !showingEmoji &&
-        !showingAppleShortcuts && !showingServers && !showingAgents && !showingRex && wifiJoin == nil && entryForm == nil && actionTarget == nil
+        !showingAppleShortcuts && !showingServers && !showingWorktrees && !showingAgents && !showingRex && wifiJoin == nil && entryForm == nil && actionTarget == nil
     }
 
     /// Opens the form for a new snippet or quicklink over the results, validated against the
@@ -2537,6 +2629,7 @@ final class LauncherModel: ObservableObject {
         switch action {
         case .open: activate(rowID: target.id)
         case .reveal:
+            if case .worktree(let item, _, _) = target { revealWorktree(item); return }
             guard case .server(let server) = target else { activateSecondary(); return }
             guard let executable = server.executable else { actionFeedback = String(localized: "The executable’s location is unavailable."); return }
             NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: executable)])
@@ -2548,6 +2641,12 @@ final class LauncherModel: ObservableObject {
         case .copyPID:
             guard case .server(let server) = target else { return }
             copyText(String(server.pid)); actionFeedback = String(localized: "Process ID copied.")
+        case .openInTerminal:
+            guard case .worktree(let item, _, _) = target else { return }
+            openWorktreeInTerminal(item)
+        case .copyBranch:
+            guard case .worktree(let item, _, _) = target, let branch = item.branch else { return }
+            copyText(branch); actionFeedback = String(localized: "Branch copied.")
         case .contents:
             guard case .app = target else { return }
             if NSWorkspace.shared.open(url.appendingPathComponent("Contents", isDirectory: true)) { dismiss() }
@@ -2598,6 +2697,7 @@ final class LauncherModel: ObservableObject {
         case .file(let file): FileSearch.reveal(file)
         case .app(let app): NSWorkspace.shared.activateFileViewerSelecting([app.url])
         case .server(let server): copy(server.url.absoluteString)
+        case .worktree(let item, _, _): copy(item.path); actionFeedback = String(localized: "Path copied.")
         case .contact(let contact): if let field = contact.secondaryField { copy(field.value) }
         case .extensionItem(let item, _):
             guard let link = item.secondaryURL, let url = URL(string: link) else { activateSelection(); return }

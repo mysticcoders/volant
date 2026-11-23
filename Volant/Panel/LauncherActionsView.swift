@@ -3,12 +3,13 @@ import VolantCore
 
 /// Only everyday actions belong here; app termination and uninstall are deliberately separate work.
 enum LauncherItemAction: String, CaseIterable, Identifiable {
-    case open, reveal, contents, favorite, copyPath, copyName, copyBundleID, copyURL, copyPort, copyPID, configure, resetRanking
+    case open, reveal, openInTerminal, contents, favorite, copyPath, copyName, copyBundleID, copyURL, copyPort, copyPID, copyBranch, configure, resetRanking
     var id: String { rawValue }
     var title: String {
         switch self {
         case .open: return String(localized: "Open", comment: "Actions menu item")
         case .reveal: return String(localized: "Reveal in Finder", comment: "Actions menu item")
+        case .openInTerminal: return String(localized: "Open in Terminal", comment: "Actions menu item")
         case .contents: return String(localized: "Show Package Contents", comment: "Actions menu item")
         case .favorite: return String(localized: "Add to Favorites", comment: "Actions menu item")
         case .copyPath: return String(localized: "Copy Path", comment: "Actions menu item")
@@ -17,6 +18,7 @@ enum LauncherItemAction: String, CaseIterable, Identifiable {
         case .copyURL: return String(localized: "Copy URL", comment: "Actions menu item")
         case .copyPort: return String(localized: "Copy Port", comment: "Actions menu item")
         case .copyPID: return String(localized: "Copy Process ID", comment: "Actions menu item")
+        case .copyBranch: return String(localized: "Copy Branch Name", comment: "Actions menu item")
         case .configure: return String(localized: "Edit Shortcut & Alias…", comment: "Actions menu item")
         case .resetRanking: return String(localized: "Reset Ranking", comment: "Actions menu item")
         }
@@ -25,17 +27,18 @@ enum LauncherItemAction: String, CaseIterable, Identifiable {
         switch self {
         case .open: return "arrow.up.forward.app"
         case .reveal, .contents: return "folder"
+        case .openInTerminal: return "terminal"
         case .favorite: return "star"
-        case .copyPath, .copyName, .copyBundleID, .copyURL, .copyPort, .copyPID: return "doc.on.clipboard"
+        case .copyPath, .copyName, .copyBundleID, .copyURL, .copyPort, .copyPID, .copyBranch: return "doc.on.clipboard"
         case .configure: return "gearshape"
         case .resetRanking: return "arrow.counterclockwise"
         }
     }
     var group: Int {
         switch self {
-        case .open, .reveal, .contents: return 0
+        case .open, .reveal, .openInTerminal, .contents: return 0
         case .favorite: return 1
-        case .copyPath, .copyName, .copyBundleID, .copyURL, .copyPort, .copyPID: return 2
+        case .copyPath, .copyName, .copyBundleID, .copyURL, .copyPort, .copyPID, .copyBranch: return 2
         case .configure, .resetRanking: return 3
         }
     }
@@ -76,6 +79,7 @@ extension ResultRow {
         case .app(let app): return app.url
         case .file(let file): return file.url
         case .server(let server): return server.url
+        case .worktree(let item, _, _): return URL(fileURLWithPath: item.path, isDirectory: true)
         default: return nil
         }
     }
@@ -88,6 +92,7 @@ extension ResultRow {
         case .app(let app): return app.name
         case .file(let file): return file.name
         case .server(let server): return "localhost:\(server.port)"
+        case .worktree(let item, _, _): return item.name
         case .extensionItem(let item, _): return item.title
         default: return ""
         }
@@ -105,6 +110,7 @@ extension ResultRow {
     /// The menu entry Command-Return runs, the same action Command-Return runs from the results.
     var commandReturnEntry: LauncherMenuEntry {
         if case .server = self { return .item(.copyURL) }
+        if case .worktree = self { return .item(.copyPath) }
         return .item(.reveal)
     }
     var itemActions: [LauncherItemAction] {
@@ -112,6 +118,7 @@ extension ResultRow {
         case .app: return [.open, .reveal, .contents, .favorite, .copyPath, .copyName, .copyBundleID, .configure, .resetRanking]
         case .file: return [.open, .reveal, .copyPath, .copyName, .resetRanking]
         case .server(let server): return [.open] + (server.executable == nil ? [] : [.reveal]) + [.copyURL, .copyPort, .copyPID]
+        case .worktree(let item, _, _): return item.stale ? [.copyPath] : [.reveal, .openInTerminal, .copyPath] + (item.branch == nil ? [] : [.copyBranch])
         default: return []
         }
     }

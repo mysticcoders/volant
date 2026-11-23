@@ -14,6 +14,7 @@ public struct HostMessage: Error, LocalizedError, Equatable, Sendable {
         case shortcutsUnavailable = "shortcuts-unavailable"
         case agentsUndetected = "agents-undetected"
         case serversUnreadable = "servers-unreadable"
+        case worktreesUnreadable = "worktrees-unreadable"
         case repositoriesUnreadable = "repositories-unreadable"
         case notAFilePath = "not-a-file-path"
         case fileSearchUnavailable = "file-search-unavailable"
@@ -133,6 +134,7 @@ public struct HostMessage: Error, LocalizedError, Equatable, Sendable {
         case .shortcutsUnavailable: return String(localized: "Couldn’t start Shortcuts. Open the Shortcuts app and try again.", table: "Core", comment: "Apple Shortcuts error")
         case .agentsUndetected: return String(localized: "Couldn’t check for installed agents.", table: "Core", comment: "AI Settings error while looking for installed coding agents")
         case .serversUnreadable: return String(localized: "Couldn’t read listening servers.", table: "Core", comment: "Servers command error")
+        case .worktreesUnreadable: return String(localized: "Couldn’t read git worktrees.", table: "Core", comment: "Worktrees command error")
         case .repositoriesUnreadable: return String(localized: "Couldn’t read repository changes.", table: "Core", comment: "Herdr pane error while reading Git status")
         case .notAFilePath: return String(localized: "Not a file path.", table: "Core", comment: "File search error")
         case .fileSearchUnavailable: return String(localized: "Couldn’t search files.", table: "Core", comment: "File search error from the helper that runs Spotlight")

@@ -2,7 +2,7 @@ import Foundation
 
 /// Discoverable entry points. Data rows keep their own identity and aren't branded as apps.
 public enum CoreCommand: String, CaseIterable, Hashable {
-    case define, translate, caffeinate, emoji, notes, clipboard, contacts, files, shortcuts, agents, servers, ai, talk, confetti, wifi, bluetooth, audio, colorPicker, camera, newSnippet, newQuicklink, catalog, welcome, menuItems, focus, breaks
+    case define, translate, caffeinate, emoji, notes, clipboard, contacts, files, shortcuts, agents, servers, worktrees, ai, talk, confetti, wifi, bluetooth, audio, colorPicker, camera, newSnippet, newQuicklink, catalog, welcome, menuItems, focus, breaks
     /// The command's name in the launcher, translated in the Core table.
     public var titleResource: LocalizedStringResource {
         switch self {
@@ -20,6 +20,7 @@ public enum CoreCommand: String, CaseIterable, Hashable {
         case .files: return LocalizedStringResource("Search Files", table: "Core", comment: "Launcher command name")
         case .agents: return LocalizedStringResource("Open Agents", table: "Core", comment: "Launcher command name")
         case .servers: return LocalizedStringResource("Listening Servers", table: "Core", comment: "Launcher command name")
+        case .worktrees: return LocalizedStringResource("Git Worktrees", table: "Core", comment: "Launcher command name")
         case .wifi: return LocalizedStringResource("Wi-Fi Networks", table: "Core", comment: "Launcher command name")
         case .bluetooth: return LocalizedStringResource("Bluetooth Devices", table: "Core", comment: "Launcher command name")
         case .audio: return LocalizedStringResource("Audio Devices", table: "Core", comment: "Launcher command name")
@@ -62,6 +63,7 @@ public enum CoreCommand: String, CaseIterable, Hashable {
         case .files: return "doc.text.magnifyingglass"
         case .agents: return "terminal"
         case .servers: return "server.rack"
+        case .worktrees: return "arrow.triangle.branch"
         case .wifi: return "wifi"
         case .bluetooth: return "antenna.radiowaves.left.and.right"
         case .audio: return "speaker.wave.2"
@@ -85,6 +87,7 @@ public enum CoreCommand: String, CaseIterable, Hashable {
         case .caffeinate: return LocalizedStringResource("Keep your Mac awake", table: "Core", comment: "Launcher command description, shown under its name")
         case .emoji: return LocalizedStringResource("Browse emoji and copy one", table: "Core", comment: "Launcher command description, shown under its name")
         case .servers: return LocalizedStringResource("See which local servers are listening, and open one", table: "Core", comment: "Launcher command description, shown under its name")
+        case .worktrees: return LocalizedStringResource("Find git worktrees, how much space they take, and which are stale", table: "Core", comment: "Launcher command description, shown under its name")
         case .colorPicker: return LocalizedStringResource("Sample a color on screen and copy it as HEX, RGB, HSL or OKLCH", table: "Core", comment: "Launcher command description, shown under its name")
         case .camera: return LocalizedStringResource("Show a small mirrored camera preview", table: "Core", comment: "Launcher command description, shown under its name")
         case .newSnippet: return LocalizedStringResource("Save text to copy by keyword", table: "Core", comment: "Launcher command description, shown under its name")
@@ -118,6 +121,7 @@ public enum CoreCommand: String, CaseIterable, Hashable {
         case .files: return "file | documents | finder"
         case .menuItems: return MenuItemsQuery.phrases.joined(separator: " | ") + " | menu commands"
         case .servers: return "ports | localhost | listening | dev server"
+        case .worktrees: return "worktree | wt | git | disk space | branches | stale"
         case .colorPicker: return LauncherRouting.colorPickerPhrases.sorted().joined(separator: " | ") + " | eyedropper | colour"
         case .camera: return "webcam | facetime camera | mirror | open camera"
         case .welcome: return "getting started | onboarding | setup | tour"

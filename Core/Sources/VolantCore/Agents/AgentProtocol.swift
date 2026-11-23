@@ -71,6 +71,16 @@ import Foundation
     /// fresh on each call and kept nowhere. Takes no input and acts on no process. Carries each
     /// process's executable path and working folder, never its arguments or environment.
     func listListeningServers(reply: @escaping (Data?, String?) -> Void)
+    /// The linked git worktrees of the owner's repositories, as JSON `[Worktree]` (at most
+    /// `Worktrees.maximumWorktrees`), read fresh on each call and kept nowhere. Repositories are found
+    /// under `Worktrees.defaultRoots`, in listening servers' folders, and in `folders`, a JSON list of
+    /// at most `Worktrees.maximumFolders` absolute paths the app already knows agents work in. Runs
+    /// only `git worktree list`, and changes nothing.
+    func listWorktrees(folders: Data, reply: @escaping (Data?, String?) -> Void)
+    /// Size on disk and last commit time for at most `Worktrees.maximumDetailPaths` worktrees, as a
+    /// JSON map from path to `WorktreeDetails`. Each path must still be a linked worktree; others are
+    /// left out. Reads file sizes and `git log -1`, never file contents.
+    func worktreeDetails(paths: Data, reply: @escaping (Data?, String?) -> Void)
 }
 
 public struct AgentSession: Codable, Identifiable, Hashable {
