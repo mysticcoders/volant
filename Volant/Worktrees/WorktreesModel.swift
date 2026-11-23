@@ -19,6 +19,8 @@ final class WorktreesModel: ObservableObject {
     var loadOverride: (([String], @escaping ([Worktree]?, String?) -> Void) -> Void)?
     var detailsOverride: (([String], @escaping ([String: WorktreeDetails]?) -> Void) -> Void)?
     var changesOverride: (([String], @escaping ([String: RepositoryState]?) -> Void) -> Void)?
+    var removeOverride: ((WorktreeRemovalRequest, @escaping (WorktreeRemoval?, String?) -> Void) -> Void)?
+    var pruneOverride: ((String, @escaping (Int, String?) -> Void) -> Void)?
 
     deinit { connection?.invalidate() }
 
@@ -119,6 +121,34 @@ final class WorktreesModel: ObservableObject {
             guard error == nil, let data, let values = try? JSONDecoder().decode([String: RepositoryState].self, from: data) else { finish(nil); return }
             finish(values)
         }
+    }
+
+    /// Asks the helper to remove `worktree` as listed. The reply is the removal, or a message in the
+    /// owner's language saying why nothing was removed.
+    func remove(_ worktree: Worktree, completion: @escaping (WorktreeRemoval?, String?) -> Void) {
+        let request = WorktreeRemovalRequest(repository: worktree.repository, path: worktree.path, head: worktree.head ?? "")
+        let finish: (WorktreeRemoval?, String?) -> Void = { removal, error in
+            Task { @MainActor in completion(removal, removal == nil ? HostMessage.display(error) ?? String(localized: "Couldn’t remove the worktree.") : nil) }
+        }
+        if let removeOverride { removeOverride(request, finish); return }
+        let failure = { finish(nil, String(localized: "Couldn’t remove the worktree.")) }
+        guard let proxy = proxy(failure: failure), let data = try? JSONEncoder().encode(request) else { failure(); return }
+        proxy.removeWorktree(request: data) { data, error in
+            guard error == nil, let data, let removal = try? JSONDecoder().decode(WorktreeRemoval.self, from: data) else { finish(nil, error); return }
+            finish(removal, nil)
+        }
+    }
+
+    /// Asks the helper to prune `repository`'s stale worktree records.
+    func prune(repository: String, completion: @escaping (Int?, String?) -> Void) {
+        let finish: (Int, String?) -> Void = { count, error in
+            Task { @MainActor in completion(error == nil ? count : nil, HostMessage.display(error)) }
+        }
+        if let pruneOverride { pruneOverride(repository, finish); return }
+        guard let proxy = proxy(failure: { finish(0, String(localized: "Couldn’t prune stale worktrees.")) }) else {
+            finish(0, String(localized: "Couldn’t prune stale worktrees.")); return
+        }
+        proxy.pruneWorktrees(repository: repository) { count, error in finish(count, error) }
     }
 
     /// The row's second line: size, uncommitted changes and the last commit's age, each when known,

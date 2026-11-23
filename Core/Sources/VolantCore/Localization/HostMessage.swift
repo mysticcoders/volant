@@ -15,6 +15,14 @@ public struct HostMessage: Error, LocalizedError, Equatable, Sendable {
         case agentsUndetected = "agents-undetected"
         case serversUnreadable = "servers-unreadable"
         case worktreesUnreadable = "worktrees-unreadable"
+        case worktreeChanged = "worktree-changed"
+        case worktreeLocked = "worktree-locked"
+        case worktreeInUse = "worktree-in-use"
+        case worktreeUnreachable = "worktree-unreachable"
+        case worktreeBackupFailed = "worktree-backup-failed"
+        case worktreeBackupTooLarge = "worktree-backup-too-large"
+        case worktreeRemoveFailed = "worktree-remove-failed"
+        case worktreePruneFailed = "worktree-prune-failed"
         case repositoriesUnreadable = "repositories-unreadable"
         case notAFilePath = "not-a-file-path"
         case fileSearchUnavailable = "file-search-unavailable"
@@ -135,6 +143,14 @@ public struct HostMessage: Error, LocalizedError, Equatable, Sendable {
         case .agentsUndetected: return String(localized: "Couldn’t check for installed agents.", table: "Core", comment: "AI Settings error while looking for installed coding agents")
         case .serversUnreadable: return String(localized: "Couldn’t read listening servers.", table: "Core", comment: "Servers command error")
         case .worktreesUnreadable: return String(localized: "Couldn’t read git worktrees.", table: "Core", comment: "Worktrees command error")
+        case .worktreeChanged: return String(localized: "This worktree changed since it was listed. Nothing was removed; refresh and try again.", table: "Core", comment: "Worktrees removal refused: the folder, commit or git record no longer matches the row")
+        case .worktreeLocked: return String(localized: "This worktree is locked with git worktree lock, so Volant leaves it alone.", table: "Core", comment: "Worktrees removal refused; git worktree lock is a command and stays in English")
+        case .worktreeInUse: return String(localized: "\(value, format: .verbatim) is working in this worktree. Quit it, then try again.", table: "Core", comment: "Worktrees removal refused; the value is a process name, such as node or zsh")
+        case .worktreeUnreachable: return String(localized: "This worktree has commits no branch holds. Nothing was removed, so they aren’t lost.", table: "Core", comment: "Worktrees removal refused: removing would lose commits")
+        case .worktreeBackupFailed: return String(localized: "Couldn’t save this worktree’s uncommitted changes, so nothing was removed.", table: "Core", comment: "Worktrees removal refused: the backup of uncommitted work failed")
+        case .worktreeBackupTooLarge: return String(localized: "This worktree’s uncommitted changes are over 100 MB, too large to back up, so nothing was removed.", table: "Core", comment: "Worktrees removal refused: the backup would be too large")
+        case .worktreeRemoveFailed: return String(localized: "git couldn’t remove this worktree.", table: "Core", comment: "Worktrees removal error from git")
+        case .worktreePruneFailed: return String(localized: "git couldn’t prune stale worktrees.", table: "Core", comment: "Worktrees prune error from git")
         case .repositoriesUnreadable: return String(localized: "Couldn’t read repository changes.", table: "Core", comment: "Herdr pane error while reading Git status")
         case .notAFilePath: return String(localized: "Not a file path.", table: "Core", comment: "File search error")
         case .fileSearchUnavailable: return String(localized: "Couldn’t search files.", table: "Core", comment: "File search error from the helper that runs Spotlight")

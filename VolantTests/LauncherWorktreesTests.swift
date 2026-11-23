@@ -77,18 +77,18 @@ final class LauncherWorktreesTests: XCTestCase {
         XCTAssertEqual(release.title, "worktree · detached 3333333")
 
         model.selection = 1
-        XCTAssertEqual(try XCTUnwrap(model.selectedRow).itemActions, [.reveal, .openInTerminal, .copyPath])
+        XCTAssertEqual(try XCTUnwrap(model.selectedRow).itemActions, [.reveal, .openInTerminal, .copyPath, .removeWorktree])
         model.activateSelection()
         XCTAssertEqual(copied.last, repo + "/dist-release.ship-9.9.9.x/worktree", "A missing folder is copied, not revealed")
         model.selection = 2
         model.activateSecondary()
         XCTAssertEqual(copied.last, repo + "/.claude/worktrees/small")
         let row = try XCTUnwrap(model.selectedRow)
-        XCTAssertEqual(row.itemActions, [.reveal, .openInTerminal, .copyPath, .copyBranch])
+        XCTAssertEqual(row.itemActions, [.reveal, .openInTerminal, .copyPath, .copyBranch, .removeWorktree])
         model.performAction(.copyBranch, target: row)
         XCTAssertEqual(copied.last, "feat/small")
         model.selection = 3
-        XCTAssertEqual(try XCTUnwrap(model.selectedRow).itemActions, [.copyPath])
+        XCTAssertEqual(try XCTUnwrap(model.selectedRow).itemActions, [.copyPath, .pruneWorktrees])
         XCTAssertNil(try XCTUnwrap(model.selectedRow).secondaryAction)
 
         model.query = "wt stale"
@@ -132,5 +132,71 @@ final class LauncherWorktreesTests: XCTestCase {
         model.query = "wt stale"
         await settle()
         XCTAssertEqual(model.notice, "No stale worktrees.")
+    }
+
+    func testRemovalAsksFirstSendsTheListedCommitAndRefreshes() async throws {
+        let model = model()
+        var lists = 0
+        model.worktrees.loadOverride = { [fictional] _, finish in lists += 1; finish(fictional, nil) }
+        model.worktrees.detailsOverride = { paths, finish in finish(Dictionary(uniqueKeysWithValues: paths.map { ($0, WorktreeDetails(size: 1_000)) })) }
+        model.worktrees.changesOverride = { paths, finish in finish(Dictionary(uniqueKeysWithValues: paths.map { ($0, RepositoryState(changed: 3)) })) }
+        var requests: [WorktreeRemovalRequest] = []
+        model.worktrees.removeOverride = { request, finish in requests.append(request); finish(WorktreeRemoval(path: request.path, backup: "/fictional/backup"), nil) }
+        model.query = "worktrees"
+        await settle()
+        let small = try XCTUnwrap(model.rows.firstIndex { $0.id.hasSuffix("/small") })
+        model.selection = small
+        model.performAction(.removeWorktree, target: try XCTUnwrap(model.selectedRow))
+        XCTAssertEqual(model.worktreeRemoval?.name, "small", "Choosing Remove only asks")
+        XCTAssertTrue(requests.isEmpty)
+        model.cancelWorktreeRemoval()
+        XCTAssertNil(model.worktreeRemoval)
+        XCTAssertTrue(requests.isEmpty, "Cancel removes nothing")
+
+        model.performAction(.removeWorktree, target: try XCTUnwrap(model.selectedRow))
+        let before = lists
+        model.confirmWorktreeRemoval()
+        await settle()
+        XCTAssertEqual(requests, [WorktreeRemovalRequest(repository: repo, path: repo + "/.claude/worktrees/small", head: "1111111111")])
+        XCTAssertNil(model.worktreeRemoval)
+        XCTAssertEqual(model.actionFeedback.map { $0.hasPrefix("Removed small.") }, true, String(describing: model.actionFeedback))
+        XCTAssertGreaterThan(lists, before, "The list is read again after a removal")
+    }
+
+    func testRemovalIsRefusedWhileInUseAndShowsTheHelpersReason() async throws {
+        let model = model()
+        model.worktrees.loadOverride = { [fictional] _, finish in finish(fictional, nil) }
+        model.worktrees.detailsOverride = { _, finish in finish([:]) }
+        model.worktrees.changesOverride = { _, finish in finish([:]) }
+        var requests = 0
+        model.worktrees.removeOverride = { _, finish in requests += 1; finish(nil, HostMessage(.worktreeUnreachable).wire) }
+        model.query = "worktrees"
+        await settle()
+        model.selection = try XCTUnwrap(model.rows.firstIndex { $0.id.hasSuffix("/served") })
+        model.performAction(.removeWorktree, target: try XCTUnwrap(model.selectedRow))
+        XCTAssertNil(model.worktreeRemoval, "A worktree a server is running in isn't offered for removal")
+        XCTAssertEqual(model.actionFeedback, "Node.js on 3000 is working in this worktree. Stop it first.")
+
+        model.selection = try XCTUnwrap(model.rows.firstIndex { $0.id.hasSuffix("/small") })
+        model.performAction(.removeWorktree, target: try XCTUnwrap(model.selectedRow))
+        model.confirmWorktreeRemoval()
+        await settle()
+        XCTAssertEqual(requests, 1)
+        XCTAssertEqual(model.actionFeedback, HostMessage(.worktreeUnreachable).text)
+    }
+
+    func testPruneRunsForAStaleRowsRepository() async throws {
+        let model = model()
+        model.worktrees.loadOverride = { [fictional] _, finish in finish(fictional, nil) }
+        model.worktrees.detailsOverride = { _, finish in finish([:]) }
+        model.worktrees.changesOverride = { _, finish in finish([:]) }
+        var pruned: [String] = []
+        model.worktrees.pruneOverride = { repository, finish in pruned.append(repository); finish(1, nil) }
+        model.query = "wt stale"
+        await settle()
+        model.performAction(.pruneWorktrees, target: try XCTUnwrap(model.selectedRow))
+        await settle()
+        XCTAssertEqual(pruned, [repo])
+        XCTAssertEqual(model.actionFeedback, "Stale worktree records pruned: 1.")
     }
 }

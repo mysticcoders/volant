@@ -1,6 +1,6 @@
 # Worktrees command
 
-Status: phase 1 (read-only) built on 2026-11-23 at the owner's go-ahead; phase 2 not started and still needs approval. Reviewed against `servers` and `VolantAgentHost` the same day (see Review notes).
+Status: phase 1 (read-only) and phase 2 (Remove and Prune) built on 2026-11-23 at the owner's go-ahead. Reviewed against `servers` and `VolantAgentHost` the same day (see Review notes).
 
 Two phases. **Phase 1 is read-only**, like `servers`: list, reveal, copy, open. **Phase 2 adds Remove and Prune** and needs the owner's separate approval, the same way stopping servers waits on `docs/process-control-spike.md`.
 
@@ -120,4 +120,12 @@ Changes from the first draft, after reading `servers` and `VolantAgentHost`:
 - Helper: `listWorktrees(folders:)` and `worktreeDetails(paths:)` (four paths per call, 6 s size budget each). Folder hints are Rex and local Herdr pane folders the launcher already has; the helper adds listening servers' folders itself. The `~/.claude/projects` source and a Settings list of roots are not built; roots are the existing `Worktrees.rootNames` folders.
 - In Use comes from listening servers and those agent folders. An agent in a plain terminal, or a Rex pane that never reported its folder, isn't seen.
 - Measured on this Mac: a detached Volant worktree (1,513 files) measured 871.9 MB, the same as `du -sk`, in 0.01 s; discovery of three roots took 0.16 s.
+
+## Phase 2 as built
+
+- Actions: **Remove Worktree…** on rows that aren't stale or locked, and **Prune Stale Worktrees** on stale rows (for that row's repository).
+- Remove opens a form in the launcher naming the folder, its size, what happens to the branch and to uncommitted work. Neither button is the default, so Return does nothing; Escape or Cancel closes it. A row the launcher knows a server or agent is working in is refused before the form opens.
+- `WorktreeRemover` (VolantCore, called by `VolantAgentHost.removeWorktree`) rechecks, in order: the request is well formed (absolute paths, a full commit ID, not the main folder); the folder's `.git` file still points into that repository; git still lists it at that commit and not as prunable; it isn't locked; no process of the owner's has its working folder inside it (`ListeningServers.processes(workingInside:)`, which also catches agents and shells in plain terminals); `git rev-list -n 1 HEAD --not --branches --remotes` is empty. Then, if `git status` shows anything, it saves `changes.patch` (`git diff HEAD --binary --output=`) and copies untracked, unignored files under `untracked/`, with a README, in `~/Library/Application Support/Volant/Worktree Backups/<date>/<repo>-<folder>`, refusing above 100 MB or 10,000 files and deleting a partial backup. Only then `git worktree remove --force`.
+- Each refusal is a `HostMessage` code the launcher shows: changed, locked, in use (with the process name), unreachable commits, backup failed, backup too large, git failed.
+- `WorktreeRemoverTests` run all of this against real git in a temporary folder.
 

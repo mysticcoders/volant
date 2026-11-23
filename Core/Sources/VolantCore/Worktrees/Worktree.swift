@@ -176,14 +176,14 @@ public enum Worktrees {
               let text = try? String(contentsOfFile: file, encoding: .utf8) else { return nil }
         guard let line = text.split(separator: "\n").first, line.hasPrefix("gitdir: ") else { return nil }
         let target = String(line.dropFirst(8)).trimmingCharacters(in: .whitespaces)
-        return target.hasPrefix("/") ? target : ((folder as NSString).appendingPathComponent(target) as NSString).standardizingPath
+        return target.hasPrefix("/") ? target : URL(fileURLWithPath: (folder as NSString).appendingPathComponent(target)).standardized.path
     }
 
     /// The repository holding `folder`: walks up to the nearest `.git`. A `.git` folder marks a
     /// main working folder; a `.git` file of a linked worktree leads to its repository; a
     /// submodule's leads nowhere.
     public static func repository(containing folder: String) -> String? {
-        var current = (folder as NSString).standardizingPath
+        var current = URL(fileURLWithPath: folder).standardized.path
         while current.count > 1 {
             var directory: ObjCBool = false
             let git = (current as NSString).appendingPathComponent(".git")

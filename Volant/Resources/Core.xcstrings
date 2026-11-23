@@ -39770,6 +39770,718 @@
           }
         }
       }
+    },
+    "%@ is working in this worktree. Quit it, then try again.": {
+      "comment": "Worktrees removal refused; the value is a process name, such as node or zsh",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@ está trabajando en este worktree. Ciérralo y vuelve a intentarlo."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@ arbeitet in diesem Worktree. Beende es und versuche es erneut."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@ travaille dans ce worktree. Quittez-le, puis réessayez."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@ sta lavorando in questo worktree. Chiudilo e riprova."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@ がこのワークツリーで動作しています。終了してからもう一度お試しください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@ 正在此工作树中运行。请退出后重试。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@ está trabalhando neste worktree. Encerre-o e tente novamente."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@ está a trabalhar nesta worktree. Feche-o e tente novamente."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@이(가) 이 워크트리에서 작업 중입니다. 종료한 후 다시 시도하세요."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@ werkt in deze worktree. Sluit het af en probeer het opnieuw."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@ działa w tym worktree. Zamknij go i spróbuj ponownie."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@ работает в этом worktree. Завершите его и повторите попытку."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@ працює в цьому worktree. Завершіть його й спробуйте ще раз."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@ bu worktree'de çalışıyor. Kapatıp yeniden deneyin."
+          }
+        }
+      }
+    },
+    "Couldn’t save this worktree’s uncommitted changes, so nothing was removed.": {
+      "comment": "Worktrees removal refused: the backup of uncommitted work failed",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No se pudieron guardar los cambios sin confirmar de este worktree, así que no se eliminó nada."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Die nicht committeten Änderungen dieses Worktrees konnten nicht gesichert werden, daher wurde nichts entfernt."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Impossible d’enregistrer les modifications non validées de ce worktree ; rien n’a été supprimé."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Impossibile salvare le modifiche non salvate di questo worktree, quindi non è stato rimosso nulla."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "このワークツリーの未コミットの変更を保存できなかったため、何も削除していません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "无法保存此工作树中未提交的更改，因此未删除任何内容。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Não foi possível salvar as alterações não commitadas deste worktree, então nada foi removido."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Não foi possível guardar as alterações não submetidas desta worktree, por isso nada foi removido."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "이 워크트리의 커밋되지 않은 변경 사항을 저장할 수 없어 아무것도 제거하지 않았습니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "De niet-gecommitte wijzigingen van deze worktree konden niet worden bewaard, dus er is niets verwijderd."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nie można zapisać niezatwierdzonych zmian tego worktree, więc nic nie usunięto."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Не удалось сохранить незакоммиченные изменения этого worktree, поэтому ничего не удалено."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Не вдалося зберегти незакомічені зміни цього worktree, тому нічого не видалено."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bu worktree'deki kaydedilmemiş değişiklikler yedeklenemedi, bu yüzden hiçbir şey kaldırılmadı."
+          }
+        }
+      }
+    },
+    "This worktree changed since it was listed. Nothing was removed; refresh and try again.": {
+      "comment": "Worktrees removal refused: the folder, commit or git record no longer matches the row",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Este worktree cambió desde que se listó. No se eliminó nada; actualiza y vuelve a intentarlo."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dieser Worktree hat sich seit dem Auflisten geändert. Es wurde nichts entfernt; aktualisiere und versuche es erneut."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ce worktree a changé depuis son affichage. Rien n’a été supprimé ; actualisez et réessayez."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Questo worktree è cambiato da quando è stato elencato. Non è stato rimosso nulla; aggiorna e riprova."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "このワークツリーは一覧表示後に変更されました。何も削除していません。更新してもう一度お試しください。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "此工作树在列出后已更改。未删除任何内容；请刷新后重试。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Este worktree mudou desde que foi listado. Nada foi removido; atualize e tente novamente."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Esta worktree mudou desde que foi listada. Nada foi removido; atualize e tente novamente."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "이 워크트리는 목록에 표시된 이후 변경되었습니다. 아무것도 제거하지 않았습니다. 새로 고친 후 다시 시도하세요."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Deze worktree is gewijzigd sinds hij werd getoond. Er is niets verwijderd; vernieuw en probeer het opnieuw."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ten worktree zmienił się od wyświetlenia. Nic nie usunięto; odśwież i spróbuj ponownie."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Этот worktree изменился после показа в списке. Ничего не удалено; обновите и повторите попытку."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Цей worktree змінився після показу в списку. Нічого не видалено; оновіть і спробуйте ще раз."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bu worktree listelendikten sonra değişti. Hiçbir şey kaldırılmadı; yenileyip yeniden deneyin."
+          }
+        }
+      }
+    },
+    "This worktree has commits no branch holds. Nothing was removed, so they aren’t lost.": {
+      "comment": "Worktrees removal refused: removing would lose commits",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Este worktree tiene commits que ninguna rama contiene. No se eliminó nada, así que no se pierden."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dieser Worktree hat Commits, die kein Branch enthält. Es wurde nichts entfernt, sie gehen also nicht verloren."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ce worktree contient des commits qu’aucune branche ne contient. Rien n’a été supprimé ; ils ne sont pas perdus."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Questo worktree ha commit che nessun branch contiene. Non è stato rimosso nulla, quindi non vanno persi."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "このワークツリーにはどのブランチにもないコミットがあります。何も削除していないため、失われません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "此工作树有不在任何分支上的提交。未删除任何内容，因此它们不会丢失。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Este worktree tem commits que nenhum branch contém. Nada foi removido, então eles não se perdem."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Esta worktree tem commits que nenhum ramo contém. Nada foi removido, por isso não se perdem."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "이 워크트리에는 어떤 브랜치에도 없는 커밋이 있습니다. 아무것도 제거하지 않았으므로 잃지 않습니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Deze worktree heeft commits die op geen enkele branch staan. Er is niets verwijderd, dus ze gaan niet verloren."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ten worktree ma commity, których nie zawiera żadna gałąź. Nic nie usunięto, więc nie przepadną."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "В этом worktree есть коммиты, которых нет ни в одной ветке. Ничего не удалено, поэтому они не потеряны."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "У цьому worktree є коміти, яких немає в жодній гілці. Нічого не видалено, тож вони не втрачені."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bu worktree'de hiçbir dalda olmayan commit'ler var. Hiçbir şey kaldırılmadı, bu yüzden kaybolmadılar."
+          }
+        }
+      }
+    },
+    "This worktree is locked with git worktree lock, so Volant leaves it alone.": {
+      "comment": "Worktrees removal refused; git worktree lock is a command and stays in English",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Este worktree está bloqueado con git worktree lock, así que Volant no lo toca."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dieser Worktree ist mit git worktree lock gesperrt, daher lässt Volant ihn in Ruhe."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ce worktree est verrouillé avec git worktree lock ; Volant n’y touche pas."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Questo worktree è bloccato con git worktree lock, quindi Volant non lo tocca."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "このワークツリーは git worktree lock でロックされているため、Volant は変更しません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "此工作树已用 git worktree lock 锁定，因此 Volant 不会动它。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Este worktree está bloqueado com git worktree lock, então o Volant não mexe nele."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Esta worktree está bloqueada com git worktree lock, por isso o Volant não lhe toca."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "이 워크트리는 git worktree lock으로 잠겨 있으므로 Volant가 건드리지 않습니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Deze worktree is vergrendeld met git worktree lock, dus Volant laat hem met rust."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Ten worktree jest zablokowany przez git worktree lock, więc Volant go nie rusza."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Этот worktree заблокирован командой git worktree lock, поэтому Volant его не трогает."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Цей worktree заблоковано командою git worktree lock, тому Volant його не чіпає."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bu worktree git worktree lock ile kilitli, bu yüzden Volant ona dokunmuyor."
+          }
+        }
+      }
+    },
+    "This worktree’s uncommitted changes are over 100 MB, too large to back up, so nothing was removed.": {
+      "comment": "Worktrees removal refused: the backup would be too large",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Los cambios sin confirmar de este worktree superan los 100 MB, demasiado para respaldarlos, así que no se eliminó nada."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Die nicht committeten Änderungen dieses Worktrees sind über 100 MB groß und zu groß zum Sichern, daher wurde nichts entfernt."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Les modifications non validées de ce worktree dépassent 100 Mo, trop pour être sauvegardées ; rien n’a été supprimé."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Le modifiche non salvate di questo worktree superano i 100 MB, troppo per il backup, quindi non è stato rimosso nulla."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "このワークツリーの未コミットの変更は 100 MB を超えておりバックアップできないため、何も削除していません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "此工作树未提交的更改超过 100 MB，无法备份，因此未删除任何内容。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "As alterações não commitadas deste worktree passam de 100 MB, grandes demais para backup, então nada foi removido."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "As alterações não submetidas desta worktree excedem 100 MB, demasiado para cópia de segurança, por isso nada foi removido."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "이 워크트리의 커밋되지 않은 변경 사항이 100MB를 넘어 백업할 수 없으므로 아무것도 제거하지 않았습니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "De niet-gecommitte wijzigingen van deze worktree zijn groter dan 100 MB en te groot om te bewaren, dus er is niets verwijderd."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Niezatwierdzone zmiany tego worktree przekraczają 100 MB i są za duże na kopię, więc nic nie usunięto."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Незакоммиченные изменения этого worktree больше 100 МБ — слишком много для резервной копии, поэтому ничего не удалено."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Незакомічені зміни цього worktree перевищують 100 МБ — забагато для резервної копії, тому нічого не видалено."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bu worktree'deki kaydedilmemiş değişiklikler 100 MB'ı aşıyor, yedeklenemeyecek kadar büyük; bu yüzden hiçbir şey kaldırılmadı."
+          }
+        }
+      }
+    },
+    "git couldn’t prune stale worktrees.": {
+      "comment": "Worktrees prune error from git",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git no pudo depurar los worktrees obsoletos."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git konnte veraltete Worktrees nicht bereinigen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git n’a pas pu nettoyer les worktrees obsolètes."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git non è riuscito a eliminare i worktree obsoleti."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git が古いワークツリーを整理できませんでした。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git 无法清理失效的工作树。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O git não conseguiu limpar os worktrees obsoletos."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O git não conseguiu limpar as worktrees obsoletas."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git이 오래된 워크트리를 정리하지 못했습니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git kon verouderde worktrees niet opschonen."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git nie mógł wyczyścić nieaktualnych worktree."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git не удалось очистить устаревшие worktree."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git не вдалося очистити застарілі worktree."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git eski worktree'leri temizleyemedi."
+          }
+        }
+      }
+    },
+    "git couldn’t remove this worktree.": {
+      "comment": "Worktrees removal error from git",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git no pudo eliminar este worktree."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git konnte diesen Worktree nicht entfernen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git n’a pas pu supprimer ce worktree."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git non è riuscito a rimuovere questo worktree."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git がこのワークツリーを削除できませんでした。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git 无法移除此工作树。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O git não conseguiu remover este worktree."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "O git não conseguiu remover esta worktree."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git이 이 워크트리를 제거하지 못했습니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git kon deze worktree niet verwijderen."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git nie mógł usunąć tego worktree."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git не удалось удалить этот worktree."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git не вдалося видалити цей worktree."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git bu worktree'yi kaldıramadı."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

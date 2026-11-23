@@ -81,6 +81,13 @@ import Foundation
     /// JSON map from path to `WorktreeDetails`. Each path must still be a linked worktree; others are
     /// left out. Reads file sizes and `git log -1`, never file contents.
     func worktreeDetails(paths: Data, reply: @escaping (Data?, String?) -> Void)
+    /// Removes one linked worktree the owner confirmed, given as a JSON `WorktreeRemovalRequest`, and
+    /// replies with a JSON `WorktreeRemoval` or a `HostMessage` code saying why not. The helper rechecks
+    /// everything against git first (`WorktreeRemover`), saves uncommitted work before removing, and
+    /// never deletes a branch or the main working folder.
+    func removeWorktree(request: Data, reply: @escaping (Data?, String?) -> Void)
+    /// Runs `git worktree prune` in one main repository, replying with how many stale records went.
+    func pruneWorktrees(repository: String, reply: @escaping (Int, String?) -> Void)
 }
 
 public struct AgentSession: Codable, Identifiable, Hashable {
