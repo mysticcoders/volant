@@ -133802,6 +133802,94 @@
           }
         }
       }
+    },
+    "Files git ignores, such as build output or a .env file, are deleted with it and not saved.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Los archivos que git ignora, como resultados de compilación o un archivo .env, se eliminan con él y no se guardan."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dateien, die git ignoriert, etwa Build-Ausgaben oder eine .env-Datei, werden mit ihm gelöscht und nicht gesichert."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Les fichiers ignorés par git, comme les résultats de compilation ou un fichier .env, sont supprimés avec lui et ne sont pas enregistrés."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "I file che git ignora, come l’output di build o un file .env, vengono eliminati con esso e non salvati."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "ビルド出力や .env ファイルなど、git が無視するファイルは一緒に削除され、保存されません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "git 忽略的文件（如构建输出或 .env 文件）会随之删除，且不会保存。"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Arquivos que o git ignora, como saída de build ou um arquivo .env, são apagados junto e não são salvos."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Os ficheiros que o git ignora, como resultados de compilação ou um ficheiro .env, são apagados com ela e não são guardados."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "빌드 결과물이나 .env 파일처럼 git이 무시하는 파일은 함께 삭제되며 저장되지 않습니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Bestanden die git negeert, zoals build-uitvoer of een .env-bestand, worden mee verwijderd en niet bewaard."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pliki ignorowane przez git, takie jak wyniki kompilacji czy plik .env, są usuwane razem z nim i nie są zapisywane."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Файлы, которые git игнорирует, например результаты сборки или файл .env, удаляются вместе с ним и не сохраняются."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Файли, які git ігнорує, наприклад результати збирання чи файл .env, видаляються разом із ним і не зберігаються."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Derleme çıktısı veya .env dosyası gibi git'in yok saydığı dosyalar onunla birlikte silinir ve kaydedilmez."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

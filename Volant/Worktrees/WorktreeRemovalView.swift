@@ -30,6 +30,7 @@ struct WorktreeRemovalView: View {
                 } else if changes == nil {
                     Text("Any uncommitted changes are saved first, in Application Support › Volant › Worktree Backups.")
                 }
+                Text("Files git ignores, such as build output or a .env file, are deleted with it and not saved.")
             }.font(.subheadline).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             HStack {
                 Button("Cancel") { model.cancelWorktreeRemoval() }.disabled(model.worktreeBusy)
