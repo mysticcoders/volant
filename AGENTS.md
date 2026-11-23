@@ -9,6 +9,11 @@
 - Unit-test hosts must not start real clipboard monitoring, hotkeys, menus, updater checks or normal app windows. Keep test fixtures isolated from owner data. Run native UI fixtures one process at a time to avoid key-window interference. Render branded UI from the compiled release assets, not a bare executable with missing images.
 - Run routine local UI tests and visual previews in headless Tart, not on the owner's desktop. `Scripts/test.sh` routes local UI checks to `tools/test-ui-vm.py`; never fall back to host UI if the VM is unavailable. Host UI testing (`VOLANT_HOST_UI_TESTS=1`), app relaunches, and disruptive performance measurements require an explicitly agreed window while the owner is working. VM timings are functional evidence, not native performance measurements.
 
+# Vocabulary and decisions
+
+- Use the terms in `docs/glossary.md`. Before naming a new type, setting, command or doc, check it there; several words (helper/host, agent, session, extension) have more than one meaning, and the glossary gives the preferred term. Add a new concept to the glossary in the same change that introduces it.
+- Before changing something an architecture decision record covers, read it: `docs/adr/README.md` has the index. A rule here that looks arbitrary usually has its reason in an ADR. Propose a new ADR in the PR when a decision is not obvious, is a real trade-off, and is hard to reverse; supersede an accepted record rather than rewriting it.
+
 # Project working notes
 
 - Security jobs are independent of native/UI change selection. Keep scanner/Action pins current, scan tracked dependency lockfiles (not local worktrees), redact secret findings, and use only individually reviewed secret exceptions. Initial dependency debt was cleared on 2026-10-28; keep the baseline empty apart from exceptions the owner reviewed (picomatch GHSA-fc5q-39xc-vjpf, build-time only, expires 2026-12-01; remove it when a fixed release exists), never auto-renew exceptions, and do not describe a green scan as proof of absence of vulnerabilities. See [security review](docs/security-review-2026-10-27.md).
