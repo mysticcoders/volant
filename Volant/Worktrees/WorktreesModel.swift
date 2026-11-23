@@ -121,17 +121,19 @@ final class WorktreesModel: ObservableObject {
         }
     }
 
-    /// The row's second line: repository, abbreviated path, size, uncommitted changes and the last
-    /// commit's age, each when known.
+    /// The row's second line: size, uncommitted changes and the last commit's age, each when known,
+    /// then the repository and the abbreviated path, which can be cut off at the end.
     func detail(for worktree: Worktree, now: Date = Date()) -> String {
-        var parts = [worktree.repositoryName, worktree.abbreviatedPath(home: Self.home)]
-        if worktree.stale { return parts.joined(separator: " · ") }
-        if let info = details[worktree.path], let size = info.size { parts.append(Worktrees.formatSize(size, complete: info.sizeComplete)) }
-        else if measuring { parts.append(String(localized: "measuring…", comment: "Worktree row while its size is being read")) }
-        if let count = changes[worktree.path], count > 0 {
-            parts.append(String(localized: "\(count, specifier: "%lld") uncommitted", comment: "Worktree row: number of uncommitted changes"))
+        var parts: [String] = []
+        if !worktree.stale {
+            if let info = details[worktree.path], let size = info.size { parts.append(Worktrees.formatSize(size, complete: info.sizeComplete)) }
+            else if measuring { parts.append(String(localized: "measuring…", comment: "Worktree row while its size is being read")) }
+            if let count = changes[worktree.path], count > 0 {
+                parts.append(String(localized: "\(count, specifier: "%lld") uncommitted", comment: "Worktree row: number of uncommitted changes"))
+            }
+            if let date = details[worktree.path]?.lastCommit { parts.append(Worktrees.age(of: date, now: now)) }
         }
-        if let date = details[worktree.path]?.lastCommit { parts.append(Worktrees.age(of: date, now: now)) }
+        parts += [worktree.repositoryName, worktree.abbreviatedPath(home: Self.home)]
         return parts.joined(separator: " · ")
     }
 

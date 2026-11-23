@@ -70,10 +70,10 @@ final class LauncherWorktreesTests: XCTestCase {
         XCTAssertEqual(model.rows.map(\.kind), ["In Use", "Clean", "Uncommitted", "Stale"])
         guard case .worktree(_, _, let served) = model.rows[0], case .worktree(let release, _, let releaseDetail) = model.rows[1],
               case .worktree(_, _, let small) = model.rows[2] else { return XCTFail("Worktree rows") }
-        XCTAssertTrue(served.hasPrefix("Node.js on 3000 · app · "), served)
-        XCTAssertTrue(releaseDetail.contains("2.3 GB"), releaseDetail)
-        XCTAssertTrue(releaseDetail.hasSuffix("3d"), releaseDetail)
-        XCTAssertTrue(small.contains("2 uncommitted"), small)
+        XCTAssertTrue(served.hasPrefix("Node.js on 3000 · 5 MB · 3d · app · "), served)
+        XCTAssertTrue(releaseDetail.hasPrefix("2.3 GB · 3d · app · "), releaseDetail)
+        XCTAssertTrue(releaseDetail.hasSuffix("/dist-release.ship-9.9.9.x/worktree"), releaseDetail)
+        XCTAssertTrue(small.hasPrefix("1 MB · 2 uncommitted · 3d · "), small)
         XCTAssertEqual(release.title, "worktree · detached 3333333")
 
         model.selection = 1
