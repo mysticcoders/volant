@@ -15,7 +15,7 @@ struct LauncherView: View {
     /// Whether item actions or the Volant menu are open; either one owns arrow keys and Return.
     private var popoverOpen: Bool { model.actionTarget != nil || model.showingAppMenu }
     /// Whether a form below the search field owns arrow keys and Return.
-    private var formOpen: Bool { model.wifiJoin != nil || model.entryForm != nil }
+    private var formOpen: Bool { model.wifiJoin != nil || model.worktreeRemoval != nil || model.entryForm != nil }
     private var fadesEdges: Bool { !reduceMotion && !reduceTransparency }
     /// Whether more results lie above or below the visible part of the list.
     @State private var hiddenEdges = ScrollEdges()
@@ -68,6 +68,9 @@ struct LauncherView: View {
             }
             if let network = model.wifiJoin {
                 WiFiJoinView(model: model, network: network).id(network.id)
+                Divider().opacity(0.6)
+            } else if let item = model.worktreeRemoval {
+                WorktreeRemovalView(model: model, worktree: item).id(item.id)
                 Divider().opacity(0.6)
             } else if let draft = model.entryForm {
                 LauncherEntryFormView(model: model, draft: draft).id(draft.id)
@@ -138,6 +141,7 @@ struct LauncherView: View {
             if model.actionTarget != nil { closeActions(); return .handled }
             if model.dictation.isListening { model.cancelDictation(); return .handled }
             if model.entryForm != nil { model.cancelEntryForm(); return .handled }
+            if model.worktreeRemoval != nil { model.cancelWorktreeRemoval(); return .handled }
             if model.backOutOfScope() { return .handled }
             // Escape in AI Chat steps back to search like Back, keeping the conversation and its draft;
             // a second Escape closes the launcher.

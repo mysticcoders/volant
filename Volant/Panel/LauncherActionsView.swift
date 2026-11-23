@@ -3,7 +3,7 @@ import VolantCore
 
 /// Only everyday actions belong here; app termination and uninstall are deliberately separate work.
 enum LauncherItemAction: String, CaseIterable, Identifiable {
-    case open, reveal, openInTerminal, contents, favorite, copyPath, copyName, copyBundleID, copyURL, copyPort, copyPID, copyBranch, configure, resetRanking
+    case open, reveal, openInTerminal, contents, favorite, copyPath, copyName, copyBundleID, copyURL, copyPort, copyPID, copyBranch, configure, resetRanking, removeWorktree, pruneWorktrees
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -21,6 +21,8 @@ enum LauncherItemAction: String, CaseIterable, Identifiable {
         case .copyBranch: return String(localized: "Copy Branch Name", comment: "Actions menu item")
         case .configure: return String(localized: "Edit Shortcut & Alias…", comment: "Actions menu item")
         case .resetRanking: return String(localized: "Reset Ranking", comment: "Actions menu item")
+        case .removeWorktree: return String(localized: "Remove Worktree…", comment: "Actions menu item: asks before deleting a git worktree's folder")
+        case .pruneWorktrees: return String(localized: "Prune Stale Worktrees", comment: "Actions menu item: runs git worktree prune for this repository")
         }
     }
     var symbol: String {
@@ -32,6 +34,8 @@ enum LauncherItemAction: String, CaseIterable, Identifiable {
         case .copyPath, .copyName, .copyBundleID, .copyURL, .copyPort, .copyPID, .copyBranch: return "doc.on.clipboard"
         case .configure: return "gearshape"
         case .resetRanking: return "arrow.counterclockwise"
+        case .removeWorktree: return "trash"
+        case .pruneWorktrees: return "scissors"
         }
     }
     var group: Int {
@@ -39,7 +43,7 @@ enum LauncherItemAction: String, CaseIterable, Identifiable {
         case .open, .reveal, .openInTerminal, .contents: return 0
         case .favorite: return 1
         case .copyPath, .copyName, .copyBundleID, .copyURL, .copyPort, .copyPID, .copyBranch: return 2
-        case .configure, .resetRanking: return 3
+        case .configure, .resetRanking, .removeWorktree, .pruneWorktrees: return 3
         }
     }
 }
@@ -118,7 +122,9 @@ extension ResultRow {
         case .app: return [.open, .reveal, .contents, .favorite, .copyPath, .copyName, .copyBundleID, .configure, .resetRanking]
         case .file: return [.open, .reveal, .copyPath, .copyName, .resetRanking]
         case .server(let server): return [.open] + (server.executable == nil ? [] : [.reveal]) + [.copyURL, .copyPort, .copyPID]
-        case .worktree(let item, _, _): return item.stale ? [.copyPath] : [.reveal, .openInTerminal, .copyPath] + (item.branch == nil ? [] : [.copyBranch])
+        case .worktree(let item, _, _):
+            if item.stale { return [.copyPath, .pruneWorktrees] }
+            return [.reveal, .openInTerminal, .copyPath] + (item.branch == nil ? [] : [.copyBranch]) + (item.locked ? [] : [.removeWorktree])
         default: return []
         }
     }

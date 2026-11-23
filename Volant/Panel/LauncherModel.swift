@@ -426,6 +426,12 @@ final class LauncherModel: ObservableObject {
     let worktrees = WorktreesModel()
     private var worktreesSubscription: AnyCancellable?
     var showingWorktrees: Bool { Worktrees.queryTerm(routedQuery) != nil }
+    /// The worktree whose removal the owner is being asked to confirm.
+    @Published var worktreeRemoval: Worktree?
+    /// Whether a removal or prune is running in the helper.
+    @Published private(set) var worktreeBusy = false
+    /// What the last removal or prune did, shown in place of the size total until the query changes.
+    private var worktreeOutcome: String?
     /// Search Menu Items' items for this launcher session, cleared when the launcher is dismissed.
     let menuItems = MenuItemsModel()
     private var menuItemsSubscription: AnyCancellable?
@@ -976,6 +982,8 @@ final class LauncherModel: ObservableObject {
         actionTarget = nil
         showingAppMenu = false
         wifiJoin = nil
+        if !worktreeBusy { worktreeRemoval = nil }
+        worktreeOutcome = nil
         entryForm = nil
         actionFeedback = nil
         systemToggleStates = [:]
@@ -1116,9 +1124,60 @@ final class LauncherModel: ObservableObject {
             ?? (rows.isEmpty ? (term.staleOnly ? String(localized: "No stale worktrees.", comment: "Worktrees notice for worktrees stale with nothing stale")
                 : String(localized: "No git worktrees found.", comment: "Worktrees notice when none were found")) : nil)
         if !rows.isEmpty {
-            actionFeedback = worktrees.message ?? (total > 0 ? String(localized: "\(Worktrees.formatSize(total, complete: !worktrees.measuring), format: .verbatim) in these worktrees", comment: "Worktrees total size, such as 41 GB in these worktrees") : nil)
+            actionFeedback = worktrees.message ?? worktreeOutcome ?? (total > 0 ? String(localized: "\(Worktrees.formatSize(total, complete: !worktrees.measuring), format: .verbatim) in these worktrees", comment: "Worktrees total size, such as 41 GB in these worktrees") : nil)
         }
         selection = selectedID.flatMap { id in rows.firstIndex { $0.id == id } } ?? 0
+    }
+
+    /// Removes the worktree the owner confirmed, after checking again that no server or agent the
+    /// launcher knows is working in it. The helper rechecks git and running processes itself.
+    func confirmWorktreeRemoval() {
+        guard let item = worktreeRemoval, !worktreeBusy else { return }
+        if let holder = Worktrees.holder(of: item, among: worktreeHolders) {
+            worktreeRemoval = nil
+            actionFeedback = String(localized: "\(holder, format: .verbatim) is working in this worktree. Stop it first.", comment: "Worktrees: removal refused; the value names a server or agent")
+            return
+        }
+        worktreeBusy = true
+        worktrees.remove(item) { [weak self] removal, error in
+            guard let self else { return }
+            self.worktreeBusy = false
+            self.worktreeRemoval = nil
+            self.searchFocusRequest = UUID()
+            if let removal {
+                self.worktreeOutcome = removal.backup == nil
+                    ? String(localized: "Removed \(item.name, format: .verbatim). Its branch is kept.", comment: "Worktrees: removal finished")
+                    : String(localized: "Removed \(item.name, format: .verbatim). Uncommitted work saved in Worktree Backups.", comment: "Worktrees: removal finished after saving uncommitted work")
+                self.actionFeedback = self.worktreeOutcome
+                self.refreshWorktrees()
+            } else {
+                self.actionFeedback = error
+            }
+        }
+    }
+
+    /// Closes the removal confirmation without doing anything.
+    func cancelWorktreeRemoval() {
+        guard !worktreeBusy else { return }
+        worktreeRemoval = nil
+        searchFocusRequest = UUID()
+    }
+
+    /// Prunes a repository's stale worktree records and lists again.
+    private func pruneWorktrees(in repository: String) {
+        guard !worktreeBusy else { return }
+        worktreeBusy = true
+        worktrees.prune(repository: repository) { [weak self] count, error in
+            guard let self else { return }
+            self.worktreeBusy = false
+            if let count {
+                self.worktreeOutcome = String(localized: "Stale worktree records pruned: \(count, specifier: "%lld").", comment: "Worktrees: prune finished; the number of git records removed")
+                self.actionFeedback = self.worktreeOutcome
+                self.refreshWorktrees()
+            } else {
+                self.actionFeedback = error
+            }
+        }
     }
 
     /// Lists worktrees and servers again and measures every worktree afresh, for the Refresh button.
@@ -1406,6 +1465,8 @@ final class LauncherModel: ObservableObject {
         notice = nil
         actionFeedback = nil
         wifiJoin = nil
+        if !worktreeBusy { worktreeRemoval = nil }
+        worktreeOutcome = nil
         entryForm = nil
         files.cancel()
         notesSearch?.cancel()
@@ -2406,7 +2467,7 @@ final class LauncherModel: ObservableObject {
 
     var canTabToAIChat: Bool {
         scope == nil && !showingACP && !showingDictionary && !showingCatalog && !showingTranslation && !showingEmoji &&
-        !showingAppleShortcuts && !showingServers && !showingWorktrees && !showingAgents && !showingRex && wifiJoin == nil && entryForm == nil && actionTarget == nil
+        !showingAppleShortcuts && !showingServers && !showingWorktrees && !showingAgents && !showingRex && wifiJoin == nil && worktreeRemoval == nil && entryForm == nil && actionTarget == nil
     }
 
     /// Opens the form for a new snippet or quicklink over the results, validated against the
@@ -2647,6 +2708,16 @@ final class LauncherModel: ObservableObject {
         case .copyBranch:
             guard case .worktree(let item, _, _) = target, let branch = item.branch else { return }
             copyText(branch); actionFeedback = String(localized: "Branch copied.")
+        case .removeWorktree:
+            guard case .worktree(let item, _, _) = target, !item.stale, !item.locked else { return }
+            if let holder = Worktrees.holder(of: item, among: worktreeHolders) {
+                actionFeedback = String(localized: "\(holder, format: .verbatim) is working in this worktree. Stop it first.", comment: "Worktrees: removal refused; the value names a server or agent")
+                return
+            }
+            worktreeRemoval = item
+        case .pruneWorktrees:
+            guard case .worktree(let item, _, _) = target, item.stale else { return }
+            pruneWorktrees(in: item.repository)
         case .contents:
             guard case .app = target else { return }
             if NSWorkspace.shared.open(url.appendingPathComponent("Contents", isDirectory: true)) { dismiss() }

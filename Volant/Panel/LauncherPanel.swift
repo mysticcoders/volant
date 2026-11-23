@@ -67,7 +67,7 @@ final class LauncherPanel: NSPanel, NSWindowDelegate {
     /// Clicking away hides the launcher, including Translate and AI Chat, whose text and conversations
     /// are kept in their models. Only work that would be lost or left half-entered keeps it on screen.
     var keepsVisibleOnBlur: Bool {
-        model.pendingExtension != nil || model.extensionRunning || model.wifiJoin != nil || model.connectivityBusy || model.entryForm != nil ||
+        model.pendingExtension != nil || model.extensionRunning || model.wifiJoin != nil || model.worktreeRemoval != nil || model.worktreeBusy || model.connectivityBusy || model.entryForm != nil ||
         model.dictation.phase == .listening || model.dictation.phase == .finishing
     }
     /// Whether the launcher was last hidden by clicking away rather than dismissed on purpose, so the

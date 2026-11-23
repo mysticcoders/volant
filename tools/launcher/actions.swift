@@ -1775,13 +1775,31 @@ func worktreesScenario() throws {
     try render("worktrees")
     key("k", 40, .command)
     verify(waitUntil { panel.model.actionTarget != nil }, "Command K opens a worktree's Actions")
-    verify(panel.model.actionTarget?.menuEntries == [.item(.reveal), .item(.openInTerminal), .item(.copyPath), .item(.copyBranch)],
-           "A worktree offers Reveal, Open in Terminal and the copies: \(String(describing: panel.model.actionTarget?.menuEntries))")
+    verify(panel.model.actionTarget?.menuEntries == [.item(.reveal), .item(.openInTerminal), .item(.copyPath), .item(.copyBranch), .item(.removeWorktree)],
+           "A worktree offers Reveal, Open in Terminal, the copies and Remove: \(String(describing: panel.model.actionTarget?.menuEntries))")
     verify(panel.model.actionTarget?.commandReturnEntry == .item(.copyPath), "Command-Return in a worktree's Actions copies the path")
     try render("worktrees-actions")
     copied = []
     focusActionSearch(); key("\r", 36, .command)
     verify(copied == [repo + "/.claude/worktrees/checkout-flow"], "Command-Return in the menu copies the worktree's path: \(copied)")
+    var removals: [WorktreeRemovalRequest] = []
+    panel.model.worktrees.removeOverride = { request, finish in removals.append(request); finish(WorktreeRemoval(path: request.path, backup: "/fictional/backup"), nil) }
+    guard let dirty = panel.model.rows.firstIndex(where: { $0.id.hasSuffix("/search-index") }) else { verify(false, "The search-index row is listed"); return }
+    panel.model.selection = dirty; settle()
+    key("k", 40, .command)
+    verify(waitUntil { panel.model.actionTarget != nil }, "Command K opens the uncommitted worktree's Actions")
+    verify(panel.model.actionTarget?.menuEntries.last == .item(.removeWorktree), "Remove Worktree is the last action")
+    try render("worktrees-remove-menu")
+    if let target = panel.model.actionTarget { panel.model.performAction(.removeWorktree, target: target) }
+    verify(waitUntil { panel.model.worktreeRemoval != nil && panel.model.actionTarget == nil }, "Remove Worktree asks first")
+    settle()
+    try render("worktrees-remove")
+    key("\r", 36)
+    settle()
+    verify(removals.isEmpty && panel.model.worktreeRemoval != nil, "Return doesn't confirm a removal")
+    key("\u{1b}", 53)
+    verify(waitUntil { panel.model.worktreeRemoval == nil }, "Escape cancels the removal")
+    verify(removals.isEmpty, "Cancel removes nothing: \(removals)")
 }
 
 /// Search Menu Items' helper calls, answered with fictional menus so no input helper runs and no

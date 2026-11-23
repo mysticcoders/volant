@@ -170,6 +170,17 @@ public enum ListeningServers {
         return Array(found.values.sorted { ($0.port, $0.pid) < ($1.port, $1.pid) }.prefix(maximumServers))
     }
 
+    /// Names of the processes owned by `uid` whose working folder is `folder` or inside it, other than
+    /// this process. Used to refuse removing a folder something is working in.
+    public static func processes(workingInside folder: String, uid: uid_t = getuid()) -> [String] {
+        let base = folder.hasSuffix("/") ? String(folder.dropLast()) : folder
+        let own = getpid()
+        return pids(uid: uid).filter { $0 != own }.compactMap { pid in
+            guard let directory = workingDirectory(pid), directory == base || directory.hasPrefix(base + "/") else { return nil }
+            return path(pid).map { ($0 as NSString).lastPathComponent } ?? name(pid)
+        }
+    }
+
     /// Processes owned by `uid`, from the kernel's process table.
     static func pids(uid: uid_t) -> [pid_t] {
         var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_UID, Int32(bitPattern: uid)]

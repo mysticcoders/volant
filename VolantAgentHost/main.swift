@@ -79,6 +79,18 @@ final class AgentHost: NSObject, VolantAgentHostProtocol {
             catch { reply(nil, HostMessage(.worktreesUnreadable).wire) }
         }
     }
+    func removeWorktree(request data: Data, reply: @escaping (Data?, String?) -> Void) {
+        worktreeQueue.async {
+            do { reply(try JSONEncoder().encode(WorktreeInspector.remove(request: data)), nil) }
+            catch { reply(nil, ((error as? HostMessage) ?? HostMessage(.worktreeRemoveFailed)).wire) }
+        }
+    }
+    func pruneWorktrees(repository: String, reply: @escaping (Int, String?) -> Void) {
+        worktreeQueue.async {
+            do { reply(try WorktreeInspector.remover().prune(repository: repository), nil) }
+            catch { reply(0, ((error as? HostMessage) ?? HostMessage(.worktreePruneFailed)).wire) }
+        }
+    }
     func repositoryStates(paths data: Data, reply: @escaping (Data?, String?) -> Void) {
         inspectionQueue.async {
             do {
