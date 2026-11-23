@@ -1775,8 +1775,8 @@ func worktreesScenario() throws {
     try render("worktrees")
     key("k", 40, .command)
     verify(waitUntil { panel.model.actionTarget != nil }, "Command K opens a worktree's Actions")
-    verify(panel.model.actionTarget?.menuEntries == [.item(.reveal), .item(.openInTerminal), .item(.copyPath), .item(.copyBranch)],
-           "A worktree offers Reveal, Open in Terminal and the copies: \(String(describing: panel.model.actionTarget?.menuEntries))")
+    verify(panel.model.actionTarget?.menuEntries == [.item(.reveal), .item(.openInTerminal), .item(.copyPath), .item(.copyBranch), .item(.removeWorktree)],
+           "A worktree offers Reveal, Open in Terminal, the copies and Remove: \(String(describing: panel.model.actionTarget?.menuEntries))")
     verify(panel.model.actionTarget?.commandReturnEntry == .item(.copyPath), "Command-Return in a worktree's Actions copies the path")
     try render("worktrees-actions")
     copied = []
