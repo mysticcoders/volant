@@ -1779,6 +1779,9 @@ func worktreesScenario() throws {
            "A worktree offers Reveal, Open in Terminal and the copies: \(String(describing: panel.model.actionTarget?.menuEntries))")
     verify(panel.model.actionTarget?.commandReturnEntry == .item(.copyPath), "Command-Return in a worktree's Actions copies the path")
     try render("worktrees-actions")
+    copied = []
+    focusActionSearch(); key("\r", 36, .command)
+    verify(copied == [repo + "/.claude/worktrees/checkout-flow"], "Command-Return in the menu copies the worktree's path: \(copied)")
 }
 
 /// Search Menu Items' helper calls, answered with fictional menus so no input helper runs and no
