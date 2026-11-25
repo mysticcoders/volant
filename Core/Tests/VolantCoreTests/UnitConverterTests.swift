@@ -218,6 +218,42 @@ final class UnitConverterTests: XCTestCase {
         }
     }
 
+    func testAQuantityAloneConvertsToItsCounterpart() {
+        let cases: [(String, String)] = [
+            ("1kg", "2.204623 lb"), ("1inch", "2.54 cm"), ("5 km", "3.106856 mi"), ("1 mi", "1.609344 km"),
+            ("6 ft", "1.8288 m"), ("6'", "1.8288 m"), ("2 m", "6.56168 ft"), ("10 cm", "3.937008 in"),
+            ("1 lb", "0.453592 kg"), ("100 g", "3.527396 oz"), ("2 l", "0.528344 gal"), ("1 cup", "236.588237 mL"),
+            ("1 fl oz", "29.57353 mL"), ("100 km/h", "62.137119 mph"), ("60 mph", "96.56064 km/h"),
+            ("1 acre", "0.404686 ha"), ("100 sq ft", "9.290304 m²"), ("1 tonne", "1.102311 short ton"),
+            ("30 mpg", "7.840486 L/100 km"), ("8 min/mi", "4.97097 min/km"), ("32 psi", "2.206322 bar"),
+            ("-3 ft", "-0.9144 m"), ("2.5kg", "5.511557 lb")
+        ]
+        for (query, expected) in cases {
+            XCTAssertEqual(converted(query), expected, query)
+        }
+        XCTAssertEqual(converted("5 km in m"), "5000 m", "An explicit target still wins")
+        XCTAssertEqual(UnitConverter.convert("1kg", locale: Self.english)?.toUnit, UnitMass.pounds)
+    }
+
+    func testNeutralUnitsAloneFollowTheLocale() throws {
+        let german = Locale(identifier: "de_DE"), british = Locale(identifier: "en_GB")
+        XCTAssertEqual(UnitConverter.convert("10 kn", locale: Self.english)?.toSymbol, "mph")
+        XCTAssertEqual(UnitConverter.convert("10 kn", locale: german)?.toSymbol, "km/h")
+        XCTAssertEqual(UnitConverter.convert("10 nmi", locale: Self.english)?.toSymbol, "mi")
+        XCTAssertEqual(UnitConverter.convert("10 nmi", locale: german)?.toSymbol, "km")
+        XCTAssertEqual(UnitConverter.convert("5 l/100km", locale: Self.english)?.toSymbol, "mpg")
+        XCTAssertEqual(UnitConverter.convert("5 l/100km", locale: british)?.toSymbol, "mpg (imp)")
+        XCTAssertEqual(try XCTUnwrap(UnitConverter.convert("2,5 kg", locale: german)).result, 5.511557, accuracy: 1e-6)
+    }
+
+    func testAQuantityAloneWithoutACounterpartStaysASearch() {
+        let queries = ["1 gb", "3 s", "2 h", "5 dozen", "1st", "12pt", "5 k", "100 w", "1 cal", "5", "km",
+                       "5 ft 10 in", "5 km 3", "safari", "1 mg", "4 au"]
+        for query in queries {
+            XCTAssertNil(UnitConverter.convert(query, locale: Self.english), query)
+        }
+    }
+
     func testDurationUnitsUseAnAverageGregorianYear() {
         XCTAssertEqual(converted("3 weeks in days"), "21 d")
         XCTAssertEqual(converted("1 year in seconds"), "31556952 s")
