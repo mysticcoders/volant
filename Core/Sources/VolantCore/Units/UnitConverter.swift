@@ -35,12 +35,13 @@ public enum UnitConverter {
     /// The speed of light reads alone ("speed of light") or as "c" when the other side is a speed,
     /// so "c in mph" converts while "c" beside a temperature stays Celsius. A bare number converts
     /// to counts ("30 in dozens"). A temperature with no target converts to the other common scale:
-    /// "98.6 f" gives °C and "37 c" gives °F.
+    /// "98.6 f" gives °C and "37 c" gives °F. Other quantities with no target convert to their
+    /// counterpart in `defaultTargets`: "1kg" gives lb and "1inch" gives cm.
     public static func convert(_ text: String, locale: Locale = .current) -> Conversion? {
         var lowered = normalized(text)
         if lightNames.contains(lowered.filter { !$0.isWhitespace }) { lowered += " in m/s" }
         if let scale = bareTemperature(lowered) { lowered += scale == "c" ? " in f" : " in c" }
-        guard let (value, initialFrom, initialTo) = split(lowered, locale: locale) else { return nil }
+        guard let (value, initialFrom, initialTo) = split(lowered, locale: locale) ?? bare(lowered, locale: locale) else { return nil }
         var from = initialFrom, to = initialTo
         if from.unit == UnitTemperature.celsius, to.unit is UnitSpeed { from = light }
         if to.unit == UnitTemperature.celsius, from.unit is UnitSpeed { to = light }
@@ -217,6 +218,46 @@ public enum UnitConverter {
               let scale = Range(match.range(at: 1), in: text) else { return nil }
         return text[scale].first == "f" ? "f" : "c"
     }
+
+    /// A number and one unit with no target ("1kg", "5 km", "-3 ft", "1 fl oz"), converted to the
+    /// unit's counterpart in `defaultTargets`. A unit with no counterpart gives no answer.
+    private static func bare(_ text: String, locale: Locale) -> (Double, Spec, Spec)? {
+        guard text.utf8.count <= 32 else { return nil }
+        let characters = Array(text)
+        let negative = characters.first == "-"
+        guard let (magnitude, end) = NumberLiteral.scan(characters, from: negative ? 1 : 0, NumberLiteral.Separators(locale), magnitudes: false),
+              let from = lookup(String(characters[end...])), let to = defaultTarget(for: from, locale: locale) else { return nil }
+        return (negative ? -magnitude : magnitude, from, to)
+    }
+
+    /// The unit a quantity converts to when no target is typed: its usual counterpart in the other
+    /// measurement system, so metric goes to US customary and back. Knots and nautical miles, which
+    /// belong to neither, go to the locale's road units, and liters per 100 km to imperial mpg in the
+    /// UK. Data, durations, counts and units whose symbols read as something else ("1st", "12pt",
+    /// "5 k") have no default.
+    static func defaultTarget(for unit: Spec, locale: Locale) -> Spec? {
+        let system = locale.measurementSystem
+        let key: String?
+        switch unit.symbol {
+        case "kn": key = system == .metric ? "km/h" : "mph"
+        case "nmi": key = system == .metric ? "km" : "mi"
+        case "L/100 km": key = system == .uk ? "mpgimp" : "mpg"
+        default: key = defaultTargets[unit.symbol]
+        }
+        return key.flatMap(lookup)
+    }
+
+    /// Each unit's counterpart, from its shown symbol to a name `lookup` reads.
+    private static let defaultTargets: [String: String] = [
+        "km": "mi", "mi": "km", "m": "ft", "ft": "m", "cm": "in", "mm": "in", "in": "cm", "yd": "m",
+        "kg": "lb", "lb": "kg", "g": "oz", "oz": "g", "t": "shortton", "short ton": "tonne", "long ton": "tonne",
+        "L": "gal", "gal": "l", "qt": "l", "mL": "floz", "fl oz": "ml", "cup": "ml", "tbsp": "ml", "tsp": "ml",
+        "km/h": "mph", "mph": "km/h", "m/s": "km/h",
+        "m²": "ft2", "ft²": "m2", "km²": "mi2", "mi²": "km2", "yd²": "m2", "cm²": "in2", "in²": "cm2",
+        "acre": "ha", "ha": "acre",
+        "kcal": "kj", "kJ": "kcal", "hp": "kw", "kW": "hp", "psi": "bar", "bar": "psi", "kPa": "psi",
+        "mpg": "l/100km", "mpg (imp)": "l/100km", "km/L": "mpg", "min/mi": "min/km", "min/km": "min/mi"
+    ]
 
     /// A source written without a leading number: the speed of light ("c", "speed of light"),
     /// counted once, and "mach 2", which puts the number after the unit as pilots say it.

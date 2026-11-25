@@ -325,3 +325,12 @@ Precision and rounding are unchanged; only presentation changed. English output 
 - **Mass:** `tonne` and `metric ton` (1,000 kg, symbol `t`), `ton` and `short ton` (2,000 lb, exactly 907.18474 kg), and `long ton` (2,240 lb, exactly 1016.0469088 kg). Foundation has no long ton, so the converter defines one.
 - **Length:** `micrometer`, `micron`, `µm` and `um` (symbol `µm`), and `nanometer` (symbol `nm`). The micro sign from Option-M and the Greek letter mu both read as micrometers.
 - **Not added:** `nm` stays nautical miles, so nanometers need the full word. A bare `t` is too ambiguous to mean tonnes. Cards still show `nm` and `t`, so Swap writes those two units by name: `1,000 nm in µm` swaps as `1,000 nanometers in µm`, and `1 t` as `1 tonnes`.
+
+## A quantity alone — November 25, 2026
+
+A number and one unit with no target converts to the unit's usual counterpart in the other measurement system, as a temperature alone already did (#406): `1kg` → `2.204623 lb`, `1inch` → `2.54 cm`, `5 km` → mi, `6'` → m, `1 cup` → mL, `100 km/h` → mph, `1 acre` → ha, `30 mpg` → L/100 km, `8 min/mi` → min/km. An explicit target still wins, and Swap writes the target, so the answer reads back as an ordinary conversion.
+
+- **Pairs:** lengths (km/mi, m/ft, cm and mm to in, in to cm, yd to m), mass (kg/lb, g/oz, tonne/short ton, long ton to tonne), volume (L/gal, qt to L, mL to fl oz, and cup, fl oz, tbsp and tsp to mL), speed (km/h/mph, m/s to km/h), area (m²/ft², km²/mi², cm²/in², yd² to m², acre/ha), energy (kcal/kJ), power (hp/kW), pressure (psi/bar, kPa to psi), fuel economy and pace. `UnitConverter.defaultTargets` holds the list.
+- **Locale:** knots and nautical miles belong to neither system, so they go to mph and mi in US and UK locales and to km/h and km in metric ones. L/100 km goes to imperial mpg in the UK and US mpg elsewhere. Gallons stay US gallons, as in the rest of the converter.
+- **No default:** data sizes and rates, durations, counts, milligrams, astronomical lengths, small calories, watts, joules and kelvin keep needing a target, since there's no obvious other side. Symbols that read as something else when typed alone also give no answer: `1st` (stone), `12pt` (pints, but usually points) and `5 k`.
+- **Not included:** a setting to choose the default targets. `25m` alone now reads as meters; Focus reads `25m` as minutes only after `focus`.
