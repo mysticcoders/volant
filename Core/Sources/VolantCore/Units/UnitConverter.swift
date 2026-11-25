@@ -141,8 +141,11 @@ public enum UnitConverter {
     /// Exact legal definitions where Foundation's coefficients are rounded to about six digits,
     /// which showed in answers ("10 kn in kph" gave 18.519969). Cup is the US customary cup
     /// (236.588 mL); Foundation's 0.24 L is the US nutrition-label cup. The international mile is
-    /// listed because swift-corelibs-foundation (the browser build) rounds it to 1609.34 m.
+    /// listed because swift-corelibs-foundation (the browser build) rounds it to 1609.34 m. Liters per
+    /// 100 km is the base the reciprocal fuel units assume; listing it keeps the browser build, whose
+    /// Foundation converts it differently, from reading `30 mpg in l/100km` as 0.127543.
     private static let exactFactors: [(Dimension, Double)] = [
+        (UnitFuelEfficiency.litersPer100Kilometers, 1),
         (UnitLength.miles, 1609.344), (UnitSpeed.milesPerHour, 0.44704),
         (UnitMass.pounds, 0.45359237), (UnitMass.ounces, 0.028349523125), (UnitMass.stones, 6.35029318),
         (UnitMass.shortTons, 907.18474),

@@ -24,3 +24,8 @@ xiv in decimal
 what is 12% of 840
 100 kg in lbs
 noon cet in ist (india)
+30 mpg in l/100km
+10 l/100km in mpg
+10 km/l in l/100km
+5 l/100km
+1kg
