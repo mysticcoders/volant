@@ -31,6 +31,7 @@ struct ExtensionSettingsView: View {
     /// The daily background check (`extensionUpdateChecks`), read from this view's config file.
     @State private var dailyChecks = false
     @State private var browsing = false
+    @State private var showingActivity = false
     private let secretStore: ExtensionSecretStore
     init(configURL: URL, onChange: @escaping () -> Void, roots: [URL]? = nil, directory: URL? = nil, dataDirectory: URL? = nil,
          catalogClient: ExtensionCatalogClient = .live, catalog: ExtensionCatalog? = nil, secretStore: ExtensionSecretStore = .keychain) {
@@ -146,6 +147,8 @@ struct ExtensionSettingsView: View {
                 HStack {
                     Text(communityAllowed ? "Installed" : "Built In")
                     Spacer()
+                    Button("Activity…") { showingActivity = true }.controlSize(.small).font(.callout)
+                        .accessibilityIdentifier("extension-activity")
                     if communityAllowed {
                         Button("Open Folder") { NSWorkspace.shared.open(ExtensionManager.directory) }.controlSize(.small).font(.callout)
                         Button("Browse Extensions…") { browsing = true }.controlSize(.small).font(.callout)
@@ -169,6 +172,9 @@ struct ExtensionSettingsView: View {
                                     install(listing, from: catalog) { failure in if let failure { error = failure } }
                                 },
                                 done: { browsing = false })
+        }
+        .sheet(isPresented: $showingActivity) {
+            ExtensionActivityView(extensions: installed, turnOff: { setEnabled($0, false) }, done: { showingActivity = false })
         }
         .sheet(item: $editingPreferences) { ext in
             ExtensionPreferencesView(ext: ext, manager: manager) { editingPreferences = nil; reload() }
