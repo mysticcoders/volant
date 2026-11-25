@@ -1,3 +1,4 @@
+import Combine
 import XCTest
 import VolantCore
 @testable import Volant
@@ -112,5 +113,32 @@ final class ExtensionActivityTests: XCTestCase {
         small.clear()
         XCTAssertEqual(small.log.events.count, 0)
         XCTAssertEqual(small.log.dropped, 0)
+    }
+
+    func testTheRecorderTellsAnOpenActivitySheetAboutNewEvents() {
+        var changes = 0
+        let watcher = recorder.objectWillChange.sink { changes += 1 }
+        recorder.record(ExtensionActivity(extensionID: "fixture", version: "1", codeHash: "", invocation: 1, time: Date(),
+                                          operation: .log, outcome: .completed))
+        recorder.clear()
+        XCTAssertEqual(changes, 2)
+        watcher.cancel()
+    }
+
+    func testTheActivitySheetDescribesEveryEventInVolantsOwnWords() {
+        func summary(_ operation: ExtensionActivity.Operation, _ detail: String? = nil) -> String {
+            ExtensionActivityView.summary(ExtensionActivity(extensionID: "fixture", version: "1", codeHash: "", invocation: 1, time: Date(),
+                                                            operation: operation, outcome: .completed, detail: detail))
+        }
+        XCTAssertEqual(summary(.fetch, "news.example.com"), "Request to news.example.com")
+        XCTAssertEqual(summary(.fetch), "Request to an unlisted address")
+        XCTAssertEqual(summary(.post, "api.example.com"), "Action request to api.example.com")
+        XCTAssertEqual(summary(.module, "plan"), "Planning requests")
+        XCTAssertEqual(summary(.module, "render"), "Showing results")
+        XCTAssertEqual(summary(.module, "something else"), "Extension call", "A phase Volant doesn't know is never shown as written")
+        let operations: [ExtensionActivity.Operation] = [.module, .fetch, .post, .clipboardRead, .clipboardWrite, .log, .location, .storageSave, .svgRender]
+        XCTAssertEqual(Set(operations.map { summary($0) }).count, operations.count, "Each operation reads differently")
+        let outcomes: [ExtensionActivity.Outcome] = [.completed, .failed, .denied, .cancelled, .timedOut]
+        XCTAssertEqual(Set(outcomes.map { ExtensionActivityView.outcome($0).label }).count, outcomes.count)
     }
 }

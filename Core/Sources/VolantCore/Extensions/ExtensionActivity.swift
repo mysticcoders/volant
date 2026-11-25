@@ -68,5 +68,58 @@ public struct ExtensionActivityLog: Equatable, Sendable {
 
     public func events(for extensionID: String) -> [ExtensionActivity] { events.filter { $0.extensionID == extensionID } }
 
+    /// What the Activity history shows: newest first, for one extension or all of them, and only the
+    /// events that didn't complete when `problemsOnly` is set.
+    public func visible(extensionID: String?, problemsOnly: Bool) -> [ExtensionActivity] {
+        events.reversed().filter { event in
+            (extensionID == nil || event.extensionID == extensionID) && (!problemsOnly || event.outcome != .completed)
+        }
+    }
+
+    /// Every extension that has activity, in the order each first appears.
+    public var extensionIDs: [String] {
+        var seen = Set<String>()
+        return events.map(\.extensionID).filter { seen.insert($0).inserted }
+    }
+
     public mutating func clear() { events = []; dropped = 0 }
+}
+
+/// The Activity history as a file the owner saves: exactly the fields each event holds, as JSON, with the
+/// count of older events the log dropped, so an export never reads as a complete record when it isn't.
+public enum ExtensionActivityExport {
+    private struct File: Encodable {
+        let exportedAt: Date
+        let note: String
+        let droppedEarlierEvents: Int
+        let events: [Event]
+    }
+
+    private struct Event: Encodable {
+        let extensionID: String
+        let version: String
+        let codeHash: String
+        let invocation: Int
+        let time: Date
+        let operation: String
+        let outcome: String
+        let detail: String?
+        let durationMilliseconds: Int?
+    }
+
+    public static func json(_ events: [ExtensionActivity], dropped: Int, exportedAt: Date) throws -> Data {
+        let file = File(exportedAt: exportedAt,
+                        note: "What Volant observed extensions do since it started. Kept in memory only, never persisted.",
+                        droppedEarlierEvents: dropped,
+                        events: events.map { event in
+                            Event(extensionID: event.extensionID, version: event.version, codeHash: event.codeHash,
+                                  invocation: event.invocation, time: event.time, operation: event.operation.rawValue,
+                                  outcome: event.outcome.rawValue, detail: event.detail,
+                                  durationMilliseconds: event.duration.map { Int(($0 * 1000).rounded()) })
+                        })
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+        return try encoder.encode(file)
+    }
 }

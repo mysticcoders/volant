@@ -971,6 +971,26 @@ func extensionSettingsScenario() throws {
     preferenceSheet.frame = NSRect(x: 0, y: 0, width: 460, height: 440); preferenceSheet.layoutSubtreeIfNeeded(); settle()
     try render("extension-preferences-sheet", view: preferenceSheet)
 
+    let activity = ExtensionActivityRecorder(capacity: 6)
+    let activityExtension = preferenceManager.extensions.first!
+    let activityStart = Date(timeIntervalSince1970: 1_800_000_000)
+    let activitySteps: [(ExtensionActivity.Operation, ExtensionActivity.Outcome, String?, TimeInterval?)] = [
+        (.clipboardRead, .completed, nil, nil), (.module, .completed, "plan", 0.012), (.fetch, .completed, "news.example.com", 0.184),
+        (.module, .completed, "render", 0.021), (.fetch, .denied, "tracker.example.net", nil), (.storageSave, .completed, nil, nil),
+        (.fetch, .timedOut, "slow.example.org", 5.0)
+    ]
+    for (index, step) in activitySteps.enumerated() {
+        activity.record(ExtensionActivity(extensionID: activityExtension.id, version: activityExtension.manifest.version, codeHash: "fixture",
+                                          invocation: index < 6 ? 1 : 2, time: activityStart.addingTimeInterval(Double(index)),
+                                          operation: step.0, outcome: step.1, detail: step.2, duration: step.3))
+    }
+    let activitySheet = NSHostingView(rootView: ExtensionActivityView(extensions: preferenceManager.extensions, recorder: activity,
+                                                                      turnOff: { _ in }, done: {}))
+    activitySheet.frame = NSRect(x: 0, y: 0, width: 580, height: 560); activitySheet.layoutSubtreeIfNeeded(); settle()
+    try render("extension-activity-sheet", view: activitySheet)
+    verify(activity.log.dropped == 1 && activity.log.visible(extensionID: nil, problemsOnly: true).count == 2,
+           "The fixture's activity sheet shows a dropped-events warning and two problems")
+
     let (hackerNewsDirectory, _) = try copyExtension("hacker-news-preferences") { manifest in
         manifest.id = "community.volant.hn"; manifest.name = "Hacker News"; manifest.output = "items"
         manifest.preferences = [

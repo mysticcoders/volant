@@ -1,11 +1,12 @@
 import Foundation
 import VolantCore
 
-/// Volant's in-memory extension activity, shared by every `ExtensionManager`, for an Activity history in
-/// Settings (#68). Used on the main thread only. Nothing is written to disk, so it lasts until Volant quits.
-final class ExtensionActivityRecorder {
+/// Volant's in-memory extension activity, shared by every `ExtensionManager` and shown in Settings ›
+/// Extensions › Activity (#68). Used on the main thread only. Nothing is written to disk, so it lasts
+/// until Volant quits; the owner may export it to a file they choose.
+final class ExtensionActivityRecorder: ObservableObject {
     static let shared = ExtensionActivityRecorder()
-    private(set) var log: ExtensionActivityLog
+    @Published private(set) var log: ExtensionActivityLog
 
     init(capacity: Int = ExtensionActivityLog.defaultCapacity) { log = ExtensionActivityLog(capacity: capacity) }
 

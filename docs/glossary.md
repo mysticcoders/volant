@@ -56,6 +56,7 @@ These collide. Use the preferred term in new code and prose, and qualify the wor
 - **Extension catalog**: the Ed25519-signed index of installable extensions, fetched only through `VolantFetchHost`.
 - **Extension preferences**: the owner's own settings for an extension; never secrets, never part of the fingerprint.
 - **Extension storage**: per-extension data that travels inside list requests and replies, for manifests with `"storage": true`.
+- **Extension activity**: what Volant observed an extension do at its own boundaries (`ExtensionActivity`), kept in memory only and shown in Settings › Extensions › Activity…. Not an extension's log, which is the extension's own words.
 - **Extension secret**: a declared token kept only in the Keychain (`ExtensionSecretStore`) and added as a header by the fetch helper.
 
 ## Helpers
