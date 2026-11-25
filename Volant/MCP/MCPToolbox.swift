@@ -211,6 +211,15 @@ struct MCPToolbox {
         }
     }
 
+    /// Runs a Focus or Breaks control through an owner held weakly, such as the app delegate. Returns
+    /// `unavailable` only when the owner is gone; a control that ran returns its own result, so its nil
+    /// (done) is never mistaken for a missing owner the way `owner?.control(c) ?? unavailable` would.
+    @MainActor static func relay<Owner: AnyObject, Control>(_ owner: Owner?, _ control: Control, unavailable: String,
+                                                           _ run: @MainActor (Owner, Control) -> String?) -> String? {
+        guard let owner else { return unavailable }
+        return run(owner, control)
+    }
+
     /// Runs a control on the main queue and returns the state after it, or why it couldn't run.
     private static func run(_ control: @escaping @MainActor () -> String?, then state: @escaping @MainActor () -> MCPValue) async -> MCPToolResult {
         await MainActor.run {
