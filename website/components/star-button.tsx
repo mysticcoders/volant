@@ -10,7 +10,8 @@ function formatStars(stars: number) {
  * scripts/stars.mjs. Without a count it is a plain Star link.
  */
 export function StarButton({ href }: { href: string }) {
-  const stars = typeof githubStars.stars === 'number' ? githubStars.stars : null;
+  const count: unknown = (githubStars as { stars: unknown }).stars;
+  const stars = typeof count === 'number' ? count : null;
   return (
     <a
       href={href}
