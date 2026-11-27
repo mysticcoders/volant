@@ -5,7 +5,8 @@ import Foundation
 /// (`SpokenPunctuation`, six languages), and spoken lists and line breaks written as lines
 /// (`SpokenLists`, English and Spanish). Numbers and punctuation work within one phrase, so they
 /// run on each phrase as the recognizer finishes it; a list spans phrases, so it runs on the
-/// finished transcript only. Turned on and off by `Preferences.dictationFormatsSpokenText`.
+/// finished transcript only. A spoken correction between two numbers, days or months ("seven, no,
+/// eight") is resolved to the second. Turned on and off by `Preferences.dictationFormatsSpokenText`.
 public enum DictationFormatting {
     /// One finished phrase with numbers in digits and punctuation names as marks. Leading
     /// whitespace is kept so phrases still join as the recognizer spaced them, except before a
@@ -18,9 +19,36 @@ public enum DictationFormatting {
         let language = locale.identifier
         let numbers = matchingCorrectedNumbers(SpokenNumbers.digits(in: body, language: language, protectedTerms: protectedTerms),
                                                language: language)
-        let formatted = SpokenPunctuation.format(numbers, language: language)
+        let formatted = resolvingCorrections(SpokenPunctuation.format(numbers, language: language), language: language)
         if let first = formatted.first, ",.;:!?)”»".contains(first) { return formatted }
         return leading + formatted
+    }
+
+    private static let spokenCorrection = try! NSRegularExpression(
+        pattern: #"(?i)(?<![\p{L}\p{N}$])([\p{L}\p{N}$:.]+)[ \t]*,?[ \t]+(?:no wait|no|sorry|i mean|make that|or rather)[ \t]*,?[ \t]+([\p{L}\p{N}$:.]+?)(?=[\s,.!?;:]|$)"#)
+
+    /// "seven, no, eight people" as "eight people": a correction cue between two words of one kind
+    /// (numbers, days or months, as `DictationEditCheck.kind` reads them) keeps only the second,
+    /// with the first's capital. Apple's on-device model leaves these as said when the recognizer
+    /// writes no commas around the cue, and the kinds make them unambiguous, so string rules
+    /// resolve them. "Actually" is no cue here ("free Tuesday, actually Wednesday works too"), a
+    /// sentence end between the words keeps both ("Is it seven? No, eight."), and only English
+    /// is read.
+    static func resolvingCorrections(_ text: String, language: String) -> String {
+        guard SpokenNumbers.isEnglish(language) else { return text }
+        var result = text
+        func kind(_ word: String) -> DictationEditCheck.Kind? {
+            DictationEditCheck.kind(of: word.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "$.:")))
+        }
+        for match in spokenCorrection.matches(in: text, range: NSRange(text.startIndex..., in: text)).reversed() {
+            guard let whole = Range(match.range, in: result), let firstRange = Range(match.range(at: 1), in: result),
+                  let secondRange = Range(match.range(at: 2), in: result) else { continue }
+            let first = String(result[firstRange]), second = String(result[secondRange])
+            guard !first.hasSuffix("."), let firstKind = kind(first), firstKind == kind(second) else { continue }
+            let kept = first.first?.isUppercase == true ? second.prefix(1).uppercased() + second.dropFirst() : second
+            result.replaceSubrange(whole, with: kept)
+        }
+        return result
     }
 
     private static let correctedNumber = try! NSRegularExpression(
