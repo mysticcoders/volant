@@ -24,6 +24,10 @@ targets:
           - App/Info.plist
           - App/VolantMobile.entitlements
       - path: Shared
+      - path: ../Volant/Resources/Licenses/Hex-LICENSE.txt
+        buildPhase: resources
+      - path: ../Volant/Resources/Licenses/ColorThemes-LICENSES.txt
+        buildPhase: resources
     dependencies:
       - package: VolantCore
       - target: VolantWidgets

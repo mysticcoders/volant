@@ -30,7 +30,8 @@ Fixture launch arguments for simulator review: `-notesDirectory <path>` (fiction
 `-onboardingComplete NO` with `-fixtureOnboardingPage <n>`, `-fixtureTab notes|more|search`,
 `-fixtureTool snippets|quicklinks|calculator`, `-fixtureSettings YES`, `-fixtureKeyboardSetup YES` (Settings ›
 Dictation Keyboard), `-fixtureKeyboardSetupPage 0|1|2` with it (the setup walkthrough at that page),
-`-fixtureKeyboardListening YES` (the keyboard preview drawn mid-dictation), and `-fixtureWidgets YES`
+`-fixtureKeyboardListening YES` (the keyboard preview drawn mid-dictation),
+`-fixtureAcknowledgements YES` (Settings › Acknowledgements), and `-fixtureWidgets YES`
 (draws the widget views from the App Group snapshot).
 
 ### On a device

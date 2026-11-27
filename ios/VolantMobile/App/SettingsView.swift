@@ -68,6 +68,11 @@ struct SettingsView: View {
                     LinkRow(symbol: "globe", title: "Volant", url: "https://usevolant.com")
                     LinkRow(symbol: "lock.shield", title: "Privacy & Security", url: "https://usevolant.com/docs/privacy-and-security")
                     LinkRow(symbol: "chevron.left.forwardslash.chevron.right", title: "Source Code", url: "https://github.com/mysticcoders/volant")
+                    NavigationLink {
+                        AcknowledgementsView()
+                    } label: {
+                        SettingsRow(symbol: "doc.text", title: "Acknowledgements", value: nil)
+                    }
                     Button {
                         dismiss()
                         onboardingComplete = false

@@ -47,6 +47,8 @@ struct RootView: View {
     var body: some View {
         if UserDefaults.standard.bool(forKey: "fixtureWidgets") {
             WidgetGallery()
+        } else if UserDefaults.standard.bool(forKey: "fixtureAcknowledgements") {
+            NavigationStack { AcknowledgementsView() }
         } else if UserDefaults.standard.bool(forKey: "fixtureKeyboardSetup") {
             NavigationStack { KeyboardSetupView() }
         } else {
