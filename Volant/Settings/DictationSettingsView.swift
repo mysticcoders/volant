@@ -58,6 +58,14 @@ struct DictationSettingsView: View {
                     Text("Format numbers, punctuation and lists")
                     Text("Writes “twenty five” as 25 and “comma” as a comma, and turns “first… second…” or “new line” into lines.")
                 }
+                Toggle(isOn: Binding(get: { config.dictationCleansUpWithAppleIntelligence }, set: { value in
+                    apply { try Preferences.updateBoolean("dictationCleansUpWithAppleIntelligence", value: value, at: configURL) }
+                })) {
+                    Text("Clean up with Apple Intelligence")
+                    Text(AppleFoundationModel.availability.reason
+                         ?? String(localized: "Resolves spoken corrections such as “seven, no, eight” and drops repeated words, on this Mac. Applies when copying or typing once finished, and adds up to two seconds."))
+                }
+                .disabled(!AppleFoundationModel.availability.isReady && !config.dictationCleansUpWithAppleIntelligence)
                 Toggle("Play sounds when dictation starts and stops", isOn: Binding(get: { config.dictationPlaysSounds }, set: { value in
                     apply { try Preferences.updateBoolean("dictationPlaysSounds", value: value, at: configURL) }
                 }))

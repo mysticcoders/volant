@@ -160,6 +160,12 @@ finished transcript (copied, or typed when finished). A punctuation name the rec
 very start of a phrase stays as said. On by default and per Mac: Settings → General → Dictation →
 Format numbers, punctuation and lists (`dictationFormatsSpokenText`).
 
+Settings → General → Dictation → Clean up with Apple Intelligence (`dictationCleansUpWithAppleIntelligence`,
+off by default) runs Apple's on-device model over the finished transcript before lists, keeping its
+answer only when `DictationEditCheck` verifies every change; in practice it resolves spoken
+self-corrections and drops repeats. It applies when copying or typing once finished, never to
+phrases typed while speaking, and waits at most two seconds. See docs/dictation-ai-cleanup.md.
+
 Availability is rechecked at start, because microphone permission can be revoked between uses. On
 macOS 15 the command is present and reports that it needs macOS 26, the same pattern Apple
 Intelligence uses.

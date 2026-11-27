@@ -283,6 +283,7 @@ final class KeyboardModel: ObservableObject {
         transcription.vocabulary = KeyboardDictationSettings.readVocabulary()
         transcription.removesFillers = KeyboardDictationSettings.removesFillers
         transcription.formatsSpokenText = KeyboardDictationSettings.formatsSpokenText
+        transcription.cleansUpWithAppleIntelligence = KeyboardDictationSettings.cleansUpWithAppleIntelligence
         transcription.downloadsModel = false
         let gate = transcription.gate
         microphone.onBuffer = { [weak self] buffer in

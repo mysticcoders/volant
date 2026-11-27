@@ -35,6 +35,8 @@ final class SpeechTranscription {
     var fixesCloseMatches = true
     /// Writes spoken numbers as digits, punctuation names as marks and spoken lists as lines.
     var formatsSpokenText = true
+    /// Runs Apple Intelligence over the finished transcript before lists are formed.
+    var cleansUpWithAppleIntelligence = false
     /// Whether a missing speech model may be downloaded; the keyboard leaves that to the app.
     var downloadsModel = true
 
@@ -155,6 +157,10 @@ final class SpeechTranscription {
         _ = await session.collector?.result
         if self.session === session { self.session = nil }
         var text = session.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        if cleansUpWithAppleIntelligence, let locale = session.locale, !text.isEmpty,
+           let cleaned = await DictationAppleIntelligenceCleanup.clean(text, locale: locale, vocabulary: vocabulary.map(\.term)) {
+            text = cleaned
+        }
         if formatsSpokenText, let locale = session.locale, !text.isEmpty {
             text = DictationFormatting.formattingTranscript(text, locale: locale)
         }
@@ -268,6 +274,7 @@ enum KeyboardDictationSettings {
     static let removesFillersKey = "dictationRemovesFillers"
     static let recordsInKeyboardKey = "keyboardRecordsInKeyboard"
     static let formatsSpokenTextKey = "dictationFormatsSpokenText"
+    static let cleansUpKey = "dictationCleansUpWithAppleIntelligence"
     /// How the keyboard's last in-keyboard recording went: its date, whether it started, and why not.
     static let recordResultKey = "keyboardRecordResult"
 
@@ -276,6 +283,8 @@ enum KeyboardDictationSettings {
 
     static var removesFillers: Bool { defaults?.object(forKey: removesFillersKey) as? Bool ?? true }
     static var formatsSpokenText: Bool { defaults?.object(forKey: formatsSpokenTextKey) as? Bool ?? true }
+    /// Off by default, as on the Mac.
+    static var cleansUpWithAppleIntelligence: Bool { defaults?.bool(forKey: cleansUpKey) ?? false }
     /// On by default; the app switch stays as the fallback either way.
     static var recordsInKeyboard: Bool { defaults?.object(forKey: recordsInKeyboardKey) as? Bool ?? true }
 

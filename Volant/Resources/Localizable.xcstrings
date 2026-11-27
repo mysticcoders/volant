@@ -25979,6 +25979,94 @@
         }
       }
     },
+    "Clean up with Apple Intelligence": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mit Apple Intelligence bereinigen"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Limpiar con Apple Intelligence"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nettoyer avec Apple Intelligence"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pulisci con Apple Intelligence"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apple Intelligence で整える"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apple Intelligence로 정리"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Opschonen met Apple Intelligence"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Porządkuj z Apple Intelligence"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Limpar com Apple Intelligence"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Limpar com Apple Intelligence"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Очищать с Apple Intelligence"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Apple Intelligence ile temizle"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Очищувати з Apple Intelligence"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "使用 Apple Intelligence 整理"
+          }
+        }
+      }
+    },
     "Clear": {
       "localizations": {
         "de": {
@@ -82837,6 +82925,94 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "重置排序"
+          }
+        }
+      }
+    },
+    "Resolves spoken corrections such as “seven, no, eight” and drops repeated words, on this Mac. Applies when copying or typing once finished, and adds up to two seconds.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Löst gesprochene Korrekturen wie „sieben, nein, acht“ auf und entfernt doppelte Wörter, auf diesem Mac. Gilt beim Kopieren oder Tippen nach dem Diktat und dauert bis zu zwei Sekunden länger."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Resuelve las correcciones habladas como “siete, no, ocho” y quita las palabras repetidas, en este Mac. Se aplica al copiar o escribir al terminar y añade hasta dos segundos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Résout les corrections dites à voix haute comme « sept, non, huit » et retire les mots répétés, sur ce Mac. S’applique à la copie ou à la saisie une fois terminé, et ajoute jusqu’à deux secondes."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Risolve le correzioni dette a voce come “sette, no, otto” e rimuove le parole ripetute, su questo Mac. Si applica quando copi o digiti alla fine e aggiunge fino a due secondi."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "「7、いや、8」のような言い直しを反映し、繰り返した語を除きます（この Mac 上で処理）。終了後にコピーまたは入力するときに適用され、最大 2 秒かかります。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "“일곱, 아니, 여덟”처럼 말로 한 정정을 반영하고 반복된 단어를 지웁니다(이 Mac에서 처리). 끝난 뒤 복사하거나 입력할 때 적용되며 최대 2초가 더 걸립니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Verwerkt uitgesproken correcties zoals “zeven, nee, acht” en haalt herhaalde woorden weg, op deze Mac. Geldt bij kopiëren of typen na afloop en duurt tot twee seconden langer."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Uwzględnia wypowiedziane poprawki, np. „siedem, nie, osiem”, i usuwa powtórzone słowa, na tym Macu. Działa przy kopiowaniu lub wpisywaniu po zakończeniu i wydłuża je do dwóch sekund."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Resolve correções faladas como “sete, não, oito” e remove palavras repetidas, neste Mac. Vale ao copiar ou digitar ao terminar e leva até dois segundos a mais."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Resolve correções faladas como “sete, não, oito” e remove palavras repetidas, neste Mac. Aplica-se ao copiar ou escrever no fim e demora até mais dois segundos."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Учитывает произнесённые поправки вроде «семь, нет, восемь» и убирает повторы слов на этом Mac. Работает при копировании или вводе после окончания и добавляет до двух секунд."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "“Yedi, hayır, sekiz” gibi sesli düzeltmeleri uygular ve tekrarlanan sözcükleri bu Mac’te kaldırır. Bitirince kopyalarken ya da yazarken uygulanır ve en fazla iki saniye ekler."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Враховує вимовлені виправлення на кшталт «сім, ні, вісім» і прибирає повтори слів на цьому Mac. Діє під час копіювання чи введення після завершення й додає до двох секунд."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "在这台 Mac 上处理口头更正（如“七，不，八”）并删除重复的词。在完成后复制或输入时生效，最多增加两秒。"
           }
         }
       }

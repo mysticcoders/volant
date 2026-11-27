@@ -1786,6 +1786,8 @@ final class LauncherModel: ObservableObject {
         }
         dictation.removesFillers = config.dictationRemovesFillers
         dictation.formatsSpokenText = config.dictationFormatsSpokenText
+        dictation.cleansUpWithAppleIntelligence = config.dictationCleansUpWithAppleIntelligence
+            && !(surface == .indicator && config.dictationOutput == .type && config.dictationTypesWhileSpeaking)
         dictation.vocabulary = config.dictationVocabulary
         dictation.fixesCloseMatches = config.dictationFixesCloseMatches
         if surface == .indicator, config.dictationOutput == .type, let inputHost {

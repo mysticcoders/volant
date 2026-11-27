@@ -50,6 +50,9 @@ final class SpeechDictation: ObservableObject {
     var removesFillers = true
     /// Writes spoken numbers as digits, punctuation names as marks and spoken lists as lines.
     var formatsSpokenText = true
+    /// Runs Apple Intelligence over the finished transcript before lists are formed. The caller
+    /// turns it off when phrases are typed while speaking, since the finished text is not typed then.
+    var cleansUpWithAppleIntelligence = false
     /// The owner's words: offered to the recognizer as hints, then corrected in every phrase.
     var vocabulary: [DictationVocabularyEntry] = []
     /// Also replaces words the spell checker doesn't know that sound like a vocabulary word.
@@ -303,10 +306,15 @@ final class SpeechDictation: ObservableObject {
                     try? await session.analyzer?.finalizeAndFinishThroughEndOfInput()
                 }
                 _ = await session.collector?.result
+                let heard = await MainActor.run { silent ? "" : self.transcript.trimmingCharacters(in: .whitespacesAndNewlines) }
+                var cleaned: String?
+                if self.cleansUpWithAppleIntelligence, let locale = session.locale, !heard.isEmpty {
+                    cleaned = await DictationAppleIntelligenceCleanup.clean(heard, locale: locale, vocabulary: self.vocabulary.map(\.term))
+                }
                 await MainActor.run {
                     self.session = nil
                     if silent { self.transcript = "" }
-                    var text = self.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+                    var text = cleaned ?? heard
                     if self.formatsSpokenText, let locale = session.locale, !text.isEmpty {
                         text = DictationFormatting.formattingTranscript(text, locale: locale)
                     }

@@ -78,6 +78,7 @@ final class PhoneDictation {
         transcription.vocabulary = vocabulary
         transcription.removesFillers = removesFillers
         transcription.formatsSpokenText = formatsSpokenText
+        transcription.cleansUpWithAppleIntelligence = KeyboardDictationSettings.cleansUpWithAppleIntelligence
         try await transcription.begin(inputFormat: tapFormat, onPreparing: onPreparing, onText: onText)
     }
 

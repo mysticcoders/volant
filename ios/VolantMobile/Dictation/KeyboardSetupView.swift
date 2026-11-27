@@ -11,6 +11,7 @@ struct KeyboardSetupView: View {
     @AppStorage(KeyboardDictationSettings.removesFillersKey, store: KeyboardDictationSettings.defaults) private var removesFillers = true
     @AppStorage(KeyboardDictationSettings.recordsInKeyboardKey, store: KeyboardDictationSettings.defaults) private var recordsInKeyboard = true
     @AppStorage(KeyboardDictationSettings.formatsSpokenTextKey, store: KeyboardDictationSettings.defaults) private var formatsSpokenText = true
+    @AppStorage(KeyboardDictationSettings.cleansUpKey, store: KeyboardDictationSettings.defaults) private var cleansUp = false
     @State private var walkthrough: KeyboardSetupFlow.Page?
 
     var body: some View {
@@ -54,6 +55,16 @@ struct KeyboardSetupView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                Toggle(isOn: $cleansUp) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        SettingsRow(symbol: "apple.intelligence", title: "Clean Up with Apple Intelligence", value: nil)
+                        Text(DictationAppleIntelligenceCleanup.unavailableReason
+                             ?? String(localized: "Resolves spoken corrections such as “seven, no, eight” and drops repeated words, on this device. Adds up to two seconds after you finish."))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .disabled(DictationAppleIntelligenceCleanup.unavailableReason != nil && !cleansUp)
                 Toggle(isOn: $recordsInKeyboard) {
                     SettingsRow(symbol: "waveform", title: "Record in Keyboard (Experimental)", value: nil)
                 }
