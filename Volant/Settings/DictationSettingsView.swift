@@ -52,6 +52,12 @@ struct DictationSettingsView: View {
                     Text("Remove filler words")
                     Text("Takes um, uh, er and hmm out of English dictation; words like “like” stay.")
                 }
+                Toggle(isOn: Binding(get: { config.dictationFormatsSpokenText }, set: { value in
+                    apply { try Preferences.updateBoolean("dictationFormatsSpokenText", value: value, at: configURL) }
+                })) {
+                    Text("Format numbers, punctuation and lists")
+                    Text("Writes “twenty five” as 25 and “comma” as a comma, and turns “first… second…” or “new line” into lines.")
+                }
                 Toggle("Play sounds when dictation starts and stops", isOn: Binding(get: { config.dictationPlaysSounds }, set: { value in
                     apply { try Preferences.updateBoolean("dictationPlaysSounds", value: value, at: configURL) }
                 }))

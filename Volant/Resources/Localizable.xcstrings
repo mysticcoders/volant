@@ -51514,6 +51514,94 @@
         }
       }
     },
+    "Format numbers, punctuation and lists": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Zahlen, Satzzeichen und Listen formatieren"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dar formato a números, puntuación y listas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mettre en forme nombres, ponctuation et listes"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Formatta numeri, punteggiatura ed elenchi"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "数字・句読点・リストを整形"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "숫자, 문장 부호, 목록 서식 지정"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Getallen, leestekens en lijsten opmaken"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Formatuj liczby, interpunkcję i listy"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Formatar números, pontuação e listas"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Formatar números, pontuação e listas"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Форматировать числа, пунктуацию и списки"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sayıları, noktalama işaretlerini ve listeleri biçimlendir"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Форматувати числа, пунктуацію та списки"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "格式化数字、标点和列表"
+          }
+        }
+      }
+    },
     "From catalog": {
       "comment": "Settings → Extensions row detail",
       "localizations": {
@@ -116089,6 +116177,94 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "写入剪贴板"
+          }
+        }
+      }
+    },
+    "Writes “twenty five” as 25 and “comma” as a comma, and turns “first… second…” or “new line” into lines.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Schreibt Zahlen als Ziffern (auf Englisch), „Komma“ als Komma und macht aus „erstens… zweitens…“ oder „neue Zeile“ einzelne Zeilen."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Escribe los números en cifras (en inglés), “coma” como una coma, y convierte “primero… segundo…” o “nueva línea” en líneas."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Écrit les nombres en chiffres (en anglais), « virgule » comme une virgule, et transforme « premièrement… deuxièmement… » ou « nouvelle ligne » en lignes."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Scrive i numeri in cifre (in inglese), “virgola” come una virgola, e trasforma “primo… secondo…” o “nuova riga” in righe."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "英語の数字を数字で書き、句読点の名前を記号にし、「first… second…」や「new line」を行に分けます。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "영어 숫자를 숫자로 쓰고, 말한 문장 부호 이름을 기호로 바꾸며, “first… second…”나 “new line”을 줄로 나눕니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Schrijft getallen als cijfers (in het Engels), zet uitgesproken leestekens om in tekens en maakt van “first… second…” of “new line” losse regels."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Zapisuje liczby cyframi (po angielsku), wypowiedziane znaki interpunkcyjne jako znaki, a „first… second…” lub „new line” zamienia na wiersze."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Escreve números em algarismos (em inglês), “vírgula” como vírgula e transforma “primeiro… segundo…” ou “nova linha” em linhas."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Escreve números em algarismos (em inglês), “vírgula” como vírgula e transforma “primeiro… segundo…” ou “nova linha” em linhas."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Записывает числа цифрами (на английском), произнесённые знаки препинания — знаками, а «first… second…» или «new line» превращает в строки."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "İngilizce sayıları rakamla yazar, söylenen noktalama adlarını işarete çevirir ve “first… second…” ya da “new line” ifadelerini satırlara ayırır."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Записує числа цифрами (англійською), вимовлені розділові знаки — знаками, а «first… second…» чи «new line» перетворює на рядки."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "将英语数字写成阿拉伯数字，把说出的标点名称写成标点，并把“first… second…”或“new line”变成分行。"
           }
         }
       }

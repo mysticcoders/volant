@@ -48,6 +48,8 @@ final class SpeechDictation: ObservableObject {
     var onFinalPhrase: ((String) -> Void)?
     /// Removes filler sounds from English phrases before they are shown, typed or copied.
     var removesFillers = true
+    /// Writes spoken numbers as digits, punctuation names as marks and spoken lists as lines.
+    var formatsSpokenText = true
     /// The owner's words: offered to the recognizer as hints, then corrected in every phrase.
     var vocabulary: [DictationVocabularyEntry] = []
     /// Also replaces words the spell checker doesn't know that sound like a vocabulary word.
@@ -81,6 +83,7 @@ final class SpeechDictation: ObservableObject {
         let engine = AVAudioEngine()
         var analyzer: SpeechAnalyzer?
         var transcriber: SpeechTranscriber?
+        var locale: Locale?
         var stream: AsyncStream<AnalyzerInput>.Continuation?
         var collector: Task<Void, Never>?
         var converter: AVAudioConverter?
@@ -139,6 +142,7 @@ final class SpeechDictation: ObservableObject {
         Task {
             do {
                 let locale = await Self.bestLocale()
+                session.locale = locale
                 let transcriber = SpeechTranscriber(locale: locale, transcriptionOptions: [],
                                                     reportingOptions: [.volatileResults], attributeOptions: [])
                 session.transcriber = transcriber
@@ -201,6 +205,8 @@ final class SpeechDictation: ObservableObject {
                     // a known mishearing never appears.
                     var settled = ""
                     let closeMatches = self.fixesCloseMatches && DictationCleanup.supports(locale) && !vocabulary.isEmpty
+                    let formats = self.formatsSpokenText
+                    let protectedTerms = vocabulary.map(\.term)
                     var knownWords: [String: Bool] = [:]
                     let isKnown = { (word: String) -> Bool in
                         if let known = knownWords[word] { return known }
@@ -210,7 +216,8 @@ final class SpeechDictation: ObservableObject {
                     }
                     let clean = { (text: String) in
                         let exact = DictationVocabulary.applying(vocabulary, to: self.removesFillers ? DictationCleanup.removingFillers(text, locale: locale) : text)
-                        return closeMatches ? DictationCloseMatch.correcting(vocabulary, in: exact, isKnownWord: isKnown) : exact
+                        let corrected = closeMatches ? DictationCloseMatch.correcting(vocabulary, in: exact, isKnownWord: isKnown) : exact
+                        return formats ? DictationFormatting.formattingPhrase(corrected, locale: locale, protectedTerms: protectedTerms) : corrected
                     }
                     do {
                         for try await result in transcriber.results {
@@ -299,7 +306,10 @@ final class SpeechDictation: ObservableObject {
                 await MainActor.run {
                     self.session = nil
                     if silent { self.transcript = "" }
-                    let text = self.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+                    var text = self.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if self.formatsSpokenText, let locale = session.locale, !text.isEmpty {
+                        text = DictationFormatting.formattingTranscript(text, locale: locale)
+                    }
                     if case .failed = self.phase {} else { self.phase = .idle }
                     finished(text.isEmpty ? nil : text)
                 }
