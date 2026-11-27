@@ -16,10 +16,37 @@ public enum DictationFormatting {
         let body = String(phrase.dropFirst(leading.count))
         guard !body.isEmpty else { return phrase }
         let language = locale.identifier
-        let formatted = SpokenPunctuation.format(SpokenNumbers.digits(in: body, language: language, protectedTerms: protectedTerms),
-                                                 language: language)
+        let numbers = matchingCorrectedNumbers(SpokenNumbers.digits(in: body, language: language, protectedTerms: protectedTerms),
+                                               language: language)
+        let formatted = SpokenPunctuation.format(numbers, language: language)
         if let first = formatted.first, ",.;:!?)”»".contains(first) { return formatted }
         return leading + formatted
+    }
+
+    private static let correctedNumber = try! NSRegularExpression(
+        pattern: #"(?i)\b([a-z]+(?:[- ][a-z]+){0,2})(\s*,?\s+(?:no wait|no|actually|sorry|i mean|or rather|make that)\s*,?\s+)(\$?\d[\d,.:]*)"#)
+
+    /// A number in words taken back for one in digits ("seven, no, 8 people") is written in digits
+    /// too, so a correction reads as one style when it is not resolved. The words are read with
+    /// `SpokenNumbers`' own rules, as if a plural noun followed them; anything it would not turn
+    /// into digits stays as said.
+    static func matchingCorrectedNumbers(_ text: String, language: String) -> String {
+        var result = text
+        for match in correctedNumber.matches(in: text, range: NSRange(text.startIndex..., in: text)).reversed() {
+            guard let wordsRange = Range(match.range(at: 1), in: result) else { continue }
+            let words = String(result[wordsRange])
+            for start in words.indices where start == words.startIndex || words[words.index(before: start)] == " " {
+                let candidate = String(words[start...])
+                let converted = SpokenNumbers.digits(in: candidate + " things", language: language)
+                guard converted.hasSuffix(" things"), let first = converted.first, first.isNumber else { continue }
+                let digits = String(converted.dropLast(" things".count))
+                guard !digits.contains(" ") else { continue }
+                let replaceFrom = result.index(wordsRange.lowerBound, offsetBy: words.distance(from: words.startIndex, to: start))
+                result.replaceSubrange(replaceFrom..<wordsRange.upperBound, with: digits)
+                break
+            }
+        }
+        return result
     }
 
     /// A finished transcript with spoken lists and line breaks written as lines.

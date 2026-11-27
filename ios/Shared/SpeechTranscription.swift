@@ -37,6 +37,8 @@ final class SpeechTranscription {
     var formatsSpokenText = true
     /// Runs Apple Intelligence over the finished transcript before lists are formed.
     var cleansUpWithAppleIntelligence = false
+    /// What the last dictation's Apple Intelligence cleanup did, for the dictation log.
+    private(set) var lastCleanup: DictationAppleIntelligenceCleanup.Result?
     /// Whether a missing speech model may be downloaded; the keyboard leaves that to the app.
     var downloadsModel = true
 
@@ -65,7 +67,9 @@ final class SpeechTranscription {
     func begin(inputFormat: AVAudioFormat, onPreparing: @escaping (String) -> Void = { _ in },
                onText: @escaping (String) -> Void) async throws {
         cancel()
+        lastCleanup = nil
         guard SpeechTranscriber.isAvailable else { throw Failure.unavailable }
+        if cleansUpWithAppleIntelligence { DictationAppleIntelligenceCleanup.prepare() }
         let session = Session()
         self.session = session
         let locale = await Self.bestLocale()
@@ -157,9 +161,10 @@ final class SpeechTranscription {
         _ = await session.collector?.result
         if self.session === session { self.session = nil }
         var text = session.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-        if cleansUpWithAppleIntelligence, let locale = session.locale, !text.isEmpty,
-           let cleaned = await DictationAppleIntelligenceCleanup.clean(text, locale: locale, vocabulary: vocabulary.map(\.term)) {
-            text = cleaned
+        if cleansUpWithAppleIntelligence, let locale = session.locale, !text.isEmpty {
+            let cleanup = await DictationAppleIntelligenceCleanup.clean(text, locale: locale, vocabulary: vocabulary.map(\.term))
+            lastCleanup = cleanup
+            if let cleaned = cleanup.text { text = cleaned }
         }
         if formatsSpokenText, let locale = session.locale, !text.isEmpty {
             text = DictationFormatting.formattingTranscript(text, locale: locale)

@@ -30,4 +30,13 @@ final class DictationFormattingTests: XCTestCase {
         XCTAssertEqual(DictationFormatting.formattingPhrase(spoken, locale: english), spoken)
         XCTAssertEqual(DictationFormatting.formattingTranscript(spoken, locale: english), "Groceries:\n1. Eggs\n2. Milk\n3. Bread")
     }
+
+    func testATakenBackNumberMatchesItsCorrection() {
+        XCTAssertEqual(DictationFormatting.formattingPhrase("Book the table for seven, no, eight people.", locale: english),
+                       "Book the table for 7, no, 8 people.")
+        XCTAssertEqual(DictationFormatting.formattingPhrase("It costs twenty five, sorry, thirty dollars", locale: english),
+                       "It costs 25, sorry, $30")
+        XCTAssertEqual(DictationFormatting.formattingPhrase("I said no to eight people", locale: english), "I said no to 8 people")
+        XCTAssertEqual(DictationFormatting.formattingPhrase("Tell him no, 8 is fine", locale: english), "Tell him no, 8 is fine")
+    }
 }

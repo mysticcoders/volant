@@ -9,7 +9,8 @@ import Foundation
 /// - self-corrections: a run of up to `longestCorrection` words removed that ends with a
 ///   correction cue ("tuesday, no wait," or "call mom, actually,"), with words left after it, so
 ///   what the speaker said after the cue is what stays. A one-word cue ("no", "actually") counts
-///   only when set off by a comma or a full stop, as a spoken correction is;
+///   only when set off by a comma or a full stop, as a spoken correction is, or when the words on
+///   either side are the same kind of thing (two numbers, days or months: "seven no eight");
 /// - fillers removed ("um", "uh"), or a word or phrase said twice in a row removed once;
 /// - words replaced by one of the speaker's vocabulary terms ("cooper netties" as "Kubernetes").
 /// Anything else, an added, dropped or swapped word, rejects the whole cleanup.
@@ -103,8 +104,27 @@ public enum DictationEditCheck {
         }
         let token = tokens[index]
         let setOff = token.markBefore || token.markAfter || (index > 0 && tokens[index - 1].markAfter)
-        if wordCues.contains(token.word), setOff { lengths.append(1) }
+        let between = index > 0 && index + 1 < tokens.count
+            && kind(of: tokens[index - 1].word).map { $0 == kind(of: tokens[index + 1].word) } == true
+        if wordCues.contains(token.word), setOff || between { lengths.append(1) }
         return lengths
+    }
+
+    enum Kind { case number, day, month }
+
+    static let numberWords: Set<String> = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+                                           "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen",
+                                           "nineteen", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety",
+                                           "hundred", "thousand", "million", "noon", "midnight"]
+    static let days: Set<String> = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "today", "tomorrow", "tonight", "yesterday"]
+    static let months: Set<String> = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
+
+    /// What kind of thing a word names, for telling a correction ("seven no eight") from a plain "no".
+    static func kind(of word: String) -> Kind? {
+        if word.first?.isNumber == true || numberWords.contains(word) { return .number }
+        if days.contains(word) { return .day }
+        if months.contains(word) { return .month }
+        return nil
     }
 
     /// A removal of fillers only, or of words said again right beside them; or a replacement by a

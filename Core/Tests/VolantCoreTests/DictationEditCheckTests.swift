@@ -61,4 +61,12 @@ final class DictationEditCheckTests: XCTestCase {
         XCTAssertFalse(check("We left early. Then, actually, we came back.", "Then we came back."))
         XCTAssertTrue(check("We left early. Then, actually, we came back.", "We left early. We came back."))
     }
+
+    func testABareCueBetweenTwoOfAKindIsACorrection() {
+        XCTAssertTrue(check("Book the table for seven no eight people", "Book the table for eight people"))
+        XCTAssertTrue(check("Book the table for seven no 8 people.", "Book the table for 8 people."))
+        XCTAssertTrue(check("Meet Tuesday actually Wednesday", "Meet Wednesday"))
+        XCTAssertFalse(check("I said no to the offer", "I said to the offer"))
+        XCTAssertFalse(check("There were seven no shows", "There were shows"))
+    }
 }
