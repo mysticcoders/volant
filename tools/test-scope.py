@@ -33,7 +33,7 @@ NATIVE_PATTERNS = ("Volant/*", "VolantTests/*", "VolantAgentHost/*", "VolantExte
 
 # Paths known to need no macOS job: documentation, the website (its own job always runs), the iOS app
 # (not built in CI yet) and repository housekeeping. Anything in neither list is unrecognized.
-OTHER_PATTERNS = ("docs/*", "website/*", "ios/*", ".github/*", "AGENTS.md", "README.md", "CONTRIBUTING.md", "LICENSE",
+OTHER_PATTERNS = ("docs/*", "website/*", "ios/*", ".github/*", "AGENTS.md", "README.md", "CONTRIBUTING.md", "LICENSE", "THIRD_PARTY_NOTICES.md",
                   "justfile", ".gitignore", ".gitleaksignore", ".claude/settings.json")
 
 
