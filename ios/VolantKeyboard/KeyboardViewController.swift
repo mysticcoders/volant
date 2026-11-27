@@ -69,6 +69,17 @@ final class KeyboardViewController: UIInputViewController {
 
     func deleteBackward() { textDocumentProxy.deleteBackward() }
 
+    /// Deletes back to the start of the word before the cursor, with the spaces after it, as the
+    /// system keyboard does once delete is held. With nothing readable before the cursor it
+    /// deletes one character.
+    func deleteWordBackward() {
+        let before = Array(textDocumentProxy.documentContextBeforeInput ?? "")
+        var end = before.count
+        while end > 0, before[end - 1].isWhitespace { end -= 1 }
+        while end > 0, !before[end - 1].isWhitespace { end -= 1 }
+        for _ in 0..<max(1, before.count - end) { textDocumentProxy.deleteBackward() }
+    }
+
     /// Opens `volant://dictate` in the Volant app. Keyboards have no `openURL`, so this walks the
     /// responder chain to the extension's application object and calls its open method by
     /// selector, the route iOS allows a keyboard with Full Access. Returns false when there is none.
@@ -133,6 +144,7 @@ final class KeyboardModel: ObservableObject {
 
     private let microphone = WebMicrophone()
     private let transcription = SpeechTranscription()
+    private var log: KeyboardDictationLog.Entry?
 
     weak var controller: KeyboardViewController?
     private var meter: Task<Void, Never>?
@@ -182,6 +194,7 @@ final class KeyboardModel: ObservableObject {
             return
         }
         DictationBridge.post(.keyboardReady)
+        if local == nil { KeyboardDictationLog.closeAbandoned() }
         if KeyboardDictationSettings.recordsInKeyboard, let view = controller?.view { microphone.attach(to: view) }
         if observer == nil {
             observer = DarwinObserver([DictationBridge.Signal.changed.name]) { [weak self] _ in self?.reload() }
@@ -190,7 +203,7 @@ final class KeyboardModel: ObservableObject {
     }
 
     func disappeared() {
-        cancelLocal()
+        cancelLocal(outcome: String(localized: "the keyboard closed"))
         visible = false
         observer = nil
         updateMeter()
@@ -225,6 +238,7 @@ final class KeyboardModel: ObservableObject {
                     : DictationLevelFile.readFraction()
                 self.levels.removeFirst()
                 self.levels.append(level)
+                self.saveLog(every: 2)
                 try? await Task.sleep(for: .milliseconds(60))
             }
         }
@@ -250,7 +264,7 @@ final class KeyboardModel: ObservableObject {
     }
 
     func cancel() {
-        if local != nil { cancelLocal(); return }
+        if local != nil { cancelLocal(outcome: String(localized: "cancelled")); return }
         fallback?.cancel()
         DictationBridge.post(.cancel)
         starting = false
@@ -271,22 +285,31 @@ final class KeyboardModel: ObservableObject {
         transcription.formatsSpokenText = KeyboardDictationSettings.formatsSpokenText
         transcription.downloadsModel = false
         let gate = transcription.gate
-        microphone.onBuffer = { gate.receive($0) }
+        microphone.onBuffer = { [weak self] buffer in
+            gate.receive(buffer)
+            self?.log?.chunks += 1
+        }
         microphone.onStop = { [weak self] in
             guard let self, case .listening = self.local else { return }
-            Task { await self.finishLocal() }
+            Task { await self.finishLocal(stoppedByPage: true) }
         }
         do {
             if let view = controller?.view { microphone.attach(to: view) }
             try await transcription.begin(inputFormat: WebMicrophone.format) { [weak self] text in
                 guard let self, case .listening = self.local else { return }
                 self.local = .listening(text)
+                if var entry = self.log {
+                    entry.characters = max(entry.characters, text.count)
+                    self.log = entry
+                }
             }
             guard local == .starting else { transcription.cancel(); return }
             try await microphone.start()
             guard local == .starting else { microphone.stop(); transcription.cancel(); return }
             local = .listening("")
             localSince = Date()
+            log = KeyboardDictationLog.Entry(started: Date(), updated: Date(), chunks: 0, characters: 0, outcome: nil)
+            saveLog()
             Self.noteRecordResult(nil)
             updateMeter()
         } catch {
@@ -300,7 +323,7 @@ final class KeyboardModel: ObservableObject {
     }
 
     /// Ends the in-keyboard dictation and types its transcript in the chosen style.
-    private func finishLocal() async {
+    private func finishLocal(stoppedByPage: Bool = false) async {
         guard case .listening = local else { return }
         local = .finishing
         let text = await transcription.finish()
@@ -308,19 +331,40 @@ final class KeyboardModel: ObservableObject {
         local = nil
         localSince = nil
         updateMeter()
+        let ending = stoppedByPage ? String(localized: "the microphone stopped by itself") : String(localized: "finished")
+        endLog(text.map { String(localized: "\(ending), typed \($0.count) characters") }
+               ?? String(localized: "\(ending), nothing was recognized"))
         if let text {
             let formatted = style.format(text)
             if !formatted.isEmpty { controller?.insertDictation(formatted) }
         }
     }
 
-    private func cancelLocal() {
+    private func cancelLocal(outcome: String) {
         guard local != nil else { return }
+        endLog(outcome)
         microphone.stop()
         transcription.cancel()
         local = nil
         localSince = nil
         updateMeter()
+    }
+
+    /// Saves the running dictation's counts, at most once every `seconds`, so a keyboard iOS closes
+    /// mid-dictation leaves a recent record behind.
+    private func saveLog(every seconds: TimeInterval = 0) {
+        guard var entry = log, Date().timeIntervalSince(entry.updated) >= seconds else { return }
+        entry.updated = Date()
+        log = entry
+        KeyboardDictationLog.write(entry)
+    }
+
+    private func endLog(_ outcome: String) {
+        guard var entry = log else { return }
+        entry.updated = Date()
+        entry.outcome = outcome
+        KeyboardDictationLog.write(entry)
+        log = nil
     }
 
     /// Notes whether the last in-keyboard recording started, with the reason when it did not.

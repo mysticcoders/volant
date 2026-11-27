@@ -65,6 +65,9 @@ struct KeyboardSetupView: View {
                         if !result.ok, !result.reason.isEmpty {
                             Text(result.reason).font(.caption).foregroundStyle(.secondary)
                         }
+                        if let lastDictation {
+                            Text(lastDictation).font(.caption).foregroundStyle(.secondary)
+                        }
                     }
                 }
                 if service.microphoneIsOpen {
@@ -96,6 +99,14 @@ struct KeyboardSetupView: View {
         guard let result = KeyboardDictationSettings.defaults?.dictionary(forKey: KeyboardDictationSettings.recordResultKey),
               let date = result["date"] as? Date, let ok = result["ok"] as? Bool else { return nil }
         return (date, ok, result["reason"] as? String ?? "")
+    }
+
+    /// The keyboard's last in-keyboard dictation, for telling apart why one produced nothing.
+    private var lastDictation: String? {
+        guard let entry = KeyboardDictationLog.read() else { return nil }
+        let seconds = Int(entry.duration.rounded())
+        let length = String(format: "%d:%02d", seconds / 60, seconds % 60)
+        return String(localized: "Last in-keyboard dictation \(entry.started.formatted(.relative(presentation: .named))): \(length) long, \(entry.chunks) audio chunks, \(entry.characters) characters heard; \(entry.outcome ?? String(localized: "still running"))")
     }
 
     private var status: String {

@@ -290,3 +290,42 @@ enum KeyboardDictationSettings {
         try? data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
     }
 }
+
+/// What happened in the keyboard's last in-keyboard dictation, kept in the App Group for Settings
+/// so a dictation that produced nothing can be told apart: no audio arrived, audio arrived but the
+/// recognizer heard nothing, or iOS closed the keyboard mid-dictation (a record still open when
+/// the next keyboard appears). Only counts and times are kept, never what was said.
+enum KeyboardDictationLog {
+    static let key = "keyboardDictationLog"
+
+    struct Entry {
+        var started: Date
+        var updated: Date
+        var chunks: Int
+        var characters: Int
+        /// How it ended, in words for Settings; nil while it runs.
+        var outcome: String?
+
+        var duration: TimeInterval { updated.timeIntervalSince(started) }
+    }
+
+    static func read() -> Entry? {
+        guard let d = KeyboardDictationSettings.defaults?.dictionary(forKey: key),
+              let started = d["started"] as? Date, let updated = d["updated"] as? Date else { return nil }
+        return Entry(started: started, updated: updated, chunks: d["chunks"] as? Int ?? 0,
+                     characters: d["characters"] as? Int ?? 0, outcome: d["outcome"] as? String)
+    }
+
+    static func write(_ entry: Entry) {
+        var d: [String: Any] = ["started": entry.started, "updated": entry.updated, "chunks": entry.chunks, "characters": entry.characters]
+        if let outcome = entry.outcome { d["outcome"] = outcome }
+        KeyboardDictationSettings.defaults?.set(d, forKey: key)
+    }
+
+    /// Closes a record a previous keyboard left open: iOS ended that keyboard during dictation.
+    static func closeAbandoned() {
+        guard var entry = read(), entry.outcome == nil else { return }
+        entry.outcome = String(localized: "the keyboard was closed by iOS during dictation")
+        write(entry)
+    }
+}

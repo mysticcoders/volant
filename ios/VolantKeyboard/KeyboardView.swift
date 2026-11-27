@@ -24,6 +24,7 @@ struct KeyboardView: View {
             onSnippet: { model.insertSnippet($0) },
             onSpace: { inputController.insert(" ") },
             onDelete: { inputController.deleteBackward() },
+            onDeleteWord: { inputController.deleteWordBackward() },
             onReturn: { inputController.insert("\n") })
     }
 

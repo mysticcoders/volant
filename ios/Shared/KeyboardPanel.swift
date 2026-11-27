@@ -33,6 +33,8 @@ struct KeyboardPanel: View {
     var onSnippet: (KeyboardSnippet) -> Void = { _ in }
     var onSpace: () -> Void = {}
     var onDelete: () -> Void = {}
+    /// Deletes the word before the cursor, once delete has been held long enough.
+    var onDeleteWord: () -> Void = {}
     var onReturn: () -> Void = {}
 
     @State private var choosingStyle = false
@@ -247,7 +249,7 @@ struct KeyboardPanel: View {
             }
             PanelKey(fill: .keyboardKey, action: onSpace) { Text("space").font(.system(size: 16)) }
                 .accessibilityLabel(Text("Space"))
-            RepeatingKey(action: onDelete) { Image(systemName: "delete.left").font(.system(size: 19)) }
+            RepeatingKey(action: onDelete, accelerated: onDeleteWord) { Image(systemName: "delete.left").font(.system(size: 19)) }
                 .frame(width: 56)
                 .accessibilityLabel(Text("Delete"))
             PanelKey(fill: .keyboardSpecialKey, action: onReturn) {
@@ -354,10 +356,18 @@ private struct PanelKey<Label: View>: View {
     }
 }
 
-/// A key that acts once when pressed, then repeats while held, like delete on the system keyboard.
+/// A key that acts once when pressed, then repeats while held, like delete on the system keyboard:
+/// after `repeatDelay` it repeats `action`, and once held for `accelerateAfter` it repeats
+/// `accelerated` more slowly instead, as the system keyboard moves from letters to whole words.
 private struct RepeatingKey<Label: View>: View {
     let action: () -> Void
+    var accelerated: (() -> Void)?
     @ViewBuilder let label: () -> Label
+
+    static var repeatDelay: Duration { .milliseconds(450) }
+    static var repeatInterval: Duration { .milliseconds(80) }
+    static var accelerateAfter: Duration { .milliseconds(1700) }
+    static var acceleratedInterval: Duration { .milliseconds(220) }
     @State private var repeater: Task<Void, Never>?
 
     var body: some View {
@@ -372,10 +382,17 @@ private struct RepeatingKey<Label: View>: View {
                     guard repeater == nil else { return }
                     action()
                     repeater = Task { @MainActor in
-                        try? await Task.sleep(for: .milliseconds(450))
+                        let clock = ContinuousClock()
+                        let pressed = clock.now
+                        try? await Task.sleep(for: Self.repeatDelay)
                         while !Task.isCancelled {
-                            action()
-                            try? await Task.sleep(for: .milliseconds(80))
+                            if let accelerated, clock.now - pressed >= Self.accelerateAfter {
+                                accelerated()
+                                try? await Task.sleep(for: Self.acceleratedInterval)
+                            } else {
+                                action()
+                                try? await Task.sleep(for: Self.repeatInterval)
+                            }
                         }
                     }
                 }
