@@ -1785,6 +1785,7 @@ final class LauncherModel: ObservableObject {
             return
         }
         dictation.removesFillers = config.dictationRemovesFillers
+        dictation.formatsSpokenText = config.dictationFormatsSpokenText
         dictation.vocabulary = config.dictationVocabulary
         dictation.fixesCloseMatches = config.dictationFixesCloseMatches
         if surface == .indicator, config.dictationOutput == .type, let inputHost {

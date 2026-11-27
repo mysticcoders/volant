@@ -112,6 +112,7 @@ The main app is sandboxed and has no network entitlement. The two unsandboxed he
 - **Breaks**: reminders to step away, with a full-screen overlay and optional phone alerts. Paused while a camera or microphone is in use.
 - **Type at the cursor**: dictation typed into the frontmost app through `VolantInputHost`.
 - **Dictation vocabulary**: phrase corrections applied after filler removal.
+- **Dictation formatting**: spoken numbers, punctuation names and lists written as digits, marks and lines (`DictationFormatting`).
 - **Search Menu Items**: searches and presses the frontmost app's menu bar items (`menus`), through `VolantInputHost`.
 - **Servers**: lists this user's listening TCP ports (`servers`, `ports`). It acts on nothing.
 - **System controls**: audio devices, volume, Bluetooth, Wi-Fi, appearance, menu bar, Pick Color, camera.
