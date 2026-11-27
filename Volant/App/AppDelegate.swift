@@ -314,6 +314,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.async { [weak self] in self?.showWelcome() }
         case .show, .skip: break
         }
+        applyCaffeinateSetting()
         if config.showOnLaunch && !showingWelcome && !launchedForTask {
             // AppKit is ready on the next main turn; Spotlight results refresh independently.
             DispatchQueue.main.async { [weak self] in
@@ -696,6 +697,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         MainActor.assumeIsolated { ThemeStore.shared.apply(appearance) }
     }
 
+    /// Starts or ends the Caffeinate session the "while Volant runs" setting keeps, in the owner's
+    /// display mode. Quitting releases it through `applicationWillTerminate`.
+    private func applyCaffeinateSetting() {
+        panel.model.caffeinate.keepAwakeWhileRunning(config.caffeinateWhileRunning, display: config.caffeinateKeepsDisplayAwake)
+    }
+
     @objc private func reloadConfig() {
         let loaded = Preferences.load()
         if let error = Preferences.loadError {
@@ -708,6 +715,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         config = loaded
         breaks.apply(config.breaks)
         mcp.apply(config.mcpServer)
+        applyCaffeinateSetting()
         if config.dictationOutput == .copy, !config.searchMenuItems, !panel.model.dictationTypesAtCursor { inputHost.disconnect() }
         NSApp.setActivationPolicy(config.showInDock ? .regular : .accessory)
         applyTheme()

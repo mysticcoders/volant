@@ -57631,6 +57631,94 @@
         }
       }
     },
+    "Keep Mac awake while Volant runs": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac wach halten, solange Volant läuft"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mantener el Mac activo mientras Volant esté abierto"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Garder le Mac actif tant que Volant est ouvert"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mantieni il Mac attivo finché Volant è in esecuzione"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volantの実行中はMacをスリープさせない"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant 실행 중 Mac 깨어 있게 유지"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Houd de Mac wakker zolang Volant draait"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Nie usypiaj Maca, gdy Volant działa"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Manter o Mac Ativo Enquanto o Volant Estiver Aberto"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Manter o Mac ativo enquanto o Volant estiver aberto"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Не давать Mac засыпать, пока работает Volant"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant çalışırken Mac'i uyanık tut"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Не давати Mac засинати, поки працює Volant"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant 运行时保持 Mac 唤醒"
+          }
+        }
+      }
+    },
     "Keep display on and unlocked": {
       "localizations": {
         "de": {
@@ -62219,6 +62307,95 @@
         }
       }
     },
+    "Mac & display awake · while Volant runs": {
+      "comment": "Caffeinate status for the session the Settings switch keeps on",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac & Display wach · solange Volant läuft"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac y pantalla activos · mientras Volant esté abierto"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac et écran actifs · tant que Volant est ouvert"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac e schermo attivi · finché Volant è in esecuzione"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Macとディスプレイはスリープしません · Volantの実行中"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac 및 디스플레이 깨어 있음 · Volant 실행 중"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac en scherm wakker · zolang Volant draait"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac i ekran nie śpią · gdy Volant działa"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac e tela ativos · enquanto o Volant estiver aberto"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac e ecrã ativos · enquanto o Volant estiver aberto"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac и дисплей не спят · пока работает Volant"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac ve ekran uyanık · Volant çalışırken"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac і дисплей не засинають · поки працює Volant"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac和显示器保持唤醒 · Volant 运行期间"
+          }
+        }
+      }
+    },
     "Mac awake · display may sleep · %@ remaining": {
       "comment": "Caffeinate status; the time is minutes:seconds",
       "localizations": {
@@ -62393,6 +62570,95 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "Mac保持唤醒 · 显示器可能睡眠 · 直到停止"
+          }
+        }
+      }
+    },
+    "Mac awake · display may sleep · while Volant runs": {
+      "comment": "Caffeinate status for the session the Settings switch keeps on",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac wach · Display darf ruhen · solange Volant läuft"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac activo · la pantalla puede apagarse · mientras Volant esté abierto"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac actif · l’écran peut se mettre en veille · tant que Volant est ouvert"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac attivo · lo schermo può andare in stop · finché Volant è in esecuzione"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Macはスリープしません · ディスプレイはスリープ可 · Volantの実行中"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac 깨어 있음 · 디스플레이 잠자기 허용 · Volant 실행 중"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac wakker · scherm mag sluimeren · zolang Volant draait"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac nie śpi · ekran może się uśpić · gdy Volant działa"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac ativo · a tela pode repousar · enquanto o Volant estiver aberto"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac ativo · o ecrã pode entrar em pausa · enquanto o Volant estiver aberto"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac не спит · дисплей может засыпать · пока работает Volant"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac uyanık · ekran uyuyabilir · Volant çalışırken"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac не засинає · дисплей може засинати · поки працює Volant"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mac保持唤醒 · 显示器可能睡眠 · Volant 运行期间"
           }
         }
       }
@@ -120890,6 +121156,94 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "正在启动相机…"
+          }
+        }
+      }
+    },
+    "Starts Caffeinate when Volant opens and ends it when Volant quits. Stopping Caffeinate by hand pauses this until you next open Volant.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Startet Caffeinate beim Öffnen von Volant und beendet es beim Beenden. Wenn du Caffeinate selbst stoppst, pausiert dies bis zum nächsten Öffnen von Volant."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Inicia Caffeinate al abrir Volant y lo detiene al salir. Si detienes Caffeinate manualmente, esto se pausa hasta la próxima vez que abras Volant."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Démarre Caffeinate à l’ouverture de Volant et l’arrête quand vous quittez Volant. Si vous arrêtez Caffeinate vous-même, cette option est suspendue jusqu’à la prochaine ouverture de Volant."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Avvia Caffeinate all’apertura di Volant e lo termina all’uscita. Se interrompi Caffeinate manualmente, l’opzione resta in pausa fino alla prossima apertura di Volant."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volantを開くとCaffeinateを開始し、終了すると停止します。Caffeinateを手動で停止すると、次にVolantを開くまで一時停止します。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant를 열면 Caffeinate를 시작하고 종료하면 끝냅니다. Caffeinate를 직접 중지하면 다음에 Volant를 열 때까지 일시 중지됩니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Start Caffeinate wanneer Volant opent en stopt het wanneer je Volant stopt. Als je Caffeinate zelf stopt, pauzeert dit tot je Volant opnieuw opent."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Uruchamia Caffeinate po otwarciu Volant i kończy je po zamknięciu. Ręczne zatrzymanie Caffeinate wstrzymuje tę opcję do następnego otwarcia Volant."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Inicia o Caffeinate quando o Volant abre e o encerra quando o Volant fecha. Parar o Caffeinate manualmente pausa isto até a próxima vez que você abrir o Volant."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Inicia o Caffeinate quando o Volant abre e termina-o quando o Volant fecha. Parar o Caffeinate manualmente pausa isto até voltar a abrir o Volant."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Запускает Caffeinate при открытии Volant и останавливает при выходе. Если остановить Caffeinate вручную, это приостановится до следующего запуска Volant."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Volant açıldığında Caffeinate'i başlatır, Volant'tan çıkınca durdurur. Caffeinate'i elle durdurmak bunu Volant'ı bir sonraki açışınıza kadar duraklatır."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Запускає Caffeinate під час відкриття Volant і зупиняє під час виходу. Якщо зупинити Caffeinate вручну, це призупиниться до наступного запуску Volant."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "打开 Volant 时启动 Caffeinate，退出 Volant 时结束。手动停止 Caffeinate 会暂停此功能，直到下次打开 Volant。"
           }
         }
       }

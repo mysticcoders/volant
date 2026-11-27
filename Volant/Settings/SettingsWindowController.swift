@@ -239,6 +239,11 @@ private struct SettingsView: View {
             }
             LanguageSettingSection()
             Section {
+                Toggle(isOn: boolean("caffeinateWhileRunning", state.config.caffeinateWhileRunning)) {
+                    Text("Keep Mac awake while Volant runs")
+                    Text("Starts Caffeinate when Volant opens and ends it when Volant quits. Stopping Caffeinate by hand pauses this until you next open Volant.")
+                }
+                .accessibilityIdentifier("caffeinate-while-running")
                 Toggle(isOn: boolean("caffeinateKeepsDisplayAwake", state.config.caffeinateKeepsDisplayAwake)) {
                     Text("Keep display on and unlocked")
                     Text("Off keeps only the Mac awake. Add display or system to a caffeinate command to choose for one session.")
