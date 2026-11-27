@@ -91,7 +91,7 @@ struct SearchView: View {
             Section("Snippets") {
                 ForEach(Array(snippets), id: \.self) { snippet in
                     Button {
-                        UIPasteboard.general.string = MacSettings.expand(snippet.body)
+                        UIPasteboard.general.string = SnippetText.expand(snippet.body)
                         toast = String(localized: "Copied \(snippet.name)")
                     } label: { SnippetRow(snippet: snippet) }
                 .buttonStyle(.row)

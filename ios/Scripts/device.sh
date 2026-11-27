@@ -2,7 +2,7 @@
 # Build Volant for iPhone with the development profiles and install it on a device:
 #   Scripts/device.sh <device-udid>
 # Profile names default to the team's development profiles; override with VOLANT_APP_PROFILE,
-# VOLANT_WIDGETS_PROFILE and VOLANT_SHARE_PROFILE.
+# VOLANT_WIDGETS_PROFILE, VOLANT_SHARE_PROFILE and VOLANT_KEYBOARD_PROFILE.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 DEVICE="${1:?usage: Scripts/device.sh <device-udid>  (xcrun devicectl list devices)}"
@@ -15,6 +15,7 @@ if ! xcodebuild -project VolantMobile.xcodeproj -scheme VolantMobile -configurat
     VOLANT_APP_PROFILE="${VOLANT_APP_PROFILE:-Volant mobile development profile}" \
     VOLANT_WIDGETS_PROFILE="${VOLANT_WIDGETS_PROFILE:-Volant mobile widget development profile}" \
     VOLANT_SHARE_PROFILE="${VOLANT_SHARE_PROFILE:-Volant mobile share development profile}" \
+    VOLANT_KEYBOARD_PROFILE="${VOLANT_KEYBOARD_PROFILE:-Volant mobile keyboard development profile}" \
     build > "$LOG" 2>&1; then
   grep -E "error:" "$LOG" | sort -u
   echo "Build failed; full log in ios/$LOG" >&2

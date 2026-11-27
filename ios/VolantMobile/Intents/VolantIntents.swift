@@ -179,7 +179,7 @@ struct CopySnippetIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
-        let text = MacSettings.expand(snippet.body)
+        let text = SnippetText.expand(snippet.body)
         UIPasteboard.general.string = text
         return .result(value: text, dialog: "Copied \(snippet.name).")
     }

@@ -46,6 +46,16 @@ struct SettingsView: View {
 
                 BreakAlertsSection(alerts: breakAlerts)
 
+                Section {
+                    NavigationLink {
+                        KeyboardSetupView()
+                    } label: {
+                        SettingsRow(symbol: "keyboard", title: "Dictation Keyboard", value: nil)
+                    }
+                } footer: {
+                    Text("An optional keyboard with a dictation button that uses Volant's on-device dictation.")
+                }
+
                 Section("Appearance") {
                     NavigationLink {
                         ThemePicker(themes: themes)

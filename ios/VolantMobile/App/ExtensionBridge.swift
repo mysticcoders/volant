@@ -52,8 +52,11 @@ final class ExtensionBridge {
 }
 
 extension AppRouter {
-    /// Follows a `volant://` link from a widget, control, Shortcut or the share extension.
+    /// Follows a `volant://` link from a widget, control, Shortcut or the share extension. The
+    /// keyboard's dictate link is handled at the app root, which exists before the notes folder
+    /// is resolved.
     func handle(_ link: DeepLink, model: NotesModel) {
+        guard link != .dictate else { return }
         showingSettings = false
         switch link {
         case .newNote:
@@ -68,6 +71,8 @@ extension AppRouter {
             if tool == .notes { tab = .notes; return }
             tab = .home
             toolPath = [tool]
+        case .dictate:
+            break
         }
     }
 }
