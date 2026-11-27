@@ -10,7 +10,8 @@ from other projects, which keeps its upstream license.
 `SpokenPunctuationTests.swift` and `SpokenListsTests.swift`, are adapted from Hex
 (https://github.com/anomalyco/hex, `ios/HEXShared/Formatting` and
 `ios/HEXMobileTests/TranscriptCleanupTests.swift` at commit f5819f4). Hex's settings types and
-the tests of its style pipeline were left out; the formatting rules are unchanged.
+the tests of its style pipeline were left out; the formatting rules are unchanged. The app ships
+the license as `Volant/Resources/Licenses/Hex-LICENSE.txt` and credits Hex in Settings › About.
 
 License: MIT
 
