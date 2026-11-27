@@ -35,7 +35,7 @@ struct SnippetsView: View {
                 }
                 .contextMenu {
                     Button("Copy", systemImage: "doc.on.doc") { copy(item.snippet) }
-                    ShareLink(item: MacSettings.expand(item.snippet.body)) { Label("Share", systemImage: "square.and.arrow.up") }
+                    ShareLink(item: SnippetText.expand(item.snippet.body)) { Label("Share", systemImage: "square.and.arrow.up") }
                     Divider()
                     Button("Delete", systemImage: "trash", role: .destructive) { mac.deleteSnippet(at: item.index) }
                 }
@@ -59,7 +59,7 @@ struct SnippetsView: View {
     }
 
     private func copy(_ snippet: Snippet) {
-        UIPasteboard.general.string = MacSettings.expand(snippet.body)
+        UIPasteboard.general.string = SnippetText.expand(snippet.body)
         toast = String(localized: "Copied \(snippet.name)")
     }
 }
@@ -85,14 +85,14 @@ struct SnippetDetailView: View {
                             }
                         }
                     }
-                    Text(MacSettings.expand(snippet.body))
+                    Text(SnippetText.expand(snippet.body))
                         .font(.body)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(16)
                         .background(theme.raisedSurface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                     Button {
-                        UIPasteboard.general.string = MacSettings.expand(snippet.body)
+                        UIPasteboard.general.string = SnippetText.expand(snippet.body)
                         toast = String(localized: "Copied \(snippet.name)")
                     } label: {
                         Label("Copy", systemImage: "doc.on.doc").frame(maxWidth: .infinity, minHeight: 34)

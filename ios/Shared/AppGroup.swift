@@ -96,6 +96,8 @@ enum DeepLink: Equatable {
     case note(String)
     case search
     case tool(String)
+    /// Opened by the Volant keyboard to listen for its latest request.
+    case dictate
 
     static let scheme = "volant"
 
@@ -105,6 +107,7 @@ enum DeepLink: Equatable {
         case .note(let id): URL(string: "volant://note/\(id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id)")!
         case .search: URL(string: "volant://search")!
         case .tool(let name): URL(string: "volant://tool/\(name)")!
+        case .dictate: URL(string: "volant://dictate")!
         }
     }
 
@@ -114,6 +117,7 @@ enum DeepLink: Equatable {
         switch url.host() {
         case "new": self = .newNote
         case "search": self = .search
+        case "dictate": self = .dictate
         case "note": guard let value else { return nil }; self = .note(value)
         case "tool": guard let value else { return nil }; self = .tool(value)
         default: return nil

@@ -10,7 +10,9 @@ sync key-value store, so a Mac with "Sync settings and notes with iCloud" on sha
 - `VolantMobile/`: the app (Home, Notes, More, Search tabs; onboarding; Settings; App Intents).
 - `VolantWidgets/`: Recent Notes and Quick Actions widgets, and the New Note control.
 - `VolantShare/`: the "Save to Volant" share extension.
-- `Shared/`: brand, App Group snapshot, note writer and deep links, compiled into all three.
+- `VolantKeyboard/`: the optional dictation keyboard (see below).
+- `Shared/`: brand, App Group snapshot, note writer, deep links and the keyboard bridge, compiled
+  into the app and every extension (the share extension and keyboard leave out the widget views).
 - The app links `../Core` (VolantCore) for themes, the calculator, and the snippet, quicklink and
   settings sync types. Core stays Foundation-only; Mac-only files are wrapped in `#if os(macOS)`.
 
@@ -26,7 +28,10 @@ xcodebuild -project VolantMobile.xcodeproj -scheme VolantMobile \
 
 Fixture launch arguments for simulator review: `-notesDirectory <path>` (fictional notes folder),
 `-onboardingComplete NO` with `-fixtureOnboardingPage <n>`, `-fixtureTab notes|more|search`,
-`-fixtureTool snippets|quicklinks|calculator`, `-fixtureSettings YES`, and `-fixtureWidgets YES`
+`-fixtureTool snippets|quicklinks|calculator`, `-fixtureSettings YES`, `-fixtureKeyboardSetup YES` (Settings ›
+Dictation Keyboard), `-fixtureKeyboardSetupPage 0|1|2` with it (the setup walkthrough at that page),
+`-fixtureKeyboardListening YES` (the keyboard preview drawn mid-dictation),
+`-fixtureAcknowledgements YES` (Settings › Acknowledgements), and `-fixtureWidgets YES`
 (draws the widget views from the App Group snapshot).
 
 ### On a device
@@ -35,12 +40,13 @@ Fixture launch arguments for simulator review: `-notesDirectory <path>` (fiction
 (`xcrun devicectl list devices` lists UDIDs). It needs, under team REMBT6JY4N:
 
 - App IDs `com.mysticcoders.volant.mobile` (iCloud with `iCloud.com.mysticcoders.volant` and
-  CloudKit, Push Notifications for Break Alerts, App Groups), `.mobile.widgets` (App Groups) and `.mobile.share` (iCloud with the container, App Groups).
-- App Group `group.com.mysticcoders.volant` on all three. The portal adds `group.` itself, so the
+  CloudKit, Push Notifications for Break Alerts, App Groups), `.mobile.widgets` (App Groups), `.mobile.share` (iCloud with the container, App Groups) and `.mobile.keyboard` (App Groups).
+- App Group `group.com.mysticcoders.volant` on all four. The portal adds `group.` itself, so the
   identifier is typed as `com.mysticcoders.volant`.
 - iOS App Development profiles "Volant mobile development profile", "Volant mobile widget
-  development profile" and "Volant mobile share development profile", or other names passed as
-  `VOLANT_APP_PROFILE`, `VOLANT_WIDGETS_PROFILE` and `VOLANT_SHARE_PROFILE`.
+  development profile", "Volant mobile share development profile" and "Volant mobile keyboard
+  development profile", or other names passed as `VOLANT_APP_PROFILE`, `VOLANT_WIDGETS_PROFILE`,
+  `VOLANT_SHARE_PROFILE` and `VOLANT_KEYBOARD_PROFILE`.
 
 ## TestFlight
 
@@ -56,7 +62,8 @@ Once per app:
 - The App Store Connect app record "Volant Mobile" ("Volant" was taken) for
   `com.mysticcoders.volant.mobile`; the Home Screen name stays Volant.
 - App Store profiles "Volant mobile production profile", "Volant mobile widget production
-  profile" and "Volant mobile share production profile", with the Apple Distribution certificate.
+  profile", "Volant mobile share production profile" and "Volant mobile keyboard production
+  profile", with the Apple Distribution certificate.
 - For external testers: a beta description, feedback email and Beta App Review. Internal testers
   need none of these.
 
@@ -96,3 +103,32 @@ contact details; set those in App Store Connect.
 No account and no telemetry, as on the Mac. Widgets read titles and one-line previews from the App
 Group snapshot; note text never leaves the notes folder. Snippet and quicklink edits are written only
 to the owner's iCloud key-value store, and only lists that decode as the Mac expects are sent.
+
+## Dictation keyboard
+
+An optional keyboard (Settings › Dictation Keyboard in the app has a setup walkthrough) with a
+Dictate bar, the Mac's snippets as tiles, and space, delete and return. The bar's style picker lays
+out the finished transcript as Plain, Message, Email or Notes (`DictationStyle` in VolantCore, which
+only regroups sentences and edge punctuation, never words). `Shared/KeyboardPanel.swift` draws the
+keyboard for both the extension and the app's preview. It is not a full
+keyboard: people type on the Apple keyboard and switch to Volant's to dictate.
+
+iOS never gives a keyboard the microphone, even with Full Access, so the app listens for it
+(`VolantMobile/Dictation`, `Shared/KeyboardBridge.swift`):
+
+1. The keyboard writes a request to the App Group. If the app said its microphone is still open, it
+   posts a Darwin notification and the app starts at once; otherwise, or with no answer in 0.8 s, it
+   opens `volant://dictate`.
+2. The app opens the microphone in the foreground, starts SpeechAnalyzer with the Mac's filler
+   removal and the dictation vocabulary from settings sync (`settings.dictationVocabulary`, read
+   only), and shows a screen telling the owner to go back with the top-left link. The `audio`
+   background mode keeps it listening there.
+3. The app writes live and final text to `dictation-state.json` and posts a notification; the
+   keyboard types the final text of its own request once, then tells the app to clear it.
+4. The microphone stays open for the chosen time (Keep Microphone Open, default 5 minutes, with the
+   orange indicator on) so the next dictation skips the app switch; buffers between dictations are
+   dropped on the audio thread.
+
+Full Access is required: without it a keyboard cannot reach the App Group or open the app. Snippets
+reach the keyboard as `keyboard-snippets.json`, which the app rewrites whenever it reads settings sync.
+Real dictation needs a device; in the simulator the keyboard can only be seen, not used.

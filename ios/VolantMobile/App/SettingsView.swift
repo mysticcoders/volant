@@ -46,6 +46,16 @@ struct SettingsView: View {
 
                 BreakAlertsSection(alerts: breakAlerts)
 
+                Section {
+                    NavigationLink {
+                        KeyboardSetupView()
+                    } label: {
+                        SettingsRow(symbol: "keyboard", title: "Dictation Keyboard", value: nil)
+                    }
+                } footer: {
+                    Text("An optional keyboard with a dictation button that uses Volant's on-device dictation.")
+                }
+
                 Section("Appearance") {
                     NavigationLink {
                         ThemePicker(themes: themes)
@@ -58,6 +68,11 @@ struct SettingsView: View {
                     LinkRow(symbol: "globe", title: "Volant", url: "https://usevolant.com")
                     LinkRow(symbol: "lock.shield", title: "Privacy & Security", url: "https://usevolant.com/docs/privacy-and-security")
                     LinkRow(symbol: "chevron.left.forwardslash.chevron.right", title: "Source Code", url: "https://github.com/mysticcoders/volant")
+                    NavigationLink {
+                        AcknowledgementsView()
+                    } label: {
+                        SettingsRow(symbol: "doc.text", title: "Acknowledgements", value: nil)
+                    }
                     Button {
                         dismiss()
                         onboardingComplete = false

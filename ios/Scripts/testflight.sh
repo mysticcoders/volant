@@ -6,8 +6,9 @@
 # ~/.appstoreconnect/private_keys/AuthKey_<id>.p8) the .ipa is uploaded; the issuer comes from
 # ASC_ISSUER_ID or ~/.appstoreconnect/issuer_id, as for the Mac release. Without a key, open the
 # .ipa in Transporter. Profile names default to the team's "Volant mobile production profile",
-# "Volant mobile widget production profile" and "Volant mobile share production profile";
-# override with VOLANT_APP_PROFILE, VOLANT_WIDGETS_PROFILE, VOLANT_SHARE_PROFILE.
+# "Volant mobile widget production profile", "Volant mobile share production profile" and
+# "Volant mobile keyboard production profile"; override with VOLANT_APP_PROFILE,
+# VOLANT_WIDGETS_PROFILE, VOLANT_SHARE_PROFILE, VOLANT_KEYBOARD_PROFILE.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 BUILD="${VOLANT_BUILD:-$(date +%Y%m%d%H%M)}"
@@ -15,6 +16,7 @@ OUT="build/testflight/$BUILD"
 APP_PROFILE="${VOLANT_APP_PROFILE:-Volant mobile production profile}"
 WIDGETS_PROFILE="${VOLANT_WIDGETS_PROFILE:-Volant mobile widget production profile}"
 SHARE_PROFILE="${VOLANT_SHARE_PROFILE:-Volant mobile share production profile}"
+KEYBOARD_PROFILE="${VOLANT_KEYBOARD_PROFILE:-Volant mobile keyboard production profile}"
 ASC_DIR="${VOLANT_ASC_DIR:-$HOME/.appstoreconnect}"
 if [[ -z "${ASC_ISSUER_ID:-}" && -s "$ASC_DIR/issuer_id" ]]; then ASC_ISSUER_ID="$(tr -d '[:space:]' < "$ASC_DIR/issuer_id")"; fi
 mkdir -p "$OUT"
@@ -24,13 +26,13 @@ if ! xcodebuild -project VolantMobile.xcodeproj -scheme VolantMobile -configurat
     -destination 'generic/platform=iOS' -derivedDataPath build/release -archivePath "$OUT/Volant.xcarchive" \
     CURRENT_PROJECT_VERSION="$BUILD" CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="Apple Distribution" \
     VOLANT_APP_PROFILE="$APP_PROFILE" VOLANT_WIDGETS_PROFILE="$WIDGETS_PROFILE" VOLANT_SHARE_PROFILE="$SHARE_PROFILE" \
-    archive > "$OUT/archive.log" 2>&1; then
+    VOLANT_KEYBOARD_PROFILE="$KEYBOARD_PROFILE" archive > "$OUT/archive.log" 2>&1; then
   grep -E "error:" "$OUT/archive.log" | sort -u
   echo "Archive failed; full log in ios/$OUT/archive.log" >&2
   exit 1
 fi
 sed -e "s/VOLANT_APP_PROFILE/$APP_PROFILE/" -e "s/VOLANT_WIDGETS_PROFILE/$WIDGETS_PROFILE/" \
-    -e "s/VOLANT_SHARE_PROFILE/$SHARE_PROFILE/" ExportOptions-AppStore.plist > "$OUT/ExportOptions.plist"
+    -e "s/VOLANT_SHARE_PROFILE/$SHARE_PROFILE/" -e "s/VOLANT_KEYBOARD_PROFILE/$KEYBOARD_PROFILE/" ExportOptions-AppStore.plist > "$OUT/ExportOptions.plist"
 # Export with only system tools on PATH: Xcode's /usr/bin/rsync starts its receiver from PATH, and a
 # Homebrew rsync 3.x there rejects the --extended-attributes option, failing the copy.
 if ! env PATH=/usr/bin:/bin:/usr/sbin:/sbin xcodebuild -exportArchive -archivePath "$OUT/Volant.xcarchive" -exportPath "$OUT/export" \
@@ -49,7 +51,7 @@ def entitlements(path):
     out = subprocess.run(["codesign", "-d", "--entitlements", "-", "--xml", path], capture_output=True).stdout
     return plistlib.loads(out) if out else {}
 group, container = "group.com.mysticcoders.volant", "iCloud.com.mysticcoders.volant"
-for path, wants_icloud in [(app, True), (f"{app}/PlugIns/VolantWidgets.appex", False), (f"{app}/PlugIns/VolantShare.appex", True)]:
+for path, wants_icloud in [(app, True), (f"{app}/PlugIns/VolantWidgets.appex", False), (f"{app}/PlugIns/VolantShare.appex", True), (f"{app}/PlugIns/VolantKeyboard.appex", False)]:
     ent = entitlements(path)
     assert not ent.get("get-task-allow"), f"{path} is a debug signature"
     assert ent.get("com.apple.security.application-groups") == [group], f"{path} lacks {group}"
@@ -59,6 +61,9 @@ for path, wants_icloud in [(app, True), (f"{app}/PlugIns/VolantWidgets.appex", F
 app_ent = entitlements(app)
 assert app_ent.get("aps-environment") == "production", f"{app} lacks production push, which Break Alerts need"
 assert "CloudKit" in app_ent.get("com.apple.developer.icloud-services", []), f"{app} lacks CloudKit, which Break Alerts need"
+info = plistlib.load(open(f"{app}/Info.plist", "rb"))
+assert "audio" in info.get("UIBackgroundModes", []), f"{app} lacks the audio background mode, which keyboard dictation needs"
+assert info.get("NSMicrophoneUsageDescription"), f"{app} lacks a microphone usage description"
 print("Signed entitlements check passed")
 import json, re
 actions = json.load(open(f"{app}/Metadata.appintents/extract.actionsdata"))["actions"]

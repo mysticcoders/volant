@@ -15,6 +15,7 @@ final class MacSettings: ObservableObject {
     @Published private(set) var quicklinks: [Quicklink] = []
     @Published private(set) var updated: Date?
     @Published private(set) var state: State = .loading
+    @Published private(set) var vocabularyCount = 0
     private let store = NSUbiquitousKeyValueStore.default
     private var rawSnippets: [[String: Any]] = []
     private var rawLinks: [[String: Any]] = []
@@ -47,6 +48,18 @@ final class MacSettings: ObservableObject {
         if rawLinks.count != quicklinks.count { rawLinks = quicklinks.map(Self.object) }
         updated = [snippetEntry?.modified, linkEntry?.modified].compactMap { $0 }.max()
         state = snippetEntry == nil && linkEntry == nil ? .empty : .ready
+        let vocabulary = Self.dictationVocabulary(in: store)
+        vocabularyCount = vocabulary.count
+        KeyboardDictationSettings.writeVocabulary(vocabulary)
+        KeyboardSnippet.writeAll(snippets.map { KeyboardSnippet(name: $0.name, body: $0.body) })
+    }
+
+    /// The dictation vocabulary the Mac shares through settings sync (`settings.dictationVocabulary`),
+    /// read only, so phone dictation writes the owner's words the way the Mac does.
+    static func dictationVocabulary(in store: NSUbiquitousKeyValueStore = .default) -> [DictationVocabularyEntry] {
+        guard let entry = SettingsSync.Entry(propertyList: store.object(forKey: "settings.dictationVocabulary")),
+              let entries = try? JSONDecoder().decode([DictationVocabularyEntry].self, from: entry.value) else { return [] }
+        return DictationVocabulary.normalized(entries)
     }
 
     /// Fictional snippets and quicklinks from a JSON file, for simulator screenshots (`-fixtureMacSettings <path>`).
@@ -121,17 +134,5 @@ final class MacSettings: ObservableObject {
     func refresh() {
         store.synchronize()
         load()
-    }
-
-    /// A snippet's text with the Mac's placeholders filled in the same way the Mac expands them.
-    static func expand(_ body: String, now: Date = Date()) -> String {
-        var s = body
-        s = s.replacingOccurrences(of: "{date}", with: now.formatted(date: .abbreviated, time: .omitted))
-        s = s.replacingOccurrences(of: "{isodate}", with: now.formatted(.iso8601.year().month().day()))
-        s = s.replacingOccurrences(of: "{time}", with: now.formatted(date: .omitted, time: .shortened))
-        s = s.replacingOccurrences(of: "{datetime}", with: now.formatted(date: .abbreviated, time: .shortened))
-        s = s.replacingOccurrences(of: "{uuid}", with: UUID().uuidString)
-        if s.contains("{clipboard}") { s = s.replacingOccurrences(of: "{clipboard}", with: UIPasteboard.general.string ?? "") }
-        return s
     }
 }

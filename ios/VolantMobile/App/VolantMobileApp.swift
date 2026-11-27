@@ -10,6 +10,7 @@ struct VolantMobileApp: App {
     @StateObject private var themes = ThemeStore()
     @StateObject private var mac = MacSettings()
     @StateObject private var breakAlerts = BreakAlerts()
+    @ObservedObject private var dictation = DictationService.shared
     @State private var model: NotesModel?
     @State private var sync: NotesSync?
     @State private var bridge: ExtensionBridge?
@@ -24,19 +25,28 @@ struct VolantMobileApp: App {
                     VolantMark(size: 64).frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
+            .overlay {
+                if dictation.showingScreen { DictationScreen(service: dictation).transition(.opacity) }
+            }
+            .onOpenURL { url in if DeepLink(url) == .dictate { dictation.openedFromKeyboard() } }
             .environmentObject(mac)
             .environmentObject(breakAlerts)
             .task {
+                dictation.activate()
                 breakAlerts.refreshRegistration()
                 await start()
             }
             .onChange(of: scenePhase) { _, phase in
+                dictation.sceneIsActive = phase == .active
                 switch phase {
                 case .active:
                     model?.store.reload()
                     mac.refresh()
                     bridge?.importInbox()
-                case .inactive, .background: model?.store.flush()
+                case .inactive: model?.store.flush()
+                case .background:
+                    model?.store.flush()
+                    if !dictation.state.isActive { dictation.showingScreen = false }
                 @unknown default: break
                 }
             }

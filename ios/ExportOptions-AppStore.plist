@@ -24,6 +24,8 @@
 		<string>VOLANT_WIDGETS_PROFILE</string>
 		<key>com.mysticcoders.volant.mobile.share</key>
 		<string>VOLANT_SHARE_PROFILE</string>
+		<key>com.mysticcoders.volant.mobile.keyboard</key>
+		<string>VOLANT_KEYBOARD_PROFILE</string>
 	</dict>
 </dict>
 </plist>

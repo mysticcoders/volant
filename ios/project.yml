@@ -24,11 +24,17 @@ targets:
           - App/Info.plist
           - App/VolantMobile.entitlements
       - path: Shared
+      - path: ../Volant/Resources/Licenses/Hex-LICENSE.txt
+        buildPhase: resources
+      - path: ../Volant/Resources/Licenses/ColorThemes-LICENSES.txt
+        buildPhase: resources
     dependencies:
       - package: VolantCore
       - target: VolantWidgets
         embed: true
       - target: VolantShare
+        embed: true
+      - target: VolantKeyboard
         embed: true
     settings:
       base:
@@ -46,6 +52,7 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: Volant
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: Volant listens when you dictate with the Volant keyboard. Speech is transcribed on device and never sent anywhere.
         INFOPLIST_KEY_UIFileSharingEnabled: YES
         INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
@@ -59,6 +66,9 @@ targets:
           - Info.plist
           - VolantWidgets.entitlements
       - path: Shared
+        excludes:
+          - KeyboardPanel.swift
+          - SpeechTranscription.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.mobile.widgets
@@ -81,6 +91,8 @@ targets:
       - path: Shared
         excludes:
           - WidgetViews.swift
+          - KeyboardPanel.swift
+          - SpeechTranscription.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.mobile.share
@@ -91,4 +103,29 @@ targets:
         INFOPLIST_FILE: VolantShare/Info.plist
         INFOPLIST_KEY_CFBundleDisplayName: Volant
         CODE_SIGN_ENTITLEMENTS: VolantShare/VolantShare.entitlements
+        SKIP_INSTALL: YES
+  VolantKeyboard:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: VolantKeyboard
+        excludes:
+          - Info.plist
+          - VolantKeyboard.entitlements
+      - path: Shared
+        excludes:
+          - WidgetViews.swift
+    dependencies:
+      - package: VolantCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.mobile.keyboard
+        PROVISIONING_PROFILE_SPECIFIER: $(VOLANT_KEYBOARD_PROFILE)
+        PRODUCT_NAME: VolantKeyboard
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: VolantKeyboard/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: Volant
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: Volant listens when you dictate with the Volant keyboard. Speech is transcribed on device and never sent anywhere.
+        CODE_SIGN_ENTITLEMENTS: VolantKeyboard/VolantKeyboard.entitlements
         SKIP_INSTALL: YES
