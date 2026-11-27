@@ -72,11 +72,12 @@ final class PhoneDictation {
     }
 
     /// Starts transcribing the open microphone.
-    func begin(vocabulary: [DictationVocabularyEntry], removesFillers: Bool,
+    func begin(vocabulary: [DictationVocabularyEntry], removesFillers: Bool, formatsSpokenText: Bool,
                onPreparing: @escaping (String) -> Void, onText: @escaping (String) -> Void) async throws {
         guard isMicrophoneOpen, let tapFormat else { throw Failure.microphoneClosed }
         transcription.vocabulary = vocabulary
         transcription.removesFillers = removesFillers
+        transcription.formatsSpokenText = formatsSpokenText
         try await transcription.begin(inputFormat: tapFormat, onPreparing: onPreparing, onText: onText)
     }
 

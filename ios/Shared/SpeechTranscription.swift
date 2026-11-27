@@ -6,7 +6,8 @@ import UIKit
 import VolantCore
 
 /// One dictation's transcription through Apple's SpeechAnalyzer, with the Mac's cleanup: filler
-/// words removed, then the owner's vocabulary applied to every phrase. Audio arrives through `gate`
+/// words removed, the owner's vocabulary applied to every phrase, then spoken numbers and
+/// punctuation written as digits and marks, and spoken lists as lines in the finished text. Audio arrives through `gate`
 /// from whatever captures it (the app's audio engine, or the keyboard's web capture) and never
 /// leaves the device; the transcript is handed back rather than stored. Shared by the app and the
 /// keyboard.
@@ -32,6 +33,8 @@ final class SpeechTranscription {
     var vocabulary: [DictationVocabularyEntry] = []
     /// Also replaces words the spell checker doesn't know that sound like a vocabulary word.
     var fixesCloseMatches = true
+    /// Writes spoken numbers as digits, punctuation names as marks and spoken lists as lines.
+    var formatsSpokenText = true
     /// Whether a missing speech model may be downloaded; the keyboard leaves that to the app.
     var downloadsModel = true
 
@@ -44,6 +47,7 @@ final class SpeechTranscription {
         var stream: AsyncStream<AnalyzerInput>.Continuation?
         var collector: Task<Void, Never>?
         var transcript = ""
+        var locale: Locale?
     }
 
     /// How long capture continues after stop, so the last word isn't cut off (the Mac's measured tail).
@@ -63,6 +67,7 @@ final class SpeechTranscription {
         let session = Session()
         self.session = session
         let locale = await Self.bestLocale()
+        session.locale = locale
         let transcriber = SpeechTranscriber(locale: locale, transcriptionOptions: [],
                                             reportingOptions: [.volatileResults], attributeOptions: [])
         if let request = try await AssetInventory.assetInstallationRequest(supporting: [transcriber]) {
@@ -99,6 +104,8 @@ final class SpeechTranscription {
 
         let removesFillers = self.removesFillers
         let closeMatches = fixesCloseMatches && DictationCleanup.supports(locale) && !vocabulary.isEmpty
+        let formats = formatsSpokenText
+        let protectedTerms = vocabulary.map(\.term)
         session.collector = Task { @MainActor in
             var settled = ""
             var knownWords: [String: Bool] = [:]
@@ -110,7 +117,8 @@ final class SpeechTranscription {
             }
             let clean = { (text: String) in
                 let exact = DictationVocabulary.applying(vocabulary, to: removesFillers ? DictationCleanup.removingFillers(text, locale: locale) : text)
-                return closeMatches ? DictationCloseMatch.correcting(vocabulary, in: exact, isKnownWord: isKnown) : exact
+                let corrected = closeMatches ? DictationCloseMatch.correcting(vocabulary, in: exact, isKnownWord: isKnown) : exact
+                return formats ? DictationFormatting.formattingPhrase(corrected, locale: locale, protectedTerms: protectedTerms) : corrected
             }
             do {
                 for try await result in transcriber.results {
@@ -146,7 +154,10 @@ final class SpeechTranscription {
         try? await session.analyzer?.finalizeAndFinishThroughEndOfInput()
         _ = await session.collector?.result
         if self.session === session { self.session = nil }
-        let text = session.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        var text = session.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        if formatsSpokenText, let locale = session.locale, !text.isEmpty {
+            text = DictationFormatting.formattingTranscript(text, locale: locale)
+        }
         return text.isEmpty ? nil : text
     }
 
@@ -256,6 +267,7 @@ final class InputGate: Sendable {
 enum KeyboardDictationSettings {
     static let removesFillersKey = "dictationRemovesFillers"
     static let recordsInKeyboardKey = "keyboardRecordsInKeyboard"
+    static let formatsSpokenTextKey = "dictationFormatsSpokenText"
     /// How the keyboard's last in-keyboard recording went: its date, whether it started, and why not.
     static let recordResultKey = "keyboardRecordResult"
 
@@ -263,6 +275,7 @@ enum KeyboardDictationSettings {
     private static var vocabularyURL: URL? { AppGroup.container?.appendingPathComponent("keyboard-vocabulary.json") }
 
     static var removesFillers: Bool { defaults?.object(forKey: removesFillersKey) as? Bool ?? true }
+    static var formatsSpokenText: Bool { defaults?.object(forKey: formatsSpokenTextKey) as? Bool ?? true }
     /// On by default; the app switch stays as the fallback either way.
     static var recordsInKeyboard: Bool { defaults?.object(forKey: recordsInKeyboardKey) as? Bool ?? true }
 

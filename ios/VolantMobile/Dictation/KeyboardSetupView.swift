@@ -10,6 +10,7 @@ struct KeyboardSetupView: View {
     @AppStorage(DictationService.microphoneMinutesKey) private var microphoneMinutes = 5
     @AppStorage(KeyboardDictationSettings.removesFillersKey, store: KeyboardDictationSettings.defaults) private var removesFillers = true
     @AppStorage(KeyboardDictationSettings.recordsInKeyboardKey, store: KeyboardDictationSettings.defaults) private var recordsInKeyboard = true
+    @AppStorage(KeyboardDictationSettings.formatsSpokenTextKey, store: KeyboardDictationSettings.defaults) private var formatsSpokenText = true
     @State private var walkthrough: KeyboardSetupFlow.Page?
 
     var body: some View {
@@ -44,6 +45,14 @@ struct KeyboardSetupView: View {
                 }
                 Toggle(isOn: $removesFillers) {
                     SettingsRow(symbol: "text.badge.minus", title: "Remove Filler Words", value: nil)
+                }
+                Toggle(isOn: $formatsSpokenText) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        SettingsRow(symbol: "textformat.123", title: "Format Numbers, Punctuation and Lists", value: nil)
+                        Text("Writes “twenty five” as 25 and “comma” as a comma, and turns “first… second…” or “new line” into lines.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 Toggle(isOn: $recordsInKeyboard) {
                     SettingsRow(symbol: "keyboard.badge.waveform", title: "Record in Keyboard (Experimental)", value: nil)

@@ -19,10 +19,15 @@ public enum DictationStyle: String, CaseIterable, Codable, Sendable, Identifiabl
     /// Body paragraphs of an email hold at most this many sentences.
     public static let sentencesPerParagraph = 3
 
-    /// The transcript laid out in this style.
+    /// The transcript laid out in this style. Text that already has line breaks, from spoken
+    /// lists or "new line" (`DictationFormatting`), keeps its lines: Notes and Email leave it as it
+    /// is, and Message drops only the last line's closing period.
     public func format(_ text: String, locale: Locale = .current) -> String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return "" }
+        if trimmed.contains("\n") {
+            return self == .message ? Self.droppingClosingPeriod(trimmed) : trimmed
+        }
         switch self {
         case .plain:
             return trimmed

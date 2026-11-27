@@ -63,6 +63,13 @@ final class DictationStyleTests: XCTestCase {
                        "Hi Sam, the file is here. Thanks, Léa.")
     }
 
+    func testTextWithLinesKeepsThem() {
+        let list = "Groceries:\n1. Eggs\n2. Milk."
+        XCTAssertEqual(DictationStyle.notes.format(list, locale: english), list)
+        XCTAssertEqual(DictationStyle.email.format(list, locale: english), list)
+        XCTAssertEqual(DictationStyle.message.format(list, locale: english), "Groceries:\n1. Eggs\n2. Milk")
+    }
+
     func testAWordThatOnlyStartsLikeAGreetingIsNotOne() {
         XCTAssertEqual(DictationStyle.email.format("Hither and yon we went.", locale: english), "Hither and yon we went.")
         XCTAssertEqual(DictationStyle.email.format("We went. Bestow it on them.", locale: english), "We went. Bestow it on them.")

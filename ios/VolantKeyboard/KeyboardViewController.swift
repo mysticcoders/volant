@@ -268,6 +268,7 @@ final class KeyboardModel: ObservableObject {
         notice = nil
         transcription.vocabulary = KeyboardDictationSettings.readVocabulary()
         transcription.removesFillers = KeyboardDictationSettings.removesFillers
+        transcription.formatsSpokenText = KeyboardDictationSettings.formatsSpokenText
         transcription.downloadsModel = false
         let gate = transcription.gate
         microphone.onBuffer = { gate.receive($0) }

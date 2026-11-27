@@ -109,6 +109,7 @@ final class DictationService: ObservableObject {
             try await dictation.begin(
                 vocabulary: MacSettings.dictationVocabulary(),
                 removesFillers: KeyboardDictationSettings.removesFillers,
+                formatsSpokenText: KeyboardDictationSettings.formatsSpokenText,
                 onPreparing: { [weak self] message in self?.update(session) { $0.message = message } },
                 onText: { [weak self] text in self?.live(text, session: session) })
             guard state.session == session, state.phase == .preparing else { return }
