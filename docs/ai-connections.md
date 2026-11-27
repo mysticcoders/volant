@@ -148,6 +148,18 @@ start of a sentence are repaired. Words that can carry meaning stay ("like", "yo
 unchanged. It is on by default and per Mac: Settings → General → Dictation → Remove filler words
 (`dictationRemovesFillers`). It cannot repair a filler the recognizer heard as another word.
 
+`DictationFormatting` then writes what was said the way it was meant, with string rules adapted
+from Hex (MIT, see `THIRD_PARTY_NOTICES.md`): numbers said in words as digits in English ("twenty
+five" 25, "five point five" 5.5, "seven fifteen pm" 7:15 pm), punctuation said by name as marks in
+English, Spanish, French, German, Italian and Portuguese ("comma", "question mark", "open quote"),
+and spoken lists and line breaks as lines in English and Spanish ("first, … second, …", "new
+line"). Guards keep prose: "trial period", "a dash of salt", "one of them" and the dictation
+vocabulary's own terms stay as said. Numbers and punctuation run on each finished phrase, after the
+vocabulary, so they apply while typing as you speak; lists span phrases, so they apply only to the
+finished transcript (copied, or typed when finished). A punctuation name the recognizer put at the
+very start of a phrase stays as said. On by default and per Mac: Settings → General → Dictation →
+Format numbers, punctuation and lists (`dictationFormatsSpokenText`).
+
 Availability is rechecked at start, because microphone permission can be revoked between uses. On
 macOS 15 the command is present and reports that it needs macOS 26, the same pattern Apple
 Intelligence uses.

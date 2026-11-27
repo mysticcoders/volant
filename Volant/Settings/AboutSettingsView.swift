@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 import VolantCore
 
-/// Settings → About: the app's version and links, and credits for the data and palettes Volant ships.
+/// Settings → About: the app's version and links, and credits for the data, palettes and code Volant ships.
 struct AboutSettingsView: View {
     /// Opens the Welcome window again; absent in fixtures that have no app to open it.
     var showWelcome: (() -> Void)?
@@ -76,6 +76,9 @@ struct AboutSettingsView: View {
                 LabeledContent("Runtime logos") {
                     Link("Simple Icons", destination: URL(string: "https://simpleicons.org")!)
                 }
+                LabeledContent("Dictation formatting") {
+                    Link(destination: URL(string: "https://github.com/anomalyco/hex")!) { Text(verbatim: "Hex") }
+                }
                 LabeledContent("Color themes") {
                     Text("Catppuccin, Nord, Dracula, Gruvbox, Solarized, Tokyo Night, Rosé Pine, One Dark")
                         .multilineTextAlignment(.trailing)
@@ -83,7 +86,9 @@ struct AboutSettingsView: View {
             } header: {
                 Text("Acknowledgements")
             } footer: {
-                SettingsFooter(String(localized: "GeoNames city names are licensed under Creative Commons Attribution 4.0. Airport codes from mwgg/Airports and the color theme palettes are MIT licensed; their licenses are included with Volant. Runtime logos are trademarks of their owners, shown only to identify a server's runtime; the Ruby and PHP logos are licensed under Creative Commons Attribution-ShareAlike, and their licenses and notices are included with Volant."))
+                SettingsFooter(String(localized: "GeoNames city names are licensed under Creative Commons Attribution 4.0. Airport codes from mwgg/Airports and the color theme palettes are MIT licensed; their licenses are included with Volant. Runtime logos are trademarks of their owners, shown only to identify a server's runtime; the Ruby and PHP logos are licensed under Creative Commons Attribution-ShareAlike, and their licenses and notices are included with Volant.")
+                               + " " + String(localized: "Dictation's number, punctuation and list formatting is adapted from Hex by Christopher Langton, which is MIT licensed; its license is included with Volant.",
+                                              comment: "About settings acknowledgement; Hex is a product name"))
             }
         }
         .formStyle(.settings)
