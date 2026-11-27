@@ -55,7 +55,7 @@ struct KeyboardSetupView: View {
                     }
                 }
                 Toggle(isOn: $recordsInKeyboard) {
-                    SettingsRow(symbol: "keyboard.badge.waveform", title: "Record in Keyboard (Experimental)", value: nil)
+                    SettingsRow(symbol: "waveform", title: "Record in Keyboard (Experimental)", value: nil)
                 }
                 if recordsInKeyboard, let result = lastRecordResult {
                     VStack(alignment: .leading, spacing: 2) {
