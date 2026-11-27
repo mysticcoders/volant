@@ -42913,6 +42913,94 @@
         }
       }
     },
+    "Dictation formatting": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Diktatformatierung"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Formato del dictado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Mise en forme de la dictée"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Formattazione della dettatura"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "音声入力の整形"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "받아쓰기 서식"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Opmaak van dicteren"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Formatowanie dyktowania"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Formatação do ditado"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Formatação do ditado"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Форматирование диктовки"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dikte biçimlendirme"
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Форматування диктування"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "听写格式"
+          }
+        }
+      }
+    },
     "Dictation is unavailable.": {
       "localizations": {
         "de": {
@@ -43355,6 +43443,95 @@
           "stringUnit": {
             "state": "needs_review",
             "value": "听写会按你在此处键入的样子写出每个字词，替换你列为“也听作”的内容以及该字词的其他大小写形式。当某个字词出错时，请将你看到的内容添加为“也听作”。可导入每行一个字词的文本文件，或包含“听到的”和“写入的”词对的CSV文件。你的列表保存在Volant的设置中，并在开启设置同步时通过iCloud同步。"
+          }
+        }
+      }
+    },
+    "Dictation's number, punctuation and list formatting is adapted from Hex by Christopher Langton, which is MIT licensed; its license is included with Volant.": {
+      "comment": "About settings acknowledgement; Hex is a product name",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Die Formatierung von Zahlen, Satzzeichen und Listen beim Diktieren basiert auf Hex von Christopher Langton, das unter der MIT-Lizenz steht; die Lizenz ist in Volant enthalten."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "El formato de números, puntuación y listas del dictado está adaptado de Hex, de Christopher Langton, con licencia MIT; su licencia se incluye con Volant."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La mise en forme des nombres, de la ponctuation et des listes de la dictée est adaptée de Hex, de Christopher Langton, sous licence MIT ; sa licence est incluse avec Volant."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "La formattazione di numeri, punteggiatura ed elenchi della dettatura è adattata da Hex di Christopher Langton, con licenza MIT; la sua licenza è inclusa in Volant."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "音声入力の数字・句読点・リストの整形は、Christopher Langton による Hex（MIT ライセンス）を基にしています。ライセンスは Volant に同梱されています。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "받아쓰기의 숫자, 문장 부호, 목록 서식은 Christopher Langton의 Hex(MIT 라이선스)를 바탕으로 하며, 라이선스는 Volant에 포함되어 있습니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "De opmaak van getallen, leestekens en lijsten bij dicteren is overgenomen uit Hex van Christopher Langton, dat onder de MIT-licentie valt; de licentie wordt met Volant meegeleverd."
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Formatowanie liczb, interpunkcji i list w dyktowaniu zaadaptowano z Hex autorstwa Christophera Langtona na licencji MIT; jej tekst jest dołączony do Volant."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "A formatação de números, pontuação e listas do ditado é adaptada do Hex, de Christopher Langton, sob licença MIT; a licença acompanha o Volant."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "A formatação de números, pontuação e listas do ditado é adaptada do Hex, de Christopher Langton, sob licença MIT; a licença acompanha o Volant."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Форматирование чисел, пунктуации и списков при диктовке основано на Hex Кристофера Лэнгтона под лицензией MIT; текст лицензии включён в Volant."
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dikte sırasında sayı, noktalama ve liste biçimlendirmesi, Christopher Langton’ın MIT lisanslı Hex projesinden uyarlanmıştır; lisansı Volant ile birlikte gelir."
+          }
+        },
+        "uk": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Форматування чисел, пунктуації та списків під час диктування засноване на Hex Крістофера Ленгтона за ліцензією MIT; текст ліцензії включено у Volant."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "听写中数字、标点和列表的格式化改编自 Christopher Langton 的 Hex，采用 MIT 许可证；其许可证随 Volant 一同提供。"
           }
         }
       }
