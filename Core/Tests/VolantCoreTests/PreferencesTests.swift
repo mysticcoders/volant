@@ -30,6 +30,21 @@ final class PreferencesTests: XCTestCase {
         let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
         XCTAssertNotNil(object["future"])
     }
+
+    /// Keeping the Mac awake while Volant runs is off unless the owner turns it on, stays per-Mac and patches narrowly.
+    func testCaffeinateWhileRunningDefaultsOffStaysLocalAndPatchesNarrowly() throws {
+        XCTAssertFalse(try JSONDecoder().decode(Preferences.self, from: Data("{}".utf8)).caffeinateWhileRunning)
+        XCTAssertFalse(SettingsSync.keys.contains("caffeinateWhileRunning"))
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: url) }
+        try Data(#"{"caffeinateKeepsDisplayAwake":false,"future":{"keep":1}}"#.utf8).write(to: url)
+        try Preferences.updateBoolean("caffeinateWhileRunning", value: true, at: url)
+        let data = try Data(contentsOf: url)
+        let config = try JSONDecoder().decode(Preferences.self, from: data)
+        XCTAssertTrue(config.caffeinateWhileRunning)
+        XCTAssertFalse(config.caffeinateKeepsDisplayAwake)
+        XCTAssertNotNil(try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])["future"])
+    }
     /// Dictation copies unless the owner chooses typing; both choices stay on this Mac, patch
     /// narrowly, and an unknown output read from a newer version falls back to copying.
     func testDictationOutputDefaultsToCopyAndPatchesNarrowly() throws {

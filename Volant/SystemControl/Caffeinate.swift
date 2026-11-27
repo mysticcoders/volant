@@ -73,20 +73,32 @@ struct NativeCaffeinateAssertions: CaffeinateAssertions {
     }
 }
 
-/// Main-thread owned, session-only state. No preferences, subprocesses or startup assertion.
+/// Main-thread owned session state, with no subprocesses. The only startup assertion is the one the
+/// owner asks for with `caffeinateWhileRunning`, applied through `keepAwakeWhileRunning`.
 final class CaffeinateService: ObservableObject {
     @Published private(set) var command: CaffeinateCommand?
     @Published private(set) var remaining: Int?
     @Published private(set) var error: String?
+    /// Whether the running session is the one the "while Volant runs" setting started.
+    @Published private(set) var isAutomatic = false
     private let assertions: CaffeinateAssertions
     private let now: () -> TimeInterval
     private let automaticTimer: Bool
     private var assertion: UInt32?
     private var deadline: TimeInterval?
     private var timer: Timer?
+    /// The "while Volant runs" setting as last applied, with its display mode. `paused` is set when the
+    /// owner stops Caffeinate by hand, and lasts until the setting is turned on again or Volant relaunches.
+    private var settingOn = false
+    private var settingDisplay = true
+    private var paused = false
     var isActive: Bool { command != nil }
     var summary: String {
         let display = command?.display == true
+        if isAutomatic {
+            return display ? String(localized: "Mac & display awake · while Volant runs", comment: "Caffeinate status for the session the Settings switch keeps on")
+                : String(localized: "Mac awake · display may sleep · while Volant runs", comment: "Caffeinate status for the session the Settings switch keeps on")
+        }
         guard let remaining else {
             return display ? String(localized: "Mac & display awake · until stopped", comment: "Caffeinate status")
                 : String(localized: "Mac awake · display may sleep · until stopped", comment: "Caffeinate status")
@@ -101,8 +113,39 @@ final class CaffeinateService: ObservableObject {
         self.now = now ?? { let elapsed = start.duration(to: clock.now).components; return Double(elapsed.seconds) + Double(elapsed.attoseconds) / 1e18 }
         self.automaticTimer = automaticTimer
     }
+    /// Applies the "while Volant runs" setting: on starts an until-stopped session in the given display
+    /// mode when none is running, and moves the automatic session to a changed mode; off ends the
+    /// automatic session but leaves one the owner started. A failure leaves `error` set.
+    func keepAwakeWhileRunning(_ enabled: Bool, display: Bool) {
+        guard enabled else {
+            settingOn = false; paused = false
+            if isAutomatic { stop() }
+            return
+        }
+        if !settingOn { settingOn = true; paused = false }
+        settingDisplay = display
+        if isAutomatic, command?.display != display { stop() }
+        startAutomaticIfWanted()
+    }
+
+    /// Starts the setting's until-stopped session when the setting is on, not paused, and nothing runs.
+    private func startAutomaticIfWanted() {
+        guard settingOn, !paused, !isActive else { return }
+        isAutomatic = start(CaffeinateCommand(minutes: nil, display: settingDisplay, stop: false))
+    }
+
+    /// Starts or stops a session the owner chose. Stopping by hand also pauses the "while Volant runs"
+    /// setting until it is turned on again or Volant relaunches.
     @discardableResult func perform(_ next: CaffeinateCommand) -> Bool {
-        if next.stop { return stop() }
+        if next.stop {
+            guard stop() else { return false }
+            if settingOn { paused = true }
+            return true
+        }
+        return start(next)
+    }
+
+    private func start(_ next: CaffeinateCommand) -> Bool {
         if let minutes = next.minutes, !(1...1440).contains(minutes) { error = String(localized: "Choose a duration from 1 minute to 24 hours.", comment: "Caffeinate error"); return false }
         guard !isActive else { error = String(localized: "Stop the current Caffeinate session before starting another."); return false }
         do {
@@ -120,14 +163,14 @@ final class CaffeinateService: ObservableObject {
     func tick() {
         guard let deadline else { return }
         remaining = max(0, Int(ceil(deadline - now())))
-        if remaining == 0 { _ = stop() }
+        if remaining == 0 { _ = stop(); startAutomaticIfWanted() }
     }
     @discardableResult func stop() -> Bool {
         if let assertion {
             do { try assertions.release(assertion) }
             catch { self.error = error.localizedDescription; return false }
         }
-        assertion = nil; command = nil; deadline = nil; remaining = nil
+        assertion = nil; command = nil; deadline = nil; remaining = nil; isAutomatic = false
         timer?.invalidate(); timer = nil; error = nil
         return true
     }
