@@ -24,7 +24,7 @@ echo "Volant for iPhone build $BUILD -> ios/$OUT"
 xcodegen generate --quiet
 if ! xcodebuild -project VolantMobile.xcodeproj -scheme VolantMobile -configuration Release \
     -destination 'generic/platform=iOS' -derivedDataPath build/release -archivePath "$OUT/Volant.xcarchive" \
-    CURRENT_PROJECT_VERSION="$BUILD" CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="Apple Distribution" \
+    CURRENT_PROJECT_VERSION="$BUILD" CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="Apple Distribution" DEVELOPMENT_TEAM=REMBT6JY4N \
     VOLANT_APP_PROFILE="$APP_PROFILE" VOLANT_WIDGETS_PROFILE="$WIDGETS_PROFILE" VOLANT_SHARE_PROFILE="$SHARE_PROFILE" \
     VOLANT_KEYBOARD_PROFILE="$KEYBOARD_PROFILE" archive > "$OUT/archive.log" 2>&1; then
   grep -E "error:" "$OUT/archive.log" | sort -u

@@ -31,9 +31,10 @@ public enum DictationFormatting {
     /// (numbers, days or months, as `DictationEditCheck.kind` reads them) keeps only the second,
     /// with the first's capital. Apple's on-device model leaves these as said when the recognizer
     /// writes no commas around the cue, and the kinds make them unambiguous, so string rules
-    /// resolve them. "Actually" is no cue here ("free Tuesday, actually Wednesday works too"), a
-    /// sentence end between the words keeps both ("Is it seven? No, eight."), and only English
-    /// is read.
+    /// resolve them. A full stop between them still counts, since Parakeet writes the pause before
+    /// the cue as one ("seven. No, eight people"); a question or exclamation keeps both ("Is it
+    /// seven? No, eight."). "Actually" is no cue here ("free Tuesday, actually Wednesday works
+    /// too"), and only English is read.
     static func resolvingCorrections(_ text: String, language: String) -> String {
         guard SpokenNumbers.isEnglish(language) else { return text }
         var result = text
@@ -44,7 +45,7 @@ public enum DictationFormatting {
             guard let whole = Range(match.range, in: result), let firstRange = Range(match.range(at: 1), in: result),
                   let secondRange = Range(match.range(at: 2), in: result) else { continue }
             let first = String(result[firstRange]), second = String(result[secondRange])
-            guard !first.hasSuffix("."), let firstKind = kind(first), firstKind == kind(second) else { continue }
+            guard let firstKind = kind(first), firstKind == kind(second) else { continue }
             let kept = first.first?.isUppercase == true ? second.prefix(1).uppercased() + second.dropFirst() : second
             result.replaceSubrange(whole, with: kept)
         }

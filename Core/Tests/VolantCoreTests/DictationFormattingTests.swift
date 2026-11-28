@@ -38,6 +38,8 @@ final class DictationFormattingTests: XCTestCase {
         XCTAssertEqual(DictationFormatting.formattingPhrase("Meet me Tuesday no wait Wednesday", locale: english), "Meet me Wednesday")
         XCTAssertEqual(DictationFormatting.formattingPhrase("Ship it in March, I mean April.", locale: english), "Ship it in April.")
         XCTAssertEqual(DictationFormatting.formattingPhrase("Seven no eight of us are coming.", locale: english), "Eight of us are coming.")
+        XCTAssertEqual(DictationFormatting.formattingPhrase("Book the table for seven. No, eight people, the cluster is down.", locale: english),
+                       "Book the table for 8 people, the cluster is down.")
     }
 
     func testOtherNosAndActuallyStay() {

@@ -7,10 +7,12 @@ import VolantCore
 
 /// One dictation's transcription through Apple's SpeechAnalyzer, with the Mac's cleanup: filler
 /// words removed, the owner's vocabulary applied to every phrase, then spoken numbers and
-/// punctuation written as digits and marks, and spoken lists as lines in the finished text. Audio arrives through `gate`
-/// from whatever captures it (the app's audio engine, or the keyboard's web capture) and never
-/// leaves the device; the transcript is handed back rather than stored. Shared by the app and the
-/// keyboard.
+/// punctuation written as digits and marks, and spoken lists as lines in the finished text. Audio
+/// arrives through `gate` from whatever captures it (the app's audio engine, or the keyboard's web
+/// capture) and never leaves the device; the transcript is handed back rather than stored. With
+/// Parakeet on (`usesParakeet`), the gate also keeps the audio and Parakeet writes the final text,
+/// cleaned the same way; Apple's transcript stays whenever Parakeet cannot. Shared by the app and
+/// the keyboard.
 @MainActor
 final class SpeechTranscription {
     enum Failure: LocalizedError {
@@ -41,6 +43,12 @@ final class SpeechTranscription {
     private(set) var lastCleanup: DictationAppleIntelligenceCleanup.Result?
     /// Whether a missing speech model may be downloaded; the keyboard leaves that to the app.
     var downloadsModel = true
+    /// Writes the final text with the downloaded Parakeet model instead of Apple's transcript.
+    var usesParakeet = false
+    /// Whether this runs in the keyboard, whose memory limit Parakeet must stay within.
+    var inKeyboard = false
+    /// Which engine wrote the last dictation's text and why, for the dictation log.
+    private(set) var lastEngine: String?
 
     /// Where captured audio goes; buffers that arrive while nothing is being transcribed are dropped.
     let gate = InputGate()
@@ -52,6 +60,8 @@ final class SpeechTranscription {
         var collector: Task<Void, Never>?
         var transcript = ""
         var locale: Locale?
+        /// The per-phrase cleanup, kept so Parakeet's text is cleaned the same way.
+        var clean: ((String) -> String)?
     }
 
     /// How long capture continues after stop, so the last word isn't cut off (the Mac's measured tail).
@@ -68,6 +78,7 @@ final class SpeechTranscription {
                onText: @escaping (String) -> Void) async throws {
         cancel()
         lastCleanup = nil
+        lastEngine = nil
         guard SpeechTranscriber.isAvailable else { throw Failure.unavailable }
         if cleansUpWithAppleIntelligence { DictationAppleIntelligenceCleanup.prepare() }
         let session = Session()
@@ -89,7 +100,9 @@ final class SpeechTranscription {
         guard self.session === session else { return }
         let (stream, continuation) = AsyncStream<AnalyzerInput>.makeStream(bufferingPolicy: .bufferingNewest(Self.bufferedInputs))
         session.stream = continuation
-        gate.route(to: InputGate.Route(continuation: continuation, converter: converter, format: analyzerFormat))
+        let recording = usesParakeet && ParakeetModel.isDownloaded
+        if recording { ParakeetTranscriber.shared.warmUp(inKeyboard: inKeyboard) }
+        gate.route(to: InputGate.Route(continuation: continuation, converter: converter, format: analyzerFormat), recording: recording)
 
         let analyzer = SpeechAnalyzer(modules: [transcriber])
         session.analyzer = analyzer
@@ -126,6 +139,7 @@ final class SpeechTranscription {
                 let corrected = closeMatches ? DictationCloseMatch.correcting(vocabulary, in: exact, isKnownWord: isKnown) : exact
                 return formats ? DictationFormatting.formattingPhrase(corrected, locale: locale, protectedTerms: protectedTerms) : corrected
             }
+            session.clean = clean
             do {
                 for try await result in transcriber.results {
                     let text = clean(String(result.text.characters))
@@ -149,7 +163,7 @@ final class SpeechTranscription {
         guard let session else { return nil }
         try? await Task.sleep(for: Self.releaseTail)
         guard self.session === session else { return nil }
-        let loudest = gate.route(to: nil)
+        let (loudest, recording) = gate.finishRoute()
         session.stream?.finish()
         if DictationLevel.isSilent(loudest: loudest) {
             await session.analyzer?.cancelAndFinishNow()
@@ -161,6 +175,15 @@ final class SpeechTranscription {
         _ = await session.collector?.result
         if self.session === session { self.session = nil }
         var text = session.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let recording, let samples = Self.sixteenKilohertz(recording) {
+            let parakeet = await ParakeetTranscriber.shared.transcribe(samples, inKeyboard: inKeyboard)
+            if let heard = parakeet.text {
+                text = (session.clean?(heard) ?? heard).trimmingCharacters(in: .whitespacesAndNewlines)
+                lastEngine = String(localized: "Parakeet \(parakeet.note)")
+            } else {
+                lastEngine = String(localized: "Apple; Parakeet \(parakeet.note)")
+            }
+        }
         if cleansUpWithAppleIntelligence, let locale = session.locale, !text.isEmpty {
             let cleanup = await DictationAppleIntelligenceCleanup.clean(text, locale: locale, vocabulary: vocabulary.map(\.term))
             lastCleanup = cleanup
@@ -180,6 +203,20 @@ final class SpeechTranscription {
         session.collector?.cancel()
         if let analyzer = session.analyzer { Task { await analyzer.cancelAndFinishNow() } }
         self.session = nil
+    }
+
+    /// A recording as 16 kHz mono samples, resampled when the analyzer's format had another rate.
+    static func sixteenKilohertz(_ recording: InputGate.Recording) -> [Float]? {
+        guard !recording.samples.isEmpty else { return nil }
+        if recording.sampleRate == 16_000 { return recording.samples }
+        guard let from = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: recording.sampleRate, channels: 1, interleaved: false),
+              let to = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 16_000, channels: 1, interleaved: false),
+              let converter = AVAudioConverter(from: from, to: to),
+              let input = AVAudioPCMBuffer(pcmFormat: from, frameCapacity: AVAudioFrameCount(recording.samples.count)) else { return nil }
+        input.frameLength = AVAudioFrameCount(recording.samples.count)
+        recording.samples.withUnsafeBufferPointer { input.floatChannelData?[0].update(from: $0.baseAddress!, count: $0.count) }
+        guard let converted = InputGate.convert(input, using: converter, to: to), let channel = converted.floatChannelData?[0] else { return nil }
+        return Array(UnsafeBufferPointer(start: channel, count: Int(converted.frameLength)))
     }
 
     /// Whether the system spell checker accepts a word in the dictation language. Close matches only
@@ -203,8 +240,9 @@ final class SpeechTranscription {
 }
 
 /// Hands audio buffers from the capture thread to the current dictation, if there is one,
-/// converted to the analyzer's format and metered for silence. Nothing in `receive` may trap: a
-/// trap on the realtime audio thread takes the whole process down.
+/// converted to the analyzer's format and metered for silence, and, for Parakeet, kept as mono
+/// samples with room reserved up front. Nothing in `receive` may trap: a trap on the realtime audio
+/// thread takes the whole process down.
 final class InputGate: Sendable {
     struct Route {
         let continuation: AsyncStream<AnalyzerInput>.Continuation
@@ -212,11 +250,22 @@ final class InputGate: Sendable {
         let format: AVAudioFormat
     }
 
+    /// A dictation's audio in the analyzer's format, as mono floats.
+    struct Recording {
+        var samples: [Float]
+        var sampleRate: Double
+    }
+
     private struct State {
         var current: Route?
         var loudest = DictationLevel.floor
         var latest = DictationLevel.floor
+        var recording: Recording?
     }
+
+    /// Room reserved for a recording, so the audio thread does not grow the array: Parakeet's
+    /// longest keyboard dictation and some to spare.
+    static let reservedSeconds = 120.0
 
     private let state = Mutex(State())
 
@@ -226,12 +275,28 @@ final class InputGate: Sendable {
     }
 
     /// Sends buffers to a new route, or to none, and returns the loudest level the old route heard.
+    /// With `recording`, the route's audio is also kept until `finishRoute`.
     @discardableResult
-    func route(to route: Route?) -> Float {
-        state.withLock { state in
+    func route(to route: Route?, recording: Bool = false) -> Float {
+        var kept: Recording?
+        if let route, recording {
+            var samples: [Float] = []
+            samples.reserveCapacity(Int(route.format.sampleRate * Self.reservedSeconds))
+            kept = Recording(samples: samples, sampleRate: route.format.sampleRate)
+        }
+        return state.withLock { state in
             let heard = state.loudest
-            state = State(current: route)
+            state = State(current: route, recording: kept)
             return heard
+        }
+    }
+
+    /// Ends the route and hands over what it heard: the loudest level and the kept recording.
+    func finishRoute() -> (loudest: Float, recording: Recording?) {
+        state.withLock { state in
+            let result = (state.loudest, state.recording)
+            state = State()
+            return result
         }
     }
 
@@ -250,6 +315,15 @@ final class InputGate: Sendable {
         }
         guard let route, let converted = Self.convert(buffer, using: route.converter, to: route.format) else { return }
         route.continuation.yield(AnalyzerInput(buffer: converted))
+        state.withLock { state in
+            guard state.recording != nil else { return }
+            let count = Int(converted.frameLength)
+            if let floats = converted.floatChannelData {
+                state.recording?.samples.append(contentsOf: UnsafeBufferPointer(start: floats[0], count: count))
+            } else if let ints = converted.int16ChannelData {
+                for index in 0..<count { state.recording?.samples.append(Float(ints[0][index]) / 32768) }
+            }
+        }
     }
 
     /// Resamples a buffer into the analyzer's format, or returns nil when it cannot.

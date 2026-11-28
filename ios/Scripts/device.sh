@@ -11,7 +11,7 @@ mkdir -p build
 xcodegen generate --quiet
 if ! xcodebuild -project VolantMobile.xcodeproj -scheme VolantMobile -configuration Debug \
     -destination 'generic/platform=iOS' -derivedDataPath build/device \
-    CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="Apple Development" \
+    CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="Apple Development" DEVELOPMENT_TEAM=REMBT6JY4N \
     VOLANT_APP_PROFILE="${VOLANT_APP_PROFILE:-Volant mobile development profile}" \
     VOLANT_WIDGETS_PROFILE="${VOLANT_WIDGETS_PROFILE:-Volant mobile widget development profile}" \
     VOLANT_SHARE_PROFILE="${VOLANT_SHARE_PROFILE:-Volant mobile share development profile}" \

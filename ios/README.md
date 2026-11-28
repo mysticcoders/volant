@@ -132,3 +132,22 @@ iOS never gives a keyboard the microphone, even with Full Access, so the app lis
 Full Access is required: without it a keyboard cannot reach the App Group or open the app. Snippets
 reach the keyboard as `keyboard-snippets.json`, which the app rewrites whenever it reads settings sync.
 Real dictation needs a device; in the simulator the keyboard can only be seen, not used.
+
+### Parakeet (optional)
+
+Settings › Dictation Keyboard › Speech Model › Parakeet (25 Languages), off by default. Turning it
+on offers a one-time download of Parakeet Ultra (NVIDIA Parakeet TDT 0.6B v3 retrained by
+Moondream, FluidInference's Core ML build, CC BY 4.0, about 595 MB) through FluidAudio (Apache
+2.0, pinned in project.yml) into the App Group (`Models/parakeet-ultra-coreml`, excluded from
+backup), so the app and the keyboard share it. The download also prepares it for the Neural Engine.
+
+Apple's engine still shows words while the owner speaks. With Parakeet on, `InputGate` also keeps
+the dictation's audio (room for two minutes reserved up front, so the audio thread does not grow
+the array), and at the checkmark `ParakeetTranscriber` writes the final text from it. That text is
+cleaned like Apple's: fillers, vocabulary, spoken formatting, the optional Apple Intelligence pass
+and lists. Apple's transcript stays whenever Parakeet cannot: not loaded yet (the keyboard
+prepares it once, about 12 s on an iPhone 17 Pro by Hex's measurement), too little keyboard memory
+(`ParakeetBudget`, from Hex's measurements: 58 MB free to load, 24 MB plus half a megabyte per
+second of audio to transcribe), or a keyboard dictation over 90 seconds. The dictation log in
+Settings › Dictation Keyboard says which engine wrote the text and why. Acknowledgements lists the
+model and FluidAudio with their licenses (`VolantMobile/Resources/Licenses`).

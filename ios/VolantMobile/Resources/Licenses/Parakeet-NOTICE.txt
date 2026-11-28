@@ -1,0 +1,14 @@
+Parakeet Ultra speech model
+
+Volant can download and use Parakeet Ultra for dictation:
+
+- Parakeet TDT 0.6B v3 by NVIDIA (https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3)
+- Retrained as Parakeet Ultra by Moondream (https://huggingface.co/moondream/parakeet-ultra)
+- Converted to Core ML by FluidInference (https://huggingface.co/FluidInference/parakeet-ultra-coreml)
+
+Licensed under the Creative Commons Attribution 4.0 International License (CC BY 4.0):
+https://creativecommons.org/licenses/by/4.0/legalcode
+
+Volant does not ship the model. It downloads FluidInference's files unchanged, the first time the
+owner turns on Parakeet in Settings, and runs them on the device. The weights are provided as-is,
+without warranties, as the license states.
