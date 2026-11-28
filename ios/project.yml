@@ -69,6 +69,7 @@ targets:
         excludes:
           - KeyboardPanel.swift
           - SpeechTranscription.swift
+          - DictationAppleIntelligenceCleanup.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.mobile.widgets
@@ -93,6 +94,7 @@ targets:
           - WidgetViews.swift
           - KeyboardPanel.swift
           - SpeechTranscription.swift
+          - DictationAppleIntelligenceCleanup.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.mobile.share

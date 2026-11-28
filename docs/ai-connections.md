@@ -157,8 +157,18 @@ line"). Guards keep prose: "trial period", "a dash of salt", "one of them" and t
 vocabulary's own terms stay as said. Numbers and punctuation run on each finished phrase, after the
 vocabulary, so they apply while typing as you speak; lists span phrases, so they apply only to the
 finished transcript (copied, or typed when finished). A punctuation name the recognizer put at the
-very start of a phrase stays as said. On by default and per Mac: Settings → General → Dictation →
+very start of a phrase stays as said. A spoken correction between two numbers, days or months ("seven, no, eight people",
+"Tuesday no wait Wednesday", "March, I mean April") keeps only the second, with or without commas
+around the cue; Apple's on-device model left the commaless form as said when measured, and the
+kinds make it unambiguous. "Actually" is not used as a cue there, and a sentence end between the
+words keeps both. On by default and per Mac: Settings → General → Dictation →
 Format numbers, punctuation and lists (`dictationFormatsSpokenText`).
+
+Settings → General → Dictation → Clean up with Apple Intelligence (`dictationCleansUpWithAppleIntelligence`,
+off by default) runs Apple's on-device model over the finished transcript before lists, keeping its
+answer only when `DictationEditCheck` verifies every change; in practice it resolves spoken
+self-corrections and drops repeats. It applies when copying or typing once finished, never to
+phrases typed while speaking, and waits at most two seconds. See docs/dictation-ai-cleanup.md.
 
 Availability is rechecked at start, because microphone permission can be revoked between uses. On
 macOS 15 the command is present and reports that it needs macOS 26, the same pattern Apple

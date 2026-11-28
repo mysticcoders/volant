@@ -283,6 +283,7 @@ final class KeyboardModel: ObservableObject {
         transcription.vocabulary = KeyboardDictationSettings.readVocabulary()
         transcription.removesFillers = KeyboardDictationSettings.removesFillers
         transcription.formatsSpokenText = KeyboardDictationSettings.formatsSpokenText
+        transcription.cleansUpWithAppleIntelligence = KeyboardDictationSettings.cleansUpWithAppleIntelligence
         transcription.downloadsModel = false
         let gate = transcription.gate
         microphone.onBuffer = { [weak self] buffer in
@@ -332,8 +333,10 @@ final class KeyboardModel: ObservableObject {
         localSince = nil
         updateMeter()
         let ending = stoppedByPage ? String(localized: "the microphone stopped by itself") : String(localized: "finished")
-        endLog(text.map { String(localized: "\(ending), typed \($0.count) characters") }
-               ?? String(localized: "\(ending), nothing was recognized"))
+        var outcome = text.map { String(localized: "\(ending), typed \($0.count) characters") }
+            ?? String(localized: "\(ending), nothing was recognized")
+        if let cleanup = transcription.lastCleanup { outcome += "; " + cleanup.summary }
+        endLog(outcome)
         if let text {
             let formatted = style.format(text)
             if !formatted.isEmpty { controller?.insertDictation(formatted) }

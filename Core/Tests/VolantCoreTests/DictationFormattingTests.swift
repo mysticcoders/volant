@@ -30,4 +30,23 @@ final class DictationFormattingTests: XCTestCase {
         XCTAssertEqual(DictationFormatting.formattingPhrase(spoken, locale: english), spoken)
         XCTAssertEqual(DictationFormatting.formattingTranscript(spoken, locale: english), "Groceries:\n1. Eggs\n2. Milk\n3. Bread")
     }
+
+    func testCorrectionsBetweenNumbersDaysAndMonthsResolve() {
+        XCTAssertEqual(DictationFormatting.formattingPhrase("Book the table for seven, no, eight people.", locale: english), "Book the table for 8 people.")
+        XCTAssertEqual(DictationFormatting.formattingPhrase("Book the table for seven no eight people.", locale: english), "Book the table for 8 people.")
+        XCTAssertEqual(DictationFormatting.formattingPhrase("It costs twenty five, sorry, thirty dollars", locale: english), "It costs $30")
+        XCTAssertEqual(DictationFormatting.formattingPhrase("Meet me Tuesday no wait Wednesday", locale: english), "Meet me Wednesday")
+        XCTAssertEqual(DictationFormatting.formattingPhrase("Ship it in March, I mean April.", locale: english), "Ship it in April.")
+        XCTAssertEqual(DictationFormatting.formattingPhrase("Seven no eight of us are coming.", locale: english), "Eight of us are coming.")
+    }
+
+    func testOtherNosAndActuallyStay() {
+        XCTAssertEqual(DictationFormatting.formattingPhrase("I'm free Tuesday, actually Wednesday works too.", locale: english),
+                       "I'm free Tuesday, actually Wednesday works too.")
+        XCTAssertEqual(DictationFormatting.formattingPhrase("Is it seven? No, eight.", locale: english), "Is it seven? No, eight.")
+        XCTAssertEqual(DictationFormatting.formattingPhrase("The answer was no, Tuesday is fine.", locale: english), "The answer was no, Tuesday is fine.")
+        XCTAssertEqual(DictationFormatting.formattingPhrase("Siete, no, ocho personas.", locale: Locale(identifier: "es_ES")), "Siete, no, ocho personas.")
+        XCTAssertEqual(DictationFormatting.formattingPhrase("I said no to eight people", locale: english), "I said no to 8 people")
+        XCTAssertEqual(DictationFormatting.formattingPhrase("Tell him no, 8 is fine", locale: english), "Tell him no, 8 is fine")
+    }
 }
