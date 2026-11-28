@@ -18,9 +18,9 @@ struct KeyboardSetupView: View {
                 VStack(spacing: 16) {
                     KeyboardPreview()
                     Button {
-                        walkthrough = .intro
+                        walkthrough = KeyboardInstall.current.isReady ? .tryIt : .intro
                     } label: {
-                        Text(KeyboardPresence.lastSeen == nil ? "Set Up Keyboard" : "Walk Through Setup Again")
+                        Text(KeyboardInstall.current.isReady ? "Try It" : "Set Up Keyboard")
                             .font(.headline)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 4)
@@ -82,8 +82,9 @@ struct KeyboardSetupView: View {
     }
 
     private var status: String {
-        guard let seen = KeyboardPresence.lastSeen else { return String(localized: "Not Set Up") }
-        return String(localized: "Used \(seen.formatted(.relative(presentation: .named)))")
+        let install = KeyboardInstall.current
+        if install.isReady { return String(localized: "Ready") }
+        return install.isAdded ? String(localized: "Needs Full Access") : String(localized: "Not Set Up")
     }
 }
 

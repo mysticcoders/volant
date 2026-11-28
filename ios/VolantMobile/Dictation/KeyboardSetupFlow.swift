@@ -14,6 +14,9 @@ struct KeyboardSetupFlow: View {
     @FocusState private var trialFocused: Bool
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
+    @Environment(\.scenePhase) private var scenePhase
+    /// Re-read after returning from the Settings app.
+    @State private var install = KeyboardInstall.current
 
     init(page: Page = .intro) {
         _page = State(initialValue: page)
@@ -30,6 +33,11 @@ struct KeyboardSetupFlow: View {
             }
             .padding(.horizontal, 24)
             .animation(.default, value: page)
+            .onChange(of: scenePhase) { _, phase in
+                guard phase == .active else { return }
+                install = KeyboardInstall.current
+                if page == .enable, install.isReady { page = .tryIt }
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(role: .close) { dismiss() }
@@ -56,7 +64,10 @@ struct KeyboardSetupFlow: View {
                 Feature(symbol: "text.quote", text: "Your Mac snippets are one tap away.")
             }
             Spacer(minLength: 0)
-            PrimaryButton(title: "Set Up Keyboard") { page = .enable }
+            PrimaryButton(title: "Set Up Keyboard") {
+                install = KeyboardInstall.current
+                page = install.isReady ? .tryIt : .enable
+            }
         }
     }
 
@@ -66,12 +77,12 @@ struct KeyboardSetupFlow: View {
                 .font(.largeTitle.weight(.bold))
                 .padding(.top, 8)
             VStack(alignment: .leading, spacing: 16) {
-                NumberedStep(number: 1, text: "Open Settings")
-                NumberedStep(number: 2, text: "Tap Keyboards")
-                NumberedStep(number: 3, text: "Turn on Volant")
-                NumberedStep(number: 4, text: "Turn on Allow Full Access")
+                NumberedStep(number: 1, text: "Open Settings", done: install.isAdded)
+                NumberedStep(number: 2, text: "Tap Keyboards", done: install.isAdded)
+                NumberedStep(number: 3, text: "Turn on Volant", done: install.isAdded)
+                NumberedStep(number: 4, text: "Turn on Allow Full Access", done: install.hasFullAccess)
             }
-            Text("Full Access lets the keyboard open Volant to listen and read back what you said, because iOS never lets a keyboard use the microphone itself. iOS warns that a keyboard with Full Access could send what you type; Volant's keyboard sends nothing over the network.")
+            Text("Full Access lets the keyboard reach Volant's microphone. Nothing you type is sent anywhere.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
             Spacer(minLength: 0)
@@ -79,7 +90,7 @@ struct KeyboardSetupFlow: View {
                 PrimaryButton(title: "Open Settings") {
                     if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
                 }
-                Button("I've Turned It On") { page = .tryIt }
+                Button(install.isAdded ? "Continue" : "I've Turned It On") { page = .tryIt }
                     .font(.body.weight(.medium))
             }
         }
@@ -176,18 +187,47 @@ private struct Feature: View {
     }
 }
 
+/// One setup step, numbered, or checked once it is done.
 private struct NumberedStep: View {
     let number: Int
     let text: LocalizedStringKey
+    var done = false
 
     var body: some View {
         HStack(spacing: 14) {
-            Text("\(number)")
-                .font(.headline)
-                .frame(width: 32, height: 32)
-                .background(Circle().fill(Color(uiColor: .secondarySystemBackground)))
-            Text(text).font(.title3)
+            Group {
+                if done {
+                    Image(systemName: "checkmark").font(.headline.weight(.bold)).foregroundStyle(.white)
+                        .frame(width: 32, height: 32)
+                        .background(Circle().fill(Brand.gradient))
+                } else {
+                    Text("\(number)").font(.headline)
+                        .frame(width: 32, height: 32)
+                        .background(Circle().fill(Color(uiColor: .secondarySystemBackground)))
+                }
+            }
+            .accessibilityLabel(done ? Text("Done") : Text("Step \(number)"))
+            Text(text).font(.title3).foregroundStyle(done ? .secondary : .primary)
         }
+    }
+}
+
+/// Whether the Volant keyboard is set up, as far as the app can tell. That it is added comes from
+/// the system's list of enabled keyboards (`AppleKeyboards`, the preference keyboard apps read).
+/// iOS tells an app nothing about Full Access, but the keyboard can reach the App Group only with
+/// it, so a keyboard that has reported in (`KeyboardPresence`) had Full Access then.
+struct KeyboardInstall: Equatable {
+    static let bundleID = "com.mysticcoders.volant.mobile.keyboard"
+
+    var isAdded: Bool
+    var hasFullAccess: Bool
+
+    var isReady: Bool { isAdded && hasFullAccess }
+
+    static var current: KeyboardInstall {
+        let keyboards = UserDefaults.standard.array(forKey: "AppleKeyboards") as? [String] ?? []
+        let reported = KeyboardPresence.lastSeen != nil
+        return KeyboardInstall(isAdded: reported || keyboards.contains(bundleID), hasFullAccess: reported)
     }
 }
 
