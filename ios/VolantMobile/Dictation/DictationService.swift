@@ -50,8 +50,12 @@ final class DictationService: ObservableObject {
             case DictationBridge.Signal.stop.name: Task { await self.stop() }
             case DictationBridge.Signal.cancel.name: self.cancel()
             case DictationBridge.Signal.consumed.name: self.clearTranscript()
-            case DictationBridge.Signal.keyboardReady.name: self.keyboardLastShown = (Date(), true)
-            case DictationBridge.Signal.keyboardNeedsFullAccess.name: self.keyboardLastShown = (Date(), false)
+            case DictationBridge.Signal.keyboardReady.name:
+                self.keyboardLastShown = (Date(), true)
+                UserDefaults.standard.removeObject(forKey: KeyboardInstall.fullAccessOffKey)
+            case DictationBridge.Signal.keyboardNeedsFullAccess.name:
+                self.keyboardLastShown = (Date(), false)
+                UserDefaults.standard.set(Date(), forKey: KeyboardInstall.fullAccessOffKey)
             default: break
             }
         }

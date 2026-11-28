@@ -11,6 +11,8 @@ struct KeyboardSetupView: View {
     @AppStorage(KeyboardDictationSettings.cleansUpKey, store: KeyboardDictationSettings.defaults) private var cleansUp = false
     @AppStorage(ParakeetModel.enabledKey, store: KeyboardDictationSettings.defaults) private var usesParakeet = false
     @State private var walkthrough: KeyboardSetupFlow.Page?
+    @State private var install = KeyboardInstall.current
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         List {
@@ -18,9 +20,9 @@ struct KeyboardSetupView: View {
                 VStack(spacing: 16) {
                     KeyboardPreview()
                     Button {
-                        walkthrough = KeyboardInstall.current.isReady ? .tryIt : .intro
+                        walkthrough = install.isReady ? .tryIt : .intro
                     } label: {
-                        Text(KeyboardInstall.current.isReady ? "Try It" : "Set Up Keyboard")
+                        Text(install.isReady ? "Try It" : "Set Up Keyboard")
                             .font(.headline)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 4)
@@ -71,9 +73,11 @@ struct KeyboardSetupView: View {
         }
         .navigationTitle("Dictation Keyboard")
         .navigationBarTitleDisplayMode(.inline)
-        .fullScreenCover(item: $walkthrough) { page in
+        .fullScreenCover(item: $walkthrough, onDismiss: { install = KeyboardInstall.current }) { page in
             KeyboardSetupFlow(page: page)
         }
+        .onAppear { install = KeyboardInstall.current }
+        .onChange(of: scenePhase) { _, phase in if phase == .active { install = KeyboardInstall.current } }
         .task {
             guard let page = UserDefaults.standard.string(forKey: "fixtureKeyboardSetupPage").flatMap(Int.init) else { return }
             try? await Task.sleep(for: .milliseconds(500))
@@ -82,7 +86,6 @@ struct KeyboardSetupView: View {
     }
 
     private var status: String {
-        let install = KeyboardInstall.current
         if install.isReady { return String(localized: "Ready") }
         return install.isAdded ? String(localized: "Needs Full Access") : String(localized: "Not Set Up")
     }

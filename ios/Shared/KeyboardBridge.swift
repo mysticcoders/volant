@@ -215,6 +215,12 @@ enum KeyboardPresence {
     static func markSeen(now: Date = Date()) {
         UserDefaults(suiteName: AppGroup.id)?.set(now, forKey: key)
     }
+
+    /// Forgets the report, once the keyboard is gone from the enabled keyboards, so adding it
+    /// again has to show Full Access again.
+    static func clear() {
+        UserDefaults(suiteName: AppGroup.id)?.removeObject(forKey: key)
+    }
 }
 
 /// Snippet text with the Mac's placeholders filled in the same way the Mac expands them.

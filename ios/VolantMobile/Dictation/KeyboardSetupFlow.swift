@@ -213,11 +213,14 @@ private struct NumberedStep: View {
 }
 
 /// Whether the Volant keyboard is set up, as far as the app can tell. That it is added comes from
-/// the system's list of enabled keyboards (`AppleKeyboards`, the preference keyboard apps read).
-/// iOS tells an app nothing about Full Access, but the keyboard can reach the App Group only with
-/// it, so a keyboard that has reported in (`KeyboardPresence`) had Full Access then.
+/// the system's list of enabled keyboards (`AppleKeyboards`, the preference keyboard apps read);
+/// when it is gone from that list, its earlier report is forgotten. iOS tells an app nothing about
+/// Full Access, but the keyboard can reach the App Group only with it, so a keyboard that has
+/// reported in (`KeyboardPresence`) had it, unless it has since appeared without it, which it
+/// signals and the app notes (`fullAccessOffKey`).
 struct KeyboardInstall: Equatable {
     static let bundleID = "com.mysticcoders.volant.mobile.keyboard"
+    static let fullAccessOffKey = "keyboardFullAccessOffSince"
 
     var isAdded: Bool
     var hasFullAccess: Bool
@@ -225,9 +228,17 @@ struct KeyboardInstall: Equatable {
     var isReady: Bool { isAdded && hasFullAccess }
 
     static var current: KeyboardInstall {
-        let keyboards = UserDefaults.standard.array(forKey: "AppleKeyboards") as? [String] ?? []
-        let reported = KeyboardPresence.lastSeen != nil
-        return KeyboardInstall(isAdded: reported || keyboards.contains(bundleID), hasFullAccess: reported)
+        let reported = KeyboardPresence.lastSeen
+        let isAdded: Bool
+        if let keyboards = UserDefaults.standard.array(forKey: "AppleKeyboards") as? [String] {
+            isAdded = keyboards.contains(bundleID)
+            if !isAdded, reported != nil { KeyboardPresence.clear() }
+        } else {
+            isAdded = reported != nil
+        }
+        let offSince = UserDefaults.standard.object(forKey: fullAccessOffKey) as? Date
+        let hasFullAccess = isAdded && reported.map { seen in offSince.map { $0 < seen } ?? true } == true
+        return KeyboardInstall(isAdded: isAdded, hasFullAccess: hasFullAccess)
     }
 }
 
