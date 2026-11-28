@@ -36,7 +36,7 @@ struct KeyboardSetupFlow: View {
             .onChange(of: scenePhase) { _, phase in
                 guard phase == .active else { return }
                 install = KeyboardInstall.current
-                if page == .enable, install.isReady { page = .tryIt }
+                if page == .enable, install.isAdded { page = .tryIt }
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -81,6 +81,11 @@ struct KeyboardSetupFlow: View {
                 NumberedStep(number: 2, text: "Tap Keyboards", done: install.isAdded)
                 NumberedStep(number: 3, text: "Turn on Volant", done: install.isAdded)
                 NumberedStep(number: 4, text: "Turn on Allow Full Access", done: install.hasFullAccess)
+            }
+            if install.isAdded, !install.hasFullAccess {
+                Text("Then switch to the Volant keyboard once so Volant can confirm it.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
             Text("Full Access lets the keyboard reach Volant's microphone. Nothing you type is sent anywhere.")
                 .font(.footnote)
@@ -224,6 +229,8 @@ struct KeyboardInstall: Equatable {
 
     var isAdded: Bool
     var hasFullAccess: Bool
+    /// The keyboard has said Full Access is off; otherwise, without a report, it is unknown.
+    var fullAccessKnownOff = false
 
     var isReady: Bool { isAdded && hasFullAccess }
 
@@ -238,7 +245,7 @@ struct KeyboardInstall: Equatable {
         }
         let offSince = UserDefaults.standard.object(forKey: fullAccessOffKey) as? Date
         let hasFullAccess = isAdded && reported.map { seen in offSince.map { $0 < seen } ?? true } == true
-        return KeyboardInstall(isAdded: isAdded, hasFullAccess: hasFullAccess)
+        return KeyboardInstall(isAdded: isAdded, hasFullAccess: hasFullAccess, fullAccessKnownOff: isAdded && !hasFullAccess && offSince != nil)
     }
 }
 

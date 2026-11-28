@@ -87,7 +87,8 @@ struct KeyboardSetupView: View {
 
     private var status: String {
         if install.isReady { return String(localized: "Ready") }
-        return install.isAdded ? String(localized: "Needs Full Access") : String(localized: "Not Set Up")
+        if install.fullAccessKnownOff { return String(localized: "Needs Full Access") }
+        return install.isAdded ? String(localized: "Added") : String(localized: "Not Set Up")
     }
 }
 
