@@ -6,7 +6,7 @@ struct CaffeinateStatusView: View {
     @State private var showingError = false
     var body: some View {
         if service.isActive {
-            Button { showingError = !service.stop() } label: {
+            Button { showingError = !service.perform(.off) } label: {
                 Image(systemName: "cup.and.saucer.fill")
                     .font(.system(size: 15)).foregroundStyle(.tint)
                     .frame(width: 28, height: 24)
@@ -21,7 +21,7 @@ struct CaffeinateStatusView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Couldn't stop Caffeinate").font(.headline)
                     Text(service.error ?? String(localized: "Try stopping the session again.")).font(.callout)
-                    Button("Try Again") { showingError = !service.stop() }
+                    Button("Try Again") { showingError = !service.perform(.off) }
                 }
                 .padding(16).frame(width: 280)
             }

@@ -100,7 +100,7 @@ The main app is sandboxed and has no network entitlement. The two unsandboxed he
 ## Settings and data
 
 - **config.json**: the owner's configuration file. Edits are narrow patches that keep unknown fields and reject stale snapshots.
-- **Per-Mac setting**: stays on this Mac. Hotkeys, favorites, AI, extension approvals, approved hosts, Focus, Breaks, the MCP server and the sync switch are per-Mac.
+- **Per-Mac setting**: stays on this Mac. Hotkeys, favorites, AI, extension approvals, approved hosts, Focus, Breaks, Caffeinate's settings, the MCP server and the sync switch are per-Mac.
 - **Synced setting**: a key listed in `SettingsSync.keys`, exchanged through iCloud key-value storage.
 - **Backup**: Export Backup / Import Backup of config and notes to a folder the owner chooses.
 - **Welcome window**: shown once per Mac on first run (`welcomeCompleted`, never synced).

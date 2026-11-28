@@ -89,4 +89,53 @@ final class CaffeinateTests: XCTestCase {
         XCTAssertTrue(LauncherRouting.isReserved("caffeinate"))
         XCTAssertTrue(LauncherRouting.isReserved("emoji"))
     }
+
+    func testTheWhileRunningSettingKeepsAnUntilStoppedSessionAndEndsOnlyItsOwn() {
+        let assertions = Assertions()
+        let service = CaffeinateService(assertions: assertions, automaticTimer: false)
+        service.keepAwakeWhileRunning(false, display: true)
+        XCTAssertFalse(service.isActive, "Off by default: nothing starts at launch")
+        service.keepAwakeWhileRunning(true, display: true)
+        XCTAssertTrue(service.isActive && service.isAutomatic)
+        XCTAssertEqual(assertions.created.count, 1)
+        XCTAssertEqual(assertions.created.first?.1, 0, "Until stopped, not timed")
+        XCTAssertEqual(service.summary, "Mac & display awake · while Volant runs")
+        service.keepAwakeWhileRunning(true, display: true)
+        XCTAssertEqual(assertions.created.count, 1, "Reapplying an unchanged setting doesn't start a second session")
+        service.keepAwakeWhileRunning(true, display: false)
+        XCTAssertEqual(assertions.created.map(\.0), [true, false], "A changed display mode moves the automatic session")
+        XCTAssertEqual(assertions.released, [42])
+        service.keepAwakeWhileRunning(false, display: false)
+        XCTAssertFalse(service.isActive)
+
+        XCTAssertTrue(service.perform(CaffeinateCommand.parse("caffeinate 30m")[0]))
+        service.keepAwakeWhileRunning(false, display: true)
+        XCTAssertTrue(service.isActive, "Turning the setting off leaves a session the owner started")
+        XCTAssertFalse(service.isAutomatic)
+    }
+
+    func testStoppingByHandPausesTheSettingUntilItIsTurnedOnAgain() {
+        let assertions = Assertions()
+        let service = CaffeinateService(assertions: assertions, automaticTimer: false)
+        service.keepAwakeWhileRunning(true, display: true)
+        XCTAssertTrue(service.perform(.off))
+        XCTAssertFalse(service.isActive)
+        service.keepAwakeWhileRunning(true, display: true)
+        XCTAssertFalse(service.isActive, "A config reload doesn't undo caffeinate off")
+        service.keepAwakeWhileRunning(false, display: true)
+        service.keepAwakeWhileRunning(true, display: true)
+        XCTAssertTrue(service.isAutomatic, "Turning the setting on again resumes it")
+    }
+
+    func testATimedSessionHandsBackToTheSettingWhenItEnds() {
+        let assertions = Assertions()
+        var time = 0.0
+        let service = CaffeinateService(assertions: assertions, now: { time }, automaticTimer: false)
+        XCTAssertTrue(service.perform(CaffeinateCommand.parse("caffeinate 1m")[0]))
+        service.keepAwakeWhileRunning(true, display: true)
+        XCTAssertFalse(service.isAutomatic, "A running timed session is left alone")
+        time = 61; service.tick()
+        XCTAssertTrue(service.isActive && service.isAutomatic, "The setting takes over once the timed session ends")
+        XCTAssertEqual(assertions.created.map(\.1), [60, 0])
+    }
 }

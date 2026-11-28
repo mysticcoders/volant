@@ -17,6 +17,8 @@ public struct Preferences: Codable {
     public var showOnLaunch: Bool = true
     public var showInDock: Bool = true
     public var caffeinateKeepsDisplayAwake: Bool = true
+    /// Keeps a Caffeinate session running for as long as Volant runs. Per-Mac, off by default.
+    public var caffeinateWhileRunning: Bool = false
     public var dictationLowersVolume: Bool = true
     /// Where hotkey dictation's text goes on this Mac. Typing needs the input helper and its
     /// Accessibility permission, so it is never the default and never synced.
@@ -75,7 +77,7 @@ public struct Preferences: Codable {
     public var help: String = "Edit and choose Reload Configuration in Settings. Hotkeys: cmd|ctrl|option|shift|meh|hyper + key. App hotkeys use the bundle identifier. Snippets: {date} {isodate} {time} {datetime} {clipboard} {uuid}. Quicklinks: {query}. Aliases map a word to an app name or query. Appearance: theme system|light|dark, colorTheme system|volant|catppuccin-mocha|nord|…|custom-<name> (named themes set their own light or dark; customThemes holds imported Raycast themes), scale 0.8–1.4, opacity 0.5–1.0."
 
     public enum CodingKeys: String, CodingKey {
-        case favoriteApps, summonHotKey, notesHotKey, emojiHotKey, talkHotKey, lockScreenHotKey, sleepDisplaysHotKey, focusHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, caffeinateKeepsDisplayAwake, dictationLowersVolume, dictationOutput, dictationTypesWhileSpeaking, dictationRemovesFillers, dictationFormatsSpokenText, dictationCleansUpWithAppleIntelligence, dictationPlaysSounds, dictationVocabulary, dictationFixesCloseMatches, fileSearchUsesFSearch, syncSettingsWithICloud, rexPanePreviews, extensionUpdateChecks, welcomeCompleted, searchMenuItems, statusBar, focus, breaks, mcpServer, snippets, quicklinks, aliases, appearance
+        case favoriteApps, summonHotKey, notesHotKey, emojiHotKey, talkHotKey, lockScreenHotKey, sleepDisplaysHotKey, focusHotKey, appHotKeys, clipboardRetention, showOnLaunch, showInDock, caffeinateKeepsDisplayAwake, caffeinateWhileRunning, dictationLowersVolume, dictationOutput, dictationTypesWhileSpeaking, dictationRemovesFillers, dictationFormatsSpokenText, dictationCleansUpWithAppleIntelligence, dictationPlaysSounds, dictationVocabulary, dictationFixesCloseMatches, fileSearchUsesFSearch, syncSettingsWithICloud, rexPanePreviews, extensionUpdateChecks, welcomeCompleted, searchMenuItems, statusBar, focus, breaks, mcpServer, snippets, quicklinks, aliases, appearance
         case help = "_help"
     }
 
@@ -107,6 +109,7 @@ public struct Preferences: Codable {
         showOnLaunch = try c.decodeIfPresent(Bool.self, forKey: .showOnLaunch) ?? d.showOnLaunch
         showInDock = try c.decodeIfPresent(Bool.self, forKey: .showInDock) ?? d.showInDock
         caffeinateKeepsDisplayAwake = try c.decodeIfPresent(Bool.self, forKey: .caffeinateKeepsDisplayAwake) ?? d.caffeinateKeepsDisplayAwake
+        caffeinateWhileRunning = try c.decodeIfPresent(Bool.self, forKey: .caffeinateWhileRunning) ?? d.caffeinateWhileRunning
         dictationLowersVolume = try c.decodeIfPresent(Bool.self, forKey: .dictationLowersVolume) ?? d.dictationLowersVolume
         // An unknown output, for example from a newer version, falls back to copying rather than typing.
         dictationOutput = (try? c.decodeIfPresent(DictationOutput.self, forKey: .dictationOutput)) ?? d.dictationOutput
@@ -144,7 +147,7 @@ public struct Preferences: Codable {
 
     /// Patch a single setting, preserving externally edited and unknown configuration fields.
     public static func updateBoolean(_ key: String, value: Bool, at url: URL = configURL) throws {
-        precondition(["showInDock", "showOnLaunch", "caffeinateKeepsDisplayAwake", "dictationLowersVolume", "dictationTypesWhileSpeaking", "dictationRemovesFillers", "dictationFormatsSpokenText", "dictationCleansUpWithAppleIntelligence", "dictationPlaysSounds", "dictationFixesCloseMatches", "fileSearchUsesFSearch", "syncSettingsWithICloud", "rexPanePreviews", "extensionUpdateChecks", "welcomeCompleted", "searchMenuItems"].contains(key))
+        precondition(["showInDock", "showOnLaunch", "caffeinateKeepsDisplayAwake", "caffeinateWhileRunning", "dictationLowersVolume", "dictationTypesWhileSpeaking", "dictationRemovesFillers", "dictationFormatsSpokenText", "dictationCleansUpWithAppleIntelligence", "dictationPlaysSounds", "dictationFixesCloseMatches", "fileSearchUsesFSearch", "syncSettingsWithICloud", "rexPanePreviews", "extensionUpdateChecks", "welcomeCompleted", "searchMenuItems"].contains(key))
         let data = try Data(contentsOf: url)
         guard var object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw CocoaError(.fileReadCorruptFile)
