@@ -36,6 +36,8 @@ struct KeyboardSetupView: View {
                 Text("An optional keyboard for Volant's dictation. Type on the Apple keyboard as usual and switch with the globe key when you want to dictate.")
             }
 
+            ParakeetSettingsSection()
+
             Section {
                 Picker(selection: $microphoneMinutes) {
                     ForEach(DictationService.microphoneMinuteChoices, id: \.self) { minutes in

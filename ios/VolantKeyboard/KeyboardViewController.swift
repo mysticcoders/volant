@@ -196,6 +196,7 @@ final class KeyboardModel: ObservableObject {
         DictationBridge.post(.keyboardReady)
         if local == nil { KeyboardDictationLog.closeAbandoned() }
         if KeyboardDictationSettings.recordsInKeyboard, let view = controller?.view { microphone.attach(to: view) }
+        if KeyboardDictationSettings.recordsInKeyboard, ParakeetModel.isEnabled { ParakeetTranscriber.shared.warmUp(inKeyboard: true) }
         if observer == nil {
             observer = DarwinObserver([DictationBridge.Signal.changed.name]) { [weak self] _ in self?.reload() }
         }
@@ -284,6 +285,8 @@ final class KeyboardModel: ObservableObject {
         transcription.removesFillers = KeyboardDictationSettings.removesFillers
         transcription.formatsSpokenText = KeyboardDictationSettings.formatsSpokenText
         transcription.cleansUpWithAppleIntelligence = KeyboardDictationSettings.cleansUpWithAppleIntelligence
+        transcription.usesParakeet = ParakeetModel.isEnabled
+        transcription.inKeyboard = true
         transcription.downloadsModel = false
         let gate = transcription.gate
         microphone.onBuffer = { [weak self] buffer in
@@ -335,6 +338,7 @@ final class KeyboardModel: ObservableObject {
         let ending = stoppedByPage ? String(localized: "the microphone stopped by itself") : String(localized: "finished")
         var outcome = text.map { String(localized: "\(ending), typed \($0.count) characters") }
             ?? String(localized: "\(ending), nothing was recognized")
+        if let engine = transcription.lastEngine { outcome += "; " + engine }
         if let cleanup = transcription.lastCleanup { outcome += "; " + cleanup.summary }
         endLog(outcome)
         if let text {

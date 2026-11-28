@@ -160,8 +160,9 @@ finished transcript (copied, or typed when finished). A punctuation name the rec
 very start of a phrase stays as said. A spoken correction between two numbers, days or months ("seven, no, eight people",
 "Tuesday no wait Wednesday", "March, I mean April") keeps only the second, with or without commas
 around the cue; Apple's on-device model left the commaless form as said when measured, and the
-kinds make it unambiguous. "Actually" is not used as a cue there, and a sentence end between the
-words keeps both. On by default and per Mac: Settings → General → Dictation →
+kinds make it unambiguous. "Actually" is not used as a cue there; a full stop between the words
+still counts (Parakeet writes the pause before the cue as one), and a question or exclamation mark
+keeps both. On by default and per Mac: Settings → General → Dictation →
 Format numbers, punctuation and lists (`dictationFormatsSpokenText`).
 
 Settings → General → Dictation → Clean up with Apple Intelligence (`dictationCleansUpWithAppleIntelligence`,

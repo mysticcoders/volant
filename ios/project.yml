@@ -7,6 +7,9 @@ options:
 packages:
   VolantCore:
     path: ../Core
+  FluidAudio:
+    url: https://github.com/FluidInference/FluidAudio.git
+    exactVersion: 0.18.4
 settings:
   base:
     SWIFT_VERSION: "5.0"
@@ -30,6 +33,7 @@ targets:
         buildPhase: resources
     dependencies:
       - package: VolantCore
+      - package: FluidAudio
       - target: VolantWidgets
         embed: true
       - target: VolantShare
@@ -70,6 +74,7 @@ targets:
           - KeyboardPanel.swift
           - SpeechTranscription.swift
           - DictationAppleIntelligenceCleanup.swift
+          - ParakeetEngine.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.mobile.widgets
@@ -95,6 +100,7 @@ targets:
           - KeyboardPanel.swift
           - SpeechTranscription.swift
           - DictationAppleIntelligenceCleanup.swift
+          - ParakeetEngine.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.mobile.share
@@ -119,6 +125,7 @@ targets:
           - WidgetViews.swift
     dependencies:
       - package: VolantCore
+      - package: FluidAudio
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mysticcoders.volant.mobile.keyboard

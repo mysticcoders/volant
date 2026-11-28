@@ -79,6 +79,7 @@ final class PhoneDictation {
         transcription.removesFillers = removesFillers
         transcription.formatsSpokenText = formatsSpokenText
         transcription.cleansUpWithAppleIntelligence = KeyboardDictationSettings.cleansUpWithAppleIntelligence
+        transcription.usesParakeet = ParakeetModel.isEnabled
         try await transcription.begin(inputFormat: tapFormat, onPreparing: onPreparing, onText: onText)
     }
 

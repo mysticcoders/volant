@@ -17,6 +17,10 @@ struct AcknowledgementsView: View {
     static let credits = [
         Credit(title: "Dictation Formatting", detail: "Hex by Christopher Langton · MIT License",
                url: "https://github.com/anomalyco/hex", licenseFile: "Hex-LICENSE"),
+        Credit(title: "Speech Model", detail: "Parakeet Ultra: NVIDIA Parakeet TDT 0.6B v3, retrained by Moondream, converted by FluidInference · CC BY 4.0",
+               url: "https://huggingface.co/FluidInference/parakeet-ultra-coreml", licenseFile: "Parakeet-NOTICE"),
+        Credit(title: "Speech Model Runtime", detail: "FluidAudio by FluidInference · Apache License 2.0",
+               url: "https://github.com/FluidInference/FluidAudio", licenseFile: "FluidAudio-LICENSE"),
         Credit(title: "Color Themes", detail: "Catppuccin, Nord, Dracula, Gruvbox, Solarized, Tokyo Night, Rosé Pine, One Dark · MIT License",
                url: nil, licenseFile: "ColorThemes-LICENSES"),
     ]
